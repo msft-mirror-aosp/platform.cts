@@ -28,7 +28,7 @@ import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
 
-_CHART_ORIENTATIONS = ['nominal', 'flip', 'mirror', 'rotate']
+_CHART_ORIENTATIONS = ('nominal', 'flip', 'mirror', 'rotate')
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_H = 0.5  # center 50%
 _PATCH_W = 0.5
@@ -53,50 +53,57 @@ def test_flip_mirror_impl(cam, props, fmt, chart, first_api_level,
   Returns:
     boolean: True if flipped, False if not
   """
-  # get a local copy of the chart template
-  template = cv2.imread(opencv_processing_utils.CHART_FILE, cv2.IMREAD_ANYDEPTH)
-
   # take img, crop chart, scale and prep for cv2 template match
   cam.do_3a()
   req = capture_request_utils.auto_capture_request()
   cap = cam.do_capture(req, fmt)
   y, _, _ = image_processing_utils.convert_capture_to_planes(cap, props)
   y = image_processing_utils.rotate_img_per_argv(y)
-  patch = image_processing_utils.get_image_patch(y, chart.xnorm, chart.ynorm,
-                                                 chart.wnorm, chart.hnorm)
-  patch = 255 * opencv_processing_utils.gray_scale_img(patch)
-  patch = opencv_processing_utils.scale_img(
-      patch.astype(np.uint8), chart.scale)
+  chart_patch = image_processing_utils.get_image_patch(
+      y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)
+  image_processing_utils.write_image(chart_patch,
+                                     f'{name_with_log_path}_chart.jpg')
+
+  # make chart patch 2D & uint8 for cv2.matchTemplate
+  chart_patch = chart_patch[:, :, 0]
+  chart_uint8 = image_processing_utils.convert_image_to_uint8(chart_patch)
+
+  # scale chart
+  chart_uint8 = opencv_processing_utils.scale_img(chart_uint8, chart.scale)
 
   # check image has content
-  if np.max(patch)-np.min(patch) < 255/8:
+  if np.max(chart_uint8)-np.min(chart_uint8) < 255/8:
     raise AssertionError('Image patch has no content! Check setup.')
 
-  # save full image & patch
-  image_processing_utils.write_image(template[:, :, np.newaxis] / 255.0,
+  # get a local copy of the chart template and save to results dir
+  template = cv2.imread(opencv_processing_utils.CHART_FILE, cv2.IMREAD_ANYDEPTH)
+  image_processing_utils.write_image(template[:, :, np.newaxis] / 255,
                                      f'{name_with_log_path}_template.jpg')
-  image_processing_utils.write_image(patch[:, :, np.newaxis] / 255.0,
-                                     f'{name_with_log_path}_scene_patch.jpg')
 
-  # crop center areas and strip off any extra rows/columns
+  # crop center areas, strip off any extra rows/columns, & save cropped images
   template = image_processing_utils.get_image_patch(
       template, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
-  patch = image_processing_utils.get_image_patch(
-      patch, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
-  patch = patch[0:min(patch.shape[0], template.shape[0]),
-                0:min(patch.shape[1], template.shape[1])]
-  comp_chart = patch
+  center_uint8 = image_processing_utils.get_image_patch(
+      chart_uint8, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
+  center_uint8 = center_uint8[:min(center_uint8.shape[0], template.shape[0]),
+                              :min(center_uint8.shape[1], template.shape[1])]
+  image_processing_utils.write_image(template[:, :, np.newaxis] / 255,
+                                     f'{name_with_log_path}_template_crop.jpg')
+  image_processing_utils.write_image(chart_uint8[:, :, np.newaxis] / 255,
+                                     f'{name_with_log_path}_chart_crop.jpg')
 
   # determine optimum orientation
   opts = []
   imgs = []
   for orientation in _CHART_ORIENTATIONS:
-    if orientation == 'flip':
-      comp_chart = np.flipud(patch)
+    if orientation == 'nominal':
+      comp_chart = center_uint8
+    elif orientation == 'flip':
+      comp_chart = np.flipud(center_uint8)
     elif orientation == 'mirror':
-      comp_chart = np.fliplr(patch)
+      comp_chart = np.fliplr(center_uint8)
     elif orientation == 'rotate':
-      comp_chart = np.flipud(np.fliplr(patch))
+      comp_chart = np.flipud(np.fliplr(center_uint8))
     correlation = cv2.matchTemplate(comp_chart, template, cv2.TM_CCOEFF)
     _, opt_val, _, _ = cv2.minMaxLoc(correlation)
     imgs.append(comp_chart)

@@ -31,8 +31,32 @@
             android:canDisplayOnRemoteDevices="false"
             android:exported="false" />
         <activity
+            android:name=".VirtualDeviceDrmTest$DrmActivity"
+            android:exported="false" />
+        <activity
             android:name=".RestrictActivityTest$RestrictedActivity"
             android:requiredDisplayCategory="testActivityCategory"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$DisplayCategory1Group1Activity"
+            android:requiredDisplayCategory="testDisplayCategory1"
+            android:taskAffinity="android.virtualdevice.cts.applaunch.group1"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$EmptyGroup1Activity"
+            android:taskAffinity="android.virtualdevice.cts.applaunch.group1"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$DisplayCategory1Activity"
+            android:requiredDisplayCategory="testDisplayCategory1"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$DisplayCategory2Activity"
+            android:requiredDisplayCategory="testDisplayCategory2"
+            android:exported="false" />
+        <activity
+            android:name=".RestrictActivityTaskTest$AnotherDisplayCategory2Activity"
+            android:requiredDisplayCategory="testDisplayCategory2"
             android:exported="false" />
         <activity
             android:name=".ActivityInterceptionTest$InterceptedActivity"
@@ -67,12 +91,16 @@
 
     <uses-feature android:name="android.software.companion_device_setup" />
 
+    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
+    <uses-permission android:name="android.permission.ADD_ALWAYS_UNLOCKED_DISPLAY" />
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
+
     <!--
      * These permissions are used to verify permission behavior in VirtualDevicePermissionTest.
      * The test module otherwise does not use these permissions.
      -->
     <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Needed to test the camera blocking behavior. -->
     <uses-permission android:name="android.permission.CAMERA" />
 

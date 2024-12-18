@@ -16,6 +16,8 @@
 
 package android.graphics.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.compat.CompatChanges;
 import android.graphics.cts.FrameRateOverrideCtsActivity.FrameRateObserver;
@@ -31,14 +33,15 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.cts.display.DisplayUtilKt;
+
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,7 +73,13 @@ public final class FrameRateOverrideTest {
     private final Handler mHandler = new Handler(Looper.getMainLooper());
 
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<FrameRateOverrideCtsActivity> mActivityRule =
             new ActivityTestRule<>(FrameRateOverrideCtsActivity.class);
 
@@ -87,6 +96,7 @@ public final class FrameRateOverrideTest {
                         Manifest.permission.OVERRIDE_DISPLAY_MODE_REQUESTS);
 
         mDisplayManager = mActivityRule.getActivity().getSystemService(DisplayManager.class);
+        assumeTrue(DisplayUtilKt.validateOnlyDefaultDisplayOn(mDisplayManager, TAG));
         mInitialMatchContentFrameRate = toSwitchingType(
                 mDisplayManager.getMatchContentFrameRateUserPreference());
         mDisplayManager.setRefreshRateSwitchingType(
@@ -153,6 +163,14 @@ public final class FrameRateOverrideTest {
         final long currentDisplayWidth = currentMode.getPhysicalWidth();
 
         for (Display.Mode mode : modes) {
+            // Skip synthetic test modes which are not currently handled. Usually synthetic mode
+            // is handled by a frame rate override, but due to SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY
+            // in the test setup, this is not communicated and thus not handled.
+            // TODO(b/361849950): write new test or fix these tests to handle synthetic modes.
+            if (mode.isSynthetic()) {
+                continue;
+            }
+
             if (mode.getPhysicalHeight() == currentDisplayHeight
                     && mode.getPhysicalWidth() == currentDisplayWidth) {
 
@@ -162,6 +180,7 @@ public final class FrameRateOverrideTest {
                     continue;
                 }
                 modesWithSameResolution.add(mode);
+                Log.i(TAG, "Mode added: " + mode.toString());
             }
         }
 
@@ -202,9 +221,6 @@ public final class FrameRateOverrideTest {
         Log.i(TAG, "\n");
     }
 
-    // b/350443755 Ignore for flaky test.
-    @Ignore
-    @FlakyTest(bugId = 350443755)
     @Test
     public void testAppBackpressure()
             throws InterruptedException, IOException {

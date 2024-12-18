@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Presubmit
 public class ServiceTest extends ActivityTestsBase {
@@ -447,13 +448,13 @@ public class ServiceTest extends ActivityTestsBase {
                             .executeShellCommand(cmd);
             byte[] buf = new byte[512];
             int bytesRead;
-            FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
-            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-            while ((bytesRead = fis.read(buf)) != -1) {
-                stdout.write(buf, 0, bytesRead);
+            try (FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd)) {
+                ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+                while ((bytesRead = fis.read(buf)) != -1) {
+                    stdout.write(buf, 0, bytesRead);
+                }
+                return stdout.toByteArray();
             }
-            fis.close();
-            return stdout.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -1676,10 +1677,14 @@ public class ServiceTest extends ActivityTestsBase {
         IsolatedConnection mConnection;
 
         IsolatedConnectionInfo(int group, int importance, int strong) {
+            this(group, importance, strong, "");
+        }
+
+        IsolatedConnectionInfo(int group, int importance, int strong, String instanceNamePostfix) {
             mGroup = group;
             mImportance = importance;
             mStrong = strong;
-            mInstanceName = group + "_" + importance;
+            mInstanceName = group + "_" + importance + instanceNamePostfix;
             StringBuilder b = new StringBuilder(mInstanceName);
             b.append('_');
             if (strong == BINDING_WEAK) {
@@ -1994,20 +1999,36 @@ public class ServiceTest extends ActivityTestsBase {
 
         final Activity a = getRunningActivity();
 
-        final int CONN_1_1_W = 0;
-        final int CONN_1_1_S = 1;
-        final int CONN_1_2_W = 2;
-        final int CONN_1_2_S = 3;
-        final int CONN_2_1_W = 4;
-        final int CONN_2_1_S = 5;
-        final int CONN_2_2_W = 6;
-        final int CONN_2_2_S = 7;
-        final int CONN_2_3_W = 8;
-        final int CONN_2_3_S = 9;
+        final int CONN_0_0_W_0 = 0;
+        final int CONN_0_0_S_0 = 1;
+        final int CONN_0_0_W_1 = 2;
+        final int CONN_0_0_S_1 = 3;
+        final int CONN_0_0_W_2 = 4;
+        final int CONN_0_0_S_2 = 5;
+        final int CONN_0_0_W_3 = 6;
+        final int CONN_0_0_S_3 = 7;
+        final int CONN_1_1_W = 8;
+        final int CONN_1_1_S = 9;
+        final int CONN_1_2_W = 10;
+        final int CONN_1_2_S = 11;
+        final int CONN_2_1_W = 12;
+        final int CONN_2_1_S = 13;
+        final int CONN_2_2_W = 14;
+        final int CONN_2_2_S = 15;
+        final int CONN_2_3_W = 16;
+        final int CONN_2_3_S = 17;
 
         // We are going to have both weak and strong references to services, so we can allow
         // some to go down in the LRU list.
         final IsolatedConnectionInfo[] connections = new IsolatedConnectionInfo[] {
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w0"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s0"),
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w1"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s1"),
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w2"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s2"),
+                new IsolatedConnectionInfo(0, 0, BINDING_WEAK, "_w3"),
+                new IsolatedConnectionInfo(0, 0, BINDING_STRONG, "_s3"),
                 new IsolatedConnectionInfo(1, 1, BINDING_WEAK),
                 new IsolatedConnectionInfo(1, 1, BINDING_STRONG),
                 new IsolatedConnectionInfo(1, 2, BINDING_WEAK),
@@ -2035,6 +2056,36 @@ public class ServiceTest extends ActivityTestsBase {
         boolean passed = false;
 
         try {
+            // Strong connections should be in order with respect to each other.
+            LruOrderItem[] expectedOrderOfGroup0StrongConnections = new LruOrderItem[]{
+                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_S_2], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_S_1], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_S_0], LruOrderItem.FLAG_SKIP_UNKNOWN),
+            };
+            // Weak connections should be in order with respect to each other.
+            LruOrderItem[] expectedOrderOfGroup0WeakConnections = new LruOrderItem[]{
+                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_W_2], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_W_1], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_W_0], LruOrderItem.FLAG_SKIP_UNKNOWN),
+            };
+
+            // Start the group 0 processes.
+            doBind(a, connections, 0, BINDING_ANY);
+
+            // Wait for them to come up.
+            doWaitForService(connections, 0, BINDING_ANY);
+
+            // Verify the order of strong and weak connections.
+            verifyLruOrder(expectedOrderOfGroup0StrongConnections);
+            verifyLruOrder(expectedOrderOfGroup0WeakConnections);
+
+            // Stop the group 0 processes.
+            doUnbind(a, connections, 0, BINDING_ANY);
+
             // Start the group 1 processes as weak.
             doBind(a, connections, 1, BINDING_WEAK);
             doUpdateServiceGroup(a, connections, 1, BINDING_WEAK);
@@ -2136,6 +2187,7 @@ public class ServiceTest extends ActivityTestsBase {
      * Test per process's max outgoing bindService() service connections.
      * @throws Exception
      */
+    @FlakyTest(bugId = 329918252)
     public void testMaxServiceConnections() throws Exception {
         final ArrayList<LatchedConnection> connections = new ArrayList<>();
         final int max = 1000;

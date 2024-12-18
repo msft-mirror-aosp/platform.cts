@@ -66,6 +66,7 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
     private int mEglColorSpace = 0;
     private boolean mIsEGLWideGamut = false;
     private boolean mEGLExtensionUnsupported = false;
+    private boolean mEGLFloatFormatUnsupported = false;
 
     static final int EGL_CONTEXT_CLIENT_VERSION = 0x3098;
     static final int EGL_OPENGL_ES2_BIT = 4;
@@ -208,6 +209,10 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
         return mEGLExtensionUnsupported;
     }
 
+    public boolean eglFloatExtensionUnsupported() {
+        return mEGLFloatFormatUnsupported;
+    }
+
     public void initGl() throws Throwable {
         initGl(0, false);
     }
@@ -222,6 +227,7 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
         mEglColorSpace = eglColorSpace;
         mIsEGLWideGamut = useHalfFloat;
         mEGLExtensionUnsupported = false;
+        mEGLFloatFormatUnsupported = false;
         runOnGLThread(mDoInitGL);
     }
 
@@ -382,9 +388,14 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
                     mEGLExtensionUnsupported = true;
                 }
             }
-            if (mIsEGLWideGamut && !extensions.contains("EXT_pixel_format_float")) {
-                mEGLExtensionUnsupported = true;
+
+            if (!extensions.contains("EXT_pixel_format_float")) {
+                mEGLFloatFormatUnsupported = true;
+                if (mIsEGLWideGamut) {
+                    mEGLExtensionUnsupported = true;
+                }
             }
+
             // If the extension is present but the device doesn't claim to have a wide color gamut
             // display then it might not return any actual float formats.
             if (mIsEGLWideGamut && !mEGLExtensionUnsupported

@@ -18,6 +18,7 @@ package android.widget.cts;
 
 import static org.junit.Assert.assertEquals;
 
+import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.res.Resources;
@@ -31,6 +32,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,7 +52,13 @@ public class RemoteViewsThemeColorsTest {
 
     private static final List<Integer> ALL_COLORS = generateColorList();
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
             new ActivityTestRule<>(RemoteViewsCtsActivity.class);
 
@@ -97,7 +106,7 @@ public class RemoteViewsThemeColorsTest {
     @Test
     public void apply_setSomeColorsInTheme_shouldChangeThoseColorsOnly() throws Throwable {
         List<Integer> changedColors = List.of(ALL_COLORS.get(10), ALL_COLORS.get(11),
-                ALL_COLORS.get(17), ALL_COLORS.get(8), ALL_COLORS.get(1));
+                ALL_COLORS.get(17), ALL_COLORS.get(8), ALL_COLORS.get(1), ALL_COLORS.get(101));
         SparseIntArray theme = new SparseIntArray();
         for (int i = 0; i < changedColors.size(); i++) {
             theme.put(changedColors.get(i), 0xffffff00 + i);
@@ -159,7 +168,7 @@ public class RemoteViewsThemeColorsTest {
     private static List<Integer> generateColorList() {
         List<Integer> colors = new ArrayList<>();
         for (int color = android.R.color.system_neutral1_0;
-                color <= android.R.color.system_accent3_1000; color++) {
+                color <= android.R.color.system_error_1000; color++) {
             colors.add(color);
         }
         return colors;

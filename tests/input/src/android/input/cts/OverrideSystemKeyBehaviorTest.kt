@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.Manifest.permission.OVERRIDE_SYSTEM_KEY_BEHAVIOR_IN_FOCUSED_WINDOW
 import android.content.pm.PackageManager
+import android.cts.input.EventVerifier
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.view.KeyEvent
@@ -26,7 +27,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
-import com.android.compatibility.common.util.ShellUtils
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.WindowUtil
 import com.android.cts.input.inputeventmatchers.withKeyCode

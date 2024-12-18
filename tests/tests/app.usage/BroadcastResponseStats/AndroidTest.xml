@@ -19,6 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
@@ -48,7 +49,7 @@
     </test>
 
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="directory-keys" value="/sdcard/CtsBRSTestCases" />
+        <option name="directory-keys" value="/sdcard/CtsUsageStatsTestCases" />
         <option name="collect-on-run-ended-only" value="true" />
     </metrics_collector>
 </configuration>

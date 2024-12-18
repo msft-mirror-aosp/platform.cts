@@ -16,8 +16,6 @@
 
 package android.app.cts.broadcasts;
 
-import static org.junit.Assume.assumeTrue;
-
 import android.app.BroadcastOptions;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -63,7 +61,6 @@ public class BroadcastDeliveryGroupTest extends BaseBroadcastTest {
 
     @Test
     public void testDeliveryGroupPolicy_withForceDelay_policyAll() throws Exception {
-        assumeTrue(isModernBroadcastQueueEnabled());
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
         final TestServiceConnection connection2 = bindToHelperService(HELPER_PKG2);
         try {
@@ -130,7 +127,6 @@ public class BroadcastDeliveryGroupTest extends BaseBroadcastTest {
 
     @Test
     public void testDeliveryGroupPolicy_withForceDelay_policyMostRecent() throws Exception {
-        assumeTrue(isModernBroadcastQueueEnabled());
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
         final TestServiceConnection connection2 = bindToHelperService(HELPER_PKG2);
         try {

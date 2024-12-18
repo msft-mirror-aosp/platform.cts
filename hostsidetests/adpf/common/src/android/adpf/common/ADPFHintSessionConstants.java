@@ -20,6 +20,7 @@ public class ADPFHintSessionConstants {
     public static final String TEST_NAME_KEY = "Test_Name";
 
     public static final int MINIMUM_VALID_SDK = 33; // T
+    public static final int MINIMUM_VENDOR_API_LEVEL = 202404; // V
     public static final String IS_HINT_SESSION_SUPPORTED_KEY = "isHintSessionSupported";
     public static final String BASELINE_KEY = "baseline";
     public static final String LIGHT_LOAD_KEY = "light_load";

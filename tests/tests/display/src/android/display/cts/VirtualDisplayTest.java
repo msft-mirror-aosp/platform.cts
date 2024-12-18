@@ -17,7 +17,6 @@
 package android.display.cts;
 
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
-import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -25,8 +24,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -38,8 +37,10 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -53,20 +54,23 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.DisplayCutout;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 import android.widget.ImageView;
-
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.StateKeeperRule;
@@ -122,10 +126,9 @@ public class VirtualDisplayTest {
     private HandlerThread mCheckThread;
     private Handler mCheckHandler;
 
+    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
     @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-            Manifest.permission.ADD_TRUSTED_DISPLAY,
+    public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
             Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @ClassRule
@@ -144,6 +147,9 @@ public class VirtualDisplayTest {
     public StateKeeperRule<DisplayStateManager.DisplayState> mDisplayManagerStateKeeper =
             new StateKeeperRule<>(new DisplayStateManager(
                     InstrumentationRegistry.getInstrumentation().getTargetContext()));
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -292,26 +298,6 @@ public class VirtualDisplayTest {
     }
 
     /**
-     * Ensures that throws {@link SecurityException} when an application creates a trusted virtual
-     * display without holding the permission {@code ADD_TRUSTED_DISPLAY}.
-     */
-    @Test
-    public void testTrustedVirtualDisplay() throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
-
-        try {
-            VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
-                    WIDTH, HEIGHT, DENSITY, mSurface, VIRTUAL_DISPLAY_FLAG_TRUSTED);
-        } catch (SecurityException e) {
-            // Expected.
-            return;
-        }
-        fail("SecurityException must be thrown if a trusted virtual display is created without"
-                + "holding the permission ADD_TRUSTED_DISPLAY.");
-    }
-
-    /**
      * Ensures that an application can create a private virtual display with a requested
      * refresh rate and show its own windows on it.
      */
@@ -333,6 +319,57 @@ public class VirtualDisplayTest {
             virtualDisplay.release();
         }
         assertDisplayUnregistered(display);
+    }
+
+    /**
+     * Ensures that an application can create a virtual display without a cutout.
+     */
+    @Test
+    public void testVirtualDisplayWithoutCutout() {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(
+                new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                        .setSurface(mSurface)
+                        .build());
+        try {
+            assertNull(virtualDisplay.getDisplay().getCutout());
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(virtualDisplay.getDisplay());
+    }
+
+    /**
+     * Ensures that an application can create a virtual display with a cutout.
+     */
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_INSETS)
+    @Test
+    public void testVirtualDisplayWithCutout() {
+        DisplayCutout cutout = new DisplayCutout(
+                /* safeInsets= */ Insets.of(0, 0, 0, 0),
+                /* boundLeft= */ new Rect(5, 6, 7, 8),
+                /* boundTop= */ new Rect(9, 10, 11, 12),
+                /* boundRight= */ new Rect(13, 14, 15, 16),
+                /* boundBottom= */ new Rect(17, 18, 19, 20),
+                /* waterfallInsets= */ Insets.of(21, 22, 23, 24));
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(
+                new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                        .setSurface(mSurface)
+                        .setDisplayCutout(cutout)
+                        .build());
+        try {
+            // The safe insets are always computed by WindowManager based on the waterfall insets
+            // and the bounds. The values passed to the DisplayCutout constructor don't matter as
+            // they will be overridden by WindowManager. So do not validate the safe insets.
+            DisplayCutout actualCutout = virtualDisplay.getDisplay().getCutout();
+            assertEquals(actualCutout.getBoundingRectLeft(), cutout.getBoundingRectLeft());
+            assertEquals(actualCutout.getBoundingRectTop(), cutout.getBoundingRectTop());
+            assertEquals(actualCutout.getBoundingRectRight(), cutout.getBoundingRectRight());
+            assertEquals(actualCutout.getBoundingRectBottom(), cutout.getBoundingRectBottom());
+            assertEquals(actualCutout.getWaterfallInsets(), cutout.getWaterfallInsets());
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(virtualDisplay.getDisplay());
     }
 
     @Test
@@ -396,6 +433,68 @@ public class VirtualDisplayTest {
                 RotationChangeWaiter waiter = new RotationChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 assertFalse(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_0, display.getRotation());
+            }
+        } finally {
+            // Clean up after the test completes.
+            activity.finish();
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
+    public void testRotateVirtualDisplay_invalidRotationValue_throws() {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface, /* flags= */ 0);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+
+        try {
+            assertThrows(IllegalArgumentException.class, () -> virtualDisplay.setRotation(-1));
+            assertThrows(IllegalArgumentException.class, () -> virtualDisplay.setRotation(4));
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(virtualDisplay.getDisplay());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_ROTATION_API)
+    public void testRotateVirtualDisplay() throws Exception {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        assertNotNull("virtual display must not be null", virtualDisplay);
+
+        Display display = virtualDisplay.getDisplay();
+        assertEquals(Surface.ROTATION_0, display.getRotation());
+        // Without an activity we're not going to receive display rotation changes
+        launchTestActivityOnDisplay(display.getDisplayId());
+        try {
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                virtualDisplay.setRotation(Surface.ROTATION_270);
+                assertTrue(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_270, display.getRotation());
+
+            }
+            {
+                // Set the current rotation as the new rotation and check that this does NOT
+                // result in a rotation event.
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                virtualDisplay.setRotation(Surface.ROTATION_270);
+                assertFalse(waiter.rotationChanged());
+                assertEquals(Surface.ROTATION_270, display.getRotation());
+            }
+            {
+                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                virtualDisplay.setRotation(Surface.ROTATION_0);
+                assertTrue(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_0, display.getRotation());
             }
         } finally {

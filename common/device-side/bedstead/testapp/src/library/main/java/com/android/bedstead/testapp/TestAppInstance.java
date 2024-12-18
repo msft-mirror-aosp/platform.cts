@@ -46,6 +46,8 @@ import android.content.pm.RemoteLauncherApps;
 import android.content.pm.RemoteLauncherAppsWrapper;
 import android.content.pm.RemotePackageManager;
 import android.content.pm.RemotePackageManagerWrapper;
+import android.media.projection.RemoteMediaProjectionManager;
+import android.media.projection.RemoteMediaProjectionManagerWrapper;
 import android.net.wifi.RemoteWifiManager;
 import android.net.wifi.RemoteWifiManagerWrapper;
 import android.net.wifi.WifiManager;
@@ -77,6 +79,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.google.android.enterprise.connectedapps.ConnectionListener;
 import com.google.android.enterprise.connectedapps.ProfileConnectionHolder;
 import com.google.android.enterprise.connectedapps.exceptions.UnavailableProfileException;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -269,6 +272,7 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      *
      * <p>This will not kill the app immediately. To do that see {@link #stop()}.
      */
+    @CanIgnoreReturnValue
     public TestAppInstance stopKeepAlive() {
         mKeepAliveManually = false;
         if (mConnectionHolder != null) {
@@ -283,6 +287,7 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      *
      * <p>This will also stop keeping the target app alive (see {@link #stopKeepAlive()}.
      */
+    @CanIgnoreReturnValue
     public TestAppInstance stop() {
         stopKeepAlive();
 
@@ -487,6 +492,15 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      */
     public RemoteEuiccManager euiccManager() {
         return new RemoteEuiccManagerWrapper(mConnector, mUser, mTestApp.pkg());
+    }
+
+    /**
+     * Access the {@link android.media.projection.MediaProjectionManager} using this test app.
+     *
+     * <p>Almost all methods are available. Those that are not will be missing from the interface.
+     */
+    public RemoteMediaProjectionManager mediaProjectionManager() {
+        return new RemoteMediaProjectionManagerWrapper(mConnector, mUser, mTestApp.pkg());
     }
 
     /**

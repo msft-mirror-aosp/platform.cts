@@ -16,10 +16,13 @@
 
 package android.preference.cts;
 
+import android.Manifest;
 import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class FragmentPreferencesTest
         extends ActivityInstrumentationTestCase2<FragmentPreferences> {
@@ -34,7 +37,8 @@ public class FragmentPreferencesTest
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                this::getActivity, Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
         mPrefsFragment = (FragmentPreferences.PrefsFragment) mActivity.getFragmentManager()
                 .findFragmentById(android.R.id.content);
     }

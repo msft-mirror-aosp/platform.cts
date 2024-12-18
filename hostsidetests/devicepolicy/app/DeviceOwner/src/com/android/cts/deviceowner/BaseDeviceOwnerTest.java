@@ -15,12 +15,15 @@
  */
 package com.android.cts.deviceowner;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS;
+
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.Nullable;
 import android.annotation.UserIdInt;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
+import android.app.UiAutomation;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
@@ -52,9 +55,11 @@ public abstract class BaseDeviceOwnerTest extends AndroidTestCase {
     private static final String TAG = BaseDeviceOwnerTest.class.getSimpleName();
 
     protected DevicePolicyManager mDevicePolicyManager;
-    @Nullable protected WifiManager mWifiManager;
+    @Nullable
+    protected WifiManager mWifiManager;
     protected WifiManager mCurrentUserWifiManager;
-    @Nullable protected WifiConfigCreator mWifiConfigCreator;
+    @Nullable
+    protected WifiConfigCreator mWifiConfigCreator;
     protected Instrumentation mInstrumentation;
     protected UiDevice mDevice;
     protected boolean mHasSecureLockScreen;
@@ -62,6 +67,7 @@ public abstract class BaseDeviceOwnerTest extends AndroidTestCase {
     protected boolean mIsAutomotive;
     /** User running the test (obtained from {@code mContext}). */
     protected @UserIdInt int mUserId;
+    private UiAutomation mUiAutomation;
 
     @Override
     protected void setUp() throws Exception {
@@ -86,6 +92,7 @@ public abstract class BaseDeviceOwnerTest extends AndroidTestCase {
                 PackageManager.FEATURE_TELEPHONY);
         mIsAutomotive = mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE);
+        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
         Log.v(TAG, "dpm=" + mDevicePolicyManager + ", wifiManager=" + mWifiManager);
 
@@ -120,9 +127,14 @@ public abstract class BaseDeviceOwnerTest extends AndroidTestCase {
     }
 
     protected final UserHandle getCurrentUser() {
-        UserHandle currentUser = UserHandle.of(ActivityManager.getCurrentUser());
-        Log.v(TAG, "getCurrentUser(): returning " + currentUser);
-        return currentUser;
+        try {
+            mUiAutomation.adoptShellPermissionIdentity(INTERACT_ACROSS_USERS);
+            UserHandle currentUser = UserHandle.of(ActivityManager.getCurrentUser());
+            Log.v(TAG, "getCurrentUser(): returning " + currentUser);
+            return currentUser;
+        } finally {
+            mUiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     protected final List<WifiConfiguration> getConfiguredNetworks() {

@@ -39,6 +39,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.admin.DevicePolicyManager;
@@ -56,6 +57,7 @@ import androidx.test.filters.RequiresDevice;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import libcore.util.EmptyArray;
 
@@ -78,6 +80,11 @@ public class DualSuspendTests {
         mReceiverHandler = new Handler(Looper.getMainLooper());
         assumeTrue("Skipping test that requires device admin",
                 FeatureUtil.hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN));
+        UserHelper userHelper = new UserHelper(mContext);
+        // Skipping for visible background users since this test sets the component as profile owner
+        // for the current user.
+        assumeFalse("Not supported on visible background user",
+                userHelper.isVisibleBackgroundUser());
         addAndAssertProfileOwner();
     }
 

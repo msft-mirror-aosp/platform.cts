@@ -394,8 +394,14 @@ public class ImsServiceConnector {
         private boolean bindCarrierImsService(ImsFeatureConfiguration config, String packageName)
                 throws Exception {
             getCarrierService().setFeatureConfig(config);
-            return setCarrierImsService(packageName) && getCarrierService().waitForLatchCountdown(
-                            TestImsService.LATCH_FEATURES_READY);
+            boolean setCarrierImsService = setCarrierImsService(packageName);
+            boolean getCarrierService = getCarrierService().waitForLatchCountdown(
+                    TestImsService.LATCH_FEATURES_READY);
+            Log.i("bindCarrierImsService", "setCarrierImsService = " + setCarrierImsService);
+            Log.i("bindCarrierImsService", "getCarrierService = " + getCarrierService);
+            return setCarrierImsService && getCarrierService;
+//            return setCarrierImsService(packageName) && getCarrierService().waitForLatchCountdown(
+//                            TestImsService.LATCH_FEATURES_READY);
         }
 
         private boolean bindDeviceImsService(ImsFeatureConfiguration config, String packageName)
@@ -539,18 +545,33 @@ public class ImsServiceConnector {
         return mCarrierServiceConnection.overrideService(config);
     }
 
-    boolean connectCarrierImsService(ImsFeatureConfiguration config) throws Exception {
+    /**
+     * Connect the CTS process local ImsService using the given config
+     */
+    public boolean connectCarrierImsService(ImsFeatureConfiguration config) throws Exception {
         if (!connectCarrierImsServiceLocally()) return false;
         return triggerFrameworkConnectionToCarrierImsService(config);
     }
 
-    boolean connectDeviceImsService(ImsFeatureConfiguration config) throws Exception {
+    /**
+     * Connect the ImsService hosted in a different test app using the given config
+     */
+    public boolean connectDeviceImsService(long capabilities,
+            ImsFeatureConfiguration config) throws Exception {
         if (!setupExternalImsService()) {
             Log.w(TAG, "connectDeviceImsService: couldn't set up service.");
             return false;
         }
         mExternalService.resetState();
+        if (capabilities != 0) {
+            mExternalService.addCapabilities(capabilities);
+            Log.d(TAG, "connectDeviceImsService: added capabilities = " + capabilities);
+        }
         return mDeviceServiceConnection.overrideService(config);
+    }
+
+    public boolean connectDeviceImsService(ImsFeatureConfiguration config) throws Exception {
+        return connectDeviceImsService(0, config);
     }
 
     boolean setDefaultSmsApp() throws Exception {
@@ -561,11 +582,17 @@ public class ImsServiceConnector {
         mDefaultSmsAppConnection.restoreOriginalPackage();
     }
 
-    void disconnectCarrierImsService() throws Exception {
+    /**
+     * Disconnect the previously connected ImsService that used {@link #connectCarrierImsService}
+     */
+    public void disconnectCarrierImsService() throws Exception {
         mCarrierServiceConnection.clearPackage();
     }
 
-    void disconnectDeviceImsService() throws Exception {
+    /**
+     * Disconnect the previously connected ImsService that used {@link #connectDeviceImsService}
+     */
+    public void disconnectDeviceImsService() throws Exception {
         mDeviceServiceConnection.clearPackage();
     }
 
@@ -686,7 +713,7 @@ public class ImsServiceConnector {
         return mCarrierService;
     }
 
-    ITestExternalImsService getExternalService() {
+    public ITestExternalImsService getExternalService() {
         return mExternalService;
     }
 

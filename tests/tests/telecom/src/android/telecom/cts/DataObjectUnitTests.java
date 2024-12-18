@@ -208,14 +208,13 @@ public class DataObjectUnitTests extends InstrumentationTestCase {
     @ApiTest(apis = {"android.telecom.DisconnectCause#DisconnectCause"})
     public void testDisconnectCauseWithTelephonyDebugInfo() throws Exception {
         if (!Flags.telecomResolveHiddenDependencies()) {
-            return; //early exit
+            return;
         }
         final CharSequence label = "Out of service area";
         final CharSequence description = "Mobile network not available";
         final String reason = "CTS Testing";
         ImsReasonInfo reasonInfo = new ImsReasonInfo(ImsReasonInfo.CODE_UNSPECIFIED, 0, "");
-        DisconnectCause cause = new DisconnectCause.Builder()
-                .setCode(DisconnectCause.ERROR)
+        DisconnectCause cause = new DisconnectCause.Builder(DisconnectCause.ERROR)
                 .setLabel(label)
                 .setDescription(description)
                 .setReason(reason)

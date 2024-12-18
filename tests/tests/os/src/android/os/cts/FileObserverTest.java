@@ -18,8 +18,10 @@ package android.os.cts;
 
 import android.os.Environment;
 import android.os.FileObserver;
+import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 import android.util.Pair;
 
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class FileObserverTest extends AndroidTestCase {
     private static final String PATH = "/PATH";
     private static final String TEST_FILE = "file_observer_test.txt";
@@ -56,8 +59,9 @@ public class FileObserverTest extends AndroidTestCase {
         dir = getContext().getCacheDir();
         helpSetUp(dir);
 
-        // Instant apps cannot access external storage
-        if (!InstrumentationRegistry.getTargetContext().getPackageManager().isInstantApp()) {
+        // Instant apps and SDK sandboxes cannot access external storage
+        if (!InstrumentationRegistry.getTargetContext().getPackageManager().isInstantApp()
+                && !Process.isSdkSandbox()) {
             dir = getContext().getExternalFilesDir(null);
             helpSetUp(dir);
 

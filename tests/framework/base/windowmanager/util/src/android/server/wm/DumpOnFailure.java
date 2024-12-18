@@ -17,17 +17,22 @@
 package android.server.wm;
 
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.BitmapUtils;
 
+import org.junit.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,7 +61,11 @@ public class DumpOnFailure implements TestRule {
 
     private static final String TAG = "DumpOnFailure";
 
-    private final Map<String, Bitmap> mDumpOnFailureBitmaps = new HashMap<>();
+    /**
+     * Map of data to be dumped on test failure. The key must contain the name, followed by
+     * the file extension type.
+     */
+    private final Map<String, DumpItem<?>> mDumpOnFailureItems = new HashMap<>();
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -66,6 +75,8 @@ public class DumpOnFailure implements TestRule {
                 onTestSetup(description);
                 try {
                     base.evaluate();
+                } catch (AssumptionViolatedException t) {
+                    throw t;
                 } catch (Throwable t) {
                     onTestFailure(description, t);
                     throw t;
@@ -76,40 +87,52 @@ public class DumpOnFailure implements TestRule {
         };
     }
 
-    private void onTestSetup(Description description) {
+    private void onTestSetup(@NonNull Description description) {
         cleanDir(getDumpRoot(description).toFile());
-        mDumpOnFailureBitmaps.clear();
+        mDumpOnFailureItems.clear();
     }
 
-    private void onTestTeardown(Description description) {
-        mDumpOnFailureBitmaps.clear();
+    private void onTestTeardown(@NonNull Description description) {
+        mDumpOnFailureItems.clear();
     }
 
-    private void onTestFailure(Description description, Throwable t) {
-        Path root = getDumpRoot(description);
-        File rootFile = root.toFile();
+    private void onTestFailure(@NonNull Description description, @NonNull Throwable t) {
+        final Path root = getDumpRoot(description);
+        final File rootFile = root.toFile();
         if (!rootFile.exists() && !rootFile.mkdirs()) {
-            throw new RuntimeException("Unable to create " + root);
+            Log.e(TAG, "onTestFailure, unable to create file: " + root);
+            return;
         }
 
-        for (Map.Entry<String, Bitmap> entry : mDumpOnFailureBitmaps.entrySet()) {
-            String fileName = getFilename(description, entry.getKey(), "png");
+        for (var entry : mDumpOnFailureItems.entrySet()) {
+            final var fileName = getFilename(description, entry.getKey());
             Log.i(TAG, "Dumping " + root + "/" + fileName);
-            BitmapUtils.saveBitmap(entry.getValue(), root.toString(), fileName);
+            entry.getValue().writeToFile(root.toString(), fileName);
         }
     }
 
-    private String getFilename(Description description, String name, String extension) {
+    /**
+     * Gets the complete file name for the file to dump the data in. This includes the Test Suite,
+     * Test Method and given unique dump item name.
+     *
+     * @param description      the test description.
+     * @param nameAndExtension the unique dump item name, followed by the file extension.
+     */
+    @NonNull
+    private String getFilename(@NonNull Description description, @NonNull String nameAndExtension) {
         return description.getTestClass().getSimpleName() + "_" + description.getMethodName()
-                + "__" + name + "." + extension;
+                + "__" + nameAndExtension;
     }
 
-    private Path getDumpRoot(Description description) {
-        return Paths.get("/sdcard/DumpOnFailure/", description.getClassName()
-                + "_" + description.getMethodName());
+    @NonNull
+    private Path getDumpRoot(@NonNull Description description) {
+        return new File(
+                        Environment.getExternalStorageDirectory() + "/DumpOnFailure",
+                        description.getClassName() + "_" + description.getMethodName())
+                .toPath();
     }
 
-    private void cleanDir(File dir) {
+    private void cleanDir(@NonNull File dir) {
         final File[] files = dir.listFiles();
         if (files == null) {
             return;
@@ -117,7 +140,7 @@ public class DumpOnFailure implements TestRule {
         for (File file : files) {
             if (!file.isDirectory()) {
                 if (!file.delete()) {
-                    throw new RuntimeException("Unable to delete " + file);
+                    Log.e(TAG, "Unable to delete " + file);
                 }
             }
         }
@@ -125,15 +148,104 @@ public class DumpOnFailure implements TestRule {
 
     /**
      * Dumps the Bitmap if the test fails.
+     *
+     * @param name   unique identifier (e.g. assertWindowShown).
+     * @param bitmap information to dump (e.g. screenshot).
      */
-    public void dumpOnFailure(String name, Bitmap bitmap) {
-        if (mDumpOnFailureBitmaps.containsKey(name)) {
-            int i = 1;
-            while (mDumpOnFailureBitmaps.containsKey(name + "_" + i)) {
-                ++i;
-            }
-            name += "_" + i;
+    public void dumpOnFailure(@NonNull String name, @Nullable Bitmap bitmap) {
+        if (bitmap == null) {
+            Log.i(TAG, "dumpOnFailure cannot dump null bitmap");
+            return;
         }
-        mDumpOnFailureBitmaps.put(name, bitmap);
+
+        mDumpOnFailureItems.put(getNextAvailableKey(name, "png"), new BitmapItem(bitmap));
+    }
+
+    /**
+     * Dumps the String if the test fails.
+     *
+     * @param name   unique identifier (e.g. assertWindowShown).
+     * @param string information to dump (e.g. logs).
+     */
+    public void dumpOnFailure(@NonNull String name, @Nullable String string) {
+        if (string == null) {
+            Log.i(TAG, "dumpOnFailure cannot dump null string");
+            return;
+        }
+
+        mDumpOnFailureItems.put(getNextAvailableKey(name, "txt"), new StringItem(string));
+    }
+
+    /**
+     * Gets the next available key in the hashmap for the given name and file extension.
+     * If the hashmap already contains an entry with the given name-extension pair, this appends
+     * the next consecutive integer that is not used for that key.
+     *
+     * @param name      the name to get the key for.
+     * @param extension the name of the file extension.
+     */
+    @NonNull
+    private String getNextAvailableKey(@NonNull String name, @NonNull String extension) {
+        if (!mDumpOnFailureItems.containsKey(name + "." + extension)) {
+            return name + "." + extension;
+        }
+
+        int i = 1;
+        while (mDumpOnFailureItems.containsKey(name + "_" + i + "." + extension)) {
+            i++;
+        }
+        return name + "_" + i + "." + extension;
+    }
+
+    /** Generic item containing data to be dumped on test failure. */
+    private abstract static class DumpItem<T> {
+
+        /** The data to be dumped. */
+        @NonNull
+        final T mData;
+
+        private DumpItem(@NonNull T data) {
+            mData = data;
+        }
+
+        /**
+         * Writes the given data to a file created in the given directory, with the given filename.
+         *
+         * @param directoryName the name of the directory where the file should be created.
+         * @param fileName      the name of the file to be created.
+         */
+        abstract void writeToFile(@NonNull String directoryName, @NonNull String fileName);
+    }
+
+    private static class BitmapItem extends DumpItem<Bitmap> {
+
+        BitmapItem(@NonNull Bitmap bitmap) {
+            super(bitmap);
+        }
+
+        @Override
+        void writeToFile(@NonNull String directoryName, @NonNull String fileName) {
+            BitmapUtils.saveBitmap(mData, directoryName, fileName);
+        }
+    }
+
+    private static class StringItem extends DumpItem<String> {
+
+        StringItem(@NonNull String string) {
+            super(string);
+        }
+
+        @Override
+        void writeToFile(@NonNull String directoryName, @NonNull String fileName) {
+            Log.i(TAG, "Writing to file: " + fileName + " in directory: " + directoryName);
+
+            final var file = new File(directoryName, fileName);
+            try (var fileStream = new FileOutputStream(file)) {
+                fileStream.write(mData.getBytes());
+                fileStream.flush();
+            } catch (Exception e) {
+                Log.e(TAG, "Writing to file failed", e);
+            }
+        }
     }
 }

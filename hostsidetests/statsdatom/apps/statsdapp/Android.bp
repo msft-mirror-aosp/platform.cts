@@ -54,9 +54,9 @@ android_test_helper_app {
     ],
     libs: [
         "androidx.annotation_annotation",
-        "android.test.runner",
+        "android.test.runner.stubs.system",
         "junit",
-        "org.apache.http.legacy",
+        "org.apache.http.legacy.stubs.system",
     ],
     privileged: true,
     static_libs: [
@@ -67,6 +67,9 @@ android_test_helper_app {
         "androidx.legacy_legacy-support-v4",
         "androidx.test.rules",
         "cts-net-utils",
+        "collector-device-lib",
+        "cts_adpf_atom_common",
+        "flag-junit",
     ],
     jni_libs: [
         "liblmkhelper_statsdatom",

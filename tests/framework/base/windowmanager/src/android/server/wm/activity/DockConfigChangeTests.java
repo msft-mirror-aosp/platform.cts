@@ -35,14 +35,22 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.RotationSession;
 import android.view.Surface;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceOther:DockConfigChangeTests
+ * atest CtsWindowManagerDeviceActivity:DockConfigChangeTests
  */
 @Presubmit
 public class DockConfigChangeTests extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_DESK_RESOURCES =
+            DESK_RESOURCES_ACTIVITY.getPackageName();
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_DESK_RESOURCES);
+    }
 
     @Test
     public void testDeskMode_noConfigChange() {

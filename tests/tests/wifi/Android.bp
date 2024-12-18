@@ -34,7 +34,7 @@ android_test {
     compile_multilib: "both",
 
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 
     srcs: [
@@ -52,6 +52,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "junit-params",
+        "Nene",
         "net-utils-framework-common",
         "truth",
         "android.wifi.mockwifi",
@@ -62,11 +63,10 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-tethering",
         "mts-wifi",
-        "mcts-tethering",
         "mcts-wifi",
         "sts",
+        "dts",
     ],
 
     data: [
@@ -86,12 +86,12 @@ android_test {
     compile_multilib: "both",
 
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 
     srcs: [
         "src/android/net/wifi/nl80211/cts/*.java",
-        "src/android/net/wifi/shareconnectivity/*.java",
+        "src/android/net/wifi/sharedconnectivity/**/*.java",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -113,4 +113,28 @@ android_test {
         "general-tests",
     ],
     platform_apis: true,
+}
+
+test_module_config {
+    name: "CtsWifiTestCases_NoNonMainlineTest",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["com.android.compatibility.common.util.NonMainlineTest"],
+}
+
+test_module_config {
+    name: "CtsWifiTestCases_NoVirtualDeviceNotSupported",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.net.wifi.cts.VirtualDeviceNotSupported"],
+}
+
+test_module_config {
+    name: "CtsWifiTestCases-wifi-mainline-presubmit",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "com.android.compatibility.common.util.NonMainlineTest",
+        "android.net.wifi.cts.VirtualDeviceNotSupported",
+    ],
 }

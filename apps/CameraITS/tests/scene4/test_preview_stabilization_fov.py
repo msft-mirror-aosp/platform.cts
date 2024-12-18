@@ -293,24 +293,25 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
 
         # Calculate ratio of stabilized image's scaler crop region over
         # active array size and compare it against the ratio of stabilized
-        # circle's radius over unstabilized circle
-        if stab_radius > ustab_radius:
-          stab_scaler_crop = (stab_rec_obj['captureMetadata']
-                              [_KEY_FRAME_INDEX]['android.scaler.cropRegion'])
-          scaler_crop_ratio = image_fov_utils.calc_scaler_crop_region_ratio(
-              stab_scaler_crop, props)
-          radius_ratio = ustab_radius / stab_radius
-          if math.isclose(scaler_crop_ratio, radius_ratio,
-                          rel_tol=_STABILIZED_SCALER_CROP_RTOL):
-            logging.debug('Crop region/active array: %f', scaler_crop_ratio)
-            logging.debug('Stabilized/unstabilized circle: %f', radius_ratio)
-            continue
-          else:
-            failure_string += (f'Too much FoV reduction: '
-                               f'Crop region: {stab_scaler_crop}, '
-                               f'Crop region ratio: {scaler_crop_ratio:.2%}, '
-                               f'Circle ratio: {radius_ratio:.2%}, '
-                               f'Tolerance: {_STABILIZED_SCALER_CROP_RTOL:.2%}')
+        # circle's radius over unstabilized circle for > Android 15
+        if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+          if stab_radius > ustab_radius:
+            stab_scaler_crop = (stab_rec_obj['captureMetadata']
+                                [_KEY_FRAME_INDEX]['android.scaler.cropRegion'])
+            scaler_crop_ratio = image_fov_utils.calc_scaler_crop_region_ratio(
+                stab_scaler_crop, props)
+            radius_ratio = ustab_radius / stab_radius
+            if math.isclose(scaler_crop_ratio, radius_ratio,
+                            rel_tol=_STABILIZED_SCALER_CROP_RTOL):
+              logging.debug('Crop region/active array: %f', scaler_crop_ratio)
+              logging.debug('Stabilized/unstabilized circle: %f', radius_ratio)
+              continue
+            else:
+              failure_string += (f'Too much FoV reduction: '
+                                 f'Crop region: {stab_scaler_crop}, '
+                                 f'Crop region ratio: {scaler_crop_ratio:.2%}, '
+                                 f'Circle ratio: {radius_ratio:.2%}, '
+                                 f'RTOL: {_STABILIZED_SCALER_CROP_RTOL:.2%}')
 
         if failure_string:
           failure_string = f'{preview_size} fails FoV test. ' + failure_string

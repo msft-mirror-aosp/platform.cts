@@ -22,8 +22,8 @@ android_test_helper_app {
     platform_apis: true,
     srcs: ["sharingapp1/src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -49,8 +49,8 @@ android_test_helper_app {
     platform_apis: true,
     srcs: ["sharingapp2/src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",

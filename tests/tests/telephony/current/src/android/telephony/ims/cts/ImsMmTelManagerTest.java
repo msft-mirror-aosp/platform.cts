@@ -33,6 +33,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CarrierConfigManager;
 import android.telephony.Rlog;
@@ -79,6 +80,9 @@ public class ImsMmTelManagerTest {
 
     private static final String KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL =
             "override_wfc_roaming_mode_while_using_ntn_bool";
+
+    private static final String KEY_SATELLITE_ATTACH_SUPPORTED_BOOL =
+            "satellite_attach_supported_bool";
 
     private static int sTestSub = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     private static Handler sHandler;
@@ -217,6 +221,7 @@ public class ImsMmTelManagerTest {
      * ContentObserver is triggered properly.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testAdvancedCallingSetting() throws Exception {
         // Ensure advanced calling setting is editable.
         PersistableBundle bundle = new PersistableBundle();
@@ -254,6 +259,7 @@ public class ImsMmTelManagerTest {
      * is triggered properly.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVtSetting() throws Exception {
         // Register Observer
         Uri callingUri = Uri.withAppendedPath(
@@ -284,6 +290,7 @@ public class ImsMmTelManagerTest {
      * is triggered properly.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiSetting() throws Exception {
         PersistableBundle bundle = new PersistableBundle();
         // Do not worry about provisioning for this test
@@ -321,6 +328,7 @@ public class ImsMmTelManagerTest {
      * Also ensure the ContentObserver is triggered properly.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testCrossSIMSetting() throws Exception {
         PersistableBundle bundle = new PersistableBundle();
         // Do not worry about provisioning for this test
@@ -366,6 +374,7 @@ public class ImsMmTelManagerTest {
      * ContentObserver is triggered properly.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiRoamingSetting() throws Exception {
         Uri callingUri = Uri.withAppendedPath(
                 SubscriptionManager.WFC_ROAMING_ENABLED_CONTENT_URI, "" + sTestSub);
@@ -427,6 +436,7 @@ public class ImsMmTelManagerTest {
      * Set the VoWiFi Mode setting and ensure the ContentResolver is triggered as well.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiModeSetting() throws Exception {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(KEY_EDITABLE_WFC_MODE_BOOL, true);
@@ -461,6 +471,7 @@ public class ImsMmTelManagerTest {
      * Set the VoWiFi Mode setting and ensure the ContentResolver is triggered as well.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiRoamingModeSetting() throws Exception {
         PersistableBundle bundle = new PersistableBundle();
         // Ensure the WFC roaming mode will be changed properly
@@ -495,6 +506,7 @@ public class ImsMmTelManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork() throws Exception {
         if (!Flags.carrierEnabledSatelliteFlag()) {
             return;
@@ -514,6 +526,7 @@ public class ImsMmTelManagerTest {
 
         // Override carrier config
         PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
         bundle.putBoolean(KEY_USE_WFC_HOME_NETWORK_MODE_IN_ROAMING_NETWORK_BOOL, false);
         bundle.putBoolean(KEY_EDITABLE_WFC_ROAMING_MODE_BOOL, true);
         bundle.putBoolean(KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL, true);

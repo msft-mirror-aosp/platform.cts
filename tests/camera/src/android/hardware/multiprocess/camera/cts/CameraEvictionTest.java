@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityTaskManager;
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -48,6 +49,7 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +70,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     private static final int OPEN_TIMEOUT = 2000; // Timeout for camera to open (ms).
     private static final int SETUP_TIMEOUT = 5000; // Remote camera setup timeout (ms).
     private static final int EVICTION_TIMEOUT = 1000; // Remote camera eviction timeout (ms).
-    private static final int WAIT_TIME = 2000; // Time to wait for process to launch (ms).
+    private static final int WAIT_TIME = 3000; // Time to wait for process to launch (ms).
     private static final int UI_TIMEOUT = 10000; // Time to wait for UI event before timeout (ms).
     // Time to wait for onCameraAccessPrioritiesChanged (ms).
     private static final int CAMERA_ACCESS_TIMEOUT = 2000;
@@ -87,6 +89,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     private int mProcessPid = -1;
     private WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private TestTaskOrganizer mTaskOrganizer;
+    private UiDevice mUiDevice;
 
     /** Load jni on initialization */
     static {
@@ -151,7 +154,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
 
         mCompleted = false;
         getActivity();
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mUiAutomation = instrumentation.getUiAutomation();
+        mUiDevice = UiDevice.getInstance(instrumentation);
         mContext = InstrumentationRegistry.getTargetContext();
         System.setProperty("dexmaker.dexcache", mContext.getCacheDir().toString());
         mActivityManager = mContext.getSystemService(ActivityManager.class);
@@ -520,6 +525,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             assertFalse(eventTagCountMap.containsKey(
                     TestConstants.EVENT_ACTIVITY_TOP_RESUMED_TRUE));
         }
+
+        mTaskOrganizer.unregisterOrganizerIfNeeded();
+        Thread.sleep(WAIT_TIME);
     }
 
     /**
@@ -545,9 +553,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
                 mock(CameraManager.AvailabilityCallback.class);
         manager.registerAvailabilityCallback(mockAvailCb, cameraHandler);
 
-        // Remove current task from top of stack. This will impact the camera access
-        // priorities.
-        getActivity().moveTaskToBack(/*nonRoot*/true);
+        // Launch home activity to remove current task from top of stack.
+        // This will impact the camera access priorities.
+        pressHome();
 
         verify(mockAvailCb, timeout(
                 PERMISSION_CALLBACK_TIMEOUT_MS).atLeastOnce()).onCameraAccessPrioritiesChanged();
@@ -578,9 +586,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             context = initializeAvailabilityCallbacksNative();
             assertTrue("Failed to initialize native availability callbacks", (context != 0));
 
-            // Remove current task from top of stack. This will impact the camera access
-            // pririorties.
-            getActivity().moveTaskToBack(/*nonRoot*/true);
+            // Launch home activity to remove current task from top of stack.
+            // This will impact the camera access priorities.
+            pressHome();
 
             Thread.sleep(PERMISSION_CALLBACK_TIMEOUT_MS);
             assertTrue("No camera permission access changed callback received",
@@ -914,5 +922,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         assertTrue("Only had " + expIndex + " of " + expected.length +
                 " expected objects in array " + Arrays.toString(actual) + ", expected was " +
                 Arrays.toString(expected), expIndex == expected.length);
+    }
+
+    private void pressHome() {
+        mUiDevice.pressHome();
     }
 }

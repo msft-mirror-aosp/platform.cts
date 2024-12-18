@@ -24,6 +24,7 @@ import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 
@@ -73,9 +74,13 @@ public class PackageManagerStatsTestsBase extends DeviceTestCase implements IBui
         assertEquals("Success\n", installResult);
     }
 
-    protected int getAppUid(String pkgName) throws Exception {
-        final int currentUser = getDevice().getCurrentUser();
-        final String uidLine = getDevice().executeShellCommand(
+    protected int getAppUid(String packageName) throws Exception {
+        return getAppUid(getDevice(), packageName);
+    }
+
+    public static int getAppUid(ITestDevice device, String pkgName) throws Exception {
+        final int currentUser = device.getCurrentUser();
+        final String uidLine = device.executeShellCommand(
                 "cmd package list packages --match-libraries -U --user " + currentUser + " "
                         + pkgName);
         final Pattern pattern = Pattern.compile("package:" + pkgName + " uid:(\\d+)");

@@ -20,7 +20,9 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.os.Process;
 import android.os.RemoteCallback;
+import android.os.UserHandle;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.ColorInt;
@@ -30,6 +32,7 @@ import androidx.annotation.Nullable;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import java.lang.annotation.Retention;
+import java.util.Objects;
 
 /**
  * An immutable data store to control the behavior of {@link MockIme}.
@@ -75,6 +78,8 @@ public class ImeSettings {
     private static final String ON_BACK_CALLBACK_ENABLED = "onBackCallbackEnabled";
 
     private static final String USE_CUSTOM_EXTRACT_TEXT_VIEW = "useCustomExtractTextView";
+
+    private static final String ZERO_INSETS = "zeroInsets";
 
     @NonNull
     private final PersistableBundle mBundle;
@@ -225,6 +230,11 @@ public class ImeSettings {
         return mBundle.getBoolean(USE_CUSTOM_EXTRACT_TEXT_VIEW, false);
     }
 
+    /** Whether the IME should provide zero insets when shown. */
+    public boolean isZeroInsetsEnabled() {
+        return mBundle.getBoolean(ZERO_INSETS, false);
+    }
+
     static Bundle serializeToBundle(@NonNull String eventCallbackActionName,
             @Nullable Builder builder, @NonNull RemoteCallback channel) {
         final Bundle result = new Bundle();
@@ -259,7 +269,36 @@ public class ImeSettings {
             return this;
         }
 
+        @NonNull
+        UserHandle mTargetUser = Process.myUserHandle();
+
+        /**
+         * Specifies a different user than the current user.
+         *
+         * @param targetUser The user whose {@link MockIme} will be connected to.
+         * @return this {@link Builder} object
+         */
+        public Builder setTargetUser(@NonNull UserHandle targetUser) {
+            mTargetUser = Objects.requireNonNull(targetUser);
+            return this;
+        }
+
+        /**
+         * Whether the IME should only be initialized and enabled, but not set as the current IME.
+         */
+        boolean mSuppressSetIme = false;
+
+        /**
+         * Sets whether the IME should only be initialized and enabled, but not set as
+         * the current IME.
+         */
+        public Builder setSuppressSetIme(boolean suppressSetIme) {
+            mSuppressSetIme = suppressSetIme;
+            return this;
+        }
+
         boolean mSuppressResetIme = false;
+
         /**
          * Specifies whether {@code adb shell ime reset} should be suppressed or not on
          * {@link MockImeSession#create(android.content.Context)} and
@@ -491,6 +530,15 @@ public class ImeSettings {
         /** Sets whether or not custom extract view hierarchy should be used. */
         public Builder setCustomExtractTextViewEnabled(boolean enabled) {
             mBundle.putBoolean(USE_CUSTOM_EXTRACT_TEXT_VIEW, enabled);
+            return this;
+        }
+
+        /**
+         * Sets whether {@link android.inputmethodservice.InputMethodService#onComputeInsets}
+         * should return zero insets.
+         */
+        public Builder setZeroInsets(boolean enabled) {
+            mBundle.putBoolean(ZERO_INSETS, enabled);
             return this;
         }
     }

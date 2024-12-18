@@ -23,8 +23,8 @@ java_library {
         "src/**/*.aidl",
     ],
     libs: [
-        "android.test.base",
-        "org.apache.http.legacy",
+        "android.test.base.stubs.system",
+        "org.apache.http.legacy.stubs.system",
     ],
     static_libs: [
         "compatibility-device-util-axt",

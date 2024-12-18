@@ -46,7 +46,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
-import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.graphics.drawable.Icon;
@@ -64,6 +63,7 @@ import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.wm.shell.Flags;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -95,7 +95,6 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
     private int mCurrentTestIndex = -1; // gets incremented first time
     private int mStepFailureCount = 0;
     private boolean mShowingSummary = false;
-    private boolean mSupportsBubble = false;
 
     private Handler mHandler = new Handler();
     private Runnable mRunnable;
@@ -154,19 +153,9 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
 
         ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
 
-        try {
-            mSupportsBubble = getResources().getBoolean(getResources().getIdentifier(
-                    "config_supportsBubble", "bool", "android"));
-        } catch (Resources.NotFoundException e) {
-            // Assume device does not support bubble, no need to do anything.
-        }
-
         if (am.isLowRamDevice()) {
             // Bubbles don't occur on low ram, instead they just show as notifs so test that
             mTests.add(new LowRamBubbleTest());
-        } else if (!mSupportsBubble) {
-            // Bubbles don't occur on bubble disabled devices, only test notifications.
-            mTests.add(new BubbleDisabledTest());
         } else {
             //
             // Behavior around settings at the device level and on the app settings page.
@@ -192,7 +181,9 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
             //
             // Behavior around the bubble overflow
             //
-            mTests.add(new CheckOverflowExists());
+            if (!Flags.enableOptionalBubbleOverflow()) {
+                mTests.add(new CheckOverflowExists());
+            }
             mTests.add(new DismissBubbleShowsInOverflow());
             mTests.add(new PromoteBubbleFromOverflow());
             mTests.add(new CancelRemovesBubblesInOverflow());
@@ -790,7 +781,9 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
 
         @Override
         public int getTestDescription() {
-            return R.string.bubbles_test_cancel_overflow_verify;
+            return Flags.enableOptionalBubbleOverflow()
+                    ? R.string.bubbles_test_cancel_overflow_verify2
+                    : R.string.bubbles_test_cancel_overflow_verify;
         }
 
         @Override
@@ -977,31 +970,6 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
         @Override
         public int getButtonText() {
             return R.string.bubbles_test_lowram_button;
-        }
-
-        @Override
-        public void performTestAction() {
-            Notification.Builder builder = getConversationNotif(getTestTitle());
-            builder.setBubbleMetadata(getBubbleBuilder().build());
-
-            mNotificationManager.notify(NOTIFICATION_ID, builder.build());
-        }
-    }
-
-    private class BubbleDisabledTest extends BubblesTestStep {
-        @Override
-        public int getTestTitle() {
-            return R.string.bubbles_test_disable_config_title;
-        }
-
-        @Override
-        public int getTestDescription() {
-            return R.string.bubbles_test_disable_config_verify;
-        }
-
-        @Override
-        public int getButtonText() {
-            return R.string.bubbles_test_disable_config_button;
         }
 
         @Override

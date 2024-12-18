@@ -29,6 +29,10 @@ import android.os.Handler.Callback;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Printer;
 
@@ -42,11 +46,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Objects;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class HandlerTest {
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
             .setProvideMainThread(true).build();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final int MESSAGE_WHAT = 3;
 
@@ -152,6 +162,29 @@ public class HandlerTest {
         assertFalse(mHandler.hasMessages(msg.what, msg.obj));
     }
 
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
+    @Test
+    public void testHasMessagesOrCallbacks() {
+        assertFalse(mHandler.hasMessagesOrCallbacks());
+
+        // Test message
+        final Message msg = mHandler.obtainMessage();
+        mHandler.sendMessageAtTime(msg, SystemClock.uptimeMillis() + RUNTIME);
+        assertTrue(mHandler.hasMessagesOrCallbacks());
+
+        mHandler.removeMessages(msg.what);
+        assertFalse(mHandler.hasMessagesOrCallbacks());
+
+        // Test callback
+        final Object obj = new Object();
+        final MockRunnable mr = new MockRunnable();
+        mHandler.postAtTime(mr, obj, SystemClock.uptimeMillis() + RUNTIME);
+        assertTrue(mHandler.hasMessagesOrCallbacks());
+
+        mHandler.removeCallbacksAndMessages(obj);
+        assertFalse(mHandler.hasMessagesOrCallbacks());
+    }
+
     @Test
     public void testRemoveCallbacksAndMessages() {
         Message msg = mHandler1.obtainMessage();
@@ -191,6 +224,50 @@ public class HandlerTest {
         mHandler1.removeCallbacksAndMessages(new Object());
         sleep(DELAYED / 2);
         assertTrue(mr1.isRun());
+    }
+
+    private static class TestObject {
+        public final int id;
+
+        TestObject(int id) {
+            this.id = id;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof TestObject)) return false;
+            final TestObject that = (TestObject) o;
+            return id == that.id;
+        }
+    }
+
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
+    @Test
+    public void testRemoveCallbacksAndEqualMessages() {
+        // Test remove a message
+        final int objectIdForMsg = 1;
+        final Message msg = mHandler.obtainMessage();
+        msg.obj = new TestObject(objectIdForMsg);
+
+        mHandler.sendMessageAtTime(msg, SystemClock.uptimeMillis() + RUNTIME);
+        assertTrue(mHandler.hasMessages(msg.what, msg.obj));
+        mHandler.removeCallbacksAndEqualMessages(new TestObject(objectIdForMsg));
+        assertFalse(mHandler.hasMessages(msg.what, msg.obj));
+
+        // Test remove a Callback
+        final int objectIdForCb = 2;
+        final Object cbObj = new TestObject(objectIdForCb);
+        final MockRunnable mr = new MockRunnable();
+
+        mHandler.postAtTime(mr, cbObj, SystemClock.uptimeMillis() + RUNTIME);
+        assertTrue(mHandler.hasCallbacks(mr));
+        mHandler.removeCallbacksAndEqualMessages(new TestObject(objectIdForCb));
+        assertFalse(mHandler.hasCallbacks(mr));
     }
 
     @Test
@@ -310,6 +387,19 @@ public class HandlerTest {
         mHandler1.removeMessages(msg.what, wrongMessage.obj);
         sleep(DELAYED / 2);
         assertEquals(100, mHandler1.what);
+    }
+
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MAINLINE_VCN_PLATFORM_API)
+    @Test
+    public void testRemoveEqualMessages() {
+        final int objectId = 1;
+        final Message msg = mHandler.obtainMessage();
+        msg.obj = new TestObject(objectId);
+
+        mHandler.sendMessageAtTime(msg, SystemClock.uptimeMillis() + RUNTIME);
+        assertTrue(mHandler.hasMessages(msg.what, msg.obj));
+        mHandler.removeEqualMessages(msg.what, new TestObject(objectId));
+        assertFalse(mHandler.hasMessages(msg.what, msg.obj));
     }
 
     @Test

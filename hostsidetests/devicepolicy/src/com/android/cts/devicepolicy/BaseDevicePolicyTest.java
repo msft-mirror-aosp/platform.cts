@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
@@ -219,14 +220,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             mInitialUserId = getDevice().getCurrentUser();
         }
 
-        if (!isHeadlessSystemUserMode()) {
-            mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
-        } else {
-            // For headless system user, all tests will be executed on current user
-            // and therefore, initial user is set as primary user for test purpose.
-            mPrimaryUserId = mInitialUserId;
-            mDeviceOwnerUserId = USER_SYSTEM;
-        }
+        mDeviceOwnerUserId = mPrimaryUserId = getMainUser();
 
         mFixedUsers.add(mPrimaryUserId);
         if (mPrimaryUserId != USER_SYSTEM) {
@@ -321,7 +315,9 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         extraArgs.add("-t");
         // Make the test app queryable by other apps via PackageManager APIs.
         extraArgs.add("--force-queryable");
-        extraArgs.add("--bypass-low-target-sdk-block");
+        if (getDevice().isBypassLowTargetSdkBlockSupported()) {
+            extraArgs.add("--bypass-low-target-sdk-block");
+        }
         if (dontKillApp) extraArgs.add("--dont-kill");
         String result = getDevice().installPackageForUser(
                 buildHelper.getTestFile(appFileName), true, grantPermissions, userId,
@@ -349,13 +345,6 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected void installDeviceOwnerApp(String apk) throws Exception {
         installAppAsUser(apk, mDeviceOwnerUserId);
-
-        if (isHeadlessSystemUserMode()) {
-            // Need to explicitly install the device owner app for the current user (rather than
-            // relying on DPMS) so it has the same privileges (like INTERACT_ACROSS_USERS) as the
-            // app running on system user, otherwise some tests might fail
-            installAppAsUser(apk, mPrimaryUserId);
-        }
     }
 
     protected void removeDeviceOwnerAdmin(String componentName) throws DeviceNotAvailableException {
@@ -902,6 +891,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected boolean setDeviceOwner(String componentName, int userId, boolean expectFailure)
             throws DeviceNotAvailableException {
+        if (isHeadlessSystemUserMode()) {
+            assumeNotNull("Devices in headles system user mode require a main user to set a device "
+                    + "owner.", getDevice().getMainUserId());
+        }
         String command = "dpm set-device-owner --user " + userId + " '" + componentName + "'";
         String commandOutput = getDevice().executeShellCommand(command);
         boolean success = commandOutput.startsWith("Success:");

@@ -19,10 +19,13 @@ package android.accessibilityservice.cts;
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_FULLSCREEN;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.homeScreenOrBust;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
@@ -33,6 +36,7 @@ import android.accessibilityservice.MagnificationConfig;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.content.res.Resources;
 import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
@@ -102,11 +106,16 @@ public class FullScreenMagnificationControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(sInstrumentation.getTargetContext()));
+
         mService = mMagnificationAccessibilityServiceRule.enableService();
     }
 
     @Test
     public void testActivityTransitions_fullscreenMagnifierMagnifying_zoomOut() throws Exception {
+        assumeFalse(isKeepMagnifiedOnContextChangeEnabled());
+
         // wait for the activity to be on screen
         launchActivityAndWaitForItToBeOnscreen(sInstrumentation, sUiAutomation, mActivityRule);
 
@@ -118,6 +127,24 @@ public class FullScreenMagnificationControllerTest {
         // the magnifier should deactivate itself when transitions. At least we can still verify
         // the fullscreen magnifier zooming out here.
         assertThat(currentScale()).isEqualTo(1f);
+    }
+
+    @Test
+    public void testActivityTransitions_fullscreenMagnifierMagnifyingWithKeepMagnified_keepZoom()
+            throws Exception {
+        assumeTrue(isKeepMagnifiedOnContextChangeEnabled());
+
+        // wait for the activity to be on screen
+        launchActivityAndWaitForItToBeOnscreen(sInstrumentation, sUiAutomation, mActivityRule);
+
+        zoomIn(/* scale= */ 2.0f);
+        // transition to home screen
+        homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+
+        // we cannot identify if the always on feature flag is enabled here, so we cannot ensure if
+        // the magnifier should deactivate itself when transitions. At least we can still verify
+        // the fullscreen magnifier zooming out here.
+        assertThat(currentScale()).isEqualTo(2f);
     }
 
     private void zoomIn(float scale) throws Exception {
@@ -173,5 +200,16 @@ public class FullScreenMagnificationControllerTest {
                         return actualConfig.isActivated() == config.isActivated();
                     }
                 });
+    }
+
+    private boolean isKeepMagnifiedOnContextChangeEnabled() {
+        try {
+            return sInstrumentation.getTargetContext().getResources().getBoolean(
+                    Resources.getSystem().getIdentifier(
+                            "config_magnification_keep_zoom_level_when_context_changed", "bool",
+                            "android"));
+        } catch (Resources.NotFoundException ignore) {
+            return false;
+        }
     }
 }

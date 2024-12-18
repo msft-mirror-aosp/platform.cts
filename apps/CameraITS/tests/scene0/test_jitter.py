@@ -16,8 +16,7 @@
 import logging
 import os.path
 
-import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 from mobly import test_runner
 
 import its_base_test
@@ -77,23 +76,29 @@ class JitterTest(its_base_test.ItsBaseTest):
       logging.debug('Jitter range: %s to %s', range0, range1)
 
       # Draw a plot.
-      pylab.figure()
-      pylab.plot(range(len(deltas_ms)), deltas_ms, '-bo')
-      pylab.title(_NAME)
-      pylab.xlabel('frame number')
-      pylab.ylabel('jitter (ms)')
+      plt.figure()
+      plt.plot(range(len(deltas_ms)), deltas_ms, '-bo')
+      plt.title(_NAME)
+      plt.xlabel('frame number')
+      plt.ylabel('jitter (ms)')
       name_with_log_path = os.path.join(self.log_path, _NAME)
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_deltas.png')
+      plt.savefig(f'{name_with_log_path}_deltas.png')
 
       # Test for pass/fail.
       if avg <= _MIN_AVG_FRAME_DELTA:
-        raise AssertionError(f'avg: {avg:.4f}ms, TOL: {_MIN_AVG_FRAME_DELTA}ms')
+        raise AssertionError(
+            f'avg: {avg:.4f}ms, ATOL: {_MIN_AVG_FRAME_DELTA}ms'
+        )
       if var >= _MAX_VAR_FRAME_DELTA:
-        raise AssertionError(f'var: {var:.4f}ms, TOL: {_MAX_VAR_FRAME_DELTA}ms')
+        raise AssertionError(
+            f'var: {var:.4f}ms, ATOL: {_MAX_VAR_FRAME_DELTA}ms'
+        )
       if (abs(range0) >= _MAX_FRAME_DELTA_JITTER or
           abs(range1) >= _MAX_FRAME_DELTA_JITTER):
-        raise AssertionError(f'range0: {range0:.4f}ms, range1: {range1:.4f}ms, '
-                             f'TOL: {_MAX_FRAME_DELTA_JITTER}')
+        raise AssertionError(
+            f'range0: {range0:.4f}ms, range1: {range1:.4f}ms, '
+            f'ATOL: {_MAX_FRAME_DELTA_JITTER}'
+        )
 
 
 if __name__ == '__main__':

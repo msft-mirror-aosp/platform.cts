@@ -56,7 +56,11 @@ android_library {
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
         "src/**/I*.aidl",
+    ],
+    exclude_srcs: [
+        "src/com/android/cts/verifier/camera/its/*",
     ],
 
     aidl: {
@@ -64,6 +68,8 @@ android_library {
     },
 
     static_libs: [
+        "android.media.audio-aconfig-java",
+        "android.service.chooser.flags-aconfig-java",
         "android-ex-camera2",
         "compatibility-common-util-devicesidelib",
         "cts-sensors-tests",
@@ -73,7 +79,9 @@ android_library {
         "androidplot",
         "ctsverifier-opencv",
         "core-tests-support",
-        "androidx.legacy_legacy-support-v4",
+        "androidx.appcompat_appcompat",
+        "androidx.fragment_fragment",
+        "androidx.preference_preference",
         "mockito-target-minus-junit4",
         "mockwebserver",
         "compatibility-device-util-axt",
@@ -88,6 +96,8 @@ android_library {
         "DpmWrapper",
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
+        "com_android_wm_shell_flags_lib",
+        "its-service",
     ],
 
     libs: [
@@ -152,12 +162,35 @@ android_library {
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",
     ],
+}
 
+// Build ItsService as a library
+android_library {
+    name: "its-service",
+
+    sdk_version: "test_current",
+    min_sdk_version: "34",
+    resource_dirs: ["res"],
+    srcs: [
+        "src/com/android/cts/verifier/camera/its/*.java",
+        "src/com/android/cts/verifier/camera/performance/*.java",
+    ],
+
+    static_libs: [
+        "android-ex-camera2",
+        "cts-camera-performance-tests",
+        "cts-verifier-framework",
+        "ctstestrunner-axt",
+        "androidx.appcompat_appcompat",
+        "CtsCameraUtils",
+        "MediaPerformanceClassCommon",
+        "mediapc-requirements",
+    ],
 }
 
 filegroup {
     name: "pre_installed_apps",
-    srcs: [
+    device_first_srcs: [
         ":CtsDefaultNotesApp",
         ":CtsDeviceControlsApp",
         ":CtsEmptyDeviceAdmin",
@@ -174,14 +207,14 @@ filegroup {
 // Apps to be installed as Instant App using adb install --instant
 filegroup {
     name: "pre_installed_instant_app",
-    srcs: [
+    device_first_srcs: [
         ":CtsVerifierInstantApp",
     ],
 }
 
 filegroup {
     name: "other_required_apps",
-    srcs: [
+    device_first_srcs: [
         ":CtsCarWatchdogCompanionApp",
         ":CtsTileServiceApp",
         ":CtsVerifierUSBCompanion",
@@ -213,11 +246,13 @@ filegroup {
 genrule {
     name: "android-cts-verifier",
     srcs: [
-        ":android-cts-verifier-notice",
         ":cts_apps_to_include",
-        ":CtsVerifier",
         ":camera-its",
         ":camera-webcam-test",
+    ],
+    device_common_srcs: [
+        ":android-cts-verifier-notice",
+        ":CtsVerifier",
         ":multidevice-test",
     ],
     tools: [

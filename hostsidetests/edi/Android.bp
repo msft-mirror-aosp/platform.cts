@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_partner_eng",
 }
 
 java_test_host {
@@ -23,6 +24,7 @@ java_test_host {
         "ats",
         "cts",
         "gts",
+        "gxrts",
         "general-tests",
         "tvts",
     ],
@@ -35,7 +37,7 @@ java_test_host {
         "modules-utils-build-testing",
         "hamcrest-library",
     ],
-    data: [":SharedLibraryInfoTestApp"],
+    device_common_data: [":SharedLibraryInfoTestApp"],
     data_native_bins: [
         "avbtool",
     ],

@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsIdentityTestCases",
+    team: "trendy_team_android_hardware_backed_security",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -25,8 +26,8 @@ android_test {
         "general-tests",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -39,6 +40,7 @@ android_test {
         "platformprotosnano",
         "cbor-java",
         "cts-wm-util",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",

@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
 import android.os.PersistableBundle;
 import android.telephony.CarrierConfigManager;
 import android.telephony.Rlog;
@@ -63,6 +64,8 @@ import java.util.concurrent.TimeUnit;
 public class CarrierRoamingSatelliteTestBase {
     private static final String TAG = "CarrierRoamingSatelliteTestBase";
     protected static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    protected static final long EXTERNAL_DEPENDENT_TIMEOUT = TimeUnit.SECONDS.toMillis(15);
+    protected static final int HYSTERESIS_TIMEOUT_SEC = 8;
     protected static final int SLOT_ID_0 = 0;
     protected static final int SLOT_ID_1 = 1;
 
@@ -71,8 +74,8 @@ public class CarrierRoamingSatelliteTestBase {
     protected static SubscriptionManager sSubscriptionManager;
     protected static ImsServiceConnector sServiceConnector;
     private static CarrierConfigReceiver sCarrierConfigReceiver;
-
-    private static boolean sSupportsImsHal = false;
+    protected static WifiManager sWifiManager = null;
+    protected static WifiStateReceiver sWifiStateReceiver = null;
 
     protected static void beforeAllTestsBase() throws Exception {
         logd(TAG, "beforeAllTestsBase");
@@ -84,6 +87,12 @@ public class CarrierRoamingSatelliteTestBase {
 
         sTelephonyManager = getContext().getSystemService(TelephonyManager.class);
         sSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
+        sWifiManager = getContext().getSystemService(WifiManager.class);
+
+        sWifiStateReceiver = new WifiStateReceiver();
+        IntentFilter wifiStateIntentFilter = new IntentFilter();
+        wifiStateIntentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        getContext().registerReceiver(sWifiStateReceiver, wifiStateIntentFilter);
 
         sCarrierConfigReceiver = new CarrierConfigReceiver();
         IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
@@ -93,10 +102,19 @@ public class CarrierRoamingSatelliteTestBase {
 
     protected static void afterAllTestsBase() throws Exception {
         logd(TAG, "afterAllTestsBase");
-        assertTrue(sMockModemManager.disconnectMockModemService());
-        sMockModemManager = null;
         sTelephonyManager = null;
         sSubscriptionManager = null;
+        sWifiManager = null;
+
+        if (sMockModemManager != null) {
+            assertTrue(sMockModemManager.disconnectMockModemService());
+            sMockModemManager = null;
+        }
+
+        if (sWifiStateReceiver != null) {
+            getContext().unregisterReceiver(sWifiStateReceiver);
+            sWifiStateReceiver = null;
+        }
 
         if (sCarrierConfigReceiver != null) {
             getContext().unregisterReceiver(sCarrierConfigReceiver);
@@ -236,10 +254,12 @@ public class CarrierRoamingSatelliteTestBase {
         }
     }
 
-    private static class ServiceStateListenerTest extends TelephonyCallback
+    protected static class ServiceStateListenerTest extends TelephonyCallback
             implements TelephonyCallback.ServiceStateListener {
 
-        private final Semaphore mNonTerrestrialNetworkSemaphore = new Semaphore(0);
+        private final Semaphore mNtnConnectedSemaphore = new Semaphore(0);
+        private final Semaphore mNtnDisconnetedSemaphore = new Semaphore(0);
+
 
         @Override
         public void onServiceStateChanged(ServiceState serviceState) {
@@ -247,21 +267,37 @@ public class CarrierRoamingSatelliteTestBase {
 
             try {
                 if (serviceState.isUsingNonTerrestrialNetwork()) {
-                    mNonTerrestrialNetworkSemaphore.release();
+                    mNtnConnectedSemaphore.release();
+                } else {
+                    mNtnDisconnetedSemaphore.release();
                 }
             } catch (Exception e) {
                 loge(TAG, "onServiceStateChanged: Got exception=" + e);
             }
         }
 
-        public boolean waitForNonTerrestrialNetworkConnection() {
+        public boolean waitUntilNonTerrestrialNetworkConnected() {
             try {
-                if (!mNonTerrestrialNetworkSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                if (!mNtnConnectedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
                     loge(TAG, "Timeout to connect to non-terrestrial network");
                     return false;
                 }
             } catch (Exception e) {
-                loge(TAG, "ServiceStateListenerTest waitForNonTerrestrialNetworkConnection: "
+                loge(TAG, "ServiceStateListenerTest waitUntilNonTerrestrialNetworkConnected: "
+                        + "Got exception=" + e);
+                return false;
+            }
+            return true;
+        }
+
+        public boolean waitUntilNonTerrestrialNetworkDisconnected() {
+            try {
+                if (!mNtnDisconnetedSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "Timeout to disconnect to non-terrestrial network");
+                    return false;
+                }
+            } catch (Exception e) {
+                loge(TAG, "ServiceStateListenerTest waitUntilNonTerrestrialNetworkDisconnected: "
                         + "Got exception=" + e);
                 return false;
             }
@@ -270,7 +306,8 @@ public class CarrierRoamingSatelliteTestBase {
 
         public void clearServiceStateChanges() {
             logd(TAG, "clearServiceStateChanges()");
-            mNonTerrestrialNetworkSemaphore.drainPermits();
+            mNtnConnectedSemaphore.drainPermits();
+            mNtnDisconnetedSemaphore.drainPermits();
         }
     }
 
@@ -320,7 +357,98 @@ public class CarrierRoamingSatelliteTestBase {
         }
     }
 
-    private static void overrideCarrierConfig(int subId, PersistableBundle bundle)
+    protected static class CarrierRoamingNtnModeListenerTest extends TelephonyCallback
+            implements TelephonyCallback.CarrierRoamingNtnModeListener {
+        private final Semaphore mActiveSemaphore = new Semaphore(0);
+        private final Semaphore mEligibleSemaphore = new Semaphore(0);
+        private final Object mLock = new Object();
+
+        @GuardedBy("mLock")
+        public boolean mActive;
+        @GuardedBy("mLock")
+        public boolean mEligible;
+
+        @Override
+        public void onCarrierRoamingNtnModeChanged(boolean active) {
+            logd(TAG, "onCarrierRoamingNtnModeChanged active:" + active);
+            synchronized (mLock) {
+                mActive = active;
+            }
+
+            try {
+                mActiveSemaphore.release();
+            } catch (Exception e) {
+                loge(TAG, "onCarrierRoamingNtnModeChanged: Got exception, ex=" + e);
+            }
+        }
+
+        @Override
+        public void onCarrierRoamingNtnEligibleStateChanged(boolean eligible) {
+            logd(TAG, "onCarrierRoamingNtnEligibleStateChanged eligible:" + eligible);
+            synchronized (mLock) {
+                mEligible = eligible;
+            }
+
+            try {
+                mEligibleSemaphore.release();
+            } catch (Exception e) {
+                loge(TAG, "onCarrierRoamingNtnEligible: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitForModeChanged(int expectedNumOfEvents) {
+            for (int i = 0; i < expectedNumOfEvents; i++) {
+                try {
+                    if (!mActiveSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge(TAG, "Timeout to receive onCarrierRoamingNtnModeChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge(TAG, "onCarrierRoamingNtnModeChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public boolean waitForNtnEligible(int expectedNumOfEvents) {
+            for (int i = 0; i < expectedNumOfEvents; i++) {
+                try {
+                    if (!mEligibleSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge(TAG, "Timeout to receive onCarrierRoamingNtnEligible");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge(TAG, "onCarrierRoamingEligible: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public boolean getNtnMode() {
+            synchronized (mLock) {
+                return mActive;
+            }
+        }
+
+        public boolean getNtnEligible() {
+            synchronized (mLock) {
+                return mEligible;
+            }
+        }
+
+        public void clearModeChanges() {
+            synchronized (mLock) {
+                mActive = false;
+                mEligible = false;
+            }
+            mActiveSemaphore.drainPermits();
+            mEligibleSemaphore.drainPermits();
+        }
+    }
+
+    protected static void overrideCarrierConfig(int subId, PersistableBundle bundle)
             throws Exception {
         logd(TAG, "overrideCarrierConfig() subId:" + subId);
         try {
@@ -348,29 +476,15 @@ public class CarrierRoamingSatelliteTestBase {
         TimeUnit.MILLISECONDS.sleep(TIMEOUT);
 
         int subId = SubscriptionManager.getSubscriptionId(slotId);
-
-        String mccmnc = sMockModemManager.getSimInfo(slotId,
-                MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
-
         // Set phone number
         setPhoneNumber(subId);
 
-        // Override carrier config
-        PersistableBundle bundle = new PersistableBundle();
-        bundle.putBoolean(
-                CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
-        PersistableBundle plmnBundle = new PersistableBundle();
-        int[] intArray1 = {3, 5};
-        plmnBundle.putIntArray(mccmnc, intArray1);
-        bundle.putPersistableBundle(
-                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
-                plmnBundle);
-        overrideCarrierConfig(subId, bundle);
+        overrideSatelliteConfig(slotId, CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
 
         // Enter service
         sMockModemManager.changeNetworkService(slotId, profile, true);
 
-        assertTrue(serviceStateListener.waitForNonTerrestrialNetworkConnection());
+        assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
     }
 
     protected static void removeSatelliteEnabledSim(int slotId, int profile) throws Exception {
@@ -384,6 +498,34 @@ public class CarrierRoamingSatelliteTestBase {
 
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId);
+    }
+
+    protected static void overrideSatelliteConfig(int slotId,
+            @CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_TYPE int connectType)
+            throws Exception {
+        logd(TAG, "overrideSatelliteConfig slotId:" + slotId + " connectType:" + connectType);
+        int subId = SubscriptionManager.getSubscriptionId(slotId);
+
+        String mccmnc = sMockModemManager.getSimInfo(slotId,
+                MockModemConfigBase.SimInfoChangedResult.SIM_INFO_TYPE_MCC_MNC);
+
+        // Override carrier config
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_SATELLITE_ATTACH_SUPPORTED_BOOL, true);
+        bundle.putInt(CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT,
+                HYSTERESIS_TIMEOUT_SEC);
+        bundle.putInt(CarrierConfigManager
+                        .KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT,
+                HYSTERESIS_TIMEOUT_SEC);
+        bundle.putInt(CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT, connectType);
+        PersistableBundle plmnBundle = new PersistableBundle();
+        int[] intArray1 = {3, 5};
+        plmnBundle.putIntArray(mccmnc, intArray1);
+        bundle.putPersistableBundle(
+                CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_SERVICES_PER_PROVIDER_BUNDLE,
+                plmnBundle);
+        overrideCarrierConfig(subId, bundle);
     }
 
     private static void setPhoneNumber(int subId) throws Exception {
@@ -430,5 +572,71 @@ public class CarrierRoamingSatelliteTestBase {
 
     protected static void loge(@NonNull String tag, @NonNull String log) {
         Rlog.e(tag, log);
+    }
+
+    protected static class WifiStateReceiver extends BroadcastReceiver {
+        private final Semaphore mWifiSemaphore = new Semaphore(0);
+        private final Object mWifiExpectedStateLock = new Object();
+        private boolean mWifiExpectedState = false;
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (action == null) {
+                logd(TAG, "WifiStateReceiver NULL action for intent " + intent);
+                return;
+            }
+            logd(TAG, "WifiStateReceiver onReceive: action = " + action);
+
+            switch (action) {
+                case WifiManager.WIFI_STATE_CHANGED_ACTION: {
+                    int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
+                            WifiManager.WIFI_STATE_UNKNOWN);
+                    logd(TAG, "Wifi state updated to " + wifiState);
+
+                    synchronized (mWifiExpectedStateLock) {
+                        if (mWifiExpectedState == sWifiManager.isWifiEnabled()) {
+                            try {
+                                mWifiSemaphore.release();
+                            } catch (Exception e) {
+                                loge(TAG, "BTWifiNFCStateReceiver onReceive(): "
+                                        + "Got exception, ex=" + e);
+                            }
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+
+        public void setWifiExpectedState(boolean expectedState) {
+            synchronized (mWifiExpectedStateLock) {
+                mWifiExpectedState = expectedState;
+                mWifiSemaphore.drainPermits();
+            }
+        }
+
+        public boolean waitUntilWifiStateChanged() {
+            synchronized (mWifiExpectedStateLock) {
+                if (mWifiExpectedState == sWifiManager.isWifiEnabled()) {
+                    return true;
+                }
+            }
+
+            try {
+                if (!mWifiSemaphore.tryAcquire(EXTERNAL_DEPENDENT_TIMEOUT,
+                        TimeUnit.MILLISECONDS)) {
+                    loge(TAG, "WifiStateReceiver waitUntilWifiStateChanged: "
+                            + "Timeout to receive onStateChanged() callback");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge(TAG, "WifiStateReceiver waitUntilWifiStateChanged: Got exception=" + ex);
+                return false;
+            }
+            return true;
+        }
     }
 }

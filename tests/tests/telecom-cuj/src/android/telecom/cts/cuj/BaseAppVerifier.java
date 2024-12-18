@@ -45,6 +45,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,8 +62,9 @@ public class BaseAppVerifier {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     public static final boolean S_IS_TEST_DISABLED = true;
     public boolean mShouldTestTelecom = true;
+    public boolean mSupportsManagedCalls = false;
     private BaseAppVerifierImpl mBaseAppVerifierImpl;
-    private Context mContext = null;
+    protected Context mContext = null;
     /***********************************************************
      /  ManagedConnectionServiceApp - The PhoneAccountHandle and PhoneAccount must reside in the
      /  CTS test process.
@@ -107,6 +109,8 @@ public class BaseAppVerifier {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mShouldTestTelecom = BaseAppVerifierImpl.shouldTestTelecom(mContext);
+        mSupportsManagedCalls = TestUtils.hasDialerRole(mContext)
+                && TestUtils.hasTelephonyFeature(mContext);
         if (!mShouldTestTelecom) {
             return;
         }
@@ -149,6 +153,16 @@ public class BaseAppVerifier {
     /***********************************************************
      /                 setUp and tearDown methods
      /***********************************************************/
+
+    /**
+     * This method will check TelecomManager#isInCall to determine if there is an ongoing call at
+     * the test start. If there is a call, the Telecom command to disconnect all ongoing calls will
+     * run and attempt to put the test class in a good state.  Also, the method will log any bound
+     * test apps.
+     */
+    public void maybeCleanupTelecom() {
+        mBaseAppVerifierImpl.maybeCleanupTelecom();
+    }
 
     public AppControlWrapper bindToApp(TelecomTestApp applicationName) throws Exception {
         return mBaseAppVerifierImpl.bindToApp(applicationName);
@@ -374,5 +388,31 @@ public class BaseAppVerifier {
             newAcct.setSimultaneousCallingRestriction(restrictions);
         }
         mBaseAppVerifierImpl.registerManagedPhoneAccount(newAcct.build());
+    }
+
+    /**
+     * Audio focus stuff
+     */
+
+    /**
+     * Acquire media focus for music playback; pretend we are listening to music so that we can
+     * verify that focus is lost during a call and restored later.
+     */
+    public void acquireAudioFocusForMusic() {
+        mBaseAppVerifierImpl.acquireAudioFocusForMusic();
+    }
+
+    /**
+     * Waits to ensure that the music audio focus was one of the expected values
+     */
+    public void waitForAndVerifyMusicFocus(int... expectedValues) {
+        mBaseAppVerifierImpl.waitForAndVerifyMusicFocus(expectedValues);
+    }
+
+    /**
+     * Release media focus for media playback; pretend we are not listening to music any longer.
+     */
+    public void releaseAudioFocusForMusic() {
+        mBaseAppVerifierImpl.releaseAudioFocusForMusic();
     }
 }

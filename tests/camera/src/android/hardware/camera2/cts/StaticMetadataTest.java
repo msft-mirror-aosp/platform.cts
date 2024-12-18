@@ -595,7 +595,7 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
      * Verifies that valid session characteristic keys can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testSessionCharacteristicsKeys() throws Exception {
         String[] cameraIds = getCameraIdsUnderTest();
         for (String cameraId : cameraIds) {
@@ -618,6 +618,24 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
                     sessionCharacteristicKeys.size());
             mCollector.expectContains(sessionCharacteristicKeys, SCALER_AVAILABLE_MAX_DIGITAL_ZOOM);
             mCollector.expectContains(sessionCharacteristicKeys, CONTROL_ZOOM_RATIO_RANGE);
+        }
+    }
+
+    /**
+     * Verifies that the output of {@link CameraCharacteristics#getKeys()} does not contain
+     * duplicates.
+     */
+    @Test
+    public void testCameraCharacteristicKeysAreUnique() throws Exception {
+        String[] cameraIds = getCameraIdsUnderTest();
+        for (String cameraId : cameraIds) {
+            StaticMetadata metadata = mAllStaticInfo.get(cameraId);
+            List<Key<?>> keys = metadata.getCharacteristics().getKeys();
+            Set<Key<?>> uniqueKeys = new HashSet<>(keys);
+            mCollector.expectEquals(
+                    "The list returned by CameraCharacteristics#getKeys() must only have unique "
+                            + "keys.",
+                    keys.size(), uniqueKeys.size());
         }
     }
 

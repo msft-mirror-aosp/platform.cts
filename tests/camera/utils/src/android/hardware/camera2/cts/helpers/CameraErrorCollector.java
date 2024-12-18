@@ -50,6 +50,8 @@ public class CameraErrorCollector extends ErrorCollector {
 
     private String mCameraMsg = "";
 
+    private boolean mMPCStatus = true;
+
     @Override
     public void verify() throws Throwable {
         // Do not remove if using JUnit 3 test runners. super.verify() is protected.
@@ -73,6 +75,13 @@ public class CameraErrorCollector extends ErrorCollector {
     @Override
     public void addError(Throwable error) {
         addErrorSuper(new Throwable(mCameraMsg + error.getMessage(), error));
+    }
+
+    public boolean getMPCStatus() {
+        return mMPCStatus;
+    }
+    public void addMPCFailure() {
+        mMPCStatus = false;
     }
 
     private void addErrorSuper(Throwable error) {
@@ -143,13 +152,34 @@ public class CameraErrorCollector extends ErrorCollector {
      * @throws IllegalArgumentException if {@code expected} was {@code null}
      */
     public <T> boolean expectEquals(String msg, T expected, T actual) {
+        return expectEquals(msg, expected, actual, /*mpc*/false);
+    }
+
+    /**
+     * Check if the two values are equal.
+     *
+     * @param msg Message to be logged when check fails.
+     * @param expected Expected value to be checked against.
+     * @param actual Actual value to be checked.
+     * @param mpc Whether to mark as error or MPC requirement failure
+     * @return {@code true} if the two values are equal, {@code false} otherwise.
+     *
+     * @throws IllegalArgumentException if {@code expected} was {@code null}
+     */
+    public <T> boolean expectEquals(String msg, T expected, T actual, boolean mpc) {
         if (expected == null) {
             throw new IllegalArgumentException("expected value shouldn't be null");
         }
 
         if (!Objects.equals(expected, actual)) {
-            addMessage(String.format("%s (expected = %s, actual = %s) ", msg, expected,
-                    actual));
+            String collectorMsg = String.format("%s (expected = %s, actual = %s) ", msg, expected,
+                    actual);
+            if (mpc) {
+                Log.i(TAG, "MPC failure: " + collectorMsg);
+                mMPCStatus = false;
+            } else {
+                addMessage(collectorMsg);
+            }
             return false;
         }
 
@@ -221,6 +251,38 @@ public class CameraErrorCollector extends ErrorCollector {
         }
 
         return true;
+    }
+
+    /**
+     * Check if {@code values} contains all elements in {@code expected}. Duplicates in
+     * {@code expected} are ignored.
+     *
+     * @param msg      Message to be logged when check fails.
+     * @param values   Collection to check membership in.
+     * @param expected Collection which must be entirely present in {@code values}.
+     * @return {@code true} if the two collection are equal, {@code false} otherwise
+     */
+    public <T> boolean expectContainsAll(String msg, Collection<T> values, Collection<T> expected) {
+        Objects.requireNonNull(values);
+        Objects.requireNonNull(expected);
+
+        List<T> missing = expected.stream()
+                .filter(e -> !values.contains(e))
+                .collect(Collectors.toList());
+        if (missing.isEmpty()) {
+            return true;
+        }
+
+        String missingElems = missing.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(/*delimiter=*/";", /*prefix=*/"{", /*suffix=*/"}"));
+        String expectedElems = expected.stream()
+                .map(Objects::toString)
+                .collect(Collectors.joining(/*delimiter=*/";", /*prefix=*/"{", /*suffix=*/"}"));
+
+        addMessage(String.format("%s (%s missing in %s)",
+                msg, missingElems, expectedElems));
+        return false;
     }
 
     /**

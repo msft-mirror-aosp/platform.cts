@@ -54,7 +54,7 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerTestBase;
-import android.server.wm.insets.WindowInsetsAnimationTestBase.TestActivity;
+import android.server.wm.WindowInsetsAnimationTestBase.TestActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;
@@ -71,7 +71,6 @@ import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.filters.FlakyTest;
 
 import com.android.compatibility.common.util.OverrideAnimationScaleRule;
 import com.android.cts.mockime.ImeEventStream;
@@ -385,7 +384,6 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
     }
 
     @Presubmit
-    @FlakyTest(bugId = 339380439)
     @Test
     public void testControl_transition_show() throws Throwable {
         retryIfCancelled(
@@ -518,7 +516,6 @@ public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase 
     }
 
     @Presubmit
-    @FlakyTest(bugId = 339380439)
     @Test
     public void testImeControl_isntInterruptedByStartingInput() throws Throwable {
         if (mType != ime()) {

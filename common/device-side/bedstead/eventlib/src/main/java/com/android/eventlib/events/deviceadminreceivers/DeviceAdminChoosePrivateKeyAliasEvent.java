@@ -38,6 +38,8 @@ import com.android.queryable.queries.UriQuery;
 import com.android.queryable.queries.UriQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when
  * {@link DeviceAdminReceiver#onChoosePrivateKeyAlias(Context, Intent, int, Uri, String)} is called.
@@ -161,6 +163,7 @@ public final class DeviceAdminChoosePrivateKeyAliasEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminChoosePrivateKeyAliasEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -175,6 +178,7 @@ public final class DeviceAdminChoosePrivateKeyAliasEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminChoosePrivateKeyAliasEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);

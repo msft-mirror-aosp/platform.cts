@@ -28,6 +28,7 @@ java_library_static {
 
 android_test {
     name: "CtsAccessibilityTestCases",
+    team: "trendy_team_framework_accessibility",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     static_libs: [
@@ -37,7 +38,7 @@ android_test {
         "CtsAccessibilityCommon",
         "CtsAccessibilityServiceUtils",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

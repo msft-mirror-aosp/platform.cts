@@ -35,7 +35,7 @@ java_test_host {
         "tradefed",
         "compatibility-host-util",
     ],
-    java_resources: [
+    device_common_java_resources: [
         ":plat_seapp_contexts",
         ":plat_seapp_neverallows",
         ":plat_file_contexts",
@@ -48,8 +48,10 @@ java_test_host {
         "CompatChangeGatingTestBase",
         "cts-host-utils",
     ],
-    data: [
+    device_common_data: [
         ":CtsZipValidateApp",
+        ":CtsDeviceInfo",
+        ":CtsDynamicCodeLoadingApp",
     ],
     // These two host cc_library_* modules cannot be wrapped as java_resources directly into
     // a .jar due to the "missing variant" issue, see b/197025344 for more details. This workaround
@@ -74,8 +76,10 @@ java_genrule_host {
         "sepolicy_tests",
     ],
     tool_files: [
-        ":general_sepolicy.conf",
         ":prebuilt_sepolicy_cts_data",
+    ],
+    device_common_srcs: [
+        ":general_sepolicy.conf",
     ],
     out: ["CtsSecurityHostTestCases_StaticLibs.jar"],
     cmd: "echo $(locations :prebuilt_sepolicy_cts_data) > $(out).prebuilt_list.txt && " +
@@ -89,4 +93,16 @@ java_genrule_host {
         "-f $(location sepolicy_tests) " +
         "-f $(location :general_sepolicy.conf) " +
         "-l $(out).prebuilt_list.txt",
+}
+
+test_module_config_host {
+    name: "CtsSecurityHostTestCases_SELinuxHostTest-priv-apps-running",
+    base: "CtsSecurityHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.security.cts.SELinuxHostTest#testPermissionControllerDomain",
+        "android.security.cts.SELinuxHostTest#testNoBugreportDenials",
+        "android.security.cts.SELinuxHostTest#testGMSCoreDomain",
+        "android.security.cts.SELinuxHostTest#testVzwOmaTriggerDomain",
+    ],
 }

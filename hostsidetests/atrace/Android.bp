@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsAtraceHostTestCases",
+    team: "trendy_team_android_core_graphics_stack",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     // Must match the package name in CtsTestCaseList.mk
@@ -26,6 +27,9 @@ java_test_host {
         "tradefed",
     ],
     static_libs: ["trebuchet-core"],
+    device_common_data: [
+        ":CtsAtraceTestApp",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

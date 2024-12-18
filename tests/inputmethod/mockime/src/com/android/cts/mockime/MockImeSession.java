@@ -22,13 +22,11 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import android.app.ActivityManager;
 import android.app.ApplicationExitInfo;
 import android.app.UiAutomation;
 import android.app.compat.CompatChanges;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.ContentProviderClient;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.RectF;
@@ -65,6 +63,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -105,13 +104,10 @@ public class MockImeSession implements AutoCloseable {
     private final AtomicBoolean mActive = new AtomicBoolean(true);
 
     @Nullable
-    private ContentProviderClient mSettingsClient;
+    private AutoCloseable mSettingsClientCloser;
 
     @Nullable
     private SessionChannel mChannel;
-
-    @NonNull
-    private final ActivityManager mActivityManager;
 
     // Set with System.currentTimeMillis so it can be compatible with
     // ApplicationExitInfo.getTimestamp()
@@ -120,6 +116,9 @@ public class MockImeSession implements AutoCloseable {
     @MockImePackageNames
     @NonNull
     private final String mMockImePackageName;
+
+    @NonNull
+    private final UserHandle mTargetUser;
 
     @MockImePackageNames
     @NonNull
@@ -215,7 +214,7 @@ public class MockImeSession implements AutoCloseable {
 
     private String executeImeCmd(String cmd, @Nullable String...args) throws IOException {
         StringBuilder fullCmd = new StringBuilder("ime ").append(cmd);
-        fullCmd.append(" --user ").append(mContext.getUserId()).append(' ');
+        fullCmd.append(" --user ").append(mTargetUser.getIdentifier()).append(' ');
         for (String arg : args) {
             // Ideally it should check if there's more args, but adding an extra space is fine
             fullCmd.append(' ').append(arg);
@@ -225,30 +224,39 @@ public class MockImeSession implements AutoCloseable {
 
     @Nullable
     private String getCurrentInputMethodId() {
-        // TODO: Replace this with IMM#getCurrentInputMethodIdForTesting()
-        String settingsValue = Settings.Secure.getString(mContext.getContentResolver(),
-                Settings.Secure.DEFAULT_INPUT_METHOD);
-        Log.v(TAG, "getCurrentInputMethodId(): returning " + settingsValue + " for user "
-                + mContext.getUser().getIdentifier());
-        return settingsValue;
+        final InputMethodInfo imi =
+                MultiUserUtils.getCurrentInputMethodInfoAsUser(mContext, mUiAutomation,
+                        mTargetUser);
+        final String result = imi != null ? imi.getId() : null;
+        // debug log for b/354782333.
+        final String defaultInputMethod = MultiUserUtils.getSecureSettings(
+                mUiAutomation, Settings.Secure.DEFAULT_INPUT_METHOD, mTargetUser);
+        // debug log for b/354782333.
+        final String enabledInputMethods = MultiUserUtils.getSecureSettings(
+                mUiAutomation, Settings.Secure.ENABLED_INPUT_METHODS, mTargetUser);
+        Log.v(TAG, "getCurrentInputMethodId(): returning " + result + " for user "
+                + mTargetUser.getIdentifier() + " DEFAULT_INPUT_METHOD=" + defaultInputMethod
+                + " ENABLED_INPUT_METHODS=" + enabledInputMethods);
+        return result;
     }
 
-    @Nullable
-    private void writeMockImeSettings(@NonNull Context context,
+    private void writeMockImeSettings(
             @NonNull String imeEventActionName,
             @Nullable ImeSettings.Builder imeSettings,
-            @NonNull RemoteCallback channel) throws Exception {
+            @NonNull RemoteCallback channel) {
         final var bundle = ImeSettings.serializeToBundle(imeEventActionName, imeSettings, channel);
-        Log.i(TAG, "Writing MockIme settings: session=" + this);
-        context.getContentResolver().call(mMockImeSettingsProviderAuthority, "write", null, bundle);
+        Log.i(TAG, "Writing MockIme settings: session=" + this + " for user="
+                + mTargetUser.getIdentifier());
+        MultiUserUtils.callContentProvider(mContext, mUiAutomation,
+                mMockImeSettingsProviderAuthority, "write", null /* arg */, bundle, mTargetUser);
     }
 
-    private void setAdditionalSubtypes(@NonNull Context context,
-            @Nullable InputMethodSubtype[] additionalSubtypes) {
+    private void setAdditionalSubtypes(@Nullable InputMethodSubtype[] additionalSubtypes) {
         final Bundle bundle = new Bundle();
         bundle.putParcelableArray(SettingsProvider.SET_ADDITIONAL_SUBTYPES_KEY, additionalSubtypes);
-        context.getContentResolver().call(mMockImeSettingsProviderAuthority,
-                SettingsProvider.SET_ADDITIONAL_SUBTYPES_COMMAND, null, bundle);
+        MultiUserUtils.callContentProvider(mContext, mUiAutomation,
+                mMockImeSettingsProviderAuthority, SettingsProvider.SET_ADDITIONAL_SUBTYPES_COMMAND,
+                null /* arg */, bundle, mTargetUser);
     }
 
     private ComponentName getMockImeComponentName() {
@@ -267,8 +275,8 @@ public class MockImeSession implements AutoCloseable {
             @NonNull ImeSettings.Builder imeSettings) {
         mContext = context;
         mUiAutomation = uiAutomation;
-        mActivityManager = mContext.getSystemService(ActivityManager.class);
         mMockImePackageName = imeSettings.mMockImePackageName;
+        mTargetUser = imeSettings.mTargetUser;
         mMockImeSettingsProviderAuthority = mMockImePackageName + ".provider";
         mSuppressReset = imeSettings.mSuppressResetIme;
         updateSessionCreateTimestamp();
@@ -285,7 +293,7 @@ public class MockImeSession implements AutoCloseable {
     @Nullable
     public InputMethodInfo getInputMethodInfo() {
         for (InputMethodInfo imi :
-                mContext.getSystemService(InputMethodManager.class).getInputMethodList()) {
+                MultiUserUtils.getInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)) {
             if (TextUtils.equals(getImeId(), imi.getId())) {
                 return imi;
             }
@@ -299,17 +307,15 @@ public class MockImeSession implements AutoCloseable {
 
         // Make sure that MockIME is not selected.
         if (!mSuppressReset
-                && mContext.getSystemService(InputMethodManager.class)
-                .getInputMethodList()
+                && MultiUserUtils.getInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
                 .stream()
                 .anyMatch(info -> getMockImeComponentName().equals(info.getComponent()))) {
             executeImeCmd("reset");
         }
-        if (mContext.getSystemService(InputMethodManager.class)
-                .getEnabledInputMethodList()
+        if (MultiUserUtils.getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
                 .stream()
                 .anyMatch(info -> getMockImeComponentName().equals(info.getComponent()))) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("MockIME should not be already enabled.");
         }
 
         // Make sure to set up additional subtypes before launching MockIme.
@@ -318,7 +324,7 @@ public class MockImeSession implements AutoCloseable {
             additionalSubtypes = new InputMethodSubtype[0];
         }
         if (additionalSubtypes.length > 0) {
-            setAdditionalSubtypes(mContext, additionalSubtypes);
+            setAdditionalSubtypes(additionalSubtypes);
         } else {
             final InputMethodInfo imi = getInputMethodInfo();
             if (imi == null) {
@@ -326,7 +332,7 @@ public class MockImeSession implements AutoCloseable {
             }
             if (imi.getSubtypeCount() != 0) {
                 // Somehow the previous run failed to remove additional subtypes. Clean them up.
-                setAdditionalSubtypes(mContext, null);
+                setAdditionalSubtypes(null);
             }
         }
         {
@@ -339,21 +345,29 @@ public class MockImeSession implements AutoCloseable {
             }
         }
 
-        mSettingsClient = mContext.getContentResolver().acquireUnstableContentProviderClient(
-                mMockImeSettingsProviderAuthority);
+        mSettingsClientCloser = MultiUserUtils.acquireUnstableContentProviderClientSession(mContext,
+                mUiAutomation, mMockImeSettingsProviderAuthority, mTargetUser);
         var sessionEstablished = new CountDownLatch(1);
         mChannel = new SessionChannel(sessionEstablished::countDown);
         mChannel.registerListener(mEventReceiver);
-        writeMockImeSettings(mContext, mImeEventActionName, imeSettings,
-                mChannel.takeTransport());
+        writeMockImeSettings(mImeEventActionName, imeSettings, mChannel.takeTransport());
         sessionEstablished.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
 
         String imeId = getImeId();
         executeImeCmd("enable", imeId);
-        executeImeCmd("set", imeId);
+        if (!imeSettings.mSuppressSetIme) {
+            executeImeCmd("set", imeId);
 
-        PollingCheck.check("Make sure that MockIME becomes available", TIMEOUT_MILLIS,
-                () -> getImeId().equals(getCurrentInputMethodId()));
+            PollingCheck.check("Make sure that MockIME becomes available", TIMEOUT_MILLIS,
+                    () -> getImeId().equals(getCurrentInputMethodId()));
+        } else {
+            PollingCheck.check("Make sure that MockIME becomes enabled", TIMEOUT_MILLIS, () ->
+                    MultiUserUtils
+                            .getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
+                            .stream()
+                            .anyMatch(
+                                    info -> getMockImeComponentName().equals(info.getComponent())));
+        }
     }
 
     @Override
@@ -417,7 +431,7 @@ public class MockImeSession implements AutoCloseable {
         AtomicBoolean result = new AtomicBoolean();
         runWithShellPermissionIdentity(() ->
                 result.set(CompatChanges.isChangeEnabled(FINISH_INPUT_NO_FALLBACK_CONNECTION,
-                        mMockImePackageName, UserHandle.CURRENT)));
+                        mMockImePackageName, mTargetUser)));
         return result.get();
     }
 
@@ -473,8 +487,8 @@ public class MockImeSession implements AutoCloseable {
             executeImeCmd("reset");
 
             PollingCheck.check("Make sure that MockIME becomes unavailable", TIMEOUT_MILLIS, () ->
-                    mContext.getSystemService(InputMethodManager.class)
-                            .getEnabledInputMethodList()
+                    MultiUserUtils
+                            .getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
                             .stream()
                             .noneMatch(
                                     info -> getMockImeComponentName().equals(info.getComponent())));
@@ -484,17 +498,18 @@ public class MockImeSession implements AutoCloseable {
             mChannel.close();
         }
         Log.i(TAG, "Deleting MockIme settings: session=" + this);
-        mContext.getContentResolver().call(
-                mMockImeSettingsProviderAuthority, "delete", null, null);
+        MultiUserUtils.callContentProvider(mContext, mUiAutomation,
+                mMockImeSettingsProviderAuthority, "delete", null /* arg */, null /* extras */,
+                mTargetUser);
 
         // Clean up additional subtypes if any.
         final InputMethodInfo imi = getInputMethodInfo();
         if (imi != null && imi.getSubtypeCount() != 0) {
-            setAdditionalSubtypes(mContext, null);
+            setAdditionalSubtypes(null);
         }
-        if (mSettingsClient != null) {
-            mSettingsClient.close();
-            mSettingsClient = null;
+        if (mSettingsClientCloser != null) {
+            mSettingsClientCloser.close();
+            mSettingsClientCloser = null;
         }
         updateSessionCreateTimestamp();
     }
@@ -522,20 +537,12 @@ public class MockImeSession implements AutoCloseable {
     }
 
     @Nullable
-    private ApplicationExitInfo findLatestMockImeSessionExitInfo() {
-        final ApplicationExitInfo[] exitReasons = new ApplicationExitInfo[1];
-
-        // Requires android.permission.DUMP permission.
-        runWithShellPermissionIdentity(() -> {
-            List<ApplicationExitInfo> latestExitReasons =
-                    mActivityManager.getHistoricalProcessExitReasons(
-                            mMockImePackageName, /* pid= */ 0, /* maxNum= */ 1);
-            if (!latestExitReasons.isEmpty()) {
-                exitReasons[0] = latestExitReasons.get(0);
-            }
-        });
-
-        return exitReasons[0];
+    @VisibleForTesting
+    ApplicationExitInfo findLatestMockImeSessionExitInfo() {
+        final List<ApplicationExitInfo> latestExitReasons =
+                MultiUserUtils.getHistoricalProcessExitReasons(mContext, mUiAutomation,
+                        mMockImePackageName, /* pid= */ 0, /* maxNum= */ 1, mTargetUser);
+        return latestExitReasons.isEmpty() ? null : latestExitReasons.get(0);
     }
 
     /**
@@ -1824,8 +1831,10 @@ public class MockImeSession implements AutoCloseable {
 
     @NonNull
     public void callSetInlineSuggestionsExtras(@NonNull Bundle bundle) {
-        mContext.getContentResolver().call(mMockImeSettingsProviderAuthority,
-                SettingsProvider.SET_INLINE_SUGGESTION_EXTRAS_COMMAND, null, bundle);
+        MultiUserUtils.callContentProvider(mContext, mUiAutomation,
+                mMockImeSettingsProviderAuthority,
+                SettingsProvider.SET_INLINE_SUGGESTION_EXTRAS_COMMAND, null /* args */, bundle,
+                mTargetUser);
     }
 
     /**
@@ -1954,5 +1963,10 @@ public class MockImeSession implements AutoCloseable {
         final Bundle params = new Bundle();
         params.putBoolean("visible", visible);
         return callCommandInternal("setImeCaptionBarVisible", params);
+    }
+
+    @NonNull
+    public ImeCommand callGetImeCaptionBarHeight() {
+        return callCommandInternal("getImeCaptionBarHeight", new Bundle());
     }
 }

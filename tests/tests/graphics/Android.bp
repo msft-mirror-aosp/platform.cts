@@ -22,8 +22,8 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -35,6 +35,7 @@ android_test {
         "hamcrest-library",
         "junit",
         "flag-junit",
+        "cts-display-lib",
         "junit-params",
         "SurfaceFlingerProperties",
         "testng",
@@ -43,6 +44,9 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "com.android.window.flags.window-aconfig-java",
         "hwui_flags_java_lib",
+        "libmonet",
+        "android.view.flags-aconfig-java",
+        "ravenwood-junit",
     ],
     jni_libs: ["libctsgraphics_jni"],
     srcs: [
@@ -58,19 +62,87 @@ android_test {
     sdk_version: "test_current",
 }
 
+android_app {
+    name: "CtsGraphicsTestCases-res",
+    defaults: ["cts_defaults"],
+    sdk_version: "test_current",
+    use_resource_processor: false,
+    enforce_uses_libs: false,
+}
+
 android_ravenwood_test {
     name: "CtsGraphicsTestCasesRavenwood",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
+        "compatibility-device-util-axt-ravenwood",
+        "junit-params",
+        "testng",
+        "hwui_flags_java_lib",
+        "framework_graphics_flags_java_lib",
     ],
     srcs: [
+        "src/android/graphics/cts/ColorTest.java",
+        "src/android/graphics/cts/Color_ColorLongTest.java",
+        "src/android/graphics/cts/ColorSpaceTest.java",
         "src/android/graphics/cts/InsetsTest.java",
-        "src/android/graphics/cts/PointTest.java",
+        "src/android/graphics/cts/InterpolatorTest.java",
+        "src/android/graphics/cts/Matrix44Test.java",
+        "src/android/graphics/cts/Matrix_ScaleToFitTest.java",
+        "src/android/graphics/cts/MatrixTest.java",
+        "src/android/graphics/cts/OutlineTest.java",
+        "src/android/graphics/cts/ParcelableColorSpaceTest.java",
+        "src/android/graphics/cts/Path_DirectionTest.java",
+        "src/android/graphics/cts/Path_FillTypeTest.java",
+        "src/android/graphics/cts/PathTest.java",
+        "src/android/graphics/cts/PixelFormatTest.java",
         "src/android/graphics/cts/PointFTest.java",
-        "src/android/graphics/cts/RectTest.java",
+        "src/android/graphics/cts/PointTest.java",
         "src/android/graphics/cts/RectFTest.java",
+        "src/android/graphics/cts/RectTest.java",
+
+        ":CtsGraphicsTestCases-res{.aapt.srcjar}",
     ],
+    resource_apk: "CtsGraphicsTestCases-res",
     auto_gen_config: true,
+    sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases_cts_icontest",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.drawable.cts.IconTest"],
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases_cts_vulkanpretransformtest",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.cts.VulkanPreTransformTest"],
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases-presubmit",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+
+    // TODO(b/242858942): periodically re-enable tests on case-by-case basis when they're fixed.
+    exclude_filters: [
+        // Broken very frequently; provides little value for our presubmit
+        "android.graphics.cts.ColorTest#resourceColor",
+        "android.graphics.cts.FrameRateOverrideTest#testAppBackpressure",
+    ],
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases-minus-gsi-flakes",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    // flaky on mixed gsi builds
+    exclude_filters: [
+        "android.graphics.cts.AnimatorLeakTest#testPauseResume",
+        "android.graphics.cts.CameraGpuTest#testCameraImageCaptureAndRendering",
+    ],
 }

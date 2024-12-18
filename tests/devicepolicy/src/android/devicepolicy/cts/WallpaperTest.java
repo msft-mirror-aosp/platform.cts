@@ -16,26 +16,26 @@
 
 package android.devicepolicy.cts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.SET_WALLPAPER;
+import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
+
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SET_WALLPAPER;
-
-import static com.google.common.truth.Truth.assertThat;
-
-import static org.testng.Assert.assertThrows;
+import static com.android.bedstead.permissions.CommonPermissions.READ_WALLPAPER_INTERNAL;
+import static com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER;
 
 import android.graphics.Bitmap;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.Wallpaper;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
@@ -50,6 +50,9 @@ import java.io.InputStream;
 
 // TODO (b/284309054): Add test for WallpaperManager#setResource
 @RunWith(BedsteadJUnit4.class)
+@RequireFeature(value = FEATURE_LIVE_WALLPAPER, reason = "WallpaperManager depends on this feature")
+@RequireNotAutomotive(reason = "AAOS doesn't support wallpaper but gsi_car reports that it does. "
+        + "See b/328312997")
 public final class WallpaperTest {
 
     @ClassRule
@@ -65,7 +68,7 @@ public final class WallpaperTest {
             BitmapUtils.bitmapToInputStream(sReferenceWallpaper);
 
     @ApiTest(apis = "android.app.WallpaperManager#setBitmap")
-    @EnsureHasPermission(SET_WALLPAPER)
+    @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureHasUserRestriction(DISALLOW_SET_WALLPAPER)
     @PolicyAppliesTest(policy = Wallpaper.class)
     public void setBitmap_viaDpc_disallowed_canSet() throws Exception {
@@ -96,12 +99,12 @@ public final class WallpaperTest {
                     .errorOnFail()
                     .await();
         } finally {
-            sDeviceState.dpc().wallpaperManager().setBitmap(sOriginalWallpaper);
+            TestApis.wallpaper().setBitmap(sOriginalWallpaper);
         }
     }
 
     @ApiTest(apis = "android.app.WallpaperManager#setBitmap")
-    @EnsureHasPermission(SET_WALLPAPER)
+    @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
     @Test
     public void setBitmap_allowed_canSet() throws Exception {
@@ -135,7 +138,7 @@ public final class WallpaperTest {
     }
 
     @ApiTest(apis = "android.app.WallpaperManager#setStream")
-    @EnsureHasPermission(SET_WALLPAPER)
+    @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
     @Test
     public void setStream_allowed_canSet() {

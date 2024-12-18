@@ -66,10 +66,10 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Converge 3A prior to capture.
-      cam.do_3a(do_af=True, lock_ae=True, lock_awb=True,
-                mono_camera=mono_camera)
-
+      camera_properties_utils.log_minimum_focus_distance(props)
       fmt = capture_request_utils.get_largest_yuv_format(props)
+      cam.do_3a(do_af=True, lock_ae=True, lock_awb=True,
+                mono_camera=mono_camera, out_surfaces=fmt)
 
       # After 3A has converged, lock AE+AWB for the duration of the test.
       logging.debug('Locking AE & AWB')
@@ -82,7 +82,7 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
       r_means = []
       g_means = []
       b_means = []
-      caps = cam.do_capture([req]*_BURST_LEN, fmt)
+      caps = cam.do_capture([req]*_BURST_LEN, fmt, reuse_session=True)
       name_with_log_path = os.path.join(log_path, _NAME)
       for i, cap in enumerate(caps):
         img = image_processing_utils.convert_capture_to_rgb_image(cap)
@@ -102,16 +102,15 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
         spread = max(means) - min_means
         logging.debug('%s patch mean spread %.5f. means = %s',
                       plane, spread, str(means))
-        for j in range(_BURST_LEN):
-          if min_means <= _VALUE_THRESH:
-            raise AssertionError(f'{plane} frame {j} too dark! mean: '
-                                 f'{min_means:.5f}, THRESH: {_VALUE_THRESH}')
-          threshold = _SPREAD_THRESH
-          if camera_properties_utils.manual_sensor(props):
-            threshold = _SPREAD_THRESH_MANUAL_SENSOR
-          if spread >= threshold:
-            raise AssertionError(f'{plane} center patch spread: {spread:.5f}, '
-                                 f'THRESH: {threshold:.2f}')
+        if min_means <= _VALUE_THRESH:
+          raise AssertionError(f'{plane} too dark! mean: '
+                               f'{min_means:.5f}, THRESH: {_VALUE_THRESH}')
+        threshold = _SPREAD_THRESH
+        if camera_properties_utils.manual_sensor(props):
+          threshold = _SPREAD_THRESH_MANUAL_SENSOR
+        if spread >= threshold:
+          raise AssertionError(f'{plane} center patch spread: {spread:.5f}, '
+                               f'THRESH: {threshold:.2f}')
 
 if __name__ == '__main__':
   test_runner.main()

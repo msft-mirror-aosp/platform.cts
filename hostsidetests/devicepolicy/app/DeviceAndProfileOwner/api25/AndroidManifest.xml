@@ -18,6 +18,7 @@
      package="com.android.cts.deviceandprofileowner">
 
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!-- Add a network security config that trusts user added CAs for tests -->
     <application android:testOnly="true">

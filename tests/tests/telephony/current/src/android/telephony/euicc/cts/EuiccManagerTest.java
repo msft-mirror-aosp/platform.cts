@@ -30,6 +30,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -724,6 +725,10 @@ public class EuiccManagerTest {
         if (!mEuiccManager.isEnabled()) {
             return;
         }
+        // b/373533557: tests using the TestEuiccUiComponent are failing on wear devices
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            return;
+        }
         setTestEuiccUiComponent();
         // set up CountDownLatch and receiver
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -750,6 +755,10 @@ public class EuiccManagerTest {
     public void testEuiccManageAction() {
         // Only test it when EuiccManager is enabled.
         if (!mEuiccManager.isEnabled()) {
+            return;
+        }
+        // b/373533557: tests using the TestEuiccUiComponent are failing on wear devices
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             return;
         }
         setTestEuiccUiComponent();
@@ -780,6 +789,10 @@ public class EuiccManagerTest {
         if (!mEuiccManager.isEnabled()) {
             return;
         }
+        // b/373533557: tests using the TestEuiccUiComponent are failing on wear devices
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            return;
+        }
         setTestEuiccUiComponent();
         // set up CountDownLatch and receiver
         CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -806,6 +819,10 @@ public class EuiccManagerTest {
     public void testEuiccConvertAction() {
         // Only test it when EuiccManager is enabled.
         if (!mEuiccManager.isEnabled()) {
+            return;
+        }
+        // b/373533557: tests using the TestEuiccUiComponent are failing on wear devices
+        if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             return;
         }
         setTestEuiccUiComponent();

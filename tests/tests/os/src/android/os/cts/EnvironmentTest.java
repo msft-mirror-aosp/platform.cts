@@ -17,19 +17,31 @@ package android.os.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Environment;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.Os;
 import android.system.StructStatVfs;
 
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import junit.framework.TestCase;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,11 +50,18 @@ import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class EnvironmentTest extends TestCase {
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
+public class EnvironmentTest {
 
     private static final Context sContext =
             InstrumentationRegistry.getInstrumentation().getContext();
 
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Test
     public void testEnvironment() {
         new Environment();
         assertNotNull(Environment.getExternalStorageState());
@@ -52,6 +71,7 @@ public class EnvironmentTest extends TestCase {
     }
 
     @AppModeFull(reason = "External directory not accessible by instant apps")
+    @Test
     public void testEnvironmentExternal() {
         assertTrue(Environment.getStorageDirectory().isDirectory());
         assertTrue(Environment.getExternalStorageDirectory().isDirectory());
@@ -61,6 +81,7 @@ public class EnvironmentTest extends TestCase {
      * If TMPDIR points to a global shared directory,
      * this could compromise the security of the files.
      */
+    @Test
     public void testNoTmpDir() {
         assertTrue(System.getenv("TMPDIR").endsWith("android.os.cts/cache"));
     }
@@ -69,6 +90,7 @@ public class EnvironmentTest extends TestCase {
      * Verify that all writable block filesystems are mounted "noatime" to avoid
      * unnecessary flash churn.
      */
+    @Test
     public void testNoAtime() throws Exception {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/mounts"))) {
             String line;
@@ -89,6 +111,7 @@ public class EnvironmentTest extends TestCase {
     /**
      * verify hidepid=2 on /proc
      */
+    @Test
     public void testHidePid2() throws Exception {
         try (BufferedReader br = new BufferedReader(new FileReader("/proc/mounts"))) {
             String line;
@@ -105,6 +128,7 @@ public class EnvironmentTest extends TestCase {
         }
     }
 
+    @Test
     public void testHidePid2_direct() throws Exception {
         assertFalse(new File("/proc/1").exists());
     }
@@ -113,6 +137,7 @@ public class EnvironmentTest extends TestCase {
      * Verify that all writable block filesystems are mounted with "resgid" to
      * mitigate disk-full trouble.
      */
+    @Test
     public void testSaneInodes() throws Exception {
         final File file = Environment.getDataDirectory();
         final StructStatVfs stat = Os.statvfs(file.getAbsolutePath());
@@ -142,6 +167,7 @@ public class EnvironmentTest extends TestCase {
         }
     }
 
+    @Test
     @ApiTest(apis = "android.os.Environment#getDataCePackageDirectoryForUser")
     public void testDataCePackageDirectoryForUser() {
         testDataPackageDirectoryForUser(
@@ -151,6 +177,7 @@ public class EnvironmentTest extends TestCase {
         );
     }
 
+    @Test
     @ApiTest(apis = "android.os.Environment#getDataDePackageDirectoryForUser")
     public void testDataDePackageDirectoryForUser() {
         testDataPackageDirectoryForUser(
@@ -158,6 +185,13 @@ public class EnvironmentTest extends TestCase {
                         uuid, userHandle, sContext.getPackageName()),
                 (appInfo) -> appInfo.deviceProtectedDataDir
         );
+    }
+
+    @Test
+    @ApiTest(apis = "android.os.Environment#getDataSystemDeDirectory")
+    @RequiresFlagsEnabled(android.crashrecovery.flags.Flags.FLAG_ENABLE_CRASHRECOVERY)
+    public void testGetDataSystemDeDirectory() {
+        assertTrue(Environment.getDataSystemDeDirectory().isDirectory());
     }
 
     private void testDataPackageDirectoryForUser(

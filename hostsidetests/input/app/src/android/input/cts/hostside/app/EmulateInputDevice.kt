@@ -15,20 +15,23 @@
  */
 package android.input.cts.hostside.app
 
-import android.app.Activity
-import android.content.Context
+import android.cts.input.EventVerifier
 import android.graphics.Point
-import android.hardware.input.InputManager
+import android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop
 import android.util.DisplayMetrics
 import android.util.Size
-import android.view.InputDevice
+import android.view.MotionEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.PollingCheck
 import com.android.cts.input.UinputDevice
+import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchPad
+import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.inputeventmatchers.withMotionAction
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,18 +44,24 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EmulateInputDevice {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var context: Context
+    private lateinit var activity: CaptureEventActivity
     private lateinit var screenSize: Size
+    private lateinit var verifier: EventVerifier
 
     @get:Rule
-    val activityRule = ActivityScenarioRule(Activity::class.java)
+    val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
     @Suppress("DEPRECATION")
     @Before
     fun setUp() {
-        activityRule.scenario.onActivity { context = it }
-        val dm = DisplayMetrics().also { context.display.getRealMetrics(it) }
+        activityRule.scenario.onActivity { activity = it }
+        val dm = DisplayMetrics().also { activity.display.getRealMetrics(it) }
         screenSize = Size(dm.widthPixels, dm.heightPixels)
+        verifier = EventVerifier(activity::getInputEvent)
+        assertTrue(
+            "Failed to wait for activity window to be on top",
+            waitForWindowOnTop(activity.window)
+        )
     }
 
     @After
@@ -65,20 +74,16 @@ class EmulateInputDevice {
      */
     @Test
     fun useTouchscreenForFiveSeconds() {
-        UinputTouchDevice(
-                instrumentation,
-                context.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        ).use { touchscreen ->
-            // Start the usage session.
-            touchscreen.tapOnScreen()
-
-            // Continue using the touchscreen for at least five more seconds.
-            for (i in 0 until 5) {
-                Thread.sleep(1000)
+        UinputTouchScreen(instrumentation, activity.display).use { touchscreen ->
+            // Use touchscreen for five more seconds, tapping it 6 times, with a 1 second wait
+            for (i in 0 until 6) {
+                if (i != 0) {
+                    Thread.sleep(1000)
+                }
                 touchscreen.tapOnScreen()
+                verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
+                verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
+                verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
             }
         }
     }
@@ -105,17 +110,12 @@ class EmulateInputDevice {
 
     @Test
     fun useTouchpadWithFingersAndPalms() {
-        UinputTouchDevice(
-                instrumentation,
-                context.display,
-                R.raw.test_touchpad_register,
-                InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             for (i in 0 until 3) {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
                 touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
-                touchpad.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_FINGER)
+                touchpad.sendDown(0, pointer)
                 touchpad.sync()
 
                 touchpad.sendBtnTouch(false)
@@ -127,7 +127,8 @@ class EmulateInputDevice {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
                 touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
-                touchpad.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PALM)
+                touchpad.sendDown(0, pointer)
+                touchpad.sendToolType(0, UinputTouchDevice.MT_TOOL_PALM)
                 touchpad.sync()
 
                 touchpad.sendBtnTouch(false)
@@ -135,17 +136,13 @@ class EmulateInputDevice {
                 touchpad.sendUp(0)
                 touchpad.sync()
             }
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
     @Test
     fun pinchOnTouchpad() {
-        UinputTouchDevice(
-            instrumentation,
-            context.display,
-            R.raw.test_touchpad_register,
-            InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointer0 = Point(500, 500)
             val pointer1 = Point(700, 700)
             touchpad.sendBtnTouch(true)
@@ -177,7 +174,7 @@ class EmulateInputDevice {
             touchpad.sendBtnTouch(false)
             touchpad.sendUp(1)
             touchpad.sync()
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -196,13 +193,10 @@ class EmulateInputDevice {
         multiFingerSwipe(4)
     }
 
+    // Perform a multi-finger swipe in one direction and return to the starting location to
+    // minimize the size effects of the gesture to the rest of the system.
     private fun multiFingerSwipe(numFingers: Int) {
-        UinputTouchDevice(
-            instrumentation,
-            context.display,
-            R.raw.test_touchpad_register,
-            InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE
-        ).use { touchpad ->
+        UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
             touchpad.sendBtnTouch(true)
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), true)
@@ -212,9 +206,10 @@ class EmulateInputDevice {
             touchpad.sync()
             Thread.sleep(TOUCHPAD_SCAN_DELAY_MILLIS)
 
-            for (rep in 0 until 10) {
+            for (rep in 0 until 20) {
+                val direction = if (rep < 10) 1 else -1
                 for (i in pointers.indices) {
-                    pointers[i].offset(0, 40)
+                    pointers[i].offset(0, direction * 40)
                     touchpad.sendMove(i, pointers[i])
                 }
                 touchpad.sync()
@@ -227,32 +222,27 @@ class EmulateInputDevice {
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), false)
             touchpad.sendBtnTouch(false)
             touchpad.sync()
-            Thread.sleep(TOUCHPAD_POST_GESTURE_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
     @Test
     fun createKeyboardDevice() {
-        UinputDevice.create(
-            instrumentation,
-            R.raw.test_keyboard_register,
-            InputDevice.SOURCE_KEYBOARD
-        ).use {
-            // do nothing: Adding a device should trigger the logging logic.
+        UinputKeyboard(instrumentation).use {
+            // Do nothing: Adding a device should trigger the logging logic.
+            // Wait until the Input device created is sent to KeyboardLayoutManager to trigger
+            // logging logic
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
     @Test
     fun createKeyboardDeviceAndSendCapsLockKey() {
-        UinputDevice.create(
-                instrumentation,
-                R.raw.test_keyboard_register,
-                InputDevice.SOURCE_KEYBOARD
-        ).use { keyboard ->
+        UinputKeyboard(instrumentation).use { keyboard ->
             // Wait for device to be added
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_PRESS, 0, 0, 0))
             injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_RELEASE, 0, 0, 0))
-            Thread.sleep(KEYBOARD_POST_EVENT_DELAY_MILLIS)
+            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -267,11 +257,11 @@ class EmulateInputDevice {
         const val KEY_PRESS: Int = 1
         const val KEY_RELEASE: Int = 0
 
-        // This delay seems to be necessary to let the gesture be properly processed and added to
-        // metrics before the touchpad device is torn down.
-        const val TOUCHPAD_POST_GESTURE_DELAY_MILLIS: Long = 500
-
-        // This delay is required for key events to be sent and handled correctly.
-        const val KEYBOARD_POST_EVENT_DELAY_MILLIS: Long = 500
+        // When a uinput device is closed, there's a race between InputReader picking up the final
+        // events from the device's buffer (specifically, the buffer in struct evdev_client in the
+        // kernel) and the device being torn down. If the device is torn down first, one or more
+        // frames of data get lost. To prevent flakes due to this race, we delay closing the device
+        // for a while after sending the last event, so InputReader has time to read them all.
+        const val UINPUT_POST_EVENT_DELAY_MILLIS: Long = 500
     }
 }

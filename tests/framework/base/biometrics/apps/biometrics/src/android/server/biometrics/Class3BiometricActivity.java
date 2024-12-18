@@ -19,12 +19,10 @@ package android.server.biometrics;
 import android.app.Activity;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
-import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
-
-import androidx.annotation.Nullable;
+import android.server.biometrics.util.BiometricCallbackHelper;
 
 import java.util.concurrent.Executor;
 
@@ -32,8 +30,9 @@ public class Class3BiometricActivity extends Activity {
     private static final String TAG = "Class3BiometricActivity";
 
     @Override
-    protected void onCreate(@Nullable Bundle bundle) {
-        super.onCreate(bundle);
+    protected void onResume() {
+        super.onResume();
+
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
         final BiometricCallbackHelper callbackHelper = new BiometricCallbackHelper(this);

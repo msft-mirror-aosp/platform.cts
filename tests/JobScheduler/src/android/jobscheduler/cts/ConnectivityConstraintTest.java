@@ -41,7 +41,9 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.BatteryUtils;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import java.util.Collections;
 import java.util.Map;
@@ -65,6 +67,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     private NetworkingHelper mNetworkingHelper;
     private WifiManager mWifiManager;
     private ConnectivityManager mCm;
+    private UserHelper mUserHelper;
 
     /** Whether the device running these tests supports WiFi. */
     private boolean mHasWifi;
@@ -87,6 +90,7 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
 
         setDataSaverEnabled(false);
         mNetworkingHelper.setAllNetworksEnabled(true);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @Override
@@ -505,6 +509,39 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     /**
+     * Schedule a job that requires a network connection, and verify that it runs even after the
+     * scheduling app is killed.
+     *
+     * Note: This is a basic test similar to testConnectivityConstraintExecutes_withWifi, except
+     * that it uses a helper app so the scheduling app's lifecycle and any resulting restrictions
+     * can be managed freely by the system.
+     */
+    public void testJobExecutes_afterAppIsKilled() throws Exception {
+        if (hasEthernetConnection()) {
+            Log.d(TAG, "Skipping test since ethernet is connected.");
+            return;
+        }
+        // To ensure the job doesn't start immediately after scheduling.
+        mNetworkingHelper.setAllNetworksEnabled(false);
+
+        mTestAppInterface = new TestAppInterface(mContext, CONNECTIVITY_JOB_ID);
+        mTestAppInterface.scheduleJob(false, JobInfo.NETWORK_TYPE_ANY, false);
+
+        mTestAppInterface.kill();
+        PollingCheck.waitFor(DEFAULT_TIMEOUT_MILLIS,
+                mTestAppInterface::isNetworkBlockedByPolicy,
+                "Test app did not lose network access after being stopped");
+        // The job should run after network is connected, even though the app does not have access
+        // due to policy right now.
+        mNetworkingHelper.setAllNetworksEnabled(true);
+
+        mTestAppInterface.runSatisfiedJob();
+        assertTrue(
+                "Job requiring network did not start after the app was killed",
+                mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
+    }
+
+    /**
      * Schedule a user-initiated job that requires a network connection, and verify that it runs
      * even when Battery Saver is on.
      */
@@ -657,6 +694,16 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
     }
 
     public void testJobUidState() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        if (mUserHelper.isVisibleBackgroundUserSupported()) {
+            Log.d(TAG, "Skip the test on devices that support visible background users"
+                    + ", because the device might not enter sleep mode even with KEYCODE_SLEEP.");
+            return;
+        }
+
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         toggleScreenOn(false);
@@ -671,9 +718,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_TIMEOUT_MILLIS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                0, // Regular jobs should not have any privileged network capabilities
-                250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */);
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(0)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                        | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(250 /* ProcessList.PERCEPTIBLE_LOW_APP_ADJ */)
+                .build());
     }
 
     // --------------------------------------------------------------------------------------------
@@ -892,6 +943,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * even when Data Saver is on and the device is not connected to WiFi.
      */
     public void testBgUiJobBypassesDataSaver() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;
@@ -933,6 +991,13 @@ public class ConnectivityConstraintTest extends BaseJobSchedulerTest {
      * even if a user-initiated job is running at the same time.
      */
     public void testBgNonUiJobDoesNotBypassDataSaverWhenUiJobRunning() throws Exception {
+        // TODO(b/380297485): Remove this check once NotificationListeners support
+        // visible background users.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            Log.d(TAG, "Skipping test since "
+                    + "NotificationListeners do not support visible background users");
+            return;
+        }
         if (hasEthernetConnection()) {
             Log.d(TAG, "Skipping test since ethernet is connected.");
             return;

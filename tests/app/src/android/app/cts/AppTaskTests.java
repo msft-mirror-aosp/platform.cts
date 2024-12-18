@@ -23,6 +23,7 @@ import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -32,10 +33,12 @@ import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.stubs.MockActivity;
 import android.app.stubs.MockListActivity;
+import android.app.stubs.MockTopResumedReporterActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.SystemClock;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
@@ -46,6 +49,8 @@ import androidx.test.runner.lifecycle.ActivityLifecycleCallback;
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitor;
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry;
 import androidx.test.runner.lifecycle.Stage;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -64,8 +69,13 @@ import java.util.function.BooleanSupplier;
 @RunWith(AndroidJUnit4.class)
 public class AppTaskTests {
 
+    private static final String TAG = AppTaskTests.class.getSimpleName();
+
     private static final long TIME_SLICE_MS = 100;
     private static final long MAX_WAIT_MS = 1500;
+
+    private static final String EXTRA_KEY = "key";
+    private static final String EXTRA_VALUE = "some_value";
 
     private Instrumentation mInstrumentation;
     private ActivityLifecycleMonitor mLifecycleMonitor;
@@ -79,6 +89,7 @@ public class AppTaskTests {
             Intent intent = new Intent();
             intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
                     | FLAG_ACTIVITY_MULTIPLE_TASK);
+            intent.putExtra(EXTRA_KEY, EXTRA_VALUE);
             return intent;
         }
     };
@@ -135,29 +146,46 @@ public class AppTaskTests {
      */
     @Test
     public void testMoveToFront() throws Exception {
-        final Activity a1 = mActivityRule.launchActivity(null);
+        final Intent firstActivityIntent = new Intent();
+        firstActivityIntent.setComponent(
+                new ComponentName(mTargetContext, MockTopResumedReporterActivity.class));
+        firstActivityIntent.setFlags(FLAG_ACTIVITY_NEW_TASK);
+        MockTopResumedReporterActivity firstActivity =
+                (MockTopResumedReporterActivity) mInstrumentation.startActivitySync(
+                        firstActivityIntent);
 
         // Launch fullscreen activity as an another task to hide the first activity
-        final Intent intent = new Intent();
-        intent.setComponent(new ComponentName(mTargetContext, MockActivity.class));
-        intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
+        final Intent secondActivityIntent = new Intent();
+        secondActivityIntent.setComponent(new ComponentName(mTargetContext, MockActivity.class));
+        secondActivityIntent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_NEW_DOCUMENT
                     | FLAG_ACTIVITY_MULTIPLE_TASK);
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
-        mInstrumentation.startActivitySync(intent, options.toBundle());
-
+        mInstrumentation.startActivitySync(secondActivityIntent, options.toBundle());
+        waitAndAssertCondition(() -> !firstActivity.isTopResumed,
+                "First activity is not top resumed");
         final BooleanValue targetResumed = new BooleanValue();
         mLifecycleMonitor.addLifecycleCallback(new ActivityLifecycleCallback() {
             public void onActivityLifecycleChanged(Activity activity, Stage stage) {
-                if (activity == a1 && stage == Stage.RESUMED) {
+                if (activity == firstActivity && stage == Stage.RESUMED) {
                     targetResumed.value = true;
                 }
             }
         });
 
-        getAppTask(a1).moveToFront();
-        waitAndAssertCondition(() -> targetResumed.value,
-                "Expected activity brought to front and resumed");
+        final ActivityManager.AppTask appTask = getAppTask(firstActivity);
+        appTask.moveToFront();
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). a1 would still be resumed and visible without a lifecycle change even when
+        // another activity is launched in this case.
+        if (!firstActivity.isInMultiWindowMode()) {
+            waitAndAssertCondition(() -> targetResumed.value,
+                    "Expected activity brought to front and resumed");
+        }
+        assertTrue(appTask.getTaskInfo().isVisible());
+        assertEquals(appTask.getTaskInfo().topActivity, firstActivity.getComponentName());
+        waitAndAssertCondition(() -> firstActivity.isTopResumed,
+                "First activity is top resumed");
     }
 
     /**
@@ -215,6 +243,18 @@ public class AppTaskTests {
     }
 
     /**
+     * Ensure that the activity has the extras from the base intent.
+     */
+    @Test
+    @ApiTest(apis = {"android.app.ActivityManager.AppTask#getTaskInfo"})
+    public void testBaseIntentHasExtras() throws Exception {
+        final Activity a1 = mActivityRule.launchActivity(null);
+        final List<ActivityManager.AppTask> appTasks = getAppTasks();
+        final ActivityManager.AppTask t1 = appTasks.get(0);
+        assertTrue(t1.getTaskInfo().baseIntent.getStringExtra(EXTRA_KEY).equals(EXTRA_VALUE));
+    }
+
+    /**
      * @return all the {@param ActivityManager.AppTask}s for the current app.
      */
     private List<ActivityManager.AppTask> getAppTasks() {
@@ -247,7 +287,12 @@ public class AppTaskTests {
     private void removeAllAppTasks() {
         final List<ActivityManager.AppTask> appTasks = getAppTasks();
         for (ActivityManager.AppTask task : appTasks) {
-            task.finishAndRemoveTask();
+            try {
+                task.finishAndRemoveTask();
+            } catch (IllegalArgumentException e) {
+                // There may be a timing issue that the task is removing.
+                Log.w(TAG, "Task=" + task + " does not exist.");
+            }
         }
         waitAndAssertCondition(() -> getAppTasks().isEmpty(),
                 "Expected no app tasks after all removed");

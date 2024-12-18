@@ -68,6 +68,7 @@ import com.android.compatibility.common.util.RetryRule;
 import com.android.compatibility.common.util.SafeCleanerRule;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.TestNameUtils;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSessionRule;
 
@@ -388,6 +389,21 @@ public final class AutoFillServiceTestCase {
                             Integer.toString(3)))
 
                 //
+                // Fill fields from current session only should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "fill_fields_from_current_session_only", Boolean.toString(true)))
+
+                //
+                // Ignore view state reset to empty should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "ignore_view_state_reset_to_empty", Boolean.toString(true)))
+
+                //
+                // Include invisible view group in assist structure should be on by default
+                .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,
+                        "include_invisible_view_group_in_assist_structure", Boolean.toString(true)))
+
+                //
                 // Finally, let subclasses add their own rules (like ActivityTestRule)
                 .around(getMainTestRule());
 
@@ -401,14 +417,21 @@ public final class AutoFillServiceTestCase {
                 .around(new RequiredFeatureRule(PackageManager.FEATURE_INPUT_METHODS));
 
         public BaseTestCase() {
-            mPackageName = mContext.getPackageName();
-            mUiBot = sDefaultUiBot;
+            this(sDefaultUiBot);
         }
 
         private BaseTestCase(@NonNull UiBot uiBot) {
             mPackageName = mContext.getPackageName();
             mUiBot = uiBot;
             mUiBot.reset();
+            // Context#getDisplayId() always returns the default display ID, even if it is called
+            // from an app running as a visible background user (b/356478691).
+            // To work around it, let's set the correct display ID manually.
+            final UserHelper userHelper = new UserHelper(mContext);
+            final int myDisplayId = userHelper.getMainDisplayId();
+            if (mContext.getDisplayId() != myDisplayId) {
+                mContext.updateDisplay(myDisplayId);
+            }
         }
 
         protected int getSmartSuggestionMode() {

@@ -48,6 +48,9 @@ class DomainVerificationFilterGroupTests : DomainVerificationIntentTestBase(DOMA
     val queryStr = "query=str"
     val uri1 = "$DOMAIN_1$path?$queryStr"
     val uri7 = "$DOMAIN_7$path?$queryStr"
+    val wildcard = "*"
+    val wildcardDomain1 = wildcard + DOMAIN_1.substring(DOMAIN_1.indexOf("."))
+    val wildcardDomain7 = wildcard + DOMAIN_7.substring(DOMAIN_7.indexOf("."))
     val groupsMap: MutableMap<String, List<UriRelativeFilterGroup>> = mutableMapOf()
     val blockGroup = UriRelativeFilterGroup(UriRelativeFilterGroup.ACTION_BLOCK).apply {
         this.addUriRelativeFilter(
@@ -61,7 +64,9 @@ class DomainVerificationFilterGroupTests : DomainVerificationIntentTestBase(DOMA
     }
     val emptyGroupsMap: Map<String, List<UriRelativeFilterGroup>> = mapOf(
         DOMAIN_1 to emptyList(),
-        DOMAIN_7 to emptyList()
+        DOMAIN_7 to emptyList(),
+        wildcardDomain1 to emptyList(),
+        wildcardDomain7 to emptyList(),
     )
 
     @Before
@@ -75,8 +80,7 @@ class DomainVerificationFilterGroupTests : DomainVerificationIntentTestBase(DOMA
                 DECLARING_PKG_NAME_1,
                 listOf(DOMAIN_1, DOMAIN_7)
             )
-            assertThat(map.get(DOMAIN_1)).isEmpty()
-            assertThat(map.get(DOMAIN_7)).isEmpty()
+            assertThat(map).isEmpty()
         } finally {
             instrumentation.uiAutomation.dropShellPermissionIdentity()
         }
@@ -101,6 +105,110 @@ class DomainVerificationFilterGroupTests : DomainVerificationIntentTestBase(DOMA
             assertThat(map).containsExactlyEntriesIn(groupsMap).inOrder()
             assertResolvesTo(browsers, uri1)
             assertResolvesTo(browsers, uri7)
+        } finally {
+            instrumentation.uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
+    @Test
+    fun resolveWithUriRelativeFilterGroups_wildcardDomains() {
+        setAppLinks(DECLARING_PKG_NAME_1, true, DOMAIN_1, DOMAIN_7)
+        assertResolvesTo(DECLARING_PKG_1_COMPONENT, uri1)
+        assertResolvesTo(DECLARING_PKG_1_COMPONENT, uri7)
+
+        instrumentation.uiAutomation.adoptShellPermissionIdentity(DOMAIN_VERIFICATION_AGENT)
+        try {
+            groupsMap.put(wildcardDomain1, listOf(blockGroup, allowGroup))
+            manager.setUriRelativeFilterGroups(DECLARING_PKG_NAME_1, groupsMap)
+            assertThat(
+                manager.getUriRelativeFilterGroups(
+                    DECLARING_PKG_NAME_1,
+                    listOf(wildcardDomain1)
+                )
+            ).containsExactlyEntriesIn(groupsMap)
+            assertResolvesTo(browsers, uri1)
+            assertResolvesTo(DECLARING_PKG_1_COMPONENT, uri7)
+
+            groupsMap.put(wildcardDomain7, listOf(blockGroup, allowGroup))
+            manager.setUriRelativeFilterGroups(DECLARING_PKG_NAME_1, groupsMap)
+            assertThat(
+                manager.getUriRelativeFilterGroups(
+                    DECLARING_PKG_NAME_1,
+                    listOf(wildcardDomain1, wildcardDomain7)
+                )
+            ).containsExactlyEntriesIn(groupsMap)
+            assertResolvesTo(browsers, uri1)
+            assertResolvesTo(browsers, uri7)
+
+            groupsMap.put(DOMAIN_1, listOf(allowGroup, blockGroup))
+            manager.setUriRelativeFilterGroups(DECLARING_PKG_NAME_1, groupsMap)
+            assertThat(
+                manager.getUriRelativeFilterGroups(
+                    DECLARING_PKG_NAME_1,
+                    listOf(wildcardDomain1, wildcardDomain7, DOMAIN_1)
+                )
+            ).containsExactlyEntriesIn(groupsMap)
+            assertResolvesTo(DECLARING_PKG_1_COMPONENT, uri1)
+            assertResolvesTo(browsers, uri7)
+
+            groupsMap.put(DOMAIN_7, listOf(allowGroup, blockGroup))
+            manager.setUriRelativeFilterGroups(DECLARING_PKG_NAME_1, groupsMap)
+            assertThat(
+                manager.getUriRelativeFilterGroups(
+                    DECLARING_PKG_NAME_1,
+                    listOf(wildcardDomain1, wildcardDomain7, DOMAIN_1, DOMAIN_7)
+                )
+            ).containsExactlyEntriesIn(groupsMap)
+            assertResolvesTo(DECLARING_PKG_1_COMPONENT, uri1)
+            assertResolvesTo(DECLARING_PKG_1_COMPONENT, uri7)
+
+            assertThat(
+                manager.getUriRelativeFilterGroups(
+                    DECLARING_PKG_NAME_1,
+                    listOf(
+                        wildcardDomain1,
+                        wildcardDomain7,
+                        DOMAIN_1,
+                        DOMAIN_7,
+                        "non.existent.domain"
+                    )
+                )
+            ).containsExactlyEntriesIn(groupsMap)
+        } finally {
+            instrumentation.uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
+    @Test
+    fun setUriRelativeFilterGroup_rejectBadDomains() {
+        instrumentation.uiAutomation.adoptShellPermissionIdentity(DOMAIN_VERIFICATION_AGENT)
+        try {
+            val longLabel = "a".repeat(64)
+            val badDomains =
+                listOf(
+                    "",
+                    ".",
+                    "some..domain",
+                    "...",
+                    "*",
+                    "*.",
+                    "some.$longLabel.domain",
+                    "a".repeat(127) + "." + "b".repeat(127),
+                    "abcd",
+                    "a.b.*.d.e"
+                )
+            for (domain in badDomains) {
+                groupsMap.put(domain, listOf(allowGroup))
+                manager.setUriRelativeFilterGroups(DECLARING_PKG_NAME_1, groupsMap)
+                assertThat(
+                    manager.getUriRelativeFilterGroups(
+                        DECLARING_PKG_NAME_1,
+                        listOf(domain)
+                    )
+                ).isEmpty()
+            }
         } finally {
             instrumentation.uiAutomation.dropShellPermissionIdentity()
         }

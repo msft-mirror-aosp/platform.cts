@@ -115,18 +115,9 @@ public class StreamingVideoActivity extends PassFailButtons.TestListActivity {
             "&signature=%s";
 
     private static final Stream[] HTTP_STREAMS = {
-        // TODO(b/150835350): Re-enable H263 test once the clip is updated to profile 0
-        /*
-        new Stream("H263 Video, AMR Audio", "http_h263_amr",
-                "http://redirector.gvt1.com/"
-                + "videoplayback?id=271de9756065677e"
-                + "&itag=13&ip=0.0.0.0&ipbits=0&expire=19000000000"
-                + "&sparams=ip,ipbits,expire,id,itag"
-                + "&signature=073A731E2BDF1E05206AC7B9B895C922ABCBA01D"
-                + ".1DDA3F999541D2136E6755F16FC44CA972767169"
-                + "&source=youtube"
-                + "&key=ik0&user=android-device-test"),
-        */
+        new Stream("H263 Profile 0 Video, AMR Audio", "http_h263_amr",
+              "https://dl.google.com/android/xts/cts/apps/CtsVerifier/"
+              + "streaming_media_player_test_http_h263_amr_video1.mp4"),
         new Stream("MPEG4 SP Video, AAC Audio", "http_mpeg4_aac",
               "https://dl.google.com/"
               + "android/xts/cts/apps/CtsVerifier/streaming-video-activity-itag-17.mp4"),

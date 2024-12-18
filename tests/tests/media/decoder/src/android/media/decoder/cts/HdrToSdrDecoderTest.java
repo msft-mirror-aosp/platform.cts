@@ -120,6 +120,9 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
     @Parameterized.Parameter(5)
     public boolean mMetaDataInContainer;
 
+    @Parameterized.Parameter(6)
+    public int mProfile;
+
     private static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList) {
         final List<Object[]> argsList = new ArrayList<>();
         int argLength = exhaustiveArgsList.get(0).length;
@@ -151,17 +154,22 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> input() {
         final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_RES, AV1_HDR_STATIC_INFO, null, false},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_RES, AV1_HDR_STATIC_INFO, null, false,
+                        AV1ProfileMain10HDR10},
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, H265_HDR10_RES, H265_HDR10_STATIC_INFO, null,
-                        false},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_RES, VP9_HDR_STATIC_INFO, null, true},
+                        false, HEVCProfileMain10HDR10},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_RES, VP9_HDR_STATIC_INFO, null, true,
+                        VP9Profile2HDR},
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, H265_HDR10PLUS_RES, H265_HDR10PLUS_STATIC_INFO,
-                        H265_HDR10PLUS_DYNAMIC_INFO, false},
+                        H265_HDR10PLUS_DYNAMIC_INFO, false, HEVCProfileMain10HDR10},
                 {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10PLUS_RES, VP9_HDR10PLUS_STATIC_INFO,
-                        VP9_HDR10PLUS_DYNAMIC_INFO, true},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_RES, null, null, false},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, H265_HLG_RES, null, null, false},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_RES, null, null, false},
+                        VP9_HDR10PLUS_DYNAMIC_INFO, true, VP9Profile2HDR},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_RES, null, null, false,
+                        AV1ProfileMain10},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, H265_HLG_RES, null, null, false,
+                        HEVCProfileMain10},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_RES, null, null, false,
+                        VP9Profile2},
         });
 
         return prepareParamList(exhaustiveArgsList);
@@ -218,12 +226,18 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
         assumeTrue("Media format of input file is not supported.",
                 MediaUtils.supports(mCodecName, format));
 
-        long requiredHdrProfile =
-                PROFILE_HDR_MAP.get(mMediaType).get(format.getInteger(MediaFormat.KEY_PROFILE));
+        long requiredHdrProfile = PROFILE_HDR_MAP.get(mMediaType).get(mProfile);
         Set<Long> availableProfiles = getAvailableHDRCaptureProfiles();
         boolean isProfileSupported =
                 availableProfiles != null && availableProfiles.contains(requiredHdrProfile);
         assumeTrue("HDR capture is not supported for input file profile.", isProfileSupported);
+
+        // If extractor returns profile, ensure it is as expected.
+        int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
+        if (profile != -1) {
+            assertEquals("profile returned by the extractor is invalid.",
+                         mProfile, profile);
+        }
 
         mExtractor.selectTrack(trackIndex);
         Log.v(TAG, "format " + format);

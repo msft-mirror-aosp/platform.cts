@@ -30,7 +30,6 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.media.cts.TestArgs;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresDevice;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -59,7 +58,6 @@ import java.util.Map;
 import java.util.Random;
 
 @SmallTest
-@RequiresDevice
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(Parameterized.class)
 public class EncoderTest {
@@ -200,7 +198,7 @@ public class EncoderTest {
     // "5.1.3" is covered partially. For instance aac is not tested for 5.0 and 5.1, Opus is not
     // tested for different sample rates.
     // TODO (b/272014629): Update test accordingly
-    @CddTest(requirements = "5.1.3")
+    @CddTest(requirements = {"5.1.3"})
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testEncoders() throws FileNotFoundException {
         setUpFormat();

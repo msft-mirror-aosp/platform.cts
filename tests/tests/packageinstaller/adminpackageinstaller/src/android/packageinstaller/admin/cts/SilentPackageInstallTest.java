@@ -19,6 +19,7 @@ package android.packageinstaller.admin.cts;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.Test;
@@ -28,6 +29,7 @@ import org.junit.runner.RunWith;
  * This class tests silent package install and uninstall by a device owner.
  */
 @RunWith(BedsteadJUnit4.class)
+@RequireRunOnSystemUser
 public class SilentPackageInstallTest extends BasePackageInstallTest {
 
     @Test

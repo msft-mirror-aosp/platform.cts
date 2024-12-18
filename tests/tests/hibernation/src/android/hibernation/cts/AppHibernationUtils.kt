@@ -34,6 +34,8 @@ import android.util.Log
 import androidx.test.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.Condition
+import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiScrollable
@@ -47,10 +49,10 @@ import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionId
 import com.android.compatibility.common.util.ThrowingSupplier
 import com.android.compatibility.common.util.UiAutomatorUtils2
 import com.android.compatibility.common.util.UiDumpUtils
+import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.click
 import com.android.compatibility.common.util.depthFirstSearch
 import com.android.compatibility.common.util.textAsString
-import com.android.modules.utils.build.SdkLevel
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import org.hamcrest.Matcher
@@ -71,6 +73,7 @@ const val ACTION_SET_UP_HIBERNATION =
 const val SYSUI_PKG_NAME = "com.android.systemui"
 const val NOTIF_LIST_ID = "notification_stack_scroller"
 const val NOTIF_LIST_ID_AUTOMOTIVE = "notifications"
+const val BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE = "car_bottom_bar_window"
 const val CLEAR_ALL_BUTTON_ID = "dismiss_text"
 const val MANAGE_BUTTON_AUTOMOTIVE = "manage_button"
 // Time to find a notification. Unlikely, but in cases with a lot of notifications, it may take
@@ -125,24 +128,6 @@ fun runBootCompleteReceiver(context: Context, testTag: String) {
         /* initialExtras= */ null)
     assertTrue("Timed out while waiting for boot receiver broadcast to be received",
         countdownLatch.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS))
-}
-
-fun bypassBatterySavingRestrictions(context: Context) {
-    if (SdkLevel.isAtLeastU()) {
-        val userId = Process.myUserHandle().identifier
-        val permissionControllerPackageName =
-            context.packageManager.permissionControllerPackageName
-        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName true")
-    }
-}
-
-fun resetBatterySavingRestrictions(context: Context) {
-    if (SdkLevel.isAtLeastU()) {
-        val userId = Process.myUserHandle().identifier
-        val permissionControllerPackageName =
-            context.packageManager.permissionControllerPackageName
-        runShellCommandOrThrow("cmd tare set-vip $userId $permissionControllerPackageName default")
-    }
 }
 
 fun resetJob(context: Context) {
@@ -275,7 +260,10 @@ fun startApp(packageName: String) {
 }
 
 fun goHome() {
-    runShellCommandOrThrow("input keyevent KEYCODE_HOME")
+    val context = InstrumentationRegistry.getTargetContext()
+    val userHelper = UserHelper(context)
+    val displayId = userHelper.getMainDisplayId()
+    runShellCommandOrThrow("input keyevent KEYCODE_HOME -d $displayId")
     waitForIdle()
 }
 
@@ -295,21 +283,23 @@ fun openUnusedAppsNotification() {
     val notifSelector = By.textContains("unused app")
     if (hasFeatureWatch()) {
         val uiAutomation = InstrumentationRegistry.getInstrumentation().uiAutomation
-        val clickRunnable = object : Runnable {
-            override fun run () {
-                waitFindObject(uiAutomation, notifSelector).click()
-            }
-        }
-        expandAndClickNotificationWatch(UiAutomatorUtils2.getUiDevice(), clickRunnable)
+        expandNotificationsWatch(UiAutomatorUtils2.getUiDevice())
+        waitFindObject(uiAutomation, notifSelector).click()
         // In wear os, notification has one additional button to open it
         waitFindObject(uiAutomation, By.textContains("Open")).click()
     } else {
-        val permissionPkg: String = InstrumentationRegistry.getTargetContext()
-            .packageManager.permissionControllerPackageName
+        val context = InstrumentationRegistry.getTargetContext()
+        val userHelper = UserHelper(context)
+        val isVisibleBackgroundUser = userHelper.isVisibleBackgroundUser()
+        val permissionPkg: String = context.packageManager.permissionControllerPackageName
         eventually({
             // Eventually clause because clicking is sometimes inconsistent if the screen is
             // scrolling
-            runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
+            if (isVisibleBackgroundUser) {
+                expandNotificationsForVisibleBackgroundUser(context, userHelper.getMainDisplayId())
+            } else {
+                runShellCommandOrThrow(CMD_EXPAND_NOTIFICATIONS)
+            }
             val notification = waitFindNotification(notifSelector, NOTIF_FIND_TIMEOUT)
             if (hasFeatureAutomotive()) {
                 notification.click(Point(0, 0))
@@ -345,28 +335,30 @@ fun hasFeatureAutomotive(): Boolean {
         PackageManager.FEATURE_AUTOMOTIVE)
 }
 
-private fun expandAndClickNotificationWatch(uiDevice: UiDevice, clickRunnable: Runnable) {
+private fun expandNotificationsWatch(uiDevice: UiDevice) {
     with(uiDevice) {
         wakeUp()
-        val x = displayWidth / 2
         // Swipe up from bottom to reveal notifications
+        val x = displayWidth / 2
         swipe(x, displayHeight, x, 0, 1)
-        try {
-            clickRunnable.run()
-            return
-        } catch (e: Exception) {
-            // TODO(b/338772456) we catch the exception here since som watches have their
-            // notifications tray on the horizontal swipe. Find a way to find a solution that does
-            // not require vertical/horizontal swipe retries.
-        }
-        // Upwards swipe did not find notifications. Undo the upwards swipe, and try sideways.
-        swipe(x, 0, x, displayHeight, 5)
-        val y = displayHeight / 2
-        swipe(0, y, displayWidth, y, 5)
-
-        clickRunnable.run()
-
     }
+}
+
+private fun expandNotificationsForVisibleBackgroundUser(context: Context, displayId: Int) {
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
+    val searchCondition = object : Condition<UiDevice, Boolean> {
+        override fun apply(device: UiDevice): Boolean {
+            return device.findObjects(
+                By.res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE)
+            ).size > 0
+        }
+    }
+    uiDevice.wait(searchCondition, JOB_RUN_WAIT_TIME)
+    val navigationBarFrame = uiDevice.findObject(
+                By.pkg(SYSUI_PKG_NAME).res(SYSUI_PKG_NAME, BOTTOM_BAR_WINDOW_ID_AUTOMOTIVE)
+                    .displayId(displayId))
+    // swipe up the car bottom bar to expand the notification panel of visible background user
+    navigationBarFrame.swipe(Direction.UP, 1.0f)
 }
 
 /**
@@ -450,5 +442,14 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
         } else {
             throw e
         }
+    }
+}
+
+fun scrollToLabel(label: String) {
+    val uiDevice = UiAutomatorUtils2.getUiDevice()
+
+    if (!uiDevice.hasObject(By.text(label))) {
+        var scrollableObject = UiScrollable(UiSelector().scrollable(true))
+        scrollableObject.scrollTextIntoView(label)
     }
 }

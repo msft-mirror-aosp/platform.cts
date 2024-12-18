@@ -19,6 +19,7 @@ package {
 java_test_host {
     // Must match the package name in CtsTestCaseList.mk
     name: "CtsOsHostTestCases",
+    team: "trendy_team_powermanager_framework",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [
@@ -36,7 +37,7 @@ java_test_host {
         "general-tests",
     ],
     // All APKs required by the tests
-    data: [
+    device_common_data: [
         ":CtsDeviceOsTestApp",
         ":CtsHostEnvironmentTestApp",
         ":CtsHostPowerManagerTestApp",
@@ -60,4 +61,19 @@ java_test_host {
         ":CtsStaticSharedNativeLibProvider1",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config_host {
+    name: "CtsOsHostTestCases_cts_staticsharedlibshosttests",
+    base: "CtsOsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.StaticSharedLibsHostTests"],
+}
+
+test_module_config_host {
+    name: "CtsOsHostTestCases_cts_staticsharedlibshosttests_Presubmit",
+    base: "CtsOsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.StaticSharedLibsHostTests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
 }

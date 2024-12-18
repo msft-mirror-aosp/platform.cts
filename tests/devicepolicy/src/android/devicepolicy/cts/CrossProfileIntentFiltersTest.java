@@ -21,7 +21,7 @@ import static android.app.admin.DevicePolicyManager.FLAG_PARENT_CAN_ACCESS_MANAG
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -40,8 +40,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;

@@ -17,6 +17,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      package="android.quicksettings.cts">
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+
     <application>
         <uses-library android:name="android.test.runner"/>
         <service android:name=".TestTileService"
@@ -40,6 +42,20 @@
             <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                        android:value="true"/>
         </service>
+
+        <service android:name=".TestOnClickLaunchFgsTileService"
+            android:exported="true"
+            android:label="TestOnClickLaunchFgsTileService"
+            android:icon="@drawable/robot"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE"/>
+            </intent-filter>
+        </service>
+
+        <service android:name=".TestOnClickLaunchFgsTileService$TestForegroundService"
+            android:foregroundServiceType="shortService"
+            android:exported="false" />
     </application>
 
     <!--  self-instrumenting test package. -->

@@ -31,6 +31,7 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.cts.ActivityManagerFgsBgStartTest.toggleBgFgsTypeStartPermissionEnforcement;
 import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
 import static android.app.stubs.LocalForegroundServiceSticky.ACTION_RESTART_FGS_STICKY_RESULT;
+import static android.content.ContentResolver.SCHEME_CONTENT;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -51,10 +52,12 @@ import android.app.cts.android.app.cts.tools.SyncOrderedBroadcast;
 import android.app.cts.android.app.cts.tools.UidImportanceListener;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
+import android.app.cts.android.app.cts.tools.WatchUidRunner.WatchUidPredicate;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundServiceLocation;
 import android.app.stubs.LocalForegroundServiceSticky;
 import android.app.stubs.ScreenOnActivity;
+import android.app.stubs.TestProvider;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -62,6 +65,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -76,12 +80,13 @@ import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
-import androidx.test.uiautomator.UiSelector;
 
 import com.android.compatibility.common.util.AmMonitor;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -104,6 +109,7 @@ public class ActivityManagerProcessStateTest {
     private static final String PACKAGE_NAME_APP1 = "com.android.app1";
     private static final String PACKAGE_NAME_APP2 = "com.android.app2";
     private static final String PACKAGE_NAME_APP3 = "com.android.app3";
+    private static final String PACKAGE_NAME_PROVIDER_APP = "com.android.app.cts.provider";
 
     private static final String[] PACKAGE_NAMES = {
             PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, PACKAGE_NAME_APP3
@@ -142,6 +148,12 @@ public class ActivityManagerProcessStateTest {
 
     private static final int TEMP_WHITELIST_DURATION_MS = 2000;
 
+    private static final WatchUidPredicate CACHED_PREDICATE = new WatchUidPredicate.Builder(
+            WatchUidRunner.CMD_CACHED).build();
+    private static final WatchUidPredicate FGS_PREDICATE = new WatchUidPredicate.Builder(
+            WatchUidRunner.CMD_PROCSTATE).setExpectedProcState(
+            WatchUidRunner.STATE_FG_SERVICE).build();
+
     private Context mContext;
     private Context mTargetContext;
     private Instrumentation mInstrumentation;
@@ -154,6 +166,7 @@ public class ActivityManagerProcessStateTest {
     private Intent mMainProcess[];
     private Intent mAllProcesses[];
 
+    private int mTestRunningUserId;
     private int mAppCount;
     private ApplicationInfo[] mAppInfo;
     private WatchUidRunner[] mWatchers;
@@ -164,11 +177,14 @@ public class ActivityManagerProcessStateTest {
             | PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
             | PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 
+    private final UserHelper mUserHelper = new UserHelper();
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mTargetContext = mInstrumentation.getTargetContext();
+        mTestRunningUserId = mTargetContext.getUserId();
         mServiceIntent = new Intent();
         mServiceIntent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_SERVICE);
         mServiceStartForegroundIntent = new Intent(mServiceIntent);
@@ -272,7 +288,8 @@ public class ActivityManagerProcessStateTest {
         CtsAppTestUtils.executeShellCmd(mInstrumentation,
                 "cmd deviceidle whitelist -" + SIMPLE_PACKAGE_NAME);
         CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                "cmd deviceidle tempwhitelist -r " + SIMPLE_PACKAGE_NAME);
+                "cmd deviceidle tempwhitelist -u " + mTestRunningUserId
+                        + " -r " + SIMPLE_PACKAGE_NAME);
     }
 
     private void waitForAppFocus(String waitForApp, long waitTime) {
@@ -314,16 +331,10 @@ public class ActivityManagerProcessStateTest {
         mInstrumentation.getUiAutomation().syncInputTransactions();
     }
 
-    private void maybeClick(UiDevice device, UiSelector sel) {
-        try {
-            device.findObject(sel).click();
-        } catch (Throwable ignored) {
-        }
-    }
-
     private void maybeClick(UiDevice device, BySelector sel) {
         try {
-            device.findObject(sel).click();
+            BySelector selByDisplay = sel.displayId(mUserHelper.getMainDisplayId());
+            device.findObject(selByDisplay).click();
         } catch (Throwable ignored) {
         }
     }
@@ -621,7 +632,7 @@ public class ActivityManagerProcessStateTest {
             cmd = "am make-uid-idle --user " + userId + " " + SIMPLE_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
-            uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // Now that we should be off the temp whitelist, make sure we again can't start.
@@ -650,7 +661,7 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(serviceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
         } finally {
@@ -736,7 +747,8 @@ public class ActivityManagerProcessStateTest {
         // And wait for the uid report to be gone.
         uidWatcher.waitFor(WatchUidRunner.CMD_GONE, null, WAIT_TIME);
 
-        String cmd = "appops set " + SIMPLE_PACKAGE_NAME + " RUN_IN_BACKGROUND deny";
+        String cmd = "appops set --user " + mTestRunningUserId + " "
+                + SIMPLE_PACKAGE_NAME + " RUN_IN_BACKGROUND deny";
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
         // This is a side-effect of the app op command.
@@ -744,7 +756,7 @@ public class ActivityManagerProcessStateTest {
         uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_NONEXISTENT);
 
         // We don't want to wait for the uid to actually go idle, we can force it now.
-        cmd = "am make-uid-idle " + SIMPLE_PACKAGE_NAME;
+        cmd = "am make-uid-idle --user " + mTestRunningUserId + " " + SIMPLE_PACKAGE_NAME;
         result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
         // Make sure app is not yet on whitelist
@@ -806,7 +818,7 @@ public class ActivityManagerProcessStateTest {
             conn2.waitForConnect();
 
             // Force app to go idle now
-            cmd = "am make-uid-idle " + SIMPLE_PACKAGE_NAME;
+            cmd = "am make-uid-idle --user " + mTestRunningUserId + " " + SIMPLE_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
             // Wait for services to be stopped by system.
@@ -819,7 +831,7 @@ public class ActivityManagerProcessStateTest {
             conn.waitForDisconnect();
             conn2.waitForDisconnect();
 
-            uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
             // There may be a transient 'SVC' proc state here.
             uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
@@ -832,7 +844,8 @@ public class ActivityManagerProcessStateTest {
 
             uidWatcher.finish();
 
-            cmd = "appops set " + SIMPLE_PACKAGE_NAME + " RUN_IN_BACKGROUND allow";
+            cmd = "appops set --user " + mTestRunningUserId + " "
+                    + SIMPLE_PACKAGE_NAME + " RUN_IN_BACKGROUND allow";
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
             cmd = "cmd deviceidle whitelist -" + SIMPLE_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
@@ -931,7 +944,7 @@ public class ActivityManagerProcessStateTest {
             // We don't want to wait for the uid to actually go idle, we can force it now.
             controller.makeUidIdle();
 
-            uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
 
             // Make sure the process is gone so we start over fresh.
             controller.ensureProcessGone();
@@ -971,7 +984,7 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
         } finally {
@@ -1036,7 +1049,7 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceIntent);
             conn.waitForDisconnect();
 
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
+            uidWatcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // App isn't yet idle, so we should be able to start the service again.
@@ -1149,8 +1162,8 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceStartForegroundIntent);
             conn.waitForDisconnect();
 
-            // THIS MUST BE AN EXPECT: we want to make sure we don't get in to STATE_FG_SERVICE.
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
+            // This should reach the cached state without moving to STATE_FG_SERVICE along the way.
+            uidWatcher.waitFor(CACHED_PREDICATE, FGS_PREDICATE);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // Make sure the uid is idle (it should be anyway, it never went active here).
@@ -1175,7 +1188,8 @@ public class ActivityManagerProcessStateTest {
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             // Remove tempwhitelist avoid temp white list block idle command and app crash occur.
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "cmd deviceidle tempwhitelist -r " + SIMPLE_PACKAGE_NAME);
+                    "cmd deviceidle tempwhitelist -u " + mTestRunningUserId
+                            + " -r " + SIMPLE_PACKAGE_NAME);
             // Good, now stop the service and wait for it to go away.
             mContext.stopService(mServiceStartForegroundIntent);
             conn.waitForDisconnect();
@@ -1210,8 +1224,8 @@ public class ActivityManagerProcessStateTest {
             mContext.stopService(mServiceStartForegroundIntent);
             conn.waitForDisconnect();
 
-            // THIS MUST BE AN EXPECT: we want to make sure we don't get in to STATE_FG_SERVICE.
-            uidWatcher.expect(WatchUidRunner.CMD_CACHED, null);
+            // This should reach the cached state without moving to STATE_FG_SERVICE along the way.
+            uidWatcher.waitFor(CACHED_PREDICATE, FGS_PREDICATE);
             uidWatcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
 
             // Make sure the uid is idle (it should be anyway, it never went active here).
@@ -1341,7 +1355,8 @@ public class ActivityManagerProcessStateTest {
                 STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
 
         // We don't want to wait for the uid to actually go idle, we can force it now.
-        String cmd = "am make-uid-idle " + CANT_SAVE_STATE_1_PACKAGE_NAME;
+        String cmd = "am make-uid-idle --user " + mTestRunningUserId + " "
+                + CANT_SAVE_STATE_1_PACKAGE_NAME;
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
         ApplicationInfo appInfo = mContext.getPackageManager().getApplicationInfo(
@@ -1404,7 +1419,8 @@ public class ActivityManagerProcessStateTest {
 
             // While in background, should go in to normal idle state.
             // Force app to go idle now
-            cmd = "am make-uid-idle " + CANT_SAVE_STATE_1_PACKAGE_NAME;
+            cmd = "am make-uid-idle --user " + mTestRunningUserId + " "
+                    + CANT_SAVE_STATE_1_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
             uidWatcher.waitFor(WatchUidRunner.CMD_IDLE, null);
 
@@ -1446,7 +1462,8 @@ public class ActivityManagerProcessStateTest {
 
             // While in background, should go in to normal idle state.
             // Force app to go idle now
-            cmd = "am make-uid-idle " + CANT_SAVE_STATE_1_PACKAGE_NAME;
+            cmd = "am make-uid-idle --user " + mTestRunningUserId
+                    + " " + CANT_SAVE_STATE_1_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
             uidWatcher.expect(WatchUidRunner.CMD_IDLE, null);
 
@@ -1490,9 +1507,11 @@ public class ActivityManagerProcessStateTest {
                 STUB_PACKAGE_NAME, android.Manifest.permission.PACKAGE_USAGE_STATS);
 
         // We don't want to wait for the uid to actually go idle, we can force it now.
-        String cmd = "am make-uid-idle " + CANT_SAVE_STATE_1_PACKAGE_NAME;
+        String cmd = "am make-uid-idle --user " + mTestRunningUserId
+                + " " + CANT_SAVE_STATE_1_PACKAGE_NAME;
         String result = SystemUtil.runShellCommand(mInstrumentation, cmd);
-        cmd = "am make-uid-idle " + CANT_SAVE_STATE_2_PACKAGE_NAME;
+        cmd = "am make-uid-idle --user " + mTestRunningUserId
+                + " " + CANT_SAVE_STATE_2_PACKAGE_NAME;
         result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
@@ -1529,7 +1548,7 @@ public class ActivityManagerProcessStateTest {
             startAndWaitForHeavyWeightSwitcherActivity(activity2Intent);
 
             // First, let's try returning to the original app.
-            maybeClick(device, new UiSelector().resourceId("android:id/switch_old"));
+            maybeClick(device, By.res("android:id/switch_old"));
             waitForAppFocus(CANT_SAVE_STATE_1_PACKAGE_NAME, WAIT_TIME);
             device.waitForIdle();
 
@@ -1546,7 +1565,7 @@ public class ActivityManagerProcessStateTest {
             startAndWaitForHeavyWeightSwitcherActivity(activity2Intent);
 
             // Now we'll switch to the new app.
-            maybeClick(device, new UiSelector().resourceId("android:id/switch_new"));
+            maybeClick(device, By.res("android:id/switch_new"));
             waitForAppFocus(CANT_SAVE_STATE_2_PACKAGE_NAME, WAIT_TIME);
             device.waitForIdle();
 
@@ -1559,7 +1578,8 @@ public class ActivityManagerProcessStateTest {
             uid2Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
 
             // Make sure the original app is idle for cleanliness
-            cmd = "am make-uid-idle " + CANT_SAVE_STATE_1_PACKAGE_NAME;
+            cmd = "am make-uid-idle --user " + mTestRunningUserId
+                    + " " + CANT_SAVE_STATE_1_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
             uid1Watcher.expect(WatchUidRunner.CMD_IDLE, null);
 
@@ -1574,7 +1594,7 @@ public class ActivityManagerProcessStateTest {
 
             // Try starting the first heavy weight app, but return to the existing second.
             startAndWaitForHeavyWeightSwitcherActivity(activity1Intent);
-            maybeClick(device, new UiSelector().resourceId("android:id/switch_old"));
+            maybeClick(device, By.res("android:id/switch_old"));
             waitForAppFocus(CANT_SAVE_STATE_2_PACKAGE_NAME, WAIT_TIME);
             device.waitForIdle();
             uid2Watcher.waitFor(WatchUidRunner.CMD_UNCACHED, null);
@@ -1587,7 +1607,7 @@ public class ActivityManagerProcessStateTest {
 
             // Again start the first heavy weight app, this time actually switching to it
             startAndWaitForHeavyWeightSwitcherActivity(activity1Intent);
-            maybeClick(device, new UiSelector().resourceId("android:id/switch_new"));
+            maybeClick(device, By.res("android:id/switch_new"));
             waitForAppFocus(CANT_SAVE_STATE_1_PACKAGE_NAME, WAIT_TIME);
             device.waitForIdle();
 
@@ -1614,9 +1634,11 @@ public class ActivityManagerProcessStateTest {
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_RECENT);
 
             // Make both apps idle for cleanliness.
-            cmd = "am make-uid-idle " + CANT_SAVE_STATE_1_PACKAGE_NAME;
+            cmd = "am make-uid-idle --user " + mTestRunningUserId
+                    + " " + CANT_SAVE_STATE_1_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
-            cmd = "am make-uid-idle " + CANT_SAVE_STATE_2_PACKAGE_NAME;
+            cmd = "am make-uid-idle --user " + mTestRunningUserId
+                    + " " + CANT_SAVE_STATE_2_PACKAGE_NAME;
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
 
         } finally {
@@ -1644,6 +1666,8 @@ public class ActivityManagerProcessStateTest {
                 WAITFOR_MSEC);
 
         try {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -1681,6 +1705,8 @@ public class ActivityManagerProcessStateTest {
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP3, 0, null);
 
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
             uid1Watcher.finish();
             uid3Watcher.finish();
         }
@@ -1709,6 +1735,8 @@ public class ActivityManagerProcessStateTest {
                 WAITFOR_MSEC);
 
         try {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -1766,6 +1794,8 @@ public class ActivityManagerProcessStateTest {
             // Stop the foreground service
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             uid1Watcher.finish();
             uid2Watcher.finish();
@@ -1796,6 +1826,8 @@ public class ActivityManagerProcessStateTest {
                 WAITFOR_MSEC);
 
         try {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -1847,6 +1879,9 @@ public class ActivityManagerProcessStateTest {
                     PACKAGE_NAME_APP3, PACKAGE_NAME_APP2, 0, null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     PACKAGE_NAME_APP3, PACKAGE_NAME_APP1, 0, null);
+
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             uid1Watcher.finish();
             uid2Watcher.finish();
@@ -2070,6 +2105,9 @@ public class ActivityManagerProcessStateTest {
             // Start an activity
             activity = startSubActivity(ScreenOnActivity.class);
 
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP2);
+
             // Start a FGS in app2
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE, PACKAGE_NAME_APP2,
@@ -2143,6 +2181,8 @@ public class ActivityManagerProcessStateTest {
                     PACKAGE_NAME_APP2, PACKAGE_NAME_APP3, 0, null);
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     PACKAGE_NAME_APP3, PACKAGE_NAME_APP1, 0, null);
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP2);
 
             uid1Listener.unregister();
             uid1ServiceListener.unregister();
@@ -2213,6 +2253,9 @@ public class ActivityManagerProcessStateTest {
                     CommandReceiver.COMMAND_START_ALERT_SERVICE, STUB_PACKAGE_NAME,
                     STUB_PACKAGE_NAME, 0, null);
 
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP2);
+
             // Start a FGS in app2
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_START_FOREGROUND_SERVICE, PACKAGE_NAME_APP2,
@@ -2268,6 +2311,8 @@ public class ActivityManagerProcessStateTest {
             uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
             uid3Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
+            SystemUtil.runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP2);
             stubListener.unregister();
             uid1Listener.unregister();
             uid2Listener.unregister();
@@ -2448,7 +2493,7 @@ public class ActivityManagerProcessStateTest {
             waiter = new WaitForBroadcast(mInstrumentation.getTargetContext());
             waiter.prepare(waitForBroadcastAction);
             CtsAppTestUtils.executeShellCmd(mInstrumentation,
-                    "am crash " + PACKAGE_NAME_APP1);
+                    "am crash --user " + mTestRunningUserId + " " + PACKAGE_NAME_APP1);
             monitor.waitFor(AmMonitor.WAIT_FOR_CRASHED, WAITFOR_MSEC);
             monitor.sendCommand(AmMonitor.CMD_KILL);
             checkKillResult.accept(uid1Watcher, waiter);
@@ -2530,6 +2575,145 @@ public class ActivityManagerProcessStateTest {
             CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
                     mAppInfo[0].packageName, mAppInfo[1].packageName, 0, null);
             shutdownWatchers();
+        }
+    }
+
+    @Test
+    public void testProcessDeathBindings() throws Exception {
+        ApplicationInfo clientAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP1, 0);
+        WatchUidRunner clientWatcher = new WatchUidRunner(mInstrumentation, clientAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo serviceAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP2, 0);
+        WatchUidRunner serviceWatcher = new WatchUidRunner(mInstrumentation, serviceAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo providerAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_PROVIDER_APP, 0);
+        WatchUidRunner providerWatcher = new WatchUidRunner(mInstrumentation, providerAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+        final Uri testProviderUri = new Uri.Builder()
+                .scheme(SCHEME_CONTENT)
+                .authority(TestProvider.AUTHORITY)
+                .build();
+        final Bundle providerUriBundle = new Bundle();
+        providerUriBundle.putParcelable(CommandReceiver.EXTRA_URI, testProviderUri);
+
+        try {
+            // Bring client app to TOP by starting an activity.
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            clientWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+
+            // Bind client to service
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Bind client to provider
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_ACQUIRE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Crash client
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "am crash --user " + mTestRunningUserId + " " + clientAppInfo.packageName);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_CACHED_EMPTY);
+
+        } finally {
+            // Clean up: unbind services to avoid from interferences with other tests
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+
+            clientWatcher.finish();
+            serviceWatcher.finish();
+            providerWatcher.finish();
+        }
+    }
+
+    @Test
+    public void testProcessDeathBindings_anotherClient() throws Exception {
+        ApplicationInfo clientAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP1, 0);
+        WatchUidRunner clientWatcher = new WatchUidRunner(mInstrumentation, clientAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo serviceAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_APP2, 0);
+        WatchUidRunner serviceWatcher = new WatchUidRunner(mInstrumentation, serviceAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+
+        ApplicationInfo providerAppInfo = mContext.getPackageManager().getApplicationInfo(
+                PACKAGE_NAME_PROVIDER_APP, 0);
+        WatchUidRunner providerWatcher = new WatchUidRunner(mInstrumentation, providerAppInfo.uid,
+                WAITFOR_MSEC, PROCESS_CAPABILITY_ALL);
+        final Uri testProviderUri = new Uri.Builder()
+                .scheme(SCHEME_CONTENT)
+                .authority(TestProvider.AUTHORITY)
+                .build();
+        final Bundle providerUriBundle = new Bundle();
+        providerUriBundle.putParcelable(CommandReceiver.EXTRA_URI, testProviderUri);
+
+        try {
+            // Start a FGS and bind to service and provider.
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
+                    STUB_PACKAGE_NAME, serviceAppInfo.packageName, 0, null);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_ACQUIRE_CONTENT_PROVIDER,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, providerUriBundle);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_BOUND_FG_SERVICE);
+
+            // Bring client app to TOP by starting an activity.
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_START_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            clientWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+
+            // Bind client to service
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_BIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Bind client to provider
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_ACQUIRE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_BOUND_TOP);
+
+            // Crash client
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "am crash --user " + mTestRunningUserId + " " + clientAppInfo.packageName);
+            serviceWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+            providerWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE,
+                    WatchUidRunner.STATE_BOUND_FG_SERVICE);
+
+        } finally {
+            // Clean up: unbind services to avoid from interferences with other tests
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
+                    STUB_PACKAGE_NAME, serviceAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,
+                    STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, 0, providerUriBundle);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_ACTIVITY,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_UNBIND_SERVICE,
+                    clientAppInfo.packageName, serviceAppInfo.packageName, 0, null);
+            CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_RELEASE_CONTENT_PROVIDER,
+                    clientAppInfo.packageName, clientAppInfo.packageName, 0, providerUriBundle);
+
+            clientWatcher.finish();
+            serviceWatcher.finish();
+            providerWatcher.finish();
         }
     }
 

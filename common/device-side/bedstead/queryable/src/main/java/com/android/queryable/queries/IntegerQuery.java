@@ -18,7 +18,9 @@ package com.android.queryable.queries;
 
 import com.android.queryable.Queryable;
 
+
 /** Query for a {@link Integer}. */
+@SuppressWarnings("CheckReturnValue")
 public interface IntegerQuery<E extends Queryable> extends Query<Integer> {
 
     /** Queries a {@link Integer}. */

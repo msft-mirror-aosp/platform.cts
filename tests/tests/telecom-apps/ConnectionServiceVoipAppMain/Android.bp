@@ -42,8 +42,8 @@ android_test_helper_app {
         "androidx.test.uiautomator_uiautomator",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     test_suites: [
         "general-tests",

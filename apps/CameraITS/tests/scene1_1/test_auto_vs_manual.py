@@ -87,7 +87,8 @@ class AutoVsManualTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Converge 3A and get the estimates
-      largest_yuv = capture_request_utils.get_largest_yuv_format(props)
+      camera_properties_utils.log_minimum_focus_distance(props)
+      largest_yuv = capture_request_utils.get_largest_format('yuv', props)
       match_ar = (largest_yuv['width'], largest_yuv['height'])
       fmt = capture_request_utils.get_near_vga_yuv_format(
           props, match_ar=match_ar)
@@ -136,11 +137,11 @@ class AutoVsManualTest(its_base_test.ItsBaseTest):
       # Check AWB gains & transform in auto results match values from do_3a
       if not np.allclose(awb_xform_a, awb_xform, atol=_AWB_AUTO_ATOL,
                          rtol=_AWB_AUTO_RTOL):
-        raise AssertionError(f'awb_xform 3A: {awb_xform}, auto: {awb_xform_a},'
+        raise AssertionError(f'awb_xform 3A: {awb_xform}, auto: {awb_xform_a}, '
                              f'RTOL={_AWB_AUTO_RTOL}, ATOL={_AWB_AUTO_ATOL}')
       if not np.allclose(awb_gains_a, awb_gains, atol=_AWB_AUTO_ATOL,
                          rtol=_AWB_AUTO_RTOL):
-        raise AssertionError(f'awb_gains 3A: {awb_gains}, auto: {awb_gains_a},'
+        raise AssertionError(f'awb_gains 3A: {awb_gains}, auto: {awb_gains_a}, '
                              f'RTOL={_AWB_AUTO_RTOL}, ATOL={_AWB_AUTO_ATOL}')
 
 if __name__ == '__main__':

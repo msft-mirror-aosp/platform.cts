@@ -227,6 +227,7 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
             float lastFocalLength = Float.NaN;
             Rect lastActiveCropRegion = new Rect();
             String lastActivePhysicalId = new String();
+            float[] lastIntrinsicCalibration = null;
             while (listener.hasMoreResults() && mStaticInfo.isActivePhysicalCameraIdSupported()) {
                 // Validate capture result.
                 TotalCaptureResult result = listener.getTotalCaptureResult(
@@ -245,6 +246,19 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
                             physicalCameraIds.toString(),
                             physicalCameraIds.contains(activePhysicalId));
 
+                    float[] lensIntrinsicCalibration = result.get(CaptureResult.LENS_INTRINSIC_CALIBRATION);
+                    if (lensIntrinsicCalibration != null) {
+                        if (!activePhysicalIdsSeen.contains(activePhysicalId) &&
+                                (lastIntrinsicCalibration != null)) {
+                            mCollector.expectTrue("The lens intrinsic calibration between " +
+                                            "two different physical devices is not expected to " +
+                                            " match",
+                                    !Arrays.equals(lensIntrinsicCalibration,
+                                            lastIntrinsicCalibration));
+                        }
+                        lastIntrinsicCalibration = lensIntrinsicCalibration;
+                    }
+
                     activePhysicalIdsSeen.add(activePhysicalId);
 
                     // Ensure that the active physical crop region is updated correctly
@@ -254,11 +268,9 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
                     if (activeCropRegion != null) {
                         Float zoomRatio = CameraTestUtils.getValueNotNull(result,
                                 CaptureResult.CONTROL_ZOOM_RATIO);
-                        float [] lensIntrinsics = result.get(
-                                CaptureResult.LENS_INTRINSIC_CALIBRATION);
                         float focalLength = Float.NaN;
-                        if (lensIntrinsics != null) {
-                            focalLength = lensIntrinsics[0];
+                        if (lensIntrinsicCalibration != null) {
+                            focalLength = lensIntrinsicCalibration[0];
                         }
                         if ((!Float.isNaN(lastZoomRatio)) && (zoomRatio > lastZoomRatio)) {
                             if (lastActivePhysicalId.equals(activePhysicalId)) {

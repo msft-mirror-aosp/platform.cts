@@ -20,6 +20,7 @@ import static android.telecom.cts.TestUtils.*;
 
 import static com.android.compatibility.common.util.BlockedNumberUtil.deleteBlockedNumber;
 import static com.android.compatibility.common.util.BlockedNumberUtil.insertBlockedNumber;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import android.app.UiModeManager;
 import android.content.Context;
@@ -29,6 +30,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
 import android.os.ParcelUuid;
+import android.os.UserManager;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
@@ -40,8 +42,11 @@ import android.telecom.InCallService;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import androidx.test.filters.FlakyTest;
+
+import com.android.server.telecom.flags.Flags;
 
 import java.util.List;
 import java.util.UUID;
@@ -111,6 +116,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         assertMuteEndpoint(inCallService, false);
     }
 
+    @FlakyTest(bugId = 344112674)
     public void testSwitchAudioRoutes() {
         if (!mShouldTestTelecom) {
             return;
@@ -125,7 +131,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         assertCallState(call, Call.STATE_DIALING);
 
         final int currentInvokeCount = mOnCallAudioStateChangedCounter.getInvokeCount();
-        mOnCallAudioStateChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnCallAudioStateChangedCounter.waitForCount(1);
         CallAudioState callAudioState =
                 (CallAudioState) mOnCallAudioStateChangedCounter.getArgs(0)[0];
 
@@ -395,17 +401,33 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
             cleanupCalls();
             // Set device back to normal
             manager.disableCarMode(0);
-            if (!TestUtils.hasAutomotiveFeature()) {
-                // Make sure the UI mode has been set back
-                assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
+
+            final int expectedUiMode;
+            // Make sure the UI mode has been set back
+            if (TestUtils.hasAutomotiveFeature()) {
+                expectedUiMode = Configuration.UI_MODE_TYPE_CAR;
+            } else if (TestUtils.hasWatchFeature()) {
+                expectedUiMode = Configuration.UI_MODE_TYPE_WATCH;
             } else {
-                assertUiMode(Configuration.UI_MODE_TYPE_CAR);
+                expectedUiMode = Configuration.UI_MODE_TYPE_NORMAL;
             }
+            assertUiMode(expectedUiMode);
         }
     }
 
     public void testIncomingCallFromBlockedNumber_IsRejected() throws Exception {
         if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+            return;
+        }
+
+        // Only the main user is able to perform actions on the BlockedNumberProvider:
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        final boolean[] isMainUser = {false};
+        assertNotNull(userManager);
+        runWithShellPermissionIdentity(() -> isMainUser[0] = userManager.isMainUser());
+        if (!isMainUser[0]) {
+            Log.i(TAG, "testIncomingCallFromBlockedNumber_IsRejected: skipping test since "
+                    + "the current user is not the main user");
             return;
         }
 
@@ -483,26 +505,26 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         }
     }
 
-    @FlakyTest
     public void testSwitchCallEndpoint() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !Flags.earlyUpdateInternalCallAudioState()) {
             return;
         }
 
         placeAndVerifyCall();
         final MockConnection connection = verifyConnectionForOutgoingCall();
+        TestUtils.InvokeCounter connectionOnCallEndpointChangedCounter =
+                connection.getConnectionOnCallEndpointChangedCounter();
 
         final MockInCallService inCallService = mInCallCallbacks.getService();
 
         final Call call = inCallService.getLastCall();
         assertCallState(call, Call.STATE_DIALING);
 
-        final int currentInvokeCount = mOnCallEndpointChangedCounter.getInvokeCount();
-        mOnCallEndpointChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnCallEndpointChangedCounter.waitForCount(1);
         CallEndpoint currentEndpoint = (CallEndpoint) mOnCallEndpointChangedCounter.getArgs(0)[0];
         int currentEndpointType = currentEndpoint.getEndpointType();
 
-        mOnAvailableEndpointsChangedCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mOnAvailableEndpointsChangedCounter.waitForCount(1);
         List<CallEndpoint> availableEndpoints =
                 (List<CallEndpoint>) mOnAvailableEndpointsChangedCounter.getArgs(0)[0];
         CallEndpoint anotherEndpoint = null;
@@ -516,6 +538,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         Executor executor = mContext.getMainExecutor();
         if (anotherEndpoint != null) {
             final int anotherEndpointType = anotherEndpoint.getEndpointType();
+            final int currentInvokeCount = mOnCallEndpointChangedCounter.getInvokeCount();
             ((InCallService) inCallService).requestCallEndpointChange(anotherEndpoint, executor,
                     new OutcomeReceiver<>() {
                         @Override
@@ -523,6 +546,10 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
                         @Override
                         public void onError(CallEndpointException exception) {}
                     });
+            // Wait for connection onCallEndpointChanged.
+            connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            // Wait for ICS connection onCallEndpointChanged.
             mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
                     WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
             assertEndpointType(connection, anotherEndpointType);
@@ -535,7 +562,11 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
                         @Override
                         public void onError(CallEndpointException exception) {}
                     });
-            mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 1,
+            // Wait for connection onCallEndpointChanged.
+            connectionOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
+                    WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+            // Wait for ICS connection onCallEndpointChanged.
+            mOnCallEndpointChangedCounter.waitForCount(currentInvokeCount + 2,
                     WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
             assertEndpointType(connection, currentEndpointType);
             assertEndpointType(inCallService, currentEndpointType);

@@ -36,7 +36,9 @@ public class AmUtils {
     }
 
     public static void runKill(String packageName, boolean wait) throws Exception {
-        SystemUtil.runShellCommandForNoOutput("am kill --user cur " + packageName);
+        SystemUtil.runShellCommandForNoOutput(
+                "am kill --user " + android.os.Process.myUserHandle().getIdentifier() + " "
+                        + packageName);
 
         if (!wait) {
             return;
@@ -63,12 +65,32 @@ public class AmUtils {
                 + " " + value);
     }
 
+    /** Run "adb shell am set-standby-bucket --user" */
+    public static void setStandbyBucketAsUser(String packageName, int value, int userId) {
+        SystemUtil.runShellCommandForNoOutput(
+                "am set-standby-bucket --user " + userId + " " + packageName + " " + value);
+    }
+
     /**
      * Run "adb shell am get-standby-bucket",
      * return #STANDBY_BUCKET_DOES_NOT_EXIST for invalid packages
      * */
     public static int getStandbyBucket(String packageName) {
         final String value = SystemUtil.runShellCommand("am get-standby-bucket " + packageName);
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException nfe) {
+            return STANDBY_BUCKET_DOES_NOT_EXIST;
+        }
+    }
+
+    /**
+     * Run "adb shell am get-standby-bucket --user",
+     * return #STANDBY_BUCKET_DOES_NOT_EXIST for invalid packages
+     */
+    public static int getStandbyBucketAsUser(String packageName, int userId) {
+        final String value = SystemUtil.runShellCommand(
+                "am get-standby-bucket --user " + userId + " " + packageName);
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException nfe) {

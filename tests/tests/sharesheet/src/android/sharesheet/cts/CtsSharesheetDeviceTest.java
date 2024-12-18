@@ -43,12 +43,10 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.chooser.ChooserAction;
 import android.service.chooser.ChooserTarget;
-import android.service.chooser.Flags;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -62,6 +60,8 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -137,6 +137,8 @@ public class CtsSharesheetDeviceTest {
             mExtraInitialIntentsLabelBase, mPreviewTitle, mPreviewText;
     private Set<ComponentName> mTargetsToExclude;
 
+    private int mMyDisplayId;
+
     /**
      * To validate Sharesheet API and API behavior works as intended, UI tests are required. It is
      * impossible to know how the Sharesheet UI will be modified by end partners, so these tests
@@ -162,8 +164,6 @@ public class CtsSharesheetDeviceTest {
         assumeTrue(
                 "Skip test: Device doesn't meet minimum resolution",
                 meetsResolutionRequirements(mDevice));
-        assumeFalse("Skip test: does not apply to automotive",
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
 
         mPkg = mContext.getPackageName();
         mActivityLabelTesterPkg = mPkg + ".packages.activitylabeltester";
@@ -222,6 +222,9 @@ public class CtsSharesheetDeviceTest {
 
         mSharesheetPkg = shareRi.activityInfo.packageName;
         assertThat(mSharesheetPkg).isNotNull();
+
+        UserHelper userHelper = new UserHelper(mContext);
+        mMyDisplayId = userHelper.getMainDisplayId();
 
         // Finally ensure the device is awake
         mDevice.wakeUp();
@@ -696,7 +699,7 @@ public class CtsSharesheetDeviceTest {
             launchSharesheet(shareIntent);
 
             UiObject2 chooserTargetButton = mSharesheet.wait(
-                    Until.findObject(By.textContains("ChooserTarget")),
+                    Until.findObject(By.textContains("ChooserTarget").displayId(mMyDisplayId)),
                     WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
             assertWithMessage("Couldn't find app-provided ChooserTarget").that(
                     chooserTargetButton).isNotNull();
@@ -778,7 +781,7 @@ public class CtsSharesheetDeviceTest {
             launchSharesheet(shareIntent);
 
             UiObject2 chooserTargetButton = mSharesheet.wait(
-                    Until.findObject(By.textContains("ChooserTarget")),
+                    Until.findObject(By.textContains("ChooserTarget").displayId(mMyDisplayId)),
                     WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
             assertThat(chooserTargetButton).isNotNull();
             Log.d(TAG, "clicking on the chooser target");
@@ -904,7 +907,6 @@ public class CtsSharesheetDeviceTest {
 
     @Test
     @ApiTest(apis = "android.content.Intent#EXTRA_METADATA_TEXT")
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SHARESHEET_METADATA_EXTRA)
     public void textSharesheetMetadata() {
         CharSequence testMetadataText = "Metadata test text";
         Intent shareIntent = createShareIntent(
@@ -1042,7 +1044,8 @@ public class CtsSharesheetDeviceTest {
 
     private void clickText(String label, boolean caseSensitive) {
         UiObject2 customAction = mSharesheet.wait(
-                Until.findObject(By.text(textContainsPattern(label, caseSensitive))),
+                Until.findObject(
+                    By.text(textContainsPattern(label, caseSensitive)).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
         assertWithMessage("Couldn't find text '" + label + "'").that(customAction).isNotNull();
         Log.d(TAG, "clicking on the custom action");
@@ -1150,7 +1153,7 @@ public class CtsSharesheetDeviceTest {
     private void launchSharesheet(Intent shareIntent) {
         mContext.startActivity(shareIntent);
         waitAndAssertPkgVisible(mSharesheetPkg, "Failed to find sharesheet on screen");
-        mSharesheet = mDevice.findObject(By.pkg(mSharesheetPkg).depth(0));
+        mSharesheet = mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
         waitForIdle();
     }
 
@@ -1159,7 +1162,7 @@ public class CtsSharesheetDeviceTest {
     }
 
     private void closeSharesheet() {
-        mDevice.pressBack();
+        mDevice.pressHome();
         waitAndAssertPkgNotVisible(mSharesheetPkg);
         waitForIdle();
     }
@@ -1167,7 +1170,8 @@ public class CtsSharesheetDeviceTest {
     private boolean isSharesheetVisible() {
         // This method intentionally does not wait, looks to see if visible on method call
         try {
-            return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0)) != null;
+            return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId))
+                != null;
         } catch (StaleObjectException e) {
             // If we get a StaleObjectException, it means that the underlying View has
             // already been destroyed, meaning the sharesheet is no longer visible.
@@ -1271,15 +1275,17 @@ public class CtsSharesheetDeviceTest {
     }
 
     private void waitAndAssertPkgVisible(String pkg, String failureMessage) {
-        waitAndAssertFoundOnDevice(By.pkg(pkg).depth(0), failureMessage);
+        waitAndAssertFoundOnDevice(
+            By.pkg(pkg).depth(0).displayId(mMyDisplayId), failureMessage);
     }
 
     private void waitAndAssertPkgNotVisible(String pkg) {
-        waitAndAssertNotFoundOnDevice(By.pkg(pkg));
+        waitAndAssertNotFoundOnDevice(By.pkg(pkg).displayId(mMyDisplayId));
     }
 
     private void waitAndAssertTextContains(String containsText) {
-        BySelector selector = By.text(textContainsPattern(containsText, false));
+        BySelector selector =
+            By.text(textContainsPattern(containsText, false)).displayId(mMyDisplayId);
         String failureMessage = "Failed to find " + containsText + " on screen";
         assertWithMessage(failureMessage).that(
                         mSharesheet.wait(Until.findObject(selector),
@@ -1302,7 +1308,7 @@ public class CtsSharesheetDeviceTest {
      * this method only once there's reason to think the UI is in the right state for testing.
      */
     private void waitAndAssertNoTextContains(String containsText) {
-        BySelector selector = By.textContains(containsText);
+        BySelector selector = By.textContains(containsText).displayId(mMyDisplayId);
         String failureMessage = "Found text '" + containsText + "' but did not expect to";
         mSharesheet.wait(Until.gone(selector), WAIT_AND_ASSERT_NOT_FOUND_TIMEOUT_MS);
         assertWithMessage(failureMessage).that(mSharesheet.findObject(selector)).isNull();
@@ -1332,7 +1338,8 @@ public class CtsSharesheetDeviceTest {
      * @return UiObject2 that can be used, for example, to execute a click
      */
     private UiObject2 findTextContains(String containsText) {
-        return mSharesheet.wait(Until.findObject(By.textContains(containsText)),
+        return mSharesheet.wait(
+            Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
     }
 

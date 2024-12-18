@@ -16,7 +16,9 @@ package android.accessibilityservice.cts.utils;
 
 import static android.accessibility.cts.common.ShellCommandBuilder.execShellCommand;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
+import static android.os.UserHandle.USER_ALL;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -25,6 +27,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.KeyguardManager;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
@@ -62,10 +65,13 @@ public class ActivityLaunchUtils {
     private static final String LOG_TAG = "ActivityLaunchUtils";
     private static final String AM_START_HOME_ACTIVITY_COMMAND =
             "am start -a android.intent.action.MAIN -c android.intent.category.HOME";
+    // Close the system dialogs for all users
     public static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOG_COMMAND =
-            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
+            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
     public static final String INPUT_KEYEVENT_KEYCODE_BACK =
             "input keyevent KEYCODE_BACK";
+    public static final String INPUT_KEYEVENT_KEYCODE_MENU =
+            "input keyevent KEYCODE_MENU";
 
     // Precision when asserting the launched activity bounds equals the reported a11y window bounds.
     private static final int BOUNDS_PRECISION_PX = 1;
@@ -145,6 +151,18 @@ public class ActivityLaunchUtils {
         serviceInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         uiAutomation.setServiceInfo(serviceInfo);
         try {
+            KeyguardManager keyguardManager = context.getSystemService(KeyguardManager.class);
+            if (keyguardManager != null) {
+                TestUtils.waitUntil("Screen is unlocked",
+                        (int) DEFAULT_TIMEOUT_MS / 1000,
+                        () -> {
+                            if (!keyguardManager.isKeyguardLocked()) {
+                                return true;
+                            }
+                            execShellCommand(uiAutomation, INPUT_KEYEVENT_KEYCODE_MENU);
+                            return false;
+                        });
+            }
             execShellCommand(uiAutomation, AM_START_HOME_ACTIVITY_COMMAND);
             execShellCommand(uiAutomation, AM_BROADCAST_CLOSE_SYSTEM_DIALOG_COMMAND);
             execShellCommand(uiAutomation, INPUT_KEYEVENT_KEYCODE_BACK);
@@ -157,6 +175,8 @@ public class ActivityLaunchUtils {
                         // Attempt to close any newly-appeared system dialogs which can prevent the
                         // home screen activity from becoming visible, active, and focused.
                         execShellCommand(uiAutomation, AM_BROADCAST_CLOSE_SYSTEM_DIALOG_COMMAND);
+                        execShellCommand(uiAutomation, INPUT_KEYEVENT_KEYCODE_BACK);
+                        execShellCommand(uiAutomation, AM_START_HOME_ACTIVITY_COMMAND);
                         return false;
                     });
         } catch (Exception error) {
@@ -190,7 +210,7 @@ public class ActivityLaunchUtils {
         final List<ResolveInfo> resolveInfos = packageManager.queryIntentActivities(
                 new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
                 PackageManager.MATCH_DEFAULT_ONLY);
-        final boolean isAuto = packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        final boolean isAuto = isAutomotive(context);
 
         // Look for an active focused window with a package name that matches
         // the default home screen.

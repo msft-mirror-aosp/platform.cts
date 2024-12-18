@@ -27,18 +27,18 @@ import org.junit.Test;
 public class DocumentChangeInfoCtsTest {
     @Test
     public void testConstructor() {
-        DocumentChangeInfo DocumentChangeInfo =
+        DocumentChangeInfo documentChangeInfo =
                 new DocumentChangeInfo(
                         "packageName",
                         "databaseName",
                         "namespace",
                         "SchemaName",
                         ImmutableSet.of("documentId1", "documentId2"));
-        assertThat(DocumentChangeInfo.getPackageName()).isEqualTo("packageName");
-        assertThat(DocumentChangeInfo.getDatabaseName()).isEqualTo("databaseName");
-        assertThat(DocumentChangeInfo.getNamespace()).isEqualTo("namespace");
-        assertThat(DocumentChangeInfo.getSchemaName()).isEqualTo("SchemaName");
-        assertThat(DocumentChangeInfo.getChangedDocumentIds())
+        assertThat(documentChangeInfo.getPackageName()).isEqualTo("packageName");
+        assertThat(documentChangeInfo.getDatabaseName()).isEqualTo("databaseName");
+        assertThat(documentChangeInfo.getNamespace()).isEqualTo("namespace");
+        assertThat(documentChangeInfo.getSchemaName()).isEqualTo("SchemaName");
+        assertThat(documentChangeInfo.getChangedDocumentIds())
                 .containsExactly("documentId1", "documentId2");
     }
 

@@ -20,13 +20,24 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.app.dream.cts.app">
     <application android:label="CtsDreamTestApp" android:debuggable="true">
-        <activity android:name=".TestDreamSettingsActivity" />
         <service
             android:name=".DreamOverlayService"
             android:exported="true">
         </service>
         <service
             android:name=".TestDreamService"
+            android:exported="true"
+            android:permission="android.permission.BIND_DREAM_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/test_dream_metadata" />
+        </service>
+        <service
+            android:name=".ControlledTestDreamService"
             android:exported="true"
             android:permission="android.permission.BIND_DREAM_SERVICE">
             <intent-filter>
@@ -50,6 +61,30 @@
                 android:resource="@xml/test_dream_metadata_invalid" />
         </service>
         <service
+            android:name=".TestDreamServiceWithNonexistentSettings"
+            android:exported="false"
+            android:label="Test Dream" >
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/test_dream_metadata_nonexistent_settings" />
+        </service>
+        <service
+            android:name=".TestDreamServiceNoPackageNonexistentSettings"
+            android:exported="false"
+            android:label="Test Dream" >
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/test_dream_metadata_nopackage_nonexistent_settings" />
+        </service>
+        <service
             android:name=".SeparateProcessDreamService"
             android:exported="true"
             android:process=":separate"
@@ -68,5 +103,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </service>
+        <service
+            android:name=".DreamProxyService"
+            android:exported="true">
+        </service>
+        <activity android:name=".TestDreamSettingsActivity" />
     </application>
 </manifest>

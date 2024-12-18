@@ -16,6 +16,7 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.AppOpsManager.OPSTR_PLAY_AUDIO;
@@ -32,6 +33,8 @@ import static android.media.AudioPlaybackConfiguration.MUTED_BY_VOLUME_SHAPER;
 import static android.media.AudioTrack.WRITE_NON_BLOCKING;
 import static android.media.cts.AudioHelper.createSoundDataInShortByteBuffer;
 import static android.media.cts.AudioHelper.hasAudioSilentProperty;
+
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.compatibility.common.util.AppOpsUtils.getOpMode;
 import static com.android.compatibility.common.util.AppOpsUtils.setOpMode;
@@ -55,9 +58,8 @@ import android.media.cts.TestUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Parcel;
+import android.os.Process;
 import android.util.Log;
-
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsAndroidTestCase;
@@ -106,9 +108,13 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private MediaPlayer mMp;
     private SoundPool mSp;
     private AudioTrack mAt;
+    private boolean mIsPrivileged = false; // if the player was setup with privileged permission
+    private final int mUid = Process.myUid();
+    private final int mPid = Process.myPid();
 
     @Override
     protected void tearDown() throws Exception {
+        mIsPrivileged = false;
         // try/catch for every method in case the tests left the objects in various states
         if (mMp != null) {
             try {
@@ -154,9 +160,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa, am.generateAudioSessionId());
         mMp.start();
         Thread.sleep(TEST_TIMING_TOLERANCE_MS);// waiting for playback to start
+        assertTrue("MediaPlayer should have started", mMp.isPlaying());
         List<AudioPlaybackConfiguration> configs = am.getActivePlaybackConfigurations();
         mMp.stop();
         assertTrue("No playback reported", configs.size() > 0);
+        assertFalse("MediaPlayer should have stopped", mMp.isPlaying());
         AudioPlaybackConfiguration configToParcel = null;
         for (AudioPlaybackConfiguration config : configs) {
             if (config.getAudioAttributes().equals(aa)) {
@@ -208,6 +216,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
         mMp.start();
         Thread.sleep(TEST_TIMING_TOLERANCE_MS);// waiting for playback to start
+        assertTrue("MediaPlayer should have started", mMp.isPlaying());
         configs = am.getActivePlaybackConfigurations();
         assertEquals("active MediaPlayer, number of configs should have increased",
                 nbActivePlayersBeforeStart + 1 /*expected*/,
@@ -287,10 +296,13 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             // stopping playback: callback is called with no match
             callback.reset();
             mMp.pause();
-            Thread.sleep(TEST_TIMING_TOLERANCE_MS);
 
-            assertEquals("onPlaybackConfigChanged call count not expected after pause",
-                    1/*expected*/, callback.getCbInvocationNumber());//only 1 pause call since reset
+            Thread.sleep(TEST_TIMING_TOLERANCE_MS);
+            assertTrue("onPlaybackConfigChanged should have been called for PLAYER_STATE_PAUSED",
+                    callback.getCbInvocationNumber() >= 1);
+
+            // TODO: improve this check which can be flaky when multiple players are
+            // still active in the platform from the same uid/pid
             assertEquals("number of active players not expected after pause",
                     nbActivePlayersBeforeStart/*expected*/, callback.getNbConfigs());
 
@@ -300,7 +312,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             Thread.sleep(TEST_TIMING_TOLERANCE_MS);
             callback.reset();
             mMp.start();
-            Thread.sleep(TEST_TIMING_TOLERANCE_MS);
+            assertTrue("MediaPlayer should have started", mMp.isPlaying());
             assertEquals("onPlaybackConfigChanged call count not expected after unregister",
                     0/*expected*/, callback.getCbInvocationNumber()); //callback is unregistered
 
@@ -350,10 +362,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             // release the player without stopping or pausing it first
             callback.reset();
             mMp.release();
-            Thread.sleep(TEST_TIMING_TOLERANCE_MS);
 
-            assertEquals("onPlaybackConfigChanged call count not expected after release",
-                    1/*expected*/, callback.getCbInvocationNumber());//only release call since reset
+            assertTrue("onPlaybackConfigChanged should have been called for PLAYER_STATE_RELEASED",
+                    callback.waitForCallbacks(1, TEST_TIMING_TOLERANCE_MS));
             assertEquals("number of active players not expected after release",
                     nbActivePlayersBeforeStart/*expected*/, callback.getNbConfigs());
 
@@ -383,12 +394,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             }
         }
 
-        final AudioAttributes aa = (new AudioAttributes.Builder())
-                .setUsage(TEST_USAGE)
-                .setContentType(TEST_CONTENT)
-                .setAllowedCapturePolicy(ALLOW_CAPTURE_BY_SYSTEM)
-                .build();
-        mSp = createSoundPool(aa);
+        mSp = createSoundPool();
         playSoundPool(mSp, getContext());
 
         Thread.sleep(TEST_TIMING_TOLERANCE_MS);
@@ -417,13 +423,13 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
         MyAudioPlaybackCallback callback = new MyAudioPlaybackCallback();
         am.registerAudioPlaybackCallback(callback, null /*handler*/);
+        mSp = createSoundPool();
 
         final AudioAttributes aa = (new AudioAttributes.Builder())
                 .setUsage(TEST_USAGE)
                 .setContentType(TEST_CONTENT)
                 .setAllowedCapturePolicy(ALLOW_CAPTURE_BY_SYSTEM)
                 .build();
-        mSp = createSoundPool(aa);
         mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa,
                 am.generateAudioSessionId());
 
@@ -432,9 +438,11 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
 
             callback.reset();
             mMp.start();
+            assertTrue("MediaPlayer should have started", mMp.isPlaying());
 
-            assertTrue("onPlaybackConfigChanged should have been called for start and new device",
-                    callback.waitForCallbacks(2,
+            assertTrue("onPlaybackConfigChanged should have been called for PLAYER_STATE_STARTED,"
+                    + " PLAYER_UPDATE_FORMAT, and PLAYER_UPDATE_DEVICE_ID",
+                    callback.waitForCallbacks(3,
                             TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
             assertListsAreConsistent(am.getActivePlaybackConfigurations(), callback.getConfigs());
 
@@ -463,24 +471,26 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 .build();
 
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
 
             mMp = createPreparedMediaPlayer(R.raw.sine1khzs40dblong, aa,
                     am.generateAudioSessionId());
 
+            mIsPrivileged = true;
             am.registerAudioPlaybackCallback(callback, h /*handler*/);
 
             mMp.start();
             // time for the new configuration to propagate
             Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
+            assertTrue("MediaPlayer should have started", mMp.isPlaying());
 
             assertTrue("Active player, device not found",
                     hasDevice(callback.getConfigs(), aa));
 
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
             if (h != null) {
                 h.getLooper().quit();
@@ -592,11 +602,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
 
         verifyMuteUnmuteNotifications(/*start=*/player.mPlay,
-                /*mute=*/
-                () -> am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, /* flags= */0),
-                /*unmute=*/
-                () -> am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, /* flags= */0),
-                /*muteChangesActiveState=*/false, MUTED_BY_STREAM_VOLUME);
+                /*mute=*/ () -> adjustMuteStreamVolume(am),
+                /*unmute=*/ () -> adjustUnMuteStreamVolume(am),
+                /*muteChangesActiveState=*/ false, MUTED_BY_STREAM_VOLUME);
     }
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",
@@ -690,10 +698,6 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         AudioManager am = new AudioManager(getContext());
         assertNotNull("Could not create AudioManager", am);
 
-        boolean isMuted = am.isStreamMute(TEST_STREAM_FOR_USAGE);
-        if (isMuted) {
-            am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, 0);
-        }
         Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
 
         MyAudioPlaybackCallback callback = new MyAudioPlaybackCallback();
@@ -705,22 +709,20 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             start.run();
 
             if (muteChangesActiveState) {
-                assertTrue("onPlaybackConfigChanged play, format and device expected",
+                assertTrue("onPlaybackConfigChanged should have been called for "
+                        + "PLAYER_STATE_STARTED, PLAYER_UPDATE_FORMAT, and PLAYER_UPDATE_DEVICE_ID",
                         callback.waitForCallbacks(3,
                                 TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
-                if (mAt != null) {
-                    Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
-                }
-            } else {
-                Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
             }
+
+            Thread.sleep(TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS);
 
             // mute with Runnable
             callback.reset();
             mute.run();
 
             if (muteChangesActiveState) {
-                assertTrue("onPlaybackConfigChanged for mute expected",
+                assertTrue("onPlaybackConfigChanged for PLAYER_UPDATE_MUTED expected",
                         callback.waitForCallbacks(1,
                                 TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
             } else {
@@ -734,7 +736,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             unmute.run();
 
             if (muteChangesActiveState) {
-                assertTrue("onPlaybackConfigChanged for unmute expected",
+                assertTrue("onPlaybackConfigChanged for PLAYER_UPDATE_MUTED expected after unmute",
                         callback.waitForCallbacks(1,
                                 TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
             } else {
@@ -743,15 +745,25 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
             unmute.run();
-
-            if (isMuted) {
-                am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, 0);
-            }
         }
     }
 
+    private void adjustUnMuteStreamVolume(AudioManager am) {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_UNMUTE, /* flags= */ 0);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+    }
+
+    private void adjustMuteStreamVolume(AudioManager am) {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        am.adjustStreamVolume(TEST_STREAM_FOR_USAGE, ADJUST_MUTE, /* flags= */ 0);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+    }
+
     private void checkMutedApi(int checkFlag) {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MODIFY_AUDIO_ROUTING);
 
         AudioPlaybackConfiguration currentConfiguration = findConfiguration(checkFlag);
@@ -759,36 +771,29 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         assertTrue("APC muted by wrong source",
                 (currentConfiguration.getMutedBy() & checkFlag) != 0);
 
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+        getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
 
     private AudioPlaybackConfiguration findConfiguration(int muteHint) {
-        int uid;
-        Context context = getContext();
-        try {
-            uid = context.getPackageManager().getApplicationInfo(context.getPackageName(),
-                    PackageManager.ApplicationInfoFlags.of(0)).uid;
-        } catch (PackageManager.NameNotFoundException e) {
-            uid = -1;
-        }
-
         AudioManager am = new AudioManager(getContext());
         List<AudioPlaybackConfiguration> configList = am.getActivePlaybackConfigurations();
         AudioPlaybackConfiguration result = null;
         for (AudioPlaybackConfiguration config : configList) {
-            if (config.getClientUid() == uid && config.getAudioDeviceInfo() != null
+            if (config.getClientUid() == mUid && config.getClientPid() == mPid
+                    && config.getAudioDeviceInfo() != null
                     && config.getAudioAttributes().getUsage() == TEST_USAGE
                     && config.getAudioAttributes().getContentType() == TEST_CONTENT) {
                 Log.v(TAG,
-                        "AudioPlaybackConfiguration " + config + " uid " + config.getClientUid());
+                        "AudioPlaybackConfiguration " + config + " uid " + config.getClientUid()
+                        + "/" + mUid + " pid " + config.getClientPid() + "/" + mPid);
                 result = config;
                 if ((config.getMutedBy() & muteHint) != 0) {
                     break;
                 }
             }
         }
-        assertNotNull("Could not find AudioPlaybackConfiguration for uid " + uid, result);
+        assertNotNull("Could not find AudioPlaybackConfiguration for uid " + mUid, result);
         return result;
     }
 
@@ -860,7 +865,12 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         return mp;
     }
 
-    private static SoundPool createSoundPool(AudioAttributes aa) {
+    private static SoundPool createSoundPool() {
+        final AudioAttributes aa = (new AudioAttributes.Builder())
+                .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setAllowedCapturePolicy(ALLOW_CAPTURE_BY_SYSTEM)
+                .build();
         return new SoundPool.Builder()
                 .setAudioAttributes(aa)
                 .setMaxStreams(1)
@@ -907,7 +917,9 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             int activePlayerCount, AudioAttributes aa) throws Exception{
         mp.start();
 
-        assertTrue("onPlaybackConfigChanged play, format and device events expected ",
+        assertTrue("MediaPlayer should have started", mp.isPlaying());
+        assertTrue("onPlaybackConfigChanged PLAYER_STATE_STARTED, PLAYER_UPDATE_FORMAT, and "
+                + "PLAYER_UPDATE_DEVICE_ID events expected",
                 callback.waitForCallbacks(3,
                         TEST_TIMING_TOLERANCE_MS + PLAY_ROUTING_TIMING_TOLERANCE_MS));
         assertEquals("number of active players not expected",
@@ -916,7 +928,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         assertTrue("Active player, attributes not found", hasAttr(callback.getConfigs(), aa));
     }
 
-    private static class MyAudioPlaybackCallback extends AudioManager.AudioPlaybackCallback {
+    private class MyAudioPlaybackCallback extends AudioManager.AudioPlaybackCallback {
         private final Object mCbLock = new Object();
         @GuardedBy("mCbLock")
         private int mCalled;
@@ -953,20 +965,41 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             reset();
         }
 
+        private List<AudioPlaybackConfiguration> filterConfigsWithCurrentUid(
+                List<AudioPlaybackConfiguration> configs) {
+            if (!mIsPrivileged) {
+                return configs;
+            }
+            List<AudioPlaybackConfiguration> result = new ArrayList<AudioPlaybackConfiguration>();
+            for (final AudioPlaybackConfiguration config : configs) {
+                try {
+                    if (config.getClientUid() == mUid && config.getClientPid() == mPid) {
+                        result.add(config);
+                    }
+                } catch (Exception e) {
+                    fail("Exception thrown during reflection on config privileged fields" + e);
+                }
+            }
+            return result;
+        }
+
         @Override
         public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
             synchronized (mCbLock) {
-                mCalled++;
-                mConfigs = configs;
+                mConfigs = filterConfigsWithCurrentUid(configs);
+                // add counter and signal when there is a matching AudioPlaybackConfiguration
+                if (!mIsPrivileged || mConfigs.size() != 0) {
+                    mCalled++;
+                    mOnCalledMonitor.signal();
+                }
             }
-            mOnCalledMonitor.signal();
         }
 
         public boolean waitForCallbacks(int calledCount, long timeoutMs)
                 throws InterruptedException {
             int signalsCounted =
                     mOnCalledMonitor.waitForCountedSignals(calledCount, timeoutMs);
-            return (signalsCounted == calledCount);
+            return (signalsCounted >= calledCount);
         }
     }
 

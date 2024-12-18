@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_onboarding",
 }
 
 android_test {
@@ -25,9 +26,9 @@ android_test {
     min_sdk_version: "30",
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -44,7 +45,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-permission",
-        "mcts-permission",
     ],
     sdk_version: "test_current",
     data: [
@@ -57,4 +57,18 @@ android_test {
         ":CtsKeyValueBackupApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsBackupTestCases_cts_permissiontest",
+    base: "CtsBackupTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.backup.cts.PermissionTest"],
+}
+
+test_module_config {
+    name: "CtsBackupTestCases-NoBackupRestoreEventLoggerTest",
+    base: "CtsBackupTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.backup.cts.BackupRestoreEventLoggerTest"],
 }

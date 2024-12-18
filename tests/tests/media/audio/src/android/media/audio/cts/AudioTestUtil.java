@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import java.util.function.IntSupplier;
 
 class AudioTestUtil {
@@ -192,6 +191,7 @@ class AudioTestUtil {
             return false;
         }
     }
+
 
     private static final List<Integer> MEDIA_DEVICE_TYPES = List.of(
             AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,

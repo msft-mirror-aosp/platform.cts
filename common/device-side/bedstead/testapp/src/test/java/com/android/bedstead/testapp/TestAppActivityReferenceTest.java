@@ -21,7 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.activities.Activity;

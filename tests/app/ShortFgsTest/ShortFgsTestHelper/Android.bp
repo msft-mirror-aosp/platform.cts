@@ -20,8 +20,8 @@ android_test_helper_app {
     name: "ShortFgsTestHelper",
     defaults: ["cts_support_defaults"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -44,8 +44,8 @@ android_test_helper_app {
 
     defaults: ["cts_support_defaults"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.rules",

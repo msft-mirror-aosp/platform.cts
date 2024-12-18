@@ -35,6 +35,7 @@ import static org.junit.Assume.assumeFalse;
 
 import static java.util.stream.Collectors.toList;
 
+import android.Manifest;
 import android.app.ActivityOptions;
 import android.app.NotificationManager;
 import android.app.UiAutomation;
@@ -67,6 +68,8 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.preconditions.SystemUiHelper;
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
@@ -123,7 +126,13 @@ public class ToastTest {
     private NotificationManager mNotificationManager;
     private UserHelper mUserHelper;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<CtsActivity> mActivityRule =
             new ActivityTestRule<>(CtsActivity.class);
     private UiAutomation mUiAutomation;
@@ -632,8 +641,13 @@ public class ToastTest {
          * Change I8180e5080e0a6860b40dbb2faa791f0ede926ca7 updated how toast are displayed on the
          * watch. Unlike the phone, which displays toast centered horizontally at the bottom of the
          * screen, the watch now displays toast in the center of the screen.
+         *
+         * This also extends to implementations of SysUI where the default toast gravity is
+         * Gravity.NO_GRAVITY, such as multi-window fullscreen UI.
          */
-        if (Gravity.CENTER == mToast.getGravity()) {
+        if (Gravity.CENTER == mToast.getGravity() || (
+                SystemUiHelper.isNonOverlappingMultiWindowMode(mActivityRule.getActivity())
+                        && Gravity.NO_GRAVITY == mToast.getGravity())) {
             assertTrue(xy1[0] > xy2[0]);
             assertTrue(xy1[1] > xy2[1]);
         } else {

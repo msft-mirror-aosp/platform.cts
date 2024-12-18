@@ -18,6 +18,7 @@ package android.videoqualityfloor.cts;
 
 import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
+import android.cts.statsdatom.lib.DeviceUtils;
 import android.platform.test.annotations.AppModeFull;
 
 import com.android.ddmlib.IDevice;
@@ -92,6 +93,12 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
     private static final long DEFAULT_SHELL_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
     private static final String TEST_TIMEOUT_INST_ARGS_KEY = "timeout_msec";
     private static final long DEFAULT_TEST_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(3);
+
+    // Constants from `android.content.pm.PackageManager`.
+    private static final String FEATURE_TOUCHSCREEN = "android.hardware.touchscreen";
+    private static final String FEATURE_WATCH = "android.hardware.type.watch";
+    private static final String FEATURE_LEANBACK = "android.software.leanback";
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
 
     // local variables related to host-side of the test
     private final String mJsonName;
@@ -201,6 +208,7 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
     public void testEncoding() throws Exception {
         // set up test environment
         sLock.lock();
+        Assume.assumeTrue("Test is only valid for handheld devices", isDeviceHandheld());
         try {
             if (!sIsTestSetUpDone) setupTestEnv();
             sCondition.signalAll();
@@ -330,6 +338,14 @@ public class CtsVideoQualityFloorHostTest implements IDeviceTest {
         CollectingTestListener listener = new CollectingTestListener();
         Assert.assertTrue(getDevice().runInstrumentationTests(testRunner, listener));
         assertTestsPassed(listener.getCurrentRunResults());
+    }
+
+    /** Checks if a device is handheld based on the description in CDD 2.2. */
+    private boolean isDeviceHandheld() throws Exception {
+        return DeviceUtils.hasFeature(getDevice(), FEATURE_TOUCHSCREEN)
+                && !DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)
+                && !DeviceUtils.hasFeature(getDevice(), FEATURE_LEANBACK)
+                && !DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE);
     }
 
     private RemoteAndroidTestRunner getTestRunner(String pkgName, String testClassName,

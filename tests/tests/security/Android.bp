@@ -42,9 +42,9 @@ android_test {
         "NeneInternal",
     ],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     java_resources: [
         ":PackageInstallerTestApp",
@@ -71,6 +71,7 @@ android_test {
         "aidl/android/security/cts/IIsolatedService.aidl",
         "aidl/android/security/cts/ICertCheckService.aidl",
         "aidl/android/security/cts/CVE_2021_0327/IBadProvider.aidl",
+        "testdata/dynamicpermissiontestattackerapp/src/**/*.aidl",
     ],
     //sdk_version: "current",
     platform_apis: true,
@@ -84,8 +85,6 @@ android_test {
     per_testcase_directory: true,
     data: [
         ":CtsDeviceInfo",
-        ":RolePermissionOverrideTestApp",
-        ":SplitBluetoothPermissionTestApp",
         ":CtsPermissionBackupAppCert1",
         ":CtsPermissionBackupAppCert1Dup",
         ":CtsPermissionBackupAppCert2",
@@ -96,7 +95,11 @@ android_test {
         ":CtsPermissionBackupAppCert34",
         ":CtsPermissionBackupAppCert123",
         ":CtsPermissionBackupAppCert4History124",
+        ":DynamicPermissionTestAttackerApp",
+        ":RolePermissionOverrideTestApp",
+        ":SplitBluetoothPermissionTestApp",
         ":CertBlocklistTestApp",
+        ":UpdatedDynamicPermissionTestAttackerApp",
     ],
 }
 
@@ -261,4 +264,28 @@ filegroup {
     srcs: [
         "test-cert-with-1-2-4-in-rotation-history",
     ],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_CertBlockist",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.security.cts.CertBlocklistTest",
+        "android.security.cts.CertBlocklistFileTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_cts_fileintegritymanagertest",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.security.cts.FileIntegrityManagerTest"],
+}
+
+test_module_config {
+    name: "CtsSecurityTestCases_cts_motioneventtest",
+    base: "CtsSecurityTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.security.cts.MotionEventTest"],
 }

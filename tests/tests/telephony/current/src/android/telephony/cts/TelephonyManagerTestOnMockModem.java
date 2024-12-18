@@ -15,13 +15,15 @@
  */
 package android.telephony.cts;
 
+import static android.telephony.CarrierRestrictionRules.CARRIER_RESTRICTION_DEFAULT_NOT_ALLOWED;
+import static android.telephony.CarrierRestrictionRules.MULTISIM_POLICY_NONE;
 import static android.telephony.PreciseDisconnectCause.NO_DISCONNECT_CAUSE_AVAILABLE;
 import static android.telephony.PreciseDisconnectCause.TEMPORARY_FAILURE;
+import static android.telephony.TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
-import static com.android.internal.telephony.RILConstants.RIL_REQUEST_RADIO_POWER;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,10 +47,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.TelecomManager;
 import android.telephony.AccessNetworkConstants;
@@ -62,7 +61,6 @@ import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 import android.telephony.mockmodem.MockCallControlInfo;
 import android.telephony.mockmodem.MockModemConfigInterface;
-import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
 
 import androidx.annotation.RequiresApi;
@@ -77,13 +75,13 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -91,20 +89,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 /** Test MockModemService interfaces. */
-public class TelephonyManagerTestOnMockModem {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
 
     private static final String TAG = "TelephonyManagerTestOnMockModem";
     private static final long WAIT_TIME_MS = 20000;
-    private static MockModemManager sMockModemManager;
-    private static TelephonyManager sTelephonyManager;
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
     private static final String BOOT_ALLOW_MOCK_MODEM_PROPERTY = "ro.boot.radio.allow_mock_modem";
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
-    private static final String RESOURCE_PACKAGE_NAME = "android";
-    private static boolean sIsMultiSimDevice;
+
     private static HandlerThread sServiceStateChangeCallbackHandlerThread;
     private static Handler sServiceStateChangeCallbackHandler;
     private static HandlerThread sCallDisconnectCauseCallbackHandlerThread;
@@ -130,21 +122,8 @@ public class TelephonyManagerTestOnMockModem {
     private static final int TIMEOUT_IN_SEC_FOR_MODEM_CB = 10;
     @BeforeClass
     public static void beforeAllTests() throws Exception {
-        Log.d(TAG, "TelephonyManagerTestOnMockModem#beforeAllTests()");
-
-        if (!hasTelephonyFeature()) {
-            return;
-        }
-
-        enforceMockModemDeveloperSetting();
-        sTelephonyManager =
-                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
-
-        sIsMultiSimDevice = isMultiSim(sTelephonyManager);
-
-        sMockModemManager = new MockModemManager();
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        if (!MockModemTestBase.beforeAllTestsCheck()) return;
+        MockModemTestBase.createMockModemAndConnectToService();
 
         sServiceStateChangeCallbackHandlerThread =
                 new HandlerThread("TelephonyManagerServiceStateChangeCallbackTest");
@@ -174,11 +153,7 @@ public class TelephonyManagerTestOnMockModem {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        Log.d(TAG, "TelephonyManagerTestOnMockModem#afterAllTests()");
-
-        if (!hasTelephonyFeature()) {
-            return;
-        }
+        if (!MockModemTestBase.afterAllTestsBase()) return;
 
         if (sServiceStateChangeCallbackHandlerThread != null) {
             sServiceStateChangeCallbackHandlerThread.quitSafely();
@@ -209,20 +184,11 @@ public class TelephonyManagerTestOnMockModem {
             sTelephonyManager.unregisterTelephonyCallback(sCallStateCallback);
             sCallStateCallback = null;
         }
-
-        // Rebind all interfaces which is binding to MockModemService to default.
-        assertNotNull(sMockModemManager);
-        // Reset the modified error response of RIL_REQUEST_RADIO_POWER to the original behavior
-        // and -1 means to disable the modifed mechanism in mock modem
-        sMockModemManager.forceErrorResponse(0, RIL_REQUEST_RADIO_POWER, -1);
-        assertTrue(sMockModemManager.disconnectMockModemService());
-        sMockModemManager = null;
-        mShaId = null;
     }
 
     @Before
     public void beforeTest() {
-        assumeTrue(hasTelephonyFeature());
+        super.beforeTest();
         try {
             sTelephonyManager.getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
@@ -232,6 +198,7 @@ public class TelephonyManagerTestOnMockModem {
 
     @After
     public void afterTest() {
+        super.afterTest();
         if (mResetCarrierStatusInfo) {
             try {
                 TelephonyUtils.resetCarrierRestrictionStatusAllowList(
@@ -244,14 +211,10 @@ public class TelephonyManagerTestOnMockModem {
         }
     }
 
-    private static Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getContext();
-    }
-
     private static String getShaId(String packageName) {
         try {
             final PackageManager packageManager = getContext().getPackageManager();
-            MessageDigest sha1MDigest = MessageDigest.getInstance("SHA1");
+            MessageDigest sha1MDigest = MessageDigest.getInstance("SHA-256");
             final PackageInfo packageInfo = packageManager.getPackageInfo(packageName,
                     PackageManager.GET_SIGNATURES);
             for (Signature signature : packageInfo.signatures) {
@@ -262,59 +225,6 @@ public class TelephonyManagerTestOnMockModem {
             ex.printStackTrace();
         }
         return null;
-    }
-
-    private static boolean hasTelephonyFeature() {
-        final PackageManager pm = getContext().getPackageManager();
-        if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return false;
-        }
-        return true;
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
-    private static boolean hasTelephonyFeature(String featureName) {
-        final PackageManager pm = getContext().getPackageManager();
-        if (!pm.hasSystemFeature(featureName)) {
-            Log.d(TAG, "Skipping test that requires " + featureName);
-            return false;
-        }
-        return true;
-    }
-
-    private static boolean isMultiSim(TelephonyManager tm) {
-        return tm != null && tm.getPhoneCount() > 1;
-    }
-
-    private static boolean isSimHotSwapCapable() {
-        boolean isSimHotSwapCapable = false;
-        int resourceId =
-                getContext()
-                        .getResources()
-                        .getIdentifier("config_hotswapCapable", "bool", RESOURCE_PACKAGE_NAME);
-
-        if (resourceId > 0) {
-            isSimHotSwapCapable = getContext().getResources().getBoolean(resourceId);
-        } else {
-            Log.d(TAG, "Fail to get the resource Id, using default.");
-        }
-
-        Log.d(TAG, "isSimHotSwapCapable = " + (isSimHotSwapCapable ? "true" : "false"));
-
-        return isSimHotSwapCapable;
-    }
-
-    private static void enforceMockModemDeveloperSetting() throws Exception {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
-        boolean isAllowedForBoot =
-                SystemProperties.getBoolean(BOOT_ALLOW_MOCK_MODEM_PROPERTY, false);
-        // Check for developer settings for user build. Always allow for debug builds
-        if (!(isAllowed || isAllowedForBoot) && !DEBUG) {
-            throw new IllegalStateException(
-                    "!! Enable Mock Modem before running this test !! "
-                            + "Developer options => Allow Mock Modem");
-        }
     }
 
     private int getActiveSubId(int phoneId) {
@@ -907,7 +817,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -934,12 +844,12 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
         assertNotNull(value);
-        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED, value.intValue());
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED, value.intValue());
     }
 
     /**
@@ -962,7 +872,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -991,12 +901,12 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
         assertNotNull(value);
-        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED,
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED,
                 value.intValue());
     }
 
@@ -1020,7 +930,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -1048,7 +958,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -1128,8 +1038,29 @@ public class TelephonyManagerTestOnMockModem {
         CarrierRestrictionRules rules =runWithShellPermissionIdentity(() -> {
             return sTelephonyManager.getCarrierRestrictionRules();
         }, android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED,
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED,
                 rules.getCarrierRestrictionStatus());
+    }
+
+    /**
+     * Verifies the API CarrierRestrictionRules#setCarrierRestrictionStatus
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_SET_CARRIER_RESTRICTION_STATUS)
+    @Test
+    public void setCarrierRestrictionStatus() {
+        CarrierRestrictionRules crr = new CarrierRestrictionRules.Builder()
+                .setMultiSimPolicy(MULTISIM_POLICY_NONE)
+                .setDefaultCarrierRestriction(CARRIER_RESTRICTION_DEFAULT_NOT_ALLOWED)
+                .setAllowedCarriers(Collections.EMPTY_LIST)
+                .setExcludedCarriers(Collections.EMPTY_LIST)
+                .setCarrierRestrictionStatus(CARRIER_RESTRICTION_STATUS_RESTRICTED)
+                .build();
+
+        assertEquals(MULTISIM_POLICY_NONE, crr.getMultiSimPolicy());
+        assertEquals(CARRIER_RESTRICTION_DEFAULT_NOT_ALLOWED, crr.getDefaultCarrierRestriction());
+        assertEquals(Collections.EMPTY_LIST, crr.getAllowedCarriers());
+        assertEquals(Collections.EMPTY_LIST, crr.getExcludedCarriers());
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED, crr.getCarrierRestrictionStatus());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)
@@ -1163,7 +1094,7 @@ public class TelephonyManagerTestOnMockModem {
         assertEquals(carrierInfo1.getMnc(), "654");
         assertEquals(carrierInfo1.getSpn(), "Airtel");
         assertEquals(carrierRules.getMultiSimPolicy(),
-                CarrierRestrictionRules.MULTISIM_POLICY_NONE);
+                MULTISIM_POLICY_NONE);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)

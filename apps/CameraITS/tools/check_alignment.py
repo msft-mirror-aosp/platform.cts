@@ -22,7 +22,6 @@ import its_base_test
 import its_session_utils
 from mobly import test_runner
 import opencv_processing_utils
-import run_all_tests
 
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_MIN_AREA = 0.01  # 1% of image size
@@ -46,7 +45,7 @@ def _circle_and_image_center_offset(cam, props, name_with_log_path):
 
   # Take a single JPEG capture
   logging.debug('Using %s for reference', _FMT)
-  fmt = capture_request_utils.get_largest_jpeg_format(props)
+  fmt = capture_request_utils.get_largest_format('jpeg', props)
   req = capture_request_utils.auto_capture_request()
   cap = cam.do_capture(req, fmt)
   logging.debug('Captured %s %dx%d', _FMT, cap['width'], cap['height'])
@@ -78,14 +77,15 @@ class CheckAlignmentTest(its_base_test.ItsBaseTest):
   def test_check_alignment(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
-        camera_id=self.camera_id) as cam:
+        camera_id=self.camera_id,
+        hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       name_with_log_path = os.path.join(self.log_path, _NAME)
       logging.info('Starting %s for camera %s', _NAME, cam.get_camera_name())
 
       # Load chart for scene
-      run_all_tests.load_scenes_on_tablet(_SCENE, self.tablet.serial)
+      its_session_utils.copy_scenes_to_tablet(_SCENE, self.tablet.serial)
       its_session_utils.load_scene(
           cam, props, _SCENE, self.tablet, self.chart_distance)
 

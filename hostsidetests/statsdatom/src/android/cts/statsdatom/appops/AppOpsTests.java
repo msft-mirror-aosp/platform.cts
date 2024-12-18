@@ -26,11 +26,18 @@ import android.cts.statsdatom.lib.ReportUtils;
 
 import com.android.os.AtomsProto;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.Descriptors;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +45,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class AppOpsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final int NUM_APP_OPS = AtomsProto.AttributedAppOps.getDefaultInstance().getOp().
             getDescriptorForType().getValues().size() - 1;
 
@@ -58,10 +66,8 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
 
     private IBuildInfo mCtsBuild;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         mTransformedFromOp.clear();
         // The hotword op is allowed to all UIDs on some devices.
         boolean hotwordDetectionServiceRequired = Boolean.parseBoolean(
@@ -80,12 +86,11 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -93,6 +98,8 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
         mCtsBuild = buildInfo;
     }
 
+    @Ignore("b/347856815")
+    @Test
     public void testAppOps() throws Exception {
         // Set up what to collect
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
@@ -126,33 +133,31 @@ public class AppOpsTests extends DeviceTestCase implements IBuildReceiver {
             }
         }
         for (AtomsProto.Atom atom : ReportUtils.getGaugeMetricAtoms(getDevice())) {
-
             AtomsProto.AppOps appOps = atom.getAppOps();
+            int opCode = appOps.getOpId().getNumber();
             if (appOps.getPackageName().equals(DeviceUtils.STATSD_ATOM_TEST_PKG)) {
-                if (appOps.getOpId().getNumber() == -1) {
+                if (opCode == -1) {
                     continue;
                 }
                 long totalNoted = appOps.getTrustedForegroundGrantedCount()
                         + appOps.getTrustedBackgroundGrantedCount()
                         + appOps.getTrustedForegroundRejectedCount()
                         + appOps.getTrustedBackgroundRejectedCount();
-                int expectedNoted =
-                        appOps.getOpId().getNumber() + 1
-                                + computeExpectedTransformedNoted(appOps.getOpId().getNumber());
-                assertWithMessage("Operation in APP_OPS_ENUM_MAP: " + appOps.getOpId().getNumber())
+                int expectedNoted = 1 + computeExpectedTransformedNoted(opCode);
+                assertWithMessage("NoteOp count mismatches, op code:" + opCode)
                         .that(totalNoted).isEqualTo(expectedNoted);
-                assertWithMessage("Unexpected Op reported").that(expectedOps).contains(
-                        appOps.getOpId().getNumber());
+                assertWithMessage("Unexpected Op reported")
+                        .that(expectedOps).contains(opCode);
                 expectedOps.remove(expectedOps.indexOf(appOps.getOpId().getNumber()));
             }
         }
-        assertWithMessage("Logging app op ids are missing in report.").that(expectedOps).isEmpty();
+        assertWithMessage("Noted ops are missing in report.").that(expectedOps).isEmpty();
     }
 
     private int computeExpectedTransformedNoted(int op) {
         if (!mTransformedFromOp.containsKey(op)) {
             return 0;
         }
-        return mTransformedFromOp.get(op) + 1;
+        return 1;
     }
 }

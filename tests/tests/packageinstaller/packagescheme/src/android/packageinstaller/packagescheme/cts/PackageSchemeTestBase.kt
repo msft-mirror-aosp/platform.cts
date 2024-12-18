@@ -26,6 +26,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -48,6 +49,7 @@ import org.junit.After
 import org.junit.Before
 
 open class PackageSchemeTestBase {
+    val LOG_TAG = PackageSchemeTestBase::class.java.simpleName
     val TARGET_APP_PKG_NAME = "android.packageinstaller.emptytestapp.cts"
     val TARGET_APP_APK = "CtsEmptyTestApp.apk"
     val RECEIVER_ACTION = "android.packageinstaller.emptytestapp.cts.action"
@@ -95,11 +97,12 @@ open class PackageSchemeTestBase {
         }
 
         fun makeIntentSender(sessionId: Int) = PendingIntent.getBroadcast(
-            mContext, sessionId,
-            Intent(RECEIVER_ACTION).setPackage(mContext.packageName)
-                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
-            PendingIntent.FLAG_UPDATE_CURRENT
-                or PendingIntent.FLAG_MUTABLE_UNAUDITED
+            mContext,
+            sessionId,
+            Intent(RECEIVER_ACTION)
+                .setPackage(mContext.packageName)
+                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE_UNAUDITED
         ).intentSender
 
         fun getResult(unit: TimeUnit, timeout: Long) = results.poll(timeout, unit)
@@ -110,8 +113,11 @@ open class PackageSchemeTestBase {
     @Before
     fun setup() {
         receiver.clear()
-        mContext.registerReceiver(receiver, IntentFilter(RECEIVER_ACTION),
-            Context.RECEIVER_EXPORTED)
+        mContext.registerReceiver(
+            receiver,
+            IntentFilter(RECEIVER_ACTION),
+            Context.RECEIVER_EXPORTED
+        )
     }
 
     @Before
@@ -199,7 +205,11 @@ open class PackageSchemeTestBase {
         val installStatus = result.getIntExtra(PackageInstaller.EXTRA_STATUS, Int.MIN_VALUE)
         if (installStatus != PackageInstaller.STATUS_SUCCESS) {
             val id = result.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, Int.MIN_VALUE)
-            mContext.packageManager.packageInstaller.abandonSession(id)
+            try {
+                mInstaller.abandonSession(id)
+            } catch (e: SecurityException) {
+                Log.w(LOG_TAG, "Could not abandon session: ${e.message}")
+            }
         }
         assertThat(installStatus).isEqualTo(PackageInstaller.STATUS_SUCCESS)
     }
@@ -228,7 +238,15 @@ open class PackageSchemeTestBase {
         // However, to fix b/297132020, AlertController was replaced with AlertDialog and shared
         // to selective partners, leading to fragmentation in which button surfaces in an OEM's
         // installer app.
-        return By.res(Pattern.compile(String.format("(?:^%s|^%s):id/%s",
-                PACKAGE_INSTALLER_PACKAGE_NAME, SYSTEM_PACKAGE_NAME, id)))
+        return By.res(
+            Pattern.compile(
+                String.format(
+                    "(?:^%s|^%s):id/%s",
+                    PACKAGE_INSTALLER_PACKAGE_NAME,
+                    SYSTEM_PACKAGE_NAME,
+                    id
+                )
+            )
+        )
     }
 }

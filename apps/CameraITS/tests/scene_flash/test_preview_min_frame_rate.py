@@ -71,14 +71,21 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       lighting_control_utils.set_lighting_state(
           arduino_serial_port, self.lighting_ch, 'OFF')
 
+      # turn OFF DUT to reduce reflections
+      lighting_control_utils.turn_off_device_screen(self.dut)
+
       # Validate lighting
       cam.do_3a(do_af=False)
       cap = cam.do_capture(
           capture_request_utils.auto_capture_request(), cam.CAP_YUV)
       y_plane, _, _ = image_processing_utils.convert_capture_to_planes(cap)
+      # In the sensor fusion rig, there is no tablet, so tablet_state is OFF.
       its_session_utils.validate_lighting(
-          y_plane, self.scene, state='OFF', log_path=self.log_path)
-
+          y_plane, self.scene, state='OFF', tablet_state='OFF',
+          log_path=self.log_path)
+      # Check for flickering frequency
+      scene_flicker_freq = cap['metadata']['android.statistics.sceneFlicker']
+      logging.debug('Detected flickering frequency: %d', scene_flicker_freq)
       logging.debug('Taking preview recording in darkened scene.')
       # determine camera capabilities for preview
       preview_sizes = cam.get_supported_preview_sizes(
@@ -86,7 +93,6 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       supported_video_sizes = cam.get_supported_video_sizes_capped(
           self.camera_id)
       max_video_size = supported_video_sizes[-1]  # largest available size
-      logging.debug('Camera supported preview sizes: %s', preview_sizes)
       logging.debug('Camera supported video sizes: %s', supported_video_sizes)
 
       preview_size = preview_sizes[-1]  # choose largest available size
@@ -101,7 +107,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
           preview_size, _PREVIEW_RECORDING_DURATION_SECONDS, stabilize=False,
           zoom_ratio=None,
           ae_target_fps_min=ae_target_fps_range[0],
-          ae_target_fps_max=ae_target_fps_range[1])
+          ae_target_fps_max=ae_target_fps_range[1],
+          antibanding_mode=scene_flicker_freq
+      )
       logging.debug('preview_recording_obj: %s', preview_recording_obj)
 
       # turn lights back ON
@@ -118,7 +126,7 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       logging.debug('preview_file_name: %s', preview_file_name)
       preview_file_name_with_path = os.path.join(
           self.log_path, preview_file_name)
-      preview_frame_rate = video_processing_utils.get_average_frame_rate(
+      preview_frame_rate = video_processing_utils.get_avg_frame_rate(
           preview_file_name_with_path)
       errors = []
       if not math.isclose(
@@ -147,8 +155,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
                     last_key_frame)
       last_image = image_processing_utils.convert_image_to_numpy_array(
           os.path.join(self.log_path, last_key_frame))
-      last_image_bgr = last_image[:, :, ::-1]
-      y_avg = np.average(opencv_processing_utils.convert_to_y(last_image_bgr))
+      y_avg = np.average(
+          opencv_processing_utils.convert_to_y(last_image, 'RGB')
+      )
       logging.debug('Last frame y avg: %.4f', y_avg)
       if not math.isclose(y_avg, 0, abs_tol=_DARKNESS_ATOL):
         raise AssertionError(f'Last frame y average: {y_avg}, expected: 0, '

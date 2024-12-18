@@ -21,6 +21,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
     <option name="force-queryable" value="true" />
@@ -29,6 +30,12 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsContactsProviderTestCases.apk" />
         <option name="test-file-name" value="CtsContactsProviderGalProvider.apk" />
+    </target_preparer>
+
+    <!-- TODO:: remove FeatureFlagTargetPreparer once default_contacts_account_api_enabled is released-->
+    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
+        <option name="flag-value"
+            value="contacts/android.provider.new_default_account_api_enabled=true"/>
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

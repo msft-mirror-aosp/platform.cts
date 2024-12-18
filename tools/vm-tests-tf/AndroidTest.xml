@@ -20,6 +20,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="component" value="art" />
     <target_preparer class="android.core.vm.targetprep.VmTestPreparer" />
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >

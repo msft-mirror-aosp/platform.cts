@@ -16,12 +16,16 @@
 
 package android.hardware.input.cts.tests;
 
+import static com.android.cts.input.BatchedEventSplitterKt.splitBatchedMotionEvent;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Activity;
 import android.app.Instrumentation;
+import android.content.Intent;
 import android.hardware.input.cts.InputCallback;
 import android.hardware.input.cts.InputCtsActivity;
 import android.os.Bundle;
@@ -43,7 +47,6 @@ import com.android.cts.input.DebugInputRule;
 import org.junit.After;
 import org.junit.Before;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -84,13 +87,15 @@ public abstract class InputTestCase {
         mInputListener = new InputListener();
     }
 
-    private ActivityScenario<InputCtsActivity> mActivityRule;
+    private ActivityScenario<Activity> mActivityRule;
 
     @Before
     public void setUp() throws Exception {
         onBeforeLaunchActivity();
-        mActivityRule = ActivityScenario.launch(InputCtsActivity.class, getActivityOptions())
-                .onActivity(activity -> mTestActivity = activity);
+        mActivityRule = ActivityScenario.launch(
+                new Intent(mInstrumentation.getContext(), InputCtsActivity.class),
+                getActivityOptions()
+        ).onActivity(activity -> mTestActivity = (InputCtsActivity) activity);
         mTestActivity.clearUnhandleKeyCode();
         mTestActivity.setInputCallback(mInputListener);
         mDecorView = mTestActivity.getWindow().getDecorView();
@@ -175,7 +180,8 @@ public abstract class InputTestCase {
         if (event.getHistorySize() > 0) {
             failWithMessage("expected each MotionEvent to only have a single entry");
         }
-        assertEquals(mCurrentTestCase + " (action)",
+        assertEquals(mCurrentTestCase + " (action) expected: "
+                + MotionEvent.actionToString(expectedEvent.getAction()) + " received: " + event,
                 expectedEvent.getAction(), event.getAction());
         assertSource(mCurrentTestCase, expectedEvent, event);
         assertEquals(mCurrentTestCase + " (button state)",
@@ -204,7 +210,7 @@ public abstract class InputTestCase {
             for (int axis = MotionEvent.AXIS_X; axis <= MotionEvent.AXIS_GENERIC_16; axis++) {
                 if (IGNORE_AXES.contains(axis)) continue;
                 assertEquals(testCase + " pointer " + i
-                        + " (" + MotionEvent.axisToString(axis) + ")",
+                                + " (" + MotionEvent.axisToString(axis) + ")",
                         expectedEvent.getAxisValue(axis, i), actualEvent.getAxisValue(axis, i),
                         TOLERANCE);
             }
@@ -227,7 +233,7 @@ public abstract class InputTestCase {
      */
     private void assertSource(String testCase, InputEvent expected, InputEvent actual) {
         assertNotEquals(testCase + " (source)", InputDevice.SOURCE_CLASS_NONE, actual.getSource());
-        assertTrue(testCase + " (source)", expected.isFromSource(actual.getSource()));
+        assertTrue(testCase + " (source)", actual.isFromSource(expected.getSource()));
     }
 
     /**
@@ -334,64 +340,6 @@ public abstract class InputTestCase {
             }
         }
         return null;
-    }
-
-    /**
-     * Since MotionEvents are batched together based on overall system timings (i.e. vsync), we
-     * can't rely on them always showing up batched in the same way. In order to make sure our
-     * test results are consistent, we instead split up the batches so they end up in a
-     * consistent and reproducible stream.
-     *
-     * Note, however, that this ignores the problem of resampling, as we still don't know how to
-     * distinguish resampled events from real events. Only the latter will be consistent and
-     * reproducible.
-     *
-     * @param event The (potentially) batched MotionEvent
-     * @return List of MotionEvents, with each event guaranteed to have zero history size, and
-     * should otherwise be equivalent to the original batch MotionEvent.
-     */
-    private static List<MotionEvent> splitBatchedMotionEvent(MotionEvent event) {
-        List<MotionEvent> events = new ArrayList<>();
-        final int historySize = event.getHistorySize();
-        final int pointerCount = event.getPointerCount();
-        MotionEvent.PointerProperties[] properties =
-                new MotionEvent.PointerProperties[pointerCount];
-        MotionEvent.PointerCoords[] currentCoords = new MotionEvent.PointerCoords[pointerCount];
-        for (int p = 0; p < pointerCount; p++) {
-            properties[p] = new MotionEvent.PointerProperties();
-            event.getPointerProperties(p, properties[p]);
-            currentCoords[p] = new MotionEvent.PointerCoords();
-            event.getPointerCoords(p, currentCoords[p]);
-        }
-        for (int h = 0; h < historySize; h++) {
-            long eventTime = event.getHistoricalEventTime(h);
-            MotionEvent.PointerCoords[] coords = new MotionEvent.PointerCoords[pointerCount];
-
-            for (int p = 0; p < pointerCount; p++) {
-                coords[p] = new MotionEvent.PointerCoords();
-                event.getHistoricalPointerCoords(p, h, coords[p]);
-            }
-            MotionEvent singleEvent =
-                    MotionEvent.obtain(event.getDownTime(), eventTime, event.getAction(),
-                            pointerCount, properties, coords,
-                            event.getMetaState(), event.getButtonState(),
-                            event.getXPrecision(), event.getYPrecision(),
-                            event.getDeviceId(), event.getEdgeFlags(),
-                            event.getSource(), event.getFlags());
-            singleEvent.setActionButton(event.getActionButton());
-            events.add(singleEvent);
-        }
-
-        MotionEvent singleEvent =
-                MotionEvent.obtain(event.getDownTime(), event.getEventTime(), event.getAction(),
-                        pointerCount, properties, currentCoords,
-                        event.getMetaState(), event.getButtonState(),
-                        event.getXPrecision(), event.getYPrecision(),
-                        event.getDeviceId(), event.getEdgeFlags(),
-                        event.getSource(), event.getFlags());
-        singleEvent.setActionButton(event.getActionButton());
-        events.add(singleEvent);
-        return events;
     }
 
     /**

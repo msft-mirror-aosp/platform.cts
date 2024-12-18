@@ -63,6 +63,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.ApplicationInfoFlags;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.PackageInfoFlags;
+import android.content.pm.ResolveInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
 import android.graphics.Bitmap;
@@ -82,6 +83,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
@@ -184,6 +186,15 @@ public class PackageInstallerArchiveTest {
         launchTestActivity();
         PackageInfo packageInfo = getPackageInfo();
 
+        long cacheBytesBefore =
+                runWithShellPermissionIdentity(() ->
+                                mStorageStatsManager.queryStatsForPackage(
+                                        packageInfo.applicationInfo.storageUuid,
+                                        packageInfo.packageName,
+                                        UserHandle.of(UserHandle.myUserId())),
+                        Manifest.permission.PACKAGE_USAGE_STATS).getCacheBytes();
+
+
         runWithShellPermissionIdentity(
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
@@ -204,7 +215,8 @@ public class PackageInstallerArchiveTest {
                         Manifest.permission.PACKAGE_USAGE_STATS);
         // This number is bound to fluctuate as the data created during app startup will change
         // over time. We only need to verify that the data directory is kept.
-        assertTrue(stats.getDataBytes() > 0L);
+        assertThat(stats.getDataBytes()).isGreaterThan(0L);
+        assertThat(stats.getCacheBytes()).isLessThan(cacheBytesBefore);
     }
 
     @Test
@@ -255,6 +267,98 @@ public class PackageInstallerArchiveTest {
 
         recycleBitmap(overlaidIcon, overlaidBitmap);
         recycleBitmap(rawIcon, rawBitmap);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void archiveApp_getApplicationIcon_draftSessionOverlayDisabledIfLauncherOverlayDisabled()
+            throws Exception {
+        installPackage(PACKAGE_NAME, APK_PATH);
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+
+        final String launcherPackageName = getCurrentLauncherPackage();
+        final boolean previousMode = getLauncherCloudOverlayMode(launcherPackageName);
+        // First, enable the overlay in the current launcher and fetch the app icon. This app icon
+        // should contain the overlay.
+        setLauncherCloudOverlayMode(launcherPackageName, /* enabled= */ true);
+        ApplicationInfo applicationInfo = mPackageManager.getPackageInfo(PACKAGE_NAME,
+                PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+        Drawable overlaidIcon = mPackageManager.getApplicationIcon(applicationInfo);
+        Bitmap overlaidBitmap = drawableToBitmap(overlaidIcon);
+        // Then, disable the overlay in the launcher and check the draft icon. This icon should not
+        // contain the overlay.
+        setLauncherCloudOverlayMode(launcherPackageName, /* enabled= */ false);
+        try {
+            SessionListener sessionListener = new SessionListener();
+            mPackageInstaller.registerSessionCallback(sessionListener,
+                    new Handler(Looper.getMainLooper()));
+
+            runWithShellPermissionIdentity(
+                    () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mUnarchiveIntentSender)),
+                    Manifest.permission.INSTALL_PACKAGES);
+            assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    PACKAGE_NAME);
+            assertThat(sUnarchiveReceiverAllUsers.get(10, TimeUnit.MILLISECONDS)).isFalse();
+            int unarchiveId = sUnarchiveId.get(10, TimeUnit.MILLISECONDS);
+
+            int draftSessionId = sessionListener.mSessionIdCreated.get(5, TimeUnit.SECONDS);
+            PackageInstaller.SessionInfo sessionInfo = mPackageInstaller.getSessionInfo(
+                    draftSessionId);
+            assertThat(unarchiveId).isEqualTo(draftSessionId);
+            Bitmap rawBitmap = sessionInfo.getAppIcon();
+            assertNotNull(rawBitmap);
+            assertThat(overlaidBitmap.sameAs(rawBitmap)).isFalse();
+
+            recycleBitmap(overlaidIcon, overlaidBitmap);
+            rawBitmap.recycle();
+
+            PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                    PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+            params.setUnarchiveId(unarchiveId);
+            params.appPackageName = PACKAGE_NAME;
+            int sessionId = mPackageInstaller.createSession(params);
+            assertThat(unarchiveId).isEqualTo(sessionId);
+            mPackageInstaller.abandonSession(sessionId);
+        } finally {
+            // Reset the overlay mode
+            setLauncherCloudOverlayMode(launcherPackageName, previousMode);
+        }
+    }
+
+    private String getCurrentLauncherPackage() {
+        return runWithShellPermissionIdentity(
+                () -> {
+                    ResolveInfo resolveInfo = mPackageManager
+                            .resolveActivity(new Intent(Intent.ACTION_MAIN)
+                                    .addCategory(Intent.CATEGORY_HOME),
+                                    PackageManager.MATCH_DEFAULT_ONLY);
+                    if (resolveInfo == null || resolveInfo.activityInfo == null) {
+                        return null;
+                    }
+                    return resolveInfo.activityInfo.packageName;
+                });
+    }
+
+    private void setLauncherCloudOverlayMode(String launcherPackageName, boolean enabled) {
+        final String command = String.format(
+                "appops set --user %d %s android:archive_icon_overlay %s",
+                ActivityManager.getCurrentUser(), launcherPackageName, enabled ? "0" : "1");
+        SystemUtil.runShellCommand(command);
+    }
+
+    private boolean getLauncherCloudOverlayMode(String launcherPackageName) {
+        final String command = String.format(
+                "appops get --user %d %s android:archive_icon_overlay",
+                ActivityManager.getCurrentUser(), launcherPackageName);
+        return SystemUtil.runShellCommand(command).trim().equals("0");
     }
 
     @Test
@@ -540,9 +644,7 @@ public class PackageInstallerArchiveTest {
     @Test
     public void unarchiveApp_missingPermissions() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
 
         SecurityException e =
                 assertThrows(
@@ -677,9 +779,8 @@ public class PackageInstallerArchiveTest {
     public void archiveApp_shellCommand() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
 
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
+
         assertThat(mPackageManager.getPackageInfo(PACKAGE_NAME,
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived).isTrue();
     }
@@ -687,13 +788,8 @@ public class PackageInstallerArchiveTest {
     @Test
     public void unarchiveApp_shellCommand() throws Exception {
         installPackage(PACKAGE_NAME, APK_PATH);
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm archive %s", PACKAGE_NAME))).isEqualTo(
-                "Success\n");
-
-        assertThat(
-                SystemUtil.runShellCommand(String.format("pm request-unarchive %s", PACKAGE_NAME)))
-                .isEqualTo("Success\n");
+        archivePackageWithShellCommand(PACKAGE_NAME);
+        unarchivePackageWithShellCommand(PACKAGE_NAME);
 
         assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
         assertThat(sUnarchiveReceiverAllUsers.get(1, TimeUnit.MILLISECONDS)).isFalse();
@@ -704,19 +800,30 @@ public class PackageInstallerArchiveTest {
         installPackage(PACKAGE_NAME, APK_PATH);
 
         int currentUser = ActivityManager.getCurrentUser();
-        PackageBroadcastReceiver
+        final PackageBroadcastReceiver
                 addedBroadcastReceiver = new PackageBroadcastReceiver(
                 PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_ADDED
         );
-        PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
+        final PackageBroadcastReceiver removedBroadcastReceiver = new PackageBroadcastReceiver(
                 PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_REMOVED
+        );
+        final PackageBroadcastReceiver fullyRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                PACKAGE_NAME, currentUser, Intent.ACTION_PACKAGE_FULLY_REMOVED
+        );
+        final PackageBroadcastReceiver uidRemovedBroadcastReceiver = new PackageBroadcastReceiver(
+                PACKAGE_NAME, currentUser, Intent.ACTION_UID_REMOVED
         );
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
         intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
+        intentFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED);
         intentFilter.addDataScheme("package");
+
+        final IntentFilter intentFilterForUidRemoved = new IntentFilter(Intent.ACTION_UID_REMOVED);
         try {
             mContext.registerReceiver(removedBroadcastReceiver, intentFilter);
+            mContext.registerReceiver(fullyRemovedBroadcastReceiver, intentFilter);
+            mContext.registerReceiver(uidRemovedBroadcastReceiver, intentFilterForUidRemoved);
 
             runWithShellPermissionIdentity(
                     () -> {
@@ -727,6 +834,8 @@ public class PackageInstallerArchiveTest {
                     },
                     Manifest.permission.DELETE_PACKAGES);
 
+            fullyRemovedBroadcastReceiver.assertBroadcastNotReceived();
+            uidRemovedBroadcastReceiver.assertBroadcastNotReceived();
             removedBroadcastReceiver.assertBroadcastReceived();
             Intent removedIntent = removedBroadcastReceiver.getBroadcastResult();
             assertNotNull(removedIntent);
@@ -743,6 +852,8 @@ public class PackageInstallerArchiveTest {
         } finally {
             try {
                 mContext.unregisterReceiver(removedBroadcastReceiver);
+                mContext.unregisterReceiver(uidRemovedBroadcastReceiver);
+                mContext.unregisterReceiver(fullyRemovedBroadcastReceiver);
                 mContext.unregisterReceiver(addedBroadcastReceiver);
             } catch (Exception e) {
                 // Already unregistered.
@@ -864,6 +975,18 @@ public class PackageInstallerArchiveTest {
                         () -> mContext.startActivity(callingIntent));
 
         assertThat(e).hasMessageThat().contains("Not allowed to start activity Intent");
+    }
+
+    private static void archivePackageWithShellCommand(@NonNull String packageName) {
+        final String command = String.format(
+                "pm archive --user %d %s", ActivityManager.getCurrentUser(), packageName);
+        assertThat(SystemUtil.runShellCommand(command)).isEqualTo("Success\n");
+    }
+
+    private static void unarchivePackageWithShellCommand(@NonNull String packageName) {
+        final String command = String.format("pm request-unarchive --user %d %s",
+                ActivityManager.getCurrentUser(), packageName);
+        assertThat(SystemUtil.runShellCommand(command)).isEqualTo("Success\n");
     }
 
     private void launchTestActivity() {

@@ -46,6 +46,8 @@ import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.hardware.DataSpace;
+import android.hardware.HardwareBuffer;
 import android.hardware.OverlayProperties;
 import android.hardware.display.DeviceProductInfo;
 import android.hardware.display.DisplayManager;
@@ -77,6 +79,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DisplayStateManager;
@@ -89,6 +93,7 @@ import com.google.common.truth.Truth;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -100,6 +105,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
@@ -111,11 +118,15 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class DisplayTest extends TestBase {
     private static final String TAG = "DisplayTest";
+
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -142,6 +153,7 @@ public class DisplayTest extends TestBase {
     private WindowManager mWindowManager;
     private UiModeManager mUiModeManager;
     private Context mContext;
+    private int mTestRunningUserId;
     private ColorSpace[] mSupportedWideGamuts;
     private Display mDefaultDisplay;
     private int mInitialRefreshRateSwitchingType;
@@ -158,9 +170,10 @@ public class DisplayTest extends TestBase {
         public final int[] mSupportedHdrTypes;
 
         DisplayModeState(Display display) {
-            mHeight = display.getMode().getPhysicalHeight();
-            mWidth = display.getMode().getPhysicalWidth();
-            mSupportedHdrTypes = display.getMode().getSupportedHdrTypes();
+            Display.Mode currentMode = display.getMode();
+            mHeight = currentMode.getPhysicalHeight();
+            mWidth = currentMode.getPhysicalWidth();
+            mSupportedHdrTypes = currentMode.getSupportedHdrTypes();
 
             // Starting Android S the, the platform might throttle down
             // applications frame rate to a divisor of the refresh rate instead if changing the
@@ -171,6 +184,13 @@ public class DisplayTest extends TestBase {
             // {@link com.android.server.display.DisplayManagerService.DISPLAY_MODE_RETURNS_PHYSICAL_REFRESH_RATE}
             // for more details.
             mRefreshRate = display.getRefreshRate();
+        }
+
+        DisplayModeState(Display.Mode mode) {
+            mHeight = mode.getPhysicalHeight();
+            mWidth = mode.getPhysicalWidth();
+            mSupportedHdrTypes = mode.getSupportedHdrTypes();
+            mRefreshRate = mode.getRefreshRate();
         }
 
         @Override
@@ -184,6 +204,11 @@ public class DisplayTest extends TestBase {
                 && mWidth == other.mWidth
                 && mRefreshRate == other.mRefreshRate
                 && Arrays.equals(mSupportedHdrTypes, other.mSupportedHdrTypes);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(mHeight, mWidth, mRefreshRate, Arrays.hashCode(mSupportedHdrTypes));
         }
 
         @Override
@@ -240,6 +265,7 @@ public class DisplayTest extends TestBase {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
         mContext = getInstrumentation().getTargetContext();
+        mTestRunningUserId = mContext.getUserId();
         assertTrue("Physical display is expected.", DisplayUtil.isDisplayConnected(mContext)
                 || MediaUtils.onCuttlefish());
 
@@ -262,14 +288,14 @@ public class DisplayTest extends TestBase {
 
     private void enableAppOps() {
         StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
+        cmd.append("appops set --user " + mTestRunningUserId + " ");
         cmd.append(InstrumentationRegistry.getInstrumentation().getContext().getPackageName());
         cmd.append(" android:system_alert_window allow");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .executeShellCommand(cmd.toString());
 
         StringBuilder query = new StringBuilder();
-        query.append("appops get ");
+        query.append("appops get --user " + mTestRunningUserId + " ");
         query.append(InstrumentationRegistry.getInstrumentation().getContext().getPackageName());
         query.append(" android:system_alert_window");
         String queryStr = query.toString();
@@ -519,6 +545,9 @@ public class DisplayTest extends TestBase {
     }
 
     private void overrideHdrTypes() {
+        // TODO(b/347657922): HDR override not working for device without default HDR support.
+        // So run tests that require HDR override only for devices that support HDR by default.
+        assumeTrue(mDefaultDisplay.isHdr());
         mDisplayManager.overrideHdrTypes(DEFAULT_DISPLAY, new int[]{
                 HdrCapabilities.HDR_TYPE_DOLBY_VISION, HdrCapabilities.HDR_TYPE_HDR10,
                 HdrCapabilities.HDR_TYPE_HLG, HdrCapabilities.HDR_TYPE_HDR10_PLUS});
@@ -663,8 +692,18 @@ public class DisplayTest extends TestBase {
      */
     @Test
     public void testModeSwitchOnPrimaryDisplay() throws Exception {
-        Display.Mode[] modes = mDefaultDisplay.getSupportedModes();
-        assumeTrue("Need two or more display modes to exercise switching.", modes.length > 1);
+        // For VRR displays we might have multiple modes differ only by VSYNC - switching between
+        // them will be transparent for applications (VSYNC is hidden API)
+        // Also for VRR displays we itroduced synthetic modes - that only limit render rate
+        Map<DisplayModeState, Display.Mode> modes = Arrays
+                .stream(mDefaultDisplay.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                // filter modes that differ only by VSYNC
+                .collect(Collectors.<Display.Mode, DisplayModeState, Display.Mode>toMap(
+                                DisplayModeState::new,
+                                mode -> mode,
+                                (first, second) -> first));
+        assumeTrue("Need two or more display modes to exercise switching.", modes.size() > 1);
 
         try {
             mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
@@ -679,10 +718,12 @@ public class DisplayTest extends TestBase {
             // current active mode. We'll switch to the modes in this order. The active mode is last
             // so we don't need an extra mode switch in case the test completes successfully.
             Display.Mode activeMode = mDefaultDisplay.getMode();
-            List<Display.Mode> modesList = new ArrayList<>(modes.length);
-            for (Display.Mode mode : modes) {
-                if (mode.getModeId() != activeMode.getModeId()) {
-                    modesList.add(mode);
+
+            DisplayModeState activeModeState = new DisplayModeState(activeMode);
+            List<Display.Mode> modesList = new ArrayList<>(modes.size());
+            for (Map.Entry<DisplayModeState, Display.Mode> mode : modes.entrySet()) {
+                if (!activeModeState.equals(mode.getKey())) {
+                    modesList.add(mode.getValue());
                 }
             }
             Random random = new Random(42);
@@ -841,7 +882,11 @@ public class DisplayTest extends TestBase {
     @Test
     public void testMode() {
         Display display = getSecondaryDisplay(mDisplayManager.getDisplays());
-        assertEquals(2, display.getSupportedModes().length);
+        List<Display.Mode> modes = Arrays
+                .stream(display.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                .toList();
+        assertEquals(2, modes.size());
         Display.Mode mode = display.getMode();
         assertEquals(display.getSupportedModes()[0], mode);
         assertEquals(SECONDARY_DISPLAY_WIDTH, mode.getPhysicalWidth());
@@ -944,8 +989,11 @@ public class DisplayTest extends TestBase {
 
     /**
      * Test that refresh rate switch app requests are correctly executed on a secondary display.
+     * TODO(b/352630509): OverlayDisplay (i.e. SecondaryDisplay) does not support visible background
+     * users at the moment, so skipping this test for secondary_user_on_secondary_display
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testRefreshRateSwitchOnSecondaryDisplay() throws Exception {
         // Standalone VR devices globally ignore SYSTEM_ALERT_WINDOW via AppOps.
         // Skip this test, which depends on a Presentation SYSTEM_ALERT_WINDOW to pass.
@@ -955,11 +1003,14 @@ public class DisplayTest extends TestBase {
 
         enableAppOps();
         final Display display = getSecondaryDisplay(mDisplayManager.getDisplays());
-        Display.Mode[] modes = display.getSupportedModes();
-        assertEquals(2, modes.length);
+        List<Display.Mode> modes = Arrays
+                .stream(display.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                .toList();
+        assertEquals(2, modes.size());
         Display.Mode mode = display.getMode();
-        assertEquals(modes[0], mode);
-        final Display.Mode newMode = modes[1];
+        assertEquals(modes.get(0), mode);
+        final Display.Mode newMode = modes.get(1);
 
         Handler handler = new Handler(Looper.getMainLooper());
 
@@ -1024,6 +1075,10 @@ public class DisplayTest extends TestBase {
         OverlayProperties dest = OverlayProperties.CREATOR.createFromParcel(parcel);
         assertEquals(overlayProperties.isMixedColorSpacesSupported(),
                      dest.isMixedColorSpacesSupported());
+        assertEquals(overlayProperties.isCombinationSupported(
+                            DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888),
+                     dest.isCombinationSupported(
+                            DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
         parcel.recycle();
     }
 
@@ -1039,6 +1094,8 @@ public class DisplayTest extends TestBase {
         Display secondaryDisplay = getSecondaryDisplay(mDisplayManager.getDisplays());
         testGetOverlaySupportInternal(secondaryDisplay.getOverlaySupport());
         assertTrue(secondaryDisplay.getOverlaySupport().isMixedColorSpacesSupported());
+        assertTrue(secondaryDisplay.getOverlaySupport()
+                .isCombinationSupported(DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
     }
 
     @Test

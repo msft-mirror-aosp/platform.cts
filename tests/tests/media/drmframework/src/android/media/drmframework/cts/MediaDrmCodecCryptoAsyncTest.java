@@ -29,6 +29,8 @@ import android.platform.test.annotations.RequiresDevice;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
 import org.junit.AssumptionViolatedException;
 import org.junit.Test;
 
@@ -38,7 +40,8 @@ import java.util.UUID;
 /**
  * Media DRM Codec tests with CONFIGURE_FLAG_USE_CRYPTO_ASYNC.
  */
-@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
+@FrameworkSpecificTest
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 public class MediaDrmCodecCryptoAsyncTest {
     private static final String TAG = "MediaDrmCodecCryptoAsyncTest";

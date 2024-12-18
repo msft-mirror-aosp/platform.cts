@@ -41,13 +41,11 @@ import android.os.cts.batterysaving.common.BatterySavingCtsCommon.Payload.TestSe
 import android.os.cts.batterysaving.common.BatterySavingCtsCommon.Payload.TestServiceRequest.SetAlarmRequest;
 import android.os.cts.batterysaving.common.BatterySavingCtsCommon.Payload.TestServiceRequest.StartServiceRequest;
 import android.os.cts.batterysaving.common.Values;
-import android.provider.DeviceConfig;
 import android.util.Log;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ThreadUtils;
 
@@ -106,8 +104,6 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
 
     private final AlarmManagerDeviceConfigHelper mAlarmManagerDeviceConfigStateHelper =
             new AlarmManagerDeviceConfigHelper();
-    private final DeviceConfigStateHelper mTareDeviceConfigStateHelper =
-            new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
 
     @Before
     public void setUp() throws IOException {
@@ -121,7 +117,6 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
     @After
     public void tearDown() throws IOException {
         resetAlarmManagerConstants();
-        mTareDeviceConfigStateHelper.restoreOriginalValues();
         getContext().unregisterReceiver(mAlarmReceiver);
     }
 
@@ -189,9 +184,6 @@ public class BatterySaverAlarmTest extends BatterySavingTestBase {
     @Test
     public void testAllowWhileIdleThrottled() throws Exception {
         assumeBatterySaverFeature();
-
-        // This test is designed for the old quota system.
-        mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
 
         final String targetPackage = APP_25_PACKAGE;
 

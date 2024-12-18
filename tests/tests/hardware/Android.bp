@@ -47,6 +47,7 @@ aidl_interface {
 
 android_test {
     name: "CtsHardwareTestCases",
+    team: "trendy_team_input_framework",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -55,13 +56,14 @@ android_test {
     ],
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "CtsVirtualDeviceCommonLib",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
+        "com.android.input.flags-aconfig-java",
         "compatibility-device-util-axt",
         "cts-input-lib",
         "cts-kernelinfo-lib",
@@ -75,6 +77,9 @@ android_test {
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
         "android.companion.virtual.flags-aconfig-java",
+        "android.media.codec-aconfig-java",
+        "ui-trace-collector",
+        "collector-device-lib",
     ],
     jni_libs: [
         "libctshardware_jni",
@@ -88,4 +93,85 @@ android_test {
         ":TestIme",
     ],
     sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_cts_tests",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hardware.input.cts.tests"],
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_hardware_lights",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.hardware.lights"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_kernel-presubmit",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: [
+        "android.hardware.input.cts.tests.AsusGamepadTest#testAllKeys",
+        // TODO(b/266108817): android.hardware.input.cts.tests unexpected timeouts
+        "android.hardware.input.cts.tests.AsusGamepadTest#testAllMotions",
+        // TODO(b/184934384):
+        "android.hardware.input.cts.tests.GameviceGv186Test#testAllKeys",
+        "android.hardware.input.cts.tests.GameviceGv186Test#testAllMotions",
+        "android.hardware.input.cts.tests.MicrosoftDesignerKeyboardTest#testAllKeys",
+        "android.hardware.input.cts.tests.MicrosoftSculpttouchTest",
+        "android.hardware.input.cts.tests.NintendoSwitchProTest#testAllKeys",
+        "android.hardware.input.cts.tests.NintendoSwitchProTest#testAllMotions",
+        "android.hardware.input.cts.tests.RazerJunglecatBluetoothTest#testAllKeys",
+        "android.hardware.input.cts.tests.RazerJunglecatBluetoothTest#testAllMotions",
+        "android.hardware.input.cts.tests.RazerKishiTest#testAllKeys",
+        "android.hardware.input.cts.tests.RazerRaijuMobileBluetoothTest#testAllKeys",
+        "android.hardware.input.cts.tests.RazerRaijuMobileBluetoothTest#testHomeKey",
+        "android.hardware.input.cts.tests.RazerServalTest#testAllKeys",
+        "android.hardware.input.cts.tests.RazerServalTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualSenseBluetoothTest#testAllKeys",
+        "android.hardware.input.cts.tests.SonyDualSenseBluetoothTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualSenseUsbTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualshock3UsbTest#testAllKeys",
+        "android.hardware.input.cts.tests.SonyDualshock3UsbTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testAllKeys",
+        "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testAllTouch",
+        "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testBattery",
+        "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testLights",
+        "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testVibrator",
+        "android.hardware.input.cts.tests.SonyDualshock4ProBluetoothTest#testAllKeys",
+        "android.hardware.input.cts.tests.SonyDualshock4ProBluetoothTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualshock4ProBluetoothTest#testVibrator",
+        "android.hardware.input.cts.tests.SonyDualshock4ProUsbTest#testAllKeys",
+        "android.hardware.input.cts.tests.SonyDualshock4ProUsbTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualshock4UsbTest#testAllKeys",
+        "android.hardware.input.cts.tests.SonyDualshock4UsbTest#testAllMotions",
+        "android.hardware.input.cts.tests.SonyDualshock4UsbTest#testBattery",
+        "android.hardware.input.cts.tests.SonyDualshock4UsbTest#testVibrator",
+        "android.hardware.input.cts.tests.UsbVoiceCommandTest#testMediaKeys",
+        "android.hardware.input.cts.tests.UsbVoiceCommandTest#testVoiceAssistantKey",
+        "android.hardware.input.cts.tests.UsbVoiceCommandTest#testVolumeKeys",
+        "android.hardware.lights.cts.tests.LightsManagerTest#testClearLight",
+        "android.hardware.lights.cts.tests.LightsManagerTest#testControlLightsPermissionIsRequiredToUseLights",
+        "android.hardware.lights.cts.tests.LightsManagerTest#testControlLights_firstCallerWinsContention",
+        "android.hardware.lights.cts.tests.LightsManagerTest#testControlLights_onlyEffectiveForLifetimeOfClient",
+        "android.hardware.lights.cts.tests.LightsManagerTest#testControlMultipleLights",
+        "android.hardware.lights.cts.tests.LightsManagerTest#testControlSingleLight",
+    ],
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_postsubmit-Touchpad-sendfling",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingDown_motionEventNotConsumed_getsConvertedToDpadDown",
+        "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingLeft_motionEventNotConsumed_getsConvertedToDpadLeft",
+        "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingRight_motionEventNotConsumed_getsConvertedToDpadRight",
+        "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingUp_motionEventNotConsumed_getsConvertedToDpadUp",
+    ],
 }

@@ -1,5 +1,5 @@
 # Bug component: 25699 = per-file ContentInfoTest.java,KeyboardShortcutInfoTest.java,AutoHandwritingTest.java,HandwritingBoundsOffsetTest.java,KeyboardShortcutGroupTest.java,KeyEventInterceptTest.java,KeyEventTest.java,KeyEventInjectionTest.java,KeyCharacterMapTest.java
-# Bug component: 1075130 = per-file TextureViewTest.java,TextureViewCameraTest.java,PixelCopyTest.java,TextureViewSnapshotTest.java,TextureViewStressTest.java,DisplayRefreshRateTest.java
+# Bug component: 1075130 = per-file SurfaceOOMTest.java,TextureViewTest.java,TextureViewCameraTest.java,PixelCopyTest.java,TextureViewSnapshotTest.java,TextureViewStressTest.java,DisplayRefreshRateTest.java
 jreck@google.com
 njawad@google.com
 alecmouri@google.com

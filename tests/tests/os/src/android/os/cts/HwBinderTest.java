@@ -28,6 +28,7 @@ import android.hidl.manager.V1_0.IServiceNotification;
 import android.os.HwBlob;
 import android.os.NativeHandle;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -49,6 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * because you can't take advantage of the versioning tools, the C++ and Java
  * interoperability, etc..
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class HwBinderTest {
 

@@ -18,12 +18,17 @@ package android.content.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
+
+import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.net.Uri;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
@@ -43,6 +48,31 @@ public class ClipDataTest {
     private static final String LOG_TAG = "ClipDataTest";
 
     @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = {PendingIntent.class})
+    public void testBuilder() {
+        final Uri uri = Uri.fromParts("scheme", "ssp", "fragment");
+        final String htmlText = "<blink>htmlText</blink>";
+        final String text = "text";
+        final Intent intent = new Intent(Intent.ACTION_MAIN);
+        final PendingIntent pi = PendingIntent.getActivity(InstrumentationRegistry.getContext(), 0,
+                intent, PendingIntent.FLAG_IMMUTABLE);
+        final IntentSender sender = pi.getIntentSender();
+        final ClipData.Item clip = new ClipData.Item.Builder()
+                .setHtmlText(htmlText)
+                .setIntentSender(sender)
+                .setText(text)
+                .setUri(uri)
+                .setIntent(intent)
+                .build();
+        assertEquals(clip.getHtmlText(), htmlText);
+        assertEquals(clip.getIntentSender(), sender);
+        assertEquals(clip.getText(), text);
+        assertEquals(clip.getUri(), uri);
+        assertEquals(clip.getIntent(), intent);
+        pi.cancel();
+    }
 
     @Test
     public void testToString_text() {

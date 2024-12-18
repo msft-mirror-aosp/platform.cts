@@ -18,6 +18,13 @@ package android.content.res.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
+
+import android.content.Context;
 import android.content.cts.R;
 import android.content.cts.util.XmlUtils;
 import android.content.pm.ActivityInfo;
@@ -25,20 +32,37 @@ import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
-import android.view.ContextThemeWrapper;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class TypedArrayTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class TypedArrayTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     private static final int DEFINT = -1;
     private static final float DEFFLOAT = -1.0f;
     private static final int EXPECTED_COLOR = 0xff0000ff;
@@ -63,19 +87,18 @@ public class TypedArrayTest extends AndroidTestCase {
 
     private TypedArray mTypedArray;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         mTypedArray = getContext().getTheme()
                 .obtainStyledAttributes(R.style.Whatever, R.styleable.style1);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         mTypedArray.recycle();
     }
 
+    @Test
     public void testSourceResourceIdFromStyle() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.StyleA, R.styleable.style1);
@@ -90,6 +113,7 @@ public class TypedArrayTest extends AndroidTestCase {
         t.recycle();
     }
 
+    @Test
     public void testSourceResourceIdFromLayout() throws Exception {
         XmlResourceParser parser =
                 getContext().getResources().getLayout(R.layout.source_style_layout);
@@ -111,6 +135,7 @@ public class TypedArrayTest extends AndroidTestCase {
         assertEquals(R.style.StyleA, t.getSourceResourceId(R.styleable.style1_type17, 0));
     }
 
+    @Test
     public void testGetType() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);
@@ -137,6 +162,7 @@ public class TypedArrayTest extends AndroidTestCase {
         t.recycle();
     }
 
+    @Test
     public void testBasics() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);
@@ -151,6 +177,7 @@ public class TypedArrayTest extends AndroidTestCase {
         t.recycle();
     }
 
+    @Test
     public void testGetAttributes() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);
@@ -160,6 +187,7 @@ public class TypedArrayTest extends AndroidTestCase {
 
         assertEquals(EXPECTED_COLOR,
                 t.getColor(R.styleable.style1_type3, DEFINT));
+
         assertEquals(EXPECTED_COLOR_STATE,
                 t.getColorStateList(R.styleable.style1_type4).getDefaultColor());
 
@@ -177,9 +205,6 @@ public class TypedArrayTest extends AndroidTestCase {
 
         assertEquals(EXPECTED_PIXEL_SIZE,
                 t.getDimensionPixelSize(R.styleable.style1_type7, DEFINT));
-
-        assertNotNull(t.getDrawable(R.styleable.style1_type8));
-        assertEquals(R.drawable.pass, t.getResourceId(R.styleable.style1_type8, DEFINT));
 
         assertEquals(EXPECTED_FLOAT,
                 t.getFloat(R.styleable.style1_type9, DEFFLOAT));
@@ -207,9 +232,6 @@ public class TypedArrayTest extends AndroidTestCase {
             actual_indices[idx] = attr_index;
         }
 
-        final Typeface font = t.getFont(R.styleable.style1_type18);
-        assertEquals(mContext.getResources().getFont(R.font.sample_regular_font), font);
-
         // NOTE: order does not matter here.
         // R.styleable.style1_typeUndefined is not expected because TYPE_NULL values do not get
         // included in the index list.
@@ -235,6 +257,27 @@ public class TypedArrayTest extends AndroidTestCase {
                 R.styleable.style1_typeEmpty);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    public void testGetDrawableAttributes() {
+        final TypedArray t = getContext().getTheme().obtainStyledAttributes(
+                R.style.Whatever, R.styleable.style1);
+
+        assertNotNull(t.getDrawable(R.styleable.style1_type8));
+        assertEquals(R.drawable.pass, t.getResourceId(R.styleable.style1_type8, DEFINT));
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
+    public void testGetTypefaceAttributes() {
+        final TypedArray t = getContext().getTheme().obtainStyledAttributes(
+                R.style.Whatever, R.styleable.style1);
+
+        final Typeface font = t.getFont(R.styleable.style1_type18);
+        assertEquals(getContext().getResources().getFont(R.font.sample_regular_font), font);
+    }
+
+    @Test
     public void testPeekValue() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);
@@ -247,6 +290,7 @@ public class TypedArrayTest extends AndroidTestCase {
         t.recycle();
     }
 
+    @Test
     public void testHasValue() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);
@@ -264,23 +308,22 @@ public class TypedArrayTest extends AndroidTestCase {
         t.recycle();
     }
 
+    @Test
     public void testRecycle() {
-        final ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(getContext(), 0);
-        contextThemeWrapper.setTheme(R.style.TextAppearance);
-        final TypedArray test = contextThemeWrapper.getTheme().obtainStyledAttributes(
+        final TypedArray test = getContext().getTheme().obtainStyledAttributes(
                 R.styleable.TextAppearance);
         test.recycle();
     }
 
+    @Test
     public void testAutoCloseable() {
-        final ContextThemeWrapper contextThemeWrapper = new ContextThemeWrapper(getContext(), 0);
-        contextThemeWrapper.setTheme(R.style.TextAppearance);
-        try (TypedArray ta = contextThemeWrapper.getTheme().obtainStyledAttributes(
+        try (TypedArray ta = getContext().getTheme().obtainStyledAttributes(
                 R.styleable.TextAppearance)) {
             ta.getIndexCount();
         }
     }
 
+    @Test
     public void testNonResourceString() throws XmlPullParserException, IOException {
         final XmlResourceParser parser = getContext().getResources().getXml(R.xml.test_color);
         XmlUtils.beginDocument(parser, XML_BEGIN);
@@ -295,6 +338,7 @@ public class TypedArrayTest extends AndroidTestCase {
         parser.close();
     }
 
+    @Test
     public void testEmptyXmlAttributeDoesNotFallbackToTheme() throws Exception {
         final Resources resources = getContext().getResources();
         try (final XmlResourceParser parser = resources.getXml(R.xml.empty)) {

@@ -18,6 +18,14 @@ package android.content.res.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNotSame;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
+
 import android.content.Context;
 import android.content.cts.R;
 import android.content.cts.util.XmlUtils;
@@ -29,6 +37,7 @@ import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
+import android.graphics.Movie;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.AdaptiveIconDrawable;
@@ -38,16 +47,22 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.LocaleList;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.util.Xml;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -57,7 +72,19 @@ import java.util.Locale;
 import java.util.stream.IntStream;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ResourcesTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class ResourcesTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
+    private Context getContext() {
+        if (RavenwoodRule.isOnRavenwood()) {
+            return mRavenwoodRule.getContext();
+        } else {
+            return InstrumentationRegistry.getInstrumentation().getTargetContext();
+        }
+    }
+
     private static final String STRING = "string";
     private static final String SIMPLE = "simple";
     private static final String STRING_SIMPLE = "string/simple";
@@ -67,17 +94,17 @@ public class ResourcesTest extends AndroidTestCase {
     public static final float FONT_SCALING_TOLERANCE = 0.05f;
     private Resources mResources;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-
+    @Before
+    public void setUp() throws Exception {
         mResources = getContext().getResources();
     }
 
+    @Test
     public void testIdNull() {
         assertEquals(0, Resources.ID_NULL);
     }
 
+    @Test
     public void testResources() {
         final AssetManager am = new AssetManager();
         final Configuration cfg = new Configuration();
@@ -90,6 +117,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(Configuration.KEYBOARDHIDDEN_YES, c.keyboard);
     }
 
+    @Test
     public void testGetString() {
         try {
             mResources.getString(-1, "%s");
@@ -102,6 +130,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("Go", strGo);
     }
 
+    @Test
     public void testObtainAttributes() throws XmlPullParserException, IOException {
         final XmlPullParser parser = mResources.getXml(R.xml.test_color);
         XmlUtils.beginDocument(parser, "resources");
@@ -115,6 +144,7 @@ public class ResourcesTest extends AndroidTestCase {
         testTypedArray.recycle();
     }
 
+    @Test
     public void testObtainTypedArray() {
         try {
             mResources.obtainTypedArray(-1);
@@ -131,48 +161,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(mResources, ta.getResources());
     }
 
-    private Resources getResources(final Configuration config, final int mcc, final int mnc,
-            final int touchscreen, final int keyboard, final int keysHidden, final int navigation,
-            final int width, final int height) {
-        final AssetManager assmgr = new AssetManager();
-        assmgr.addAssetPath(mContext.getPackageResourcePath());
-        final DisplayMetrics metrics = new DisplayMetrics();
-        final WindowManager wm = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-        final Display d = wm.getDefaultDisplay();
-        d.getMetrics(metrics);
-        config.mcc = mcc;
-        config.mnc = mnc;
-        config.touchscreen = touchscreen;
-        config.keyboard = keyboard;
-        config.keyboardHidden = keysHidden;
-        config.navigation = navigation;
-        metrics.widthPixels = width;
-        metrics.heightPixels = height;
-        return new Resources(assmgr, metrics, config);
-    }
-
-    private static void checkGetText1(final Resources res, final int resId,
-            final String expectedValue) {
-        final String actual = res.getText(resId).toString();
-        assertNotNull("Returned wrong configuration-based simple value: expected <nothing>, "
-                + "got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue);
-        assertEquals("Returned wrong configuration-based simple value: expected " + expectedValue
-                + ", got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue, actual);
-    }
-
-    private static void checkGetText2(final Resources res, final int resId,
-            final String expectedValue) {
-        final String actual = res.getText(resId, null).toString();
-        assertNotNull("Returned wrong configuration-based simple value: expected <nothing>, "
-                + "got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue);
-        assertEquals("Returned wrong configuration-based simple value: expected " + expectedValue
-                + ", got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue, actual);
-    }
-
+    @Test
+    @DisabledOnRavenwood(blockedBy = Movie.class)
     public void testGetMovie() {
         try {
             mResources.getMovie(-1);
@@ -182,6 +172,7 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testGetDimension() {
         try {
             mResources.getDimension(-1);
@@ -195,6 +186,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(48.0f, dim);
     }
 
+    @Test
     public void testGetDimensionPixelOffset() {
         try {
             mResources.getDimensionPixelOffset(-1);
@@ -208,6 +200,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(48, dim);
     }
 
+    @Test
     public void testGetColorStateList() {
         try {
             mResources.getColorStateList(-1);
@@ -222,6 +215,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(mResources.getColor(R.color.testcolor1), focusColor);
     }
 
+    @Test
     public void testGetColorStateListThrows() {
         try {
             // XML that's not a selector or gradient throws
@@ -232,6 +226,7 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testGetColor() {
         try {
             mResources.getColor(-1);
@@ -252,6 +247,7 @@ public class ResourcesTest extends AndroidTestCase {
         return new Resources(new AssetManager(), dm, cfg);
     }
 
+    @Test
     public void testUpdateConfiguration() {
         Resources res = createNewResources();
         final Configuration cfg = new Configuration(res.getConfiguration());
@@ -262,6 +258,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(5.0f, res.getConfiguration().fontScale, 0.001f);
     }
 
+    @Test
     public void testUpdateConfiguration_emptyLocaleIsOverridden() {
         Resources res = createNewResources();
         res.getConfiguration().setLocales(null);
@@ -275,6 +272,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(LocaleList.getDefault(), res.getConfiguration().getLocales());
     }
 
+    @Test
     public void testUpdateConfiguration_copyLocales() {
         Resources res = createNewResources();
         final Configuration cfg = new Configuration(res.getConfiguration());
@@ -290,6 +288,7 @@ public class ResourcesTest extends AndroidTestCase {
                 LocaleList.forLanguageTags("ru,az-Arab").equals(locales));
     }
 
+    @Test
     public void testUpdateConfiguration_emptyAfterUpdate() {
         Resources res = createNewResources();
         final Configuration cfg = new Configuration(res.getConfiguration());
@@ -304,6 +303,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(LocaleList.getDefault(), res.getConfiguration().getLocales());
     }
 
+    @Test
     public void testUpdateConfiguration_fontScaleIs1DoesNotUseAdaptiveFontScalingDeriveDimension() {
         Resources res = createNewResources();
         final DisplayMetrics metrics1x = res.getDisplayMetrics();
@@ -328,6 +328,7 @@ public class ResourcesTest extends AndroidTestCase {
                 .of(pxToDp(100f, metrics1x));
     }
 
+    @Test
     public void testUpdateConfiguration_fontScaleIs1DoesNotUseAdaptiveFontScalingApplyDimension() {
         Resources res = createNewResources();
         final DisplayMetrics metrics1x = res.getDisplayMetrics();
@@ -352,6 +353,7 @@ public class ResourcesTest extends AndroidTestCase {
                 .of(dpToPx(100f, metrics1x));
     }
 
+    @Test
     public void testTypedValue_convertPixelsToDimensionAlias() {
         Resources res = createNewResources();
         final DisplayMetrics metrics = res.getDisplayMetrics();
@@ -389,6 +391,7 @@ public class ResourcesTest extends AndroidTestCase {
                         });
     }
 
+    @Test
     public void testTypedValue_convertDimensionToPixelsAlias() {
         Resources res = createNewResources();
         final DisplayMetrics metrics = res.getDisplayMetrics();
@@ -426,6 +429,7 @@ public class ResourcesTest extends AndroidTestCase {
                         });
     }
 
+    @Test
     public void testGetDimensionPixelSize() {
         try {
             mResources.getDimensionPixelSize(-1);
@@ -443,6 +447,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(-2, mResources.getDimensionPixelSize(R.dimen.neg_dimen_151));
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable() {
         try {
             mResources.getDrawable(-1);
@@ -463,6 +469,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertNull(mResources.getDrawable(R.drawable.fake_image_will_not_decode));
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorResource() {
         final Drawable drawable = mResources.getDrawable(R.color.testcolor1, null);
         assertTrue(drawable instanceof ColorDrawable);
@@ -472,6 +480,8 @@ public class ResourcesTest extends AndroidTestCase {
         );
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorStateListResource() {
         final Drawable drawable = mResources.getDrawable(R.color.testcolor, null);
         assertTrue(drawable instanceof ColorStateListDrawable);
@@ -483,6 +493,8 @@ public class ResourcesTest extends AndroidTestCase {
                 ((ColorStateListDrawable) drawable).getColorStateList().getDefaultColor());
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorStateListConfigurations() {
         final Configuration dayConfiguration = new Configuration(mResources.getConfiguration());
         final Configuration nightConfiguration = new Configuration(mResources.getConfiguration());
@@ -517,6 +529,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(ActivityInfo.CONFIG_UI_MODE, nightDrawable.getChangingConfigurations());
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_StackOverflowErrorDrawable() {
         try {
             mResources.getDrawable(R.drawable.drawable_recursive);
@@ -526,6 +540,8 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_StackOverflowErrorDrawable_mipmap() {
         try {
             mResources.getDrawable(R.mipmap.icon_recursive);
@@ -535,6 +551,8 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensity() {
         final Drawable ldpi = mResources.getDrawableForDensity(
                 R.drawable.density_test, DisplayMetrics.DENSITY_LOW);
@@ -549,6 +567,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(100, hdpi.getIntrinsicWidth());
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensityWithZeroDensityIsSameAsGetDrawable() {
         final Drawable defaultDrawable = mResources.getDrawable(R.drawable.density_test, null);
         assertNotNull(defaultDrawable);
@@ -566,6 +586,8 @@ public class ResourcesTest extends AndroidTestCase {
         return ((AdaptiveIconDrawable) drawable).getForeground();
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensityWithAdaptiveIconDrawable() {
         final Drawable ldpi = extractForegroundFromAdaptiveIconDrawable(R.drawable.adaptive_icon,
                 DisplayMetrics.DENSITY_LOW);
@@ -583,6 +605,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(100, hdpi.getIntrinsicWidth());
     }
 
+    @Test
     public void testGetAnimation() throws Exception {
         try {
             mResources.getAnimation(-1);
@@ -600,30 +623,37 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("@17432582", ani.getAttributeValue(0));
     }
 
+    @Test
     public void testGetQuantityString1() {
+        // Need to do this due to b/339653024.
+        final Resources res = resourcesForLanguage("en");
         try {
-            mResources.getQuantityString(-1, 1, "");
+            res.getQuantityString(-1, 1, "");
             fail("Failed at testGetQuantityString1");
         } catch (NotFoundException e) {
             //expected
         }
 
-        final String strGo = mResources.getQuantityString(R.plurals.plurals_test, 1, "");
+        final String strGo = res.getQuantityString(R.plurals.plurals_test, 1, "");
         assertEquals("A dog", strGo);
     }
 
+    @Test
     public void testGetQuantityString2() {
+        // Need to do this due to b/339653024.
+        final Resources res = resourcesForLanguage("en");
         try {
-            mResources.getQuantityString(-1, 1);
+            res.getQuantityString(-1, 1);
             fail("Failed at testGetQuantityString2");
         } catch (NotFoundException e) {
             //expected
         }
 
-        final String strGo = mResources.getQuantityString(R.plurals.plurals_test, 1);
+        final String strGo = res.getQuantityString(R.plurals.plurals_test, 1);
         assertEquals("A dog", strGo);
     }
 
+    @Test
     public void testGetInteger() {
         try {
             mResources.getInteger(-1);
@@ -636,6 +666,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(10, i);
     }
 
+    @Test
     public void testGetValue() {
         final TypedValue tv = new TypedValue();
 
@@ -651,6 +682,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("res/raw/text.txt", tv.coerceToString());
     }
 
+    @Test
     public void testGetValueForDensity() {
         final TypedValue tv = new TypedValue();
 
@@ -667,6 +699,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("hdpi", tv.coerceToString());
     }
 
+    @Test
     public void testGetValueForDensityWithZeroDensityIsSameAsGetValue() {
         final TypedValue defaultTv = new TypedValue();
         mResources.getValue(R.string.density_string, defaultTv, false);
@@ -680,16 +713,19 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(defaultTv.string, densityTv.string);
     }
 
+    @Test
     public void testGetAssets() {
         final AssetManager aM = mResources.getAssets();
         assertNotNull(aM);
         assertTrue(aM.isUpToDate());
     }
 
+    @Test
     public void testGetSystem() {
         assertNotNull(Resources.getSystem());
     }
 
+    @Test
     public void testGetLayout() throws Exception {
         try {
             mResources.getLayout(-1);
@@ -706,6 +742,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("@" + R.id.abslistview_root, layout.getAttributeValue(0));
     }
 
+    @Test
     public void testGetBoolean() {
         try {
             mResources.getBoolean(-1);
@@ -718,11 +755,13 @@ public class ResourcesTest extends AndroidTestCase {
         assertTrue(b);
     }
 
+    @Test
     public void testgetFraction() {
         assertEquals(1, (int)mResources.getFraction(R.dimen.frac100perc, 1, 1));
         assertEquals(100, (int)mResources.getFraction(R.dimen.frac100perc, 100, 1));
     }
 
+    @Test
     public void testParseBundleExtras() throws XmlPullParserException, IOException {
         final Bundle b = new Bundle();
         XmlResourceParser parser = mResources.getXml(R.xml.extra);
@@ -734,6 +773,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("android", b.getString("google"));
     }
 
+    @Test
     public void testParseBundleExtra() throws XmlPullParserException, IOException {
         final Bundle b = new Bundle();
         XmlResourceParser parser = mResources.getXml(R.xml.extra);
@@ -745,6 +785,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals("Lee", b.getString("Bruce"));
     }
 
+    @Test
     public void testGetIdentifier() {
 
         int resid = mResources.getIdentifier(COM_ANDROID_CTS_STUB_IDENTIFIER, null, null);
@@ -757,6 +798,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(R.string.simple, resid);
     }
 
+    @Test
     public void testGetIntArray() {
         final int NO_EXIST_ID = -1;
         try {
@@ -788,6 +830,7 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testGetQuantityText() {
         CharSequence cs;
         final Resources res = resourcesForLanguage("cs");
@@ -809,6 +852,8 @@ public class ResourcesTest extends AndroidTestCase {
 
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = ColorDrawable.class)
     public void testChangingConfiguration() {
         ColorDrawable dr1 = (ColorDrawable) mResources.getDrawable(R.color.varies_uimode);
         assertEquals(ActivityInfo.CONFIG_UI_MODE, dr1.getChangingConfigurations());
@@ -825,10 +870,12 @@ public class ResourcesTest extends AndroidTestCase {
         return new Resources(mResources.getAssets(), mResources.getDisplayMetrics(), config);
     }
 
+    @Test
     public void testGetResourceEntryName() {
         assertEquals(SIMPLE, mResources.getResourceEntryName(R.string.simple));
     }
 
+    @Test
     public void testGetResourceName() {
         final String fullName = mResources.getResourceName(R.string.simple);
         assertEquals(COM_ANDROID_CTS_STUB_IDENTIFIER, fullName);
@@ -840,6 +887,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(STRING, typeName);
     }
 
+    @Test
     public void testGetStringWithIntParam() {
         checkString(R.string.formattedStringNone,
                 mResources.getString(R.string.formattedStringNone),
@@ -867,6 +915,7 @@ public class ResourcesTest extends AndroidTestCase {
                 expected, actual);
     }
 
+    @Test
     public void testGetStringArray() {
         checkStringArray(R.array.strings, new String[] {
                 "zero", "1", "here"
@@ -904,6 +953,7 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
     public void testGetValueWithID() {
         tryBoolean(R.bool.trueRes, true);
         tryBoolean(R.bool.falseRes, false);
@@ -918,25 +968,26 @@ public class ResourcesTest extends AndroidTestCase {
 
     private void tryBoolean(final int resid, final boolean expected) {
         final TypedValue v = new TypedValue();
-        mContext.getResources().getValue(resid, v, true);
+        getContext().getResources().getValue(resid, v, true);
         assertEquals(TypedValue.TYPE_INT_BOOLEAN, v.type);
         assertEquals("Expecting boolean value " + expected + " got " + v
                 + " from TypedValue: in resource 0x" + Integer.toHexString(resid),
                 expected, v.data != 0);
         assertEquals("Expecting boolean value " + expected + " got " + v
                 + " from getBoolean(): in resource 0x" + Integer.toHexString(resid),
-                expected, mContext.getResources().getBoolean(resid));
+                expected, getContext().getResources().getBoolean(resid));
     }
 
     private void tryString(final int resid, final String expected) {
         final TypedValue v = new TypedValue();
-        mContext.getResources().getValue(resid, v, true);
+        getContext().getResources().getValue(resid, v, true);
         assertEquals(TypedValue.TYPE_STRING, v.type);
         assertEquals("Expecting string value " + expected + " got " + v
                 + ": in resource 0x" + Integer.toHexString(resid),
                 expected, v.string);
     }
 
+    @Test
     public void testRawResource() throws Exception {
         assertNotNull(mResources.newTheme());
 
@@ -976,6 +1027,8 @@ public class ResourcesTest extends AndroidTestCase {
         is.close();
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidResourceId() {
         try {
             mResources.getFont(-1);
@@ -985,6 +1038,8 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_fontFile() {
         Typeface font = mResources.getFont(R.font.sample_regular_font);
 
@@ -992,6 +1047,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertNotSame(Typeface.DEFAULT, font);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFile() {
         Typeface font = mResources.getFont(R.font.samplexmlfont);
 
@@ -1017,6 +1074,8 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileWithTtc() {
         // Here we test that building typefaces by indexing in font collections works correctly.
         // We want to ensure that the built typefaces correspond to the fonts with the right index.
@@ -1033,6 +1092,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(getLargerTypeface("b", normalFont, italicFont), italicFont);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileWithVariationSettings() {
         // Here we test that specifying variation settings for fonts in XMLs works.
         // We build typefaces from two families containing one font each, using the same font
@@ -1048,6 +1109,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(getLargerTypeface("-", typeface1, typeface2), typeface2);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidXmlFile() {
         try {
             assertNull(mResources.getFont(R.font.invalid_xmlfamily));
@@ -1062,6 +1125,8 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidFontFiles() {
         try {
             mResources.getFont(R.font.invalid_xmlfont);
@@ -1093,6 +1158,8 @@ public class ResourcesTest extends AndroidTestCase {
 
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_brokenFontFiles() {
         try {
             mResources.getFont(R.font.brokenfont);
@@ -1109,6 +1176,8 @@ public class ResourcesTest extends AndroidTestCase {
         }
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_fontFileIsCached() {
         Typeface font = mResources.getFont(R.font.sample_regular_font);
         Typeface font2 = mResources.getFont(R.font.sample_regular_font);
@@ -1116,6 +1185,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(font, font2);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileIsCached() {
         Typeface font = mResources.getFont(R.font.samplexmlfont);
         Typeface font2 = mResources.getFont(R.font.samplexmlfont);
@@ -1123,6 +1194,8 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(font, font2);
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_resolveByFontTable() {
         assertEquals(Typeface.NORMAL, mResources.getFont(R.font.sample_regular_font).getStyle());
         assertEquals(Typeface.BOLD, mResources.getFont(R.font.sample_bold_font).getStyle());
@@ -1137,6 +1210,8 @@ public class ResourcesTest extends AndroidTestCase {
                 mResources.getFont(R.font.sample_bolditalic_family).getStyle());
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testComplexColorDrawableAttributeInflation() {
         final LayoutInflater layoutInflater = (LayoutInflater) getContext().getSystemService(
                 Context.LAYOUT_INFLATER_SERVICE);
@@ -1146,6 +1221,7 @@ public class ResourcesTest extends AndroidTestCase {
         assertTrue(view.getBackground() instanceof ColorStateListDrawable);
     }
 
+    @Test
     public void testGetAttributeSetSourceResId() {
         assertEquals(Resources.ID_NULL, Resources.getAttributeSetSourceResId(null));
 
@@ -1167,11 +1243,14 @@ public class ResourcesTest extends AndroidTestCase {
         assertEquals(R.anim.anim_rotate, Resources.getAttributeSetSourceResId(anim_rotate_set));
     }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testSystemFontFamilyReturnsSystemFont() {
         Typeface typeface = mResources.getFont(R.font.sample_downloadable_font);
         assertEquals(typeface, Typeface.create("sans-serif", Typeface.NORMAL));
     }
 
+    @Test
     public void testThemeCompare() {
         Resources.Theme t1 = mResources.newTheme();
         Resources.Theme t2 = mResources.newTheme();

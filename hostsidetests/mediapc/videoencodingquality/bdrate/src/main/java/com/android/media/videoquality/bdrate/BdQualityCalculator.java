@@ -21,10 +21,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.math3.analysis.interpolation.AkimaSplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
-import java.util.logging.Logger;
-
 public class BdQualityCalculator {
-    private static final Logger LOGGER = Logger.getLogger(BdQualityCalculator.class.getName());
 
     private BdQualityCalculator() {}
 

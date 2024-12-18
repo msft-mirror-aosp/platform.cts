@@ -18,11 +18,9 @@ package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 
+import static org.mockito.Mockito.*;
+
 import android.graphics.ImageFormat;
-import android.view.Surface;
-
-import com.android.ex.camera2.blocking.BlockingSessionCallback;
-
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCaptureSession.CaptureCallback;
@@ -31,7 +29,6 @@ import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
-import android.util.Size;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
@@ -40,22 +37,22 @@ import android.hardware.camera2.params.SessionConfiguration;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
-import android.view.SurfaceView;
+import android.util.Size;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 
+import com.android.ex.camera2.blocking.BlockingSessionCallback;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatcher;
 
-import static org.mockito.Mockito.*;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.HashMap;
-
-import org.junit.runners.Parameterized;
-import org.junit.runner.RunWith;
-import org.junit.Test;
+import java.util.List;
 
 /**
  * CameraDevice preview test by using SurfaceView.
@@ -484,20 +481,6 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
                 new OutputConfiguration(OutputConfiguration.SURFACE_GROUP_ID_NONE, mReaderSurface);
         outputSurfaces.add(jpegOutput);
 
-        // Confirm that other surface types aren't supported for OutputConfiguration
-        Class[] unsupportedClasses =
-                {android.media.ImageReader.class, android.media.MediaCodec.class,
-                 android.media.MediaRecorder.class};
-
-        for (Class klass : unsupportedClasses) {
-            try {
-                OutputConfiguration bad = new OutputConfiguration(maxPreviewSize, klass);
-                fail("OutputConfiguration allowed use of unsupported class " + klass);
-            } catch (IllegalArgumentException e) {
-                // expected
-            }
-        }
-
         // Confirm that zero surface size isn't supported for OutputConfiguration
         Size[] sizeZeros = { new Size(0, 0), new Size(1, 0), new Size(0, 1) };
         for (Size size : sizeZeros) {
@@ -511,7 +494,7 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
 
         // Check whether session configuration is supported
         CameraTestUtils.checkSessionConfigurationSupported(mCamera, mHandler, outputSurfaces,
-                /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
+                /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR, mCameraManager,
                 /*defaultSupport*/ true, "Deferred session configuration query failed");
 
         // Create session

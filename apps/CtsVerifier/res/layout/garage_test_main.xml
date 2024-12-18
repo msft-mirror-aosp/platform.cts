@@ -15,6 +15,7 @@
 -->
 <com.android.cts.verifier.BoxInsetLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:fitsSystemWindows="@bool/fit_system_windows"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
     <LinearLayout app:ctsv_layout_box="all"
@@ -30,14 +31,14 @@
             android:id="@+id/car_garage_mode_results"/>
         <Button
             android:id="@+id/car_wifi_settings"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
             android:layout_marginTop="10dp"
             android:text="@string/car_wifi_settings"/>
         <Button
             android:id="@+id/launch_garage_monitor"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
             android:layout_marginTop="10dp"

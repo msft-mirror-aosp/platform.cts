@@ -18,7 +18,7 @@ package com.android.bedstead.nene.packages;
 
 import static android.os.Build.VERSION_CODES.S;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -31,12 +31,12 @@ import android.content.Intent;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.Versions;
@@ -511,5 +511,10 @@ public class PackagesTest {
 
             assertThat(sTestApp.pkg().runningProcess(sDeviceState.workProfile())).isNotNull();
         }
+    }
+
+    @Test
+    public void dump_dumpsState() {
+        assertThat(TestApis.packages().dump()).isNotEmpty();
     }
 }

@@ -29,6 +29,9 @@ cc_test {
         "dhry_1.c",
         "dhry_2.c",
     ],
+    // This is historical code that doesn't build as C23,
+    // but we don't want to unnecessarily fork.
+    c_std: "gnu99",
     cflags: [
         "-O3",
         "-fno-inline-functions",

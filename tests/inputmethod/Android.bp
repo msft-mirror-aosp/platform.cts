@@ -26,7 +26,7 @@ android_test {
         "general-tests",
     ],
     compile_multilib: "both",
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
@@ -43,11 +43,14 @@ android_test {
         "testng",
         "kotlin-test",
         "cts-wm-util",
+        "sts-device-util",
         "cts_window-extensions",
         "statsdprotonano",
         "android.view.inputmethod.flags-aconfig-java",
+        "com.android.text.flags-aconfig-java",
         "flag-junit",
         "ravenwood-junit",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",
@@ -69,6 +72,7 @@ android_test {
         ":CtsMockLargeResourceInputMethod",
         ":CtsMockInputMethodWithSubtypes",
         ":CtsInputMethodTestLauncher",
+        ":TestIme",
     ],
     per_testcase_directory: true,
 }
@@ -78,7 +82,7 @@ android_ravenwood_test {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
         "src/android/view/inputmethod/cts/InputBindingTest.java",

@@ -25,7 +25,6 @@ import static org.junit.Assert.fail;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -33,9 +32,9 @@ import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.MockTestActivityUtil;
 import android.view.inputmethod.cts.util.UnlockScreenRule;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -58,13 +57,6 @@ public final class PackageVisibilityTest extends EndToEndImeTestBase {
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.PackageVisibilityTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @AppModeFull
     @Test

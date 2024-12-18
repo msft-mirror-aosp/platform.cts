@@ -25,7 +25,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [":CtsJvmtiTaggingDeviceApp"],
+    device_common_data: [":CtsJvmtiTaggingDeviceApp"],
     test_options: {
         unit_test: false,
     },

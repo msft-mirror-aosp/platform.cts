@@ -36,7 +36,8 @@ import android.os.Bundle;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -60,6 +61,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BundleTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
@@ -294,7 +296,7 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SpannableString.class)
+    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testGetCharSequence() {
         initSpannable();
         final CharSequence cS = "Bruce Lee";
@@ -311,7 +313,7 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SpannableString.class)
+    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testGetCharSequenceArray() {
         initSpannable();
         assertNull(mBundle.getCharSequenceArray(KEY1));
@@ -334,7 +336,7 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SpannableString.class)
+    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testGetCharSequenceArrayList() {
         initSpannable();
         assertNull(mBundle.getCharSequenceArrayList(KEY1));
@@ -959,7 +961,6 @@ public class BundleTest {
     // return 0 if no fd and return 1 if has fd for the tested Bundle
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testDescribeContents() {
         assertTrue((mBundle.describeContents()
                 & Parcelable.CONTENTS_FILE_DESCRIPTOR) == 0);
@@ -967,9 +968,9 @@ public class BundleTest {
         final Parcel parcel = Parcel.obtain();
         try {
             mBundle.putParcelable("foo", ParcelFileDescriptor.open(
-                    new File("/system"), ParcelFileDescriptor.MODE_READ_ONLY));
+                    new File("/dev/zero"), ParcelFileDescriptor.MODE_READ_ONLY));
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("can't open /system", e);
+            throw new RuntimeException("can't open /dev/zero", e);
         }
         assertTrue((mBundle.describeContents()
                 & Parcelable.CONTENTS_FILE_DESCRIPTOR) != 0);
@@ -992,7 +993,6 @@ public class BundleTest {
     // case 3: The tested Bundle should has FileDescriptor
     //  if put a Parcelable object, which is created with a FileDescriptor, into it.
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withParcelFdItem() {
         assertFalse(mBundle.hasFileDescriptors());
 
@@ -1000,9 +1000,9 @@ public class BundleTest {
         assertFalse(parcel.hasFileDescriptors());
         try {
             mBundle.putParcelable("foo", ParcelFileDescriptor.open(
-                    new File("/system"), ParcelFileDescriptor.MODE_READ_ONLY));
+                    new File("/dev/zero"), ParcelFileDescriptor.MODE_READ_ONLY));
         } catch (FileNotFoundException e) {
-            throw new RuntimeException("can't open /system", e);
+            throw new RuntimeException("can't open /dev/zero", e);
         }
         assertTrue(mBundle.hasFileDescriptors());
         mBundle.writeToParcel(parcel, 0);
@@ -1033,7 +1033,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withParcelable() throws Exception {
         assertTrue(mBundle.isEmpty());
         assertFalse(mBundle.hasFileDescriptors());
@@ -1046,7 +1045,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withStringArray() throws Exception {
         assertTrue(mBundle.isEmpty());
         assertFalse(mBundle.hasFileDescriptors());
@@ -1056,7 +1054,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withSparseArray() throws Exception {
         assertTrue(mBundle.isEmpty());
         assertFalse(mBundle.hasFileDescriptors());
@@ -1077,7 +1074,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withParcelableArray() throws Exception {
         assertTrue(mBundle.isEmpty());
         assertFalse(mBundle.hasFileDescriptors());
@@ -1092,7 +1088,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptorsOnNullValuedCollection() {
         assertFalse(mBundle.hasFileDescriptors());
 
@@ -1115,7 +1110,6 @@ public class BundleTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withNestedContainers() throws IOException {
         // Purposely omitting generic types here, this is still "valid" app code after all.
         ArrayList nested = new ArrayList(
@@ -1132,7 +1126,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withOriginalParcelContainingFdButNotItems() throws IOException {
         mBundle.putParcelable("fd", ParcelFileDescriptor.dup(FileDescriptor.in));
         mBundle.putParcelable("parcelable", new CustomParcelable(13, "Tiramisu"));
@@ -1148,7 +1141,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testHasFileDescriptors_withOriginalParcelAndItemsContainingFd() throws IOException {
         mBundle.putParcelable("fd", ParcelFileDescriptor.dup(FileDescriptor.in));
         mBundle.putParcelable("parcelable", new CustomParcelable(13, "Tiramisu"));
@@ -1285,7 +1277,6 @@ public class BundleTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testHasFileDescriptor() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
         try {

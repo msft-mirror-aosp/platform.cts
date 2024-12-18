@@ -28,7 +28,7 @@ java_test_host {
         "platform-test-annotations-host",
         "compatibility-host-util",
     ],
-    data: [
+    device_common_data: [
         ":CtsMultiuserApp",
         ":CtsMultiuserDpc",
     ],

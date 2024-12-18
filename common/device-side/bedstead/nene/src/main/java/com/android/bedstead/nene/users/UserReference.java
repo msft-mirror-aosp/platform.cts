@@ -21,21 +21,24 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_AVAILABLE;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
+import static android.cts.testapisreflection.TestApisReflectionKt.forceUpdateUserSetupComplete;
+import static android.cts.testapisreflection.TestApisReflectionKt.getUserType;
 import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.S;
+import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MODIFY_QUIET_MODE;
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_USERS;
 import static com.android.bedstead.nene.users.Users.users;
 import static com.android.bedstead.nene.utils.Versions.U;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.MODIFY_QUIET_MODE;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_USERS;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.content.pm.UserInfo;
 import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -50,14 +53,16 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
-import com.android.bedstead.nene.permissions.CommonPermissions;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommand.Builder;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.CommonPermissions;
+import com.android.bedstead.permissions.PermissionContext;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -136,12 +141,14 @@ public final class UserReference implements AutoCloseable {
         if (!Versions.meetsMinimumSdkVersionRequirement(U)) {
             return false;
         }
+
         return userInfo().isForTesting();
     }
 
     /**
      * {@code true} if this is the main user.
      */
+    @SuppressLint("NewApi")
     @Experimental
     public boolean isMain() {
         if (!Versions.meetsMinimumSdkVersionRequirement(U)) {
@@ -167,6 +174,7 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user does not exist then nothing will happen. If the removal fails for any other
      * reason, a {@link NeneException} will be thrown.
      */
+    @CanIgnoreReturnValue
     public UserReference remove() {
         Log.i(LOG_TAG, "Trying to remove user " + mId);
         if (!exists()) {
@@ -253,6 +261,7 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user does not exist, or the start fails for any other reason, a
      * {@link NeneException} will be thrown.
      */
+    @CanIgnoreReturnValue
     public UserReference start() {
         Log.i(LOG_TAG, "Starting user " + mId);
         return startUser(Display.INVALID_DISPLAY);
@@ -290,8 +299,7 @@ public final class UserReference implements AutoCloseable {
             if (visibleOnDisplay) {
                 builder.addOperand("--display").addOperand(displayId);
             }
-            builder
-                    .addOperand(mId) // NOTE: id MUST be the last argument
+            builder.addOperand(mId) // NOTE: id MUST be the last argument
                     .validate(ShellCommandUtils::startsWithSuccess)
                     .execute();
 
@@ -364,6 +372,7 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user is a profile, then this will make the parent the foreground user. It will
      * still return the {@link UserReference} of the profile in that case.
      */
+    @CanIgnoreReturnValue
     public UserReference switchTo() {
         UserReference parent = parent();
         if (parent != null) {
@@ -478,6 +487,7 @@ public final class UserReference implements AutoCloseable {
     }
 
     /** Is the user {@link UserManager#isUserVisible() visible}? */
+    @SuppressLint("NewApi")
     public boolean isVisible() {
         if (!Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
             // Best effort to define visible as "current user or a profile of the current user"
@@ -544,7 +554,7 @@ public final class UserReference implements AutoCloseable {
                 try (PermissionContext p = TestApis.permissions()
                         .withPermission(CREATE_USERS)
                         .withPermissionOnVersionAtLeast(U, QUERY_USERS)) {
-                    String userTypeName = mUserManager.getUserType();
+                    String userTypeName = getUserType(mUserManager);
                     if (userTypeName.equals("")) {
                         throw new NeneException("User does not exist " + this);
                     }
@@ -619,7 +629,7 @@ public final class UserReference implements AutoCloseable {
         if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
             return TestApis.users().all().stream().anyMatch(u -> u.equals(this));
         }
-        return users().anyMatch(ui -> ui.id == id());
+        return users().anyMatch(ui -> ui.getId() == id());
     }
 
     /**
@@ -646,7 +656,7 @@ public final class UserReference implements AutoCloseable {
                 /* user= */ this, USER_SETUP_COMPLETE_KEY, complete ? 1 : 0);
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            devicePolicyManager.forceUpdateUserSetupComplete(id());
+            forceUpdateUserSetupComplete(devicePolicyManager, id());
         }
     }
 
@@ -691,7 +701,7 @@ public final class UserReference implements AutoCloseable {
                     .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
                     .execute();
         } catch (AdbException e) {
-            if (e.output().contains("null or empty")) {
+            if (e.output().contains("old credential was not provided")) {
                 throw new NeneException("Error attempting to set lock credential when there is "
                         + "already one set. Use the version which takes the existing credential");
             }
@@ -882,6 +892,7 @@ public final class UserReference implements AutoCloseable {
      * @return {@code false} if user's credential is needed in order to turn off quiet mode,
      *         {@code true} otherwise.
      */
+    @CanIgnoreReturnValue
     @TargetApi(P)
     @Experimental
     public boolean setQuietMode(boolean enabled) {
@@ -973,7 +984,7 @@ public final class UserReference implements AutoCloseable {
     private UserInfo userInfo() {
         Versions.requireMinimumVersion(S);
 
-        return users().filter(ui -> ui.id == id()).findFirst()
+        return users().filter(ui -> ui.getId() == id()).findFirst()
                 .orElseThrow(() -> new NeneException("User does not exist " + this));
     }
 
@@ -1020,11 +1031,60 @@ public final class UserReference implements AutoCloseable {
 
         UserInfo userInfo = userInfo();
         if (!userInfo.supportsSwitchTo()) {
-            return "supportsSwitchTo=false(partial=" + userInfo.partial + ", isEnabled="
-                    + userInfo.isEnabled() + ", preCreated=" + userInfo.preCreated + ", isFull="
+            return "supportsSwitchTo=false(partial=" + userInfo.getPartial() + ", isEnabled="
+                    + userInfo.isEnabled() + ", preCreated=" + userInfo.getPreCreated() + ", isFull="
                     + userInfo.isFull() + ")";
         }
 
         return null;
+    }
+
+    /**
+     * checks if user is ephemeral
+     */
+    public boolean isEphemeral() {
+        return userInfo().isEphemeral();
+    }
+
+    /**
+     * checks if user is a guest
+     */
+    public boolean isGuest() {
+        return userInfo().isGuest();
+    }
+
+    /**
+     * Check if the provided user {@code credential} equals the set credential
+     *
+     * @param credential The credential to verify.
+     * @return {@code true} if the credential matches.
+     */
+    public boolean lockCredentialEquals(String credential) {
+        try {
+            return ShellCommand.builder("cmd lock_settings verify")
+                    .addOperand("--user")
+                    .addOperand(userInfo().getId())
+                    .addOperand(credential.isEmpty() ? "" : "--old "+credential)
+                    .execute().startsWith("Lock credential verified");
+        } catch (AdbException e) {
+            throw new NeneException("Could not verify user credential");
+        }
+    }
+
+    /** Checks if a profile of type {@code userType} can be created. */
+    @Experimental
+    @SuppressWarnings("NewApi") // We include a T version check in the method.
+    public boolean canCreateProfile(UserType userType) {
+        // UserManager#getRemainingCreatableProfileCount is added in T, so we need a version guard.
+        if (Versions.meetsMinimumSdkVersionRequirement(TIRAMISU)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
+                return mUserManager.getRemainingCreatableProfileCount(userType.name()) > 0;
+            }
+        }
+
+        // For S and older versions, we need to keep the previous behavior by returning true here
+        // so that the check can pass.
+        Log.d(LOG_TAG, "canCreateProfile pre-T: true");
+        return true;
     }
 }

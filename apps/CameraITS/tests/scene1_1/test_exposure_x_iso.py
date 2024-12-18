@@ -16,9 +16,8 @@
 
 import logging
 import os.path
-import matplotlib
-from matplotlib import pylab
 
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -45,7 +44,7 @@ _THRESH_MAX_LEVEL_DIFF_WIDE_RANGE = 0.06
 _THRESH_MAX_OUTLIER_DIFF = 0.1
 _THRESH_ROUND_DOWN_ISO = 0.04
 _THRESH_ROUND_DOWN_EXP = 0.03
-_THRESH_ROUND_DOWN_EXP0 = 1.00  # TOL at 0ms exp; theoretical limit @ 4-line exp
+_THRESH_ROUND_DOWN_EXP0 = 1.00  # RTOL @0ms exp; theoretical limit @ 4-line exp
 _THRESH_EXP_KNEE = 6E6  # exposures less than knee have relaxed tol
 _WIDE_EXP_RANGE_THRESH = 64.0  # threshold for 'wide' range sensor
 
@@ -97,18 +96,17 @@ def plot_rgb_means(title, x, r, g, b, test_name_with_path):
     b: b plane menas
     test_name_with_path: path for saved files
   """
-  pylab.figure(title)
-  pylab.semilogx(x, r, 'ro-')
-  pylab.semilogx(x, g, 'go-')
-  pylab.semilogx(x, b, 'bo-')
-  pylab.title(f'{_NAME} {title}')
-  pylab.xlabel('Gain Multiplier')
-  pylab.ylabel('Normalized RGB Plane Avg')
-  pylab.minorticks_off()
-  pylab.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
-  pylab.ylim([0, 1])
-  plot_name = f'{test_name_with_path}_plot_rgb_means.png'
-  matplotlib.pyplot.savefig(plot_name)
+  plt.figure(title)
+  plt.semilogx(x, r, 'ro-')
+  plt.semilogx(x, g, 'go-')
+  plt.semilogx(x, b, 'bo-')
+  plt.title(f'{_NAME} {title}')
+  plt.xlabel('Gain Multiplier')
+  plt.ylabel('Normalized RGB Plane Avg')
+  plt.minorticks_off()
+  plt.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
+  plt.ylim([0, 1])
+  plt.savefig(f'{test_name_with_path}_plot_rgb_means.png')
 
 
 def plot_raw_means(title, x, r, gr, gb, b, test_name_with_path):
@@ -123,20 +121,20 @@ def plot_raw_means(title, x, r, gr, gb, b, test_name_with_path):
     b: B plane menas
     test_name_with_path: path for saved files
   """
-  pylab.figure(title)
-  pylab.semilogx(x, r, 'ro-', label='R')
-  pylab.semilogx(x, gr, 'go-', label='Gr')
-  pylab.semilogx(x, gb, 'ko-', label='Gb')
-  pylab.semilogx(x, b, 'bo-', label='B')
-  pylab.title(f'{_NAME} {title}')
-  pylab.xlabel('Gain Multiplier')
-  pylab.ylabel('Normalized RAW Plane Avg')
-  pylab.minorticks_off()
-  pylab.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
-  pylab.ylim([0, 1])
-  pylab.legend(numpoints=1)
+  plt.figure(title)
+  plt.semilogx(x, r, 'ro-', label='R')
+  plt.semilogx(x, gr, 'go-', label='Gr')
+  plt.semilogx(x, gb, 'ko-', label='Gb')
+  plt.semilogx(x, b, 'bo-', label='B')
+  plt.title(f'{_NAME} {title}')
+  plt.xlabel('Gain Multiplier')
+  plt.ylabel('Normalized RAW Plane Avg')
+  plt.minorticks_off()
+  plt.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
+  plt.ylim([0, 1])
+  plt.legend(numpoints=1)
   plot_name = f'{test_name_with_path}_plot_raw_means.png'
-  matplotlib.pyplot.savefig(plot_name)
+  plt.savefig(plot_name)
 
 
 def check_line_fit(color, mults, values, thresh_max_level_diff):
@@ -226,7 +224,7 @@ class ExposureXIsoTest(its_base_test.ItsBaseTest):
                   camera_properties_utils.manual_sensor(props))
       sync_latency = camera_properties_utils.sync_latency(props)
       logging.debug('sync latency: %d frames', sync_latency)
-      largest_yuv = capture_request_utils.get_largest_yuv_format(props)
+      largest_yuv = capture_request_utils.get_largest_format('yuv', props)
       match_ar = (largest_yuv['width'], largest_yuv['height'])
       fmt = capture_request_utils.get_near_vga_yuv_format(
           props, match_ar=match_ar)
@@ -267,10 +265,10 @@ class ExposureXIsoTest(its_base_test.ItsBaseTest):
               (_THRESH_EXP_KNEE - e_req) / _THRESH_EXP_KNEE)
         if not 0 <= s_req - s_res < s_req * _THRESH_ROUND_DOWN_ISO:
           raise AssertionError(f's_req: {s_req}, s_res: {s_res}, '
-                               f'TOL=-{_THRESH_ROUND_DOWN_ISO*100}%')
+                               f'RTOL=-{_THRESH_ROUND_DOWN_ISO*100}%')
         if not 0 <= e_req - e_res < e_req * thresh_round_down_exp:
           raise AssertionError(f'e_req: {e_req}ns, e_res: {e_res}ns, '
-                               f'TOL=-{thresh_round_down_exp*100}%')
+                               f'RTOL=-{thresh_round_down_exp*100}%')
         s_e_product_res = s_res * e_res
         req_res_ratio = s_e_product / s_e_product_res
         logging.debug('Capture result s: %d, e: %dns', s_res, e_res)

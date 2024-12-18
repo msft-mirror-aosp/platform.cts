@@ -53,7 +53,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.MediaUtils;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -830,7 +829,7 @@ public class BitmapFactoryTest {
     }
 
     @Test
-    @CddTest(requirement = "5.1.5/C-0-6")
+    @CddTest(requirements = {"5.1.5/C-0-6"})
     @Parameters(method = "parametersForTestDng")
     @LargeTest
     public void testDng(DNG dng) {
@@ -1143,6 +1142,14 @@ public class BitmapFactoryTest {
         assertEquals(120, bm2.getWidth());
         assertEquals(160, bm2.getHeight());
         assertEquals(Config.ARGB_8888, bm2.getConfig());
+    }
+
+    @Test
+    public void testAssertionFromColorSpace() {
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        Bitmap b = BitmapFactory.decodeResource(mRes, R.drawable.b198155681, opt);
+        assertNotNull(b);
+        assertNull(opt.outColorSpace);
     }
 
     private byte[] obtainArray() {

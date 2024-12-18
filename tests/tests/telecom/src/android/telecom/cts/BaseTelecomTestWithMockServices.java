@@ -16,9 +16,12 @@
 
 package android.telecom.cts;
 
+import static android.content.Context.RECEIVER_EXPORTED;
 import static android.telecom.cts.TestUtils.PACKAGE;
 import static android.telecom.cts.TestUtils.TAG;
 import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
+
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
@@ -27,8 +30,10 @@ import static org.junit.Assert.assertThat;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
 import android.app.UiModeManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
@@ -80,6 +85,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 /**
@@ -327,8 +333,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mTestCallStateListener = new TestCallStateListener();
         CountDownLatch latch = mTestCallStateListener.getCountDownLatch();
         mTelephonyManager.registerTelephonyCallback(r -> r.run(), mTestCallStateListener);
-        latch.await(
-                TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            // Without telephony, we shouldn't expect any callback to fire, but we should still try
+            // registering telephony callback to at least make sure it doesn't crash.
+            latch.await(
+                    TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        }
         // Create a new thread for the telephony callback.
         mTelephonyCallbackThread = new HandlerThread("PhoneStateListenerThread");
         mTelephonyCallbackThread.start();
@@ -419,8 +429,9 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 mPreviousDefaultOutgoingAccount =
                         mTelecomManager.getUserSelectedOutgoingPhoneAccount();
                 mShouldRestoreDefaultOutgoingAccount = true;
-                TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                        TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+                runWithShellPermissionIdentity(() ->
+                        mTelecomManager.setUserSelectedOutgoingPhoneAccount(
+                                TestUtils.TEST_PHONE_ACCOUNT_HANDLE));
                 // Wait till the adb commands have executed and the default has changed.
                 assertPhoneAccountIsDefault(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
             }
@@ -443,8 +454,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         CtsConnectionService.tearDown();
         assertCtsConnectionServiceUnbound();
         if (mShouldRestoreDefaultOutgoingAccount) {
-            TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                    mPreviousDefaultOutgoingAccount);
+            runWithShellPermissionIdentity(() -> mTelecomManager
+                    .setUserSelectedOutgoingPhoneAccount(mPreviousDefaultOutgoingAccount));
         }
         this.connectionService = null;
         mPreviousDefaultOutgoingAccount = null;
@@ -641,7 +652,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mOnHandoverFailedCounter = new TestUtils.InvokeCounter("mOnHandoverFailedCounter");
         mOnPhoneAccountChangedCounter = new TestUtils.InvokeCounter(
                 "mOnPhoneAccountChangedCounter");
-        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("OnCallEndpointChanged");
+        mOnCallEndpointChangedCounter = new TestUtils.InvokeCounter("IcsOnCallEndpointChanged");
         mOnAvailableEndpointsChangedCounter = new TestUtils.InvokeCounter(
                 "OnAvailableEndpointsChanged");
         mOnMuteStateChangedCounter = new TestUtils.InvokeCounter("OnMuteStateChanged");
@@ -682,7 +693,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     void setDefaultOutgoingPhoneAccountAndVerify(PhoneAccountHandle handle)
             throws Exception {
         // set the default outgoing as a self-managed account
-        TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(), handle);
+        runWithShellPermissionIdentity(() ->
+                mTelecomManager.setUserSelectedOutgoingPhoneAccount(handle));
 
         // assert the self-managed is returned
         assertEquals(handle, mTelecomManager.getUserSelectedOutgoingPhoneAccount());
@@ -2416,5 +2428,68 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             }
         }
         return true;
+    }
+
+    /**
+     * Change the enabled state of a package and wait for confirmation that it has happened.
+     * @param enabledSettings The component enabled settings.
+     * @throws InterruptedException
+     * @throws TimeoutException
+     */
+    public void setComponentEnabledSettingsAndWaitForBroadcasts(
+            PackageManager.ComponentEnabledSetting enabledSettings)
+            throws InterruptedException, TimeoutException {
+        final String enabledComponentName = enabledSettings.getComponentName().flattenToString();
+        final PackageManager packageManager = mContext.getPackageManager();
+        final IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
+        filter.addDataScheme("package");
+
+        if (packageManager.getComponentEnabledSetting(
+                enabledSettings.getComponentName()) == enabledSettings.getEnabledState()) {
+            // enabled state already correct
+            return;
+        }
+
+        final CountDownLatch latch = new CountDownLatch(1 /* count */);
+        final BroadcastReceiver br = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String packageName = intent.getData() != null
+                        ? intent.getData().getSchemeSpecificPart() : null;
+                final String[] receivedComponents = intent.getStringArrayExtra(
+                        Intent.EXTRA_CHANGED_COMPONENT_NAME_LIST);
+                if (packageName == null) {
+                    return;
+                }
+
+                for (String componentString : receivedComponents) {
+                    // Use contains since the componentstring is just the class name, not the full
+                    // component name sometimes.
+                    if (enabledComponentName.contains(componentString)) {
+                        latch.countDown();
+                        break;
+                    }
+                }
+            }
+        };
+        mContext.registerReceiver(br, filter, RECEIVER_EXPORTED);
+        try {
+            mContext.getPackageManager().setComponentEnabledSettings(List.of(enabledSettings));
+            long TIMEOUT_MS = 10000;
+            if ((enabledSettings.getEnabledFlags() & PackageManager.DONT_KILL_APP) == 0) {
+                TIMEOUT_MS = WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
+            } else {
+                TIMEOUT_MS = WAIT_FOR_STATE_CHANGE_TIMEOUT_MS + 10000;
+            }
+            if (!latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+                throw new TimeoutException("Package changed broadcasts for " + enabledSettings
+                        + " not received in " + TIMEOUT_MS + "ms");
+            }
+            assertEquals(packageManager.getComponentEnabledSetting(
+                    enabledSettings.getComponentName()), enabledSettings.getEnabledState());
+        } finally {
+            mContext.unregisterReceiver(br);
+        }
     }
 }

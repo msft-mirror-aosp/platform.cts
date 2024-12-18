@@ -36,8 +36,9 @@ java_test_host {
         "-Werror",
     ],
 
-    data: [
+    device_common_data: [
         ":CtsInputHostTestHelperApp",
+        ":TestIme",
     ],
 
     libs: [

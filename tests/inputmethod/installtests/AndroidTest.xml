@@ -24,10 +24,25 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
+    <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
+            type="module_controller">
+        <option name="required-feature" value="android.software.input_methods" />
+    </object>
+
     <!-- Create place to store apks -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/inputmethod/" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts"/>
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <!--
+            MockIME always needs to be installed as a full package, even when CTS is running
+            for instant apps.
+        -->
+        <option name="force-install-mode" value="FULL"/>
+        <option name="test-file-name" value="CtsMockInputMethod.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -44,6 +59,7 @@
         -->
         <option name="push" value="CtsInputMethod1.apk->/data/local/tmp/cts/inputmethod/CtsInputMethod1.apk" />
         <option name="push" value="CtsInputMethod2.apk->/data/local/tmp/cts/inputmethod/CtsInputMethod2.apk" />
+        <option name="push" value="CtsDirectBootAwareIme.apk->/data/local/tmp/cts/inputmethod/CtsDirectBootAwareIme.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />

@@ -2097,12 +2097,17 @@ public class WebViewTest extends SharedWebViewTest {
 
         int origX = mOnUiThread.getScrollX();
         int origY = mOnUiThread.getScrollY();
-
         int half = dimension / 2;
         Rect rect = new Rect(half, half, half + 1, half + 1);
         assertTrue(mOnUiThread.requestChildRectangleOnScreen(mWebView, rect, true));
-        assertThat(mOnUiThread.getScrollX(), greaterThan(origX));
-        assertThat(mOnUiThread.getScrollY(), greaterThan(origY));
+        // In a few cases the values returned by getScrollX/getScrollY don't update immediately
+        // even though the scroll was in fact issued, so we poll for it.
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return mOnUiThread.getScrollX() > origX && mOnUiThread.getScrollY() > origY;
+            }
+        }.run();
     }
 
     @Test

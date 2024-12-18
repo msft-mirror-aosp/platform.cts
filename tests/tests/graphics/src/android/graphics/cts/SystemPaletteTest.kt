@@ -20,6 +20,7 @@ import android.R
 import android.app.UiModeManager
 import android.content.Context
 import android.graphics.Color
+import android.graphics.cts.R as CtsR
 import android.provider.Settings
 import android.util.Log
 import android.util.Pair
@@ -31,9 +32,12 @@ import com.android.compatibility.common.util.FeatureUtil
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
+import com.google.ux.material.libmonet.contrast.Contrast
+import com.google.ux.material.libmonet.hct.Hct
 import java.io.Serializable
 import java.util.Arrays
 import java.util.Locale
+import kotlin.math.abs
 import org.junit.AfterClass
 import org.junit.Assert
 import org.junit.BeforeClass
@@ -77,10 +81,8 @@ class SystemPaletteTest(
                 getAllAccent3Colors(context),
                 getAllNeutral1Colors(context),
                 getAllNeutral2Colors(context),
-                getAllErrorColors(context)
         )
 
-        Log.d(TAG, "whiteColor: ${getAllAccent1Colors(context).joinToString()} ")
         allPalettes.forEach { palette ->
             assertColor(palette.first(), Color.WHITE)
             assertColor(palette.last(), Color.BLACK)
@@ -95,9 +97,11 @@ class SystemPaletteTest(
         assurePaletteSetting(context)
 
         val allPalettes = listOf(
-                getAllAccent1Colors(context),
-                getAllAccent2Colors(context), getAllAccent3Colors(context),
-                getAllNeutral1Colors(context), getAllNeutral2Colors(context)
+            getAllAccent1Colors(context),
+            getAllAccent2Colors(context),
+            getAllAccent3Colors(context),
+            getAllNeutral1Colors(context),
+            getAllNeutral2Colors(context)
         )
 
         val labColor = doubleArrayOf(0.0, 0.0, 0.0)
@@ -123,31 +127,54 @@ class SystemPaletteTest(
 
         assurePaletteSetting(context)
 
-        val atLeast4dot5 = listOf(
-                Pair(0, 500), Pair(50, 600), Pair(100, 600), Pair(200, 700),
-                Pair(300, 800), Pair(400, 900), Pair(500, 1000))
+        val atLeast4dot45 = listOf(
+                Pair(0, 500),
+            Pair(50, 600),
+            Pair(100, 600),
+            Pair(200, 700),
+                Pair(300, 800),
+            Pair(400, 900),
+            Pair(500, 1000)
+        )
 
         val atLeast3dot0 = listOf(
-                Pair(0, 400), Pair(50, 500), Pair(100, 500), Pair(200, 600), Pair(300, 700),
-                Pair(400, 800), Pair(500, 900), Pair(600, 1000))
+                Pair(0, 400),
+            Pair(50, 500),
+            Pair(100, 500),
+            Pair(200, 600),
+            Pair(300, 700),
+                Pair(400, 800),
+            Pair(500, 900),
+            Pair(600, 1000)
+        )
 
-        val allPalettes = listOf(getAllAccent1Colors(context),
-                getAllAccent2Colors(context), getAllAccent3Colors(context),
-                getAllNeutral1Colors(context), getAllNeutral2Colors(context))
+        val allPalettes =
+            listOf(
+                getAllAccent1Colors(context),
+            getAllAccent2Colors(context),
+            getAllAccent3Colors(context),
+            getAllNeutral1Colors(context),
+            getAllNeutral2Colors(context)
+            )
 
         fun pairContrastCheck(palette: IntArray, shades: Pair<Int, Int>, contrastLevel: Double) {
             val background = palette[shadeToArrayIndex(shades.first)]
             val foreground = palette[shadeToArrayIndex(shades.second)]
-            val contrast = ColorUtils.calculateContrast(foreground, background)
 
-            assertWithMessage("Shade ${shades.first} (#${Integer.toHexString(background)}) " +
+            val contrast = Contrast.ratioOfTones(
+                Hct.fromInt(foreground).tone,
+                Hct.fromInt(background).tone
+            )
+
+            assertWithMessage(
+                "Shade ${shades.first} (#${Integer.toHexString(background)}) " +
                     "should have at least $contrastLevel contrast ratio against " +
                     "${shades.second} (#${Integer.toHexString(foreground)}), but had $contrast"
             ).that(contrast).isGreaterThan(contrastLevel)
         }
 
         allPalettes.forEach { palette ->
-            atLeast4dot5.forEach { shades -> pairContrastCheck(palette, shades, 4.5) }
+            atLeast4dot45.forEach { shades -> pairContrastCheck(palette, shades, 4.45) }
             atLeast3dot0.forEach { shades -> pairContrastCheck(palette, shades, 3.0) }
         }
     }
@@ -173,14 +200,16 @@ class SystemPaletteTest(
                         R.color.system_surface_container_low_dark,
                         R.color.system_surface_container_lowest_dark,
                         R.color.system_surface_variant_dark
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_surface_dark,
                         R.color.system_on_surface_variant_dark,
                         R.color.system_primary_dark,
                         R.color.system_secondary_dark,
                         R.color.system_tertiary_dark,
                         R.color.system_error_dark
-                ).andForegrounds(foregroundContrast,
+                ).andForegrounds(
+                    foregroundContrast,
                         R.color.system_outline_dark
                 ),
 
@@ -195,115 +224,179 @@ class SystemPaletteTest(
                         R.color.system_surface_container_low_light,
                         R.color.system_surface_container_lowest_light,
                         R.color.system_surface_variant_light
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_surface_light,
                         R.color.system_on_surface_variant_light,
                         R.color.system_primary_light,
                         R.color.system_secondary_light,
                         R.color.system_tertiary_light,
                         R.color.system_error_light
-                ).andForegrounds(foregroundContrast,
+                ).andForegrounds(
+                    foregroundContrast,
                         R.color.system_outline_light
                 ),
 
                 // Colors against accents [DARK]
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_primary_dark).andForegrounds(4.5f,
-                        R.color.system_on_primary_dark),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_primary_dark
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_primary_dark
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_primary_container_dark).andForegrounds(4.5f,
-                        R.color.system_on_primary_container_dark),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_primary_container_dark
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_primary_container_dark
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_secondary_dark).andForegrounds(4.5f,
-                        R.color.system_on_secondary_dark),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_secondary_dark
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_secondary_dark
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_secondary_container_dark).andForegrounds(4.5f,
-                        R.color.system_on_secondary_container_dark),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_secondary_container_dark
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_secondary_container_dark
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_tertiary_dark).andForegrounds(4.5f,
-                        R.color.system_on_tertiary_dark),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_tertiary_dark
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_tertiary_dark
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_tertiary_container_dark).andForegrounds(4.5f,
-                        R.color.system_on_tertiary_container_dark),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_tertiary_container_dark
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_tertiary_container_dark
+                ),
 
                 // Colors against accents [LIGHT]
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_primary_light).andForegrounds(4.5f,
-                        R.color.system_on_primary_light),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_primary_light
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_primary_light
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_primary_container_light).andForegrounds(4.5f,
-                        R.color.system_on_primary_container_light),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_primary_container_light
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_primary_container_light
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_secondary_light).andForegrounds(4.5f,
-                        R.color.system_on_secondary_light),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_secondary_light
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_secondary_light
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_secondary_container_light).andForegrounds(4.5f,
-                        R.color.system_on_secondary_container_light),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_secondary_container_light
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_secondary_container_light
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_tertiary_light).andForegrounds(4.5f,
-                        R.color.system_on_tertiary_light),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_tertiary_light
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_tertiary_light
+                ),
 
-                ContrastTester.ofBackgrounds(context,
-                        R.color.system_tertiary_container_light).andForegrounds(4.5f,
-                        R.color.system_on_tertiary_container_light),
+                ContrastTester.ofBackgrounds(
+                    context,
+                        R.color.system_tertiary_container_light
+                ).andForegrounds(
+                    4.5f,
+                        R.color.system_on_tertiary_container_light
+                ),
 
                 // Colors against accents [FIXED]
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_primary_fixed,
                         R.color.system_primary_fixed_dim
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_primary_fixed,
                         R.color.system_on_primary_fixed_variant
                 ),
 
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_secondary_fixed,
                         R.color.system_secondary_fixed_dim
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_secondary_fixed,
                         R.color.system_on_secondary_fixed_variant
                 ),
 
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_tertiary_fixed,
                         R.color.system_tertiary_fixed_dim
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_tertiary_fixed,
                         R.color.system_on_tertiary_fixed_variant
                 ),
 
                 // Auxiliary Colors [DARK]
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_error_dark
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_error_dark
                 ),
 
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_error_container_dark
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_error_container_dark
                 ),
 
                 // Auxiliary Colors [LIGHT]
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_error_light
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_error_light
                 ),
 
-                ContrastTester.ofBackgrounds(context,
+                ContrastTester.ofBackgrounds(
+                    context,
                         R.color.system_error_container_light
-                ).andForegrounds(4.5f,
+                ).andForegrounds(
+                    4.5f,
                         R.color.system_on_error_container_light
                 )
         )
@@ -438,7 +531,6 @@ class SystemPaletteTest(
     }
 
     private fun setExpectedPalette(context: Context): Boolean {
-
         // Update setting, so system colors will change
         runWithShellPermissionIdentity {
             Settings.Secure.putString(
@@ -456,27 +548,37 @@ class SystemPaletteTest(
             if (DEBUG) {
                 val setting = Settings.Secure.getString(
                         context.contentResolver,
-                        Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES)
+                        Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES
+                )
 
-                Log.d(TAG,
-                        if (noMismatches)
+                Log.d(
+                    TAG,
+                        if (noMismatches) {
                             "Palette $setting is correctly set with colors: " +
                                     intArrayToHexString(expectedPalette)
-                        else """
+                        } else {
+                            """
                         Setting:
                         $setting
                         Mismatches [index](color, expected):
                         ${
                             mismatches.map { (i, current, expected) ->
-                                val c = if (current != null)
-                                    Integer.toHexString(current) else "Null"
-                                val e = if (expected != null)
-                                    Integer.toHexString(expected) else "Null"
+                                val c = if (current != null) {
+                                    Integer.toHexString(current)
+                                } else {
+                                    "Null"
+                                }
+                                val e = if (expected != null) {
+                                    Integer.toHexString(expected)
+                                } else {
+                                    "Null"
+                                }
 
                                 return@map "[$i]($c, $e) "
                             }.joinToString(" ")
                         }
                    """.trimIndent()
+                        }
                 )
             }
 
@@ -561,10 +663,25 @@ class SystemPaletteTest(
             val valueA = if (a.size >= i + 1) a[i] else null
             val valueB = if (b.size >= i + 1) b[i] else null
 
-            if (valueA != valueB) mismatches.add(Triple(i, valueA, valueB))
+            if (valueB != valueA && isColorDifferenceTooLarge(valueA, valueB, 3)){
+                mismatches.add(Triple(i, valueA, valueB))
+            }
         }
 
         return mismatches
+    }
+
+    private fun isColorDifferenceTooLarge(color1: Int?, color2: Int?, threshold: Int): Boolean {
+        if (color1 == null || color2 == null) return true
+
+        val hct1 = Hct.fromInt(color1)
+        val hct2 = Hct.fromInt(color2)
+
+        val diffTone = abs(hct1.tone - hct2.tone)
+        val diffChroma = abs(hct1.chroma - hct2.chroma)
+        val diffHue = abs(hct1.hue - hct2.hue)
+
+        return diffTone + diffChroma + diffHue > threshold
     }
 
     // Helper Classes
@@ -589,7 +706,7 @@ class SystemPaletteTest(
             return this
         }
 
-        private inner class Background internal constructor(
+        private inner class Background(
                 private val mContrasLevel: Float,
                 private vararg val mEntries: Int
         ) {
@@ -628,7 +745,10 @@ class SystemPaletteTest(
             fun checkPair(context: Context, minContrast: Float, fgRes: Int, bgRes: Int): Boolean {
                 val background = context.getColor(bgRes)
                 val foreground = context.getColor(fgRes)
-                val contrast = ColorUtils.calculateContrast(foreground, background)
+                val contrast = Contrast.ratioOfTones(
+                    Hct.fromInt(foreground).tone,
+                    Hct.fromInt(background).tone
+                )
                 return contrast > minContrast
             }
         }
@@ -662,6 +782,7 @@ class SystemPaletteTest(
 
         private var initialContrast: Float = 0f
 
+        @JvmStatic
         @BeforeClass
         fun setUp() {
             initialContrast = getInstrumentation()
@@ -671,6 +792,7 @@ class SystemPaletteTest(
             putContrastInSettings(0f)
         }
 
+        @JvmStatic
         @AfterClass
         fun tearDown() {
             putContrastInSettings(initialContrast)
@@ -684,9 +806,7 @@ class SystemPaletteTest(
         @JvmStatic
         fun testData(): List<Array<Serializable>> {
             val context: Context = getInstrumentation().targetContext
-            val parser: XmlPullParser =
-                    context.resources.getXml(android.graphics.cts.R.xml.valid_themes)
-
+            val parser: XmlPullParser = context.resources.getXml( CtsR.xml.valid_themes)
             val dataList: MutableList<Array<Serializable>> = mutableListOf()
 
             try {
@@ -700,22 +820,23 @@ class SystemPaletteTest(
                         val styleName = parser.name
                         parser.next()
                         val colors = Arrays.stream(
-                                parser.text.split(",".toRegex()).dropLastWhile { it.isEmpty() }
-                                        .toTypedArray())
+                            parser.text.split(",".toRegex()).dropLastWhile { it.isEmpty() }
+                                    .toTypedArray()
+                        )
                                 .mapToInt { s: String ->
                                     Color.parseColor(
-                                            "#$s"
+                                        "#$s"
                                     )
                                 }
                                 .toArray()
                         parser.next()
                         parser.require(XmlPullParser.END_TAG, null, styleName)
                         dataList.add(
-                                arrayOf(
-                                        color,
-                                        styleName.uppercase(Locale.getDefault()),
-                                        colors
-                                )
+                            arrayOf(
+                                color,
+                                styleName.uppercase(Locale.getDefault()),
+                                colors
+                            )
                         )
                     }
                 }

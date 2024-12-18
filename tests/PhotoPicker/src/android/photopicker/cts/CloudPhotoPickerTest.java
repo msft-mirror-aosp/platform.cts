@@ -19,46 +19,64 @@ package android.photopicker.cts;
 import static android.photopicker.cts.PhotoPickerCloudUtils.addImage;
 import static android.photopicker.cts.PhotoPickerCloudUtils.containsExcept;
 import static android.photopicker.cts.PhotoPickerCloudUtils.disableDeviceConfigSync;
+import static android.photopicker.cts.PhotoPickerCloudUtils.disablePickImagesPreload;
 import static android.photopicker.cts.PhotoPickerCloudUtils.enableCloudMediaAndSetAllowedCloudProviders;
+import static android.photopicker.cts.PhotoPickerCloudUtils.enablePickImagesPreload;
 import static android.photopicker.cts.PhotoPickerCloudUtils.extractMediaIds;
+import static android.photopicker.cts.PhotoPickerCloudUtils.isPickImagesPreloadEnabled;
 import static android.photopicker.cts.PickerProviderMediaGenerator.MediaGenerator;
 import static android.photopicker.cts.PickerProviderMediaGenerator.syncCloudProvider;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.createImagesAndGetUris;
 import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
+import static android.photopicker.cts.util.ResultsAssertionsUtils.assertImageExifRedacted;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertRedactedReadOnlyAccess;
 import static android.provider.MediaStore.PickerMediaColumns;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 
 import android.content.ClipData;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.CancellationSignal;
+import android.os.ParcelFileDescriptor;
 import android.os.storage.StorageManager;
 import android.photopicker.cts.cloudproviders.CloudProviderNoIntentFilter;
 import android.photopicker.cts.cloudproviders.CloudProviderNoPermission;
 import android.photopicker.cts.cloudproviders.CloudProviderPrimary;
 import android.photopicker.cts.cloudproviders.CloudProviderSecondary;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.MediaStore;
+import android.system.Os;
+import android.system.OsConstants;
 import android.util.Pair;
 
 import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -70,6 +88,10 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
 public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = CloudPhotoPickerTest.class.getSimpleName();
     private final List<Uri> mUriList = new ArrayList<>();
     private MediaGenerator mCloudPrimaryMediaGenerator;
@@ -189,6 +211,10 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
 
     @Test
     public void testVersionChange() throws Exception {
+        // Save current device config
+        final boolean isPickImagesPreloadEnabled = isPickImagesPreloadEnabled();
+        disablePickImagesPreload();
+
         initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1),
                 Pair.create(null, CLOUD_ID2));
 
@@ -213,6 +239,11 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         mediaIds = extractMediaIds(clipData, 1);
 
         containsExcept(mediaIds, CLOUD_ID2, CLOUD_ID1);
+
+        // Restore device config
+        if (isPickImagesPreloadEnabled) {
+            enablePickImagesPreload();
+        }
     }
 
     @Test
@@ -263,6 +294,130 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         setCloudProvider(CloudProviderNoPermission.AUTHORITY);
         assertThat(MediaStore.isCurrentCloudMediaProviderAuthority(mContext.getContentResolver(),
                         CloudProviderPrimary.AUTHORITY)).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenFile() throws Exception {
+        initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
+
+        final ClipData clipData = launchPickerAndFetchMedia(1);
+        final List<String> mediaIds = extractMediaIds(clipData, 1);
+
+        assertThat(mediaIds).containsExactly(CLOUD_ID1);
+
+        final Uri uri = clipData.getItemAt(0).getUri();
+        final CancellationSignal cg = new CancellationSignal();
+        try (ParcelFileDescriptor pfd1 = mContext.getContentResolver()
+                .openFileDescriptor(uri, "r", cg)) {
+            try (ParcelFileDescriptor pfd2 = MediaStore
+                    .openFileDescriptor(mContext.getContentResolver(), uri, "r", cg)) {
+                long end1 = Os.lseek(pfd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(pfd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+
+                // assert location data redacted
+                Os.lseek(pfd2.getFileDescriptor(), 0, OsConstants.SEEK_SET);
+                InputStream is = new FileInputStream(pfd2.getFileDescriptor());
+                assertImageExifRedacted(is);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenAssetFile() throws Exception {
+        initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
+
+        final ClipData clipData = launchPickerAndFetchMedia(1);
+        final List<String> mediaIds = extractMediaIds(clipData, 1);
+
+        assertThat(mediaIds).containsExactly(CLOUD_ID1);
+
+        final Uri uri = clipData.getItemAt(0).getUri();
+        final CancellationSignal cg = new CancellationSignal();
+        try (AssetFileDescriptor afd1 = mContext.getContentResolver()
+                .openAssetFileDescriptor(uri, "r", cg)) {
+            try (AssetFileDescriptor afd2 = MediaStore
+                    .openAssetFileDescriptor(mContext.getContentResolver(), uri, "r", cg)) {
+                long end1 = Os.lseek(afd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+
+                // assert location data redacted
+                Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_SET);
+                InputStream is = new FileInputStream(afd2.getFileDescriptor());
+                assertImageExifRedacted(is);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenTypedAssetFile() throws Exception {
+        initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
+
+        final ClipData clipData = launchPickerAndFetchMedia(1);
+        final List<String> mediaIds = extractMediaIds(clipData, 1);
+
+        assertThat(mediaIds).containsExactly(CLOUD_ID1);
+
+        final Uri uri = clipData.getItemAt(0).getUri();
+        final CancellationSignal cg = new CancellationSignal();
+        try (AssetFileDescriptor afd1 = mContext.getContentResolver()
+                .openTypedAssetFileDescriptor(uri, "*/*", null, cg)) {
+            try (AssetFileDescriptor afd2 = MediaStore.openTypedAssetFileDescriptor(
+                    mContext.getContentResolver(), uri, "*/*", null, cg)) {
+                long end1 = Os.lseek(afd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+
+                // assert location data redacted
+                Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_SET);
+                InputStream is = new FileInputStream(afd2.getFileDescriptor());
+                assertImageExifRedacted(is);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenFile_invalidMode() throws Exception {
+        initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
+
+        final ClipData clipData = launchPickerAndFetchMedia(1);
+        final List<String> mediaIds = extractMediaIds(clipData, 1);
+
+        assertThat(mediaIds).containsExactly(CLOUD_ID1);
+
+        final Uri uri = clipData.getItemAt(0).getUri();
+
+        try (ParcelFileDescriptor pfd = MediaStore
+                .openFileDescriptor(mContext.getContentResolver(), uri, "w", null)) {
+            fail("Expected SecurityException thrown");
+        } catch (SecurityException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenAssetFile_invalidMode() throws Exception {
+        initPrimaryCloudProviderWithImage(Pair.create(null, CLOUD_ID1));
+
+        final ClipData clipData = launchPickerAndFetchMedia(1);
+        final List<String> mediaIds = extractMediaIds(clipData, 1);
+
+        assertThat(mediaIds).containsExactly(CLOUD_ID1);
+
+        final Uri uri = clipData.getItemAt(0).getUri();
+
+        try (AssetFileDescriptor afd = MediaStore
+                .openAssetFileDescriptor(mContext.getContentResolver(), uri, "w", null)) {
+            fail("Expected SecurityException thrown");
+        } catch (SecurityException e) {
+            // Expected
+        }
     }
 
     @Test

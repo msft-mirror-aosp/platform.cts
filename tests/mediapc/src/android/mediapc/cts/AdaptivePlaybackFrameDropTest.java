@@ -74,7 +74,7 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.3/H-1-2")
+    @CddTest(requirements = {"2.2.7.1/5.3/H-1-2"})
     public void test30Fps() throws Exception {
         Assume.assumeTrue("Test is limited to R performance class devices or devices that do not " +
                 "advertise performance class",
@@ -102,7 +102,7 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.3/H-1-2")
+    @CddTest(requirements = {"2.2.7.1/5.3/H-1-2"})
     public void test60Fps() throws Exception {
         Assume.assumeTrue("Test is limited to S/T performance class devices or devices that do " +
                 "not advertise performance class",
@@ -130,7 +130,7 @@ public class AdaptivePlaybackFrameDropTest extends FrameDropTestBase {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.3/H-1-2")
+    @CddTest(requirements = {"2.2.7.1/5.3/H-1-2"})
     public void test4k() throws Exception {
         Assume.assumeTrue("Test is limited to U,V performance class devices or devices that do"
                         + "not advertise performance class",

@@ -128,10 +128,6 @@ public final class Processor extends AbstractProcessor {
             ClassName.get(
                     "com.android.bedstead.testapp",
                     "Utils");
-    private static final ClassName NENE_EXCEPTION_CLASSNAME =
-            ClassName.get(
-                    "com.android.bedstead.nene.exceptions",
-                    "NeneException");
     private static final ClassName TEST_APP_INSTANCE_CLASSNAME =
             ClassName.get("com.android.bedstead.testapp", "TestAppInstance");
     private static final ClassName COMPONENT_REFERENCE_CLASSNAME =
@@ -265,8 +261,11 @@ public final class Processor extends AbstractProcessor {
             generateDpmParentWrapper(processingEnv.getElementUtils());
             for (FrameworkClass frameworkClass : frameworkClasses) {
                 generateRemoteFrameworkClassWrapper(
-                        extractClassFromAnnotation(processingEnv.getTypeUtils(),
-                                frameworkClass::frameworkClass));
+                        extractClassFromAnnotation(
+                                processingEnv.getTypeUtils(),
+                                () -> {
+                                    Class<?> unused = frameworkClass.frameworkClass();
+                                }));
             }
         }
 
@@ -926,8 +925,13 @@ public final class Processor extends AbstractProcessor {
                 .build());
 
         for (FrameworkClass frameworkClass : frameworkClasses) {
-            ClassName originalClassName = ClassName.get(extractClassFromAnnotation(
-                    processingEnv.getTypeUtils(), frameworkClass::frameworkClass));
+            ClassName originalClassName =
+                    ClassName.get(
+                            extractClassFromAnnotation(
+                                    processingEnv.getTypeUtils(),
+                                    () -> {
+                                        Class<?> unused = frameworkClass.frameworkClass();
+                                    }));
             ClassName interfaceClassName = ClassName.get(
                     originalClassName.packageName(), "Remote" + originalClassName.simpleName());
             ClassName implClassName = ClassName.get(

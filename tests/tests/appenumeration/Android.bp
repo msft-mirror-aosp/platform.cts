@@ -94,3 +94,10 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsAppEnumerationTestCases_android_server_pm",
+    base: "CtsAppEnumerationTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

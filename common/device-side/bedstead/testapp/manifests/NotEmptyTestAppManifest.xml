@@ -21,6 +21,19 @@
 
     <application android:label="NotEmptyTestApp">
         <meta-data android:name="test-metadata-key" android:value="test-metadata-value" />
+        <meta-data android:name="test-metadata-with-res-key"
+                   android:value="test_xml"
+                   android:resource="@xml/test_xml" />
+
+        <activity-alias
+            android:name="android.testapp.TestSchemeActivityAlias"
+            android:targetActivity="android.testapp.TestSchemeActivity"
+            android:exported="true">
+            <intent-filter >
+                <action android:name="android.intent.action.ACTIVITY_ALIAS_ACTION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity-alias>
 
         <!--This should only be included in a single TestApp-->
         <activity android:name="android.testapp.UniqueActivity" android:exported="true">
@@ -57,5 +70,5 @@
             <meta-data android:name="android.credentials.testsystemprovider" android:value="true" />
         </service>
     </application>
-    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35"/>
 </manifest>

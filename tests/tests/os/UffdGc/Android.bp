@@ -16,6 +16,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_art_performance",
 }
 
 android_test {
@@ -33,8 +34,8 @@ android_test {
         "ctstestrunner-axt",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     test_suites: [
         "cts",

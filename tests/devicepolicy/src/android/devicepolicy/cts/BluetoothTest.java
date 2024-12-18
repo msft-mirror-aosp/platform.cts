@@ -22,13 +22,14 @@ import static android.os.UserManager.DISALLOW_BLUETOOTH_SHARING;
 
 import static com.android.bedstead.nene.bluetooth.Bluetooth.OPP_LAUNCHER_CLASS;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_BLUETOOTH;
-import static com.android.bedstead.nene.permissions.CommonPermissions.BLUETOOTH_CONNECT;
-import static com.android.bedstead.nene.permissions.CommonPermissions.LOCAL_MAC_ADDRESS;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_BLUETOOTH;
+import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_CONNECT;
+import static com.android.bedstead.permissions.CommonPermissions.LOCAL_MAC_ADDRESS;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.testng.Assert.assertThrows;
 
 import android.bluetooth.BluetoothAdapter;
@@ -43,27 +44,26 @@ import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.Bluetooth;
-import com.android.bedstead.harrier.policies.DisallowBluetooth;
 import com.android.bedstead.harrier.policies.DisableBluetoothContactSharing;
+import com.android.bedstead.harrier.policies.DisallowBluetooth;
 import com.android.bedstead.harrier.policies.DisallowBluetoothGlobally;
 import com.android.bedstead.harrier.policies.DisallowBluetoothPreU;
 import com.android.bedstead.harrier.policies.DisallowBluetoothSharing;
@@ -74,11 +74,12 @@ import com.android.bedstead.harrier.policies.DisallowConfigBluetoothGlobally;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.interactive.Step;
 import com.android.interactive.annotations.Interactive;
 import com.android.interactive.annotations.NotFullyAutomated;
@@ -300,6 +301,7 @@ public final class BluetoothTest {
         }
     }
 
+    @Ignore("b/333377966")
     @CannotSetPolicyTest(policy = DisallowBluetoothSharingPreU.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
@@ -378,6 +380,11 @@ public final class BluetoothTest {
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = UPSIDE_DOWN_CAKE))
     )
     public void addUserRestriction_preU_disallowBluetoothSharing_isNotSet() {
+        // Some profiles such as managed profile and private profile has DISALLOW_BLUETOOTH_SHARING
+        // enabled by default. Skip this test in this case.
+        assumeFalse("User has DISALLOW_BLUETOOTH_SHARING set by default",
+                TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING));
+
         sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                 sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING);
 
@@ -389,6 +396,11 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void addUserRestriction_disallowBluetoothSharing_isNotSet() {
+        // Some profiles such as managed profile and private profile has DISALLOW_BLUETOOTH_SHARING
+        // enabled by default. Skip this test in this case.
+        assumeFalse("User has DISALLOW_BLUETOOTH_SHARING set by default",
+                TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING));
+
         sDeviceState.dpc().devicePolicyManager().addUserRestriction(
                 sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING);
 
@@ -412,12 +424,13 @@ public final class BluetoothTest {
     @Test
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
+    @RequireRunOnInitialUser
     public void share_disallowBluetoothAndSharingRestrictionsAreNotSet_canShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
-
+      
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
-                        .isEnabled(TestApis.users().system()))
+                        .isEnabled(TestApis.users().current()))
                 .toBeEqualTo(true)
                 .errorOnFail()
                 .await();
@@ -433,7 +446,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void share_disallowBluetoothSharingRestrictionIsSet_canNotShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
-
+      
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().system()))
@@ -467,6 +480,7 @@ public final class BluetoothTest {
                         DISALLOW_BLUETOOTH));
     }
 
+    @Ignore("b/333377966")
     @CannotSetPolicyTest(policy = DisallowBluetoothPreU.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
@@ -490,7 +504,7 @@ public final class BluetoothTest {
     @RequireNotHeadlessSystemUserMode(reason = "b/276405672 bluetooth restriction not enforced on secondary users")
     public void share_disallowBluetoothRestrictionIsSet_canNotShare() {
         Assume.assumeTrue("We can't test resolving if opp is disabled", OPP_ENABLED);
-
+        
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
                         .isEnabled(TestApis.users().system()))

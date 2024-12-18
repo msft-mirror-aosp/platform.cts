@@ -16,17 +16,25 @@
 
 package com.android.bedstead.harrier;
 
+import static com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermissionKt.ensureDoesNotHavePermission;
+import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
+
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
@@ -43,24 +51,16 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
-import com.android.bedstead.harrier.annotations.RunWithFeatureFlagEnabledAndDisabled;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
-import com.android.bedstead.harrier.annotations.enterprise.MostImportantCoexistenceTest;
-import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
-import com.android.bedstead.nene.annotations.Nullable;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
+import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -102,24 +102,14 @@ import java.util.stream.Stream;
 // @AutoAnnotation is not able to set default value for a field with an annotated data type,
 // so we try to pass the default value explicitly that is accessed via reflection through this
 // class.
+@SuppressWarnings("AndroidJdkLibsChecker")
 @Query
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
-
-    private static final String BEDSTEAD_PACKAGE_NAME = "com.android.bedstead";
-
-    @AutoAnnotation
-    private static EnsureHasPermission ensureHasPermission(String[] value) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureHasPermission(value);
-    }
-
-    @AutoAnnotation
-    private static EnsureDoesNotHavePermission ensureDoesNotHavePermission(String[] value) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureDoesNotHavePermission(value);
-    }
+    private boolean mHasManualHarrierRule = false;
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -219,17 +209,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         return new AutoAnnotation_BedsteadJUnit4_requireNotHeadlessSystemUserMode(reason);
     }
 
-    @AutoAnnotation
-    private static EnsureFeatureFlagEnabled ensureFeatureFlagEnabled(String namespace, String key) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureFeatureFlagEnabled(namespace, key);
-    }
-
-    @AutoAnnotation
-    private static EnsureFeatureFlagEnabled ensureFeatureFlagNotEnabled(
-            String namespace, String key) {
-        return new AutoAnnotation_BedsteadJUnit4_ensureFeatureFlagNotEnabled(namespace, key);
-    }
-
     // Get @Query annotation via BedsteadJunit4 class as a workaround to enable adding Query
     // fields to annotations that rely on @AutoAnnotation (for e.g. @EnsureHasWorkProfile)
     private static Query query() {
@@ -259,15 +238,11 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     private static int getAnnotationCost(Annotation annotation) {
-        if (!annotation.annotationType().getPackage().getName().startsWith(BEDSTEAD_PACKAGE_NAME)) {
-            return AnnotationPriorityRunPrecedence.MIDDLE;
-        }
-
         try {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
             // Default to MIDDLE if no cost is found on the annotation.
-            return AnnotationPriorityRunPrecedence.MIDDLE;
+            return AnnotationCostRunPrecedence.MIDDLE;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new NeneException("Failed to invoke cost on this annotation: " + annotation, e);
         }
@@ -277,10 +252,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         if (annotation instanceof DynamicParameterizedAnnotation) {
             // Special case, not important
             return AnnotationPriorityRunPrecedence.PRECEDENCE_NOT_IMPORTANT;
-        }
-
-        if (!annotation.annotationType().getPackage().getName().startsWith(BEDSTEAD_PACKAGE_NAME)) {
-            return AnnotationPriorityRunPrecedence.FIRST;
         }
 
         try {
@@ -304,27 +275,28 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     /**
      * Resolves annotations recursively.
      *
-     * @param parameterizedAnnotation The class of the parameterized annotation to expand, if any
+     * @param parameterizedAnnotations The class of the parameterized annotations to expand, if any
      */
-    public void resolveRecursiveAnnotations(List<Annotation> annotations,
-            @Nullable Annotation parameterizedAnnotation) {
-        resolveRecursiveAnnotations(getHarrierRule(), annotations, parameterizedAnnotation);
+    public void resolveRecursiveAnnotations(
+            List<Annotation> annotations, List<Annotation> parameterizedAnnotations) {
+        resolveRecursiveAnnotations(getHarrierRule(), annotations, parameterizedAnnotations);
     }
 
     /**
      * Resolves annotations recursively.
      *
-     * @param parameterizedAnnotation The class of the parameterized annotation to expand, if any
+     * @param parameterizedAnnotations The class of the parameterized annotation to expand, if any
      */
-    public static void resolveRecursiveAnnotations(HarrierRule harrierRule,
+    public static void resolveRecursiveAnnotations(
+            HarrierRule harrierRule,
             List<Annotation> annotations,
-            @Nullable Annotation parameterizedAnnotation) {
+            List<Annotation> parameterizedAnnotations) {
         int index = 0;
         while (index < annotations.size()) {
             Annotation annotation = annotations.get(index);
             annotations.remove(index);
             List<Annotation> replacementAnnotations =
-                    getReplacementAnnotations(harrierRule, annotation, parameterizedAnnotation);
+                    getReplacementAnnotations(harrierRule, annotation, parameterizedAnnotations);
             replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
             annotations.addAll(index, replacementAnnotations);
             index += replacementAnnotations.size();
@@ -337,6 +309,11 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         }
 
         return annotation.annotationType().getAnnotation(ParameterizedAnnotation.class) != null;
+    }
+
+    private static boolean isAnnotationClassParameterizedAnnotation(Annotation annotation) {
+        return annotation.annotationType() != null
+                && annotation.annotationType().getAnnotation(ParameterizedAnnotation.class) != null;
     }
 
     private static Annotation[] getIndirectAnnotations(Annotation annotation) {
@@ -399,7 +376,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     static List<Annotation> getReplacementAnnotations(
             HarrierRule harrierRule,
             Annotation annotation,
-            @Nullable Annotation parameterizedAnnotation) {
+            List<Annotation> parameterizedAnnotations) {
         BiFunction<HarrierRule, Annotation, Stream<Annotation>> specialReplaceFunction =
                 ANNOTATION_REPLACEMENTS.get(annotation.annotationType());
 
@@ -424,7 +401,8 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             }
         }
 
-        if (isParameterizedAnnotation(annotation) && !annotation.equals(parameterizedAnnotation)) {
+        if (isParameterizedAnnotation(annotation)
+                && !parameterizedAnnotations.contains(annotation)) {
             return replacementAnnotations;
         }
 
@@ -433,8 +411,9 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 continue;
             }
 
-            replacementAnnotations.addAll(getReplacementAnnotations(
-                    harrierRule, indirectAnnotation, parameterizedAnnotation));
+            replacementAnnotations.addAll(
+                    getReplacementAnnotations(
+                            harrierRule, indirectAnnotation, parameterizedAnnotations));
         }
 
         if (!(annotation instanceof DynamicParameterizedAnnotation)) {
@@ -448,6 +427,10 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private static boolean shouldSkipAnnotation(Annotation annotation) {
         if (annotation instanceof DynamicParameterizedAnnotation) {
             return false;
+        }
+
+        if(annotation.annotationType().equals(IncludeNone.class)) {
+            return true;
         }
 
         String annotationPackage = annotation.annotationType().getPackage().getName();
@@ -470,14 +453,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         super(testClass);
     }
 
-    private boolean annotationShouldBeSkipped(Annotation annotation) {
-        if (annotation instanceof DynamicParameterizedAnnotation) {
-            return false;
-        }
-
-        return annotation.annotationType().equals(IncludeNone.class);
-    }
-
     private static List<FrameworkMethod> getBasicTests(TestClass testClass) {
         Set<FrameworkMethod> methods = new HashSet<>();
 
@@ -492,32 +467,116 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         methods.addAll(testClass.getAnnotatedMethods(MostRestrictiveCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(MostImportantCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(HiddenApiTest.class));
+        methods.addAll(testClass.getAnnotatedMethods(PerformanceTest.class));
 
         return new ArrayList<>(methods);
     }
 
+    /**
+     * Groups list of annotations of type [ParameterizedAnnotation] by its [scope].
+     *
+     * @param parameterizedAnnotations the list of annotations of type [ParameterizedAnnotation]
+     * @return list of list of [ParameterizedAnnotation] where each sub list corresponds to
+     *     annotations of one scope.
+     */
+    private List<List<Annotation>> getParameterizedAnnotationsGroupedByScope(
+            Set<Annotation> parameterizedAnnotations) {
+        Map<String, List<Annotation>> annotationsPerScope = new HashMap<>();
+        for (Annotation annotation : parameterizedAnnotations) {
+            if (isAnnotationClassParameterizedAnnotation(annotation)
+                    && !shouldSkipAnnotation(annotation)) {
+                ParameterizedAnnotation parameterizedAnnotation =
+                        annotation.annotationType().getAnnotation(ParameterizedAnnotation.class);
+                annotationsPerScope.putIfAbsent(
+                        parameterizedAnnotation.scope().name(), new ArrayList<>());
+                annotationsPerScope.get(parameterizedAnnotation.scope().name()).add(annotation);
+            }
+        }
+
+        return new ArrayList<>(annotationsPerScope.values());
+    }
+
+    /**
+     * Generates a cartesian product of multiple sets of annotations. For example: If the
+     * [annotations] param has value [[A1, A2], [A3, A4]] then it will return [[A1, A3], [A1, A4],
+     * [A2, A3], [A2, A4]].
+     *
+     * @param annotations list of list of annotations whose cartesian product we want to generate.
+     * @return cartesian product of the annotation sets.
+     */
+    private static List<List<Annotation>> calculateCartesianProductOfAnnotationSets(
+            List<List<Annotation>> annotations) {
+        List<List<Annotation>> result = new ArrayList<>();
+        if (!annotations.isEmpty()) {
+            generateCartesianProductOfAnnotationSets(annotations, 0, result, new ArrayList<>());
+        }
+        return result;
+    }
+
+    /**
+     * Generates a cartesian product of multiple sets of annotations. This method is an internal
+     * helper method for {@code calculateCartesianProductOfAnnotationSets()}. Refer {@code
+     * calculateCartesianProductOfAnnotationSets()} for an example.
+     */
+    private static void generateCartesianProductOfAnnotationSets(
+            List<List<Annotation>> annotations,
+            int position,
+            List<List<Annotation>> result,
+            List<Annotation> subResult) {
+        if (position == annotations.size()) {
+            if (!subResult.isEmpty()) {
+                result.add(new ArrayList<>(subResult));
+            }
+            return;
+        }
+        for (int i = 0; i < annotations.get(position).size(); i++) {
+            subResult.add(annotations.get(position).get(i));
+            generateCartesianProductOfAnnotationSets(annotations, position + 1, result, subResult);
+            subResult.remove(subResult.size() - 1);
+        }
+    }
+
     @Override
     protected List<FrameworkMethod> computeTestMethods() {
-        // TODO: It appears that the annotations are computed up to 8 times per run. Figure out how to
-        // cut this out (this method only seems to be called once)
+        // TODO: It appears that the annotations are computed up to 8 times per run. Figure out how
+        // to cut this out (this method only seems to be called once)
         List<FrameworkMethod> basicTests = getBasicTests(getTestClass());
         List<FrameworkMethod> modifiedTests = new ArrayList<>();
 
         for (FrameworkMethod m : basicTests) {
-            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m);
+            Set<Annotation> parameterizedAnnotations = getParameterizedAnnotations(m.getAnnotations());
 
             if (parameterizedAnnotations.isEmpty()) {
                 // Unparameterized, just add the original
                 modifiedTests.add(new BedsteadFrameworkMethod(this, m.getMethod()));
+                continue;
             }
 
+            // Create [BedsteadFrameworkMethod] for parameterized annotation of instance {@Code
+            // DynamicParameterizedAnnotation}.
             for (Annotation annotation : parameterizedAnnotations) {
-                if (annotationShouldBeSkipped(annotation)) {
+                if (shouldSkipAnnotation(annotation)
+                        || isAnnotationClassParameterizedAnnotation(annotation)) {
                     // Special case - does not generate a run
                     continue;
                 }
                 modifiedTests.add(
-                        new BedsteadFrameworkMethod(this, m.getMethod(), annotation));
+                        new BedsteadFrameworkMethod(this, m.getMethod(), List.of(annotation)));
+            }
+
+            List<List<Annotation>> parametrizedAnnotationsGroupedByScope =
+                    getParameterizedAnnotationsGroupedByScope(parameterizedAnnotations);
+
+            List<List<Annotation>> cartesianProductOfAnnotationSets =
+                    calculateCartesianProductOfAnnotationSets(
+                            parametrizedAnnotationsGroupedByScope);
+
+            // Create [BedsteadFrameworkMethod] for each parameterized annotation of type
+            // [ParameterizedAnnotation].
+            for (List<Annotation> annotationsToApplyTogether : cartesianProductOfAnnotationSets) {
+                modifiedTests.add(
+                        new BedsteadFrameworkMethod(
+                                this, m.getMethod(), annotationsToApplyTogether));
             }
         }
 
@@ -535,17 +594,16 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 .collect(Collectors.toList());
     }
 
-    private Stream<FrameworkMethod> generateGeneralParameterisationMethods(
-            FrameworkMethod method) {
+    private Stream<FrameworkMethod> generateGeneralParameterisationMethods(FrameworkMethod method) {
         Stream<FrameworkMethod> expandedMethods = Stream.of(method);
         if (method.getMethod().getParameterCount() == 0) {
             return expandedMethods;
         }
 
         for (Parameter parameter : method.getMethod().getParameters()) {
-            List<Annotation> annotations = new ArrayList<>(
-                    Arrays.asList(parameter.getAnnotations()));
-            resolveRecursiveAnnotations(annotations, /* parameterizedAnnotation= */ null);
+            List<Annotation> annotations =
+                    new ArrayList<>(Arrays.asList(parameter.getAnnotations()));
+            resolveRecursiveAnnotations(annotations, /* parameterizedAnnotations= */ List.of());
 
             boolean hasParameterised = false;
 
@@ -635,7 +693,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     Policy.getAnnotationsForPolicies(
                             Policy.getEnterprisePolicyWithCallingClass(policyClasses));
 
-            List<FrameworkMethod> expandedMethodList = expandedMethods.toList();
+            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
             Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
             for (Class<?> policyClass : policyClasses) {
                 Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
@@ -644,36 +702,43 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 if (validArguments.isEmpty()) {
                     throw new NeneException(
                             "Empty valid arguments passed for "
-                                    + policyClass.getSimpleName() + " policy");
+                                    + policyClass.getSimpleName()
+                                    + " policy");
                 }
 
                 Set<Annotation> policyAnnotations =
                         policyClassToAnnotationsMap.get(policyClass.getName());
 
                 for (FrameworkMethod expandedMethod : expandedMethodList) {
-                    Annotation parameterizedAnnotation =
-                            ((BedsteadFrameworkMethod) expandedMethod).getParameterizedAnnotation();
-                    if ((policyAppliesTestAnnotation != null &&
-                            policyAnnotations.contains((parameterizedAnnotation))) ||
-                            (policyDoesNotApplyTestAnnotation != null) ||
-                            (canSetPolicyTestAnnotation != null &&
-                                    policyAnnotations.contains(parameterizedAnnotation)) ||
-                            (cannotSetPolicyTestAnnotation != null)) {
-                        tempExpandedFrameworkMethodSet.addAll(
-                                applyPolicyArgumentParameter(expandedMethod, validArguments));
+                    List<Annotation> parameterizedAnnotations =
+                            ((BedsteadFrameworkMethod) expandedMethod)
+                                    .getParameterizedAnnotations();
+                    for (Annotation parameterizedAnnotation : parameterizedAnnotations) {
+                        if ((policyAppliesTestAnnotation != null
+                                        && policyAnnotations.contains((parameterizedAnnotation)))
+                                || (policyDoesNotApplyTestAnnotation != null)
+                                || (canSetPolicyTestAnnotation != null
+                                        && policyAnnotations.contains(parameterizedAnnotation))
+                                || (cannotSetPolicyTestAnnotation != null)) {
+                            tempExpandedFrameworkMethodSet.addAll(
+                                    applyPolicyArgumentParameter(expandedMethod, validArguments));
+                        }
                     }
                 }
             }
 
             return tempExpandedFrameworkMethodSet.stream();
-        } catch (NoSuchMethodException | InvocationTargetException
-                 | IllegalAccessException | InstantiationException e) {
+        } catch (NoSuchMethodException
+                | InvocationTargetException
+                | IllegalAccessException
+                | InstantiationException e) {
             // Should never happen as validArguments method will always have a default
             // implementation for every EnterprisePolicy
             throw new NeneException(
                     "PolicyArgument parameter annotation cannot be added to a test "
                             + "without the validArguments method specified for the "
-                            + "EnterprisePolicy", e);
+                            + "EnterprisePolicy",
+                    e);
         }
     }
 
@@ -733,7 +798,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         List<Annotation> bedsteadAnnotationsSortedByMostCommon =
                 bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-        comparator.thenComparing((o1, o2) -> {
+        var unused = comparator.thenComparing((o1, o2) -> {
             for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
                 boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
                 boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
@@ -756,11 +821,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         Map<Annotation, Integer> annotationCosts = mapAnnotationsCost(methods);
 
         List<Annotation> annotations = new ArrayList<>(annotationCosts.keySet());
-        annotations.removeIf(
-                annotation ->
-                        !annotation.annotationType()
-                                .getCanonicalName().contains(BEDSTEAD_PACKAGE_NAME));
-
         annotations.sort(Comparator.comparingInt(annotationCosts::get));
 
         return annotations;
@@ -769,12 +829,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     private List<Annotation> bedsteadAnnotationsSortedByMostCommon(List<FrameworkMethod> methods) {
         Map<Annotation, Integer> annotationCounts = countAnnotations(methods);
         List<Annotation> annotations = new ArrayList<>(annotationCounts.keySet());
-
-        annotations.removeIf(
-                annotation ->
-                        !annotation.annotationType()
-                                .getCanonicalName().contains(BEDSTEAD_PACKAGE_NAME));
-
         annotations.sort(Comparator.comparingInt(annotationCounts::get));
         Collections.reverse(annotations);
 
@@ -806,14 +860,19 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         return annotationCosts;
     }
 
-    private Set<Annotation> getParameterizedAnnotations(FrameworkMethod method) {
+    /**
+     * Filters array of annotations and returns only annotations of type
+     * {@link ParameterizedAnnotation} and {@link DynamicParameterizedAnnotation}.
+     *
+     * @param methodAnnotations the array of annotations of test method
+     */
+    public static Set<Annotation> getParameterizedAnnotations(Annotation[] methodAnnotations) {
         Set<Annotation> parameterizedAnnotations = new HashSet<>();
-        List<Annotation> annotations = new ArrayList<>(Arrays.asList(method.getAnnotations()));
+        List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));
 
         parseEnterpriseAnnotations(annotations);
         parsePermissionAnnotations(annotations);
         parseUserAnnotations(annotations);
-        parseFlagAnnotations(annotations);
 
         for (Annotation annotation : annotations) {
             if (isParameterizedAnnotation(annotation)) {
@@ -827,14 +886,19 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     /**
      * Create a new {@link EnterprisePolicy} by merging a group of policies.
      *
+     * <p> Example usage
+     * Policy1: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
+     * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+     * EnterprisePolicy.dpc(): APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER | APPLIES_TO_OWN_USER
+     *
      * <p>Each policy will have flags validated.
      *
      * <p>If policies support different delegation scopes, then they cannot be merged and an
      * exception will be thrown. These policies require separate tests.
      */
-    private static EnterprisePolicy mergePolicies(Class<?>[] policies) {
+    private static EnterprisePolicy unionPolicies(Class<?>[] policies) {
         if (policies.length == 0) {
-            throw new IllegalStateException("Cannot merge 0 policies");
+            throw new IllegalStateException("Cannot union 0 policies");
         } else if (policies.length == 1) {
             // Nothing to merge, just return the only one
             return policies[0].getAnnotation(EnterprisePolicy.class);
@@ -881,6 +945,73 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     }
 
+
+    /**
+     * Create a new {@link EnterprisePolicy} with DPC that fulfills all the requirements of all the
+     * provided policies.
+     *
+     * <p> Example usage
+     * Policy1: APPLIED_BY_DEVICE_OWNER | APPLIES_GLOBALLY, APPLIED_BY_PROFILE_OWNER |
+     * APPLIES_TO_OWN_USER
+     * Policy 2: APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+     * EnterprisePolicy.dpc(): APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER
+     *
+     * <p>Each policy will have flags validated.
+     */
+    private static EnterprisePolicy intersectPolicies(Class<?>[] policies) {
+        if (policies.length == 0) {
+            throw new IllegalStateException("Cannot intersect 0 policies");
+        } else if (policies.length == 1) {
+            // Nothing to intersect, just return the only one
+            return policies[0].getAnnotation(EnterprisePolicy.class);
+        }
+
+        Set<EnterprisePolicy.Permission> permissions = new HashSet<>();
+        Set<EnterprisePolicy.AppOp> appOps = new HashSet<>();
+        Set<String> delegatedScopes = new HashSet<>();
+
+        int intersectDpc = ~0;
+
+        for (Class<?> policy : policies) {
+            EnterprisePolicy enterprisePolicy = policy.getAnnotation(EnterprisePolicy.class);
+            Policy.validateFlags(policy.getName(), enterprisePolicy.dpc());
+
+            for (int dpcPolicy : enterprisePolicy.dpc()) {
+                intersectDpc &= dpcPolicy;
+            }
+
+            // TODO: (b/331606832) support permissions intersection
+            for (EnterprisePolicy.Permission permission : enterprisePolicy.permissions()) {
+                permissions.add(permission);
+            }
+
+            // TODO: (b/341401594) support appOps intersection
+            for (EnterprisePolicy.AppOp appOp : enterprisePolicy.appOps()) {
+                appOps.add(appOp);
+            }
+
+            if (enterprisePolicy.delegatedScopes().length > 0) {
+                ImmutableSet<String> newDelegatedScopes = ImmutableSet.copyOf(
+                        enterprisePolicy.delegatedScopes());
+                if (!delegatedScopes.isEmpty()
+                        && !delegatedScopes.containsAll(newDelegatedScopes)) {
+                    throw new IllegalStateException(
+                            "Cannot intersect multiple policies which define "
+                                    + "different delegated scopes. You should separate this into "
+                                    + "multiple tests.");
+                }
+
+                delegatedScopes = newDelegatedScopes;
+            }
+        }
+
+        return Policy.enterprisePolicy(new int[]{intersectDpc},
+                permissions.toArray(new EnterprisePolicy.Permission[0]),
+                appOps.toArray(new EnterprisePolicy.AppOp[0]),
+                delegatedScopes.toArray(new String[0]));
+
+    }
+
     /**
      * Parse enterprise-specific annotations.
      *
@@ -895,7 +1026,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                 List<Annotation> replacementAnnotations =
                         Policy.policyAppliesStates(
-                                mergePolicies(((PolicyAppliesTest) annotation).policy()));
+                                unionPolicies(((PolicyAppliesTest) annotation).policy()));
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
 
                 annotations.addAll(index, replacementAnnotations);
@@ -905,7 +1036,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                 List<Annotation> replacementAnnotations =
                         Policy.policyDoesNotApplyStates(
-                                mergePolicies(((PolicyDoesNotApplyTest) annotation).policy()));
+                                unionPolicies(((PolicyDoesNotApplyTest) annotation).policy()));
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
 
                 annotations.addAll(index, replacementAnnotations);
@@ -915,7 +1046,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
                 List<Annotation> replacementAnnotations =
                         Policy.cannotSetPolicyStates(
-                                mergePolicies(((CannotSetPolicyTest) annotation).policy()),
+                                unionPolicies(((CannotSetPolicyTest) annotation).policy()),
                                 ((CannotSetPolicyTest) annotation).includeDeviceAdminStates(),
                                 ((CannotSetPolicyTest) annotation).includeNonDeviceAdminStates());
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
@@ -926,10 +1057,32 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                 annotations.remove(index);
                 boolean singleTestOnly = ((CanSetPolicyTest) annotation).singleTestOnly();
 
+                Class<?>[] policyUnionAnnotations = ((CanSetPolicyTest) annotation).policyUnion();
+                Class<?>[] policyIntersectionAnnotations =
+                        ((CanSetPolicyTest) annotation).policyIntersection();
+                Class<?>[] policyAnnotations = ((CanSetPolicyTest) annotation).policy();
+
+                int numberOfUniquePolicySet = (policyAnnotations.length > 0 ? 1 : 0)
+                        + (policyUnionAnnotations.length > 0 ? 1 : 0) + (
+                        policyIntersectionAnnotations.length > 0 ? 1 : 0);
+
+                if (numberOfUniquePolicySet != 1) {
+                    throw new IllegalStateException("Exactly 1 of policy/policyUnion/policyIntersection must be set");
+                }
+
+                EnterprisePolicy enterprisePolicy;
+
+                if (policyAnnotations.length > 0) {
+                    enterprisePolicy = unionPolicies(policyAnnotations);
+                } else if (policyUnionAnnotations.length > 0) {
+                    enterprisePolicy = unionPolicies(policyUnionAnnotations);
+                } else {
+                    enterprisePolicy = intersectPolicies(policyIntersectionAnnotations);
+                }
+
                 List<Annotation> replacementAnnotations =
-                        Policy.canSetPolicyStates(
-                                mergePolicies(((CanSetPolicyTest) annotation).policy()),
-                                singleTestOnly);
+                        Policy.canSetPolicyStates(enterprisePolicy, singleTestOnly);
+
                 replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
 
                 annotations.addAll(index, replacementAnnotations);
@@ -974,7 +1127,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     new DynamicParameterizedAnnotation(
                             permission,
                             new Annotation[]{
-                                    ensureHasPermission(new String[]{permission}),
+                                    ensureHasPermission(permission),
                                     ensureDoesNotHavePermission(allPermissions.toArray(new String[]{}))
                             }));
             allPermissions.add(permission);
@@ -1059,46 +1212,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         return replacementAnnotations;
     }
 
-    /**
-     * Parse @RunWithFeatureFlagEnabledAndDisabled annotations.
-     *
-     * <p>To be used before general annotation processing.
-     */
-    static void parseFlagAnnotations(List<Annotation> annotations) {
-        int index = 0;
-        while (index < annotations.size()) {
-            Annotation annotation = annotations.get(index);
-            if (annotation instanceof RunWithFeatureFlagEnabledAndDisabled) {
-                annotations.remove(index);
-
-                RunWithFeatureFlagEnabledAndDisabled a =
-                        ((RunWithFeatureFlagEnabledAndDisabled) annotation);
-
-                List<Annotation> replacementAnnotations = generateFeatureFlagAnnotations(
-                        a.namespace(), a.key());
-                replacementAnnotations.sort(BedsteadJUnit4::annotationSorter);
-
-                annotations.addAll(index, replacementAnnotations);
-                index += replacementAnnotations.size();
-            } else {
-                index++;
-            }
-        }
-    }
-
-    private static List<Annotation> generateFeatureFlagAnnotations(String namespace, String key) {
-        List<Annotation> replacementAnnotations = new ArrayList<>();
-
-        replacementAnnotations.add(
-                new DynamicParameterizedAnnotation(namespace + "_" + key + "_true",
-                        new Annotation[]{ensureFeatureFlagEnabled(namespace, key)}));
-        replacementAnnotations.add(
-                new DynamicParameterizedAnnotation(namespace + "_" + key + "_false",
-                        new Annotation[]{ensureFeatureFlagNotEnabled(namespace, key)}));
-
-        return replacementAnnotations;
-    }
-
     private static Annotation getRunOnAnnotation(UserType userType, String annotationName) {
         switch (userType) {
             case SYSTEM_USER:
@@ -1158,43 +1271,51 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     HarrierRule getHarrierRule() {
         if (mHarrierRule == null) {
-            classRules();
+            var unused = classRules();
         }
         return mHarrierRule;
+    }
+
+    @Override
+    protected List<TestRule> getTestRules(Object target) {
+        var testRules = super.getTestRules(target);
+        if (mHasManualHarrierRule) {
+            return testRules;
+        }
+        var harrier = findHarrier(testRules);
+        if (harrier == null) {
+            testRules.add(getHarrierRule());
+        }
+        return testRules;
     }
 
     @Override
     protected List<TestRule> classRules() {
         List<TestRule> rules = super.classRules();
 
-        for (TestRule rule : rules) {
-            if (rule instanceof HarrierRule) {
-                mHarrierRule = (HarrierRule) rule;
-                break;
-            }
-        }
+        mHarrierRule = findHarrier(rules);
+        mHasManualHarrierRule = mHarrierRule != null;
 
         if (mHarrierRule == null) {
-            try {
-                mHarrierRule =
-                        (HarrierRule)
-                                Class.forName("com.android.bedstead.harrier.DeviceState")
-                                        .newInstance();
-                rules = new ArrayList<>(rules);
-                rules.add(mHarrierRule);
-            } catch (ClassNotFoundException e) {
-                // Must be running on the host - for now we don't add anything
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException("Error initialising Harrier Rule", e);
-            }
+            mHarrierRule = new DeviceState();
+        }
+        if (!rules.contains(mHarrierRule)) {
+            rules.add(mHarrierRule);
         }
 
-        if (mHarrierRule != null) {
-            mHarrierRule.setSkipTestTeardown(true);
-            mHarrierRule.setUsingBedsteadJUnit4(true);
-        }
+        mHarrierRule.setSkipTestTeardown(true);
+        mHarrierRule.setUsingBedsteadJUnit4(true);
 
         return rules;
+    }
+
+    private HarrierRule findHarrier(List<TestRule> rules) {
+        for (TestRule rule : rules) {
+            if (rule instanceof HarrierRule) {
+                return (HarrierRule) rule;
+            }
+        }
+        return null;
     }
 
     /**

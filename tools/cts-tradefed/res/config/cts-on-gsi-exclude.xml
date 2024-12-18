@@ -44,7 +44,7 @@
     <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.AutoRevokeTest" />
 
     <!-- No Gallery2, Music -->
-    <option name="compatibility:exclude-filter" value="CtsProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
+    <option name="compatibility:exclude-filter" value="CtsMediaProviderTestCases android.provider.cts.media.MediaStoreIntentsTest" />
 
     <!-- No Music -->
     <option name="compatibility:exclude-filter" value="CtsContentTestCases android.content.cts.AvailableIntentsTest#testMusicPlayback" />
@@ -137,11 +137,6 @@
     <!-- b/285247534 Remove WM Extension tests on GSI -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SdkAvailabilityTest" />
 
-    <!-- b/284917528 -->
-    <option name="compatibility:exclude-filter" value="MicrodroidHostTestCases" />
-    <option name="compatibility:exclude-filter" value="MicrodroidTestApp" />
-    <option name="compatibility:exclude-filter" value="odsign_e2e_tests" />
-
     <!-- b/285455242 Temporarily exclude some save save UI tests failing due to layout issue -->
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.MultiScreenLoginTest#testSaveBothFieldsAtOnceNoClientStateOnSecondRequest" />
     <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dropdown.MultipleFragmentLoginTest#loginOnTwoFragments" />
@@ -158,14 +153,10 @@
     <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_FiraRangingTests" />
 
     <!-- b/296896687 -->
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_notPreferredIndex" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
-    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_nonPreferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
+    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
+    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_notPreferredIndex" />
 
     <!-- b/298915013 Remove CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey_StrongBox" />
@@ -183,6 +174,20 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
 
+    <!-- b/353142444 -->
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppChoreographer" />
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppBackpressure" />
+
+    <!-- b/342028446 Remove SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked from cts-on-gsi -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked" />
+
+    <!-- b/337678518#comment25 Missing vendor_required_attestation_certificates.xml -->
+    <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />
+
+    <!-- b/339130891 Test removed due to flakiness -->
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualIntentFilterChanges" />
+    <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualGroupChanges" />
+
     <!-- b/349776686 -->
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestedRoTAcrossKeymints" />
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_StrongBox" />
@@ -191,4 +196,23 @@
 
     <!-- b/349072303 -->
     <option name="compatibility:exclude-filter" value="CtsHardwareTestCases android.hardware.cts.LowRamDeviceTest#testMinDataPartitionSize" />
+
+    <!-- b/353141490 -->
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayModeGetRefreshRateDisplayModeReturnsPhysicalRefreshRate" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeChoreographer" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeBackpressure" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayGetRefreshRate" />
+
+    <!-- b/361909833 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.AdSelectionTest#testGetAdSelectionService_lowRamDevice_throwsIllegalStateException" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.CustomAudienceTest#testGetCustomAudienceService_lowRamDevice_throwsIllegalStateException" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTestMeasurement com.android.adservices.tests.cts.measurement.MeasurementManagerCtsTest#testMeasurementApiDisabled_lowRamDevice" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testGetTopics_lowRamDevice" />
+
+    <!-- b/372032447 Remove Bionic minimum compiler optimizations CTS Tests -->
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases cpu_target_features#has_expected_aarch64_compiler_values" />
+    <option name="compatibility:exclude-filter" value="CtsBionicTestCases cpu_target_features#has_expected_x86_compiler_values" />
+
+    <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
+
 </configuration>

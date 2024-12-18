@@ -112,10 +112,12 @@ public class LockTaskHostDrivenTest extends BaseDeviceAdminTest {
         mUiDevice.waitForIdle();
     }
 
-    private void checkLockedActivityIsRunning() {
-        String activityName =
-                mActivityManager.getAppTasks().get(0).getTaskInfo().topActivity.getClassName();
-        assertEquals(LOCK_TASK_ACTIVITY, activityName);
+    private void checkLockedActivityIsRunning() throws Exception {
+        waitAndCheckLockedActivityIsResumed();
+
+        ComponentName topActivity = mActivityManager.getAppTasks().get(0).getTaskInfo().topActivity;
+        assertNotNull(topActivity);
+        assertEquals(LOCK_TASK_ACTIVITY, topActivity.getClassName());
 
         PollingCheck.waitFor(
                 () -> (mActivityManager.getLockTaskModeState()
@@ -150,8 +152,10 @@ public class LockTaskHostDrivenTest extends BaseDeviceAdminTest {
     }
 
     private void launchLockTaskUtilityActivityWithoutStartingLockTask() {
-        final Intent intent = new Intent(mContext, LockTaskUtilityActivityIfAllowed.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        final Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
     }
 

@@ -33,6 +33,8 @@ import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.SystemUtil;
+
 import com.google.common.base.Objects;
 
 import java.io.FileInputStream;
@@ -187,7 +189,7 @@ public class NotificationHelper {
 
     public TestNotificationListener enableListener(String pkg) throws IOException {
         String command = " cmd notification allow_listener "
-                + pkg + "/" + TestNotificationListener.class.getName();
+                + pkg + "/" + TestNotificationListener.class.getName() + " " + mContext.getUserId();
         runCommand(command, InstrumentationRegistry.getInstrumentation());
         mNotificationListener = TestNotificationListener.getInstance();
         if (mNotificationListener != null) {
@@ -199,7 +201,8 @@ public class NotificationHelper {
     public void disableListener(String pkg) throws IOException {
         final ComponentName component =
                 new ComponentName(pkg, TestNotificationListener.class.getName());
-        String command = " cmd notification disallow_listener " + component.flattenToString();
+        String command = " cmd notification disallow_listener " + component.flattenToString()
+                + " " + mContext.getUserId();
 
         runCommand(command, InstrumentationRegistry.getInstrumentation());
 
@@ -226,6 +229,20 @@ public class NotificationHelper {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation().dropShellPermissionIdentity();
         return mAssistant;
+    }
+
+    // For a NAS not owned by the test package, we need to check/enable the NAS with the shell
+    public void enableOtherPkgAssistantIfNeeded(String componentName) {
+        if (componentName == null || componentName.equals(getEnabledAssistant())) {
+            return;
+        }
+        SystemUtil.runShellCommand("cmd notification allow_assistant " + componentName + " "
+                + mContext.getUserId());
+    }
+
+    public String getEnabledAssistant() {
+        return SystemUtil.runShellCommand("cmd notification get_approved_assistant" + " "
+                + mContext.getUserId());
     }
 
     public void disableAssistant(String pkg) throws IOException {

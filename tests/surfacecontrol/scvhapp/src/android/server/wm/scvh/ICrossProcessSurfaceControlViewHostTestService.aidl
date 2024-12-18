@@ -17,13 +17,15 @@
 package android.server.wm.scvh;
 
 import android.os.IBinder;
+import android.view.MotionEvent;
 import android.view.SurfaceControlViewHost.SurfacePackage;
+import android.window.InputTransferToken;
 
 interface ICrossProcessSurfaceControlViewHostTestService {
     SurfacePackage getSurfacePackage(IBinder hostInputToken);
-    boolean getViewIsTouched();
-    boolean getViewIsTouchedAndObscured();
+    MotionEvent getMotionEvent();
     IBinder getWindowToken();
     boolean waitForFocus(boolean waitForFocus);
     void setKeepScreenOnFlag(boolean keepScreenOn);
+    boolean requestTouchGestureTransferFromHostThrows(in InputTransferToken hostInputTransferToken);
 }

@@ -17,6 +17,7 @@
 package android.view.cts;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.Context;
@@ -35,6 +36,7 @@ import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.cts.display.DisplayUtilKt;
 
 import org.junit.After;
 import org.junit.Before;
@@ -124,6 +126,7 @@ public class DisplayRefreshRateTest {
 
         Context context = mActivity.getApplicationContext();
         mDisplayManager = context.getSystemService(DisplayManager.class);
+        assumeTrue(DisplayUtilKt.validateOnlyDefaultDisplayOn(mDisplayManager, TAG));
 
         mInitialMatchContentFrameRate =
                 toSwitchingType(mDisplayManager.getMatchContentFrameRateUserPreference());

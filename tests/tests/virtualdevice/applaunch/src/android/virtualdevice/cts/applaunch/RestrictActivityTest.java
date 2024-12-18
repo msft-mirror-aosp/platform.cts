@@ -16,8 +16,6 @@
 
 package android.virtualdevice.cts.applaunch;
 
-import static android.virtualdevice.cts.common.VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -26,7 +24,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.companion.virtual.VirtualDeviceManager;
@@ -34,13 +31,14 @@ import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;
@@ -110,10 +108,8 @@ public class RestrictActivityTest {
 
     @Test
     public void restrictedActivity_noGwpc_shouldFail() {
-        final VirtualDisplay virtualDisplay = mRule.createManagedUnownedVirtualDisplayWithFlags(
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+        final VirtualDisplay virtualDisplay = mRule.createManagedUnownedVirtualDisplay(
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
 
         final Intent intent = new Intent(mContext, RestrictedActivity.class)
@@ -129,7 +125,7 @@ public class RestrictActivityTest {
         final Intent intent = new Intent(mContext, clazz)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         Activity activity = mRule.startActivityOnDisplaySync(displayId, clazz);
-        assertActivityOnDisplay(activity.getComponentName(), displayId);
+        assertActivityOnDisplay(activity.getComponentName(), displayId, mContext.getUserId());
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(mContext, displayId, intent))
                 .isTrue();
     }
@@ -140,7 +136,8 @@ public class RestrictActivityTest {
         final Intent intent = new Intent(mContext, clazz)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mRule.sendIntentToDisplay(intent, displayId);
-        assertActivityOnDisplay(VirtualDeviceRule.BLOCKED_ACTIVITY_COMPONENT, displayId);
+        assertActivityOnDisplay(VirtualDeviceRule.BLOCKED_ACTIVITY_COMPONENT, displayId,
+                UserHandle.SYSTEM.getIdentifier());
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(mContext, displayId, intent))
                 .isFalse();
     }
@@ -149,21 +146,19 @@ public class RestrictActivityTest {
             @Nullable Set<String> displayCategories) {
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
         virtualDevice.addActivityListener(mContext.getMainExecutor(), mActivityListener);
-        VirtualDisplayConfig.Builder builder = createDefaultVirtualDisplayConfigBuilder()
-                .setFlags(DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+        VirtualDisplayConfig.Builder builder =
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder();
         if (displayCategories != null) {
-            builder = builder.setDisplayCategories(displayCategories);
+            builder.setDisplayCategories(displayCategories);
         }
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(
-                virtualDevice, builder.build());
+                virtualDevice, builder);
         return virtualDisplay.getDisplay().getDisplayId();
     }
 
-    protected void assertActivityOnDisplay(ComponentName componentName, int displayId) {
+    protected void assertActivityOnDisplay(ComponentName componentName, int displayId, int userId) {
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onTopActivityChanged(
-                eq(displayId), eq(componentName), eq(mContext.getUserId()));
+                eq(displayId), eq(componentName), eq(userId));
     }
 
     /** An empty activity with a display category. */

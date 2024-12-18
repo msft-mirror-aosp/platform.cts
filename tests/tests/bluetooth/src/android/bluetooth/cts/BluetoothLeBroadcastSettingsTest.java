@@ -19,12 +19,9 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioContentMetadata;
@@ -57,9 +54,8 @@ public class BluetoothLeBroadcastSettingsTest {
     private static final String TEST_BROADCAST_NAME = "TEST";
     private static final String TEST_INVALID_SHORT_BROADCAST_NAME = "TE";
     private static final String TEST_INVALID_LONG_BROADCAST_NAME =
-                "TESTWITHLENGTH34TESTWITHLENGTH3434";
-    private static final int TEST_QUALITY =
-            BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
+            "TESTWITHLENGTH34TESTWITHLENGTH3434";
+    private static final int TEST_QUALITY = BluetoothLeBroadcastSubgroupSettings.QUALITY_STANDARD;
 
     private Context mContext;
     private BluetoothAdapter mAdapter;
@@ -73,24 +69,19 @@ public class BluetoothLeBroadcastSettingsTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
 
         mIsBroadcastAssistantSupported =
                 mAdapter.isLeAudioBroadcastAssistantSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastAssistantSupported) {
-            boolean isBroadcastAssistantEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT);
-            assertTrue("Config must be true when profile is supported",
-                    isBroadcastAssistantEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT))
+                    .isTrue();
         }
 
         mIsBroadcastSourceSupported =
                 mAdapter.isLeAudioBroadcastSourceSupported() == FEATURE_SUPPORTED;
         if (mIsBroadcastSourceSupported) {
-            boolean isBroadcastSourceEnabledInConfig =
-                    TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST);
-            assertTrue("Config must be true when profile is supported",
-                    isBroadcastSourceEnabledInConfig);
+            assertThat(TestUtils.isProfileEnabled(BluetoothProfile.LE_AUDIO_BROADCAST)).isTrue();
         }
 
         Assume.assumeTrue(mIsBroadcastAssistantSupported || mIsBroadcastSourceSupported);
@@ -106,50 +97,59 @@ public class BluetoothLeBroadcastSettingsTest {
     public void createBroadcastSettingsFromBuilder() {
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).build();
-        BluetoothLeBroadcastSettings.Builder builder = new BluetoothLeBroadcastSettings.Builder()
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .build();
+        BluetoothLeBroadcastSettings.Builder builder =
+                new BluetoothLeBroadcastSettings.Builder()
                         .setPublicBroadcast(false)
                         .setPublicBroadcastMetadata(publicBroadcastMetadata);
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
 
         // test invalid code length 0
-        assertThrows(IllegalArgumentException.class, () ->
-                        builder.setBroadcastCode(new byte[0]));
+        assertThrows(IllegalArgumentException.class, () -> builder.setBroadcastCode(new byte[0]));
 
         // test invalid code length 18
-        assertThrows(IllegalArgumentException.class, () ->
-                        builder.setBroadcastCode(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05,
-                                                             0x06, 0x07, 0x08, 0x09, 0x0A,
-                                                             0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-                                                             0x10, 0x11, 0x12}));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        builder.setBroadcastCode(
+                                new byte[] {
+                                    0x01, 0x02, 0x03, 0x04, 0x05,
+                                    0x06, 0x07, 0x08, 0x09, 0x0A,
+                                    0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+                                    0x10, 0x11, 0x12
+                                }));
 
         // test invalid name length 2
-        assertThrows(IllegalArgumentException.class, () ->
-                        builder.setBroadcastName(TEST_INVALID_SHORT_BROADCAST_NAME));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setBroadcastName(TEST_INVALID_SHORT_BROADCAST_NAME));
 
         // test invalid name length 34
-        assertThrows(IllegalArgumentException.class, () ->
-                        builder.setBroadcastName(TEST_INVALID_LONG_BROADCAST_NAME));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> builder.setBroadcastName(TEST_INVALID_LONG_BROADCAST_NAME));
 
         builder.setBroadcastCode(null);
         builder.setBroadcastName(null);
 
         BluetoothLeBroadcastSubgroupSettings[] subgroupSettings =
-                new BluetoothLeBroadcastSubgroupSettings[] {
-                    createBroadcastSubgroupSettings()
-                };
+                new BluetoothLeBroadcastSubgroupSettings[] {createBroadcastSubgroupSettings()};
         for (BluetoothLeBroadcastSubgroupSettings setting : subgroupSettings) {
             builder.addSubgroupSettings(setting);
         }
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
-        assertFalse(broadcastSettings.isPublicBroadcast());
-        assertNull(broadcastSettings.getBroadcastName());
-        assertNull(broadcastSettings.getBroadcastCode());
-        assertEquals(publicBroadcastMetadata, broadcastSettings.getPublicBroadcastMetadata());
-        assertArrayEquals(subgroupSettings,
-                broadcastSettings.getSubgroupSettings()
-                .toArray(new BluetoothLeBroadcastSubgroupSettings[0]));
+        assertThat(broadcastSettings.isPublicBroadcast()).isFalse();
+        assertThat(broadcastSettings.getBroadcastName()).isNull();
+        assertThat(broadcastSettings.getBroadcastCode()).isNull();
+        assertThat(broadcastSettings.getPublicBroadcastMetadata())
+                .isEqualTo(publicBroadcastMetadata);
+        assertThat(
+                        broadcastSettings
+                                .getSubgroupSettings()
+                                .toArray(new BluetoothLeBroadcastSubgroupSettings[0]))
+                .isEqualTo(subgroupSettings);
         builder.clearSubgroupSettings();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
@@ -160,9 +160,10 @@ public class BluetoothLeBroadcastSettingsTest {
     public void createBroadcastSettingsFromCopy() {
         BluetoothLeAudioContentMetadata publicBroadcastMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .build();
         BluetoothLeBroadcastSettings.Builder builder =
-                        new BluetoothLeBroadcastSettings.Builder()
+                new BluetoothLeBroadcastSettings.Builder()
                         .setPublicBroadcast(false)
                         .setBroadcastName(TEST_BROADCAST_NAME)
                         .setBroadcastCode(null)
@@ -170,22 +171,23 @@ public class BluetoothLeBroadcastSettingsTest {
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
         BluetoothLeBroadcastSubgroupSettings[] subgroupSettings =
-                new BluetoothLeBroadcastSubgroupSettings[] {
-                    createBroadcastSubgroupSettings()
-                };
+                new BluetoothLeBroadcastSubgroupSettings[] {createBroadcastSubgroupSettings()};
         for (BluetoothLeBroadcastSubgroupSettings setting : subgroupSettings) {
             builder.addSubgroupSettings(setting);
         }
         BluetoothLeBroadcastSettings broadcastSettings = builder.build();
         BluetoothLeBroadcastSettings broadcastSettingsCopy =
                 new BluetoothLeBroadcastSettings.Builder(broadcastSettings).build();
-        assertFalse(broadcastSettingsCopy.isPublicBroadcast());
-        assertEquals(TEST_BROADCAST_NAME, broadcastSettingsCopy.getBroadcastName());
-        assertNull(broadcastSettingsCopy.getBroadcastCode());
-        assertEquals(publicBroadcastMetadata, broadcastSettingsCopy.getPublicBroadcastMetadata());
-        assertArrayEquals(subgroupSettings,
-                broadcastSettingsCopy.getSubgroupSettings()
-                .toArray(new BluetoothLeBroadcastSubgroupSettings[0]));
+        assertThat(broadcastSettingsCopy.isPublicBroadcast()).isFalse();
+        assertThat(broadcastSettingsCopy.getBroadcastName()).isEqualTo(TEST_BROADCAST_NAME);
+        assertThat(broadcastSettingsCopy.getBroadcastCode()).isNull();
+        assertThat(broadcastSettingsCopy.getPublicBroadcastMetadata())
+                .isEqualTo(publicBroadcastMetadata);
+        assertThat(
+                        broadcastSettingsCopy
+                                .getSubgroupSettings()
+                                .toArray(new BluetoothLeBroadcastSubgroupSettings[0]))
+                .isEqualTo(subgroupSettings);
         builder.clearSubgroupSettings();
         // builder expect at least one subgroup
         assertThrows(IllegalArgumentException.class, builder::build);
@@ -194,12 +196,13 @@ public class BluetoothLeBroadcastSettingsTest {
     static BluetoothLeBroadcastSubgroupSettings createBroadcastSubgroupSettings() {
         BluetoothLeAudioContentMetadata contentMetadata =
                 new BluetoothLeAudioContentMetadata.Builder()
-                        .setProgramInfo(TEST_PROGRAM_INFO).setLanguage(TEST_LANGUAGE).build();
+                        .setProgramInfo(TEST_PROGRAM_INFO)
+                        .setLanguage(TEST_LANGUAGE)
+                        .build();
         BluetoothLeBroadcastSubgroupSettings.Builder builder =
                 new BluetoothLeBroadcastSubgroupSettings.Builder()
-                .setPreferredQuality(TEST_QUALITY)
-                .setContentMetadata(contentMetadata);
+                        .setPreferredQuality(TEST_QUALITY)
+                        .setContentMetadata(contentMetadata);
         return builder.build();
     }
-
 }

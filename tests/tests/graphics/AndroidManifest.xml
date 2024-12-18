@@ -26,7 +26,8 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name="android.graphics.cts.CameraGpuCtsActivity"
-             android:label="CameraGpuCtsActivity">
+             android:label="CameraGpuCtsActivity"
+             android:exported="true">
         </activity>
 
         <activity android:name="android.graphics.cts.FrameRateCtsActivity"
@@ -59,12 +60,14 @@
 
         <activity android:name="android.graphics.cts.VulkanPreTransformCtsActivity"
              android:label="VulkanPreTransformCtsActivity"
-             android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+             android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+             android:exported="true">
         </activity>
 
         <activity android:name="android.graphics.drawable.cts.DrawableStubActivity"
              android:theme="@style/WhiteBackgroundNoWindowAnimation"
-             android:screenOrientation="locked"/>
+             android:screenOrientation="locked"
+             android:exported="true"/>
 
         <activity android:name="android.graphics.cts.EmptyActivity"
                   android:label="Empty Activity"
@@ -84,7 +87,8 @@
         </activity>
         <activity android:name="android.graphics.drawable.cts.AnimatedImageActivity"
              android:theme="@style/WhiteBackgroundNoWindowAnimation"
-             android:screenOrientation="locked">
+             android:screenOrientation="locked"
+             android:exported="true">
         </activity>
         <provider android:name=".EmptyProvider"
              android:exported="true"

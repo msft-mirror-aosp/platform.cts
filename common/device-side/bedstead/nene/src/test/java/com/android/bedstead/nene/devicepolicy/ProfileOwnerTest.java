@@ -26,14 +26,13 @@ import android.content.ComponentName;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.remotedpc.RemoteDpc;

@@ -24,7 +24,7 @@ android_test {
     srcs: [
         "src/**/*.java",
         "helper/**/*.java",
-        ":CtsProviderTestUtils",
+        ":CtsMediaProviderTestUtils",
     ],
     compile_multilib: "both",
     test_suites: [
@@ -37,9 +37,10 @@ android_test {
     min_sdk_version: "30",
     target_sdk_version: "33",
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs",
+        "android.test.runner.stubs",
         "framework-mediaprovider.impl",
+        "framework-photopicker.impl",
         "framework-res",
         "android_test_stubs_current",
     ],
@@ -47,7 +48,16 @@ android_test {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "cts-install-lib",
+        "flag-junit",
         "Harrier",
         "modules-utils-build",
+        "mediaprovider_flags_java_lib",
     ],
+}
+
+test_module_config {
+    name: "CtsPhotoPickerTest_NoLarge",
+    base: "CtsPhotoPickerTest",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

@@ -1,0 +1,9 @@
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/ForegroundCtsPaymentService"
+    android:wantsRoleHolderPriority="true">
+    <aid-group android:description="@string/ForegroundCtsPaymentService" android:category="payment">
+        <aid-filter android:name="A000000005101011"/>
+        <aid-filter android:name="A000000005101012"/>
+        <aid-filter android:name="A000000005101013"/>
+    </aid-group>
+</host-apdu-service>

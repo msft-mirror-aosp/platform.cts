@@ -325,7 +325,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         @Override
         protected void tearDown() {
             mNm.cancelAll();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             deleteChannels();
         }
 
@@ -378,7 +380,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         @Override
         protected void tearDown() {
             mNm.cancelAll();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             deleteChannels();
         }
 
@@ -470,7 +474,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
 
         @Override
         protected void tearDown() {
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             mNm.deleteNotificationChannel(mChannelId);
             SharedPreferences prefs =
                     mContext.getSharedPreferences(
@@ -608,7 +614,7 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             mNm.createNotificationChannelGroup(group);
             NotificationChannel channel =
                     new NotificationChannel(
-                            mGroupId, "ReceiveChannelBlockNoticeTest", IMPORTANCE_LOW);
+                            mGroupId, "ReceiveChannelBlockNoticeTest", IMPORTANCE_NONE);
             channel.setGroup(mGroupId);
             mNm.createNotificationChannel(channel);
             status = READY;
@@ -648,7 +654,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         }
 
         protected void tearDown() {
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             mNm.deleteNotificationChannelGroup(mGroupId);
             SharedPreferences prefs =
                     mContext.getSharedPreferences(
@@ -726,7 +734,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         }
 
         protected void tearDown() {
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             SharedPreferences prefs =
                     mContext.getSharedPreferences(
                             NotificationListenerVerifierActivity.PREFS, Context.MODE_PRIVATE);
@@ -797,7 +807,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         }
 
         protected void tearDown() {
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             SharedPreferences prefs =
                     mContext.getSharedPreferences(
                             NotificationListenerVerifierActivity.PREFS, Context.MODE_PRIVATE);
@@ -924,7 +936,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         @Override
         protected void tearDown() {
             mNm.cancelAll();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             deleteChannels();
         }
     }
@@ -989,7 +1003,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         @Override
         protected void tearDown() {
             mNm.cancelAll();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             deleteChannels();
         }
     }
@@ -1031,7 +1047,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
         }
     }
 
@@ -1074,7 +1092,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
         }
     }
 
@@ -1193,7 +1213,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
         }
     }
 
@@ -1236,7 +1258,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
         }
     }
 
@@ -1264,7 +1288,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
 
         @Override
         protected void tearDown() {
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
         }
 
         @Override
@@ -1506,7 +1532,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             delay();
         }
     }
@@ -1581,7 +1609,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
         }
     }
 
@@ -1668,7 +1698,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         protected void tearDown() {
             mNm.cancelAll();
             deleteChannels();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             delay();
         }
     }
@@ -1707,11 +1739,13 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             mId1 = NOTIFICATION_ID + 1;
 
             Notification.MessagingStyle.Message msg1 =
-                    new Notification.MessagingStyle.Message("text1", 0 /* timestamp */, "sender1");
+                    new Notification.MessagingStyle.Message("text 1", 0 /* timestamp */,
+                            "sender 1");
             msg1.getExtras().putCharSequence(extrasKey1, extrasValue1);
 
             Notification.MessagingStyle.Message msg2 =
-                    new Notification.MessagingStyle.Message("text2", 1 /* timestamp */, "sender2");
+                    new Notification.MessagingStyle.Message("text 2", 1 /* timestamp */,
+                            "sender 2");
             msg2.getExtras().putCharSequence(extrasKey2, extrasValue2);
 
             Notification.MessagingStyle style = new Notification.MessagingStyle("display_name");
@@ -1721,7 +1755,7 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             Notification n1 =
                     new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
                             .setContentTitle("ClearTest 1")
-                            .setContentText(mTag1.toString())
+                            .setContentText("Content Title")
                             .setPriority(Notification.PRIORITY_LOW)
                             .setSmallIcon(mIcon1)
                             .setWhen(mWhen1)
@@ -1976,7 +2010,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         @Override
         protected void tearDown() {
             mNm.cancelAll();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             deleteChannels();
         }
 
@@ -2020,7 +2056,9 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
         @Override
         protected void tearDown() {
             mNm.cancelAll();
-            MockListener.getInstance().resetData();
+            if (MockListener.getInstance() != null) {
+                MockListener.getInstance().resetData();
+            }
             deleteChannels();
         }
 

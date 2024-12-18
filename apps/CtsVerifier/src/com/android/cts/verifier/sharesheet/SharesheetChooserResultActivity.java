@@ -16,99 +16,116 @@
 
 package com.android.cts.verifier.sharesheet;
 
+import static android.service.chooser.ChooserResult.CHOOSER_RESULT_COPY;
+import static android.service.chooser.ChooserResult.CHOOSER_RESULT_EDIT;
+import static android.service.chooser.ChooserResult.CHOOSER_RESULT_SELECTED_COMPONENT;
+import static android.service.chooser.ChooserResult.CHOOSER_RESULT_UNKNOWN;
+
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.service.chooser.ChooserResult;
 import android.service.chooser.Flags;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.StringRes;
+
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
-public class SharesheetChooserResultActivity extends PassFailButtons.Activity {
+import java.util.Objects;
+
+abstract class SharesheetChooserResultActivity extends PassFailButtons.Activity {
+    private static final String TAG = "ChooserResultTest";
+
     private static final String CHOOSER_RESULT =
             "com.android.cts.verifier.sharesheet.CHOOSER_RESULT";
 
-    private final ChooserResult mExpectedCopy =
-            new ChooserResult(ChooserResult.CHOOSER_RESULT_COPY, null, false);
+    private ChooserResult mResultExpected;
+    private ChooserResult mResultReceived;
+    private TextView mInstructiontext;
+    private Button mShareButton;
 
-    BroadcastReceiver mChooserCallbackReceiver = new BroadcastReceiver() {
+    private View mAfterShareSection;
+    private Button mCouldNotLocate;
+    private Button mActionPerformed;
+
+    private Handler mHandler;
+    private boolean mWaitingForResult;
+    private boolean mResumed;
+    private boolean mTestPassed;
+    private boolean mTestComplete;
+
+    private final Runnable NO_RESULT_RECEIVED = this::handleNoResultReceived;
+    private final Runnable RELAUNCH_TEST = () -> startActivity(getTestActivityIntent());
+
+
+    protected abstract Intent getTestActivityIntent();
+
+    private final BroadcastReceiver mChooserCallbackReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            evaluateAndSetResult(intent.getParcelableExtra(
+            onChooserResultReceived(Objects.requireNonNull(intent.getParcelableExtra(
                     Intent.EXTRA_CHOOSER_RESULT,
-                    ChooserResult.class));
+                    ChooserResult.class)));
         }
     };
 
-    private void evaluateAndSetResult(ChooserResult result) {
-        if (mExpectedCopy.equals(result)) {
-            Toast.makeText(SharesheetChooserResultActivity.this,
-                    R.string.sharesheet_result_test_passed,
-                    Toast.LENGTH_SHORT).show();
-            setTestResultAndFinish(true);
-            return;
-        }
-        setTestResultAndFinish(false);
+    protected final void setInstructions(@StringRes int instructions) {
+        mInstructiontext.setText(instructions);
     }
+
+    protected final void setAfterShareButtonLabels(@StringRes int actionTakenLabel,
+            @StringRes int notFoundLabel) {
+        mActionPerformed.setText(actionTakenLabel);
+        mCouldNotLocate.setText(notFoundLabel);
+    }
+
+    protected final void setExpectedResult(ChooserResult result) {
+        mResultExpected = result;
+    }
+
+    protected abstract Intent createChooserIntent();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        mHandler = new Handler(Looper.getMainLooper());
         if (!Flags.enableChooserResult()) {
             // If the API isn't enabled, immediately let the test pass.
             Toast.makeText(this, R.string.sharesheet_skipping_for_flag, Toast.LENGTH_LONG).show();
             setTestResultAndFinish(true);
             return;
         }
-
         setContentView(R.layout.sharesheet_chooser_result_activity);
         setPassFailButtonClickListeners();
-        setInfoResources(
-                R.string.sharesheet_result_test,
-                R.string.sharesheet_result_test_info,
-                -1);
 
-        final TextView instructionText = requireViewById(R.id.instructions);
-        final Button shareButton = requireViewById(R.id.sharesheet_share_button);
-        final View afterShareSection =
-                requireViewById(R.id.sharesheet_result_test_instructions_after_share);
-        final Button copyNotFound = requireViewById(R.id.sharesheet_result_test_not_found);
-        final Button copyPressed = requireViewById(R.id.sharesheet_result_test_pressed);
+        mInstructiontext = requireViewById(R.id.instructions);
+        mAfterShareSection = requireViewById(R.id.sharesheet_result_test_instructions_after_share);
+
+        mCouldNotLocate = requireViewById(R.id.sharesheet_result_test_not_found);
+        mActionPerformed = requireViewById(R.id.sharesheet_result_test_pressed);
+        mAfterShareSection.setVisibility(View.GONE);
+
+        mShareButton = requireViewById(R.id.sharesheet_share_button);
+        mShareButton.setText(R.string.sharesheet_share_label);
+        mShareButton.setOnClickListener(v -> {
+            mWaitingForResult = true;
+            startActivity(createChooserIntent());
+        });
 
         // Can't pass until steps are completed.
         getPassButton().setVisibility(View.GONE);
 
-        shareButton.setOnClickListener(v -> {
-            shareText();
-            instructionText.setText(R.string.sharesheet_result_test_instructions_after_share);
-            afterShareSection.setVisibility(View.VISIBLE);
-            shareButton.setText(R.string.sharesheet_result_test_try_again);
-        });
-
-        copyPressed.setOnClickListener(v -> {
-            // Pressed copy but not callback was received, fail.
-            Toast.makeText(this,
-                    R.string.sharesheet_result_test_no_result_message,
-                    Toast.LENGTH_LONG).show();
-            setTestResultAndFinish(false);
-        });
-
-        // If there's no copy button, then the test is passed.
-        copyNotFound.setOnClickListener(v -> {
-            Toast.makeText(this,
-                    R.string.sharesheet_result_test_no_button,
-                    Toast.LENGTH_LONG).show();
-            setTestResultAndFinish(true);
-        });
     }
 
     @Override
@@ -124,12 +141,85 @@ public class SharesheetChooserResultActivity extends PassFailButtons.Activity {
         unregisterReceiver(mChooserCallbackReceiver);
     }
 
-    private void shareText() {
-        Intent sendIntent = new Intent();
-        sendIntent.setAction(Intent.ACTION_SEND);
-        sendIntent.putExtra(Intent.EXTRA_TEXT, "Testing");
-        sendIntent.setType("text/plain");
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mResumed = false;
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mResumed = true;
+        mHandler.removeCallbacks(RELAUNCH_TEST);
+
+        if (mTestComplete) {
+            finishTest();
+            return;
+        }
+
+        if (mWaitingForResult && mResultReceived == null) {
+            Log.d(TAG, "waiting for result (100ms)");
+            mHandler.postDelayed(NO_RESULT_RECEIVED, 100);
+        }
+    }
+
+    private void handleNoResultReceived() {
+        Log.d(TAG, "Timed out while waiting for result (100ms)");
+        mWaitingForResult = false;
+
+        // No ChooserResult was received. Ask the user if they pressed the button (or retry)
+        mInstructiontext.setText(R.string.sharesheet_result_test_instructions_after_share);
+        mAfterShareSection.setVisibility(View.VISIBLE);
+        mShareButton.setText(R.string.sharesheet_result_test_try_again);
+
+        // If there's no action to take, then the test is passed.
+        mCouldNotLocate.setOnClickListener(v -> {
+            Toast.makeText(this, R.string.sharesheet_result_test_no_button,
+                    Toast.LENGTH_SHORT).show();
+            setTestResultAndFinish(true);
+
+        });
+
+        // Tester performed the requested action but no result received. FAIL.
+        mActionPerformed.setOnClickListener(v -> {
+            Toast.makeText(this, R.string.sharesheet_result_test_no_result_message,
+                    Toast.LENGTH_SHORT).show();
+            setTestResultAndFinish(false);
+        });
+    }
+
+    private void onChooserResultReceived(ChooserResult result) {
+        Log.d(TAG, "onChooserResultReceived: " + resultToString(result));
+        mHandler.removeCallbacks(NO_RESULT_RECEIVED);
+        mResultReceived = result;
+
+        if (!mWaitingForResult) {
+            return;
+        }
+
+        mTestPassed =  mResultExpected.equals(result);
+        mTestComplete = true;
+
+        if (mResumed) {
+            finishTest();
+        } else {
+            mHandler.postDelayed(RELAUNCH_TEST, 100);
+        }
+    }
+
+    private void finishTest() {
+        if (!mTestPassed) {
+            Log.d(TAG,
+                    "ChooserResult incorrect!\n expected: " + resultToString(mResultExpected)
+                            + "\nreceived: " + resultToString(mResultReceived));
+            Toast.makeText(this, R.string.sharesheet_result_test_incorrect_result,
+                    Toast.LENGTH_SHORT).show();
+        }
+        setTestResultAndFinish(mTestPassed);
+    }
+
+    protected Intent wrapWithChooserIntent(Intent shareIntent) {
         Intent resultIntent = new Intent(CHOOSER_RESULT).setPackage(getPackageName());
         PendingIntent shareResultIntent = PendingIntent.getBroadcast(
                 /* context= */ this,
@@ -137,11 +227,36 @@ public class SharesheetChooserResultActivity extends PassFailButtons.Activity {
                 /* intent= */ resultIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
 
-        Intent shareIntent = Intent.createChooser(
-                /* target= */ sendIntent,
+        Intent chooserIntent = Intent.createChooser(
+                /* target= */ shareIntent,
                 /* title= */ null,
                 /* sender= */ shareResultIntent.getIntentSender()
         );
-        startActivity(shareIntent);
+        chooserIntent.putExtra(Intent.EXTRA_AUTO_LAUNCH_SINGLE_CHOICE, false);
+        chooserIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        chooserIntent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        return chooserIntent;
+    }
+
+    private static String typeToString(int type) {
+        switch (type) {
+            case CHOOSER_RESULT_SELECTED_COMPONENT:
+                return "SELECTED_COMPONENT";
+            case CHOOSER_RESULT_COPY:
+                return "COPY";
+            case CHOOSER_RESULT_EDIT:
+                return "EDIT";
+            case CHOOSER_RESULT_UNKNOWN:
+            default:
+                return "UNKNOWN";
+        }
+    }
+
+    private static String resultToString(ChooserResult result) {
+        return "ChooserResult{"
+                + "type=" + typeToString(result.getType())
+                + " component=" + result.getSelectedComponent()
+                + " isShortcut=" + result.isShortcut()
+                + "}";
     }
 }

@@ -20,6 +20,7 @@ package {
 
 java_test_host {
     name: "CtsMediaParserHostTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",
@@ -38,7 +39,7 @@ java_test_host {
         "cts-host-utils",
         "cts-statsd-atom-host-test-utils",
     ],
-    data: [
-      ":CtsMediaParserTestCasesApp",
-    ]
+    device_common_data: [
+        ":CtsMediaParserTestCasesApp",
+    ],
 }

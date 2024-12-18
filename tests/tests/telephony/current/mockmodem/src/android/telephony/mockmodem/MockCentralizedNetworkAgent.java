@@ -63,6 +63,9 @@ public class MockCentralizedNetworkAgent {
                 TelephonyUtils.executeShellCommand(
                         InstrumentationRegistry.getInstrumentation(),
                         sQueryTelephonyDebugServiceCommand);
+        if (result.contains("Use -h for help")) {
+            throw new RuntimeException(result);
+        }
 
         for (int numSim = 0; numSim < numOfPhone; numSim++) {
             String targetString = "DataNetworkController-" + Integer.toString(numSim);

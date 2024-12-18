@@ -17,11 +17,13 @@ package android.os.cts;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import android.os.Build;
 import android.os.SystemProperties;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 /**
  * Tests for Security Patch String settings
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SecurityPatchTest extends InstrumentationTestCase {
     private static final String TAG = SecurityPatchTest.class.getSimpleName();
     private static final String SECURITY_PATCH_ERROR =

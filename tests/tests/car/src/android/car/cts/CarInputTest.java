@@ -32,7 +32,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.car.Car;
 import android.car.CarOccupantZoneManager;
@@ -50,11 +49,15 @@ import android.view.MotionEvent;
 
 import androidx.test.core.app.ActivityScenario;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.internal.annotations.GuardedBy;
 
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -68,6 +71,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * current user is the driver and not some passenger - this test won't work if
  * `--user-type secondary_user_on_secondary_display` flag is passed.
  */
+@RequireRunNotOnVisibleBackgroundNonProfileUser
 public final class CarInputTest extends AbstractCarTestCase {
     public static final String TAG = CarInputTest.class.getSimpleName();
     private static final long ACTIVITY_WAIT_TIME_OUT_MS = 10_000L;
@@ -82,6 +86,10 @@ public final class CarInputTest extends AbstractCarTestCase {
     private static final String PREFIX_INJECTING_KEY_CMD =
             "cmd car_service inject-key " + OPTION_SEAT + " %d %d";
     private static final String PREFIX_INJECTING_MOTION_CMD = "cmd car_service inject-motion";
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private CarOccupantZoneManager mCarOccupantZoneManager;
 
@@ -103,7 +111,6 @@ public final class CarInputTest extends AbstractCarTestCase {
         var driverZoneAndDisplay = getDriverZoneAndDisplay();
         mDriverZoneInfo = driverZoneAndDisplay.first;
         mDriverDisplayId = driverZoneAndDisplay.second.getDisplayId();
-        assumeTestRunAsDriver();
 
         // Set driver zone and display for one randomly chose passenger.
         var anyPassengerZoneAndDisplay = pickAnyPassengerZoneAndDisplay();
@@ -111,14 +118,6 @@ public final class CarInputTest extends AbstractCarTestCase {
                 anyPassengerZoneAndDisplay.isPresent());
         mPassengerZoneInfo = anyPassengerZoneAndDisplay.get().first;
         mPassengerDisplay = anyPassengerZoneAndDisplay.get().second;
-    }
-
-    private void assumeTestRunAsDriver() {
-        int userId = mCarOccupantZoneManager.getUserForOccupant(mDriverZoneInfo);
-        assumeTrue("This test can't run with the test user as a passenger (test is running as {"
-                        + ActivityManager.getCurrentUser() + "}, but driver user id is {" + userId
-                        + "})",
-                ActivityManager.getCurrentUser() == userId);
     }
 
     @Test

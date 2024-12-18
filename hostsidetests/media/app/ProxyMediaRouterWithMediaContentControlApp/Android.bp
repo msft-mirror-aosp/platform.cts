@@ -36,5 +36,6 @@ android_test_helper_app {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "Harrier",
     ],
 }

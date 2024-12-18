@@ -43,6 +43,8 @@ StreamBase::Result OboeRecorder::setupStream(int32_t channelCount, int32_t sampl
 
     oboe::Result result = oboe::Result::ErrorInternal;
     if (mAudioStream != nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, TAG,
+                            "ERROR_INVALID_STATE - Stream Already Open");
         return ERROR_INVALID_STATE;
     } else {
         mChannelCount = channelCount;
@@ -181,6 +183,12 @@ JNIEXPORT jint JNICALL
 Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getChannelCountN(
         JNIEnv *env, jobject thiz, jlong native_recorder) {
     return ((OboeRecorder*)native_recorder)->getChannelCount();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_hyphonate_megaaudio_recorder_OboeRecorder_isMMapN(
+        JNIEnv *env, jobject thiz, jlong native_recorder) {
+    return ((OboeRecorder*)native_recorder)->isMMap();
 }
 
 JNIEXPORT jint JNICALL Java_org_hyphonate_megaaudio_recorder_OboeRecorder_getStreamStateN(

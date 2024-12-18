@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.CellLocation;
@@ -41,12 +42,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permission")
 public class CellLocationTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean mOnCellLocationChangedCalled;
+    private Boolean mWasLocationEnabled;
     private final Object mLock = new Object();
     private TelephonyManager mTelephonyManager;
     private PackageManager mPackageManager;
@@ -68,6 +71,10 @@ public class CellLocationTest {
             // unregister listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
         }
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
     }
 
     @Test
@@ -85,6 +92,7 @@ public class CellLocationTest {
         }
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
 
         // getCellLocation should never return null,
         // but that is allowed if the cell network type

@@ -19,27 +19,24 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.content.Context;
-import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.ConnectivityManager.NetworkCallback;
 import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
+import android.net.Uri;
 import android.os.Build;
-import android.os.SystemProperties;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
-import android.telephony.TelephonyManager;
-import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -58,9 +55,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /** Test MockModemService interfaces. */
-public class ConnectivityManagerTestOnMockModem {
+public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     private static final String TAG = "ConnectivityManagerTestOnMockModem";
     private static final int TIMEOUT_NETWORK_VALIDATION = 20000;
+    private static final int TIMEOUT_ACTIVATE_NETWORK = 20000;
     private static final int WAIT_MSEC = 500;
     private static final int NETWORK_AVAILABLE_SEC = 60;
     private static boolean sIsValidate;
@@ -69,15 +67,22 @@ public class ConnectivityManagerTestOnMockModem {
     private static Object sIsValidateLock = new Object();
     private static Object sIsOnAvailableLock = new Object();
     private static CMNetworkCallback sNetworkCallback;
-    private static MockModemManager sMockModemManager;
-    private static TelephonyManager sTelephonyManager;
     private static SubscriptionManager sSubscriptionManager;
     private static ConnectivityManager sConnectivityManager;
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
     private static final String BOOT_ALLOW_MOCK_MODEM_PROPERTY = "ro.boot.radio.allow_mock_modem";
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
     private static final String RESOURCE_PACKAGE_NAME = "android";
-    private static boolean sIsMultiSimDevice;
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    private static AssertionError sInitError = null;
+    private static final String APN_SETTINGS_URL = "content://telephony/carriers";
+    private static final String COLUMN_ID = "_id";
+    private static final String COLUMN_NAME = "name";
+    private static final String COLUMN_APN = "apn";
+    private static final String COLUMN_TYPE = "type";
+    private static final String MCC_MNC_TWN_CHT = "46692";
+    private static final String MCC_MNC_TWN_FET = "46601";
+
 
     private static class CMNetworkCallback extends NetworkCallback {
         final CountDownLatch mNetworkLatch = new CountDownLatch(1);
@@ -143,18 +148,10 @@ public class ConnectivityManagerTestOnMockModem {
     }
 
     @BeforeClass
+    @SuppressWarnings("StaticAssignmentOfThrowable")
     public static void beforeAllTests() throws Exception {
         TimeUnit.SECONDS.sleep(10);
-        Log.d(TAG, "ConnectivityManagerTestOnMockModem#beforeAllTests()");
-
-        if (!hasTelephonyFeature()) {
-            return;
-        }
-
-        enforceMockModemDeveloperSetting();
-        sTelephonyManager =
-                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
-        sIsMultiSimDevice = isMultiSim(sTelephonyManager);
+        if (!MockModemTestBase.beforeAllTestsCheck()) return;
 
         sConnectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
@@ -168,106 +165,111 @@ public class ConnectivityManagerTestOnMockModem {
         Network activeNetwork = sConnectivityManager.getActiveNetwork();
         NetworkCapabilities nc;
         if (activeNetwork == null) {
-            fail("This test requires there is an active network. But the active network is null.");
+            sInitError = new AssertionError("This test requires there is an active network. "
+                    + "But the active network is null.");
+            return;
         }
 
         nc = sConnectivityManager.getNetworkCapabilities(activeNetwork);
 
         if (!nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-            fail("This test requires there is a transport type with TRANSPORT_CELLULAR.");
+            sInitError = new AssertionError(
+                    "This test requires there is a transport type with TRANSPORT_CELLULAR.");
+            return;
         }
 
         if (!nc.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
-            fail(
-                    "This test requires there is a network capabilities with"
-                            + " NET_CAPABILITY_INTERNET.");
+            sInitError = new AssertionError("This test requires there is a network capabilities"
+                    + " with NET_CAPABILITY_INTERNET.");
+            return;
         }
 
         if (!nc.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-            fail(
-                    "This test requires there is a network capabilities with"
-                            + " NET_CAPABILITY_VALIDATED.");
+            sInitError = new AssertionError("This test requires there is a network capabilities"
+                            + " with NET_CAPABILITY_VALIDATED.");
+            return;
         }
 
         unregisterNetworkCallback();
 
-        sMockModemManager = new MockModemManager();
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        MockModemTestBase.createMockModemAndConnectToService();
     }
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        Log.d(TAG, "ConnectivityManagerTestOnMockModem#afterAllTests()");
-
-        if (!hasTelephonyFeature()) {
-            return;
-        }
-        // Rebind all interfaces which is binding to MockModemService to default.
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.disconnectMockModemService());
-        sMockModemManager = null;
+        MockModemTestBase.afterAllTestsBase();
     }
 
     @Before
-    public void beforeTest() throws Exception {
-        assumeTrue(hasTelephonyFeature());
+    public void beforeTest() {
+        super.beforeTest();
+        if (sInitError != null) throw sInitError;
         registerNetworkCallback();
     }
 
     @After
     public void afterTest() {
+        super.afterTest();
         // unregister the network call back
         if (sNetworkCallback != null) {
             unregisterNetworkCallback();
         }
     }
 
-    private static boolean isMultiSim(TelephonyManager tm) {
-        return tm != null && tm.getPhoneCount() > 1;
-    }
 
-    private static boolean isSimHotSwapCapable() {
-        boolean isSimHotSwapCapable = false;
-        int resourceId =
-                getContext()
-                        .getResources()
-                        .getIdentifier("config_hotswapCapable", "bool", RESOURCE_PACKAGE_NAME);
+    private static boolean hasApns(String mccmnc) {
+        Uri uri = Uri.parse(APN_SETTINGS_URL);
 
-        if (resourceId > 0) {
-            isSimHotSwapCapable = getContext().getResources().getBoolean(resourceId);
-        } else {
-            Log.d(TAG, "Fail to get the resource Id, using default.");
+        // Query the database using a ContentResolver
+        String[] projection = new String[]{COLUMN_ID, COLUMN_NAME, COLUMN_APN, COLUMN_TYPE};
+        String selection = "numeric = ?"; // Filter by mccmnc
+        String[] selectionArgs = new String[]{mccmnc}; // Provide the mccmnc as an argument
+        int count = 0;
+        adoptShellPermissionIdentity();
+        try (Cursor cursor =
+                InstrumentationRegistry.getInstrumentation().getContext().getContentResolver()
+                     .query(uri, projection, selection, selectionArgs, null)) {
+
+            if (cursor != null && cursor.moveToFirst()) {
+                count = cursor.getCount();
+                Log.i(TAG, "Carrier count for " + mccmnc + ": " + count);
+                do {
+                    int idIndex = cursor.getColumnIndex(COLUMN_ID);
+                    int nameIndex = cursor.getColumnIndex(COLUMN_NAME);
+                    int typeIndex = cursor.getColumnIndex(COLUMN_TYPE);
+                    int apnIndex = cursor.getColumnIndex(COLUMN_APN);
+
+                    if (idIndex != -1 && nameIndex != -1 && typeIndex != -1 && apnIndex != -1) {
+                        int id = cursor.getInt(idIndex);
+                        String name = cursor.getString(nameIndex);
+                        String type = cursor.getString(typeIndex);
+                        String apn = cursor.getString(apnIndex);
+                        Log.d(TAG, "ID: " + id + ", Name: " + name + ", Apn: "
+                                                            + apn + ", Type: " + type);
+                    }
+                } while (cursor.moveToNext());
+            } else {
+                Log.i(TAG, "No results found for carrier " + mccmnc);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error querying carriers table: " + mccmnc + ": " + e.getMessage());
+        } finally {
+            dropShellPermissionIdentity();
         }
-
-        Log.d(TAG, "isSimHotSwapCapable = " + (isSimHotSwapCapable ? "true" : "false"));
-
-        return isSimHotSwapCapable;
+        return count > 0;
     }
 
-    private static Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getContext();
+    /** Allows test app to run as shell UID to acquire privileged permissions */
+    public static void adoptShellPermissionIdentity() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity();
     }
 
-    private static boolean hasTelephonyFeature() {
-        final PackageManager pm = getContext().getPackageManager();
-        if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return false;
-        }
-        return true;
-    }
-
-    private static void enforceMockModemDeveloperSetting() throws Exception {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
-        boolean isAllowedForBoot =
-                SystemProperties.getBoolean(BOOT_ALLOW_MOCK_MODEM_PROPERTY, false);
-        // Check for developer settings for user build. Always allow for debug builds
-        if (!(isAllowed || isAllowedForBoot) && !DEBUG) {
-            throw new IllegalStateException(
-                    "!! Enable Mock Modem before running this test !! "
-                            + "Developer options => Allow Mock Modem");
-        }
+    /** Disallow test app to run as shell UID to acquire privileged permissions */
+    public static void dropShellPermissionIdentity() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     private int getRegState(int domain) {
@@ -339,7 +341,7 @@ public class ConnectivityManagerTestOnMockModem {
             })
     public void testNetworkValidated() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testNetworkValidated");
-
+        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
         assumeTrue(isSimHotSwapCapable());
 
         int slotId = 0;
@@ -384,6 +386,9 @@ public class ConnectivityManagerTestOnMockModem {
 
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId);
+
+        waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
+        assertNull(sConnectivityManager.getActiveNetwork());
     }
 
     private static void waitForExpectedValidationState(boolean validated, long timeout)
@@ -409,6 +414,8 @@ public class ConnectivityManagerTestOnMockModem {
     public void testDDSChange() throws Throwable {
         Log.d(TAG, "ConnectivityManagerTestOnMockModem#testDDSChange");
         assumeTrue("Skip test: Not test on single SIM device", sIsMultiSimDevice);
+        assumeTrue(hasApns(MCC_MNC_TWN_CHT));
+        assumeTrue(hasApns(MCC_MNC_TWN_FET));
 
         int slotId_0 = 0;
         int slotId_1 = 1;
@@ -461,6 +468,25 @@ public class ConnectivityManagerTestOnMockModem {
         // Remove the SIM
         sMockModemManager.removeSimCard(slotId_0);
         sMockModemManager.removeSimCard(slotId_1);
+
+        waitForNullActiveNetwork(TIMEOUT_ACTIVATE_NETWORK);
+        assertNull(sConnectivityManager.getActiveNetwork());
+    }
+
+    private static void waitForNullActiveNetwork(long timeout)
+            throws InterruptedException {
+        Log.d(
+                TAG,
+                "Wait For Null ActiveNetwork: "
+                        + "timeout: "
+                        + timeout
+                        + " ms");
+        long expectedTimeout = System.currentTimeMillis() + timeout;
+        while (System.currentTimeMillis() < expectedTimeout
+                && sConnectivityManager.getActiveNetwork() != null) {
+            TimeUnit.SECONDS.sleep(1);
+            Log.d(TAG, "ActiveNetwork: " + sConnectivityManager.getActiveNetwork());
+        }
     }
 }
 

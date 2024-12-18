@@ -16,6 +16,8 @@
 
 package android.keystore.cts;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -35,18 +37,13 @@ import android.keystore.cts.util.EmptyArray;
 import android.keystore.cts.util.ImportedKey;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
-import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
-import android.server.wm.ActivityManagerTestBase;
-import android.server.wm.LockScreenSession;
-import android.server.wm.UiDeviceUtils;
 import android.util.Pair;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -303,44 +300,7 @@ public class CipherTest {
             "5EBE2294ECD0E0F08EAB7690D2A6EE6926AE5CC854E36B6B");
 
     private Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getTargetContext();
-    }
-
-    private class DeviceLockSession extends ActivityManagerTestBase implements AutoCloseable {
-
-        private LockScreenSession mLockCredential;
-
-        public DeviceLockSession() throws Exception {
-            setUp();
-            mLockCredential = new LockScreenSession(mInstrumentation, mWmState);
-            mLockCredential.setLockCredential();
-        }
-
-        public void performDeviceLock() {
-            mLockCredential.sleepDevice();
-            KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(Context.KEYGUARD_SERVICE);
-            for (int i = 0; i < 25 && !keyguardManager.isDeviceLocked(); i++) {
-                SystemClock.sleep(200);
-            }
-        }
-
-        public void performDeviceUnlock() throws Exception {
-            mLockCredential.gotoKeyguard();
-            UiDeviceUtils.pressUnlockButton();
-            mLockCredential.enterAndConfirmLockCredential();
-            launchHomeActivity();
-            KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(
-                    Context.KEYGUARD_SERVICE);
-            for (int i = 0; i < 25 && keyguardManager.isDeviceLocked(); i++) {
-                SystemClock.sleep(200);
-            }
-            assertFalse(keyguardManager.isDeviceLocked());
-        }
-
-        @Override
-        public void close() throws Exception {
-            mLockCredential.close();
-        }
+        return getInstrumentation().getTargetContext();
     }
 
     @Presubmit
@@ -634,7 +594,7 @@ public class CipherTest {
             return;
         }
 
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyguardManager keyguardManager = (KeyguardManager)getContext()
                     .getSystemService(Context.KEYGUARD_SERVICE);
 
@@ -656,7 +616,7 @@ public class CipherTest {
             return;
         }
 
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             dl.performDeviceLock();
             KeyguardManager keyguardManager = (KeyguardManager)getContext()
                 .getSystemService(Context.KEYGUARD_SERVICE);
@@ -756,7 +716,7 @@ public class CipherTest {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
 
         List<Pair<String, ImportedKey>> importedKeys = new ArrayList<>();
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             for (String algorithm : BASIC_ALGORITHMS) {
                 KeyProtection importParams = getUnlockedDeviceRequiredParams(algorithm);
                 ImportedKey key = importDefaultKatKey(algorithm, importParams);
@@ -1263,7 +1223,7 @@ public class CipherTest {
             return;
         }
 
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(Context.KEYGUARD_SERVICE);
 
             dl.performDeviceLock();
@@ -1311,7 +1271,7 @@ public class CipherTest {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
 
         List<ImportedKey> importedKeys = new ArrayList<>();
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             for (String algorithm : BASIC_ALGORITHMS) {
                 KeyProtection importParams =
                         TestUtils.getMinimalWorkingImportParametersForCipheringWith(algorithm,
@@ -1336,7 +1296,7 @@ public class CipherTest {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
 
         ImportedKey key = null;
-        try (DeviceLockSession dl = new DeviceLockSession()) {
+        try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyProtection importParams =
                     TestUtils.getMinimalWorkingImportParametersForCipheringWith(BASIC_ALGORITHMS[0],
                             KeyProperties.PURPOSE_ENCRYPT | KeyProperties.PURPOSE_DECRYPT,

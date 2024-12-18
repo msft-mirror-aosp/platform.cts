@@ -18,7 +18,7 @@ package android.app.appops.cts
 
 import android.app.AppOpsManager
 import android.app.AppOpsManager.OPSTR_READ_CONTACTS
-import android.app.AppOpsManager.OPSTR_WIFI_SCAN
+import android.app.AppOpsManager.OPSTR_RESERVED_FOR_TESTING
 import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.content.ComponentName
 import android.content.Context
@@ -54,13 +54,14 @@ class AttributionTest {
     private val appUid by lazy { context.packageManager.getPackageUid(APP_PKG, 0) }
 
     private fun installApk(apk: String) {
-        val result = runCommand("pm install -r --force-queryable $APK_PATH$apk")
+        val result = runCommand(
+            "pm install --user ${context.userId} -r --force-queryable $APK_PATH$apk")
         assertThat(result.trim()).isEqualTo("Success")
     }
 
     @Before
     fun resetTestApp() {
-        runCommand("pm uninstall $APP_PKG")
+        runCommand("pm uninstall --user ${context.userId} $APP_PKG")
         installApk("CtsAppToBlame1.apk")
     }
 
@@ -69,7 +70,7 @@ class AttributionTest {
         sleep(1)
 
         runWithShellPermissionIdentity {
-            appOpsManager.noteOp(OPSTR_WIFI_SCAN, appUid, APP_PKG, attribution, null)
+            appOpsManager.noteOp(OPSTR_RESERVED_FOR_TESTING, appUid, APP_PKG, attribution, null)
         }
     }
 
@@ -113,7 +114,7 @@ class AttributionTest {
                     .isEqualTo(before.attributedOpEntries[ATTRIBUTION_3]!!
                             .getLastAccessTime(OP_FLAGS_ALL))
         }
-        runCommand("pm uninstall $PKG")
+        runCommand("pm uninstall --user ${context.userId} $PKG")
     }
 
     @Test
@@ -124,11 +125,11 @@ class AttributionTest {
         noteForAttribution(ATTRIBUTION_4)
         noteForAttribution(ATTRIBUTION_5)
 
-        val beforeUpdate = getOpEntry(appUid, APP_PKG, OPSTR_WIFI_SCAN)!!
+        val beforeUpdate = getOpEntry(appUid, APP_PKG, OPSTR_RESERVED_FOR_TESTING)!!
         installApk("CtsAppToBlame2.apk")
 
         eventually {
-            val afterUpdate = getOpEntry(appUid, APP_PKG, OPSTR_WIFI_SCAN)!!
+            val afterUpdate = getOpEntry(appUid, APP_PKG, OPSTR_RESERVED_FOR_TESTING)!!
 
             // Attribution 1 is unchanged
             assertThat(afterUpdate.attributedOpEntries[ATTRIBUTION_1]!!
@@ -160,7 +161,7 @@ class AttributionTest {
     @Ignore
     fun canUseUndeclaredAttributionTagButTreatedAsNull() {
         noteForAttribution("invalid attribution tag")
-        val opEntry = getOpEntry(appUid, APP_PKG, OPSTR_WIFI_SCAN)!!
+        val opEntry = getOpEntry(appUid, APP_PKG, OPSTR_RESERVED_FOR_TESTING)!!
         assertThat(opEntry.attributedOpEntries["invalid attribution tag"]).isNull()
     }
 
@@ -235,17 +236,17 @@ class AttributionTest {
     private fun noteProxyOpForAttribution(attributionForContextCreation: String, attributionForNoteOp: String) {
         val ctx = context.createAttributionContext(attributionForContextCreation)
         val appOpsManager = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        appOpsManager.noteProxyOp(OPSTR_WIFI_SCAN, APP_PKG, appUid, attributionForNoteOp, "message")
+        appOpsManager.noteProxyOp(OPSTR_RESERVED_FOR_TESTING, APP_PKG, appUid, attributionForNoteOp, "message")
     }
 
     private fun startProxyOpForAttribution(attributionForContextCreation: String, attributionForNoteOp: String) {
         val ctx = context.createAttributionContext(attributionForContextCreation)
         val appOpsManager = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
-        appOpsManager.startProxyOp(OPSTR_WIFI_SCAN, appUid, APP_PKG, attributionForNoteOp,"message")
+        appOpsManager.startProxyOp(OPSTR_RESERVED_FOR_TESTING, appUid, APP_PKG, attributionForNoteOp,"message")
     }
 
     private fun getPersistedAttribution(attribution: String) : String? {
-        val entry = getOpEntry(appUid, APP_PKG, OPSTR_WIFI_SCAN) as AppOpsManager.OpEntry
+        val entry = getOpEntry(appUid, APP_PKG, OPSTR_RESERVED_FOR_TESTING) as AppOpsManager.OpEntry
         return entry.attributedOpEntries[attribution]?.getLastProxyInfo(OP_FLAGS_ALL)?.attributionTag
     }
 }

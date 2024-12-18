@@ -61,8 +61,7 @@ import java.util.function.Supplier;
         "android.view.WindowManager#getMaximumWindowMetrics",
         "android.app.Activity#getWindowManager"})
 public class WindowMetricsActivityTests extends WindowManagerTestBase {
-    private static final Rect WINDOW_BOUNDS = new Rect(100, 100, 400, 400);
-    private static final Rect RESIZED_WINDOW_BOUNDS = new Rect(100, 100, 900, 900);
+    private static final Rect WINDOW_BOUNDS = new Rect(100, 100, 900, 900);
     private static final int MOVE_OFFSET = 100;
 
     @Test
@@ -179,24 +178,33 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         launchActivity(new ComponentName(mTargetContext, MetricsActivity.class),
                 WINDOWING_MODE_FREEFORM);
 
-        // Resize the freeform activity.
+        Condition.waitFor(new Condition<>("Activity becomes freeform mode",
+                activity::isInMultiWindowMode)
+                .setRetryIntervalMs(500).setRetryLimit(10)
+                .setOnFailure(unused -> fail("Activity must be in multi-window mode.")));
+        assertMetricsMatchesLayout(activity);
+
+        final Rect boundsBeforeResize = activity.getListener().getLayoutBounds();
+        // Resize the task.
         resizeActivityTask(activity.getComponentName(), WINDOW_BOUNDS.left, WINDOW_BOUNDS.top,
                 WINDOW_BOUNDS.right, WINDOW_BOUNDS.bottom);
 
+        Condition.waitFor(new Condition<>("layout bounds change",
+                () -> !boundsBeforeResize.equals(activity.getListener().getLayoutBounds()))
+                .setRetryIntervalMs(500).setRetryLimit(10)
+                .setOnFailure(unused -> fail("Layout bounds must be changed due to task resize.")));
         assertMetricsMatchesLayout(activity);
 
-        // Resize again.
-        resizeActivityTask(activity.getComponentName(), RESIZED_WINDOW_BOUNDS.left,
-                RESIZED_WINDOW_BOUNDS.top, RESIZED_WINDOW_BOUNDS.right,
-                RESIZED_WINDOW_BOUNDS.bottom);
+        final Rect boundsBeforeMove = activity.getListener().getLayoutBounds();
+        // Move the task.
+        resizeActivityTask(activity.getComponentName(), MOVE_OFFSET + WINDOW_BOUNDS.left,
+                MOVE_OFFSET + WINDOW_BOUNDS.top, MOVE_OFFSET + WINDOW_BOUNDS.right,
+                MOVE_OFFSET + WINDOW_BOUNDS.bottom);
 
-        assertMetricsMatchesLayout(activity);
-
-        // Move the activity.
-        resizeActivityTask(activity.getComponentName(), MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.left,
-                MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.top, MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.right,
-                MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.bottom);
-
+        Condition.waitFor(new Condition<>("layout bounds change",
+                () -> !boundsBeforeMove.equals(activity.getListener().getLayoutBounds()))
+                .setRetryIntervalMs(500).setRetryLimit(10)
+                .setOnFailure(unused -> fail("Layout bounds must be changed due to task move.")));
         assertMetricsMatchesLayout(activity);
     }
 
@@ -212,23 +220,16 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         launchActivity(new ComponentName(mTargetContext, MetricsActivity.class),
                 WINDOWING_MODE_FREEFORM);
 
-        // Resize the freeform activity.
+        // Resize the task.
         resizeActivityTask(activity.getComponentName(), WINDOW_BOUNDS.left, WINDOW_BOUNDS.top,
                 WINDOW_BOUNDS.right, WINDOW_BOUNDS.bottom);
 
         assertMetricsValidity(activity);
 
-        // Resize again.
-        resizeActivityTask(activity.getComponentName(), RESIZED_WINDOW_BOUNDS.left,
-                RESIZED_WINDOW_BOUNDS.top, RESIZED_WINDOW_BOUNDS.right,
-                RESIZED_WINDOW_BOUNDS.bottom);
-
-        assertMetricsValidity(activity);
-
-        // Move the activity.
-        resizeActivityTask(activity.getComponentName(), MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.left,
-                MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.top, MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.right,
-                MOVE_OFFSET + RESIZED_WINDOW_BOUNDS.bottom);
+        // Move the task.
+        resizeActivityTask(activity.getComponentName(), MOVE_OFFSET + WINDOW_BOUNDS.left,
+                MOVE_OFFSET + WINDOW_BOUNDS.top, MOVE_OFFSET + WINDOW_BOUNDS.right,
+                MOVE_OFFSET + WINDOW_BOUNDS.bottom);
 
         assertMetricsValidity(activity);
     }
@@ -242,7 +243,7 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
         final Supplier<WindowMetrics> maxMetrics =
                 () -> activity.getWindowManager().getMaximumWindowMetrics();
 
-        Condition.waitFor(new Condition<>("WindowMetrics must match layout metrics",
+        Condition.waitFor(new Condition<>("WindowMetrics matches layout metrics",
                 () -> currentMetrics.get().getBounds().equals(listener.getLayoutBounds()))
                 .setRetryIntervalMs(500).setRetryLimit(10)
                 .setOnFailure(unused -> fail("WindowMetrics must match layout metrics. Layout"

@@ -20,12 +20,16 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.hardware.display.DisplayManager;
 import android.os.SystemClock;
+import android.view.Display;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.test.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 
@@ -42,7 +46,15 @@ public abstract class BaseToastTest {
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getContext();
+        Context baseContext = InstrumentationRegistry.getContext();
+        UserHelper userHelper = new UserHelper(baseContext);
+        if (userHelper.isVisibleBackgroundUser()) {
+            DisplayManager displayManager = baseContext.getSystemService(DisplayManager.class);
+            Display display = displayManager.getDisplay(userHelper.getMainDisplayId());
+            mContext = display != null ? baseContext.createDisplayContext(display) : baseContext;
+        } else {
+            mContext = baseContext;
+        }
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mUiAutomation = mInstrumentation.getUiAutomation();
         waitForToastTimeout();

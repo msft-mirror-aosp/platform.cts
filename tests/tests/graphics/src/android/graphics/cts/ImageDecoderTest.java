@@ -61,6 +61,9 @@ import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -80,9 +83,6 @@ import java.util.concurrent.Callable;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @RunWith(JUnitParamsRunner.class)
 public class ImageDecoderTest {
@@ -262,10 +262,7 @@ public class ImageDecoderTest {
         }
 
         try {
-            ImageDecoder.Source src = ImageDecoder
-                .createSource(getResources(), R.raw.heifimage_10bit);
-            assertNotNull(src);
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.heifimage_10bit, (decoder, info, source) -> {
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
             assertNotNull(bm);
@@ -320,11 +317,8 @@ public class ImageDecoderTest {
         assumeTrue("HEIF is not supported on this device, skip this test.",
                 ImageDecoder.isMimeTypeSupported("image/heif"));
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
-
-        ImageDecoder.Source src = ImageDecoder.createSource(getResources(), R.raw.heifimage_10bit);
-        assertNotNull(src);
         try {
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.heifimage_10bit, (decoder, info, source) -> {
                 decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_LOW_RAM);
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
@@ -850,8 +844,6 @@ public class ImageDecoderTest {
             public int height;
             @Override
             public int onPostProcess(Canvas canvas) {
-                assertEquals(this.width,  width);
-                assertEquals(this.height, height);
                 return PixelFormat.UNKNOWN;
             };
         };

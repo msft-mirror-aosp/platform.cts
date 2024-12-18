@@ -18,7 +18,6 @@ package android.view.inputmethod.cts;
 
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
-import static android.content.pm.PackageManager.FEATURE_INPUT_METHODS;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
@@ -65,20 +64,22 @@ public class InputMethodPickerTest extends MultiDisplayTestBase {
 
     @Before
     public void setUp() throws Exception {
+        assumeTrue(canRunTest());
         super.setUp();
-
-        assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS));
-
         mImManager = mContext.getSystemService(InputMethodManager.class);
         closeSystemDialogsAndWait();
     }
 
     @After
     public void tearDown() throws Exception {
-        if (!mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS)) {
+        if (!canRunTest()) {
             return;
         }
         closeSystemDialogsAndWait();
+    }
+
+    private boolean canRunTest() {
+        return supportsInstallableIme() && !isAutomotive();
     }
 
     @SecurityTest(minPatchLevel = "unknown")

@@ -1,13 +1,7 @@
 {
   "kernel-presubmit": [
     {
-      "name": "CtsDisplayTestCases",
-      "options": [
-        {
-          // TODO(b/247135992)
-          "exclude-filter": "android.display.cts.DisplayManagerTest#testCreateVirtualDisplayFromShell"
-        }
-      ]
+      "name": "CtsDisplayTestCases"
     },
     {
       "name": "CtsStatsdAtomHostTestCases",

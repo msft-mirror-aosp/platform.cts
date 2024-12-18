@@ -25,8 +25,12 @@ import android.service.ambientcontext.AmbientContextDetectionServiceStatus;
 import android.service.wearable.WearableSensingService;
 import android.util.Log;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -87,6 +91,34 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
      */
     public static final String ACTION_VERIFY_BOOLEAN_STATE = "VERIFY_BOOLEAN_STATE";
 
+    /** PersistableBundle value that represents a request to read a file and verify the output. */
+    public static final String ACTION_READ_FILE_AND_VERIFY = "READ_FILE_AND_VERIFY";
+
+    /**
+     * PersistableBundle key that represents the file path to read. The value should be relative to
+     * the package's root file directory.
+     */
+    public static final String FILE_PATH_KEY = "FILE_PATH_KEY";
+
+    /**
+     * PersistableBundle key that represents the expected content of the file read. For simplicity,
+     * the content should contain only one line of text.
+     */
+    public static final String EXPECTED_FILE_CONTENT_KEY = "EXPECTED_FILE_CONTENT_KEY";
+
+    /**
+     * PersistableBundle key that represents the expected exception encountered for an action. The
+     * value is the exception's simple class name.
+     */
+    public static final String EXPECTED_EXCEPTION_KEY = "EXPECTED_EXCEPTION_KEY";
+
+    /**
+     * PersistableBundle value that represents a request to write to a file and verify the exception
+     * thrown.
+     */
+    public static final String ACTION_WRITE_FILE_AND_VERIFY_EXCEPTION =
+            "WRITE_FILE_AND_VERIFY_EXCEPTION";
+
     private volatile ParcelFileDescriptor mSecureWearableConnection;
     private volatile boolean mBooleanState = false;
 
@@ -99,11 +131,19 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
     }
 
     @Override
+    public void onDataStreamProvided(
+            ParcelFileDescriptor parcelFileDescriptor, Consumer<Integer> statusConsumer) {
+        Log.w(TAG, "onDataStreamProvided");
+        statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    @Override
     public void onDataProvided(
             PersistableBundle data, SharedMemory sharedMemory, Consumer<Integer> statusConsumer) {
         String action = data.getString(BUNDLE_ACTION_KEY);
         Log.i(TAG, "#onDataProvided, action: " + action);
         try {
+            String relativeFilePath;
             switch (action) {
                 case ACTION_RESET:
                     reset();
@@ -129,6 +169,17 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                             mBooleanState
                                     ? WearableSensingManager.STATUS_SUCCESS
                                     : WearableSensingManager.STATUS_UNKNOWN);
+                    return;
+                case ACTION_READ_FILE_AND_VERIFY:
+                    relativeFilePath = data.getString(FILE_PATH_KEY);
+                    String expectedContent = data.getString(EXPECTED_FILE_CONTENT_KEY);
+                    String expectedException = data.getString(EXPECTED_EXCEPTION_KEY);
+                    readFileAndVerify(
+                            relativeFilePath, expectedContent, expectedException, statusConsumer);
+                    return;
+                case ACTION_WRITE_FILE_AND_VERIFY_EXCEPTION:
+                    relativeFilePath = data.getString(FILE_PATH_KEY);
+                    writeToFileAndVerifyException(relativeFilePath, statusConsumer);
                     return;
                 default:
                     Log.w(TAG, "Unknown action: " + action);
@@ -218,14 +269,63 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
     }
 
+    private void readFileAndVerify(
+            String relativeFilePath,
+            String expectedContent,
+            String expectedException,
+            Consumer<Integer> statusConsumer)
+            throws Exception {
+        try (FileInputStream fileInputStream = openFileInput(relativeFilePath)) {
+            BufferedReader bufferedReader =
+                    new BufferedReader(new InputStreamReader(fileInputStream));
+            String content = bufferedReader.readLine();
+            if (expectedContent != null) {
+                if (expectedContent.equals(content)) {
+                    statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+                } else {
+                    Log.e(
+                            TAG,
+                            "Unexpected file content. Expected "
+                                    + expectedContent
+                                    + " but found "
+                                    + content);
+                    statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+                }
+                return;
+            }
+        } catch (Exception ex) {
+            if (expectedException != null
+                    && expectedException.equals(ex.getClass().getSimpleName())) {
+                statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+                return;
+            }
+            throw ex; // onDataProvided will catch the exception and return the error status code
+        }
+        Log.e(
+                TAG,
+                "#readFileAndVerify with no specified expectedContent, but no exception is"
+                        + " thrown.");
+        statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+    }
+
+    private void writeToFileAndVerifyException(
+            String relativeFilePath, Consumer<Integer> statusConsumer) throws Exception {
+        try (FileInputStream fileInputStream = openFileInput(relativeFilePath)) {
+            try {
+                FileOutputStream fileOutputStream = new FileOutputStream(fileInputStream.getFD());
+                fileOutputStream.write(3); // write anything
+            } catch (SecurityException | IOException ex) {
+                Log.i(TAG, "Caught expected exception from writing to read-only stream", ex);
+                statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+                return;
+            }
+        }
+        Log.e(TAG, "#writeToFileAndVerifyException does not throw any exception.");
+        statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+    }
+
     // The methods below are not used. They are tested in CtsWearableSensingService and only
     // implemented here because they are abstact.
-
-    @Override
-    public void onDataStreamProvided(
-            ParcelFileDescriptor parcelFileDescriptor, Consumer<Integer> statusConsumer) {
-        Log.w(TAG, "onDataStreamProvided");
-    }
 
     @Override
     public void onStartDetection(

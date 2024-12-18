@@ -38,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
@@ -79,6 +80,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test sending MMS using {@link android.telephony.SmsManager}.
  */
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
 public class MmsTest {
     private static final String TAG = "MmsTest";
 
@@ -224,8 +226,7 @@ public class MmsTest {
     @BeforeClass
     public static void beforeAllTests() {
         Log.i(TAG, "beforeAllTests");
-        sCarrierConfigReceiver = new CarrierConfigReceiver(
-                SmsManager.getDefaultSmsSubscriptionId());
+        sCarrierConfigReceiver = new CarrierConfigReceiver();
         IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
         // ACTION_CARRIER_CONFIG_CHANGED is sticky, so we will get a callback right away.
         getInstrumentation().getContext().registerReceiver(sCarrierConfigReceiver, filter);
@@ -592,9 +593,11 @@ public class MmsTest {
     }
 
     private static class CarrierConfigReceiver extends BaseReceiver {
-        private final int mSubId;
+        private int mSubId;
 
-        CarrierConfigReceiver(int subId) {
+        CarrierConfigReceiver() {}
+
+        public void setSubId(int subId) {
             mSubId = subId;
         }
 
@@ -615,12 +618,17 @@ public class MmsTest {
         try {
             CarrierConfigManager carrierConfigManager = getInstrumentation()
                     .getContext().getSystemService(CarrierConfigManager.class);
+            if (carrierConfigManager == null) {
+                Log.d(TAG, "CarrierConfigManager is not present on this device.");
+                return false;
+            }
             sCarrierConfigReceiver.clearQueue();
+            sCarrierConfigReceiver.setSubId(subId);
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(carrierConfigManager,
                     (m) -> m.overrideConfig(subId, bundle));
             return sCarrierConfigReceiver.waitForChanged();
         } catch (Exception ex) {
-            Log.e(TAG, "overrideCarrierConfig(), ex=" + ex);
+            Log.e(TAG, "overrideCarrierConfig()", ex);
             return false;
         }
     }

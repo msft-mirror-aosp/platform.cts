@@ -19,13 +19,12 @@ package {
 java_defaults {
     name: "CtsUtilTestCasesDefaults",
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "ctstestrunner-axt",
-        "cts-install-lib",
         "core-test-rules", // for libcore.dalvik.system.CloseGuardSupport
         "ravenwood-junit",
     ],
@@ -34,6 +33,7 @@ java_defaults {
 
 android_test {
     name: "CtsUtilTestCases",
+    team: "trendy_team_windowing_sdk",
     // CtsUtilTestCasesRavenwood references the .aapt.srcjar
     use_resource_processor: false,
     defaults: [
@@ -43,6 +43,9 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+    ],
+    static_libs: [
+        "cts-install-lib",
     ],
     srcs: [
         "src/**/*.java",
@@ -59,6 +62,9 @@ android_ravenwood_test {
     srcs: [
         "src/**/*.java",
         ":CtsUtilTestCases{.aapt.srcjar}",
+    ],
+    exclude_srcs: [
+        "src/**/InstallUtilTest.java",
     ],
     auto_gen_config: true,
 }

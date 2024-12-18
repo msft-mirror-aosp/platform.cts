@@ -34,6 +34,7 @@ import com.android.compatibility.common.util.ThrowingRunnable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -53,6 +54,11 @@ public class WallpaperManagerTestUtils {
     public static final ComponentName TEST_LIVE_WALLPAPER_AMBIENT_COMPONENT = new ComponentName(
             TestLiveWallpaperSupportingAmbientMode.class.getPackageName(),
             TestLiveWallpaperSupportingAmbientMode.class.getName());
+
+    private static final Set<ComponentName> TEST_COMPONENTS = Set.of(
+            TEST_LIVE_WALLPAPER_COMPONENT,
+            TEST_LIVE_WALLPAPER_NO_UNFOLD_COMPONENT,
+            TEST_LIVE_WALLPAPER_AMBIENT_COMPONENT);
 
     /**
      * Runs the given runnable and waits until request number of engine events are triggered.
@@ -368,15 +374,24 @@ public class WallpaperManagerTestUtils {
     public static void performChange(
             WallpaperManager wallpaperManager, WallpaperChange change)
             throws IOException {
+
+        // Count the number of test live wallpapers that will be replaced
+        final int onDestroyCount = (int) Stream.of(FLAG_SYSTEM, FLAG_LOCK)
+                .filter(which -> (change.mDestination & which) > 0)
+                .map(wallpaperManager::getWallpaperInfo)
+                .filter(info -> info != null && TEST_COMPONENTS.contains(info.getComponent()))
+                .count();
+
         if (change.mWallpaper.isStatic()) {
-            wallpaperManager.setResource(
-                    change.mWallpaper.getBitmapResourceId(), change.mDestination);
+            runAndAwaitChanges(500, TimeUnit.MILLISECONDS, 0, onDestroyCount, 0, () ->
+                    wallpaperManager.setResource(
+                            change.mWallpaper.getBitmapResourceId(), change.mDestination));
         } else {
             // Up to one surface is expected to be created when switching wallpapers. It's possible
             // that this operation ends up being a no-op, in that case the wait will time out.
             final int expectedSurfaceCreations = 1;
-            runAndAwaitChanges(500, TimeUnit.MILLISECONDS, 0, 0, expectedSurfaceCreations,
-                    () -> {
+            runAndAwaitChanges(500, TimeUnit.MILLISECONDS, 0,
+                    onDestroyCount, expectedSurfaceCreations, () -> {
                         wallpaperManager.setWallpaperComponentWithFlags(
                                 change.mWallpaper.getComponentName(), change.mDestination);
                     });

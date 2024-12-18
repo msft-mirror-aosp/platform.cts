@@ -47,9 +47,11 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.preconditions.SystemUiHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import junit.framework.Assert;
 
@@ -78,6 +80,7 @@ public class ToastTest {
     private boolean mLayoutDone;
     private ViewTreeObserver.OnGlobalLayoutListener mLayoutListener;
     private NotificationManager mNotificationManager;
+    private UserHelper mUserHelper;
 
     @Rule
     public ActivityTestRule<CtsActivity> mActivityRule =
@@ -86,6 +89,7 @@ public class ToastTest {
     @Before
     public void setup() {
         mContext = InstrumentationRegistry.getTargetContext();
+        mUserHelper = new UserHelper(mContext);
         mLayoutListener = () -> mLayoutDone = true;
         mNotificationManager =
                 mContext.getSystemService(NotificationManager.class);
@@ -241,6 +245,10 @@ public class ToastTest {
 
     @Test
     public void testAccessDuration_withA11yTimeoutEnabled() throws Throwable {
+        // TODO(b/372077250): remove method, callers, and mUserHelper when A11Y supports visible
+        // background users
+        assumeFalse("Not supported on visible background user",
+                mUserHelper.isVisibleBackgroundUser());
         makeToast();
         final Runnable showToast = () -> {
             mToast.setDuration(Toast.LENGTH_SHORT);
@@ -356,8 +364,13 @@ public class ToastTest {
          * Change I8180e5080e0a6860b40dbb2faa791f0ede926ca7 updated how toast are displayed on the
          * watch. Unlike the phone, which displays toast centered horizontally at the bottom of the
          * screen, the watch now displays toast in the center of the screen.
+         *
+         * This also extends to implementations of SysUI where the default toast gravity is
+         * Gravity.NO_GRAVITY, such as multi-window fullscreen UI.
          */
-        if (Gravity.CENTER == mToast.getGravity()) {
+        if (Gravity.CENTER == mToast.getGravity() || (
+                SystemUiHelper.isNonOverlappingMultiWindowMode(mActivityRule.getActivity())
+                        && Gravity.NO_GRAVITY == mToast.getGravity())) {
             assertTrue(xy1[0] > xy2[0]);
             assertTrue(xy1[1] > xy2[1]);
         } else {

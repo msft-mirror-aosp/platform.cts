@@ -87,7 +87,8 @@ public class SimCallManagerTest extends InstrumentationTestCase {
     }
 
     public void testGetSimCallManager() throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext)
+                || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -99,7 +100,10 @@ public class SimCallManagerTest extends InstrumentationTestCase {
         ComponentName carrierConfigSimCallManager = null;
         CarrierConfigManager configManager = (CarrierConfigManager) mContext.getSystemService(
                 Context.CARRIER_CONFIG_SERVICE);
-        PersistableBundle configBundle = configManager.getConfig();
+        PersistableBundle configBundle = null;
+        if (configManager != null) {
+            configBundle = configManager.getConfig();
+        }
         if (configBundle != null) {
             final String componentString = configBundle.getString(
                     CarrierConfigManager.KEY_DEFAULT_SIM_CALL_MANAGER_STRING);

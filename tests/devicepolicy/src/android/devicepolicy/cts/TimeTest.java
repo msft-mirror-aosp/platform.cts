@@ -32,10 +32,10 @@ import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.AutoTimeEnabled;
 import com.android.bedstead.harrier.policies.AutoTimeRequired;
 import com.android.bedstead.harrier.policies.AutoTimeZoneEnabled;
@@ -57,11 +57,8 @@ import java.util.TimeZone;
 
 @RunWith(BedsteadJUnit4.class)
 public final class TimeTest {
-
     private static final long MILLIS_SINCE_EPOCH = 1660000000000l;
-
     private static final String TIMEZONE = "Singapore";
-
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();

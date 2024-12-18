@@ -18,8 +18,10 @@ package com.android.cts.input;
 
 import android.app.Instrumentation;
 import android.util.Log;
+import android.view.Display;
 
 import androidx.annotation.GuardedBy;
+import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -32,13 +34,13 @@ import java.util.List;
 /**
  * Represents a virtual UINPUT device registered through /dev/uinput.
  */
-public final class UinputDevice extends VirtualInputDevice {
+public class UinputDevice extends VirtualInputDevice {
     private static final String TAG = "UinputDevice";
     // uinput executable expects "-" argument to read from stdin instead of a file
     private static final String UINPUT_COMMAND = "uinput -";
 
     @GuardedBy("mLock")
-    private List<UinputResultData> mResults = new ArrayList<UinputResultData>();
+    private final List<UinputResultData> mResults = new ArrayList<>();
 
     @Override
     protected String getShellCommand() {
@@ -69,22 +71,9 @@ public final class UinputDevice extends VirtualInputDevice {
         }
     }
 
-    public UinputDevice(Instrumentation instrumentation, int id, int vendorId, int productId,
-            int sources, String registerCommand) {
-        super(instrumentation, id, vendorId, productId, sources, registerCommand);
-    }
-
-    /**
-     * Create Uinput device using the provided resourceId.
-     */
-    public static UinputDevice create(Instrumentation instrumentation, int resourceId,
-            int sources) {
-        final InputJsonParser parser = new InputJsonParser(instrumentation.getTargetContext());
-        final int resourceDeviceId = parser.readDeviceId(resourceId);
-        final String registerCommand = parser.readRegisterCommand(resourceId);
-        return new UinputDevice(instrumentation, resourceDeviceId,
-                parser.readVendorId(resourceId), parser.readProductId(resourceId),
-                sources, registerCommand);
+    public UinputDevice(Instrumentation instrumentation, int sources, UinputRegisterCommand cmd,
+            @Nullable Display display) {
+        super(instrumentation, cmd.getId(), cmd.getVid(), cmd.getPid(), sources, cmd, display);
     }
 
     /**
@@ -126,6 +115,7 @@ public final class UinputDevice extends VirtualInputDevice {
      * The above string represents an event array of [EV_KEY, KEY_9, DOWN, EV_SYN, SYN_REPORT, 0]
      * Hex strings ("0x01") are not supported inside the incoming string.
      * The number of entries in the provided string has to be a multiple of 3.
+     *
      * @param evdevEvents The uinput events to be injected.  (a JSON-formatted array of numbers)
      */
     public void injectEvents(String evdevEvents) {
@@ -157,5 +147,4 @@ public final class UinputDevice extends VirtualInputDevice {
         }
         writeCommands(json.toString().getBytes());
     }
-
 }

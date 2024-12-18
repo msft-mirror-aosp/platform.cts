@@ -17,99 +17,111 @@
 package com.android.cts.verifier.libs.ui;
 
 import android.text.Html;
+import android.view.View;
+import android.webkit.WebView;
 
 /**
- * Utility class for building well-formatted HTML.
+ * An implementation of TextFormatter for HTML output.
  */
-public class HtmlFormatter {
-    private StringBuilder mSB = new StringBuilder();
-
-    /**
-     * Clear any accumulated text
-     * @return this HtmlFormatter to allow for cascading calls.
-     */
-    public HtmlFormatter clear() {
-        mSB = new StringBuilder();
-        return this;
-    }
+public class HtmlFormatter extends TextFormatter {
 
     /**
      * Starts the HTML document block
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter openDocument() {
+    public TextFormatter openDocument() {
         mSB.append("<!DOCTYPE html>\n<html lang=\"en-US\">\n<body>\n");
         return this;
     }
 
     /**
      * Closes the HTML document block
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter closeDocument() {
+    public TextFormatter closeDocument() {
         mSB.append("</body>\n</html>");
         return this;
     }
 
     /**
-     * Opens an HTML paragraph block.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * Starts the HTML Heading block
+     * @param level The desired heading level. Should be between 1 and 6 inclusive.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter openParagraph() {
+    public TextFormatter openHeading(int level) {
+        mSB.append("<h" + level + ">");
+        return this;
+    }
+
+    /**
+     * Ends the HTML Heading block
+     * @param level The heading level associated with the corresponding openHeading() call.
+     * @return this TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter closeHeading(int level) {
+        mSB.append("</h" + level + ">");
+        return this;
+    }
+
+    /**
+     * Opens an HTML paragraph block.
+     * @return this TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter openParagraph() {
         mSB.append("<p>");
         return this;
     }
 
     /**
      * Closes an HTML paragraph block.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter closeParagraph() {
+    public TextFormatter closeParagraph() {
         mSB.append("</p>\n");
         return this;
     }
 
     /**
      * Opens an HTML bold block.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter openBold() {
+    public TextFormatter openBold() {
         mSB.append("<b>");
         return this;
     }
 
     /**
      * Closes an HTML bold block.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter closeBold() {
+    public TextFormatter closeBold() {
         mSB.append("</b>");
         return this;
     }
 
     /**
      * Opens an HTML italic block.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter openItalic() {
+    public TextFormatter openItalic() {
         mSB.append("<i>");
         return this;
     }
 
     /**
      * Closes an HTML italic block.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter closeItalic() {
+    public TextFormatter closeItalic() {
         mSB.append("</i>");
         return this;
     }
 
     /**
      * Inserts a 'break' in the HTML
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter appendBreak() {
+    public TextFormatter appendBreak() {
         mSB.append("<br>\n");
         return this;
     }
@@ -117,37 +129,93 @@ public class HtmlFormatter {
     /**
      * Opens a text color block
      * @param color The desired color, i.e. "red", "blue"...
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter openTextColor(String color) {
+    public TextFormatter openTextColor(String color) {
         mSB.append("<font color=\"" + color + "\">");
         return this;
     }
 
     /**
      * Closes a color block
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @return this TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter closeTextColor() {
+    public TextFormatter closeTextColor() {
         mSB.append("</font>");
         return this;
     }
 
     /**
-     * Appends the specified text to the HTML stream.
-     * @return this HtmlFormatter to allow for cascading calls.
+     * Starts a bullets list.
+     * @return This TextFormatter to allow for cascading calls.
      */
-    public HtmlFormatter appendText(String text) {
+    public TextFormatter openBulletList() {
+        mSB.append("<ul>");
+        return this;
+    }
+
+    /**
+     * Ends a bullets list.
+     * @return This TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter closeBulletList() {
+        mSB.append("</ul>");
+        return this;
+    }
+
+    /**
+     * Opens a list item in an enclosing bulleted list.
+     * @return This TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter openListItem() {
+        mSB.append("<li>");
+        return this;
+    }
+
+    /**
+     * Closes a list item in an enclosing bulleted list.
+     * @return This TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter closeListItem() {
+        mSB.append("</li>");
+        return this;
+    }
+
+    /**
+     * Appends a link tag with the specified link target URL
+     * @param url The url for the link.
+     * @return This TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter openLink(String url) {
+        mSB.append("<a href=\"" + url + "\">");
+        return this;
+    }
+
+    /**
+     * Closes a link tag.
+     * @return This TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter closeLink() {
+        mSB.append("</a>");
+        return this;
+    }
+
+    /**
+     * Appends the specified text to the HTML stream.
+     * @return this TextFormatter to allow for cascading calls.
+     */
+    public TextFormatter appendText(String text) {
         mSB.append(Html.escapeHtml(text));
         return this;
     }
 
     /**
+     * Loads the formatted text into a view.
      *
-     * @return this HtmlFormatter to allow for cascading calls.
+     * @param view The View into which the formatted text will is to be displayed.
+     *             Note: for an HtmlFormatter, this must be a WebView.
      */
-    @Override
-    public String toString() {
-        return mSB.toString();
+    public void put(View view) {
+        ((WebView) view).loadData(mSB.toString(), "text/html; charset=utf-8", "utf-8");
     }
 }

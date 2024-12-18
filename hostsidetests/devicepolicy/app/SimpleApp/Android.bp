@@ -28,7 +28,7 @@ android_test_helper_app {
         "mts-permission",
         "sts",
     ],
-    sdk_version: "current",
+    sdk_version: "test_current",
     // V4 signature required by Incremental installs
     v4_signature: true,
 }

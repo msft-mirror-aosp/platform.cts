@@ -88,7 +88,7 @@ java_test_host {
         "general-tests",
     ],
     test_config: "host/AndroidTest.xml",
-    data: [":CtsJvmtiAttachingDeviceApp"],
+    device_common_data: [":CtsJvmtiAttachingDeviceApp"],
     test_options: {
         unit_test: false,
     },

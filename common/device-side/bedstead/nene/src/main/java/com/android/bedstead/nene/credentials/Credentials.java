@@ -16,14 +16,17 @@
 
 package com.android.bedstead.nene.credentials;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.isServiceEnabled;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.QUERY_ADMIN_POLICY;
 import static android.Manifest.permission.READ_DEVICE_CONFIG;
 import static android.Manifest.permission.WRITE_SECURE_SETTINGS;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_ALL_PACKAGES;
+import static com.android.bedstead.testapisreflection.TestApisConstants.PROVIDER_FILTER_ALL_PROVIDERS;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.credentials.CredentialManager;
 import android.credentials.CredentialProviderInfo;
@@ -32,7 +35,7 @@ import androidx.annotation.RequiresApi;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 
@@ -68,17 +71,24 @@ public final class Credentials {
                                 WRITE_SECURE_SETTINGS,
                                 READ_DEVICE_CONFIG,
                                 QUERY_ALL_PACKAGES)) {
-            return new HashSet<>(
-                    credentialManager(user)
-                            .getCredentialProviderServicesForTesting(
-                                    CredentialManager.PROVIDER_FILTER_ALL_PROVIDERS));
+            return getCredentialProviderServicesForTesting(user);
         }
+    }
+
+    // TODO(b/337769574): revert to using testapis reflection once we figure out a way to deal with
+    //  the case where there are private obfuscated fields
+    @SuppressLint("NewApi")
+    private static Set<CredentialProviderInfo> getCredentialProviderServicesForTesting(
+            UserReference user) {
+        return new HashSet<>(credentialManager(user)
+                .getCredentialProviderServicesForTesting(PROVIDER_FILTER_ALL_PROVIDERS));
     }
 
     /**
      * Get the current {@link CredentialManager} service or throw a {@link
      * UnsupportedOperationException} if the service is not available.
      */
+    @SuppressLint("NewApi")
     private static CredentialManager credentialManager(UserReference user) {
         Versions.requireMinimumVersion(UPSIDE_DOWN_CAKE);
 

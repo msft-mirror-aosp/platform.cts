@@ -221,7 +221,8 @@ public class WindowInsetsBehaviorTests {
 
         // No bars on embedded devices.
         // No bars on TVs and watches.
-        return !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
+        return pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) &&
+                !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
                 || pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
                 || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
@@ -439,14 +440,12 @@ public class WindowInsetsBehaviorTests {
             if (callback != null) {
                 callback.accept(new Point(i, y));
             }
-            mDevice.waitForIdle();
             count++;
         }
 
         if (callback != null) {
             callback.accept(new Point(theRightestLine, y));
         }
-        mDevice.waitForIdle();
         count++;
 
         return count;

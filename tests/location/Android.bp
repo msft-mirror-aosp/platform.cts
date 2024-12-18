@@ -16,7 +16,7 @@ android_robolectric_test {
         "truth",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
     srcs: [
         //"*/protos/**/*.proto",

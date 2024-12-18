@@ -16,27 +16,45 @@
 
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+
+import android.content.Context;
 import android.content.cts.R;
 import android.content.res.Resources;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+import android.platform.test.ravenwood.RavenwoodRule;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class RawResourceTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class RawResourceTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     private Resources mResources;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mResources = mContext.getResources();
+    @Before
+    public void setUp() throws Exception {
+        mResources = getContext().getResources();
     }
 
     @SmallTest
+    @Test
     public void testReadToEnd() throws IOException {
         final InputStream is = mResources.openRawResource(R.raw.text);
         verifyTextAsset(is);

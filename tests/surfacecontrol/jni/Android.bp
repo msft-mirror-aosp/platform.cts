@@ -26,8 +26,10 @@ cc_test_library {
     gtest: false,
     srcs: [
         "CtsSurfaceControlJniOnLoad.cpp",
+        "android_view_cts_AInputTransferTokenTest.cpp",
         "android_view_cts_ASurfaceControlTest.cpp",
         "android_view_surfacecontrol_cts_ChoreographerNativeTest.cpp",
+        "android_window_cts_ASurfaceControlInputReceiverTest.cpp",
     ],
     shared_libs: [
         "libandroid",

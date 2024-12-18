@@ -55,6 +55,8 @@ public class ActivityLifecycleKeyguardTests extends ActivityLifecycleClientTestB
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
         UiAutomatorUtils2.getUiDevice().waitForIdle();
     }
 

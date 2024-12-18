@@ -34,5 +34,5 @@ android_test {
         "general-tests",
         "sts",
     ],
-    libs: ["android.test.runner"] + ["android.test.base"],
+    libs: ["sdk_public_28_android.test.runner"] + ["sdk_public_28_android.test.base"],
 }

@@ -34,6 +34,8 @@ import com.android.queryable.queries.UserHandleQuery;
 import com.android.queryable.queries.UserHandleQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DeviceAdminReceiver#onPasswordExpiring(Context, Intent)} or
  * {@link DeviceAdminReceiver#onPasswordExpiring(Context, Intent, UserHandle)} is called.
@@ -129,6 +131,7 @@ public final class DeviceAdminPasswordExpiringEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminPasswordExpiringEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -143,6 +146,7 @@ public final class DeviceAdminPasswordExpiringEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminPasswordExpiringEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);
@@ -156,6 +160,7 @@ public final class DeviceAdminPasswordExpiringEvent extends Event {
         }
 
         /** Sets the {@link UserHandle}. */
+        @CanIgnoreReturnValue
         public DeviceAdminPasswordExpiringEventLogger setUserHandle(UserHandle userHandle) {
             mEvent.mUser = new SerializableParcelWrapper<>(userHandle);
             return this;

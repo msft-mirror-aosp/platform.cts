@@ -16,20 +16,23 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.VirtualDisplayActivityScenario
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_HEIGHT
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_WIDTH
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_0
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_180
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_270
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_90
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
@@ -52,18 +55,12 @@ class DrawingTabletTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
 
     @Before
     fun setUp() {
-        drawingTablet =
-            UinputTouchDevice(
-                InstrumentationRegistry.getInstrumentation(),
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_drawing_tablet_register,
-                InputDevice.SOURCE_MOUSE or InputDevice.SOURCE_STYLUS,
-                useDisplaySize = true,
-            )
+        drawingTablet = UinputDrawingTablet(
+            InstrumentationRegistry.getInstrumentation(), virtualDisplayRule.virtualDisplay.display)
         verifier = EventVerifier(virtualDisplayRule.activity::getInputEvent)
     }
 
@@ -102,6 +99,60 @@ class DrawingTabletTest {
         }
     }
 
+    @Test
+    fun testHover() {
+        val pointerId = 0
+        val commonMatcher =
+            allOf(
+                withSource(InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_MOUSE),
+                withToolType(MotionEvent.TOOL_TYPE_STYLUS),
+            )
+
+        // Inject and verify HOVER_ENTER
+        drawingTablet.sendBtnTouch(false)
+        drawingTablet.sendDown(pointerId, INJECTION_POINTS[0])
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_ENTER),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_MOVE
+        drawingTablet.sendMove(pointerId, INJECTION_POINTS[1])
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+
+        // Inject and verify HOVER_EXIT
+        drawingTablet.sendUp(pointerId)
+        drawingTablet.sync()
+
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_EXIT),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[1])!!),
+                commonMatcher
+            )
+        )
+    }
+
     /**
      * Taps at each point in [INJECTION_POINTS] and ensures that the event is received at the
      * corresponding point in [expectedPoints].
@@ -113,7 +164,7 @@ class DrawingTabletTest {
         for (i in INJECTION_POINTS.indices) {
             val pointerId = 0
             drawingTablet.sendBtnTouch(true)
-            drawingTablet.sendDown(pointerId, INJECTION_POINTS[i], UinputTouchDevice.MT_TOOL_PEN)
+            drawingTablet.sendDown(pointerId, INJECTION_POINTS[i])
             drawingTablet.sync()
 
             drawingTablet.sendBtnTouch(false)
@@ -150,9 +201,9 @@ class DrawingTabletTest {
         /** Coordinates in the drawing tablet injected in [verifyTaps]. */
         val INJECTION_POINTS = arrayOf(
             Point(0, 0), // top-left corner of drawing tablet
-            Point(WIDTH - 1, 0), // top-right corner of drawing tablet
-            Point(WIDTH - 1, HEIGHT - 1), // bottom-right corner of drawing tablet
-            Point(0, HEIGHT - 1), // bottom-left corner of drawing tablet
+            Point(DEFAULT_WIDTH - 1, 0), // top-right corner of drawing tablet
+            Point(DEFAULT_WIDTH - 1, DEFAULT_HEIGHT - 1), // bottom-right corner of drawing tablet
+            Point(0, DEFAULT_HEIGHT - 1), // bottom-left corner of drawing tablet
             Point(200, 200), // point inside drawing tablet
             Point(200, 600), // point inside drawing tablet
         )
@@ -188,10 +239,10 @@ class DrawingTabletTest {
         )
 
         fun transformForRotatedDrawingTablet(p: Point): PointF? {
-            val rotatedScale = HEIGHT.toFloat() / WIDTH.toFloat()
+            val rotatedScale = DEFAULT_HEIGHT.toFloat() / DEFAULT_WIDTH.toFloat()
             val scaled = PointF(p.x * rotatedScale, p.y * rotatedScale)
-            if (scaled.x < 0 || scaled.x >= HEIGHT.toFloat() ||
-                scaled.y < 0 || scaled.y >= WIDTH.toFloat()) {
+            if (scaled.x < 0 || scaled.x >= DEFAULT_HEIGHT.toFloat() ||
+                scaled.y < 0 || scaled.y >= DEFAULT_WIDTH.toFloat()) {
                 return null
             }
             return scaled
