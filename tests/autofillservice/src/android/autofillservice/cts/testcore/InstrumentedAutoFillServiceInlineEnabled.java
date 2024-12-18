@@ -24,8 +24,10 @@ import android.service.autofill.AutofillService;
 public class InstrumentedAutoFillServiceInlineEnabled extends InstrumentedAutoFillService {
     @SuppressWarnings("hiding")
     static final String SERVICE_PACKAGE = "android.autofillservice.cts";
+
     @SuppressWarnings("hiding")
-    static final String SERVICE_CLASS = "InstrumentedAutoFillServiceInlineEnabled";
+    public static final String SERVICE_CLASS = "InstrumentedAutoFillServiceInlineEnabled";
+
     @SuppressWarnings("hiding")
     public static final String SERVICE_NAME = SERVICE_PACKAGE + "/.testcore." + SERVICE_CLASS;
 

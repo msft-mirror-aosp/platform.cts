@@ -512,6 +512,57 @@ public class CustomViewActivityTest extends
     }
 
     @Test
+    public void testVirtualView_flushEvents() throws Exception {
+        final CtsContentCaptureService service = enableService();
+        final ActivityWatcher watcher = startWatcher();
+
+        final CountDownLatch asyncLatch = setAsyncDelegate((customView, structure) -> {
+            Log.d(TAG, "delegate running on " + Thread.currentThread());
+            final AutofillId customViewId = customView.getAutofillId();
+            Log.d(TAG, "customViewId: " + customViewId);
+            final ContentCaptureSession session = customView.getContentCaptureSession();
+
+            final ViewStructure child1 = session.newVirtualViewStructure(customViewId, 1);
+            child1.setText("child1");
+            final AutofillId child1Id = child1.getAutofillId();
+            assertThat(session.newAutofillId(customViewId, 1)).isEqualTo(child1Id);
+            session.notifyViewAppeared(child1);
+
+            final ViewStructure child2 = session.newVirtualViewStructure(customViewId, 2);
+            child2.setText("child2");
+            final AutofillId child2Id = child2.getAutofillId();
+            assertThat(session.newAutofillId(customViewId, 2)).isEqualTo(child2Id);
+            session.notifyViewAppeared(child2);
+
+            session.flush();
+        });
+
+        final CustomViewActivity activity = launchActivity();
+        watcher.waitFor(RESUMED);
+        await(asyncLatch, "async onProvide");
+        activity.finish();
+        watcher.waitFor(DESTROYED);
+
+        final Session session = service.getOnlyFinishedSession();
+        Log.v(TAG, "session id: " + session.id);
+
+        assertRightActivity(session, session.id, activity);
+
+        final int additionalEvents = 4;
+        final List<ContentCaptureEvent> events = activity.assertInitialViewsAppeared(session,
+                additionalEvents);
+
+        final AutofillId customViewId = activity.mCustomView.getAutofillId();
+        final ContentCaptureSession mainSession = activity.mCustomView.getContentCaptureSession();
+
+        new EventsAssertor(events)
+                .assertViewTreeFinished() // assert the initial tree event
+                .assertVirtualViewAppeared(mainSession, customViewId, 1, "child1")
+                .assertVirtualViewAppeared(mainSession, customViewId, 2, "child2")
+                .assertSessionFlush();
+    }
+
+    @Test
     public void testContentCaptureConditions() throws Exception {
         final CtsContentCaptureService service = enableService();
         final ActivityWatcher watcher = startWatcher();

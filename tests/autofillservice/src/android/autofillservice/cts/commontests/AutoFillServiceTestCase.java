@@ -73,6 +73,7 @@ import com.android.compatibility.common.util.TestNameUtils;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSessionRule;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -554,10 +555,20 @@ public final class AutoFillServiceTestCase {
 
             prepareServicePreTest();
 
-            InstrumentedAutoFillService.resetStaticState();
             AuthenticationActivity.resetStaticState();
             AugmentedAuthActivity.resetStaticState();
             sReplier.reset();
+
+            InstrumentedAutoFillService.startTest();
+        }
+
+        @After
+        public void postTestCleanup() {
+            Log.v(TAG, "@After: postTestCleanup()");
+
+            InstrumentedAutoFillService.resetStaticState();
+            mTestWatcher.cleanAllActivities();
+            cleanAllActivities();
         }
 
         /**

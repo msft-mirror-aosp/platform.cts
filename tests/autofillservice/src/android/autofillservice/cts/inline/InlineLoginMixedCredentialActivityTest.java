@@ -20,6 +20,7 @@ import static android.autofillservice.cts.testcore.Helper.ID_CARD_NUMBER;
 import static android.autofillservice.cts.testcore.Helper.ID_PASSWORD;
 import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.disablePccDetectionFeature;
+import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_CLASS;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillServiceInlineEnabled.SERVICE_NAME;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -33,6 +34,7 @@ import android.autofillservice.cts.credman.DeviceConfigStateRequiredRule;
 import android.autofillservice.cts.testcore.CannedFillResponse;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
+import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.credentials.CredentialManager;
@@ -129,6 +131,7 @@ public class InlineLoginMixedCredentialActivityTest
     @Override
     protected void enableService() {
         Helper.enableAutofillService(SERVICE_NAME);
+        InstrumentedAutoFillService.setAutofillServiceClass(SERVICE_CLASS);
     }
 
     public InlineLoginMixedCredentialActivityTest() {

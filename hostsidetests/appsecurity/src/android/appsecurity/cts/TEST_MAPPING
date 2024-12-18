@@ -5,15 +5,7 @@
       "file_patterns": ["SplitTests\\.java"]
     },
     {
-      "name": "CtsInstantAppsHostTestCases",
-      "options": [
-        {
-          "include-filter": "android.appsecurity.cts.EphemeralTest"
-        },
-        {
-          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
-        }
-      ]
+      "name": "CtsInstantAppsHostTestCases_cts_ephemeraltest"
     },
     {
       "name": "CtsPackageManagerHostTestCases_cts_isolatedsplitstests",

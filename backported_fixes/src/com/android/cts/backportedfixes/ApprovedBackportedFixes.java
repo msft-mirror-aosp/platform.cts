@@ -15,6 +15,9 @@
  */
 package com.android.cts.backportedfixes;
 
+import com.android.build.backportedfixes.BackportedFix;
+import com.android.build.backportedfixes.BackportedFixes;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;

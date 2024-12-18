@@ -102,6 +102,17 @@ public class EventsAssertor {
     }
 
     /**
+     * Asserts the contents of a {@link ContentCaptureEvent#TYPE_SESSION_FLUSH} event.
+     */
+    @NonNull
+    public EventsAssertor assertSessionFlush() {
+        assertNextEvent((event) -> assertSessionLevelEvent(event),
+                ContentCaptureEvent.TYPE_SESSION_FLUSH,
+                "no TYPE_SESSION_FLUSH event");
+        return this;
+    }
+
+    /**
      * Asserts the basic contents of a {@link ContentCaptureEvent#TYPE_CONTEXT_UPDATED} event.
      */
     public EventsAssertor assertContextUpdated() {
