@@ -36,6 +36,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.net.TetheringManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -114,6 +115,17 @@ public final class TestAppSystemServiceFactory {
             Class<? extends BroadcastReceiver> receiverClass) {
         return getSystemService(context, WifiManager.class, receiverClass,
                 /* forDeviceOwner= */ true, isSingleUser(context));
+    }
+
+    /** Gets the proper {@link TetheringManager} instance to be used by device owner tests. */
+    public static TetheringManager getTetheringManager(
+            Context context, Class<? extends BroadcastReceiver> receiverClass) {
+        return getSystemService(
+                context,
+                TetheringManager.class,
+                receiverClass,
+                /* forDeviceOwner= */ true,
+                isSingleUser(context));
     }
 
     private static boolean isSingleUser(Context context) {
@@ -222,6 +234,13 @@ public final class TestAppSystemServiceFactory {
                     (ServiceManagerWrapper<T>) new WifiManagerWrapper();
             wrapper = safeCastWrapper;
             wrappedClass = WifiManager.class;
+            managerCanBeNull = true;
+        } else if (serviceClass.equals(TetheringManager.class)) {
+            @SuppressWarnings("unchecked")
+            ServiceManagerWrapper<T> safeCastWrapper =
+                    (ServiceManagerWrapper<T>) new TetheringManagerWrapper();
+            wrapper = safeCastWrapper;
+            wrappedClass = TetheringManager.class;
             managerCanBeNull = true;
         } else if (serviceClass.equals(HardwarePropertiesManager.class)) {
             @SuppressWarnings("unchecked")

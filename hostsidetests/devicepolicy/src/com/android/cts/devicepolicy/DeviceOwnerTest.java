@@ -471,6 +471,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         }
     }
 
+    @Test
+    public void testTethering() throws Exception {
+        executeDeviceOwnerTest("TetheringTest");
+    }
+
     /**
      * Execute WifiSetHttpProxyTest as device owner.
      */
