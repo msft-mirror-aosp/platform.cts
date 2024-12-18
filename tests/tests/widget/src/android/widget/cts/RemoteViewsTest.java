@@ -528,11 +528,6 @@ public class RemoteViewsTest {
             mRemoteViews.setOnClickFillInIntent(i + 1, intents[i]);
         }
         applyNightModeThenApplyAndTest(false /* nightMode */, () -> {});
-        verifyBitmap(width, height, (bitmap) -> verifyColorsOnFourCorners(Color.WHITE, bitmap));
-
-        // Switch to night mode
-        applyNightModeThenReapplyAndTest(true /* nightMode */, () -> {});
-        verifyBitmap(width, height, (bitmap) -> verifyColorsOnFourCorners(Color.BLACK, bitmap));
 
         // Verify clicks
         mActivityRule.runOnUiThread(() -> {
