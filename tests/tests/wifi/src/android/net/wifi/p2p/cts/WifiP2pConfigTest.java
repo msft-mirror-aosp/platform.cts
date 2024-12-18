@@ -18,8 +18,8 @@ package android.net.wifi.p2p.cts;
 
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV4_DHCP;
 import static android.net.wifi.p2p.WifiP2pConfig.GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL;
-import static android.net.wifi.p2p.WifiP2pConfig.PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2;
 import static android.net.wifi.p2p.WifiP2pConfig.P2P_VERSION_2;
+import static android.net.wifi.p2p.WifiP2pConfig.PCC_MODE_CONNECTION_TYPE_LEGACY_OR_R2;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_PERSISTENT;
 import static android.net.wifi.p2p.WifiP2pGroup.NETWORK_ID_TEMPORARY;
 
@@ -217,8 +217,11 @@ public class WifiP2pConfigTest extends AndroidTestCase {
         assertEquals(expectedPairingBootstrappingConfig, pairingBootstrappingConfig);
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig#isAuthorizeConnectionFromPeer",
-            "android.net.wifi.p2p.WifiP2pConfig.Builder#setAuthorizeConnectionFromPeer"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.WifiP2pConfig#isAuthorizeConnectionFromPeerEnabled",
+                "android.net.wifi.p2p.WifiP2pConfig.Builder#setAuthorizeConnectionFromPeerEnabled"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     public void testWifiP2pConfigBuilderWithAuthorizeConnectionFromPeer() throws Exception {
@@ -229,13 +232,13 @@ public class WifiP2pConfigTest extends AndroidTestCase {
                 .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
                 .setPairingBootstrappingConfig(pairingBootstrappingConfig)
                 .setGroupOperatingFrequency(2437)
-                .setAuthorizeConnectionFromPeer(true)
+                .setAuthorizeConnectionFromPeerEnabled(true)
                 .build();
         WifiP2pPairingBootstrappingConfig expectedPairingBootstrappingConfig =
                 config.getPairingBootstrappingConfig();
         assertNotNull(expectedPairingBootstrappingConfig);
         assertEquals(expectedPairingBootstrappingConfig, pairingBootstrappingConfig);
-        assertTrue(config.isAuthorizeConnectionFromPeer());
+        assertTrue(config.isAuthorizeConnectionFromPeerEnabled());
     }
 
     private static void assertWifiP2pConfigHasFields(WifiP2pConfig config,
