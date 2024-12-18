@@ -22,11 +22,13 @@ import static org.junit.Assert.assertTrue;
 
 import android.os.HidlMemory;
 import android.os.NativeHandle;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import org.junit.Test;
 
 import java.io.IOException;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class HidlMemoryTest {
     @Test
     public void testAccessors() {

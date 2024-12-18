@@ -16,18 +16,19 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_usb",
 }
 
 android_test {
     name: "CtsUsbManagerTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
-	"ctstestrunner-axt",
-	"CtsMockInputMethodLib",
+        "ctstestrunner-axt",
+        "CtsMockInputMethodLib",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     srcs: ["src/**/*.java"],
 

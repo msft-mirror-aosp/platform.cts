@@ -81,6 +81,7 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_ID_APP_1_ROUTE_2 = "route_1-2";
     public static final String ROUTE_ID_APP_1_ROUTE_3 = "route_1-3";
     public static final String ROUTE_ID_APP_1_ROUTE_4 = "route_1-4";
+    public static final String ROUTE_ID_APP_1_ROUTE_5 = "route_1-5";
 
     public static final String ROUTE_ID_APP_2_ROUTE_1 = "route_2-1";
     public static final String ROUTE_ID_APP_2_ROUTE_2 = "route_2-2";
@@ -107,6 +108,7 @@ public final class MediaRouterTestConstants {
     public static final String ROUTE_DEDUPLICATION_ID_3 = "dedup_id_3";
 
     public static final String FEATURE_SAMPLE = "android.media.cts.FEATURE_SAMPLE";
+    public static final String FEATURE_ACTIVE_SCAN_ONLY = "android.media.cts.ACTIVE_SCAN_ONLY";
 
     public static final String TARGET_USER_ID_KEY = "TARGET_USER_ID_KEY";
 

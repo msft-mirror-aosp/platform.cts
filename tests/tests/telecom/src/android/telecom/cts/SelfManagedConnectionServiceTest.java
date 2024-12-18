@@ -35,7 +35,6 @@ import android.database.Cursor;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.net.Uri;
-import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.OutcomeReceiver;
@@ -56,12 +55,12 @@ import android.telecom.VideoProfile;
 import android.telecom.cts.selfmanagedcstestapp.ICtsSelfManagedConnectionServiceControl;
 import android.telecom.cts.selfmanagedcstestappone.CtsSelfManagedConnectionServiceControlOne;
 import android.util.Log;
-import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.server.telecom.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -789,6 +788,69 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
     }
 
     /**
+     * Test the scenario where a user starts a self-managed call and while that call is active,
+     * starts a sim based call. This tests simulates that the self-managed Connection does
+     * not respond to a hold request, which MUST trigger the self-managed Connection to disconnect.
+     */
+    @ApiTest(apis = {"android.telecom.Connection#onHold"})
+    public void testSelfManagedAndSimBasedCallHoldFailure() throws Exception {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)
+                || !Flags.transactionalCsVerifier()) {
+            return;
+        }
+        SelfManagedConnection connection = null;
+        Connection simBasedConnection = null;
+
+        Bundle extras = new Bundle();
+        extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE,
+                TestUtils.TEST_SIM_PHONE_ACCOUNT.getAccountHandle());
+
+        try {
+            registerSimAccountIfNeeded();
+            connection = placeSelfManagedCallAndGetConnection(TestUtils.TEST_SELF_MANAGED_HANDLE_2,
+                    TEST_ADDRESS_2);
+            Call selfManagedCall = getInCallService().getLastCall();
+            assertNotNull("SM call expected", selfManagedCall);
+            mInCallCallbacks.resetLock();
+
+            // start an incoming SIM based call
+            addAndVerifyNewIncomingCall(createTestNumber(), null);
+            simBasedConnection = verifyConnectionForIncomingCall();
+
+            // Answer SIM call and do not respond to hold request with SM call
+            connection.setSuppressHoldResponse(true);
+            Call incomingCall = getInCallService().getLastCall();
+            assertNotEquals("Incoming Managed Call not found", incomingCall,
+                    selfManagedCall);
+            assertNotNull("Incoming Managed call expected", incomingCall);
+            incomingCall.answer(VideoProfile.STATE_AUDIO_ONLY);
+
+            // SM call will be disconnected due to no response to hold and SIM call will move to
+            // active
+            assertCallState(selfManagedCall, Call.STATE_DISCONNECTED);
+            assertCallState(incomingCall, Call.STATE_ACTIVE);
+
+            // end incoming SIM based call
+            simBasedConnection.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
+            simBasedConnection.destroy();
+            //assert the incoming call is disconnected
+            assertCallState(incomingCall, Call.STATE_DISCONNECTED);
+            assertIsInCall(false);
+
+        } finally {
+            unregisterSimPhoneAccount();
+            if (connection != null && connection.getState() != Connection.STATE_DISCONNECTED) {
+                connection.disconnectAndDestroy();
+            }
+            if (simBasedConnection != null && simBasedConnection.getState()
+                    != Connection.STATE_DISCONNECTED) {
+                simBasedConnection.onDisconnect();
+            }
+            assertIsInCall(false);
+        }
+    }
+
+    /**
      * verify TelecomManager#acceptRingingCall does not change the state of a self-managed call from
      * ringing to active. In short, TelecomManager#acceptRingingCall should not change the state
      * of any self-manged connection.
@@ -977,7 +1039,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         setActiveAndVerify(connection);
 
         TestUtils.InvokeCounter counter = connection.getCallAudioStateChangedInvokeCounter();
-        counter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        counter.waitForCount(1);
         CallAudioState callAudioState = (CallAudioState) counter.getArgs(0)[0];
         int availableRoutes = callAudioState.getSupportedRouteMask();
 
@@ -1527,13 +1589,13 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
 
         TestUtils.InvokeCounter currentEndpointCounter =
                 connection.getCallEndpointChangedInvokeCounter();
-        currentEndpointCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        currentEndpointCounter.waitForCount(1);
         CallEndpoint currentEndpoint = (CallEndpoint) currentEndpointCounter.getArgs(0)[0];
         int currentEndpointType = currentEndpoint.getEndpointType();
 
         TestUtils.InvokeCounter availableEndpointsCounter =
                 connection.getAvailableEndpointsChangedInvokeCounter();
-        availableEndpointsCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        availableEndpointsCounter.waitForCount(1);
         List<CallEndpoint> availableEndpoints =
                 (List<CallEndpoint>) availableEndpointsCounter.getArgs(0)[0];
 
@@ -1591,64 +1653,53 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
     @CddTest(requirements = "7.4.1.2/C-12-1,C-12-2")
     @ApiTest(apis = {"android.telecom.TelecomManager#isInSelfManagedCall"})
     public void testIsInSelfManagedCall() throws Exception {
-        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)
+                || !Flags.telecomResolveHiddenDependencies()) {
             return;
         }
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity();
 
-        // Specific user defined scenarios:
-        // Verify TelecomManager#isInSelfManagedCall for specified user -> true.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                TEST_SELF_MANAGED_HANDLE_1.getUserHandle(), new Pair(false, false));
-        // Deliberately pass in different UserHandle different from the calling user to ensure that
-        // the API indicates that there aren't any ongoing calls -> false.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                UserHandle.of(UserHandle.MIN_SECONDARY_USER_ID), new Pair(false, false));
+        SelfManagedConnection connection = null;
+        try {
+            // Create self-managed call
+            connection = placeSelfManagedCallAndGetConnection(
+                    TEST_SELF_MANAGED_HANDLE_1, TEST_ADDRESS_1);
 
-        // Cross-user scenarios:
-        // Deliberately pass in different UserHandle to ensure that cross users functionality
-        // works as intended -> true.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1, null, new Pair(true, true));
-        // Ensure that not setting cross user will verify the calls on the caller -> true.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                null, new Pair(true, false));
+            // Case 1: Verify TelecomManager#isInSelfManagedCall for specified user -> true.
+            UserHandle userHandle = TEST_SELF_MANAGED_HANDLE_1.getUserHandle();
+            verifyIsInSelfManagedCallCrossUsers(userHandle);
+
+            // Case 2: Deliberately pass in different UserHandle different from the phone account
+            // handle user to ensure that the API indicates that there aren't any ongoing calls ->
+            // false.
+            userHandle = UserHandle.of(UserHandle.MIN_SECONDARY_USER_ID);
+            verifyIsInSelfManagedCallCrossUsers(userHandle);
+
+            // Case 3: Cross-user scenario: ensure that passing UserHandle.ALL correctly
+            // identifies calls for any user with self-managed calls.
+            userHandle = UserHandle.ALL;
+            verifyIsInSelfManagedCallCrossUsers(userHandle);
+        } finally {
+            if (connection != null) {
+                // Disconnect the call
+                connection.disconnectAndDestroy();
+                assertIsInCall(false);
+            }
+        }
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
 
-    private void verifyIsInSelfManagedCallCrossUsers(PhoneAccountHandle handle,
-            UserHandle userHandle, Pair<Boolean, Boolean> handleCrossUser) throws Exception {
-        SelfManagedConnection connection = null;
+    private void verifyIsInSelfManagedCallCrossUsers(UserHandle userHandle) {
+        boolean assertIsInSelfManagedCall = userHandle.equals(UserHandle.ALL)
+                || TEST_SELF_MANAGED_HANDLE_1.getUserHandle().equals(userHandle);
 
-        boolean assertIsInSelfManagedCall = true;
-        if (!handleCrossUser.first && !handle.getUserHandle().equals(userHandle)) {
-            assertIsInSelfManagedCall = false;
-        } else if (handleCrossUser.first && !handleCrossUser.second
-                && !Binder.getCallingUserHandle().equals(handle.getUserHandle())) {
-            assertIsInSelfManagedCall = false;
-        }
-
-        try {
-            connection = placeSelfManagedCallAndGetConnection(handle, TEST_ADDRESS_1);
-            boolean isInSelfManagedCall;
-            if (handleCrossUser.first) {
-                isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
-                        handle.getComponentName().getPackageName(), handleCrossUser.second);
-            } else {
-                isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
-                        handle.getComponentName().getPackageName(), userHandle);
-            }
-            assertEquals(assertIsInSelfManagedCall, isInSelfManagedCall);
-        } finally {
-            if (connection != null) {
-                // Disconnect the call
-                connection.disconnectAndDestroy();
-                TestUtils.waitOnAllHandlers(getInstrumentation());
-                assertIsInCall(false);
-            }
-        }
+        boolean isInSelfManagedCall;
+        isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
+                TEST_SELF_MANAGED_HANDLE_1.getComponentName().getPackageName(), userHandle);
+        assertEquals(assertIsInSelfManagedCall, isInSelfManagedCall);
     }
 
     private void registerSimAccountIfNeeded() {

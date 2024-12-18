@@ -16,9 +16,9 @@
 
 package com.android.interactive;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERNAL_SYSTEM_WINDOW;
-import static com.android.bedstead.nene.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
-import static com.android.bedstead.nene.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
+import static com.android.bedstead.permissions.CommonPermissions.INTERNAL_SYSTEM_WINDOW;
+import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
+import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
 import static com.android.interactive.Automator.AUTOMATION_FILE;
 
 import android.graphics.PixelFormat;
@@ -39,8 +39,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.TestLifecycleListener;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.interactive.annotations.CacheableStep;
 
 import java.time.Duration;
@@ -110,12 +110,17 @@ public abstract class Step<E> {
         try {
             step = stepClass.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            throw new AssertionError("Error preparing step", e);
+            throw new AssertionError("Error preparing " + stepClass, e);
         }
 
         // Check if is cached...
         if (sStepCache.containsKey(stepClass)) {
             return (E) sStepCache.get(stepClass);
+        }
+
+        if (step.getValue().isPresent()) {
+            // If the step already has an answer - no need to show it to the user or run automations
+            return step.getValue().get();
         }
 
         if (!sForceManual.get()
@@ -186,7 +191,9 @@ public abstract class Step<E> {
         }
 
         if (TestApis.instrumentation().arguments().getBoolean("ENABLE_MANUAL", false)) {
-            step.interact();
+            if (!step.hasFailed()) {
+                step.interact();
+            }
 
             // Wait until we've reached a valid ending point
             try {
@@ -230,7 +237,8 @@ public abstract class Step<E> {
                 }
             }
         }
-        throw new AssertionError("Could not automatically or manually pass test");
+        throw new AssertionError("Could not automatically or manually pass test. "
+                + "Failed at step: " + step);
     }
 
     /** Gets the boolean value of an instrumentation argument with a default value. */

@@ -18,7 +18,7 @@ package com.android.bedstead.nene.activities;
 
 import static android.content.pm.PackageManager.MATCH_DISABLED_COMPONENTS;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 
 import android.content.ComponentName;
 import android.content.pm.PackageManager;
@@ -27,7 +27,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 
 /**

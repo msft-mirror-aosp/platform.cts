@@ -16,6 +16,17 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.CameraTestUtils.ImageAndMultiResStreamInfo;
+import static android.hardware.camera2.cts.CameraTestUtils.SimpleMultiResolutionImageReaderListener;
+import static android.hardware.camera2.cts.CameraTestUtils.StreamCombinationTargets;
+import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigurationSupported;
+
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
+
+import static org.mockito.Mockito.*;
+
 import android.graphics.ImageFormat;
 import android.hardware.HardwareBuffer;
 import android.hardware.camera2.CameraCaptureSession;
@@ -41,25 +52,17 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static android.hardware.camera2.cts.CameraTestUtils.ImageAndMultiResStreamInfo;
-import static android.hardware.camera2.cts.CameraTestUtils.SimpleMultiResolutionImageReaderListener;
-import static android.hardware.camera2.cts.CameraTestUtils.StreamCombinationTargets;
-import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigurationSupported;
-
-import static junit.framework.Assert.assertNotNull;
-import static junit.framework.Assert.assertTrue;
-
-import static org.mockito.Mockito.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Basic test for MultiResolutionImageReader APIs.
@@ -307,7 +310,7 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                     /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    true/*defaultSupport*/, String.format(
+                    mCameraManager, true/*defaultSupport*/, String.format(
                     "Session configuration query for multi-res combination: %s failed",
                     combination.getDescription()));
 
@@ -404,12 +407,35 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
             mMultiResolutionImageReader.setOnImageAvailableListener(mListener,
                     new HandlerExecutor(mHandler));
 
-            // Create session
             Collection<OutputConfiguration> outputConfigs =
                     OutputConfiguration.createInstancesForMultiResolutionOutput(
                     mMultiResolutionImageReader);
             ArrayList<OutputConfiguration> outputConfigsList = new ArrayList<OutputConfiguration>(
                     outputConfigs);
+
+            if (Flags.cameraDeviceSetup()) {
+                // Create OutputConfigurations without surfaces
+                List<OutputConfiguration> outputConfigs2Steps =
+                        OutputConfiguration.createInstancesForMultiResolutionOutput(
+                                multiResolutionStreams, format);
+                // Check both OutputConfiguration lists created directly from
+                // MultiResolutionImageReader and from MultiResolutionStreamInfo are the same.
+                OutputConfiguration.setSurfacesForMultiResolutionOutput(
+                        outputConfigs2Steps, mMultiResolutionImageReader);
+                // outputConfigs2Steps and outputConfigsList are not equal because their
+                // surfaceGenerationId, surfaceGroupdId will not be the same.
+                assertEquals("OutputConfiguration list creates from MultiResolutionImageReader "
+                        + "must match the one from MultiResolutionStreamInfo",
+                        outputConfigs2Steps.size(), outputConfigsList.size());
+                for (int i = 0; i < outputConfigsList.size(); i++) {
+                    OutputConfiguration outputConfig2Step = outputConfigs2Steps.get(i);
+                    OutputConfiguration outputConfig = outputConfigsList.get(i);
+                    assertEquals("OutputConfigurations' surfaces don't match",
+                            outputConfig2Step.getSurfaces(), outputConfig.getSurfaces());
+                }
+            }
+
+            // Create session
             createSessionByConfigs(outputConfigsList);
 
             CaptureRequest.Builder captureBuilder =

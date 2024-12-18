@@ -16,6 +16,7 @@
 
 package android.companion.cts.core
 
+import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.MAC_ADDRESS_A
@@ -26,10 +27,10 @@ import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
 import android.companion.cts.common.sleepFor
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.time.Duration.Companion.ZERO
+import kotlin.time.Duration.Companion.seconds
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Duration.Companion.ZERO
 
 /**
  * Test [com.android.server.companion.CompanionDeviceManagerService.removeInactiveSelfManagedAssociations].
@@ -43,11 +44,14 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
 
     @Test
     fun test_inactive_associations_removal() {
-        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            cdm.notifyDeviceAppeared(it.id)
+        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
         }
-        val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B) {
-            cdm.notifyDeviceAppeared(it.id)
+
+        val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idB)
         }
 
         setSystemPropertyDuration(1.seconds, SYS_PROP_DEBUG_REMOVAL_TIME_WINDOW)
@@ -55,8 +59,10 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
         sleepFor(1.seconds)
         // "Disconnect" device A and B since we are not able to disconnect them after the
         // associations are removed.
-        cdm.notifyDeviceDisappeared(idA)
-        cdm.notifyDeviceDisappeared(idB)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceDisappeared(idA)
+            cdm.notifyDeviceDisappeared(idB)
+        }
         // Assert both services are unbound now
         assertValidCompanionDeviceServicesUnbind()
         // Start running the removal job.
@@ -69,9 +75,12 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
     @Test
     fun test_inactive_associations_removal_multiple_types() = with(targetApp) {
         // Create the selfManaged association.
-        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            cdm.notifyDeviceAppeared(it.id)
+        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
         }
+
         // Create the normal association.
         associate(MAC_ADDRESS_A)
 
@@ -80,7 +89,9 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
         sleepFor(1.seconds)
         // "Disconnect" device A since we are not able to  disconnect it after the associations
         // are removed.
-        cdm.notifyDeviceDisappeared(idA)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceDisappeared(idA)
+        }
         // Assert both services are unbound now
         assertValidCompanionDeviceServicesUnbind()
         // Start running the removal job.
@@ -98,8 +109,10 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
 
     @Test
     fun test_active_associations_do_not_get_removed() = with(targetApp) {
-        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A) {
-            cdm.notifyDeviceAppeared(it.id)
+        val idA = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
         }
 
         setSystemPropertyDuration(10.seconds, SYS_PROP_DEBUG_REMOVAL_TIME_WINDOW)
@@ -107,13 +120,16 @@ class InactiveSelfManagedAssociationsRemovalTest : CoreTestBase() {
         sleepFor(1.seconds)
         // "Disconnect" device A and B since we are not able to disconnect them after the
         // associations are removed.
-        cdm.notifyDeviceDisappeared(idA)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceDisappeared(idA)
+        }
         // Assert both services are unbound now
         assertValidCompanionDeviceServicesUnbind()
         // Start running the removal job.
         removeInactiveSelfManagedAssociations()
         // Give it 1 seconds for running the removal job.
         sleepFor(1.seconds)
+
         // Active selfManaged associations should not be removed
         assertSelfManagedAssociations(
             actual = cdm.myAssociations,

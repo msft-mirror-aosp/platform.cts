@@ -13,21 +13,17 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    style="@style/RootLayoutPadding">
-
     <ScrollView
+        android:fitsSystemWindows="@bool/fit_system_windows"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/scrollView">
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/scrollView"
+        style="@style/RootLayoutPadding">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical">
 
             <LinearLayout
@@ -36,42 +32,14 @@
                 android:orientation="vertical"
                 android:id="@+id/audio_loopback_headset_port">
 
-                <LinearLayout
-                    xmlns:android="http://schemas.android.com/apk/res/android"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:id="@+id/audio_loopback_layout">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/audio_loopback_instructions2"
-                        android:id="@+id/audio_loopback_instructions2" />
-
-                    <SeekBar
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/audio_loopback_level_seekbar"
-                        android:nextFocusForward="@+id/audio_loopback_test_btn"
-                        android:nextFocusUp="@+id/audio_loopback_plug_ready_btn"
-                        android:nextFocusDown="@+id/audio_loopback_test_btn"
-                        android:nextFocusLeft="@+id/audio_loopback_plug_ready_btn"
-                        android:nextFocusRight="@+id/audio_loopback_test_btn" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/audio_loopback_level_text"
-                        android:id="@+id/audio_loopback_level_text" />
-                </LinearLayout>
-
-                <Button
+                <!-- Features -->
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/audio_datapaths_calibrate"
-                    android:id="@+id/audio_loopback_calibrate_button"/>
+                    android:textSize="20sp"
+                    android:text="@string/ctsv_loopback_features"/>
 
+                <!-- Features, row 1 -->
                 <LinearLayout
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
@@ -80,7 +48,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:text="@string/audio_loopback_proaudio"/>
+                        android:text="@string/audio_general_proaudio"/>
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -91,7 +59,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginStart="5sp"
                         android:text="@string/audio_loopback_lowlatency"/>
 
                     <TextView
@@ -103,7 +71,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginStart="5sp"
                         android:text="@string/audio_loopback_mcp"/>
 
                     <TextView
@@ -113,6 +81,7 @@
                         android:id="@+id/audio_loopback_mpc"/>
                 </LinearLayout>
 
+                <!-- Features, row 2 -->
                 <LinearLayout
                     android:orientation="horizontal"
                     android:layout_width="match_parent"
@@ -132,7 +101,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginStart="5sp"
                         android:text="@string/audio_loopback_mmapexclusive"/>
 
                     <TextView
@@ -141,6 +110,13 @@
                         android:textStyle="bold"
                         android:id="@+id/audio_loopback_mmap_exclusive"/>
                 </LinearLayout>
+
+                <!-- Platform -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="@string/ctsv_loopback_platform"/>
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -161,7 +137,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginStart="5sp"
                         android:text="@string/audio_loopback_tv"/>
 
                     <TextView
@@ -173,7 +149,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginStart="5sp"
                         android:text="@string/audio_loopback_automobile"/>
 
                     <TextView
@@ -185,7 +161,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="match_parent"
-                        android:layout_marginStart="5dp"
+                        android:layout_marginStart="5sp"
                         android:text="@string/audio_loopback_handheld"/>
 
                     <TextView
@@ -195,11 +171,13 @@
                         android:id="@+id/audio_loopback_is_handheld"/>
                 </LinearLayout>
 
+                <include layout="@layout/audio_loopback_utilities" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:id="@+id/audio_loopback_instructions"
-                    android:textSize="20dp"
+                    android:textSize="20sp"
                     android:gravity="center"/>
 
                 <!-- Speaker/Mic -->
@@ -217,8 +195,7 @@
                     <LinearLayout
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/audio_loopback_layout">
+                        android:layout_height="wrap_content">
 
                         <Button
                             android:layout_width="wrap_content"
@@ -245,14 +222,13 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/audio_loopback_headsetjack"
+                        android:text="@string/audio_loopback_headset"
                         android:textSize="18sp"/>
 
                     <LinearLayout
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/audio_loopback_layout">
+                        android:layout_height="wrap_content">
 
                         <Button
                             android:layout_width="wrap_content"
@@ -264,7 +240,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="fill"
-                            android:text="@string/audio_loopback_headsetpath_instructions"
                             android:id="@+id/audio_loopback_headsetpath_info" />
                     </LinearLayout>
             </LinearLayout>
@@ -296,12 +271,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="fill"
-                        android:text="@string/audio_loopback_usbpath_instructions"
                         android:id="@+id/audio_loopback_usbpath_info" />
                 </LinearLayout>
-
             </LinearLayout>
-
                 <LinearLayout
                     xmlns:android="http://schemas.android.com/apk/res/android"
                     android:layout_width="match_parent"
@@ -311,6 +283,7 @@
                     <ProgressBar
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_gravity="center"
                         android:id="@+id/audio_loopback_progress_bar" />
 
                     <TextView
@@ -318,12 +291,15 @@
                         android:layout_height="wrap_content"
                         android:text="@string/audio_loopback_results_text"
                         android:id="@+id/audio_loopback_status_text"
-                        android:textSize="20dp" />
+                        android:textSize="20sp" />
                 </LinearLayout>
-
             </LinearLayout>
+
+            <WebView
+                android:id="@+id/audio_loopback_results"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
             <include layout="@layout/pass_fail_buttons" />
         </LinearLayout>
     </ScrollView>
-
-</LinearLayout>

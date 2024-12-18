@@ -61,7 +61,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -939,7 +938,6 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         sCallStateCallback = null;
     }
 
-    @Ignore("For internal test purpose only")
     @Test
     public void testMultipleVoLteCalls() throws Exception {
         sMockModemManager.changeNetworkService(
@@ -1013,7 +1011,6 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         waitForUnboundService();
     }
 
-    @Ignore("For internal test purpose only")
     @Test
     public void testMultipleVoLteCallsWithIncomingCall() throws Exception {
         if (!ImsUtils.shouldTestImsService()) {
@@ -1083,7 +1080,6 @@ public class CallDomainSelectionTestOnMockModem extends ImsCallingBase {
         waitForUnboundService();
     }
 
-    @Ignore("For internal test purpose only")
     @Test
     public void testMultipleVoWifiCalls() throws Exception {
         sMockModemManager.changeNetworkService(

@@ -57,12 +57,11 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.PatternMatcher;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.test.mock.MockContext;
 import android.util.Printer;
@@ -96,12 +95,8 @@ import java.util.function.Predicate;
 @PlatinumTest(focusArea = "pm")
 public class IntentFilterTest {
     @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private IntentFilter mIntentFilter;
@@ -119,7 +114,7 @@ public class IntentFilterTest {
 
     @Before
     public void setUp() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) {
+        if (RavenwoodRule.isOnRavenwood()) {
             // TODO: replace with mockito when better supported
             mContext = new MockContext() {
                 @Override
@@ -828,7 +823,7 @@ public class IntentFilterTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
+    @DisabledOnRavenwood
     @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
     public void testMatchDataWithRelRefGroups() {
         Uri uri = Uri.parse("https://" + HOST + "/path?query=string&cat=gizmo#fragment");
@@ -1238,7 +1233,7 @@ public class IntentFilterTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
+    @DisabledOnRavenwood
     @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
     public void testWriteToXmlWithRelRefGroup() throws IllegalArgumentException,
             IllegalStateException, IOException, MalformedMimeTypeException, XmlPullParserException {
@@ -1320,7 +1315,7 @@ public class IntentFilterTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testReadFromXml()
             throws NameNotFoundException, XmlPullParserException, IOException {
         XmlPullParser parser = null;
@@ -1493,7 +1488,7 @@ public class IntentFilterTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testMatchWithIntent() throws MalformedMimeTypeException {
         final ContentResolver resolver = mContext.getContentResolver();
 
@@ -1620,7 +1615,7 @@ public class IntentFilterTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
+    @DisabledOnRavenwood
     @RequiresFlagsEnabled(Flags.FLAG_RELATIVE_REFERENCE_INTENT_FILTERS)
     public void testWriteToParcelWithRelRefGroup() throws MalformedMimeTypeException {
         UriRelativeFilterGroup relRefGroup = new UriRelativeFilterGroup(ACTION_ALLOW);
@@ -2082,7 +2077,7 @@ public class IntentFilterTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testAsPredicateWithTypeResolution() throws Exception {
         final ContentResolver resolver = mContext.getContentResolver();
         final Predicate<Intent> pred = new IntentFilter(ACTION, DATA_STATIC_TYPE)

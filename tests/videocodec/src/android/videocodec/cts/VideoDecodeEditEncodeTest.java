@@ -19,11 +19,11 @@ package android.videocodec.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.media.MediaFormat.KEY_ALLOW_FRAME_DROP;
-import static android.mediav2.common.cts.CodecEncoderTestBase.getMuxerFormatForMediaType;
-import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
-import static android.mediav2.common.cts.CodecEncoderTestBase.muxOutput;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.Q_DEQ_TIMEOUT_US;
+import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
+import static android.mediav2.common.cts.MuxerUtils.muxOutput;
+import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.VideoErrorManager.computeFrameVariance;
 
 import static org.junit.Assert.assertEquals;

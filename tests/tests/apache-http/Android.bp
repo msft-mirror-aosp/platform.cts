@@ -26,8 +26,8 @@ android_test {
         "src/**/*.kt",
     ],
     libs: [
-        "android.test.base",
-        "org.apache.http.legacy",
+        "android.test.base.stubs.test",
+        "org.apache.http.legacy.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",

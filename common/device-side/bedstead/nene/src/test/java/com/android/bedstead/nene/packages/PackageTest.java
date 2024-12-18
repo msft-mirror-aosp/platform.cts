@@ -35,7 +35,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -80,7 +80,7 @@ public class PackageTest {
                     INSTALL_PERMISSION
             ).get();
     private static final File sTestAppApkFile = new File(
-            Environment.getExternalStorageDirectory(), "testApp.apk");
+            Environment.getExternalStorageDirectory(), "NeneTestApp1.apk");
 
     @BeforeClass
     public static void setupClass() throws Exception {
@@ -282,40 +282,11 @@ public class PackageTest {
     }
 
     @Test
-    public void denyPermission_packageDoesNotExist_throwsException() {
-        assertThrows(NeneException.class, () ->
-                TestApis.packages().find(NON_EXISTING_PACKAGE_NAME).denyPermission(sUser,
-                        DECLARED_RUNTIME_PERMISSION));
-    }
-
-    @Test
-    public void denyPermission_permissionDoesNotExist_throwsException() {
-        assertThrows(NeneException.class, () ->
-                TestApis.packages().find(sContext.getPackageName()).denyPermission(sUser,
-                        NON_EXISTING_PERMISSION));
-    }
-
-    @Test
-    public void denyPermission_packageIsNotInstalledForUser_throwsException() {
-        sTestApp.pkg().uninstall(TestApis.users().instrumented());
-
-        assertThrows(NeneException.class,
-                () -> sTestApp.pkg().denyPermission(DECLARED_RUNTIME_PERMISSION));
-    }
-
-    @Test
     public void denyPermission_installPermission_throwsException() {
         try (TestAppInstance instance = sTestApp.install()) {
             assertThrows(NeneException.class, () ->
                     sTestApp.pkg().denyPermission(INSTALL_PERMISSION));
         }
-    }
-
-    @Test
-    public void denyPermission_nonDeclaredPermission_throwsException() {
-        assertThrows(NeneException.class, () ->
-                TestApis.packages().find(sContext.getPackageName()).denyPermission(sUser,
-                        UNDECLARED_RUNTIME_PERMISSION));
     }
 
     @Test

@@ -34,8 +34,10 @@ java_test_host {
     ],
     static_libs: ["cts-install-lib-host"],
     data: [
-        ":StagedInstallTest",
         ":deapexer.zip",
+    ],
+    device_common_data: [
+        ":StagedInstallTest",
     ],
     test_suites: [
         "cts",
@@ -273,6 +275,29 @@ prebuilt_apex {
         },
     },
     filename: "com.android.apex.cts.shim.v3.apex",
+    installable: false,
+}
+
+prebuilt_apex {
+    name: "StagedInstallTestApexV2_AddApkToApex",
+    arch: {
+        arm: {
+            src: "testdata/apex/arm/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        arm64: {
+            src: "testdata/apex/arm/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        riscv64: {
+            src: "testdata/apex/riscv64/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        x86: {
+            src: "testdata/apex/x86/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        x86_64: {
+            src: "testdata/apex/x86/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+    },
+    filename: "com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
     installable: false,
 }
 
@@ -666,4 +691,11 @@ genrule {
         "cp $${HOST_OUT_SHARED_LIBRARIES}/libc++.* $(genDir)/deapexer && " +
         "$(location soong_zip) -o $(out) -C $(genDir)/deapexer -D $(genDir)/deapexer",
     out: ["deapexer.zip"],
+}
+
+test_module_config_host {
+    name: "CtsStagedInstallHostTestCases_NoLarge",
+    base: "CtsStagedInstallHostTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
 }

@@ -24,8 +24,7 @@ import textwrap
 import capture_read_noise_utils
 import its_base_test
 import its_session_utils
-from matplotlib import pylab
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
 import matplotlib.ticker
 from mobly import test_runner
 import noise_model_constants
@@ -471,7 +470,7 @@ class DngNoiseModel(its_base_test.ItsBaseTest):
         sub_plot.legend()
 
     fig.suptitle('Noise model: N(x) = sqrt(Sx + O)', x=0.54, y=0.99)
-    pylab.tight_layout()
+    plt.tight_layout()
     fig.savefig(f'{name_with_log_path}.png', dpi=_FIG_DPI)
 
   def test_dng_noise_model_generation(self):

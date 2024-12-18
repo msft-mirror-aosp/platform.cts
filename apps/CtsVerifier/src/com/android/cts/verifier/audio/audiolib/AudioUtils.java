@@ -124,9 +124,13 @@ public class AudioUtils {
         sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_QUAD, "CHANNEL_OUT_QUAD");
         sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_SURROUND, "CHANNEL_OUT_SURROUND");
         sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_5POINT1, "CHANNEL_OUT_5POINT1");
+        sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_6POINT1, "CHANNEL_OUT_6POINT1");
+        // Deprecated
         sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_7POINT1, "CHANNEL_OUT_7POINT1");
         sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_7POINT1_SURROUND,
                 "CHANNEL_OUT_7POINT1_SURROUND");
+        sOutChanPosStrings.put(AudioFormat.CHANNEL_OUT_7POINT1POINT4,
+                "CHANNEL_OUT_7POINT1POINT4");
     }
 
     static void initInChanPositionStrings() {

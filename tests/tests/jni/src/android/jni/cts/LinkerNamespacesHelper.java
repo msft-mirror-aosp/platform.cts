@@ -23,6 +23,8 @@ import android.os.Build;
 
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.CpuFeatures;
+
 import dalvik.system.PathClassLoader;
 
 import java.io.BufferedReader;
@@ -394,6 +396,10 @@ class LinkerNamespacesHelper {
         List<String> publicLibs = new ArrayList<>();
         Collections.addAll(publicLibs, PUBLIC_SYSTEM_LIBRARIES);
         Collections.addAll(publicLibs, PUBLIC_APEX_LIBRARIES);
+
+        // There's no renderscript on riscv64 devices.
+        if (CpuFeatures.isRiscv64Cpu()) publicLibs.remove("libRS.so");
+
         for (String lib : publicLibs) {
             String result = LinkerNamespacesHelper.tryDlopen(lib);
             if (result != null) {

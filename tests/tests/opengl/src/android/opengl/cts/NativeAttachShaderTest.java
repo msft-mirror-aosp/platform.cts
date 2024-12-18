@@ -15,9 +15,12 @@
  */
 package android.opengl.cts;
 
+import android.Manifest;
 import android.content.Intent;
 import android.opengl.GLES20;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class NativeAttachShaderTest
         extends ActivityInstrumentationTestCase2<OpenGLES20NativeActivityOne> {
@@ -33,7 +36,8 @@ public class NativeAttachShaderTest
         intent.putExtra(OpenGLES20NativeActivityOne.EXTRA_VIEW_TYPE, viewType);
         intent.putExtra(OpenGLES20NativeActivityOne.EXTRA_VIEW_INDEX, viewIndex);
         setActivityIntent(intent);
-        OpenGLES20NativeActivityOne activity = getActivity();
+        OpenGLES20NativeActivityOne activity = SystemUtil.runWithShellPermissionIdentity(
+                () -> getActivity(), Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
         assertTrue(activity.waitForFrameDrawn());
         return activity;
     }

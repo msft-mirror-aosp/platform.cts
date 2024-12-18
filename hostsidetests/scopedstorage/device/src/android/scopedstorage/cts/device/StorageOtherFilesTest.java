@@ -44,15 +44,23 @@ import static android.scopedstorage.cts.lib.TestUtils.readExifMetadataFromTestAp
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.FileUtils;
 import android.provider.MediaStore;
+import android.provider.MediaStore.MediaColumns;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
@@ -60,13 +68,15 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.install.lib.TestApp;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,7 +85,7 @@ import java.util.Set;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
 public class StorageOtherFilesTest {
 
-    protected static final String TAG = "MediaProviderOtherFilePermissionTest";
+    protected static final String TAG = "StorageOtherFilesTest";
     private static final String THIS_PACKAGE_NAME =
             ApplicationProvider.getApplicationContext().getPackageName();
 
@@ -84,32 +94,24 @@ public class StorageOtherFilesTest {
             "CtsScopedStorageTestAppVUSelected.apk");
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
+
+    private static final Context sContext = sInstrumentation.getContext();
     private static final ContentResolver sContentResolver = getContentResolver();
 
     @ClassRule
     public static final OtherAppFilesRule sFilesRule = new OtherAppFilesRule(sContentResolver);
 
-    private static final File IMAGE_FILE_READABLE = sFilesRule.getImageFile1();
-    private static final File IMAGE_FILE_NO_ACCESS = sFilesRule.getImageFile2();
+    private static final File IMAGE_FILE_READABLE = OtherAppFilesRule.getImageFile1();
+    private static final File IMAGE_FILE_NO_ACCESS = OtherAppFilesRule.getImageFile2();
 
-    private static final File VIDEO_FILE_READABLE = sFilesRule.getVideoFile1();
-    private static final File VIDEO_FILE_NO_ACCESS = sFilesRule.getVideoFile2();
+    private static final File VIDEO_FILE_READABLE = OtherAppFilesRule.getVideoFile1();
+    private static final File VIDEO_FILE_NO_ACCESS = OtherAppFilesRule.getVideoFile2();
 
     // Cannot be static as the underlying resource isn't
     private final Uri mImageUriReadable = sFilesRule.getImageUri1();
     private final Uri mImageUriNoAccess = sFilesRule.getImageUri2();
     private final Uri mVideoUriReadable = sFilesRule.getVideoUri1();
     private final Uri mVideoUriNoAccess = sFilesRule.getVideoUri2();
-
-    static boolean isHardwareSupported() {
-        PackageManager pm = sInstrumentation.getContext().getPackageManager();
-
-        // Do not run tests on Watches, TVs, Auto or devices without UI.
-        return !pm.hasSystemFeature(pm.FEATURE_EMBEDDED)
-                && !pm.hasSystemFeature(pm.FEATURE_WATCH)
-                && !pm.hasSystemFeature(pm.FEATURE_LEANBACK)
-                && !pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE);
-    }
 
     @BeforeClass
     public static void init() throws Exception {
@@ -120,9 +122,8 @@ public class StorageOtherFilesTest {
     }
 
     @Before
-    public void setUp() throws Exception {
-        // Ensure tests are only run on supported hardware.
-        Assume.assumeTrue(isHardwareSupported());
+    public void setUp() {
+        DeviceTestUtils.checkUISupported();
     }
 
     @Test
@@ -214,6 +215,32 @@ public class StorageOtherFilesTest {
     }
 
     @Test
+    public void testDeleteWithParamDeleteData() throws Exception {
+        int expectedTargetSdk = sContext.getPackageManager().getApplicationInfo(
+                THIS_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0)).targetSdkVersion;
+        assumeTrue(expectedTargetSdk > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+        File testFile = stageImageFile("test" + System.nanoTime() + ".jpg",
+                RESOURCE_ID_WITH_METADATA);
+        final Uri uri = MediaStore.scanFile(sContentResolver, testFile);
+        String path;
+        try (Cursor c = sContentResolver.query(uri, new String[]{MediaColumns.DATA}, null, null,
+                null)) {
+            c.moveToNext();
+            path = c.getString(c.getColumnIndex(MediaColumns.DATA));
+        }
+
+        assertTrue(new File(path).exists());
+
+        // Delete with param "deletedata" as false
+        sContentResolver.delete(
+                uri.buildUpon().appendQueryParameter("deletedata", "false").build(), /* extras */
+                null);
+
+        // File should be deleted despite "deletedata" as false
+        assertFalse(new File(path).exists());
+    }
+
+    @Test
     public void other_accessLocationMetadata() throws Exception {
         // The current application has access to ACCESS_MEDIA_LOCATION
         HashMap<String, String> originalExif =
@@ -230,5 +257,18 @@ public class StorageOtherFilesTest {
         HashMap<String, String> exifFromTestApp =
                 readExifMetadataFromTestApp(APP_VU_SELECTED, IMAGE_FILE_READABLE.getPath());
         assertExifMetadataMismatch(exifFromTestApp, originalExif);
+    }
+
+    private File stageImageFile(String name, int sourceId) throws Exception {
+        final File img = new File(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), name);
+
+        try (InputStream in = sContext.getResources().openRawResource(sourceId);
+             OutputStream out = new FileOutputStream(img)) {
+            // Dump the image we have to external storage
+            FileUtils.copy(in, out);
+        }
+
+        return img;
     }
 }

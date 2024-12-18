@@ -17,7 +17,6 @@ package android.text.cts
 
 import android.graphics.RectF
 import android.graphics.Typeface
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.text.BoringLayout
 import android.text.Layout
 import android.text.TextPaint
@@ -25,14 +24,12 @@ import android.text.cts.LayoutUseBoundsUtil.getDrawingHorizontalOffset
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
-@RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
 class BoringLayoutUseBoundsTest {
 
     private val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
@@ -45,6 +42,7 @@ class BoringLayoutUseBoundsTest {
     // U+0065(e), U+05D4(denoted as E in test comment): 1em, (-0.5, 0) - (1,   1)
     // U+0066(f), U+05D5(denoted as F in test comment): 1em, (-1.0, 0) - (1,   1)
     // U+0067(g), U+05D6(denoted as G in test comment): 1em, (-1.5, 0) - (1,   1)
+    // U+0068(h), U+05D7(denoted as H in test comment): 1em, ( 0.5, 0) - (1,   1)
     private val overshootFont = Typeface.createFromAsset(context.assets, "fonts/OvershootTest.ttf")
     private val overshootPaint = TextPaint().apply {
         typeface = overshootFont
@@ -92,5 +90,21 @@ class BoringLayoutUseBoundsTest {
         assertThat(layout.getLineEnd(0)).isEqualTo(19)
         assertThat(layout.getLineWidth(0)).isEqualTo(205)
         assertThat(layout.getLineMax(0)).isEqualTo(205)
+    }
+
+    @Test
+    fun testBreakOvershoot_bounds_inside() {
+        val text = "hhhh dddd"
+
+        // Width constraint: 1000px
+        // |hhhh dddd      : width: 90, max: 90, left: 5, right: 105
+        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
+        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
+        var layout = buildLayout(text, 1000)
+        assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(5f, 0f, 105f, 10f))
+        assertThat(layout.lineCount).isEqualTo(1)
+        assertThat(layout.getLineEnd(0)).isEqualTo(9)
+        assertThat(layout.getLineWidth(0)).isEqualTo(105)
+        assertThat(layout.getLineMax(0)).isEqualTo(105)
     }
 }

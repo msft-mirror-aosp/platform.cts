@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_crumpet",
 }
 
 java_test_host {
@@ -31,4 +32,11 @@ java_test_host {
         "cts",
         "general-tests",
     ],
+}
+
+test_module_config_host {
+    name: "CtsDumpsysHostTestCases-qualified",
+    base: "CtsDumpsysHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.dumpsys.cts.GfxInfoDumpsysTest#testGfxinfoFramestats"],
 }

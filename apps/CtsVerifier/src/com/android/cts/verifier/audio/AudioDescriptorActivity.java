@@ -77,6 +77,8 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
 
     private AudioManager mAudioManager;
 
+    private TestAudioDeviceCallback mConnectListener;
+
     private Button mRunTestBtn;
 
     private boolean mClaimsHDMI;
@@ -102,7 +104,7 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         setContentView(R.layout.audio_descriptor);
 
         mAudioManager = getSystemService(AudioManager.class);
-        mAudioManager.registerAudioDeviceCallback(new TestAudioDeviceCallback(), null);
+        mConnectListener = new TestAudioDeviceCallback();
 
         mRunTestBtn = (Button) findViewById(R.id.audioDescriptorRunTestBtn);
         mRunTestBtn.setOnClickListener(new OnClickListener() {
@@ -120,6 +122,18 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         setInfoResources(R.string.audio_descriptor_test, R.string.audio_descriptor_test_info, -1);
         setPassFailButtonClickListeners();
         clearTestResult();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
+        super.onStop();
     }
 
     @Override
@@ -191,7 +205,9 @@ public class AudioDescriptorActivity extends PassFailButtons.Activity {
         AudioDeviceInfo[] deviceInfos = mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL);
         for (AudioDeviceInfo deviceInfo : deviceInfos) {
             Log.i(TAG, "  " + deviceInfo.getProductName() + " type:" + deviceInfo.getType());
-            if (deviceInfo.isSink() && deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI) {
+            if (deviceInfo.isSink() && (deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI ||
+                    deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_ARC ||
+                    deviceInfo.getType() == AudioDeviceInfo.TYPE_HDMI_EARC)) {
                 mHDMIDeviceInfo = deviceInfo;
                 break;
             }

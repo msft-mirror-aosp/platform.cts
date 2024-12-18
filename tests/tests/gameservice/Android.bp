@@ -35,8 +35,8 @@ android_test {
         ":CtsGameServiceTouchVerifier",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "androidx.test.core",

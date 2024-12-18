@@ -16,27 +16,17 @@
 
 package android.view.surfacecontrol.cts;
 
-import static android.view.cts.util.ASurfaceControlTestUtils.TransactionCompleteListener;
-import static android.view.cts.util.ASurfaceControlTestUtils.applyAndDeleteSurfaceTransaction;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_createFromWindow;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_release;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_create;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_releaseBuffer;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setBuffer;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setEnableBackPressure;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setOnCompleteCallback;
-import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction_setSolidBuffer;
-import static android.view.cts.util.ASurfaceControlTestUtils.reparent;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.cts.surfacevalidator.CapturedActivity;
-import android.view.cts.surfacevalidator.MultiFramePixelChecker;
-import android.view.cts.surfacevalidator.SurfaceControlTestCase;
+import android.hardware.HardwareBuffer;
+import android.server.wm.CtsWindowInfoUtils;
+import android.util.Log;
+import android.view.SurfaceControl;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
@@ -50,42 +40,19 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class ASurfaceControlBackPressureTest {
-
-    private static class SyncTransactionCompleteListener implements TransactionCompleteListener {
-        private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
-
-        @Override
-        public void onTransactionComplete(long latchTime, long presentTime) {
-            mCountDownLatch.countDown();
-        }
-
-        public void waitForTransactionComplete() {
-            try {
-                mCountDownLatch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private static final int DEFAULT_LAYOUT_WIDTH = 50;
-    private static final int DEFAULT_LAYOUT_HEIGHT = 50;
-
+    private static final String TAG = "ASurfaceControlBackPressureTest";
     @Rule
-    public ActivityTestRule<CapturedActivity> mActivityRule =
-            new ActivityTestRule<>(CapturedActivity.class);
-
-    private CapturedActivity mActivity;
-
+    public ActivityTestRule<SurfaceViewCtsActivity> mActivityRule = new ActivityTestRule<>(
+            SurfaceViewCtsActivity.class);
     @Rule
     public TestName mName = new TestName();
+    SurfaceViewCtsActivity mActivity;
 
     @Before
     public void setup() {
@@ -94,189 +61,109 @@ public class ASurfaceControlBackPressureTest {
 
     @After
     public void tearDown() throws UiObjectNotFoundException {
-        mActivity.restoreSettings();
+        mActivityRule.finishActivity();
     }
 
-    public abstract static class BasicSurfaceHolderCallback implements SurfaceHolder.Callback {
-        private final Set<Long> mSurfaceControls = new HashSet<>();
-        private final Set<Long> mBuffers = new HashSet<>();
-        private final Set<BufferCycler> mBufferCyclers = new HashSet<>();
+    private SurfaceControl createChildSurfaceControl(boolean enableBackPressure)
+            throws InterruptedException {
+        // create a surface control for testing and reparent it to the activity window
+        SurfaceControl surfaceControl = new SurfaceControl.Builder().setName(
+                "testSurfaceTransaction_setEnableBackPressure").build();
+        SurfaceControl.Transaction transaction =
+                mActivity.getWindow().getDecorView().getRootSurfaceControl()
+                        .buildReparentTransaction(surfaceControl);
 
-        // Helper class to submit buffers as fast as possible. The thread submits a buffer,
-        // waits for the transaction complete callback, and then submits the next buffer.
-        class BufferCycler extends Thread {
-            private final long mSurfaceControl;
-            private final long[] mBuffers;
-            private volatile boolean mStop = false;
-            private int mFrameNumber = 0;
+        // set back pressure flag
+        nSurfaceTransaction_setEnableBackPressure(transaction, surfaceControl, enableBackPressure);
+        final CountDownLatch transactionCompleted = new CountDownLatch(1);
+        transaction.addTransactionCompletedListener(Runnable::run,
+                (unused) -> transactionCompleted.countDown());
+        transaction.apply();
+        assertTrue("Failed to receive all transaction completed callbacks. Num missing = "
+                        + transactionCompleted.getCount(),
+                transactionCompleted.await(5000L * HW_TIMEOUT_MULTIPLIER, TimeUnit.MILLISECONDS));
+        return surfaceControl;
+    }
 
-            BufferCycler(long surfaceControl, long[] buffers) {
-                mSurfaceControl = surfaceControl;
-                mBuffers = buffers;
+    private long[] submitBuffers(SurfaceControl surfaceControl, int numFrames)
+            throws InterruptedException {
+        HardwareBuffer[] hardwareBuffers = new HardwareBuffer[2];
+        for (int i = 0; i < hardwareBuffers.length; i++) {
+            hardwareBuffers[i] = HardwareBuffer.create(100, // width
+                    100, // height
+                    HardwareBuffer.RGBA_8888, // format
+                    1, // layers
+                    HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE | HardwareBuffer.USAGE_COMPOSER_OVERLAY);
+        }
+
+        final long[] latchTimesNanos = new long[numFrames];
+        final CountDownLatch lastTransactionCompleted = new CountDownLatch(numFrames);
+        SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
+        for (int i = 0; i < numFrames; i++) {
+            int finalI = i;
+            transaction.setBuffer(surfaceControl, hardwareBuffers[i % 2]);
+            transaction.addTransactionCompletedListener(Runnable::run, (stats) -> {
+                latchTimesNanos[finalI] = stats.getLatchTimeNanos();
+                lastTransactionCompleted.countDown();
+            });
+            transaction.apply();
+        }
+        assertTrue("Failed to receive all transaction completed callbacks. Num missing = "
+                        + lastTransactionCompleted.getCount(),
+                lastTransactionCompleted.await(5000L * HW_TIMEOUT_MULTIPLIER,
+                        TimeUnit.MILLISECONDS));
+        return latchTimesNanos;
+    }
+
+    private int validateLatchTimes(long[] latchTimesNanos) {
+        long previousLatchTime = -1;
+        int numBuffersLatchedInSameVsync = 0;
+        for (int i = 0; i < latchTimesNanos.length; i++) {
+            final long latchTime = latchTimesNanos[i];
+
+            // track buffers that were not latched
+            if (latchTime == -1) {
+                numBuffersLatchedInSameVsync++;
+                continue;
             }
 
-            private long getNextBuffer() {
-                return mBuffers[mFrameNumber++ % mBuffers.length];
+            // check if we had multiple latches within a vsync
+            if (latchTime - previousLatchTime < TimeUnit.MILLISECONDS.toNanos(1)) {
+                numBuffersLatchedInSameVsync++;
             }
 
-            @Override
-            public void run() {
-                while (!mStop) {
-                    SyncTransactionCompleteListener listener =
-                            new SyncTransactionCompleteListener();
-                    // Send all buffers in batches so we can stuff the SurfaceFlinger transaction
-                    // queue.
-                    for (int i = 0; i < mBuffers.length; i++) {
-                        long surfaceTransaction = createSurfaceTransaction();
-                        nSurfaceTransaction_setBuffer(mSurfaceControl, surfaceTransaction,
-                                getNextBuffer());
-                        if (i == 0) {
-                            nSurfaceTransaction_setOnCompleteCallback(surfaceTransaction,
-                                    false /* waitForFence */, listener);
-                        }
-                        applyAndDeleteSurfaceTransaction(surfaceTransaction);
-                    }
+            // check to see if we latched out of order
+            assertTrue("unexpected latch time. previous buffer latch time = " + previousLatchTime
+                            + " latch time = " + latchTime + " frameNum=" + i,
+                    latchTime > previousLatchTime);
 
-                    // Wait for one of transactions to be applied before sending more transactions.
-                    listener.waitForTransactionComplete();
-                }
-            }
-
-            void end() {
-                mStop = true;
-            }
+            Log.d(TAG, "previous buffer latch time = " + previousLatchTime + " latch time = "
+                    + latchTime + " frameNum=" + i);
+            previousLatchTime = latchTime;
         }
-
-        @Override
-        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            Canvas canvas = holder.lockCanvas();
-            canvas.drawColor(Color.YELLOW);
-            holder.unlockCanvasAndPost(canvas);
-        }
-
-        @Override
-        public void surfaceDestroyed(SurfaceHolder holder) {
-            for (BasicSurfaceHolderCallback.BufferCycler cycler : mBufferCyclers) {
-                cycler.end();
-                try {
-                    cycler.join();
-                } catch (InterruptedException e) {
-                }
-            }
-            for (Long surfaceControl : mSurfaceControls) {
-                reparent(surfaceControl, 0);
-                nSurfaceControl_release(surfaceControl);
-            }
-            mSurfaceControls.clear();
-
-            for (Long buffer : mBuffers) {
-                nSurfaceTransaction_releaseBuffer(buffer);
-            }
-            mBuffers.clear();
-        }
-
-        public long createSurfaceTransaction() {
-            long surfaceTransaction = nSurfaceTransaction_create();
-            assertTrue("failed to create surface transaction", surfaceTransaction != 0);
-            return surfaceTransaction;
-        }
-
-        public long createFromWindow(Surface surface) {
-            long surfaceControl = nSurfaceControl_createFromWindow(surface);
-            assertTrue("failed to create surface control", surfaceControl != 0);
-
-            mSurfaceControls.add(surfaceControl);
-            return surfaceControl;
-        }
-
-        public void setEnableBackPressure(long surfaceControl, boolean enableBackPressure) {
-            long surfaceTransaction = createSurfaceTransaction();
-            nSurfaceTransaction_setEnableBackPressure(surfaceControl, surfaceTransaction,
-                    enableBackPressure);
-            applyAndDeleteSurfaceTransaction(surfaceTransaction);
-        }
-
-        public long setSolidBuffer(long surfaceControl, int width, int height, int color) {
-            long surfaceTransaction = createSurfaceTransaction();
-            long buffer = nSurfaceTransaction_setSolidBuffer(
-                    surfaceControl, surfaceTransaction, width, height, color);
-            assertTrue("failed to set buffer", buffer != 0);
-            mBuffers.add(buffer);
-            applyAndDeleteSurfaceTransaction(surfaceTransaction);
-            return buffer;
-        }
-
-        public void addBufferCycler(long surfaceControl, long[] buffers) {
-            BasicSurfaceHolderCallback.BufferCycler cycler =
-                    new BasicSurfaceHolderCallback.BufferCycler(surfaceControl, buffers);
-            cycler.start();
-            mBufferCyclers.add(cycler);
-        }
+        return numBuffersLatchedInSameVsync;
     }
 
     @Test
     public void testSurfaceTransaction_setEnableBackPressure() throws Throwable {
-        int[] colors = new int[]{Color.RED, Color.GREEN, Color.BLUE};
-        BasicSurfaceHolderCallback callback = new BasicSurfaceHolderCallback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                long surfaceControl = createFromWindow(holder.getSurface());
-                setEnableBackPressure(surfaceControl, true);
-                long[] buffers = new long[6];
-                for (int i = 0; i < buffers.length; i++) {
-                    buffers[i] = setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH,
-                            DEFAULT_LAYOUT_HEIGHT, colors[i % colors.length]);
-                }
-                addBufferCycler(surfaceControl, buffers);
-            }
-        };
-
-        MultiFramePixelChecker pixelChecker = new MultiFramePixelChecker(colors) {
-            @Override
-            public boolean checkPixels(int pixelCount, int width, int height) {
-                return pixelCount > 2000 && pixelCount < 3000;
-            }
-        };
-
-        mActivity.verifyTest(new SurfaceControlTestCase(callback, pixelChecker,
-                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                        DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT),
-                mName);
+        // wait for activity window to be visible
+        CtsWindowInfoUtils.waitForWindowVisible(mActivity.getWindow().getDecorView());
+        SurfaceControl surfaceControl = createChildSurfaceControl(true /* enableBackPressure */);
+        final int numFrames = 100;
+        long[] latchTimesNanos = submitBuffers(surfaceControl, numFrames);
+        int numBuffersLatchedInSameVsync = validateLatchTimes(latchTimesNanos);
+        assertEquals("Error: frames latched in same vsync" + numBuffersLatchedInSameVsync, 0,
+                numBuffersLatchedInSameVsync);
     }
 
     @Test
     public void testSurfaceTransaction_defaultBackPressureDisabled() throws Throwable {
-        int[] colors = new int[]{Color.RED, Color.GREEN, Color.BLUE};
-        BasicSurfaceHolderCallback callback = new BasicSurfaceHolderCallback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                long surfaceControl = createFromWindow(holder.getSurface());
-                // back pressure is disabled by default
-                long[] buffers = new long[6];
-                for (int i = 0; i < buffers.length; i++) {
-                    buffers[i] = setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH,
-                            DEFAULT_LAYOUT_HEIGHT, colors[i % colors.length]);
-                }
-                addBufferCycler(surfaceControl, buffers);
-            }
-        };
-
-        MultiFramePixelChecker pixelChecker = new MultiFramePixelChecker(colors) {
-            @Override
-            public boolean checkPixels(int pixelCount, int width, int height) {
-                return pixelCount > 2000 && pixelCount < 3000;
-            }
-        };
-
-        CapturedActivity.TestResult result = mActivity.runTest(new SurfaceControlTestCase(callback,
-                pixelChecker,
-                DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
-                DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT));
-
-        assertTrue(result.passFrames > 0);
-
-        // With back pressure disabled, the default config, we expect at least one or more frames to
-        // fail since we expect at least one buffer to be dropped.
-        assertTrue(result.failFrames > 0);
+        // wait for activity window to be visible
+        CtsWindowInfoUtils.waitForWindowVisible(mActivity.getWindow().getDecorView());
+        SurfaceControl surfaceControl = createChildSurfaceControl(false /* enableBackPressure */);
+        final int numFrames = 100;
+        long[] latchTimesNanos = submitBuffers(surfaceControl, numFrames);
+        int numBuffersLatchedInSameVsync = validateLatchTimes(latchTimesNanos);
+        assertNotEquals("Error: No frames latched in same vsync", 0, numBuffersLatchedInSameVsync);
     }
 }

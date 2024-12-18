@@ -41,6 +41,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
 @RequireRunOnProfileAnnotation("android.os.usertype.profile.CLONE")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireRunOnCloneProfile {
     OptionalBoolean installInstrumentedAppInParent() default ANY;
 

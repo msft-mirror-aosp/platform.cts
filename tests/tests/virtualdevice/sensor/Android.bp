@@ -19,12 +19,12 @@ package {
 
 android_test {
     name: "CtsVirtualDevicesSensorTestCases",
-
+    sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
 
     static_libs: [
@@ -32,6 +32,9 @@ android_test {
     ],
 
     jni_libs: ["libvirtualsensortest-jni"],
+
+    // include both the 32 and 64 bit versions
+    compile_multilib: "both",
 
     srcs: [
         "src/**/*.java",

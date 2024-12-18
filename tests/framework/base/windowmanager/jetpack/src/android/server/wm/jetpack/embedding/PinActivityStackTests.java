@@ -79,7 +79,7 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
 
     @Override
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mPrimaryActivity = startFullScreenActivityNewTask(TestConfigChangeHandlingActivity.class);
         mTaskId = mPrimaryActivity.getTaskId();

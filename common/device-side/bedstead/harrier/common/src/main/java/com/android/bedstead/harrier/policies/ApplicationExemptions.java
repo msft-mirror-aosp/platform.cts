@@ -16,17 +16,15 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DPM_ROLE_HOLDER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_APP_EXEMPTIONS;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_APP_EXEMPTIONS;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policy for {@code DevicePolicyManager#setApplicationExemptions}
  */
-@EnterprisePolicy(dpc = {APPLIED_BY_DPM_ROLE_HOLDER | APPLIES_TO_OWN_USER},
-        permissions = @EnterprisePolicy.Permission(
-                appliedWith = MANAGE_DEVICE_POLICY_APP_EXEMPTIONS, appliesTo = APPLIES_TO_OWN_USER))
+@EnterprisePolicy(permissions = @EnterprisePolicy.Permission(
+        appliedWith = MANAGE_DEVICE_POLICY_APP_EXEMPTIONS, appliesTo = APPLIES_TO_OWN_USER))
 public final class ApplicationExemptions {
 }

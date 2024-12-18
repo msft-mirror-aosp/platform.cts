@@ -20,8 +20,13 @@ import static android.inputmethodservice.InputMethodService.FINISH_INPUT_NO_FALL
 import static android.view.View.SCREEN_STATE_OFF;
 import static android.view.View.SCREEN_STATE_ON;
 import static android.view.View.VISIBLE;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
 
+import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
@@ -41,7 +46,6 @@ import android.graphics.Color;
 import android.inputmethodservice.InputMethodService;
 import android.os.IBinder;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.Editable;
@@ -67,13 +71,15 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
+import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
@@ -86,7 +92,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -103,13 +108,14 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
 
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.FocusHandlingTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
-
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testInputConnectionStateWhenScreenStateChanges() throws Exception {
@@ -177,7 +183,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             TestUtils.unlockScreen();
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_ON
                             && editText.getWindowVisibility() == VISIBLE, TIMEOUT);
-            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            clickOnViewCenter(editText);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
@@ -235,8 +241,9 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
             // Not expect the input connection will be started or finished even gaining non-IME
             // focusable window focus.
-            notExpectEvent(stream, event -> "onFinishInput".equals(event.getEventName())
-                    || "onStartInput".equals(event.getEventName()), TIMEOUT);
+            notExpectEvent(stream, withDescription("onFinishInput OR onStartInput",
+                    event -> "onFinishInput".equals(event.getEventName())
+                            || "onStartInput".equals(event.getEventName())), TIMEOUT);
 
             // Verify the input connection of the EditText is still active and can accept text.
             final InputMethodManager imm = editText.getContext().getSystemService(
@@ -245,9 +252,49 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
         }
     }
 
+    @Test
+    @AppModeFull(reason = "forceStop interferes with instant app")
+    public void testShowingImeDuringSessionChange_doesntShowOnPreviousSession() throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final boolean instant =
+                instrumentation.getTargetContext().getPackageManager().isInstantApp();
+        try (MockImeSession imeSession = MockImeSession.create(
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String markerHidden = getTestMarker("hidden");
+            launchTestActivity(markerHidden, SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            expectEvent(stream, editorMatcher("onStartInput", markerHidden), TIMEOUT);
+
+            // Ensure we don't have a session.
+            MockTestActivityUtil.forceStopPackage();
+
+            final String markerShown = getTestMarker("shown");
+            MockTestActivityUtil.launchSync(instant, TIMEOUT, Map.of(
+                    MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, markerShown,
+                    MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
+                    Integer.toString(SOFT_INPUT_STATE_VISIBLE)));
+
+            // Wait for startInput on the second activity to have happened, but don't consume the
+            // events.
+            expectEvent(stream.copy(), editorMatcher("onStartInput", markerShown), TIMEOUT);
+            // Assert that the onStartInputView was dispatched for the second activity, not the
+            // first.
+            notExpectEvent(stream, editorMatcher("onStartInputView", markerHidden), 0);
+            expectEvent(stream, editorMatcher("onStartInputView", markerShown), TIMEOUT);
+        }
+    }
+
     private EditText launchTestActivity(String marker) {
+        return launchTestActivity(marker, SOFT_INPUT_STATE_UNSPECIFIED);
+    }
+
+    private EditText launchTestActivity(String marker, int softInputMode) {
         final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-        TestActivity.startSync(activity-> {
+        TestActivity.startSync(activity -> {
+            activity.getWindow().setSoftInputMode(softInputMode);
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -306,7 +353,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final boolean instant =
                 instrumentation.getTargetContext().getPackageManager().isInstantApp();
-        final String marker1 = getTestMarker();
+        final String marker1 = getTestMarker(FIRST_EDIT_TEXT_TAG);
         try (AutoCloseable closeable = MockTestActivityUtil.launchSync(instant,
                 TIMEOUT, Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker1))) {
 
@@ -320,7 +367,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
 
                 expectCommand(stream, imeSession.suspendCreateSession(), TIMEOUT);
 
-                final String marker2 = getTestMarker();
+                final String marker2 = getTestMarker(SECOND_EDIT_TEXT_TAG);
                 final EditText editText = launchTestActivity(marker2);
                 TestUtils.runOnMainSync(() -> editText.getContext().getSystemService(
                         InputMethodManager.class).invalidateInput(editText));
@@ -565,12 +612,12 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
                 imm.updateSelection(myEditor, newSelStart, newSelEnd, -1, -1);
             });
 
-            notExpectEvent(stream, event -> "onUpdateSelection".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onUpdateSelection"),
                     NOT_EXPECT_TIMEOUT);
         }
     }
 
-    private static Predicate<ImeEvent> onFinishInputMatcher() {
+    private static DescribedPredicate<ImeEvent> onFinishInputMatcher() {
         return withDescription("onFinishInput()",
                 event -> TextUtils.equals("onFinishInput", event.getEventName()));
     }

@@ -33,6 +33,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraDevice.CameraDeviceSetup;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureFailure;
@@ -78,6 +79,7 @@ import com.android.ex.camera2.blocking.BlockingCameraManager.BlockingOpenExcepti
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -472,6 +474,7 @@ public class CameraTestUtils extends Assert {
                 case ImageFormat.JPEG:
                 case ImageFormat.YUV_420_888:
                 case ImageFormat.YCBCR_P010:
+                case ImageFormat.YCBCR_P210:
                 case ImageFormat.Y8:
                 case ImageFormat.HEIC:
                 case ImageFormat.DEPTH16:
@@ -1795,8 +1798,8 @@ public class CameraTestUtils extends Assert {
      *
      * <p>For JPEG, it returns a 1-D byte array contains a complete JPEG image.</p>
      *
-     * <p>For YUV P010, it returns a byte array that contains Y plane first, followed
-     * by the interleaved U(Cb)/V(Cr) plane.</p>
+     * <p>For YUV P010 and P210, it returns a byte array that contains Y plane first,
+     * followed by the interleaved U(Cb)/V(Cr) plane.</p>
      */
     public static byte[] getDataFromImage(Image image) {
         assertNotNull("Invalid image:", image);
@@ -1856,7 +1859,38 @@ public class CameraTestUtils extends Assert {
                 buffer.rewind();
             }
             return data;
+        } else if (format == ImageFormat.YCBCR_P210) {
+            // P210 samples are stored within 16 bit values
+            int offset = 0;
+            int bytesPerPixelRounded = ImageFormat.getBitsPerPixel(format) / 8;
+            data = new byte[width * height * bytesPerPixelRounded];
+            assertTrue("Unexpected number of planes, expected " + 3 + " actual " + planes.length,
+                    planes.length == 3);
+            for (int i = 0; i < 2; i++) {
+                buffer = planes[i].getBuffer();
+                assertNotNull("Fail to get bytebuffer from plane", buffer);
+                buffer.rewind();
+                rowStride = planes[i].getRowStride();
+                if (VERBOSE) {
+                    Log.v(TAG, "rowStride " + rowStride);
+                    Log.v(TAG, "width " + width);
+                    Log.v(TAG, "height " + height);
+                }
+                for (int row = 0; row < height; row++) {
+                    // Each 10-bit pixel occupies 2 bytes
+                    int length = 2 * width;
+                    buffer.get(data, offset, length);
+                    offset += length;
+                    if (row < height - 1) {
+                        buffer.position(buffer.position() + rowStride - length);
+                    }
+                }
+                if (VERBOSE) Log.v(TAG, "Finished reading data from plane " + i);
+                buffer.rewind();
+            }
+            return data;
         }
+
 
         int offset = 0;
         data = new byte[width * height * ImageFormat.getBitsPerPixel(format) / 8];
@@ -1927,6 +1961,7 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.NV21:
             case ImageFormat.YV12:
             case ImageFormat.YCBCR_P010:
+            case ImageFormat.YCBCR_P210:
                 assertEquals("YUV420 format Images should have 3 planes", 3, planes.length);
                 break;
             case ImageFormat.JPEG:
@@ -2283,8 +2318,9 @@ public class CameraTestUtils extends Assert {
      * Get the largest size by area, and with given aspect ratio.
      *
      * @param sizes an array of sizes, must have at least 1 element
+     * @param aspectRatio the aspect ratio to match. -1 if aspect ratio doesn't need to match.
      *
-     * @return Largest Size
+     * @return Largest Size. Null if no such size exists matching aspect ratio.
      *
      * @throws IllegalArgumentException if sizes was null or had 0 elements
      */
@@ -2293,18 +2329,18 @@ public class CameraTestUtils extends Assert {
             throw new IllegalArgumentException("sizes was empty");
         }
 
-        Size sz = sizes[0];
+        Size sz = null;
         for (Size size : sizes) {
             float ar = 1.0f * size.getWidth() / size.getHeight();
             if (aspectRatio > 0 && Math.abs(ar - aspectRatio) > ASPECT_RATIO_MATCH_THRESHOLD) {
                 continue;
             }
 
-            if (size.getWidth() * size.getHeight() > sz.getWidth() * sz.getHeight()) {
+            if (sz == null
+                    || size.getWidth() * size.getHeight() > sz.getWidth() * sz.getHeight()) {
                 sz = size;
             }
         }
-
         return sz;
     }
 
@@ -2674,6 +2710,9 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.YCBCR_P010:
                 validateP010Data(data, width, height, format, image.getTimestamp(), filePath);
                 break;
+            case ImageFormat.YCBCR_P210:
+                validateP210Data(data, width, height, format, image.getTimestamp(), filePath);
+                break;
             case ImageFormat.YUV_420_888:
             case ImageFormat.YV12:
                 validateYuvData(data, width, height, format, image.getTimestamp(), filePath);
@@ -2816,10 +2855,8 @@ public class CameraTestUtils extends Assert {
     private static void validateP010Data(byte[] p010Data, int width, int height, int format,
             long ts, String filePath) {
         if (VERBOSE) Log.v(TAG, "Validating P010 data");
-        // The P010 10 bit samples are stored in two bytes so the size needs to be adjusted
-        // accordingly.
-        int bytesPerPixelRounded = (ImageFormat.getBitsPerPixel(format) + 7) / 8;
-        int expectedSize = width * height * bytesPerPixelRounded;
+        int bytesPerPixel = ImageFormat.getBitsPerPixel(format) / 8;
+        int expectedSize = width * height * bytesPerPixel;
         assertEquals("P010 data doesn't match", expectedSize, p010Data.length);
 
         if (DEBUG && filePath != null) {
@@ -2828,6 +2865,21 @@ public class CameraTestUtils extends Assert {
             dumpFile(fileName, p010Data);
         }
     }
+
+    private static void validateP210Data(byte[] p210Data, int width, int height, int format,
+            long ts, String filePath) {
+        if (VERBOSE) Log.v(TAG, "Validating P210 data");
+        int bytesPerPixel = ImageFormat.getBitsPerPixel(format) / 8;
+        int expectedSize = width * height * bytesPerPixel;
+        assertEquals("P210 data doesn't match", expectedSize, p210Data.length);
+
+        if (DEBUG && filePath != null) {
+            String fileName =
+                    filePath + "/" + width + "x" + height + "_" + ts / 1e6 + ".p210";
+            dumpFile(fileName, p210Data);
+        }
+    }
+
     private static void validateRaw16Data(byte[] rawData, int width, int height, int format,
             long ts, String filePath) {
         if (VERBOSE) Log.v(TAG, "Validating raw data");
@@ -3989,23 +4041,24 @@ public class CameraTestUtils extends Assert {
      */
     public static void checkSessionConfigurationWithSurfaces(CameraDevice camera,
             Handler handler, List<Surface> outputSurfaces, InputConfiguration inputConfig,
-            int operatingMode, boolean defaultSupport, String msg) {
+            int operatingMode, CameraManager manager, boolean defaultSupport, String msg)
+            throws Exception {
         List<OutputConfiguration> outConfigurations = new ArrayList<>(outputSurfaces.size());
         for (Surface surface : outputSurfaces) {
             outConfigurations.add(new OutputConfiguration(surface));
         }
 
         checkSessionConfigurationSupported(camera, handler, outConfigurations,
-                inputConfig, operatingMode, defaultSupport, msg);
+                inputConfig, operatingMode, manager, defaultSupport, msg);
     }
 
     public static void checkSessionConfigurationSupported(CameraDevice camera,
             Handler handler, List<OutputConfiguration> outputConfigs,
-            InputConfiguration inputConfig, int operatingMode, boolean defaultSupport,
-            String msg) {
+            InputConfiguration inputConfig, int operatingMode, CameraManager manager,
+            boolean defaultSupport, String msg) throws Exception {
         SessionConfigSupport sessionConfigSupported =
                 isSessionConfigSupported(camera, handler, outputConfigs, inputConfig,
-                operatingMode, defaultSupport);
+                operatingMode, manager, defaultSupport);
 
         assertTrue(msg, !sessionConfigSupported.error && sessionConfigSupported.configSupported);
     }
@@ -4015,7 +4068,9 @@ public class CameraTestUtils extends Assert {
      */
     public static SessionConfigSupport isSessionConfigSupported(CameraDevice camera,
             Handler handler, List<OutputConfiguration> outputConfigs,
-            InputConfiguration inputConfig, int operatingMode, boolean defaultSupport) {
+            InputConfiguration inputConfig, int operatingMode,
+            CameraManager manager, boolean defaultSupport)
+            throws android.hardware.camera2.CameraAccessException {
         boolean ret;
         BlockingSessionCallback sessionListener = new BlockingSessionCallback();
 
@@ -4025,10 +4080,29 @@ public class CameraTestUtils extends Assert {
             sessionConfig.setInputConfiguration(inputConfig);
         }
 
+        // Verify that the return value of CameraDevice.isSessionConfigurationSupported is the
+        // same as CameraDeviceSetup.isSessionConfigurationSupported.
+        // Note: This check only makes sense if targetSdkVersion and platform's SDK Version >= V
+        boolean deviceSetupSupported = false;
+        boolean configSupportedByDeviceSetup = false;
+        String cameraId = camera.getId();
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                && Flags.cameraDeviceSetup() && manager.isCameraDeviceSetupSupported(cameraId)) {
+            CameraDeviceSetup deviceSetup = manager.getCameraDeviceSetup(cameraId);
+            assertNotNull("Failed to get camera device setup for " + cameraId, deviceSetup);
+            deviceSetupSupported = true;
+
+            configSupportedByDeviceSetup = deviceSetup.isSessionConfigurationSupported(
+                    sessionConfig);
+        }
+
         try {
             ret = camera.isSessionConfigurationSupported(sessionConfig);
         } catch (UnsupportedOperationException e) {
             // Camera doesn't support session configuration query
+            assertFalse("If device setup is supported, "
+                    + "CameraDevice.isSessionConfigurationSupported cannot throw"
+                    + "unsupportedOperationException", deviceSetupSupported);
             return new SessionConfigSupport(false/*error*/,
                     false/*callSupported*/, defaultSupport/*configSupported*/);
         } catch (IllegalArgumentException e) {
@@ -4039,10 +4113,19 @@ public class CameraTestUtils extends Assert {
                     false/*callSupported*/, false/*configSupported*/);
         }
 
+        if (deviceSetupSupported) {
+            assertEquals("CameraDeviceSetup and CameraDevice must return the same value "
+                    + "for isSessionConfigurationSupported!", ret, configSupportedByDeviceSetup);
+        }
         return new SessionConfigSupport(false/*error*/,
                 true/*callSupported*/, ret/*configSupported*/);
     }
 
+    /**
+     * Check if a session configuration with parameters is supported.
+     *
+     * All OutputConfigurations contains valid output surfaces.
+     */
     public static boolean isSessionConfigWithParamsSupported(
             CameraDevice.CameraDeviceSetup cameraDeviceSetup,
             Handler handler, List<OutputConfiguration> outputConfigs,
@@ -4055,6 +4138,43 @@ public class CameraTestUtils extends Assert {
         return cameraDeviceSetup.isSessionConfigurationSupported(sessionConfig);
     }
 
+    /**
+     * Check if a session configuration with parameters is supported.
+     *
+     * <p>OutputConfigurations do not contain the output surface. Additionally this function
+     * checks the consistency of isSessionConfigurationSupported return value between the
+     * incompleted SessionConfiguration and the completed SessionConfiguration after addSurface
+     * is called.</p>
+     */
+    public static boolean isSessionConfigWithParamsSupportedChecked(
+            CameraDevice.CameraDeviceSetup cameraDeviceSetup,
+            List<Pair<OutputConfiguration, Surface>> outputConfigs2Steps,
+            int operatingMode, CaptureRequest request) throws CameraAccessException {
+        List<OutputConfiguration> outputConfigs = new ArrayList<>();
+        for (Pair<OutputConfiguration, Surface> c : outputConfigs2Steps) {
+            outputConfigs.add(c.first);
+        }
+        SessionConfiguration sessionConfig = new SessionConfiguration(operatingMode, outputConfigs);
+        sessionConfig.setSessionParameters(request);
+        boolean sessionConfigNoSurfaceSupported = cameraDeviceSetup.isSessionConfigurationSupported(
+                sessionConfig);
+
+        // Add surfaces for the OutputConfigurations
+        for (Pair<OutputConfiguration, Surface> c : outputConfigs2Steps) {
+            OutputConfiguration config = c.first;
+            Surface surface = c.second;
+            if (config.getSurface() == null) {
+                config.addSurface(surface);
+            }
+        }
+        boolean sessionConfigWithSurfaceSupported =
+                cameraDeviceSetup.isSessionConfigurationSupported(sessionConfig);
+        assertEquals("isSessionConfigurationSupported return value shouldn't change before and "
+                + "after surfaces are added to SessionConfiguration",
+                sessionConfigNoSurfaceSupported, sessionConfigWithSurfaceSupported);
+
+        return sessionConfigWithSurfaceSupported;
+    }
 
     /**
      * Wait for numResultWait frames
@@ -4437,6 +4557,39 @@ public class CameraTestUtils extends Assert {
         return unavailablePhysicalCameras;
     }
 
+    /**
+     * Get the unavailable physical cameras based on onPhysicalCameraUnavailable callback.
+     */
+    public static Set<Pair<String, String>> getUnavailablePhysicalCameras(CameraManager manager,
+            Handler handler) throws Exception {
+        final Set<Pair<String, String>> ret = new HashSet<>();
+        final ConditionVariable cv = new ConditionVariable();
+
+        CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
+            @Override
+            public void onPhysicalCameraUnavailable(String cameraId, String physicalCameraId) {
+                synchronized (ret) {
+                    ret.add(new Pair<String, String>(cameraId, physicalCameraId));
+                }
+                cv.open();
+            }
+        };
+        manager.registerAvailabilityCallback(ac, handler);
+
+        // Wait for next physical camera availability callback
+        while (cv.block(AVAILABILITY_TIMEOUT_MS)) {
+            // cv.block() returns true when open() is called
+            // false on timeout.
+            cv.close();
+        }
+
+        manager.unregisterAvailabilityCallback(ac);
+
+        synchronized (ret) {
+            return ret;
+        }
+    }
+
     public static void testPhysicalCameraAvailabilityConsistencyHelper(
             String[] cameraIds, CameraManager manager,
             Handler handler, boolean expectInitialCallbackAfterOpen) throws Throwable {
@@ -4560,12 +4713,7 @@ public class CameraTestUtils extends Assert {
     /**
      * Simple holder for resolutions to use for different camera outputs and size limits.
      */
-    static class MaxStreamSizes {
-
-        enum AspectRatio {
-            ARBITRARY, AR_4_3, AR_16_9
-        }
-
+    public static class MaxStreamSizes {
         // Format shorthands
         static final int PRIV = ImageFormat.PRIVATE;
         static final int JPEG = ImageFormat.JPEG;
@@ -4573,6 +4721,7 @@ public class CameraTestUtils extends Assert {
         static final int RAW  = ImageFormat.RAW_SENSOR;
         static final int Y8   = ImageFormat.Y8;
         static final int HEIC = ImageFormat.HEIC;
+        static final int JPEG_R = ImageFormat.JPEG_R;
 
         // Max resolution output indices
         static final int PREVIEW = 0;
@@ -4582,10 +4731,16 @@ public class CameraTestUtils extends Assert {
         static final int VGA_FULL_FOV = 4;
         static final int MAX_30FPS = 5;
         static final int S720P = 6;
-        static final int S1440P = 7;
+        static final int S1440P_4_3 = 7; // 4:3
         static final int MAX_RES = 8;
         static final int S1080P = 9;
-        static final int RESOLUTION_COUNT = 10;
+        static final int S1080P_4_3 = 10;
+        static final int S1440P_16_9 = 11;
+        static final int XVGA = 12;
+        static final int MAXIMUM_16_9 = 13;
+        static final int MAXIMUM_4_3 = 14;
+        static final int UHD = 15;
+        static final int RESOLUTION_COUNT = 16;
 
         // Max resolution input indices
         static final int INPUT_MAXIMUM = 0;
@@ -4593,13 +4748,18 @@ public class CameraTestUtils extends Assert {
         static final int INPUT_RESOLUTION_COUNT = 2;
 
         static final Size S_1280_720 = new Size(1280, 720);   // 16:9
-        static final Size S_960_720 = new Size(960, 720);     // 4:3
+
+        static final Size S_1024_768 = new Size(1024, 768);   // 4:3
 
         static final Size S_1920_1080 = new Size(1920, 1080); // 16:9
+
         static final Size S_1440_1080 = new Size(1440, 1080); // 4:3
 
         static final Size S_2560_1440 = new Size(2560, 1440); // 16:9
+
         static final Size S_1920_1440 = new Size(1920, 1440); // 4:3
+
+        static final Size S_3840_2160 = new Size(3840, 2160); // 16:9
 
         static final long FRAME_DURATION_30FPS_NSEC = (long) 1e9 / 30;
 
@@ -4616,8 +4776,35 @@ public class CameraTestUtils extends Assert {
         static final int USE_CASE_CROPPED_RAW =
                 CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW;
 
+        // Note: This must match the required stream combinations defined in
+        // CameraCharacteristcs#INFO_SESSION_CONFIGURATION_QUERY_VERSION.
+        private static final int[][] QUERY_COMBINATIONS = {
+            {PRIV, S1080P},
+            {PRIV, S720P},
+            {PRIV, S1080P,  JPEG, MAXIMUM_16_9},
+            {PRIV, S1080P,  JPEG, UHD},
+            {PRIV, S1080P,  JPEG, S1440P_16_9},
+            {PRIV, S1080P,  JPEG, S1080P},
+            {PRIV, S1080P,  PRIV, UHD},
+            {PRIV, S720P,   JPEG, MAXIMUM_16_9},
+            {PRIV, S720P,   JPEG, UHD},
+            {PRIV, S720P,   JPEG, S1080P},
+            {PRIV, XVGA,    JPEG, MAXIMUM_4_3},
+            {PRIV, S1080P_4_3, JPEG, MAXIMUM_4_3},
+            {PRIV, S1080P,  JPEG_R, MAXIMUM_16_9},
+            {PRIV, S1080P,  JPEG_R, UHD},
+            {PRIV, S1080P,  JPEG_R, S1440P_16_9},
+            {PRIV, S1080P,  JPEG_R, S1080P},
+            {PRIV, S720P,   JPEG_R, MAXIMUM_16_9},
+            {PRIV, S720P,   JPEG_R, UHD},
+            {PRIV, S720P,   JPEG_R, S1080P},
+            {PRIV, XVGA,    JPEG_R, MAXIMUM_4_3},
+            {PRIV, S1080P_4_3, JPEG_R, MAXIMUM_4_3},
+        };
+
         private final Size[] mMaxPrivSizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxJpegSizes = new Size[RESOLUTION_COUNT];
+        private final Size[] mMaxJpegRSizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxYuvSizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxY8Sizes = new Size[RESOLUTION_COUNT];
         private final Size[] mMaxHeicSizes = new Size[RESOLUTION_COUNT];
@@ -4627,23 +4814,14 @@ public class CameraTestUtils extends Assert {
         private final Size[] mMaxPrivInputSizes = new Size[INPUT_RESOLUTION_COUNT];
         private final Size[] mMaxYuvInputSizes = new Size[INPUT_RESOLUTION_COUNT];
         private final Size mMaxInputY8Size;
+        private int[][] mQueryableCombinations;
 
-        private final AspectRatio mAspectRatio;
-
-        MaxStreamSizes(StaticMetadata sm, String cameraId, Context context) {
-            this(sm, cameraId, context, AspectRatio.ARBITRARY);
+        public MaxStreamSizes(StaticMetadata sm, String cameraId, Context context) {
+            this(sm, cameraId, context, /*matchSize*/false);
         }
 
-        MaxStreamSizes(StaticMetadata sm, String cameraId, Context context,
-                AspectRatio aspectRatio) {
-            mAspectRatio = aspectRatio;
-            float aspectRatioValue = -1;
-            if (aspectRatio == AspectRatio.AR_4_3) {
-                aspectRatioValue = 1.0f * 4 / 3;
-            } else if (aspectRatio == AspectRatio.AR_16_9) {
-                aspectRatioValue = 1.0f * 16 / 9;
-            }
-
+        public MaxStreamSizes(StaticMetadata sm, String cameraId, Context context,
+                boolean matchSize) {
             Size[] privSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.PRIVATE,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
             Size[] yuvSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.YUV_420_888,
@@ -4652,6 +4830,8 @@ public class CameraTestUtils extends Assert {
             Size[] y8Sizes = sm.getAvailableSizesForFormatChecked(ImageFormat.Y8,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
             Size[] jpegSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.JPEG,
+                    StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
+            Size[] jpegRSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.JPEG_R,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
             Size[] rawSizes = sm.getAvailableSizesForFormatChecked(ImageFormat.RAW_SENSOR,
                     StaticMetadata.StreamDirection.Output, /*fastSizes*/true, /*slowSizes*/false);
@@ -4698,9 +4878,19 @@ public class CameraTestUtils extends Assert {
                             maxResConfigs.getOutputSizes(ImageFormat.JPEG));
                 }
 
-                mMaxPrivSizes[MAXIMUM] = CameraTestUtils.getMaxSize(privSizes, aspectRatioValue);
-                mMaxYuvSizes[MAXIMUM] = CameraTestUtils.getMaxSize(yuvSizes, aspectRatioValue);
-                mMaxJpegSizes[MAXIMUM] = CameraTestUtils.getMaxSize(jpegSizes, aspectRatioValue);
+                mMaxPrivSizes[MAXIMUM] = CameraTestUtils.getMaxSize(privSizes);
+                mMaxYuvSizes[MAXIMUM] = CameraTestUtils.getMaxSize(yuvSizes);
+                mMaxJpegSizes[MAXIMUM] = CameraTestUtils.getMaxSize(jpegSizes);
+
+                float aspectRatio43 = 1.0f * 4 / 3;
+                mMaxPrivSizes[MAXIMUM_4_3] = CameraTestUtils.getMaxSize(privSizes, aspectRatio43);
+                mMaxYuvSizes[MAXIMUM_4_3] = CameraTestUtils.getMaxSize(yuvSizes, aspectRatio43);
+                mMaxJpegSizes[MAXIMUM_4_3] = CameraTestUtils.getMaxSize(jpegSizes, aspectRatio43);
+
+                float aspectRatio169 = 1.0f * 16 / 9;
+                mMaxPrivSizes[MAXIMUM_16_9] = CameraTestUtils.getMaxSize(privSizes, aspectRatio169);
+                mMaxYuvSizes[MAXIMUM_16_9] = CameraTestUtils.getMaxSize(yuvSizes, aspectRatio169);
+                mMaxJpegSizes[MAXIMUM_16_9] = CameraTestUtils.getMaxSize(jpegSizes, aspectRatio169);
 
                 // Must always be supported, add unconditionally
                 final Size vgaSize = new Size(640, 480);
@@ -4708,50 +4898,125 @@ public class CameraTestUtils extends Assert {
                 mMaxYuvSizes[VGA] = vgaSize;
                 mMaxJpegSizes[VGA] = vgaSize;
 
-                // Check for 720p size for PRIVATE and YUV
-                // 720p is not mandatory for JPEG so it is not checked
-                final Size s720pSize =
-                        (mAspectRatio == AspectRatio.AR_4_3) ? S_960_720 : S_1280_720;
-                if (mAspectRatio == AspectRatio.ARBITRARY) {
+                final Size s1440p43Size = S_1920_1440;
+                mMaxPrivSizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                        configs.getOutputSizes(ImageFormat.PRIVATE), s1440p43Size);
+                mMaxYuvSizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                        configs.getOutputSizes(ImageFormat.YUV_420_888), s1440p43Size);
+                mMaxJpegSizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                        configs.getOutputSizes(ImageFormat.JPEG), s1440p43Size);
+
+                final Size s720pSize = S_1280_720;
+                final Size xvgaSize = S_1024_768;
+                final Size s1080pSize = S_1920_1080;
+                final Size s1080p43Size = S_1440_1080;
+                final Size s1440p169Size = S_2560_1440;
+                final Size uhdSize = S_3840_2160;
+                if (!matchSize) {
+                    // Skip JPEG for 720p, XVGA, and S1080P_4_3, because those resolutions
+                    // are not mandatory JPEG resolutions, and they could be filtered out
+                    // for MediaPerformance class.
                     mMaxPrivSizes[S720P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.PRIVATE), s720pSize);
                     mMaxYuvSizes[S720P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.YUV_420_888), s720pSize);
-                } else {
-                    mMaxPrivSizes[S720P] = s720pSize;
-                    mMaxYuvSizes[S720P] = s720pSize;
-                    mMaxJpegSizes[S720P] = s720pSize;
-                }
 
-                final Size s1440pSize =
-                        (mAspectRatio == AspectRatio.AR_16_9) ? S_2560_1440 : S_1920_1440;
-                if (mAspectRatio == AspectRatio.ARBITRARY) {
+                    mMaxPrivSizes[XVGA] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.PRIVATE), xvgaSize);
+                    mMaxYuvSizes[XVGA] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.YUV_420_888), xvgaSize);
 
-                    mMaxPrivSizes[S1440P] = CameraTestUtils.getMaxSizeWithBound(
-                            configs.getOutputSizes(ImageFormat.PRIVATE), s1440pSize);
-                    mMaxYuvSizes[S1440P] = CameraTestUtils.getMaxSizeWithBound(
-                            configs.getOutputSizes(ImageFormat.YUV_420_888), s1440pSize);
-                    mMaxJpegSizes[S1440P] = CameraTestUtils.getMaxSizeWithBound(
-                            configs.getOutputSizes(ImageFormat.JPEG), s1440pSize);
-                } else {
-                    mMaxPrivSizes[S1440P] = s1440pSize;
-                    mMaxYuvSizes[S1440P] = s1440pSize;
-                    mMaxJpegSizes[S1440P] = s1440pSize;
-                }
+                    mMaxPrivSizes[S1080P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.PRIVATE), s1080p43Size);
+                    mMaxYuvSizes[S1080P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.YUV_420_888), s1080p43Size);
 
-                final Size s1080pSize =
-                        (mAspectRatio == AspectRatio.AR_4_3) ? S_1440_1080 : S_1920_1080;
-                if (mAspectRatio == AspectRatio.ARBITRARY) {
                     mMaxPrivSizes[S1080P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.PRIVATE), s1080pSize);
                     mMaxYuvSizes[S1080P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.YUV_420_888), s1080pSize);
                     mMaxJpegSizes[S1080P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.JPEG), s1080pSize);
+
+                    mMaxPrivSizes[S1440P_16_9] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.PRIVATE), s1440p169Size);
+                    mMaxYuvSizes[S1440P_16_9] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.YUV_420_888), s1440p169Size);
+                    mMaxJpegSizes[S1440P_16_9] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.JPEG), s1440p169Size);
+
+                    mMaxPrivSizes[UHD] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.PRIVATE), uhdSize);
+                    mMaxYuvSizes[UHD] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.YUV_420_888), uhdSize);
+                    mMaxJpegSizes[UHD] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.JPEG), uhdSize);
                 } else {
+                    mMaxPrivSizes[S720P] = s720pSize;
+                    mMaxYuvSizes[S720P] = s720pSize;
+                    mMaxJpegSizes[S720P] = s720pSize;
+
+                    mMaxPrivSizes[XVGA] = xvgaSize;
+                    mMaxYuvSizes[XVGA] = xvgaSize;
+                    mMaxJpegSizes[XVGA] = xvgaSize;
+
                     mMaxPrivSizes[S1080P] = s1080pSize;
                     mMaxYuvSizes[S1080P] = s1080pSize;
                     mMaxJpegSizes[S1080P] = s1080pSize;
+
+                    mMaxPrivSizes[S1080P_4_3] = s1080p43Size;
+                    mMaxYuvSizes[S1080P_4_3] = s1080p43Size;
+                    mMaxJpegSizes[S1080P_4_3] = s1080p43Size;
+
+                    mMaxPrivSizes[S1440P_16_9] = s1440p169Size;
+                    mMaxYuvSizes[S1440P_16_9] = s1440p169Size;
+                    mMaxJpegSizes[S1440P_16_9] = s1440p169Size;
+
+                    mMaxPrivSizes[UHD] = uhdSize;
+                    mMaxYuvSizes[UHD] = uhdSize;
+                    mMaxJpegSizes[UHD] = uhdSize;
+                }
+                if (sm.isJpegRSupported()) {
+                    mMaxJpegRSizes[MAXIMUM] = CameraTestUtils.getMaxSize(jpegRSizes);
+                    mMaxJpegRSizes[MAXIMUM_4_3] = CameraTestUtils.getMaxSize(
+                            jpegRSizes, aspectRatio43);
+                    mMaxJpegRSizes[MAXIMUM_16_9] = CameraTestUtils.getMaxSize(
+                            jpegRSizes, aspectRatio169);
+                    if (!matchSize) {
+                        mMaxJpegRSizes[S1080P] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), s1080pSize);
+                        mMaxJpegRSizes[S1440P_16_9] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), s1440p169Size);
+                        mMaxJpegRSizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), s1440p43Size);
+                        mMaxJpegRSizes[UHD] = CameraTestUtils.getMaxSizeWithBound(
+                                configs.getOutputSizes(ImageFormat.JPEG_R), uhdSize);
+                    } else {
+                        mMaxJpegRSizes[S720P] = s720pSize;
+                        mMaxJpegRSizes[XVGA] = xvgaSize;
+                        mMaxJpegRSizes[S1080P] = s1080pSize;
+                        mMaxJpegRSizes[S1080P_4_3] = s1080p43Size;
+                        mMaxJpegRSizes[S1440P_16_9] = s1440p169Size;
+                        mMaxJpegRSizes[UHD] = uhdSize;
+                    }
+                    mQueryableCombinations = QUERY_COMBINATIONS;
+                } else {
+                    // JPEG_R is not supported. Remove all combinations containing JPEG_R
+                    List<int[]> combinationsMinusJpegR = new ArrayList<int[]>();
+                    for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
+                        boolean hasJpegR = false;
+                        for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
+                            if (QUERY_COMBINATIONS[i][j] == JPEG_R) {
+                                hasJpegR = true;
+                                break;
+                            }
+                        }
+
+                        if (!hasJpegR) {
+                            combinationsMinusJpegR.add(QUERY_COMBINATIONS[i]);
+                        }
+                    }
+                    mQueryableCombinations = combinationsMinusJpegR.toArray(int[][]::new);
                 }
 
                 if (sm.isMonochromeWithY8()) {
@@ -4766,8 +5031,8 @@ public class CameraTestUtils extends Assert {
                     mMaxY8Sizes[VGA] = vgaSize;
                     mMaxY8Sizes[S720P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.Y8), s720pSize);
-                    mMaxY8Sizes[S1440P] = CameraTestUtils.getMaxSizeWithBound(
-                            configs.getOutputSizes(ImageFormat.Y8), s1440pSize);
+                    mMaxY8Sizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.Y8), s1440p43Size);
                 }
 
                 if (sm.isHeicSupported()) {
@@ -4778,8 +5043,8 @@ public class CameraTestUtils extends Assert {
                     mMaxHeicSizes[VGA] = vgaSize;
                     mMaxHeicSizes[S720P] = CameraTestUtils.getMaxSizeWithBound(
                             configs.getOutputSizes(ImageFormat.HEIC), s720pSize);
-                    mMaxHeicSizes[S1440P] = CameraTestUtils.getMaxSizeWithBound(
-                            configs.getOutputSizes(ImageFormat.HEIC), s1440pSize);
+                    mMaxHeicSizes[S1440P_4_3] = CameraTestUtils.getMaxSizeWithBound(
+                            configs.getOutputSizes(ImageFormat.HEIC), s1440p43Size);
                 }
             }
             if (sm.isColorOutputSupported() && !sm.isHardwareLevelLegacy()) {
@@ -4918,6 +5183,8 @@ public class CameraTestUtils extends Assert {
                     return mMaxYuvSizes[resolutionIndex];
                 case JPEG:
                     return mMaxJpegSizes[resolutionIndex];
+                case JPEG_R:
+                    return mMaxJpegRSizes[resolutionIndex];
                 case Y8:
                     return mMaxY8Sizes[resolutionIndex];
                 case HEIC:
@@ -4994,6 +5261,10 @@ public class CameraTestUtils extends Assert {
             return b.toString();
         }
 
+        public final int[][] getQueryableCombinations() {
+            return mQueryableCombinations;
+        }
+
         int getInputResolutionIndex(int resolutionIndex) {
             switch (resolutionIndex) {
                 case MAXIMUM:
@@ -5011,6 +5282,9 @@ public class CameraTestUtils extends Assert {
                     break;
                 case JPEG:
                     b.append("[JPEG, ");
+                    break;
+                case JPEG_R:
+                    b.append("[JPEG_R, ");
                     break;
                 case YUV:
                     b.append("[YUV, ");
@@ -5048,14 +5322,32 @@ public class CameraTestUtils extends Assert {
                 case S720P:
                     b.append("S720P]");
                     break;
-                case S1440P:
-                    b.append("S1440P]");
+                case S1440P_4_3:
+                    b.append("S1440P_4_3]");
                     break;
                 case MAX_RES:
                     b.append("MAX_RES]");
                     break;
                 case S1080P:
                     b.append("S1080P]");
+                    break;
+                case S1080P_4_3:
+                    b.append("S1080P_4_3]");
+                    break;
+                case S1440P_16_9:
+                    b.append("S440P_16_9]");
+                    break;
+                case XVGA:
+                    b.append("XVGA]");
+                    break;
+                case MAXIMUM_16_9:
+                    b.append("MAXIMUM_16_9]");
+                    break;
+                case MAXIMUM_4_3:
+                    b.append("MAXIMUM_4_3]");
+                    break;
+                case UHD:
+                    b.append("UHD]");
                     break;
                 default:
                     b.append("UNK]");

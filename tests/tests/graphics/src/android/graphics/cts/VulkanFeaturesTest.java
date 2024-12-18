@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.FeatureInfo;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.AppModeFull;
 import android.util.ArrayMap;
 import android.util.Log;
 
@@ -34,11 +35,6 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -46,11 +42,17 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Test that the Vulkan loader is present, supports the required extensions, and that system
  * features accurately indicate the capabilities of the Vulkan driver if one exists.
  */
 @SmallTest
+@AppModeFull
 @RunWith(AndroidJUnit4.class)
 public class VulkanFeaturesTest {
 
@@ -105,11 +107,28 @@ public class VulkanFeaturesTest {
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_V,
                 new String[] {
+                    "VK_KHR_calibrated_timestamps",
                     "VK_KHR_cooperative_matrix",
+                    "VK_KHR_index_type_uint8",
+                    "VK_KHR_line_rasterization",
+                    "VK_KHR_load_store_op_none",
                     "VK_KHR_maintenance5",
+                    "VK_KHR_maintenance6",
                     "VK_KHR_map_memory2",
                     "VK_KHR_ray_tracing_position_fetch",
-                    "VK_ANDROID_external_format_resolve"});
+                    "VK_KHR_shader_expect_assume",
+                    "VK_KHR_shader_quad_control",
+                    "VK_KHR_vertex_attribute_divisor",
+                    "VK_ANDROID_external_format_resolve",
+                    "VK_KHR_dynamic_rendering_local_read",
+                    "VK_KHR_shader_float_controls2",
+                    "VK_KHR_shader_maximal_reconvergence",
+                    "VK_KHR_shader_subgroup_rotate",
+                    "VK_KHR_video_decode_av1",
+                    "VK_KHR_video_encode_h264",
+                    "VK_KHR_video_encode_h265",
+                    "VK_KHR_video_encode_queue",
+                    "VK_KHR_video_maintenance1"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_U,
                 new String[] {
@@ -281,7 +300,7 @@ public class VulkanFeaturesTest {
         mBestDevice = getBestDevice();
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-1,C-2-1")
+    @CddTest(requirements = {"7.1.4.2/C-1-1,C-2-1"})
     @Test
     public void testVulkanHardwareFeatures() throws JSONException {
         if (DEBUG) {
@@ -355,7 +374,7 @@ public class VulkanFeaturesTest {
         }
     }
 
-    @CddTest(requirement = "3.3.1/C-0-12")
+    @CddTest(requirements = {"3.3.1/C-0-12"})
     @Test
     public void testVulkanApplicationBinaryInterfaceRequirements() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
@@ -368,7 +387,7 @@ public class VulkanFeaturesTest {
                 mVulkanHardwareVersion.version >= VULKAN_1_1);
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-3")
+    @CddTest(requirements = {"7.1.4.2/C-1-3"})
     @Test
     public void testVulkanApiForEachDevice() throws JSONException {
         for (JSONObject device : mVulkanDevices) {
@@ -377,7 +396,7 @@ public class VulkanFeaturesTest {
         }
     }
 
-    @CddTest(requirement = "7.1.4.2/C-3-1")
+    @CddTest(requirements = {"7.1.4.2/C-3-1"})
     @Test
     public void testVulkan1_1Requirements() throws JSONException {
         if (mVulkanHardwareVersion == null || mVulkanHardwareVersion.version < VULKAN_1_1
@@ -409,7 +428,7 @@ public class VulkanFeaturesTest {
                     "externalFenceFeatures", 0x3 /* importable + exportable */));
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-7, 3.3.1/C-0-12")
+    @CddTest(requirements = {"7.1.4.2/C-1-7", "3.3.1/C-0-12"})
     @Test
     public void testVulkanRequiredExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanDevices.length > 0);
@@ -423,7 +442,7 @@ public class VulkanFeaturesTest {
         assertVulkanDeviceExtension(VK_KHR_MAINTENANCE1, VK_KHR_MAINTENANCE1_SPEC_VERSION);
     }
 
-    @CddTest(requirement = "7.9.2/C-1-5")
+    @CddTest(requirements = {"7.9.2/C-1-5"})
     @Test
     public void testVulkanVersionForVrHighPerformance() {
         if (!mPm.hasSystemFeature(PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE))
@@ -435,7 +454,7 @@ public class VulkanFeaturesTest {
             mVulkanHardwareLevel != null && mVulkanHardwareLevel.version >= 0);
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-11")
+    @CddTest(requirements = {"7.1.4.2/C-1-11"})
     @Test
     public void testVulkanBlockedExtensions() throws JSONException {
         assertNoVulkanDeviceExtension("VK_KHR_performance_query");
@@ -444,7 +463,7 @@ public class VulkanFeaturesTest {
         assertNoVulkanDeviceExtension("VK_KHR_video_encode_queue");
     }
 
-    @CddTest(requirement = "7.1.4.2")
+    @CddTest(requirements = {"7.1.4.2"})
     @Test
     public void testVulkanVariantSupport() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
@@ -454,7 +473,7 @@ public class VulkanFeaturesTest {
         assertEquals(expectedVariant, actualVariant);
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-14")
+    @CddTest(requirements = {"7.1.4.2/C-1-14"})
     @Test
     public void testVulkanExposedDeviceExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
@@ -512,9 +531,12 @@ public class VulkanFeaturesTest {
         return mHasTouchscreen && !mIsTV && !mIsWatch;
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-13")
+    @CddTest(requirements = {"7.1.4.2/H-1-1"})
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
+        final int apiLevel = PropertyUtil.getVsrApiLevel();
+        assumeTrue("Test does not apply for SoCs launched before T", apiLevel > 33);
+
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
         assumeTrue("Skipping because ABP is only required of handheld devices", isHandheld());
 

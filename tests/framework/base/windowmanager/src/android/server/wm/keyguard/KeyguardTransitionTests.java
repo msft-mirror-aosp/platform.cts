@@ -59,6 +59,8 @@ public class KeyguardTransitionTests extends ActivityManagerTestBase {
         assumeFalse(ENABLE_SHELL_TRANSITIONS);
         assumeTrue(supportsInsecureLock());
         assumeFalse(isUiModeLockedToVrHeadset());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     @Test

@@ -14,7 +14,6 @@
 """Verify image and inertial sensor events are well synchronized."""
 
 
-import fnmatch
 import json
 import logging
 import math
@@ -23,8 +22,7 @@ import sys
 import threading
 import time
 
-from matplotlib import pylab
-import matplotlib.pyplot
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 import scipy.spatial
@@ -42,7 +40,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _ARDUINO_INIT_WAIT_TIME = 3.0  # Seconds to wait for Arduino comm
 _NUM_ROTATIONS = 10
 _START_FRAME = 1
-_FRAME_DELTA_TOL = 1.5  # 50% margin over nominal FPS of captures
+_FRAME_DELTA_RTOL = 1.5  # 50% margin over nominal FPS of captures
 _POLYFIT_DEGREES_LEGACY = (2, 3)
 _POLYFIT_DEGREES = (3,)
 
@@ -204,7 +202,7 @@ def _get_cam_times(cam_events, fps):
   max_frame_delta_ms = (np.amax(np.subtract(starts[1:], starts[0:-1])) /
                         _MSEC_TO_NSEC)
   logging.debug('Maximum frame delta: %.3f ms', max_frame_delta_ms)
-  frame_delta_tol_ms = _FRAME_DELTA_TOL * (1 / fps) * _SEC_TO_MSEC
+  frame_delta_tol_ms = _FRAME_DELTA_RTOL * (1 / fps) * _SEC_TO_MSEC
   if max_frame_delta_ms > frame_delta_tol_ms:
     raise AssertionError(f'Frame drop! Max delta: {max_frame_delta_ms:.3f}ms, '
                          f'ATOL: {frame_delta_tol_ms}ms')
@@ -233,17 +231,16 @@ def _plot_best_shift(best, coeff, x, y, name_with_log_path, degree):
   polynomial = sensor_fusion_utils.polynomial_from_coefficients(coeff)
   yfit = [polynomial(x) for x in xfit]
   logging.debug('Degree %s best x: %s, y: %s', degree, best, min(yfit))
-  pylab.figure()
-  pylab.title(f'{_NAME} Degree: {degree} Gyro/Camera Time Correlation')
-  pylab.plot(x, y, 'ro', label='data', alpha=0.7)
-  pylab.plot(xfit, yfit, 'b', label='fit', alpha=0.7)
-  pylab.plot(best, min(yfit), 'g*', label='best', markersize=10)
-  pylab.ticklabel_format(axis='y', style='sci', scilimits=(-3, -3))
-  pylab.xlabel('Relative horizontal shift between curves (ms)')
-  pylab.ylabel('Correlation distance')
-  pylab.legend()
-  matplotlib.pyplot.savefig(
-      f'{name_with_log_path}_plot_shifts_degree{degree}.png')
+  plt.figure()
+  plt.title(f'{_NAME} Degree: {degree} Gyro/Camera Time Correlation')
+  plt.plot(x, y, 'ro', label='data', alpha=0.7)
+  plt.plot(xfit, yfit, 'b', label='fit', alpha=0.7)
+  plt.plot(best, min(yfit), 'g*', label='best', markersize=10)
+  plt.ticklabel_format(axis='y', style='sci', scilimits=(-3, -3))
+  plt.xlabel('Relative horizontal shift between curves (ms)')
+  plt.ylabel('Correlation distance')
+  plt.legend()
+  plt.savefig(f'{name_with_log_path}_plot_shifts_degree{degree}.png')
 
 
 def _plot_rotations(cam_rots, gyro_rots, name_with_log_path):
@@ -255,17 +252,17 @@ def _plot_rotations(cam_rots, gyro_rots, name_with_log_path):
     name_with_log_path: File name with location to store data.
   """
   # For plot, scale rotations to degrees.
-  pylab.figure()
-  pylab.title(f'{_NAME} Gyro/Camera Rotations')
-  pylab.plot(range(len(cam_rots)), cam_rots*_RADS_TO_DEGS, '-r.',
-             label='camera', alpha=0.7)
-  pylab.plot(range(len(gyro_rots)), gyro_rots*_RADS_TO_DEGS, '-b.',
-             label='gyro', alpha=0.7)
-  pylab.xlabel('Camera frame number')
-  pylab.ylabel('Angular displacement between adjacent camera frames (degrees)')
-  pylab.xlim([0, len(cam_rots)])
-  pylab.legend()
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_rotations.png')
+  plt.figure()
+  plt.title(f'{_NAME} Gyro/Camera Rotations')
+  plt.plot(range(len(cam_rots)), cam_rots*_RADS_TO_DEGS, '-r.',
+           label='camera', alpha=0.7)
+  plt.plot(range(len(gyro_rots)), gyro_rots*_RADS_TO_DEGS, '-b.',
+           label='gyro', alpha=0.7)
+  plt.xlabel('Camera frame number')
+  plt.ylabel('Angular displacement between adjacent camera frames (degrees)')
+  plt.xlim([0, len(cam_rots)])
+  plt.legend()
+  plt.savefig(f'{name_with_log_path}_plot_rotations.png')
 
 
 def load_data():
@@ -423,25 +420,13 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
     # Assert PASS/FAIL criteria.
     if corr_dist > _CORR_DIST_THRESH_MAX:
       raise AssertionError(f'Poor gyro/camera correlation: {corr_dist:.6f}, '
-                           f'TOL: {_CORR_DIST_THRESH_MAX}.')
+                           f'ATOL: {_CORR_DIST_THRESH_MAX}.')
     if abs(offset_ms) > _OFFSET_MS_THRESH_MAX:
       raise AssertionError('Offset too large. Measured (ms): '
-                           f'{offset_ms:.3f}, TOL: {_OFFSET_MS_THRESH_MAX}.')
+                           f'{offset_ms:.3f}, ATOL: {_OFFSET_MS_THRESH_MAX}.')
 
     else:  # remove frames if PASS
-      temp_files = []
-      try:
-        temp_files = os.listdir(self.log_path)
-      except FileNotFoundError:
-        logging.debug('/tmp directory: %s not found', self.log_path)
-      for file in temp_files:
-        if fnmatch.fnmatch(file, f'{_NAME}_frame*.png'):
-          file_to_remove = os.path.join(self.log_path, file)
-          try:
-            os.remove(file_to_remove)
-          except FileNotFoundError:
-            logging.debug('File not found: %s', str(file))
-      logging.debug('Test passes, frame images have been removed')
+      its_session_utils.remove_tmp_files(self.log_path, f'{_NAME}_frame*.png')
 
 if __name__ == '__main__':
   test_runner.main()

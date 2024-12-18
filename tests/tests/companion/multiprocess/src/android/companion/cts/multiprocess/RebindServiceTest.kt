@@ -15,10 +15,9 @@
  */
 package android.companion.cts.multiprocess
 
-import android.Manifest
+import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.Flags
-import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.PRIMARY_PROCESS_NAME
@@ -52,7 +51,9 @@ class RebindServiceTest : TestBase() {
         // Create a self-managed association.
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
         SystemClock.sleep(2000)
@@ -61,12 +62,14 @@ class RebindServiceTest : TestBase() {
         killProcess(SECONDARY_PROCESS_NAME)
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Primary and secondary services should not be bound.
         assertServiceNotBound("PrimaryCompanionService")
         assertServiceNotBound("SecondaryCompanionService")
         // Recall notifyDeviceAppeared, primary and secondary services should be bound.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
 
         assertApplicationBinds(cdm)
         assertServiceBound("PrimaryCompanionService")
@@ -79,7 +82,9 @@ class RebindServiceTest : TestBase() {
         val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
 
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
 
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
@@ -88,7 +93,7 @@ class RebindServiceTest : TestBase() {
         killProcess(SECONDARY_PROCESS_NAME)
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Secondary service should be bound.
         assertServiceBound("SecondaryCompanionService")
         // Primary service should be still bound.
@@ -102,21 +107,28 @@ class RebindServiceTest : TestBase() {
         val idB = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_B)
 
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(idA)
-        cdm.notifyDeviceAppeared(idB)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
+            cdm.notifyDeviceAppeared(idB)
+        }
 
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
         SystemClock.sleep(2000)
-        // Kill the primary process.
+        // Kill both primary and secondary processes.
         killProcess(PRIMARY_PROCESS_NAME)
         killProcess(SECONDARY_PROCESS_NAME)
         // Primary service should be unbound.
         assertServiceNotBound("PrimaryCompanionService")
 
         // Rebind by the application
-        cdm.notifyDeviceAppeared(idA)
-        cdm.notifyDeviceAppeared(idB)
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
+            cdm.notifyDeviceAppeared(idB)
+        }
+
+        // Wait for the CompanionAppBinder.REBIND_TIMEOUT (and 1 more second for good measure).
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
 
         // Primary service should be bound again.
         assertServiceBound("PrimaryCompanionService")
@@ -125,13 +137,7 @@ class RebindServiceTest : TestBase() {
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_PRESENCE)
     @Test
     fun test_ObservingDeviceUuidPresence_rebind() {
-        val request = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
-        withShellPermissionIdentity(
-            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
-        ) {
-            cdm.startObservingDevicePresence(request)
-        }
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         assertApplicationBinds(cdm)
@@ -146,16 +152,11 @@ class RebindServiceTest : TestBase() {
         assertServiceNotBound("PrimaryCompanionService")
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Primary service should be still bound.
         assertServiceBound("PrimaryCompanionService")
 
-        withShellPermissionIdentity(
-            Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
-        ) {
-            cdm.stopObservingDevicePresence(request)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
     }
 
     private fun assertServiceBound(component: String) {
@@ -178,5 +179,9 @@ class RebindServiceTest : TestBase() {
                 fail("Service $component should not bound.")
             }
         }
+    }
+
+    companion object {
+        const val REBIND_WAIT_TIME_MS = 11_000L
     }
 }

@@ -19,6 +19,7 @@ package android.scopedstorage.cts.host;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
@@ -165,16 +166,16 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
     @Test
     public void testCheckInstallerAppAccessToObbDirs() throws Exception {
         allowAppOps("android:request_install_packages");
-        // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-        if (isSdkLevelLessThanT()) {
+        // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+        if (isSdkLevelLessThanU()) {
             grantPermissions("android.permission.WRITE_EXTERNAL_STORAGE");
         }
         try {
             runDeviceTest("testCheckInstallerAppAccessToObbDirs");
         } finally {
             denyAppOps("android:request_install_packages");
-            // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-            if (isSdkLevelLessThanT()) {
+            // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+            if (isSdkLevelLessThanU()) {
                 revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE");
             }
         }
@@ -183,16 +184,16 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
     @Test
     public void testCheckInstallerAppCannotAccessDataDirs() throws Exception {
         allowAppOps("android:request_install_packages");
-        // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-        if (isSdkLevelLessThanT()) {
+        // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+        if (isSdkLevelLessThanU()) {
             grantPermissions("android.permission.WRITE_EXTERNAL_STORAGE");
         }
         try {
             runDeviceTest("testCheckInstallerAppCannotAccessDataDirs");
         } finally {
             denyAppOps("android:request_install_packages");
-            // WRITE_EXTERNAL_STORAGE is no-op for Installers T onwards
-            if (isSdkLevelLessThanT()) {
+            // WRITE_EXTERNAL_STORAGE is no-op for Installers U onwards
+            if (isSdkLevelLessThanU()) {
                 revokePermissions("android.permission.WRITE_EXTERNAL_STORAGE");
             }
         }
@@ -360,6 +361,16 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
         }
     }
 
+    @Test
+    // TODO(b/364875662): Use flag filtering to enable / disable test
+    public void testMediaStoreVersion() throws Exception {
+        String flag = executeShellCommand(
+                "aflags list | grep com.android.providers.media.flags.version_lockdown");
+        // This change targets Baklava / API 36
+        assumeTrue(flag.contains("enabled") && getDevice().getApiLevel() > 35);
+        runDeviceTest("testMediaStoreVersionLockdown");
+    }
+
     private void grantPermissionsToPackage(String packageName, String... perms) throws Exception {
         int currentUserId = getCurrentUserId();
         for (String perm : perms) {
@@ -392,8 +403,8 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
         }
     }
 
-    private boolean isSdkLevelLessThanT() throws DeviceNotAvailableException {
+    private boolean isSdkLevelLessThanU() throws DeviceNotAvailableException {
         DeviceSdkLevel deviceSdkLevel = new DeviceSdkLevel(getDevice());
-        return !deviceSdkLevel.isDeviceAtLeastT();
+        return !deviceSdkLevel.isDeviceAtLeastU();
     }
 }

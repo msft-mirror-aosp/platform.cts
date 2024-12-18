@@ -48,7 +48,4 @@ public class StreamedAppConstants {
 
     // The id of the device whose clipboard to access.
     public static final String EXTRA_DEVICE_ID = "deviceId";
-
-    // The name of the permission to request.
-    public static final String EXTRA_PERMISSION_NAME = "permissionName";
 }

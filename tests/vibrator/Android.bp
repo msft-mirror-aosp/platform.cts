@@ -51,16 +51,21 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "sts",
-        "mts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],
     min_sdk_version: "29",
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsVibratorTestCases_NoLarge",
+    base: "CtsVibratorTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

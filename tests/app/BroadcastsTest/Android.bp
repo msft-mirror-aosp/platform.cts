@@ -18,12 +18,14 @@ package {
 
 android_test {
     name: "CtsBroadcastTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "guava",
+        "platformprotosnano",
         "truth",
         "testng",
     ],
@@ -89,4 +91,11 @@ filegroup {
         "common/src/**/*.java",
     ],
     path: "common/src",
+}
+
+test_module_config {
+    name: "CtsBroadcastTestCases_android_server_am",
+    base: "CtsBroadcastTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

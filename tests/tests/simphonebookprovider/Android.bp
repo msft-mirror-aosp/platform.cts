@@ -1,5 +1,6 @@
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_contacts",
 }
 
 filegroup {
@@ -43,7 +44,7 @@ android_test {
     ],
 
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
 
     static_libs: [

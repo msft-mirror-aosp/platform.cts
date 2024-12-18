@@ -16,20 +16,13 @@
 
 package android.server.wm.jetpack.embedding;
 
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 
-import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assume.assumeTrue;
-
-import android.app.ActivityTaskManager;
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
-import android.view.Display;
 
-import androidx.test.core.app.ApplicationProvider;
-import androidx.window.extensions.WindowExtensions;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitInfo;
 
@@ -47,38 +40,40 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
 
     protected ActivityEmbeddingComponent mActivityEmbeddingComponent;
     protected TestValueCountConsumer<List<SplitInfo>> mSplitInfoConsumer;
-    protected ReportedDisplayMetrics mReportedDisplayMetrics =
-            ReportedDisplayMetrics.getDisplayMetrics(Display.DEFAULT_DISPLAY);
+    protected ReportedDisplayMetrics mReportedDisplayMetrics;
 
     @Override
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
-        assumeTrue(applicationSupportsMultiWindow());
-        assumeExtensionSupportedDevice();
-        WindowExtensions windowExtensions = getWindowExtensions();
-        assumeNotNull(windowExtensions);
-        mActivityEmbeddingComponent = windowExtensions.getActivityEmbeddingComponent();
-        assumeNotNull(mActivityEmbeddingComponent);
+        assumeActivityEmbeddingSupportedDevice();
+        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(getMainDisplayId());
+
+        mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
+
         mSplitInfoConsumer = new TestValueCountConsumer<>();
         mActivityEmbeddingComponent.setSplitInfoCallback(mSplitInfoConsumer);
+        // The splitInfoCallback will be triggered once upon register, so clear the queue before
+        // test starts.
+        mSplitInfoConsumer.clearQueue();
 
         UiDeviceUtils.pressWakeupButton();
         UiDeviceUtils.pressUnlockButton();
-    }
-
-    /** Checks whether the device supports the multi-window feature or not. */
-    private static boolean applicationSupportsMultiWindow() {
-        return ActivityTaskManager.supportsMultiWindow(ApplicationProvider.getApplicationContext());
     }
 
     @Override
     @After
     public void tearDown() throws Throwable {
         super.tearDown();
-        mReportedDisplayMetrics.restoreDisplayMetrics();
+        if (mReportedDisplayMetrics != null) {
+            mReportedDisplayMetrics.restoreDisplayMetrics();
+        }
         if (mActivityEmbeddingComponent != null) {
             mActivityEmbeddingComponent.setEmbeddingRules(Collections.emptySet());
+            mActivityEmbeddingComponent.clearActivityStackAttributesCalculator();
+            mActivityEmbeddingComponent.clearEmbeddedActivityWindowInfoCallback();
+            mActivityEmbeddingComponent.clearSplitAttributesCalculator();
+            mActivityEmbeddingComponent.clearSplitInfoCallback();
         }
     }
 }

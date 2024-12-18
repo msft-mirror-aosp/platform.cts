@@ -65,8 +65,8 @@ public class AnnotationTest extends AbstractApiTest {
      * Tests that the parts of the device's API that are annotated (e.g. with
      * android.annotation.SystemApi) match the API definition.
      */
+    @Ignore("b/339852001")
     @Test
-    @Ignore("b/301075649")
     public void testAnnotation() {
        AnnotationChecker.ResultFilter filter = new AnnotationChecker.ResultFilter() {
             @Override

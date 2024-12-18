@@ -20,6 +20,8 @@ import static android.content.res.Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.fail;
+
 import android.app.Flags;
 import android.app.GrammaticalInflectionManager;
 import android.content.ComponentName;
@@ -33,6 +35,7 @@ import android.server.wm.TestJournalProvider;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -68,7 +71,6 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-
         mGrammaticalInflectionManager = mContext.getSystemService(
                 GrammaticalInflectionManager.class);
     }
@@ -94,6 +96,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     public void testSetApplicationGender_setFeminine_returnFeminineAfterReCreating() {
         TestJournalProvider.TestJournalContainer.start();
         launchActivity(TEST_APP_MAIN_ACTIVITY);
@@ -108,6 +111,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     public void testSetApplicationGender_setMasculine_returnMasculineAfterReCreating() {
         TestJournalProvider.TestJournalContainer.start();
         launchActivity(TEST_APP_MAIN_ACTIVITY);
@@ -122,6 +126,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     public void testSetApplicationGender_setMasculine_returnMasculineWithoutReCreating() {
         launchActivity(TEST_APP_HANDLE_CONFIG_CHANGE);
         TestJournalProvider.TestJournalContainer.start();
@@ -136,6 +141,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
     public void testGetSystemGrammaticalGender_setMasculineForSysApp_returnMasculineToSysApp() {
         mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
@@ -153,16 +159,14 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
         assertThat(Integer.parseInt(value)).isEqualTo(Configuration.GRAMMATICAL_GENDER_MASCULINE);
     }
 
-    @Test
+    @Test(expected = SecurityException.class)
+    @CddTest(requirements = {"3.19/C-0-1"})
     @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
-    public void testGetSystemGrammaticalGender_setNeutralForSysApp_returnNotSpecifiedTo3rdApp() {
+    public void testGetSystemGrammaticalGender_setNeutralForSysApp_throwExceptionTo3rdApp() {
         mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
                 CMD_GET_GRAMMATICAL_GENDER + " --user %d ", mContext.getUserId()));
-
         setGrammaticalGender(String.valueOf(Configuration.GRAMMATICAL_GENDER_NEUTRAL));
-
-        assertThat(mGrammaticalInflectionManager.getSystemGrammaticalGender()).isEqualTo(
-                Configuration.GRAMMATICAL_GENDER_NOT_SPECIFIED);
+        mGrammaticalInflectionManager.getSystemGrammaticalGender();
     }
 
     private void setGrammaticalGender(String grammaticalGender) {

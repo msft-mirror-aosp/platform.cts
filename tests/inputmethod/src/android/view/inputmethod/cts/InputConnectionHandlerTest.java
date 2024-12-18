@@ -38,7 +38,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Process;
-import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.text.InputType;
@@ -56,9 +55,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -100,13 +99,6 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             TimeUnit.MILLISECONDS.toMillis(2000);
 
     private static final int TEST_VIEW_HEIGHT = 10;
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InputConnectionHandlerTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     private static final class InputConnectionHandlingThread extends HandlerThread
             implements AutoCloseable {
@@ -490,7 +482,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
 
             final AtomicReference<View> testEditorViewRef = new AtomicReference<>();
-            TestActivity.startSync(activity -> {
+            final var testActivity = new TestActivity.Starter().startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -517,7 +509,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                 testEditorViewRef.set(testEditor);
                 layout.addView(testEditor);
                 return layout;
-            });
+            }, TestActivity.class);
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -525,8 +517,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
             assertFalse("InputMethodManager#isFullscreenMode() must return false",
-                    getOnMainSync(() -> InstrumentationRegistry.getInstrumentation().getContext()
-                            .getSystemService(InputMethodManager.class).isFullscreenMode()));
+                    getOnMainSync(() -> testActivity.getSystemService(
+                            InputMethodManager.class).isFullscreenMode()));
 
             // In order to have an IME be shown in the fullscreen mode,
             // SOFT_INPUT_STATE_ALWAYS_VISIBLE is insufficient.  An explicit API call is necessary.
@@ -545,8 +537,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                     thread.getThreadId(), callingThreadId.get());
 
             assertTrue("InputMethodManager#isFullscreenMode() must return true",
-                    getOnMainSync(() -> InstrumentationRegistry.getInstrumentation().getContext()
-                            .getSystemService(InputMethodManager.class).isFullscreenMode()));
+                    getOnMainSync(() -> testActivity.getSystemService(
+                            InputMethodManager.class).isFullscreenMode()));
             assertTrue(expectCommand(stream, imeSession.callVerifyExtractViewNotNull(), TIMEOUT)
                     .getReturnBooleanValue());
         }
@@ -567,8 +559,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                 instrumentation.getUiAutomation(),
                 new ImeSettings.Builder())) {
             final ImeEventStream stream = imeSession.openEventStream();
-            final String marker = getTestMarker();
-            final String fenceMarker = getTestMarker();
+            final String editTextMarker = getTestMarker();
+            final String fenceMarker = getTestMarker("Fence");
             final AtomicReference<Runnable> removeViewRef = new AtomicReference<>();
             final CountDownLatch fenceCommandLatch = new CountDownLatch(1);
             final CountDownLatch closeConnectionLatch = new CountDownLatch(1);
@@ -611,7 +603,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
                         if (imeSession.isActive()) {
                             outAttrs.inputType = InputType.TYPE_CLASS_TEXT;
-                            outAttrs.privateImeOptions = marker;
+                            outAttrs.privateImeOptions = editTextMarker;
                             return new MyInputConnection();
                         }
                         return null;
@@ -626,7 +618,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             });
 
             // "onStartInput" gets called for the EditText.
-            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream, editorMatcher("onStartInput", editTextMarker), TIMEOUT);
 
             runOnMainSyncWithRethrowing(() -> {
                 // Trigger layout.removeView(testEditor)

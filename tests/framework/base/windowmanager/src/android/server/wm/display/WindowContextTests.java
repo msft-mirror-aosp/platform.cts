@@ -22,6 +22,8 @@ import static android.view.Display.INVALID_DISPLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
+import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -168,23 +170,33 @@ public class WindowContextTests extends WindowContextTestBase {
         final TestComponentCallbacks callbacks = new TestComponentCallbacks();
         final WindowManagerState.DisplayContent display = createManagedVirtualDisplaySession()
                 .setPublicDisplay(true).createDisplay();
-        final FontScaleSession fontScaleSession = createManagedFontScaleSession();
         final Context windowContext = createWindowContext(display.mId);
         windowContext.registerComponentCallbacks(callbacks);
-        final float expectedFontScale = fontScaleSession.get() + 0.3f;
-        fontScaleSession.set(expectedFontScale);
+        // Obtain the original config
+        final Configuration originalConfiguration =
+                new Configuration(windowContext.getResources().getConfiguration());
+        final float expectedFontScale = originalConfiguration.fontScale + 0.3f;
+        try {
+            // TODO(b/373878703): Use FontScaleSession once it supports visible background
+            // users. Currently it only supports current user, so this test relies on shell
+            // commands.
+            runShellCommand("settings put system font_scale " + expectedFontScale);
 
-        // Wait for TestComponentCallbacks#mConfiguration to be assigned.
-        callbacks.waitForConfigChanged();
+            // Wait for TestComponentCallbacks#mConfiguration to be assigned.
+            callbacks.waitForConfigChanged();
 
-        // We don't rely on latch to verify the result because we may receive two configuration
-        // changes. One may from that WindowContext attaches to a DisplayArea although it is before
-        // ComponentCallback registration), the other is from font the scale change, which is what
-        // we want to verify.
-        waitForOrFail("font scale to match " + expectedFontScale, () ->
-                expectedFontScale == callbacks.mConfiguration.fontScale);
+            // We don't rely on latch to verify the result because we may receive two configuration
+            // changes. One may from that WindowContext attaches to a DisplayArea although it is
+            // before ComponentCallback registration), the other is from font the scale change,
+            // which is what we want to verify.
+            waitForOrFail("font scale to match " + expectedFontScale, () ->
+                    expectedFontScale == callbacks.mConfiguration.fontScale);
 
-        windowContext.unregisterComponentCallbacks(callbacks);
+            windowContext.unregisterComponentCallbacks(callbacks);
+        } finally {
+            // At the end of the test, we need to restore the initial value.
+            runShellCommand("settings put system font_scale " + originalConfiguration.fontScale);
+        }
     }
 
     /**
@@ -277,20 +289,24 @@ public class WindowContextTests extends WindowContextTestBase {
         final Configuration originalConfiguration =
                 new Configuration(service.getResources().getConfiguration());
 
-        final FontScaleSession fontScaleSession = createManagedFontScaleSession();
-        final float expectedFontScale = fontScaleSession.get() + 0.3f;
-        fontScaleSession.set(expectedFontScale);
+        final float expectedFontScale = originalConfiguration.fontScale + 0.3f;
+        try {
+            runShellCommand("settings put system font_scale " + expectedFontScale);
 
-        service.waitAndAssertConfigurationChanged();
+            service.waitAndAssertConfigurationChanged();
 
-        assertThat(service.mConfiguration.fontScale).isEqualTo(expectedFontScale);
-        // Also check Configuration obtained from WindowProviderService's Resources
-        assertWithMessage("Configuration update must contains font scale change.")
-                .that(originalConfiguration.diff(service.mConfiguration)
-                        & ActivityInfo.CONFIG_FONT_SCALE).isNotEqualTo(0);
-        assertWithMessage("Font scale must be updated to WindowProviderService Resources.")
-                .that(service.getResources().getConfiguration().fontScale)
-                .isEqualTo(expectedFontScale);
+            assertThat(service.mConfiguration.fontScale).isEqualTo(expectedFontScale);
+            // Also check Configuration obtained from WindowProviderService's Resources
+            assertWithMessage("Configuration update must contains font scale change.")
+                    .that(originalConfiguration.diff(service.mConfiguration)
+                            & ActivityInfo.CONFIG_FONT_SCALE).isNotEqualTo(0);
+            assertWithMessage("Font scale must be updated to WindowProviderService Resources.")
+                    .that(service.getResources().getConfiguration().fontScale)
+                    .isEqualTo(expectedFontScale);
+        } finally {
+            // At the end of the test, we need to restore the initial value.
+            runShellCommand("settings put system font_scale " + originalConfiguration.fontScale);
+        }
     }
 
     @Test

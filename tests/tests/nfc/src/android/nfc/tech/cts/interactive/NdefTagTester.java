@@ -21,11 +21,12 @@ import android.nfc.FormatException;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
 import android.nfc.Tag;
+import android.nfc.cts.R;
 import android.nfc.tech.Ndef;
 import android.util.Log;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 /**
@@ -36,7 +37,7 @@ public class NdefTagTester implements TagTester {
 
     private static final String TAG = NdefTagTester.class.getSimpleName();
 
-    private static final String MIME_TYPE = "application/com.android.cts.verifier.nfc";
+    private static final String MIME_TYPE = "application/com.android.nfc.cts.interactive";
 
     private static final String PAYLOAD = "CTS Verifier NDEF Tag";
 
@@ -64,13 +65,12 @@ public class NdefTagTester implements TagTester {
     public TagVerifier writeTag(Tag tag) throws IOException, FormatException {
         Random random = new Random();
         NdefRecord mimeRecord = createRandomMimeRecord(random);
-        NdefRecord[] expectedRecords = new NdefRecord[] {mimeRecord};
+        NdefRecord[] expectedRecords = new NdefRecord[]{mimeRecord};
 
         final NdefMessage expectedMessage = new NdefMessage(expectedRecords);
         writeMessage(tag, expectedMessage);
 
-        final String expectedContent =
-                String.format("Id: %1$s\\nMime: %2$s\\nPayload: %3$s",
+        final String expectedContent = mContext.getString(R.string.nfc_ndef_content,
                 NfcUtils.displayByteArray(mimeRecord.getId()), MIME_TYPE, PAYLOAD);
 
         return new TagVerifier() {
@@ -82,11 +82,10 @@ public class NdefTagTester implements TagTester {
 
                 if (records.length > 0) {
                     NdefRecord record = records[0];
-                    actualContent = String.format("Id: %1$s\\nMime: %2$s\\nPayload: %3$s",
-
+                    actualContent = mContext.getString(R.string.nfc_ndef_content,
                             NfcUtils.displayByteArray(record.getId()),
-                            new String(record.getType(), Charset.forName("US-ASCII")),
-                            new String(record.getPayload(), Charset.forName("US-ASCII")));
+                            new String(record.getType(), StandardCharsets.US_ASCII),
+                            new String(record.getPayload(), StandardCharsets.US_ASCII));
                 } else {
                     actualContent = null;
                 }
@@ -98,10 +97,10 @@ public class NdefTagTester implements TagTester {
     }
 
     private NdefRecord createRandomMimeRecord(Random random) {
-        byte[] mimeBytes = MIME_TYPE.getBytes(Charset.forName("US-ASCII"));
+        byte[] mimeBytes = MIME_TYPE.getBytes(StandardCharsets.US_ASCII);
         byte[] id = new byte[4];
         random.nextBytes(id);
-        byte[] payload = PAYLOAD.getBytes(Charset.forName("US-ASCII"));
+        byte[] payload = PAYLOAD.getBytes(StandardCharsets.US_ASCII);
         return new NdefRecord(NdefRecord.TNF_MIME_MEDIA, mimeBytes, id, payload);
     }
 

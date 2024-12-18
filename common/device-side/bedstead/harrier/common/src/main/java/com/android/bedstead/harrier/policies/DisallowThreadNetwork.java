@@ -16,24 +16,26 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_GLOBALLY;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_THREAD_NETWORK;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_GLOBALLY;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_THREAD_NETWORK;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
- * Policy related to setting {@code DISLLOW_THREAD_NETWORK}.
+ * Policy related to setting {@code DISALLOW_THREAD_NETWORK}.
 */
 @EnterprisePolicy(
     dpc = { APPLIED_BY_DEVICE_OWNER
             | APPLIED_BY_PARENT_INSTANCE_OF_ORGANIZATIONAL_OWNED_PROFILE_OWNER_PROFILE
             | APPLIES_GLOBALLY
-            | CANNOT_BE_APPLIED_BY_ROLE_HOLDER },
-    permissions = @EnterprisePolicy.Permission(
+            | CANNOT_BE_APPLIED_BY_ROLE_HOLDER }
+// We need to split this into two policies because the user restriction can only be set using
+// the global method when using the permission.
+    /*permissions = @EnterprisePolicy.Permission(
         appliedWith = MANAGE_DEVICE_POLICY_THREAD_NETWORK,
-        appliesTo = APPLIES_GLOBALLY))
+        appliesTo = APPLIES_GLOBALLY) */)
 public final class DisallowThreadNetwork {
 }

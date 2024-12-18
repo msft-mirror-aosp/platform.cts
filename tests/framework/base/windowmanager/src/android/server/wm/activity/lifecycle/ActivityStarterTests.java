@@ -40,8 +40,8 @@ import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -114,7 +114,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         mWmState.waitForActivityState(secondLaunchActivity.getComponentName(), STATE_RESUMED);
         assertEquals("The activity should be started and be resumed",
                 getActivityName(secondLaunchActivity.getComponentName()),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
     }
 
     /**
@@ -140,7 +140,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the second standard activity is front.
         assertEquals("The stack for the second standard activity must be front.",
                 getActivityName(SECOND_STANDARD_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         // Make sure the standard activity and the second standard activity are in same task.
         assertEquals("Activity must be in same task.", taskId,
@@ -153,6 +153,12 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
      */
     @Test
     public void testLaunchNoHistoryActivityShowWhenLocked() {
+        // TODO(b/380276500): Re-enable once per-display interactiveness is supported.
+        assumeFalse(
+                "Skip test on devices with visible background users enabled (primarily Automotive"
+                        + " Multi Display) because there is no support for per display "
+                        + "interactiveness.",
+                isVisibleBackgroundUserSupported());
         // Allow TV devices to skip this test.
         assumeFalse(isLeanBack());
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -298,7 +304,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the single top activity is front.
         assertEquals("The stack for the single top activity must be front.",
                 getActivityName(SINGLE_TOP_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         // Make sure the standard activity and the single top activity are in same task.
         assertEquals("Two activities must be in same task.", taskId,
@@ -338,7 +344,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the single instance activity is front.
         assertEquals("The stack for the single instance activity must be front.",
                 getActivityName(SINGLE_INSTANCE_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         // Make sure the standard activity and the test activity are not in same task.
         assertNotEquals("Activity must be in different task.", firstTaskId, secondTaskId);
@@ -371,7 +377,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the single task activity is front.
         assertEquals("The stack for the single task activity must be front.",
                 getActivityName(SINGLE_TASK_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         // Make sure the test activity is in same task.
         assertEquals("Activity must be in same task.", taskId,
@@ -463,7 +469,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the standard activity is front.
         assertEquals("The stack for the standard activity must be front.",
                 getActivityName(STANDARD_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
     }
 
     /**
@@ -502,7 +508,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the standard activity is front.
         assertEquals("The stack for the standard activity must be front.",
                 getActivityName(STANDARD_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         // Make sure the activity is not in same task.
         assertEquals("Activity must be in same task.", taskId,
@@ -573,7 +579,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the single top activity is front.
         assertEquals("The stack for the single top activity must be front.",
                 getActivityName(STANDARD_SINGLE_TOP_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         // Make sure the standard activity and the single top activity are in same task.
         assertEquals("Activity must be in same task.", taskId,
@@ -608,7 +614,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the stack for the standard activity is front.
         assertEquals("The stack for the standard activity must be front.",
                 getActivityName(STANDARD_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
         // Make sure the first standard activity and second standard activity are not in same task.
         assertNotEquals("Activity must not be in same task.", taskId,
                 mWmState.getTaskByActivity(STANDARD_ACTIVITY).getTaskId());
@@ -652,7 +658,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
         // Make sure the task for the clearTaskonlaunch activity is front.
         assertEquals("The task for the clearTaskonlaunch activity must be front.",
                 getActivityName(CLEAR_TASK_ON_LAUNCH_ACTIVITY),
-                mWmState.getTopActivityName(0));
+                mWmState.getTopActivityName(getMainDisplayId()));
 
         assertEquals("Instance of the activity in its task must be cleared", 0,
                 mWmState.getActivityCountInTask(taskId, STANDARD_ACTIVITY));

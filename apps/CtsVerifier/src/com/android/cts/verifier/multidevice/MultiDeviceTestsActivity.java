@@ -62,6 +62,9 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
                 "CtsNfcHceMultiDeviceTestCases#test_other_prefix",
                 "CtsNfcHceMultiDeviceTestCases#test_other_prefix")
             .addTest(
+                "CtsNfcHceMultiDeviceTestCases#test_event_listener",
+                "CtsNfcHceMultiDeviceTestCases#test_event_listener")
+            .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_payment_prefix_emulator",
                 "CtsNfcHceMultiDeviceTestCases#test_payment_prefix_emulator")
             .addTest(
@@ -80,12 +83,6 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
                 "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service",
                 "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service")
             .addTest(
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_disabled",
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_disabled")
-            .addTest(
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_poll_tech_mismatch",
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_poll_tech_mismatch")
-            .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_single_payment_service",
                 "CtsNfcHceMultiDeviceTestCases#test_single_payment_service")
             .addTest(
@@ -93,6 +90,18 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
                 "CtsNfcHceMultiDeviceTestCases#test_tap_50_times")
             .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_throughput",
-                "CtsNfcHceMultiDeviceTestCases#test_throughput"));
+                "CtsNfcHceMultiDeviceTestCases#test_throughput")
+            .addTest(
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_timestamp",
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_timestamp")
+            .addTest(
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_vendor_specific_gain",
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_vendor_specific_gain")
+            .addTest(
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_type",
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_type")
+            .addTest(
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_data",
+                "CtsNfcHceMultiDeviceTestCases#test_polling_frame_data"));
   }
 }

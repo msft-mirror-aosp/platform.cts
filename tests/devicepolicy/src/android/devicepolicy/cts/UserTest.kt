@@ -19,28 +19,28 @@ import android.os.UserManager
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureCanAddUser
 import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest
 import com.android.bedstead.harrier.policies.DisallowRemoveUser
 import com.android.bedstead.harrier.policies.DisallowUserSwitch
 import com.android.bedstead.harrier.policies.ReceiveUserCallbacks
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.permissions.CommonPermissions
 import com.android.bedstead.nene.types.OptionalBoolean.ANY
 import com.android.bedstead.nene.types.OptionalBoolean.FALSE
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_REMOVE_USER
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_USER_SWITCH
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.google.common.truth.Truth.assertThat
@@ -58,7 +58,8 @@ class UserTest {
     fun setUserRestriction_disallowRemoveUser_cannotSet_throwsException() {
         assertThrows(SecurityException::class.java) {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_REMOVE_USER
+                deviceState.dpc().componentName(),
+                DISALLOW_REMOVE_USER
             )
         }
     }
@@ -69,7 +70,8 @@ class UserTest {
     fun setUserRestriction_disallowRemoveUser_isSet() {
         try {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_REMOVE_USER
+                deviceState.dpc().componentName(),
+                DISALLOW_REMOVE_USER
             )
 
             assertThat(
@@ -78,7 +80,8 @@ class UserTest {
             ).isTrue()
         } finally {
             deviceState.dpc().devicePolicyManager().clearUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_REMOVE_USER
+                deviceState.dpc().componentName(),
+                DISALLOW_REMOVE_USER
             )
         }
     }
@@ -89,7 +92,8 @@ class UserTest {
     fun setUserRestriction_disallowRemoveUser_isNotSet() {
         try {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_REMOVE_USER
+                deviceState.dpc().componentName(),
+                DISALLOW_REMOVE_USER
             )
 
             assertThat(
@@ -98,7 +102,8 @@ class UserTest {
             ).isFalse()
         } finally {
             deviceState.dpc().devicePolicyManager().clearUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_REMOVE_USER
+                deviceState.dpc().componentName(),
+                DISALLOW_REMOVE_USER
             )
         }
     }
@@ -160,7 +165,8 @@ class UserTest {
     fun setUserRestriction_disallowUserSwitch_cannotSet_throwsException() {
         assertThrows(SecurityException::class.java) {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_USER_SWITCH
+                deviceState.dpc().componentName(),
+                DISALLOW_USER_SWITCH
             )
         }
     }
@@ -171,7 +177,8 @@ class UserTest {
     fun setUserRestriction_disallowUserSwitch_isSet() {
         try {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_USER_SWITCH
+                deviceState.dpc().componentName(),
+                DISALLOW_USER_SWITCH
             )
 
             assertThat(
@@ -180,7 +187,8 @@ class UserTest {
             ).isTrue()
         } finally {
             deviceState.dpc().devicePolicyManager().clearUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_USER_SWITCH
+                deviceState.dpc().componentName(),
+                DISALLOW_USER_SWITCH
             )
         }
     }
@@ -191,7 +199,8 @@ class UserTest {
     fun setUserRestriction_disallowUserSwitch_isNotSet() {
         try {
             deviceState.dpc().devicePolicyManager().addUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_USER_SWITCH
+                deviceState.dpc().componentName(),
+                DISALLOW_USER_SWITCH
             )
 
             assertThat(
@@ -200,7 +209,8 @@ class UserTest {
             ).isFalse()
         } finally {
             deviceState.dpc().devicePolicyManager().clearUserRestriction(
-                deviceState.dpc().componentName(), DISALLOW_USER_SWITCH
+                deviceState.dpc().componentName(),
+                DISALLOW_USER_SWITCH
             )
         }
     }
@@ -290,7 +300,6 @@ class UserTest {
                 .whereStoppedUser().id().isEqualTo(deviceState.additionalUser().id())
         )
             .eventOccurred()
-
     }
 
     @EnsureCanAddUser

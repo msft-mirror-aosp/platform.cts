@@ -14,11 +14,13 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_system_intelligence",
 }
 
 java_library {
     name: "CtsAttentionServiceDevice",
     srcs: ["src/**/CtsTestAttentionService.java"],
+    sdk_version: "test_current",
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",

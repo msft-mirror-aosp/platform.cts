@@ -23,11 +23,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.app.UiAutomation;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.LocaleList;
-import android.os.ParcelFileDescriptor;
 import android.provider.Settings;
 import android.text.format.DateFormat;
 
@@ -44,9 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -54,7 +50,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
-import java.util.Scanner;
 import java.util.TimeZone;
 
 @LargeTest
@@ -83,8 +78,6 @@ public class DateFormatTest {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mDefaultTimeFormat = getTimeFormat();
         mDefaultLocale = Locale.getDefault();
-
-        enableAppOps();
     }
 
     @After
@@ -92,35 +85,6 @@ public class DateFormatTest {
         setTimeFormat(mDefaultTimeFormat);
         if ((mDefaultLocale != null) && !Locale.getDefault().equals(mDefaultLocale)) {
             Locale.setDefault(mDefaultLocale);
-        }
-    }
-
-    private void enableAppOps() {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-
-        StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
-        cmd.append(mContext.getPackageName());
-        cmd.append(" android:write_settings allow");
-        uiAutomation.executeShellCommand(cmd.toString());
-
-        StringBuilder query = new StringBuilder();
-        query.append("appops get ");
-        query.append(mContext.getPackageName());
-        query.append(" android:write_settings");
-        String queryStr = query.toString();
-
-        String result = "No operations.";
-        while (result.contains("No operations")) {
-            ParcelFileDescriptor pfd = uiAutomation.executeShellCommand(queryStr);
-            InputStream inputStream = new FileInputStream(pfd.getFileDescriptor());
-            result = convertStreamToString(inputStream);
-        }
-    }
-
-    private String convertStreamToString(InputStream is) {
-        try (Scanner scanner = new Scanner(is).useDelimiter("\\A")) {
-            return scanner.hasNext() ? scanner.next() : "";
         }
     }
 

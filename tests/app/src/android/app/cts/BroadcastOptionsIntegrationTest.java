@@ -37,11 +37,27 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 public class BroadcastOptionsIntegrationTest {
+    @Before
+    public void setUp() throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        CtsAppTestUtils.executeShellCmd(instrumentation,
+                "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        CtsAppTestUtils.executeShellCmd(instrumentation,
+                "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
+    }
+
     private void assertBroadcastSuccess(BroadcastOptions options) {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         final WaitForBroadcast waiter = new WaitForBroadcast(instrumentation.getTargetContext());

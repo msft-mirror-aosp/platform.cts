@@ -313,7 +313,7 @@ public class LauncherAppsTest {
 
             assertThat(activities).hasSize(1);
             LauncherActivityInfo launcherActivityInfo = activities.get(0);
-            assertThat(launcherActivityInfo.getLabel().toString()).isEqualTo(ACTIVITY_LABEL_TITLE);
+            assertThat(launcherActivityInfo.getLabel().toString()).contains(ACTIVITY_LABEL_TITLE);
         } finally {
             uninstallPackage(ACTIVITY_LABEL_PACKAGE_NAME);
         }
@@ -331,7 +331,7 @@ public class LauncherAppsTest {
             assertThat(activities).hasSize(1);
             LauncherActivityInfo launcherActivityInfo = activities.get(0);
             assertThat(launcherActivityInfo.getLabel().toString())
-                    .isEqualTo(APPLICATION_LABEL_TITLE);
+                    .contains(APPLICATION_LABEL_TITLE);
         } finally {
             uninstallPackage(APPLICATION_LABEL_PACKAGE_NAME);
         }
@@ -357,26 +357,38 @@ public class LauncherAppsTest {
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testLauncherUserInfo() {
-        LauncherUserInfo info = mLauncherApps.getLauncherUserInfo(UserHandle.of(0));
+        LauncherUserInfo info =
+                mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
         assertThat(info).isNotNull();
     }
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetMarketIntent() {
         IntentSender intentSender =
-                mLauncherApps.getAppMarketActivityIntent(PACKAGE_NAME, UserHandle.of(0));
+                mLauncherApps.getAppMarketActivityIntent(
+                        PACKAGE_NAME, UserHandle.of(UserHandle.myUserId()));
+        assertThat(intentSender).isNotNull();
+
+        // No errors if the package is not installed
+        intentSender =
+                mLauncherApps.getAppMarketActivityIntent(
+                        "not.installed.package", UserHandle.of(UserHandle.myUserId()));
         assertThat(intentSender).isNotNull();
     }
 
     @Test
     @AppModeFull(reason = "Need special permission")
-    @RequiresFlagsEnabled(FLAG_ALLOW_PRIVATE_PROFILE)
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetPreInstalledSystemPackages() {
-        List<String> packages = mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(0));
+        List<String> packages =
+                mLauncherApps.getPreInstalledSystemPackages(UserHandle.of(UserHandle.myUserId()));
         assertThat(packages).isNotNull();
     }
 

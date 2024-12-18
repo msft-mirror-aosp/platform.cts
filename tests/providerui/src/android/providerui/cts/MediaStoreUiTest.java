@@ -16,13 +16,15 @@
 
 package android.providerui.cts;
 
-import static android.provider.cts.ProviderTestUtils.resolveVolumeName;
+import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -43,7 +45,7 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.provider.cts.ProviderTestUtils;
+import android.provider.cts.media.MediaProviderTestUtils;
 import android.providerui.cts.GetResultActivity.Result;
 import android.system.Os;
 import android.text.format.DateUtils;
@@ -79,6 +81,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 @RunWith(Parameterized.class)
 public class MediaStoreUiTest {
@@ -104,7 +107,7 @@ public class MediaStoreUiTest {
 
     @Parameters
     public static Iterable<? extends Object> data() {
-        return ProviderTestUtils.getSharedVolumeNames();
+        return MediaProviderTestUtils.getSharedVolumeNames();
     }
 
     @Before
@@ -147,7 +150,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile();
         clearDocumentsUi();
@@ -176,7 +179,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri_throwsWithoutPermission() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile();
         clearDocumentsUi();
@@ -191,7 +194,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri_symmetry_externalStorageProvider() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile();
         clearDocumentsUi();
@@ -214,7 +217,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetMediaUriAccess_mediaDocumentsProvider() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile("TEST");
         clearDocumentsUi();
@@ -236,7 +239,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenFile_onMediaDocumentsProvider_success() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         final String rawText = "TEST";
         // Stage a text file which contains raw text "TEST"
@@ -279,7 +282,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenFile_onMediaDocumentsProvider_failsWithoutAccess() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         String rawText = "TEST";
         // Read and write grants will be provided to the file associated with this pair.
@@ -333,6 +336,90 @@ public class MediaStoreUiTest {
         }
     }
 
+    @Test
+    public void testOpenDocumentTree_disabledForAndroidDataDir() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fdata/document/"
+                    + root + "%3AAndroid%2Fdata");
+
+            assertFalse(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_disabledForAndroidDataDirWithZwsChars() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fdata/document/"
+                    + root + "%3AA%E2%80%8Bndroid%2Fdata");
+
+            assertFalse(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_disabledForAndroidObbDir() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fobb/document/"
+                    + root + "%3AAndroid%2Fobb");
+
+            assertFalse(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_enabledForAndroidMediaDir() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fmedia/document/"
+                    + root + "%3AAndroid%2Fmedia");
+
+            assertTrue(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
     private void assertAccessToMediaUri(Uri mediaUri, File file) {
         final String[] projection = {MediaStore.MediaColumns.DISPLAY_NAME};
         try (Cursor c = mContext.getContentResolver().query(
@@ -346,7 +433,7 @@ public class MediaStoreUiTest {
      * Clears the DocumentsUI package data.
      */
     protected void clearDocumentsUi() throws Exception {
-        executeShellCommand("pm clear " + getDocumentsUiPackageId());
+        executeShellCommand("pm clear --user current " + getDocumentsUiPackageId());
     }
 
     private UiObject findDocument(String label) throws UiObjectNotFoundException {
@@ -406,8 +493,7 @@ public class MediaStoreUiTest {
     private boolean supportsHardware() {
         final PackageManager pm = mContext.getPackageManager();
         return !pm.hasSystemFeature("android.hardware.type.television")
-                && !pm.hasSystemFeature("android.hardware.type.watch")
-                && !pm.hasSystemFeature("android.hardware.type.automotive");
+                && !pm.hasSystemFeature("android.hardware.type.watch");
     }
 
     public File getVolumePath(String volumeName) {

@@ -25,13 +25,11 @@ import android.test.AndroidTestCase;
 
 import com.android.compatibility.common.util.FileCopyHelper;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 
 import java.io.File;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class MediaScannerConnectionTest extends AndroidTestCase {
 

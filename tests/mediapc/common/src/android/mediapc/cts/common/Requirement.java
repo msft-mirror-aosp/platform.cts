@@ -118,12 +118,6 @@ public abstract class Requirement {
      * @return whether or not the requirement meets the device's specified performance class
      */
     public boolean writeLogAndCheck(ReportLog log, String testName) {
-        if (this.id == RequirementConstants.RTBD) {
-            // skip upload on any requirement without a specified id
-            Log.i(this.TAG, testName + "has requirement without set requirement id and test " +
-                "results were not uploaded");
-            return this.checkPerformanceClass(Utils.getPerfClass());
-        }
 
         int perfClass = this.computePerformanceClass();
 

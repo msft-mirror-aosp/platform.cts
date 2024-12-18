@@ -13,7 +13,6 @@
 # limitations under the License.
 """Verify video is stable during phone movement."""
 
-import fnmatch
 import logging
 import os
 import threading
@@ -203,10 +202,9 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
         logging.debug('Frame size %d x %d', frame_shape[1], frame_shape[0])
 
         # Extract camera rotations
-        img_h = frames[0].shape[0]
         file_name_stem = f'{os.path.join(log_path, _NAME)}_{video_quality}'
         cam_rots = sensor_fusion_utils.get_cam_rotations(
-            frames[_START_FRAME:], facing, img_h,
+            frames[_START_FRAME:], facing, frame_shape[0],
             file_name_stem, _START_FRAME, stabilized_video=True)
         sensor_fusion_utils.plot_camera_rotations(
             cam_rots, _START_FRAME, video_quality, file_name_stem)
@@ -251,21 +249,9 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
               f"ratio: {max_angles['cam']/max_angles['gyro']:.3f} "
               f'THRESH: {video_stabilization_factor}.')
         else:  # remove frames if PASS
-          temp_files = []
-          try:
-            temp_files = os.listdir(log_path)
-          except FileNotFoundError:
-            logging.debug('/tmp directory: %s not found', log_path)
-          for file in temp_files:
-            if fnmatch.fnmatch(
-                file, f'*_{video_quality}_*_stabilized_frame_*.png'):
-              file_to_remove = os.path.join(log_path, file)
-              try:
-                os.remove(file_to_remove)
-              except FileNotFoundError:
-                logging.debug('File not found: %s', str(file))
-          logging.debug('Quality %s passes, frame images have been removed',
-                        video_quality)
+          its_session_utils.remove_tmp_files(
+              log_path, f'*_{video_quality}_*_stabilized_frame_*.png'
+          )
       if test_failures:
         raise AssertionError(test_failures)
 

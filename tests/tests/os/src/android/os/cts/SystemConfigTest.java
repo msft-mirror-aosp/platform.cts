@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import android.os.SystemConfigManager;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
 
 import androidx.test.InstrumentationRegistry;
@@ -36,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 // These tests are disabled for now because selinux doesn't allow CTS to access
 // system_config_service. Re-enable once the appropriate changes are in.
 public class SystemConfigTest {

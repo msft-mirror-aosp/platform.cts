@@ -23,6 +23,8 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.SystemClock
+import android.os.SystemProperties
+import android.os.UserHandle
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_CANCEL
@@ -44,7 +46,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 private const val OVERLAY_ACTIVITY_FOCUSED = "android.input.cts.action.OVERLAY_ACTIVITY_FOCUSED"
-private val ACTIVITY_FOCUS_LOST_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10)
+private val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1)
+private val ACTIVITY_FOCUS_LOST_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(10) *
+        HW_TIMEOUT_MULTIPLIER
 
 private fun getViewCenterOnScreen(v: View): Pair<Float, Float> {
     val location = IntArray(2)
@@ -177,6 +181,7 @@ class IncompleteMotionTest {
         }
         val metaState = 0
         val event = MotionEvent.obtain(downTime, eventTime, action, x, y, metaState)
+        event.displayId = activity.displayId
         event.source = InputDevice.SOURCE_TOUCHSCREEN
         instrumentation.uiAutomation.injectInputEvent(event, sync)
     }
@@ -190,8 +195,11 @@ class IncompleteMotionTest {
      * Because the bottom activity's UI thread is locked, use 'am start' to start the new activity
      */
     private fun startOverlayActivity() {
+        val userId = UserHandle.myUserId()
+        val displayId = activity.displayId
         val flags = " -W -n "
-        val startCmd = "am start $flags android.input.cts/.OverlayActivity"
+        val startCmd = "am start $flags android.input.cts/.OverlayActivity " +
+                "--user $userId --display $displayId"
         instrumentation.uiAutomation.executeShellCommand(startCmd)
     }
 }

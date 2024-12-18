@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
- * Copyright (C) 2017 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,8 @@
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".activities.LoginActivity"
-             android:exported="true">
+             android:exported="true"
+             android:theme="@style/OptOutEdgeToEdge">
             <intent-filter>
                 <!-- This intent filter is not really needed by CTS, but it makes easier to launch
                                          this app during CTS development... -->
@@ -65,7 +66,8 @@
         <activity android:name=".activities.LoginNotImportantForAutofillWrappedApplicationContextActivity"/>
         <activity android:name=".activities.LoginImportantForCredentialManagerActivity"/>
         <activity android:name=".activities.LoginMixedImportantForCredentialManagerActivity"/>
-        <activity android:name=".activities.LoginCredentialMixedActivity"/>
+        <activity android:name=".activities.LoginCredentialMixedActivity"
+             android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.WelcomeActivity"
              android:taskAffinity=".WelcomeActivity"/>
         <activity android:name=".activities.ViewActionActivity"
@@ -82,7 +84,8 @@
              android:taskAffinity=".SecondActivity"/>
         <activity android:name=".activities.ViewAttributesTestActivity"/>
         <activity android:name=".activities.AuthenticationActivity"/>
-        <activity android:name=".activities.ManualAuthenticationActivity"/>
+        <activity android:name=".activities.ManualAuthenticationActivity"
+          android:theme="@style/OptOutEdgeToEdge"/>
         <activity android:name=".activities.CheckoutActivity"
              android:taskAffinity=".CheckoutActivity"/>
         <activity android:name=".activities.InitializedCheckoutActivity"/>
@@ -179,6 +182,15 @@
         <activity android:name=".activities.SimpleAfterLoginActivity"/>
         <activity android:name=".activities.SimpleBeforeLoginActivity"/>
         <activity android:name=".activities.NonAutofillableActivity"/>
+        <activity
+            android:name=".credman.CtsGetPasswordActivity"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.autofillservice.cts.credman.GET_PASSWORD" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <receiver android:name=".testcore.SelfDestructReceiver"
              android:exported="true"

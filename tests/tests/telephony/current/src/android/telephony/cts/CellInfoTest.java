@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
@@ -65,6 +66,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.internal.telephony.flags.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -89,6 +91,8 @@ import java.util.concurrent.Executor;
  * </ul>
  *
  */
+@AppModeNonSdkSandbox(
+        reason = "SDK sandboxes are not allowed to access cell info - no location permission")
 public class CellInfoTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -196,6 +200,7 @@ public class CellInfoTest {
     private TelephonyManager mTm;
 
     private int mNetworkHalVersion;
+    private Boolean mWasLocationEnabled;
 
     private static final int makeRadioVersion(int major, int minor) {
         if (major < 0 || minor < 0) return 0;
@@ -274,6 +279,15 @@ public class CellInfoTest {
                 mTm.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
         mNetworkHalVersion = makeRadioVersion(verPair.first, verPair.second);
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+    }
+
+    @After
+    public void tearDown() {
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
     }
 
     /**

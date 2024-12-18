@@ -57,7 +57,7 @@ public abstract class BaseDeviceAdminServiceTest extends BaseDevicePolicyTest {
         super.tearDown();
     }
 
-    protected abstract int getUserId();
+    protected abstract int getUserId() throws Exception;
 
     protected void executeDeviceTestMethod(String className, String testName) throws Exception {
         runDeviceTestsAsUser(OWNER_PKG, className, testName, getUserId());

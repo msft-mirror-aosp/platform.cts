@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsMemunreachableTestCases",
+    team: "trendy_team_native_tools_libraries",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.kt"],
     libs: [
@@ -33,7 +34,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [
+    device_common_data: [
         ":CtsMemunreachableDebuggableTestApp",
         ":CtsMemunreachableUndebuggableTestApp",
     ],

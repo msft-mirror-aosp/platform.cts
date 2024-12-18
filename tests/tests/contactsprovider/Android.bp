@@ -4,6 +4,7 @@ package {
 
 android_test {
     name: "CtsContactsProviderTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
 
     compile_multilib: "both",
@@ -15,9 +16,9 @@ android_test {
     ],
 
     libs: [
-        "android.test.mock",
-        "android.test.base",
-        "android.test.runner",
+        "android.test.mock.stubs.test",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
 
     static_libs: [
@@ -25,6 +26,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "truth",
+        "android.provider.flags-aconfig-java",
         "androidx.test.rules",
     ],
 

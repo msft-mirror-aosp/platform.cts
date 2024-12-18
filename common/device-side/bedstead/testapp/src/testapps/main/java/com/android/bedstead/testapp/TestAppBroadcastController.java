@@ -21,7 +21,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.android.compatibility.common.util.enterprise.DeviceAdminReceiverUtils;
+import com.android.bedstead.nene.utils.DeviceAdminReceiverUtils;
 
 /**
  * {@link BroadcastReceiver} allowing for simple control of test apps using broadcasts.

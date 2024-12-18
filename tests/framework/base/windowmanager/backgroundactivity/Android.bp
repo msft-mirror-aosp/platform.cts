@@ -41,6 +41,7 @@ android_test {
         "cts_window_jetpack_utils",
         "com.android.window.flags.window-aconfig-java",
         "android.security.flags-aconfig-java",
+        "Harrier",
     ],
 
     test_suites: [

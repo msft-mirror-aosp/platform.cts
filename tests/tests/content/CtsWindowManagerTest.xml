@@ -28,6 +28,8 @@
 
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
+
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="rm -rf /data/local/tmp/cts" />
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/content" />

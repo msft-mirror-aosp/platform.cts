@@ -13,15 +13,13 @@
 # limitations under the License.
 """Verify multiple cameras take images in same time base."""
 
-import fnmatch
 import logging
 import os
 import threading
 import time
 
 import cv2
-import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy
 
@@ -112,26 +110,26 @@ def _mask_angles_near_extremes(frame_pair_angles):
 
 def _plot_frame_pair_angles(frame_pair_angles, ids, name_with_log_path):
   """Plot the extracted angles."""
-  matplotlib.pyplot.figure('Camera Rotation Angle')
+  plt.figure('Camera Rotation Angle')
   cam0_angles = [i for i, _ in frame_pair_angles]
   cam1_angles = [j for _, j in frame_pair_angles]
-  pylab.plot(range(len(cam0_angles)), cam0_angles, '-r.', alpha=0.5,
-             label=f'{ids[0]}')
-  pylab.plot(range(len(cam1_angles)), cam1_angles, '-g.', alpha=0.5,
-             label=f'{ids[1]}')
-  pylab.legend()
-  pylab.xlabel('Frame number')
-  pylab.ylabel('Rotation angle (degrees)')
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_angles_plot.png')
+  plt.plot(range(len(cam0_angles)), cam0_angles, '-r.', alpha=0.5,
+           label=f'{ids[0]}')
+  plt.plot(range(len(cam1_angles)), cam1_angles, '-g.', alpha=0.5,
+           label=f'{ids[1]}')
+  plt.legend()
+  plt.xlabel('Frame number')
+  plt.ylabel('Rotation angle (degrees)')
+  plt.savefig(f'{name_with_log_path}_angles_plot.png')
 
-  matplotlib.pyplot.figure('Angle Diffs')
+  plt.figure('Angle Diffs')
   angle_diffs = [j-i for i, j in frame_pair_angles]
-  pylab.plot(range(len(angle_diffs)), angle_diffs, '-b.',
-             label=f'cam{ids[1]}-{ids[0]}')
-  pylab.legend()
-  pylab.xlabel('Frame number')
-  pylab.ylabel('Rotation angle difference (degrees)')
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_angle_diffs_plot.png')
+  plt.plot(range(len(angle_diffs)), angle_diffs, '-b.',
+           label=f'cam{ids[1]}-{ids[0]}')
+  plt.legend()
+  plt.xlabel('Frame number')
+  plt.ylabel('Rotation angle difference (degrees)')
+  plt.savefig(f'{name_with_log_path}_angle_diffs_plot.png')
 
 
 class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):
@@ -241,20 +239,9 @@ class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):
     if diff > angular_diff_thresh:
       raise AssertionError(
           f'Too much difference between cameras! Angle 1: {angle_1:.2f}, 2: '
-          f'{angle_2:.2f}, diff: {diff:.3f}, TOL: {angular_diff_thresh}.')
+          f'{angle_2:.2f}, diff: {diff:.3f}, ATOL: {angular_diff_thresh}.')
     else:  # remove frames on PASS
-      temp_files = []
-      try:
-        temp_files = os.listdir(self.log_path)
-      except FileNotFoundError:
-        logging.debug('/tmp directory: %s not found', self.log_path)
-      for file in temp_files:
-        if fnmatch.fnmatch(file, f'{_NAME}_?_*.png'):
-          file_to_remove = os.path.join(self.log_path, file)
-          try:
-            os.remove(file_to_remove)
-          except FileNotFoundError:
-            logging.debug('File not found: %s', str(file))
+      its_session_utils.remove_tmp_files(self.log_path, f'{_NAME}_?_*.png')
 
   def test_multi_camera_frame_sync(self):
     rot_rig = {}

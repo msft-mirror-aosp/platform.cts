@@ -12,7 +12,7 @@ android_test {
         "general-tests",
     ],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
 
     static_libs: [
         "androidx.slice_slice-core",
@@ -26,6 +26,9 @@ android_test {
         "Harrier",
         "junit",
         "truth",
+        "telephony_flags_core_java_lib",
+        "camera_platform_flags_java_lib",
+        "com_android_car_settings_flags_lib",
     ],
 
     srcs: ["src/**/*.java"],

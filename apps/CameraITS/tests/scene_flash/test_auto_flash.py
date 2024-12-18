@@ -27,6 +27,8 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import lighting_control_utils
+import opencv_processing_utils
+import ui_interaction_utils
 
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
 _MEAN_DELTA_ATOL = 15  # mean used for reflective charts
@@ -43,6 +45,14 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
   def setup_class(self):
     super().setup_class()
     self.ui_app = _JETPACK_CAMERA_APP_PACKAGE_NAME
+    # restart CtsVerifier to ensure that correct flags are set
+    ui_interaction_utils.force_stop_app(
+        self.dut, its_base_test.CTS_VERIFIER_PKG)
+    self.dut.adb.shell(
+        'am start -n com.android.cts.verifier/.CtsVerifierActivity')
+
+  def teardown_test(self):
+    ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
 
   def test_auto_flash(self):
     with its_session_utils.ItsSession(
@@ -53,15 +63,22 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
       test_name = os.path.join(self.log_path, _TEST_NAME)
 
+      # close camera after props retrieved, so that ItsTestActivity can open it
+      cam.close_camera()
+
       # check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       facing_front = (props['android.lens.facing'] ==
                       camera_properties_utils.LENS_FACING['FRONT'])
-      should_run = camera_properties_utils.flash(props) or facing_front
-      camera_properties_utils.skip_unless(
-          should_run and
+      should_run_front = (
+          facing_front and
+          first_api_level >= its_session_utils.ANDROID15_API_LEVEL
+      )
+      should_run_rear = (
+          camera_properties_utils.flash(props) and
           first_api_level >= its_session_utils.ANDROID13_API_LEVEL
       )
+      camera_properties_utils.skip_unless(should_run_front or should_run_rear)
 
       # establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
@@ -85,7 +102,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       )
       os.rename(path, no_flash_capture_path)
       cv2_no_flash_image = cv2.imread(str(no_flash_capture_path))
-      y, _, _ = cv2.split(cv2.cvtColor(cv2_no_flash_image, cv2.COLOR_BGR2YUV))
+      y = opencv_processing_utils.convert_to_y(cv2_no_flash_image, 'BGR')
       # Add a color channel dimension for interoperability
       y = np.expand_dims(y, axis=2)
       patch = image_processing_utils.get_image_patch(
@@ -110,7 +127,7 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
       )
       os.rename(path, auto_flash_capture_path)
       cv2_auto_flash_image = cv2.imread(str(auto_flash_capture_path))
-      y, _, _ = cv2.split(cv2.cvtColor(cv2_auto_flash_image, cv2.COLOR_BGR2YUV))
+      y = opencv_processing_utils.convert_to_y(cv2_auto_flash_image, 'BGR')
       # Add a color channel dimension for interoperability
       y = np.expand_dims(y, axis=2)
       patch = image_processing_utils.get_image_patch(
@@ -132,4 +149,3 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-

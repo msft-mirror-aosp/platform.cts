@@ -22,10 +22,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeNotNull;
 
-import android.annotation.NonNull;
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
-import android.companion.virtual.flags.Flags;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
@@ -33,9 +31,9 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -54,7 +52,6 @@ public class StreamedAppBehaviorTest {
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
-    @RequiresFlagsDisabled(Flags.FLAG_STREAM_CAMERA)
     @Test
     public void appsInVirtualDevice_shouldNotHaveAccessToCamera() throws Exception {
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();

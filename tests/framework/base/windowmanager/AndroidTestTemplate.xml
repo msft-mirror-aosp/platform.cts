@@ -19,6 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
         <option name="force-skip-system-props" value="true" />
@@ -27,6 +28,9 @@
         <option name="set-global-setting" key="verifier_engprod" value="1" />
         <!-- settings put global verifier_verify_adb_installs 0 -->
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
+        <!-- keeps the screen on during tests -->
+        <option name="screen-always-on" value="on" />
+        <option name="enable-testing-secondary-user-on-secondary-display" value="true" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true"/>
@@ -110,6 +114,7 @@
         <option name="package" value="android.server.wm.cts"/>
         <option name="runtime-hint" value="1h"/>
         <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
         <!-- DefaultUITraceListener args -->
         <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
         <option name="instrumentation-arg" key="per_class" value="true"/>
@@ -120,6 +125,8 @@
         <option name="pull-pattern-keys" value="perfetto_file_path*"/>
         <option name="directory-keys" value="/sdcard/DumpOnFailure" />
         <option name="directory-keys" value="/data/user/0/android.server.wm.cts/files" />
+        <!-- Collect the files generated on error -->
+        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
         <option name="collect-on-run-ended-only" value="true" />
     </metrics_collector>
 
@@ -128,8 +135,4 @@
         <option name="cleanup" value="true" />
         <option name="push-file" key="CtsDeviceDeprecatedAbiApp.apk" value="/data/local/tmp/cts/CtsDeviceDeprecatedAbiApp.apk" />
     </target_preparer>
-    <object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
-        <!-- Take screenshot upon test failure -->
-        <option name="screenshot-on-failure" value="true" />
-    </object>
 </configuration>

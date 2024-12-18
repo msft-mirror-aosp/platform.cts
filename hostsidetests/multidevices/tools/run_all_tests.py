@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import logging
+import multi_device_utils
 import os
 import os.path
 from pathlib import Path
@@ -21,7 +23,6 @@ import re
 import subprocess
 import tempfile
 import time
-import multi_device_utils
 import yaml
 
 
@@ -110,6 +111,18 @@ def main():
   topdir = tempfile.mkdtemp(prefix='MultiDevice_')
   subprocess.call(['chmod', 'g+rx', topdir])  # Add permissions
 
+  # Parse command-line arguments
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+      '--test_cases',
+      nargs='+',
+      help='Specific test cases to run (space-separated)')
+  parser.add_argument(
+      '--test_files',
+      nargs='+',
+      help='Filter test files by name (substring match, space-separated)')
+  args = parser.parse_args()
+
   config_file_contents = get_config_file_contents()
   device_ids = get_device_serial_number(config_file_contents)
 
@@ -119,7 +132,10 @@ def main():
   # Run tests
   for root, _, files in os.walk(TESTS_DIR):
     for test_file in files:
-      if test_file.endswith('-py-ctsv'):
+      if test_file.endswith('-py-ctsv') and (
+          args.test_files is None or
+          test_file in args.test_files
+      ):
         test_file_path = os.path.join(root, test_file)
         logging.info('Start running test: %s', test_file)
         cmd = [
@@ -129,6 +145,12 @@ def main():
             '--testbed',
             test_file,
         ]
+
+        if args.test_cases:
+          cmd.extend(['--tests'])
+          for test_case in args.test_cases:
+            cmd.extend([test_case])
+
         summary_file_path = os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE)
 
         test_completed = False

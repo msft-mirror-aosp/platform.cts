@@ -1,0 +1,75 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_storage",
+}
+
+android_test {
+    name: "CtsMediaProviderTestCases",
+    defaults: ["cts_defaults"],
+
+    compile_multilib: "both",
+
+    test_suites: [
+        "cts",
+        "general-tests",
+        "sts",
+        "mts-mediaprovider",
+        "mcts-mediaprovider",
+    ],
+
+    libs: [
+        "android.test.mock.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
+    ],
+
+    static_libs: [
+        "androidx.test.core",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "flag-junit",
+        "junit",
+        "truth",
+        "mediaprovider_flags_java_lib",
+    ],
+
+    srcs: [
+        "src/**/*.java",
+        "app/GalleryTestApp/src/**/*.java",
+        ":CtsProviderTestUtils",
+    ],
+
+    min_sdk_version: "21",
+    target_sdk_version: "33",
+
+    platform_apis: true,
+
+    data: [
+        ":CtsProviderGalleryTestApp",
+    ],
+
+    host_required: ["compatibility-host-provider-preconditions"],
+}
+
+filegroup {
+    name: "CtsMediaProviderTestUtils",
+    srcs: [
+        "src/android/provider/cts/media/MediaStoreUtils.java",
+        "src/android/provider/cts/media/MediaProviderTestUtils.java",
+        ":CtsProviderTestUtils",
+    ],
+}
+
+test_module_config {
+    name: "CtsMediaProviderTestCases_NoLarge",
+    base: "CtsMediaProviderTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsMediaProviderTestCases_media_mediastore_downloadstest",
+    base: "CtsMediaProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.media.MediaStore_DownloadsTest"],
+}

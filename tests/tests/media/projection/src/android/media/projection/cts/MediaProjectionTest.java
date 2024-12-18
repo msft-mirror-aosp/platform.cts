@@ -25,7 +25,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import android.app.ActivityManager;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -46,7 +45,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -65,7 +64,7 @@ import java.util.concurrent.TimeUnit;
  * Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionTest {
     private static final String TAG = "MediaProjectionTest";
     private static final int RECORDING_WIDTH = 500;
@@ -91,7 +90,7 @@ public class MediaProjectionTest {
             mContext.getPackageManager().revokeRuntimePermission(
                     mContext.getPackageName(),
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
-                    new UserHandle(ActivityManager.getCurrentUser()));
+                    new UserHandle(mContext.getUserId()));
         });
         mTimeoutMs = 1000 * HW_TIMEOUT_MULTIPLIER;
     }

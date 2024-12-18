@@ -118,6 +118,23 @@ public interface Features {
     String LIST_FILTER_HAS_PROPERTY_FUNCTION = FeatureConstants.LIST_FILTER_HAS_PROPERTY_FUNCTION;
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers whether or not the
+     * AppSearch backend can store the descriptions returned by {@link
+     * AppSearchSchema#getDescription} and {@link AppSearchSchema.PropertyConfig#getDescription}.
+     */
+    String SCHEMA_SET_DESCRIPTION = "SCHEMA_SET_DESCRIPTION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchSchema.EmbeddingPropertyConfig}.
+     *
+     * <p>For details on the embedding search expressions, see {@link AppSearchSession#search} for
+     * the query language and {@link SearchSpec.Builder#setRankingStrategy(String)} for the ranking
+     * language.
+     */
+    String SCHEMA_EMBEDDING_PROPERTY_CONFIG = "SCHEMA_EMBEDDING_PROPERTY_CONFIG";
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
      * SearchSpec#GROUPING_TYPE_PER_SCHEMA}
      */
@@ -143,6 +160,13 @@ public interface Features {
     String SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION = "SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION";
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the support of the
+     * {@link SearchSpec.Builder#addSearchStringParameters} and {@link
+     * SearchSuggestionSpec.Builder#addSearchStringParameters} apis.
+     */
+    String SEARCH_SPEC_SEARCH_STRING_PARAMETERS = "SEARCH_SPEC_SEARCH_STRING_PARAMETERS";
+
+    /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
      * AppSearchSchema.StringPropertyConfig#JOINABLE_VALUE_TYPE_QUALIFIED_ID}, {@link
      * SearchSpec.Builder#setJoinSpec}, and all other join features.
@@ -154,12 +178,6 @@ public interface Features {
      * AppSearchSession#searchSuggestion}.
      */
     String SEARCH_SUGGESTION = "SEARCH_SUGGESTION";
-
-    /**
-     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
-     * AppSearchSchema.StringPropertyConfig.Builder#setDeletionPropagation}.
-     */
-    String SCHEMA_SET_DELETION_PROPAGATION = "SCHEMA_SET_DELETION_PROPAGATION";
 
     /**
      * Feature for {@link #isFeatureSupported(String)}. This feature covers setting schemas with
@@ -203,6 +221,22 @@ public interface Features {
      * EnterpriseGlobalSearchSession}
      */
     String ENTERPRISE_GLOBAL_SEARCH_SESSION = "ENTERPRISE_GLOBAL_SEARCH_SESSION";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * SearchSpec.Builder#addInformationalRankingExpressions}.
+     */
+    String SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS =
+            "SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchBlobHandle}.
+     */
+    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
+    // TODO(b/273591938) unhide the API once it read for API review.
+
+    String BLOB_STORAGE = "BLOB_STORAGE";
 
     /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in

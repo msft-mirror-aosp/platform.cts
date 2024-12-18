@@ -36,7 +36,6 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityTaskManager;
@@ -102,7 +101,9 @@ public class WindowManagerState {
     public static final String STATE_INITIALIZING = "INITIALIZING";
     public static final String STATE_STARTED = "STARTED";
     public static final String STATE_RESUMED = "RESUMED";
+    public static final String STATE_PAUSING = "PAUSING";
     public static final String STATE_PAUSED = "PAUSED";
+    public static final String STATE_STOPPING = "STOPPING";
     public static final String STATE_STOPPED = "STOPPED";
     public static final String STATE_DESTROYED = "DESTROYED";
     public static final String TRANSIT_ACTIVITY_OPEN = "TRANSIT_ACTIVITY_OPEN";
@@ -157,7 +158,7 @@ public class WindowManagerState {
     private String mFocusedApp = null;
     private Boolean mIsHomeRecentsComponent;
     private String mTopResumedActivityRecord = null;
-    final List<String> mResumedActivitiesInRootTasks = new ArrayList<>();
+    final SparseArray<ArrayList<String>> mResumedActivitiesInRootTasks = new SparseArray<>();
     final List<String> mResumedActivitiesInDisplays = new ArrayList<>();
     private Rect mDefaultPinnedStackBounds = new Rect();
     private Rect mPinnedStackMovementBounds = new Rect();
@@ -340,7 +341,7 @@ public class WindowManagerState {
                     || mFocusedApp == null || (mSanityCheckFocusedWindow && mFocusedWindow == null)
                     || !mWindowFramesValid
                     || (mTopResumedActivityRecord == null
-                    || mResumedActivitiesInRootTasks.isEmpty())
+                    || mResumedActivitiesInRootTasks.size() == 0)
                     && !mKeyguardControllerState.keyguardShowing;
         } while (retry && retriesLeft-- > 0);
 
@@ -353,7 +354,7 @@ public class WindowManagerState {
         if (mTopResumedActivityRecord == null) {
             logE("No focused activity found...");
         }
-        if (mResumedActivitiesInRootTasks.isEmpty()) {
+        if (mResumedActivitiesInRootTasks.size() == 0) {
             logE("No resumed activities found...");
         }
         if (mWindowStates.isEmpty()) {
@@ -419,7 +420,10 @@ public class WindowManagerState {
                 addResumedActivity(task.mTasks.get(i));
             }
         } else if (task.mResumedActivity != null) {
-            mResumedActivitiesInRootTasks.add(task.mResumedActivity);
+            final ArrayList<String> resumedActivities =
+                    mResumedActivitiesInRootTasks.get(task.mDisplayId, new ArrayList<>());
+            resumedActivities.add(task.mResumedActivity);
+            mResumedActivitiesInRootTasks.put(task.mDisplayId, resumedActivities);
         }
     }
 
@@ -512,6 +516,20 @@ public class WindowManagerState {
         return null;
     }
 
+    /**
+     * Returns the task display area feature id present on a display, or
+     * {@code DisplayAreaOrganizer.FEATURE_UNDEFINED} if task display area not found.
+     * Note: This is required since an activity can be present on more than one task display areas
+     * if there are visible background users.
+     */
+    public int getTaskDisplayAreaFeatureIdOnDisplay(ComponentName activityName, int displayId) {
+        final DisplayArea tda = getDisplay(displayId).getTaskDisplayArea(activityName);
+        if (tda != null) {
+            return tda.getFeatureId();
+        }
+        return FEATURE_UNDEFINED;
+    }
+
     @Nullable
     public DisplayArea getTaskDisplayArea(ComponentName activityName) {
         final List<DisplayArea> result = new ArrayList<>();
@@ -602,7 +620,18 @@ public class WindowManagerState {
     }
 
     public int getResumedActivitiesCount() {
-        return mResumedActivitiesInRootTasks.size();
+        int count = 0;
+        for (int i = 0; i < mResumedActivitiesInRootTasks.size(); i++) {
+            final ArrayList<String> resumedActivities = mResumedActivitiesInRootTasks.valueAt(i);
+            count += resumedActivities.size();
+        }
+        return count;
+    }
+
+    public int getResumedActivitiesCountOnDisplay(int displayId) {
+        final ArrayList<String> resumedActivitiesOnDisplay =
+                mResumedActivitiesInRootTasks.get(displayId, new ArrayList<>());
+        return resumedActivitiesOnDisplay.size();
     }
 
     public int getResumedActivitiesCountInPackage(String packageName) {
@@ -668,6 +697,16 @@ public class WindowManagerState {
     public Task getRootTaskByActivityType(int activityType) {
         for (Task rootTask : mRootTasks) {
             if (activityType == rootTask.getActivityType()) {
+                return rootTask;
+            }
+        }
+        return null;
+    }
+
+    /** Gets the top root task with the {@code windowingMode}. **/
+    public Task getTopRootTaskByWindowingMode(int windowingMode) {
+        for (Task rootTask : mRootTasks) {
+            if (windowingMode == rootTask.getWindowingMode()) {
                 return rootTask;
             }
         }
@@ -798,15 +837,6 @@ public class WindowManagerState {
 
     public boolean isTaskDisplayAreaIgnoringOrientationRequest(ComponentName activityName) {
         return getTaskDisplayArea(activityName).isIgnoringOrientationRequest();
-    }
-
-    public boolean containsStartedActivities() {
-        for (Task rootTask : mRootTasks) {
-            final Activity activity = rootTask.getActivity(
-                    (a) -> !a.state.equals(STATE_STOPPED) && !a.state.equals(STATE_DESTROYED));
-            if (activity != null) return true;
-        }
-        return false;
     }
 
     public boolean hasActivityState(ComponentName activityName, String activityState) {
@@ -1040,8 +1070,8 @@ public class WindowManagerState {
                 .collect(Collectors.toList());
     }
 
-    @Nullable
-    List<WindowState> getAndAssertNavBarWindowsOnDisplay(int displayId, int expectedNavBarCount) {
+    @NonNull
+    List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
         List<WindowState> navWindows = mDisplays.stream()
                 .filter(dc -> dc.mId == displayId)
                 .filter(dc -> dc.mProviders != null)
@@ -1050,12 +1080,8 @@ public class WindowManagerState {
                 .map(InsetsSourceProvider::getWindowState)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-        // We may need some time to wait for nav bar showing.
-        // It's Ok to get less that expected nav bars here.
-        assertTrue("There should be at most expectedNavBarCount navigation bar on a display",
-                navWindows.size() <= expectedNavBarCount);
 
-        return navWindows.size() == expectedNavBarCount ? navWindows : null;
+        return navWindows;
     }
 
     WindowState getWindowStateForAppToken(String appToken) {
@@ -1076,6 +1102,21 @@ public class WindowManagerState {
         for (WindowState window : mWindowStates) {
             if (window.getName().equals(windowName)) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if at least one window on {@code displayId}. which matches the specified name has shown
+     * it's surface.
+     */
+    public boolean isWindowSurfaceShownOnDisplay(String windowName, int displayId) {
+        for (WindowState window : mWindowStates) {
+            if (window.getName().equals(windowName) && window.getDisplayId() == displayId) {
+                if (window.isSurfaceShown()) {
+                    return true;
+                }
             }
         }
         return false;

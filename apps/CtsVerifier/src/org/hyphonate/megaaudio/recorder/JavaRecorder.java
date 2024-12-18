@@ -82,6 +82,12 @@ public class JavaRecorder extends Recorder {
         return mAudioRecord != null ?  mAudioRecord.getChannelCount() : -1;
     }
 
+    @Override
+    public boolean isMMap() {
+        // Java Streams are never MMAP
+        return false;
+    }
+
     /**
      * The buff to receive the recorder samples
      */
@@ -183,9 +189,12 @@ public class JavaRecorder extends Recorder {
     @Override
     public int startStream() {
         if (LOG) {
-            Log.i(TAG, "startStream() mAudioRecord:" + mAudioRecord);
+            Log.d(TAG, "startStream() mAudioRecord:" + mAudioRecord);
         }
         if (mAudioRecord == null) {
+            if (LOG) {
+                Log.i(TAG, " - ERROR_INVALID_STATE");
+            }
             return ERROR_INVALID_STATE;
         }
         if (mListener != null) {

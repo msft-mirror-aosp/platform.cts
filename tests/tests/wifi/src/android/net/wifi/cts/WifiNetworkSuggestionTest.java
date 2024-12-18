@@ -1173,6 +1173,7 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @Test
     public void testConnectToSuggestionThenRemoveWithLingering() throws Exception {
         assertNotNull(sTestNetwork);
+        boolean hasActiveNetwork = sConnectivityManager.getActiveNetwork() != null;
         WifiNetworkSuggestion suggestion =
                 TestHelper.createSuggestionBuilderWithCredentialFromSavedNetworkWithBssid(
                                 sTestNetwork)
@@ -1188,8 +1189,13 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         callback.waitForAnyCallback(DURATION_NETWORK_DISCONNECT_MILLIS);
         // Should not disconnect immediately
         assertFalse(callback.onLostCalled);
-        // After linger time out, should disconnect.
-        Thread.sleep(DURATION_NETWORK_LINGER_MILLIS);
+        if (hasActiveNetwork) {
+            assertTrue(callback.onLosingCalled);
+        }
+        // Should disconnect immediately
+        ShellIdentityUtils.invokeWithShellPermissions(() ->
+                sWifiManager.disconnect());
+        callback.waitForAnyCallback(DURATION_NETWORK_DISCONNECT_MILLIS);
         assertTrue(callback.onLostCalled);
     }
 

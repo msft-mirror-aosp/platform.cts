@@ -24,10 +24,11 @@ import android.stats.devicepolicy.EventId;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.harrier.policies.EnableSystemApp;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
@@ -48,10 +49,15 @@ public final class SystemAppTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final TestApp sTestApp = sDeviceState.testApps().any();
-    private static final TestAppInstance sTestAppInstance = sTestApp.install();
+    private static TestAppInstance sTestAppInstance;
 
     private static final Package SYSTEM_APP =
             TestApis.packages().systemApps().stream().findFirst().get();
+
+    @BeforeClass
+    public static void setUpClass() {
+        sTestAppInstance = sTestApp.install();
+    }
 
     @AfterClass
     public static void teardownClass() {

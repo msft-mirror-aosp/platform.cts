@@ -17,7 +17,6 @@
 package android.app.cts;
 
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -31,8 +30,8 @@ import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
-import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.FakeView;
+import android.app.stubs.shared.FutureServiceConnection;
 import android.app.stubs.shared.ICloseSystemDialogsTestsService;
 import android.app.stubs.shared.NotificationHelper;
 import android.app.stubs.shared.TestNotificationListener;
@@ -42,6 +41,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -60,18 +60,27 @@ import android.view.WindowManager.LayoutParams;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class CloseSystemDialogsTest {
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private static final String TEST_SERVICE =
             "android.app.stubs.shared.CloseSystemDialogsTestService";
     private static final String APP_COMPAT_ENABLE = "enable";
@@ -95,6 +104,8 @@ public class CloseSystemDialogsTest {
      * Intent#ACTION_CLOSE_SYSTEM_DIALOGS} and we don't want those powers under simulation.
      */
     private static final String APP_HELPER = "com.android.app4";
+
+    private static final UserHelper USER_HELPER = new UserHelper();
 
     private Instrumentation mInstrumentation;
     private FutureServiceConnection mConnection;
@@ -130,10 +141,22 @@ public class CloseSystemDialogsTest {
         mWindowState = new WindowManagerStateHelper();
         enableUserFinal();
 
+        final CountDownLatch latch = new CountDownLatch(1);
+        mContext.getContentResolver().registerContentObserver(
+                Settings.Global.getUriFor(Settings.Global.HIDDEN_API_POLICY), false,
+                new ContentObserver(null) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        super.onChange(selfChange);
+                        latch.countDown();
+                    }
+                });
+
         // We need to test that a few hidden APIs are properly protected in the helper app. The
         // helper app we're using doesn't have the checks disabled because it's not the target of
         // instrumentation, see comment on APP_HELPER for details.
         mPreviousHiddenApiPolicy = setHiddenApiPolicy("1");
+        latch.await(3, TimeUnit.SECONDS);
 
         // Add a receiver that will verify if the intent was sent or not
         mIntentReceiver = new IntentReceiver();
@@ -167,7 +190,9 @@ public class CloseSystemDialogsTest {
         compat(APP_COMPAT_RESET, ActivityManager.LOCK_DOWN_CLOSE_SYSTEM_DIALOGS, APP_HELPER);
         compat(APP_COMPAT_RESET, "NOTIFICATION_TRAMPOLINE_BLOCK", APP_HELPER);
         mNotificationHelper.disableListener(APP_SELF);
-        mNotificationListener.resetData();
+        if (mNotificationListener != null) {
+            mNotificationListener.resetData();
+        }
         // Use test API to prevent PermissionManager from killing the test process when revoking
         // permission.
         SystemUtil.runWithShellPermissionIdentity(
@@ -215,6 +240,14 @@ public class CloseSystemDialogsTest {
         assertCloseSystemDialogsReceived();
     }
 
+    /**
+     * TODO(b/355106764, b/340960913): remove the annotation once populating components of
+     * ManagedServices supports visible background users.
+     */
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test relies on populating"
+            + " components of ManagedServices. The populating components of ManagedServices does"
+            + " not support visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
     @Test
     public void testCloseSystemDialogs_inTrampolineWhenTargetSdkCurrent_isBlockedAndThrows()
             throws Exception {
@@ -232,6 +265,14 @@ public class CloseSystemDialogsTest {
         assertCloseSystemDialogsNotReceived();
     }
 
+    /**
+     * TODO(b/355106764, b/340960913): remove the annotation once populating components of
+     * ManagedServices supports visible background users.
+     */
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test relies on populating"
+            + " components of ManagedServices. The populating components of ManagedServices does"
+            + " not support visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
     @Test
     public void testCloseSystemDialogs_inTrampolineWhenTargetSdk30_isSent() throws Exception {
         int notificationId = 43;
@@ -247,6 +288,14 @@ public class CloseSystemDialogsTest {
     }
 
     /** System doesn't throw on the PI's sender call stack. */
+    /**
+     * TODO(b/355106764, b/340960913): remove the annotation once populating components of
+     * ManagedServices supports visible background users.
+     */
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test relies on populating"
+            + " components of ManagedServices. The populating components of ManagedServices does"
+            + " not support visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
     @Test
     public void testCloseSystemDialogs_inTrampolineViaPendingIntentWhenTargetSdkCurrent_isBlocked()
             throws Exception {
@@ -263,6 +312,14 @@ public class CloseSystemDialogsTest {
         assertCloseSystemDialogsNotReceived();
     }
 
+    /**
+     * TODO(b/355106764, b/340960913): remove the annotation once populating components of
+     * ManagedServices supports visible background users.
+     */
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test relies on populating"
+            + " components of ManagedServices. The populating components of ManagedServices does"
+            + " not support visible background users at the moment, so skipping these tests for"
+            + " secondary_user_on_secondary_display.")
     @Test
     public void testCloseSystemDialogs_inTrampolineViaPendingIntentWhenTargetSdk30_isSent()
             throws Exception {
@@ -278,6 +335,10 @@ public class CloseSystemDialogsTest {
         assertCloseSystemDialogsReceived();
     }
 
+    // TODO(b/340960913): remove the annotation once accessibility supports visible background users
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "This test relies on accessibility."
+            + " The accessibility does not support visible background users at the moment,"
+            + " so skipping these tests for secondary_user_on_secondary_display.")
     @Test
     public void testCloseSystemDialogs_withWindowAboveShadeAndTargetSdk30_isSent()
             throws Exception {
@@ -480,7 +541,7 @@ public class CloseSystemDialogsTest {
 
     private static Context getContextForSaw(Context context) {
         DisplayManager displayManager = context.getSystemService(DisplayManager.class);
-        Display display = displayManager.getDisplay(DEFAULT_DISPLAY);
+        Display display = displayManager.getDisplay(USER_HELPER.getMainDisplayId());
         Context displayContext = context.createDisplayContext(display);
         return displayContext.createWindowContext(TYPE_APPLICATION_OVERLAY, null);
     }

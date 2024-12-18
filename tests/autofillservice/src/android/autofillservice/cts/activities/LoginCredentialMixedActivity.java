@@ -15,44 +15,82 @@
  */
 package android.autofillservice.cts.activities;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.autofillservice.cts.R;
+import android.autofillservice.cts.testcore.OneTimeTextWatcher;
+import android.credentials.CredentialOption;
+import android.credentials.GetCredentialException;
+import android.credentials.GetCredentialRequest;
+import android.credentials.GetCredentialResponse;
 import android.os.Bundle;
+import android.os.OutcomeReceiver;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+
+import androidx.credentials.PasswordCredential;
 
 /**
  * Same as {@link LoginActivity}, but with login fields integrated with CredentialManager, and an
  * additional payment field to make the activity mixed.
  */
-public class LoginCredentialMixedActivity extends LoginActivity {
+public class LoginCredentialMixedActivity extends AbstractAutoFillActivity {
 
-    private static final String CREDENTIAL_HINT =
-            "credential={\"get\":{\"credentialOptions\":[{\"type\":\"android.credentials."
-                    + "TYPE_PASSWORD_CREDENTIAL\",\"requestData\":{\"androidx.credentials.BUNDLE"
-                    + "_KEY_IS_AUTO_SELECT_ALLOWED\":false,\"androidx.credentials.BUNDLE_KEY_"
-                    + "ALLOWED_USER_IDS\":[]},\"candidateQueryData\":{\"androidx.credentials."
-                    + "BUNDLE_KEY_IS_AUTO_SELECT_ALLOWED\":false,\"androidx.credentials.BUNDLE_"
-                    + "KEY_ALLOWED_USER_IDS\":[]},\"isSystemProviderRequired\":false}]}}";
     private static final String USERNAME_HINT = "username";
     private static final String PASSWORD_HINT = "password";
     private static final String CREDIT_HINT = "creditCardNumber";
 
-    // a complete credential hint has a json credential option appended to the hint.
-    private static final String INCOMPLETE_CREDENTIAL_HINT = "credential";
-
+    private LinearLayout mUsernameContainer;
+    EditText mUsernameEditText;
+    EditText mPasswordEditText;
     private EditText mCreditEditText;
+    FillExpectation mExpectation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.mUsernameEditText.setAutofillHints(USERNAME_HINT, CREDENTIAL_HINT);
-        this.mPasswordEditText.setAutofillHints(PASSWORD_HINT, CREDENTIAL_HINT);
+        setContentView(getContentView());
+
+        mUsernameContainer = findViewById(R.id.username_container);
+        mUsernameEditText = findViewById(R.id.username);
+        mPasswordEditText = findViewById(R.id.password);
+
+        this.mUsernameEditText.setAutofillHints(USERNAME_HINT);
+        this.mPasswordEditText.setAutofillHints(PASSWORD_HINT);
         this.mCreditEditText = findViewById(R.id.card_number);
-        this.mCreditEditText.setAutofillHints(CREDIT_HINT, INCOMPLETE_CREDENTIAL_HINT);
+        this.mCreditEditText.setAutofillHints(CREDIT_HINT);
+        GetCredentialRequest.Builder builder = new GetCredentialRequest.Builder(new Bundle());
+        builder.addCredentialOption(
+                new CredentialOption.Builder(
+                        "android.credentials.TYPE_PASSWORD_CREDENTIAL",
+                        new Bundle(),
+                        new Bundle()).build());
+        OutcomeReceiver<GetCredentialResponse, GetCredentialException> outcomeReceiver = result -> {
+            androidx.credentials.Credential credential = androidx.credentials.Credential.createFrom(
+                    result.getCredential().getType(), result.getCredential().getData());
+            if (credential instanceof PasswordCredential) {
+                PasswordCredential pwCredential = (PasswordCredential) credential;
+                mUsernameEditText.setText(pwCredential.getId());
+                mPasswordEditText.setText(pwCredential.getPassword());
+            }
+        };
+        this.mUsernameEditText.setPendingCredentialRequest(builder.build(), outcomeReceiver);
+        this.mPasswordEditText.setPendingCredentialRequest(builder.build(), outcomeReceiver);
     }
 
-    @Override
     protected int getContentView() {
         return R.layout.mixed_fields_important_for_credential_manager;
+    }
+
+    /**
+     * Sets the expectation for an autofill request (for all fields), so it can be asserted through
+     * {@link #assertAutoFilled()} later.
+     */
+    public void expectAutoFill(String username, String password) {
+        mExpectation = new FillExpectation(username, password);
+        mUsernameEditText.addTextChangedListener(mExpectation.mUsernameWatcher);
+        mPasswordEditText.addTextChangedListener(mExpectation.mPasswordWatcher);
     }
 
     /**
@@ -66,5 +104,50 @@ public class LoginCredentialMixedActivity extends LoginActivity {
     public void expectCreditCardAutoFill(String creditNumber) {
         mExpectation = new FillExpectation("credit", creditNumber, mCreditEditText);
         mCreditEditText.addTextChangedListener(mExpectation.mCustomFieldWatcher);
+    }
+
+    /**
+     * Asserts the activity was auto-filled with the values passed to
+     * {@link #expectAutoFill(String, String)}.
+     */
+    public void assertAutoFilled() throws Exception {
+        assertWithMessage("expectAutoFill() not called").that(mExpectation).isNotNull();
+        if (mExpectation.mUsernameWatcher != null) {
+            mExpectation.mUsernameWatcher.assertAutoFilled();
+        }
+        if (mExpectation.mPasswordWatcher != null) {
+            mExpectation.mPasswordWatcher.assertAutoFilled();
+        }
+        if (mExpectation.mCustomFieldWatcher != null) {
+            mExpectation.mCustomFieldWatcher.assertAutoFilled();
+        }
+    }
+
+    @Override
+    public void clearFocus() {
+        syncRunOnUiThread(() -> ((View) mUsernameContainer.getParent()).requestFocus());
+    }
+
+    /**
+     * Holder for the expected auto-fill values.
+     */
+    final class FillExpectation {
+        private final OneTimeTextWatcher mUsernameWatcher;
+        private final OneTimeTextWatcher mPasswordWatcher;
+        final OneTimeTextWatcher mCustomFieldWatcher;
+
+        FillExpectation(String username, String password) {
+            mUsernameWatcher = username == null ? null
+                    : new OneTimeTextWatcher("username", mUsernameEditText, username);
+            mPasswordWatcher = password == null ? null
+                    : new OneTimeTextWatcher("password", mPasswordEditText, password);
+            mCustomFieldWatcher = null;
+        }
+
+        FillExpectation(String type, String value, EditText customField) {
+            mUsernameWatcher = null;
+            mPasswordWatcher = null;
+            mCustomFieldWatcher = new OneTimeTextWatcher(type, customField, value);
+        }
     }
 }

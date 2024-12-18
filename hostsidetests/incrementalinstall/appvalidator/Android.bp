@@ -36,8 +36,8 @@ android_test_helper_app {
         "incremental-install-common-lib",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     jni_libs: [
         "libpath_checker_jni",

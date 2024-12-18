@@ -32,6 +32,8 @@ import com.android.queryable.queries.UserHandleQuery;
 import com.android.queryable.queries.UserHandleQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when
  * {@link DeviceAdminReceiver#onTransferAffiliatedProfileOwnershipComplete(Context, UserHandle)}
@@ -123,6 +125,7 @@ public final class DeviceAdminTransferAffiliatedProfileOwnershipCompleteEvent ex
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminTransferAffiliatedProfileOwnershipCompleteEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -137,6 +140,7 @@ public final class DeviceAdminTransferAffiliatedProfileOwnershipCompleteEvent ex
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminTransferAffiliatedProfileOwnershipCompleteEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);
@@ -144,6 +148,7 @@ public final class DeviceAdminTransferAffiliatedProfileOwnershipCompleteEvent ex
         }
 
         /** Sets the {@link UserHandle} which was received. */
+        @CanIgnoreReturnValue
         public DeviceAdminTransferAffiliatedProfileOwnershipCompleteEventLogger setUser(
                 UserHandle user) {
             mEvent.mUser = new SerializableParcelWrapper<>(user);

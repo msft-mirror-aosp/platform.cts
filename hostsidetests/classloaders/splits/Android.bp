@@ -18,8 +18,8 @@ package {
 
 java_test_host {
     name: "CtsClassloaderSplitsHostTestCases",
-    defaults: [ "cts_defaults" ],
-    srcs: [ "src/**/*.java" ],
+    defaults: ["cts_defaults"],
+    srcs: ["src/**/*.java"],
     libs: [
         "compatibility-host-util",
         "cts-tradefed",
@@ -34,7 +34,7 @@ java_test_host {
         "CtsClassloaderSplitAppFeatureA",
         "CtsClassloaderSplitAppFeatureB",
     ],
-    data: [
+    device_common_data: [
         ":CtsClassloaderSplitApp",
         ":CtsClassloaderSplitAppFeatureA",
         ":CtsClassloaderSplitAppFeatureB",

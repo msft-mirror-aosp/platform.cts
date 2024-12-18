@@ -47,6 +47,7 @@ interface IAppControl {
     void unregisterPhoneAccountWithHandle( in PhoneAccountHandle handle);
     UserHandle getProcessUserHandle();
     int getProcessUid();
+    void cleanup();
 
     // The below AIDL methods all need to return a BaseTransaction:
     NoDataTransaction registerDefaultPhoneAccount();

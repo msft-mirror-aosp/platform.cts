@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.platform.test.annotations.Presubmit;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintJob;
@@ -51,6 +52,7 @@ import java.util.ArrayList;
 /**
  * Test interface from the application to the print service.
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class InterfaceForAppsTest extends BasePrintTest {
     private static final String TEST_PRINTER = "Test printer";

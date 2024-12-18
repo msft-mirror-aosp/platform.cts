@@ -18,6 +18,7 @@ package com.android.compatibility.common.deviceinfo;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +29,8 @@ import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
@@ -35,11 +38,11 @@ import com.android.compatibility.common.util.DeviceInfoStore;
 import com.android.compatibility.common.util.DummyActivity;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Optional;
-import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Screen device info collector.
@@ -83,9 +86,9 @@ public final class ScreenDeviceInfo extends DeviceInfo {
         // TODO (b/202855636) store info from both extensions and sidecar if both are present
         if (ExtensionsUtil.isExtensionVersionValid()) {
             // Extensions is available on device.
-            final Version extensionVersion = ExtensionsUtil.getExtensionVersion();
+            final int extensionVersion = ExtensionsUtil.getExtensionVersion();
             store.addResult("wm_jetpack_version",
-                    "[Extensions]" + extensionVersion.toString());
+                    "[Extensions]" + extensionVersion);
             final Activity activity = ScreenDeviceInfo.this.launchActivity(
                     "com.android.compatibility.common.deviceinfo",
                     DummyActivity.class,
@@ -125,31 +128,35 @@ public final class ScreenDeviceInfo extends DeviceInfo {
      *
      * b/329875626 for reference.
      */
-    private int[] getDeviceStateIdentifiers(DeviceStateManager deviceStateManager) {
+    @NonNull
+    private int[] getDeviceStateIdentifiers(@NonNull DeviceStateManager deviceStateManager) {
         try {
-
-            return deviceStateManager.getSupportedStates();
+            final List<DeviceState> deviceStates = deviceStateManager.getSupportedDeviceStates();
+            final int[] identifiers = new int[deviceStates.size()];
+            for (int i = 0; i < deviceStates.size(); i++) {
+                identifiers[i] = deviceStates.get(i).getIdentifier();
+            }
+            return identifiers;
         } catch (NoSuchMethodError e) {
-            return getDeviceStateIdentifiersFromMethod(deviceStateManager,
-                    getMethod(deviceStateManager.getClass(), "getSupportedDeviceStates"));
+            return getDeviceStateIdentifiersUsingReflection(deviceStateManager);
         }
     }
 
     /**
-     * Attempst to retrieve the array of device state identifiers from the provided {@link Method}
+     * Attempts to retrieve the array of device state identifiers from {@link DeviceStateManager}
      * using reflection.
      */
-    private int[] getDeviceStateIdentifiersFromMethod(DeviceStateManager deviceStateManager,
-            Method getSupportedDeviceStatesMethod) {
+    @NonNull
+    private int[] getDeviceStateIdentifiersUsingReflection(
+            @NonNull DeviceStateManager deviceStateManager) {
+        Method getSupportedStatesMethod = getMethod(deviceStateManager.getClass(),
+                "getSupportedStates");
+        if (getSupportedStatesMethod == null) {
+            return new int[0];
+        }
+
         try {
-            List<Object> supportedDeviceStates =
-                    (List<Object>) getSupportedDeviceStatesMethod.invoke(deviceStateManager);
-            int[] identifiers = new int[supportedDeviceStates.size()];
-            for (int i = 0; i < supportedDeviceStates.size(); i++) {
-                Class<?> c = Class.forName("android.hardware.devicestate.DeviceState");
-                int id = (int) getMethod(c, "getIdentifier").invoke(supportedDeviceStates.get(i));
-                identifiers[i] = id;
-            }
+            final int[] identifiers = (int[]) getSupportedStatesMethod.invoke(deviceStateManager);
             return identifiers;
         } catch (Exception ignored) {
             return new int[0];
@@ -160,7 +167,8 @@ public final class ScreenDeviceInfo extends DeviceInfo {
      * Returns the {@link Method} for the provided {@code methodName} on the provided
      * {@code classToCheck}. If that method does not exist, return {@code null};
      */
-    private Method getMethod(Class<?> classToCheck, String methodName) {
+    @Nullable
+    private Method getMethod(@NonNull Class<?> classToCheck, @NonNull String methodName) {
         try {
             return classToCheck.getMethod(methodName);
         } catch (NoSuchMethodException e) {

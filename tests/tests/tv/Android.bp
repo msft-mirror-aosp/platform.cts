@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_tv_os",
 }
 
 android_library {
@@ -25,10 +26,11 @@ android_library {
     ],
     libs: [
         "platform-test-annotations",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
+        "android.media.tv.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.rules",
         "androidx.test.ext.truth",
@@ -39,7 +41,9 @@ android_library {
 
     // sdk_version: "test_current",
     platform_apis: true,
-    resource_dirs: ["res"],
+    resource_dirs: [
+        "res",
+    ],
 }
 
 android_test {
@@ -50,7 +54,6 @@ android_test {
         "cts",
         "general-tests",
     ],
-
     static_libs: [
         "CtsTvTestCases_lib",
     ],
@@ -72,4 +75,11 @@ android_test_helper_app {
         "androidx.legacy_legacy-support-v4",
         "androidx.test.rules",
     ],
+}
+
+test_module_config {
+    name: "CtsTvTestCases_Presubmit",
+    base: "CtsTvTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
 }

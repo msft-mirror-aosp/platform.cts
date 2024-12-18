@@ -1,102 +1,62 @@
 {
   "mainline-presubmit": [
         {
-            "name": "CtsScopedStorageCoreHostTest[com.google.android.mediaprovider.apex]",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageCoreHostTest[com.google.android.mediaprovider.apex]"
         },
         {
-            "name": "CtsScopedStorageHostTest[com.google.android.mediaprovider.apex]",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageHostTest[com.google.android.mediaprovider.apex]"
         },
         {
-            "name": "CtsScopedStorageDeviceOnlyTest[com.google.android.mediaprovider.apex]",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageDeviceOnlyTest[com.google.android.mediaprovider.apex]"
         },
         {
-            "name": "CtsScopedStorageBypassDatabaseOperationsTest[com.google.android.mediaprovider.apex]",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageBypassDatabaseOperationsTest[com.google.android.mediaprovider.apex]"
         },
         {
-            "name": "CtsScopedStorageGeneralTest[com.google.android.mediaprovider.apex]",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageGeneralTest[com.google.android.mediaprovider.apex]"
         },
         {
-            "name": "CtsScopedStorageRedactUriTest[com.google.android.mediaprovider.apex]",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageRedactUriTest[com.google.android.mediaprovider.apex]"
+        }
+    ],
+    "mediaprovider-mainline-presubmit": [
+        {
+            "name": "CtsScopedStorageCoreHostTest"
+        },
+        {
+            "name": "CtsScopedStorageHostTest"
+        },
+        {
+            "name": "CtsScopedStorageDeviceOnlyTest"
+        },
+        {
+            "name": "CtsScopedStorageBypassDatabaseOperationsTest"
+        },
+        {
+            "name": "CtsScopedStorageGeneralTest"
+        },
+        {
+            "name": "CtsScopedStorageRedactUriTest"
         }
     ],
     "presubmit": [
         {
-            "name": "CtsScopedStorageCoreHostTest",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageCoreHostTest"
         },
         {
-            "name": "CtsScopedStorageHostTest",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageHostTest"
         },
         {
-            "name": "CtsScopedStorageDeviceOnlyTest",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageDeviceOnlyTest"
         },
         {
-            "name": "CtsScopedStorageBypassDatabaseOperationsTest",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageBypassDatabaseOperationsTest"
         },
         {
-            "name": "CtsScopedStorageGeneralTest",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageGeneralTest"
         },
         {
-            "name": "CtsScopedStorageRedactUriTest",
-            "options": [
-                {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-                }
-            ]
+            "name": "CtsScopedStorageRedactUriTest"
         }
     ],
     "presubmit-large": [
@@ -106,15 +66,7 @@
     ],
     "postsubmit": [
         {
-          "name": "CtsAppCloningMediaProviderHostTest",
-          "options": [
-            {
-              "include-filter": "android.scopedstorage.cts.host.AppCloningMediaProviderHostTest#testGetFilesInDirectoryViaMediaProvider"
-            },
-            {
-              "include-filter": "android.scopedstorage.cts.host.AppCloningMediaProviderHostTest#testInsertCrossUserFilesInDirectoryViaMediaProvider"
-            }
-          ]
+          "name": "CtsAppCloningMediaProviderHostTest_postsubmit-methods"
         }
     ]
 }

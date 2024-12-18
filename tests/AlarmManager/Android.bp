@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsAlarmManagerTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.rules",
@@ -44,4 +45,11 @@ android_test {
     ],
     per_testcase_directory: true,
     min_sdk_version: "29",
+}
+
+test_module_config {
+    name: "CtsAlarmManagerTestCases_NoLarge",
+    base: "CtsAlarmManagerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

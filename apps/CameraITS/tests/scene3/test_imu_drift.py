@@ -17,8 +17,7 @@ import logging
 import math
 import os
 
-import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -26,6 +25,7 @@ import its_base_test
 import camera_properties_utils
 import imu_processing_utils
 import its_session_utils
+import video_processing_utils
 
 _ADV_FEATURE_GYRO_DRIFT_ATOL = 1  # deg/min
 _RAD_TO_DEG = 180/math.pi
@@ -71,13 +71,13 @@ def define_3axis_plot(x, y, z, t, plot_name):
     t: list of time values for x, y, z data
     plot_name: str name of plot and figure
   """
-  pylab.figure(plot_name)
-  pylab.plot(t, x, 'r.', label='x', alpha=0.5, clip_on=False)
-  pylab.plot(t, y, 'g.', label='y', alpha=0.5, clip_on=False)
-  pylab.plot(t, z, 'b.', label='z', alpha=0.5, clip_on=False)
-  pylab.xlabel('Time (seconds)')
-  pylab.title(plot_name)
-  pylab.legend()
+  plt.figure(plot_name)
+  plt.plot(t, x, 'r.', label='x', alpha=0.5, clip_on=False)
+  plt.plot(t, y, 'g.', label='y', alpha=0.5, clip_on=False)
+  plt.plot(t, z, 'b.', label='z', alpha=0.5, clip_on=False)
+  plt.xlabel('Time (seconds)')
+  plt.title(plot_name)
+  plt.legend()
 
 
 def plot_rotation_vector_data(x, y, z, t, log_path):
@@ -94,10 +94,10 @@ def plot_rotation_vector_data(x, y, z, t, log_path):
   # plot RV data
   plot_name = f'{_NAME}_rotation_vector'
   define_3axis_plot(x, y, z, t, plot_name)
-  pylab.ylabel('RV (degrees)')
-  pylab.ylim([-180, 180])
-  pylab.yticks([-180, -135, -90, -45, 0, 45, 90, 135, 180])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('RV (degrees)')
+  plt.ylim([-180, 180])
+  plt.yticks([-180, -135, -90, -45, 0, 45, 90, 135, 180])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
   # find drift per sample and min/max
   x_drift = imu_processing_utils.calc_rv_drift(x)
@@ -115,10 +115,10 @@ def plot_rotation_vector_data(x, y, z, t, log_path):
   # plot RV drift
   plot_name = f'{_NAME}_rotation_vector_drift'
   define_3axis_plot(x_drift, y_drift, z_drift, t, plot_name)
-  pylab.ylabel('RV drift (degrees)')
-  pylab.ylim([min([x_drift_min, y_drift_min, z_drift_min, -_RV_DRIFT_THRESH]),
-              max([x_drift_max, y_drift_max, z_drift_max, _RV_DRIFT_THRESH])])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('RV drift (degrees)')
+  plt.ylim([min([x_drift_min, y_drift_min, z_drift_min, -_RV_DRIFT_THRESH]),
+            max([x_drift_max, y_drift_max, z_drift_max, _RV_DRIFT_THRESH])])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
 
 def plot_raw_gyro_data(x, y, z, t, log_path):
@@ -134,10 +134,10 @@ def plot_raw_gyro_data(x, y, z, t, log_path):
 
   plot_name = f'{_NAME}_gyro_raw'
   define_3axis_plot(x, y, z, t, plot_name)
-  pylab.ylabel('Gyro raw output (degrees)')
-  pylab.ylim([min([np.amin(x), np.amin(y), np.amin(z), -_GYRO_MEAN_THRESH]),
-              max([np.amax(x), np.amax(y), np.amax(x), _GYRO_MEAN_THRESH])])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('Gyro raw output (degrees)')
+  plt.ylim([min([np.amin(x), np.amin(y), np.amin(z), -_GYRO_MEAN_THRESH]),
+            max([np.amax(x), np.amax(y), np.amax(x), _GYRO_MEAN_THRESH])])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
 
 def do_riemann_sums(x, y, z, t, log_path):
@@ -177,10 +177,10 @@ def do_riemann_sums(x, y, z, t, log_path):
   # plot accumulated gyro drift
   plot_name = f'{_NAME}_gyro_drift'
   define_3axis_plot(x_sums, y_sums, z_sums, t, plot_name)
-  pylab.ylabel('Drift (degrees)')
-  pylab.ylim([min([x_min, y_min, z_min, -_GYRO_DRIFT_ATOL]),
-              max([x_max, y_max, z_max, _GYRO_DRIFT_ATOL])])
-  matplotlib.pyplot.savefig(f'{os.path.join(log_path, plot_name)}.png')
+  plt.ylabel('Drift (degrees)')
+  plt.ylim([min([x_min, y_min, z_min, -_GYRO_DRIFT_ATOL]),
+            max([x_max, y_max, z_max, _GYRO_DRIFT_ATOL])])
+  plt.savefig(f'{os.path.join(log_path, plot_name)}.png')
 
   return x_max-x_min, y_max-y_min, z_max-z_min
 
@@ -226,26 +226,31 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(cam, props, self.scene,
                                    self.tablet, self.chart_distance)
 
-      # determine preview size
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
-      preview_size = supported_preview_sizes[-1]
-      logging.debug('Tested preview resolution: %s', preview_size)
+      # get largest size from get_preview_video_sizes_union
+      preview_size = (
+          video_processing_utils.get_preview_video_sizes_union(
+              cam, self.camera_id).largest_size
+      )
+      logging.debug('Testing preview resolution: %s', preview_size)
 
       # start collecting IMU events
       logging.debug('Collecting IMU events')
       cam.start_sensor_events()
 
       # do preview recording
+      preview_stabilization_supported = (
+          camera_properties_utils.preview_stabilization_supported(props)
+      )
       cam.do_preview_recording(
           video_size=preview_size, duration=_IMU_EVENTS_WAIT_TIME,
-          stabilize=True)
+          stabilize=preview_stabilization_supported
+      )
 
       # dump IMU events
       sensor_events = cam.get_sensor_events()
       gyro_events = sensor_events['gyro']  # raw gyro output
-      rv_events = sensor_events['rv']  # rotation vector
+      if 'rv' in sensor_events.keys():
+        rv_events = sensor_events['rv']  # rotation vector
 
     # process gyro data
     x_gyro, y_gyro, z_gyro, times = convert_events_to_arrays(
@@ -257,17 +262,17 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
     x_gyro_drift, y_gyro_drift, z_gyro_drift = do_riemann_sums(
         x_gyro, y_gyro, z_gyro, times, self.log_path)
 
-    # process rotation vector data
-    x_rv, y_rv, z_rv, t_rv = convert_events_to_arrays(
-        rv_events, _NSEC_TO_SEC, 1)
-    # Rotation Vector sampling rate is SENSOR_DELAY_FASTEST in ItsService.java
-    calc_effective_sampling_rate(t_rv, 'rv')
+    if rv_events:
+      # process rotation vector data
+      x_rv, y_rv, z_rv, t_rv = convert_events_to_arrays(
+          rv_events, _NSEC_TO_SEC, 1)
+      # Rotation Vector sampling rate is SENSOR_DELAY_FASTEST in ItsService.java
+      calc_effective_sampling_rate(t_rv, 'rv')
 
-    # plot rotation vector data
-    plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
+      # plot rotation vector data
+      plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
 
     # assert correct gyro behavior
-    first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
     gyro_var_atol = _GYRO_VAR_ATOL * gyro_sampling_rate * _RAD_TO_DEG**2
     for i, samples in enumerate([x_gyro, y_gyro, z_gyro]):
       gyro_mean = samples.mean()
@@ -276,7 +281,7 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       logging.debug('%s gyro_var: %.3e', 'XYZ'[i], gyro_var)
       if gyro_mean >= _GYRO_MEAN_THRESH:
         raise AssertionError(f'gyro_mean: {gyro_mean:.3e}, '
-                             f'TOL={_GYRO_MEAN_THRESH}')
+                             f'ATOL={_GYRO_MEAN_THRESH}')
       if gyro_var >= gyro_var_atol:
         raise AssertionError(f'gyro_var: {gyro_var:.3e}, '
                              f'ATOL={gyro_var_atol:.3e}')
@@ -291,11 +296,6 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
         f'{x_gyro_drift:.3f}, {y_gyro_drift:.3f}, {z_gyro_drift:.3f}, '
         f'{gyro_drift_total:.3f}, test duration: {test_duration:.3f} (sec)'
     )
-
-    # Android 15 checks
-    if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
-      if gyro_drift_total >= _GYRO_DRIFT_ATOL:
-        raise AssertionError(f'{e_msg_stem}, ATOL: {_GYRO_DRIFT_ATOL}')
 
     # Performance checks for advanced features
     logging.debug('Check for advanced features gyro drift.')

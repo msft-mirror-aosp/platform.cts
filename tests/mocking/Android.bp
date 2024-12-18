@@ -18,8 +18,9 @@ package {
 
 android_test {
     name: "CtsMockingTestCases",
+    team: "trendy_team_adte",
     defaults: ["cts_defaults"],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs"],
     static_libs: [
         "mockito-target",
         "androidx.test.rules",
@@ -31,4 +32,11 @@ android_test {
         "general-tests",
     ],
     sdk_version: "current",
+}
+
+test_module_config {
+    name: "CtsMockingTestCases_NoLarge",
+    base: "CtsMockingTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

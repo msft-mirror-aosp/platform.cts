@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_framework_backstage_power",
 }
 
 android_test {
@@ -33,8 +34,8 @@ android_test {
         "flag-junit",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     srcs: [
         "src/**/*.java",
@@ -51,4 +52,11 @@ android_test {
         ":CtsBatterySavingAppTargetApiCurrent",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsBatterySavingTestCases_android_server_power",
+    base: "CtsBatterySavingTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

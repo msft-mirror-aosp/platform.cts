@@ -24,6 +24,8 @@ import camera_properties_utils
 import capture_request_utils
 import its_session_utils
 
+_OPTIONAL_SENSOR_CHECK = ('rv')
+_REQUIRED_SENSOR_CHECK = ('accel', 'gyro', 'mag')
 _SENSOR_EVENTS_WAIT_TIME = 2  # seconds
 
 
@@ -83,11 +85,17 @@ class UnifiedTimeStampTest(its_base_test.ItsBaseTest):
                         ts_sensor_last[sensor])
           if (not ts_image0 < ts_sensor_first[sensor] < ts_image1 or
               not ts_image0 < ts_sensor_last[sensor] < ts_image1):
-            raise AssertionError(
+            e_msg = (
                 f'{sensor} times not bounded by camera! camera: '
                 f'{ts_image0}:{ts_image1}, {sensor}: '
-                f'{ts_sensor_first[sensor]}:{ts_sensor_last[sensor]}')
-
+                f'{ts_sensor_first[sensor]}:{ts_sensor_last[sensor]}'
+            )
+            if sensor in _REQUIRED_SENSOR_CHECK:
+              raise AssertionError(e_msg)
+            elif sensor in _OPTIONAL_SENSOR_CHECK:
+              raise AssertionError(
+                  f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}'
+              )
 
 if __name__ == '__main__':
   test_runner.main()

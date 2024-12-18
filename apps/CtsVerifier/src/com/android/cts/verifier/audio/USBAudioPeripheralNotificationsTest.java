@@ -27,7 +27,6 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
 
@@ -44,6 +43,7 @@ public class USBAudioPeripheralNotificationsTest extends PassFailButtons.Activit
             TAG = USBAudioPeripheralNotificationsTest.class.getSimpleName();
 
     private AudioManager    mAudioManager;
+    private ConnectListener mConnectionListener;
 
     private TextView mHeadsetInName;
     private TextView mHeadsetOutName;
@@ -81,8 +81,8 @@ public class USBAudioPeripheralNotificationsTest extends PassFailButtons.Activit
 
         mHeadsetPlugMessage = (TextView)findViewById(R.id.uap_messages_plug_message);
 
-        mAudioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        mAudioManager = getSystemService(AudioManager.class);
+        mConnectionListener = new ConnectListener();
 
         mHeadsetPlugReceiver = new HeadsetPlugReceiver();
         IntentFilter filter = new IntentFilter();
@@ -94,6 +94,18 @@ public class USBAudioPeripheralNotificationsTest extends PassFailButtons.Activit
 
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionListener);
+        super.onStop();
     }
 
     //

@@ -16,7 +16,9 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
+import static android.telephony.satellite.SatelliteSubscriberInfo.IMSI_MSISDN;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,11 +29,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.telephony.SubscriptionManager;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
@@ -39,6 +44,8 @@ import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
+import android.telephony.satellite.SatelliteSubscriberInfo;
+import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -53,6 +60,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -512,62 +522,68 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE, callback1.modemState);
         sSatelliteManager.unregisterForModemStateChanged(callback);
 
+        int[] sosDatagramTypes = {SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                SatelliteManager.DATAGRAM_TYPE_LAST_SOS_MESSAGE_STILL_NEED_HELP,
+                SatelliteManager.DATAGRAM_TYPE_LAST_SOS_MESSAGE_NO_HELP_NEEDED};
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         String mText = "This is a test datagram message";
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
-        callback1.clearModemStates();
-        sSatelliteManager.sendDatagram(
-                SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
-                getContext().getMainExecutor(), resultListener::offer);
+        for (int datagramType : sosDatagramTypes) {
+            callback1.clearModemStates();
+            sSatelliteManager.sendDatagram(
+                    datagramType, datagram, true,
+                    getContext().getMainExecutor(), resultListener::offer);
 
-        Integer errorCode;
-        try {
-            errorCode = resultListener.poll(TIMEOUT, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            fail("testSatelliteModemStateChanged: Got InterruptedException in waiting"
-                    + " for the sendDatagram result code");
-            return;
-        }
-        assertNotNull(errorCode);
-        Log.d(TAG, "testSatelliteModemStateChanged: sendDatagram errorCode="
-                + errorCode);
-
-        assertFalse(callback.waitUntilResult(1));
-        assertTrue(callback1.waitUntilResult(2));
-        assertTrue(callback1.getTotalCountOfModemStates() >= 2);
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING,
-                callback1.getModemState(0));
-        if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
-            /**
-             * Modem state should have the following transitions:
-             * 1) IDLE to TRANSFERRING.
-             * 2) TRANSFERRING to LISTENING.
-             * 3) LISTENING to IDLE
-             */
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_LISTENING,
-                    callback1.getModemState(1));
-            /**
-             * Satellite will stay at LISTENING mode for 3 minutes by default. Thus, we will skip
-             * checking the last state transition.
-             */
-        } else {
-            /**
-             * Modem state should have the following transitions:
-             * 1) IDLE to TRANSFERRING.
-             * 2) TRANSFERRING to IDLE.
-             */
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE,
-                    callback1.getModemState(1));
-        }
-
-        if (!originalEnabledState) {
-            // Restore original modem enabled state.
-            requestSatelliteEnabled(false);
+            Integer errorCode;
+            try {
+                errorCode = resultListener.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                fail("testSatelliteModemStateChanged: Got InterruptedException in waiting"
+                        + " for the sendDatagram result code");
+                return;
+            }
+            assertNotNull(errorCode);
+            Log.d(TAG, "testSatelliteModemStateChanged: sendDatagram errorCode="
+                    + errorCode);
 
             assertFalse(callback.waitUntilResult(1));
-            assertTrue(callback1.waitUntilResult(1));
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback1.modemState);
-            assertFalse(isSatelliteEnabled());
+            assertTrue(callback1.waitUntilResult(2));
+            assertTrue(callback1.getTotalCountOfModemStates() >= 2);
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING,
+                    callback1.getModemState(0));
+            if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
+                /**
+                 * Modem state should have the following transitions:
+                 * 1) IDLE to TRANSFERRING.
+                 * 2) TRANSFERRING to LISTENING.
+                 * 3) LISTENING to IDLE
+                 */
+                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_LISTENING,
+                        callback1.getModemState(1));
+                /**
+                 * Satellite will stay at LISTENING mode for 3 minutes by default. Thus, we will
+                 * skip
+                 * checking the last state transition.
+                 */
+            } else {
+                /**
+                 * Modem state should have the following transitions:
+                 * 1) IDLE to TRANSFERRING.
+                 * 2) TRANSFERRING to IDLE.
+                 */
+                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE,
+                        callback1.getModemState(1));
+            }
+
+            if (!originalEnabledState) {
+                // Restore original modem enabled state.
+                requestSatelliteEnabled(false);
+
+                assertFalse(callback.waitUntilResult(1));
+                assertTrue(callback1.waitUntilResult(1));
+                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback1.modemState);
+                assertFalse(isSatelliteEnabled());
+            }
         }
         sSatelliteManager.unregisterForModemStateChanged(callback1);
 
@@ -811,8 +827,13 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.registerForNtnSignalStrengthChanged(
                         getContext().getMainExecutor(), callback));
-        assertThrows(SecurityException.class,
-                () -> sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback));
+        try {
+            sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback);
+            fail("Expected IllegalArgumentException or SecurityException");
+        } catch (IllegalArgumentException | SecurityException ex) {
+            assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
+            logd(ex.toString());
+        }
     }
 
     @Test
@@ -854,5 +875,111 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.getSatellitePlmnsForCarrier(
                         getActiveSubIDForCarrierSatelliteTest()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForSatelliteSupportedStateChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteSupportedStateCallbackTest satelliteSupportedStateCallback =
+                new SatelliteSupportedStateCallbackTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSupportedStateChanged(
+                        getContext().getMainExecutor(), satelliteSupportedStateCallback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForCommunicationAllowedStateChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteCommunicationAllowedStateCallbackTest satelliteCommunicationAllowedStateCallback =
+                new SatelliteCommunicationAllowedStateCallbackTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForCommunicationAllowedStateChanged(
+                        getContext().getMainExecutor(),
+                        satelliteCommunicationAllowedStateCallback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteSubscriberProvisionStatus() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<List<SatelliteSubscriberProvisionStatus>> enabled =
+                new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<List<SatelliteSubscriberProvisionStatus>,
+                SatelliteManager.SatelliteException>
+                receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<SatelliteSubscriberProvisionStatus> result) {
+                        Log.d(TAG, "onResult: result.size=" + result.size());
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSatelliteSubscriberProvisionStatus(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testProvisionSatellite() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Boolean> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        final int slotId0 = 0;
+        final int idType = IMSI_MSISDN;
+        final List<SatelliteSubscriberInfo> list = new ArrayList<>(
+                Collections.singleton(new SatelliteSubscriberInfo.Builder()
+                        .setSubscriberId("09876543").setCarrierId(12345).setNiddApn("")
+                        .setSubId(SubscriptionManager.getSubscriptionId(
+                                slotId0)).setSubscriberIdType(idType).build()));
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        Log.d(TAG, "onResult: result=" + result);
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(),
+                        receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testSendIntent_ActionSatelliteSubscribersChanged() {
+        if (!shouldTestSatellite()) return;
+
+        Context context = getContext();
+        Intent intent = new Intent(ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED);
+        // Throws SecurityException as it is not a system app.
+        assertThrows(SecurityException.class, () -> context.sendBroadcast(intent));
     }
 }

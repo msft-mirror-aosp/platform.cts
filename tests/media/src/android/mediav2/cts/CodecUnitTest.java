@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
 import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
+import static android.media.codec.Flags.FLAG_NUM_INPUT_SLOTS;
 
 import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
@@ -46,7 +47,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -70,10 +70,9 @@ public class CodecUnitTest {
 
     @SmallTest
     // Following tests were added in Android R and are not limited to c2.android.* codecs.
-    // Hence limit the tests to Android R and above and also annotate as NonMainlineTest
+    // Hence limit the tests to Android R and above and also annotate as FrameworkSpecificTest
     @SdkSuppress(minSdkVersion = 30)
     @FrameworkSpecificTest
-    @NonMainlineTest
     public static class TestApi extends CodecTestBase {
         private final CodecDecoderBlockModelTestBase.LinearBlockWrapper
                 mLinearInputBlock = new CodecDecoderBlockModelTestBase.LinearBlockWrapper();
@@ -2792,14 +2791,39 @@ public class CodecUnitTest {
             mCodec.release();
         }
 
+        @RequiresFlagsEnabled({FLAG_NUM_INPUT_SLOTS})
+        @ApiTest(apis = {"android.media.MediaFormat#KEY_NUM_SLOTS"})
+        @Test
+        public void testNumInputSlots() throws IOException, InterruptedException {
+            MediaFormat format = getSampleVideoFormat();
+            String mediaType = format.getString(MediaFormat.KEY_MIME);
+            String codecName = MEDIA_CODEC_LIST_ALL.findDecoderForFormat(format);
+            mCodec = MediaCodec.createDecoderByType(mediaType);
+            configureCodec(format, true, false, false, MediaCodec.CONFIGURE_FLAG_USE_BLOCK_MODEL);
+            mCodec.start();
+            assertTrue(
+                    "KEY_NUM_SLOTS not found in input format: " + mCodec.getInputFormat(),
+                    mCodec.getInputFormat().containsKey(MediaFormat.KEY_NUM_SLOTS));
+            int numInputSlots = mCodec.getInputFormat().getInteger(MediaFormat.KEY_NUM_SLOTS);
+            assertTrue("KEY_NUM_SLOTS is not positive: " + numInputSlots, numInputSlots > 0);
+            while (!mAsyncHandle.isInputQueueEmpty()) {
+                int bufferIndex = mAsyncHandle.getInput().first;
+                assertTrue(
+                        "bufferIndex " + bufferIndex +
+                        " is out of range [0, " + numInputSlots + ")",
+                        bufferIndex < numInputSlots);
+            }
+            mCodec.stop();
+            mCodec.release();
+        }
+
     }
 
     @SmallTest
     // Following tests were added in Android R and are not limited to c2.android.* codecs.
-    // Hence limit the tests to Android R and above and also annotate as NonMainlineTest
+    // Hence limit the tests to Android R and above and also annotate as FrameworkSpecificTest
     @SdkSuppress(minSdkVersion = 30)
     @FrameworkSpecificTest
-    @NonMainlineTest
     public static class TestApiNative {
         @Rule
         public Timeout timeout = new Timeout(PER_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);

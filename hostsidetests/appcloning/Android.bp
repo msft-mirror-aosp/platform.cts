@@ -14,10 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_profile_experiences",
 }
 
 java_test_host {
     name: "CtsAppCloningHostTest",
+    team: "trendy_team_android_profile_experiences",
     srcs: [
         "hostside/src/com/android/cts/appcloning/BaseHostTestCase.java",
         "hostside/src/com/android/cts/appcloning/AppCloningBaseHostTest.java",
@@ -40,7 +42,7 @@ java_test_host {
         "cts",
     ],
     test_config: "AndroidTestAppCloning.xml",
-    data: [
+    device_common_data: [
         ":CtsAppCloningTestApp",
         ":CtsAppCloningIntentRedirectionCloneProfileApp",
         ":CtsAppCloningIntentRedirectionOwnerProfileApp",
@@ -70,7 +72,7 @@ java_test_host {
         "cts",
     ],
     test_config: "ContactsSharingAppCloningTest.xml",
-    data: [
+    device_common_data: [
         ":CtsAppCloningNotLaunchableCloneProfileApp",
         ":CtsAppCloningLaunchableCloneProfileApp",
         ":CtsManagedProfileOwnerApp",
@@ -97,9 +99,26 @@ java_test_host {
         "cts",
     ],
     test_config: "IntentRedirectionAppCloningTest.xml",
-    data: [
+    device_common_data: [
         ":CtsAppCloningIntentRedirectionCloneProfileApp",
         ":CtsAppCloningIntentRedirectionOwnerProfileApp",
         ":CtsIntentRedirectionTestApp",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsAppCloningHostTest_NoLarge",
+    base: "CtsAppCloningHostTest",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.platform.test.annotations.LargeTest"],
+}
+
+test_module_config_host {
+    name: "CtsAppCloningHostTest_WithLargeAndFlaky",
+    base: "CtsAppCloningHostTest",
+    test_suites: ["general-tests"],
+    include_annotations: [
+        "android.platform.test.annotations.LargeTest",
+        "android.platform.test.annotations.FlakyTest",
     ],
 }

@@ -39,6 +39,8 @@ import android.test.ActivityInstrumentationTestCase2;
 import android.view.WindowInsets;
 import android.view.WindowMetrics;
 
+import com.android.window.flags.Flags;
+
 public class ConfigurationScreenLayoutTest
         extends ActivityInstrumentationTestCase2<OrientationActivity> {
 
@@ -131,9 +133,14 @@ public class ConfigurationScreenLayoutTest
      *         {@link Configuration#SCREENLAYOUT_SIZE_MASK} defined
      */
     private int computeScreenLayout(Activity activity) {
-        final WindowInsets windowInsets = activity.getWindowManager().getCurrentWindowMetrics()
-                .getWindowInsets();
-        final Insets insets = windowInsets.getInsets(systemBars() | displayCutout());
+        final Insets insets;
+        if (!Flags.insetsDecoupledConfiguration()) {
+            final WindowInsets windowInsets = activity.getWindowManager().getCurrentWindowMetrics()
+                    .getWindowInsets();
+            insets = windowInsets.getInsets(systemBars() | displayCutout());
+        } else {
+            insets = Insets.NONE;
+        }
         return reduceScreenLayout(activity, insets, BIGGEST_LAYOUT);
     }
 

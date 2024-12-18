@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_smartos",
 }
 
 android_test {
@@ -24,7 +25,7 @@ android_test {
         "cts",
         "general-tests",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     static_libs: [
         "androidx.test.core",
         "androidx.test.rules",

@@ -106,19 +106,19 @@ public final class StringQueryHelper<E extends Queryable>
     @Override
     public E matchesAnnotation(com.android.queryable.annotations.StringQuery queryAnnotation) {
         if (!queryAnnotation.startsWith().equals(DEFAULT_STRING_QUERY_PARAMETERS_VALUE)) {
-            startsWith(queryAnnotation.startsWith());
+            E unused = startsWith(queryAnnotation.startsWith());
         }
         if (!queryAnnotation.isEqualTo().equals(DEFAULT_STRING_QUERY_PARAMETERS_VALUE)) {
-            isEqualTo(queryAnnotation.isEqualTo());
+            E unused = isEqualTo(queryAnnotation.isEqualTo());
         }
         if (!queryAnnotation.isNotEqualTo().equals(DEFAULT_STRING_QUERY_PARAMETERS_VALUE)) {
-            isNotEqualTo(queryAnnotation.isNotEqualTo());
+            E unused = isNotEqualTo(queryAnnotation.isNotEqualTo());
         }
         if (queryAnnotation.isNull().equals(OptionalBoolean.TRUE)) {
-            isNull();
+            E unused = isNull();
         }
         if (queryAnnotation.isNull().equals(OptionalBoolean.FALSE)) {
-            isNotNull();
+            E unused = isNotNull();
         }
 
         return mQuery;

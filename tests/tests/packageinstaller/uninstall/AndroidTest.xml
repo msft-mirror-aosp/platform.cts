@@ -20,6 +20,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
@@ -29,6 +30,7 @@
         <option name="set-global-setting" key="verifier_verify_adb_installs" value="0" />
         <option name="restore-settings" value="true" />
         <option name="set-global-setting" key="unused_static_shared_lib_min_cache_period" value="0" />
+        <option name="enable-testing-secondary-user-on-secondary-display" value="true" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -49,6 +51,8 @@
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/uninstall" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts"/>
         <!-- Ensure the UI is ready and in an idle state before running tests -->
+        <option name="run-command" value="settings put global device_provisioned 1" />
+        <option name="run-command" value="settings put secure user_setup_complete 1" />
         <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
         <option name="run-command" value="wm dismiss-keyguard" />
         <!-- Collapse notifications -->
@@ -62,7 +66,10 @@
         <option name="cleanup" value="true" />
         <option name="push" value="CtsSelfUninstallingTestApp.apk->/data/local/tmp/cts/uninstall/CtsSelfUninstallingTestApp.apk" />
         <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/uninstall/CtsEmptyTestApp.apk" />
+        <option name="push" value="CtsArchiveInstallerApp.apk->/data/local/tmp/cts/uninstall/CtsArchiveInstallerApp.apk" />
         <option name="push" value="CtsArchiveTestApp.apk->/data/local/tmp/cts/uninstall/CtsArchiveTestApp.apk" />
+        <option name="push" value="HelloWorldAppV1.apk->/data/local/tmp/cts/uninstall/HelloWorldAppV1.apk" />
+        <option name="push" value="HelloWorldAppV2.apk->/data/local/tmp/cts/uninstall/HelloWorldAppV2.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer">

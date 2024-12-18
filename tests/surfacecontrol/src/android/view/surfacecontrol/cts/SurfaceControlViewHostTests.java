@@ -16,9 +16,9 @@
 package android.view.surfacecontrol.cts;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
-import static android.server.wm.CtsWindowInfoUtils.assertAndDumpWindowState;
-import static android.server.wm.CtsWindowInfoUtils.tapOnWindow;
-import static android.server.wm.CtsWindowInfoUtils.tapOnWindowCenter;
+import static android.server.wm.CtsWindowInfoUtils.getWindowCenter;
+import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
+import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
@@ -29,16 +29,23 @@ import static android.view.SurfaceControlViewHost.SurfacePackage;
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+import static android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withFlags;
+import static com.android.cts.input.inputeventmatchers.InputEventMatchersKt.withMotionAction;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -90,13 +97,19 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.PopupWindow;
+import android.window.InputTransferToken;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.DebugInputRule;
+import com.android.cts.input.UinputTouchDevice;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
 import com.android.window.flags.Flags;
@@ -107,14 +120,17 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Ensure end-to-end functionality of SurfaceControlViewHost.
@@ -136,6 +152,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             }
         }
     }
+
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     private static final String TAG = "SurfaceControlViewHostTests";
 
@@ -191,6 +210,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     private CountDownLatch mSvCreatedLatch;
 
+    UinputTouchDevice mTouchScreen;
+
+    private int mDisplayId;
+
     class MotionConsumingSurfaceView extends SurfaceView {
         MotionConsumingSurfaceView(Context c) {
             super(c);
@@ -224,6 +247,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.launchActivity(null);
+        mDisplayId = mActivity.getDisplayId();
+        mTouchScreen = new UinputTouchScreen(mInstrumentation, mActivity.getDisplay());
         mInstrumentation.waitForIdleSync();
         // Wait for device animation that shows above the activity to leave.
         waitForWindowOnTop(mActivity.getWindow());
@@ -243,6 +268,51 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         }
         mConnections.clear();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        mTouchScreen.close();
+    }
+
+    private static int[] getViewLocationOnScreen(@NonNull View view) {
+        final int[] xy = new int[2];
+        view.getLocationOnScreen(xy);
+        return xy;
+    }
+
+    private static Point getViewCenterOnScreen(@NonNull View view) {
+        final int[] xy = getViewLocationOnScreen(view);
+        final int viewWidth = view.getWidth();
+        final int viewHeight = view.getHeight();
+
+        return new Point(xy[0] + viewWidth / 2, xy[1] + viewHeight / 2);
+    }
+
+    private void globalTapOnViewCenter(@NonNull View view) {
+        final Point location = getViewCenterOnScreen(view);
+        UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(location.x, location.y);
+        pointer.lift();
+    }
+
+    private void globalTapOnWindowCenter(@NonNull Supplier<IBinder> windowTokenSupplier)
+            throws InterruptedException {
+        final Point center = getWindowCenter(windowTokenSupplier, mDisplayId);
+        UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(center.x, center.y);
+        pointer.lift();
+    }
+
+    private void globalTapOnWindowCorner(@NonNull Supplier<IBinder> windowTokenSupplier)
+            throws InterruptedException {
+        globalTapOnWindow(windowTokenSupplier, 0 /*xOffset*/, 0 /*yOffset*/);
+    }
+
+    private void globalTapOnWindow(@NonNull Supplier<IBinder> windowTokenSupplier, int xOffset,
+            int yOffset) throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, mDisplayId);
+        if (bounds == null) {
+            fail("Could not get bounds for window!");
+        }
+
+        UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(bounds.left + xOffset,
+                bounds.top + yOffset);
+        pointer.lift();
     }
 
     private void addSurfaceView(int width, int height) throws Throwable {
@@ -431,30 +501,27 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     leftMargin, topMargin);
             mInstrumentation.waitForIdleSync();
             waitUntilEmbeddedViewDrawn();
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
 
             final int[] surfaceLocation = new int[2];
             mSurfaceView.getLocationOnScreen(surfaceLocation);
 
             final int displayX = surfaceLocation[0] + viewX;
             final int displayY = surfaceLocation[1] + viewY;
-            final long downTime = SystemClock.uptimeMillis();
-            mCtsTouchUtils.injectDownEvent(mInstrumentation, downTime, displayX, displayY,
-                    null /*eventInjectionListener*/, /* useGlobalInjection=*/ true);
-            mCtsTouchUtils.injectUpEvent(mInstrumentation, downTime, true /*useCurrentEventTime*/,
-                    displayX, displayY, /* waitForAnimations= */ true,
-                    /* eventInjectionListener= */ null, /* useGlobalInjection= */ true);
 
-            assertEquals("Expected to capture all injected events.", 2, events.size());
-            final float epsilon = 0.001f;
+            UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(displayX, displayY);
+            pointer.lift();
+
+            PollingCheck.waitFor(() -> (events.size() == 2));
             events.forEach(e -> {
                 assertEquals("Expected to get the x coordinate in View space.",
-                        viewX, e.getX(), epsilon);
+                        viewX, e.getX(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
                 assertEquals("Expected to get the y coordinate in View space.",
-                        viewY, e.getY(), epsilon);
+                        viewY, e.getY(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
                 assertEquals("Expected to get raw x coordinate in Display space.",
-                        displayX, e.getRawX(), epsilon);
+                        displayX, e.getRawX(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
                 assertEquals("Expected to get raw y coordinate in Display space.",
-                        displayY, e.getRawY(), epsilon);
+                        displayY, e.getRawY(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
             });
         }
     }
@@ -587,6 +654,38 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     @Test
+    public void testReceivesOutsideEvents() throws Throwable {
+        final CountDownLatch outsideEventLatch = new CountDownLatch(1);
+        mEmbeddedView = new Button(mActivity);
+        mEmbeddedView.setOnTouchListener((view, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                outsideEventLatch.countDown();
+            }
+            return true;
+        });
+
+        mEmbeddedLayoutParams = new WindowManager.LayoutParams(mEmbeddedViewWidth,
+                mEmbeddedViewHeight, WindowManager.LayoutParams.TYPE_APPLICATION, 0,
+                PixelFormat.OPAQUE);
+
+        final int marginLeft = 20;
+        final int marginTop = 20;
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, true /*onTop*/,
+                marginLeft, marginTop);
+        mInstrumentation.waitForIdleSync();
+
+        mActivityRule.runOnUiThread(() -> {
+            mEmbeddedLayoutParams.flags |= FLAG_WATCH_OUTSIDE_TOUCH;
+            mVr.relayout(mEmbeddedLayoutParams);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        // Tap outside the embedded window.
+        globalTapOnWindow(mEmbeddedView::getWindowToken, -10 /*xOffset*/, -10 /*yOffset*/);
+        assertTrue(outsideEventLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
+    }
+
+    @Test
     public void testFocusable() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
@@ -614,17 +713,14 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitUntilEmbeddedViewDrawn();
 
         // Tap where the embedded window is placed to ensure focus is given via touch
-        assertTrue("Failed to tap on embedded",
-                tapOnWindowCenter(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        /* useGlobalInjection= */ true, null /* outCoords */));
+        globalTapOnWindowCenter(mEmbeddedView::getWindowToken);
+
         assertWindowFocused(mEmbeddedView, true);
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
 
         // Tap where the host window is placed to ensure focus is given back to host when touched
-        assertTrue("Failed to tap on host",
-                tapOnWindowCenter(mInstrumentation, () -> mViewParent.getWindowToken(),
-                        /* useGlobalInjection= */ true, null /* outCoords */));
+        globalTapOnWindowCenter(mViewParent::getWindowToken);
         assertWindowFocused(mEmbeddedView, false);
         // assert host does not have focus
         assertWindowFocused(mViewParent, true);
@@ -651,9 +747,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         waitUntilViewDrawn(embeddedViewChild);
 
-        assertTrue("Failed to tap on embedded child",
-                tapOnWindowCenter(mInstrumentation, embeddedViewChild::getWindowToken,
-                        /* useGlobalInjection= */ true, null /* outCoords */));
+        globalTapOnWindowCenter(embeddedViewChild::getWindowToken);
         // When tapping on the child embedded window, it should gain focus.
         assertWindowFocused(embeddedViewChild, true);
         // assert parent embedded window does not have focus.
@@ -661,9 +755,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
 
-        assertTrue("Failed to tap on embedded parent",
-                tapOnWindow(mInstrumentation, () -> mEmbeddedView.getWindowToken(),
-                        new Point(1, 1) /* offset */, /* useGlobalInjection= */ true));
+        globalTapOnWindowCorner(mEmbeddedView::getWindowToken);
+
         // When tapping on the parent embedded window, it should gain focus.
         assertWindowFocused(mEmbeddedView, true);
         // assert child embedded window does not have focus.
@@ -681,22 +774,20 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mSvCreatedLatch.await(5, TimeUnit.SECONDS);
 
         // Tap where the embedded window is placed to ensure focus is given via touch
-        assertTrue("Failed to tap on embedded",
-                tapOnWindowCenter(mInstrumentation, () -> {
-                    try {
-                        return mTestService.getWindowToken();
-                    } catch (RemoteException e) {
-                        return null;
-                    }
-                }, /* useGlobalInjection= */ true, null /* outCoords */));
+        globalTapOnWindowCenter(() -> {
+            try {
+                return mTestService.getWindowToken();
+            } catch (RemoteException e) {
+                fail("Could not get token from service, got " + e);
+                return null;
+            }
+        });
         assertTrue(mTestService.waitForFocus(true));
         // assert host does not have focus
         assertWindowFocused(mSurfaceView, false);
 
         // Tap where the host window is placed to ensure focus is given back to host when touched
-        assertTrue("Failed to tap on host",
-                tapOnWindowCenter(mInstrumentation, () -> mViewParent.getWindowToken(),
-                        /* useGlobalInjection= */ true, null /* outCoords */));
+        globalTapOnWindowCenter(mViewParent::getWindowToken);
         assertTrue(mTestService.waitForFocus(false));
         // assert host does not have focus
         assertWindowFocused(mViewParent, true);
@@ -867,11 +958,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         // Check if SurfacePackage copy remains valid even though the original package has
         // been released.
-        boolean success = tapOnWindowCenter(mInstrumentation,
-                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true,
-                null /* outCoords */);
-        assertAndDumpWindowState(TAG, "Failed to find embedded window to tap", success);
-        assertTrue(mClicked);
+        globalTapOnWindowCenter(mEmbeddedView::getWindowToken);
+        PollingCheck.waitFor(() -> mClicked);
     }
 
     @Test
@@ -1000,11 +1088,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         // Check to see if the click went through - this only would happen if the surface package
         // was replaced
-        boolean success = tapOnWindowCenter(mInstrumentation,
-                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true,
-                null /* outCoords */);
-        assertAndDumpWindowState(TAG, "Failed to tap on window", success);
-        assertTrue(mClicked);
+        globalTapOnWindowCenter(mEmbeddedView::getWindowToken);
+        PollingCheck.waitFor(() -> mClicked);
     }
 
     class MotionRecordingSurfaceView extends SurfaceView {
@@ -1066,6 +1151,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         @Override
         protected void onDetachedFromWindow() {
+            if (mPackage == null) {
+                return;
+            }
             mPackage.notifyDetachedFromWindow();
         }
 
@@ -1189,6 +1277,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     @Test
+    @DebugInputRule.DebugInput(bug = 329439551)
     public void testEmbeddedViewReceivesInputOnBottom() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         mEmbeddedView.setOnClickListener((View v) -> {
@@ -1200,8 +1289,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitUntilEmbeddedViewDrawn();
 
         // We should receive no input until we punch a hole
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView,
-                /* waitForAnimations= */ true, /* useGlobalInjection= */ true);
+        globalTapOnViewCenter(mSurfaceView);
         mInstrumentation.waitForIdleSync();
         assertFalse(mClicked);
 
@@ -1220,11 +1308,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // everything, we should have a standard way to wait on the completion of async
         // operations
         waitForTouchableRegionChanged(originalRegion);
+        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView,
-                /* waitForAnimations= */ true, /* useGlobalInjection= */ true);
-        mInstrumentation.waitForIdleSync();
-        assertTrue(mClicked);
+        globalTapOnViewCenter(mSurfaceView);
+        PollingCheck.waitFor(() -> mClicked);
     }
 
     private ICrossProcessSurfaceControlViewHostTestService getService() throws Exception {
@@ -1265,19 +1352,19 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertTrue("Failed to wait for host window to be visible",
                 waitForWindowVisible(mSurfaceView));
         assertTrue("Failed to wait for embedded window to be visible",
-                waitForWindowVisible(mTestService.getWindowToken()));
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView,
-                /* waitForAnimations= */ true, /* useGlobalInjection= */ true);
+                waitForWindowVisible(mTestService.getWindowToken(),
+                mDisplayId));
 
-        int retryCount = 0;
-        boolean isViewTouchedAndObscured = mTestService.getViewIsTouchedAndObscured();
-        while (!isViewTouchedAndObscured && retryCount < 3) {
-            retryCount++;
-            Thread.sleep(100);
-            isViewTouchedAndObscured = mTestService.getViewIsTouchedAndObscured();
-        }
+        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
+        globalTapOnViewCenter(mSurfaceView);
 
-        assertTrue(isViewTouchedAndObscured);
+        MotionEvent motionEvent = mTestService.getMotionEvent();
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
+                withFlags(MotionEvent.FLAG_WINDOW_IS_OBSCURED)));
+        motionEvent = mTestService.getMotionEvent();
+        assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_UP),
+                withFlags(MotionEvent.FLAG_WINDOW_IS_OBSCURED)));
+
     }
 
     @Test
@@ -1297,12 +1384,12 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertTrue("Failed to wait for host window to be visible",
                 waitForWindowVisible(mSurfaceView));
         assertTrue("Failed to wait for embedded window to be visible",
-                waitForWindowVisible(mTestService.getWindowToken()));
+                waitForWindowVisible(mTestService.getWindowToken(),
+                mDisplayId));
 
-        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView,
-                /* waitForAnimations= */ true, /* useGlobalInjection= */ true);
+        globalTapOnViewCenter(mSurfaceView);
 
-        assertFalse(mTestService.getViewIsTouched());
+        assertNull(mTestService.getMotionEvent());
     }
 
     @Test
@@ -1393,7 +1480,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     parentBounds.left + 100, parentBounds.top + 100);
             return expectedBounds.equals(popupBounds);
         };
-        assertTrue(waitForWindowInfos(hasExpectedFrame, 5, TimeUnit.SECONDS));
+        assertTrue(waitForWindowInfos(hasExpectedFrame, Duration.ofSeconds(5)));
     }
 
     @Test
@@ -1428,8 +1515,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // because the popupView is initially unattached and doesn't have a
         // window token. The supplier is called each time the predicate is
         // tested, eventually returning the window token.
-        assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
+        assertTrue(waitForWindowInfo(hasExpectedDimensions, Duration.ofSeconds(5),
+                popupView::getWindowToken, mDisplayId));
     }
 
     @Test
@@ -1456,8 +1543,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         Predicate<WindowInfo> hasExpectedDimensions =
                 windowInfo -> windowInfo.bounds.width() == 50 && windowInfo.bounds.height() == 50;
-        assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
+        assertTrue(waitForWindowInfo(hasExpectedDimensions, Duration.ofSeconds(5),
+                popupView::getWindowToken, mDisplayId));
     }
 
     class TouchTransferringView extends View {
@@ -1554,8 +1641,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         long downTime = SystemClock.uptimeMillis();
 
         // We inject a down event
-        mCtsTouchUtils.injectDownEvent(mInstrumentation, downTime, injectedX, injectedY, null,
-                /* useGlobalInjection= */ false);
+        mCtsTouchUtils.injectDownEvent(mInstrumentation, downTime, injectedX, injectedY, null);
 
 
         // And this down event should arrive on the embedded view, which should transfer the touch
@@ -1589,6 +1675,40 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     public void testEmbeddedWindowCanTransferTouchGestureToHost_transferTouchGesture()
             throws Throwable {
         testEmbeddedWindowCanTransferTouchGestureToHost(true);
+    }
+
+    @Test
+    public void testEmbeddedCannotStealTouchGestureFromHost() throws Throwable {
+        mTestService = getService();
+        assertNotNull(mTestService);
+
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+
+        InputTransferToken hostInputTransferToken = Objects.requireNonNull(
+                mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
+        // Ask the embedded process to request gesture transfer from the host and then 
+        // verify that the call throws a security exception. We need to do the assertion
+        // in the test process to handle the assertion correctly.
+        assertTrue(mTestService.requestTouchGestureTransferFromHostThrows(hostInputTransferToken));
+    }
+
+    @Test
+    public void testHostCannotStealTouchGestureFromEmbedded() throws Throwable {
+        mTestService = getService();
+        assertNotNull(mTestService);
+
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+
+        InputTransferToken hostInputTransferToken = Objects.requireNonNull(
+                mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
+        InputTransferToken surfacePackageInputTransferToken =
+                mRemoteSurfacePackage.getInputTransferToken();
+        WindowManager wm = mActivity.getSystemService(WindowManager.class);
+        assertThrows(SecurityException.class,
+                () -> wm.transferTouchGesture(surfacePackageInputTransferToken,
+                        hostInputTransferToken));
     }
 
     @Test
@@ -1644,22 +1764,22 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // Assert the KEEP_SCREEN_ON flag is not set on the main window yet.
         assertNotEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
 
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final CountDownLatch keepScreenOnSetLatch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> mSurfaceView.getViewTreeObserver().addOnDrawListener(
-                countDownLatch::countDown));
+                keepScreenOnSetLatch::countDown));
         mTestService.setKeepScreenOnFlag(true);
-        countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        keepScreenOnSetLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
         mWmState.computeState();
         windowState = mWmState.getWindowState(TEST_ACTIVITY);
         // Assert the KEEP_SCREEN_ON flag is now set on the main window.
         assertEquals(FLAG_KEEP_SCREEN_ON, (windowState.getFlags() & FLAG_KEEP_SCREEN_ON));
 
-        final CountDownLatch countDownLatch2 = new CountDownLatch(1);
+        final CountDownLatch keepScreenOnUnsetLatch = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> mSurfaceView.getViewTreeObserver().addOnDrawListener(
-                countDownLatch2::countDown));
+                keepScreenOnUnsetLatch::countDown));
         mTestService.setKeepScreenOnFlag(false);
-        countDownLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        keepScreenOnUnsetLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
 
         mWmState.computeState();
         windowState = mWmState.getWindowState(TEST_ACTIVITY);
@@ -1728,8 +1848,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mSurfaceView.getLocationInWindow(viewInWindow);
         Point point = new Point(viewInWindow[0] + 1, viewInWindow[1] + 1);
 
-        CtsWindowInfoUtils.tapOnWindow(mInstrumentation, () -> mSurfaceView.getWindowToken(),
-                point, /* useGlobalInjection= */ false);
+        CtsWindowInfoUtils.tapOnWindow(mInstrumentation, mSurfaceView::getWindowToken, point,
+                mDisplayId);
 
         assertTrue("Failed to receive touch from host=" + hostGotEvent[0] + " or embedded="
                 + embeddedGotEvent[0], receivedTouches.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));

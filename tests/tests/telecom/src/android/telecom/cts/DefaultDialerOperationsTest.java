@@ -33,6 +33,7 @@ import android.test.InstrumentationTestCase;
 import android.text.TextUtils;
 
 import androidx.test.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import java.util.List;
@@ -210,7 +211,7 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
 
     public void testHandlePinMmPermissions()
             throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         try {
@@ -232,13 +233,16 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
     }
 
     public void testGetAdnForPhoneAccountPermissions() throws Exception {
-        if (!TestUtils.shouldTestTelecom(mContext)) {
+        if (!TestUtils.shouldTestTelecom(mContext) || mPhoneAccountHandle == null) {
             return;
         }
         try {
             mTelecomManager.getAdnUriForPhoneAccount(mPhoneAccountHandle);
             fail("TelecomManager.getAdnUriForPhoneAccount should throw SecurityException if "
-                    + "not default dialer");
+                    + "not default dialer; current is: "
+                    + TestUtils.getDefaultDialer(getInstrumentation())
+                    + ", system is: "
+                    + mTelecomManager.getSystemDialerPackage());
         } catch (SecurityException e) {
         }
 

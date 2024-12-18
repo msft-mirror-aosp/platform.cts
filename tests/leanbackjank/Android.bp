@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsLeanbackJankTestCases",
+    team: "trendy_team_fwk_core_networking",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",
@@ -35,7 +36,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.janktesthelper",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     data: [
         ":CtsLeanbackJankApp",
     ],

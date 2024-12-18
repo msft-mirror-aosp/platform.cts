@@ -25,6 +25,7 @@ android_library {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "compatibility-device-util-axt",
+        "cts-input-lib",
         "cts-wm-util",
         "ctstestrunner-axt",
         "CtsMockInputMethodLib",
@@ -33,6 +34,7 @@ android_library {
         "testng",
         "kotlin-test",
         "statsdprotonano",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",

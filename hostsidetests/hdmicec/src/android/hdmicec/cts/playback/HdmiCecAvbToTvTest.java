@@ -181,6 +181,8 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
         assumeFalse("Skip for audio system devices (b/323469502)",
                 hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
 
+        assumeFalse("Skip for fixed volume device", isFixedVolumeDevice());
+
         // Enable AVB
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                 HdmiCecConstants.VOLUME_CONTROL_ENABLED);
@@ -220,6 +222,8 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
     public void testIncomingVolumeUpdates() throws Exception {
         assumeFalse("Skip for audio system devices (b/323469502)",
                 hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+
+        assumeFalse("Skip for fixed volume device", isFixedVolumeDevice());
 
         // Enable AVB
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,

@@ -18,6 +18,7 @@ package {
 
 android_library {
     name: "cts-wm-shared",
+    sdk_version: "current",
     defaults: ["cts_support_defaults"],
     srcs: [
         "src/**/*.java",

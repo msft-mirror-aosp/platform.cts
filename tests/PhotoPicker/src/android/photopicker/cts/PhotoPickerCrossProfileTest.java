@@ -41,13 +41,13 @@ import androidx.test.uiautomator.UiSelector;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +60,7 @@ import java.util.List;
  */
 @RunWith(BedsteadJUnit4.class)
 @LargeTest
+@RequireNotAutomotive(reason = "Profiles are not supported on AAOS")
 public class PhotoPickerCrossProfileTest extends PhotoPickerBaseTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();

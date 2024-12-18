@@ -35,6 +35,7 @@ public class NetworkRequestInvalidCredentialNetworkSpecifierTestActivity extends
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        mPskRequired = true;
         super.onCreate(savedInstanceState);
         setInfoResources(R.string.wifi_test_network_request_invalid_credential,
                 R.string.wifi_test_network_request_invalid_credential_info, 0);

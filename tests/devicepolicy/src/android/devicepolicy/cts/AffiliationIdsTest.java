@@ -23,7 +23,7 @@ import android.content.Context;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.harrier.policies.AffiliationIds;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
@@ -41,8 +41,6 @@ public final class AffiliationIdsTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-
-    private static final Context sContext = TestApis.context().instrumentedContext();
 
     private ComponentName mAdmin;
     private RemoteDevicePolicyManager mDpm;

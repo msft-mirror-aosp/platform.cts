@@ -30,10 +30,11 @@ android_test {
         "truth",
         "ub-uiautomator",
         "android.os.flags-aconfig-java",
+        "Harrier",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: [
         "src/**/*.java",

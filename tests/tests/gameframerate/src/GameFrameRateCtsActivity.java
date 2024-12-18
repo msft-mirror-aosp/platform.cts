@@ -16,6 +16,7 @@
 
 package android.gameframerate.cts;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -25,6 +26,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.support.test.uiautomator.UiDevice;
 import android.sysprop.SurfaceFlingerProperties;
 import android.util.Log;
@@ -33,9 +35,11 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Optional;
 
 /**
  * An Activity to help with frame rate testing.
@@ -52,12 +56,7 @@ public class GameFrameRateCtsActivity extends Activity {
     private static final float FPS_TOLERANCE_FOR_FRAME_RATE_OVERRIDE = 5;
     private static final long FRAME_RATE_MIN_WAIT_TIME_NANOSECONDS = 1 * 1_000_000_000L;
     private static final long FRAME_RATE_MAX_WAIT_TIME_NANOSECONDS = 10 * 1_000_000_000L;
-
-    // Default game frame rate sets the frame rate to 60 by default, even if the system properties
-    // "ro.surface_flinger.game_default_frame_rate_override" is not set. Ref: GameManagerService
-    // {@link com.android.server.app.GameManagerService#onBootCompleted()}
-    private static final Integer GAME_DEFAULT_FRAMERATE_INT =
-            SurfaceFlingerProperties.game_default_frame_rate_override().orElse(60);
+    private static final int MINIMUM_VENDOR_API_LEVEL = 35; // V
 
     private DisplayManager mDisplayManager;
     private SurfaceView mSurfaceView;
@@ -167,6 +166,10 @@ public class GameFrameRateCtsActivity extends Activity {
                     new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT));
             mSurfaceView.getHolder().addCallback(mSurfaceHolderCallback);
+            if (android.view.flags.Flags.toolkitSetFrameRateReadOnly()) {
+                Window window = getWindow();
+                window.setFrameRatePowerSavingsBalanced(false);
+            }
         }
     }
 
@@ -320,6 +323,13 @@ public class GameFrameRateCtsActivity extends Activity {
                 }
             }
         }
+    }
+
+    private boolean isMinVendorApiLevelAboveV() throws NumberFormatException {
+        String vendorApiLevelStr = SystemProperties.get("ro.vendor.api_level");
+        int apiLevel = Integer.parseInt(vendorApiLevelStr);
+
+        return apiLevel >= MINIMUM_VENDOR_API_LEVEL;
     }
 
     // Returns a range of frame rate that is accepted to
@@ -500,8 +510,43 @@ public class GameFrameRateCtsActivity extends Activity {
         }
         @Override
         public void test(FrameRateObserver frameRateObserver, float initialRefreshRate,
-                int[] frameRateOverrides) throws InterruptedException, IOException {
+                int[] frameRateOverrides) throws InterruptedException,
+                IOException, NumberFormatException {
             Log.i(TAG, "Starting testGameModeFrameRateOverride");
+
+            final String syspropGameDefaultFrameRateOverride =
+                    "ro.surface_flinger.game_default_frame_rate_override";
+
+            // Default game frame rate sets the frame rate to 60 by default,
+            // even if the system properties
+            // "ro.surface_flinger.game_default_frame_rate_override" is not set.
+            // Ref: GameManagerService
+            // {@link com.android.server.app.GameManagerService#onBootCompleted()}
+            final Optional<Integer> gameDefaultFrameRateOptional =
+                    SurfaceFlingerProperties.game_default_frame_rate_override();
+
+            final String syspropDefaultFrameRateDisabled =
+                    "debug.graphics.game_default_frame_rate.disabled";
+            final boolean isDefaultFrameRateDisabled =
+                    SystemProperties.getBoolean("debug.graphics.game_default_frame_rate.disabled",
+                                                false);
+
+            // Here we enforce that the default frame rate is not disabled.
+            // The default frame rate sysprops should be:
+            // 1. "debug.graphics.game_default_frame_rate.disabled" not disabled.
+            // 2. "ro.surface_flinger.game_default_frame_rate_override" with a positive int.
+            assertFalse(syspropDefaultFrameRateDisabled + "should not be disabled",
+                    isDefaultFrameRateDisabled);
+
+            int gameDefaultFrameRateInt = 60;
+            if (isMinVendorApiLevelAboveV()) {
+                assertTrue(syspropGameDefaultFrameRateOverride + "should not be null",
+                        gameDefaultFrameRateOptional.isPresent());
+
+                gameDefaultFrameRateInt = (int) gameDefaultFrameRateOptional.get();
+                assertTrue(syspropGameDefaultFrameRateOverride + "should be a positive integer",
+                        gameDefaultFrameRateInt > 0);
+            }
 
             for (int frameRateOverride : frameRateOverrides) {
 
@@ -527,12 +572,12 @@ public class GameFrameRateCtsActivity extends Activity {
             Log.i(TAG, String.format("Resetting game mode."));
 
             FrameRateRange expectedFrameRate =
-                    getExpectedFrameRate(initialRefreshRate, GAME_DEFAULT_FRAMERATE_INT);
+                    getExpectedFrameRate(initialRefreshRate, gameDefaultFrameRateInt);
             mUiDevice.executeShellCommand(String.format("cmd game reset %s", getPackageName()));
             waitForRefreshRateChange(expectedFrameRate);
             frameRateObserver.observe(initialRefreshRate, expectedFrameRate,
                     String.format("Game Default Frame Rate(%d), expectedFrameRate(%.2f %.2f)",
-                            GAME_DEFAULT_FRAMERATE_INT,
+                            gameDefaultFrameRateInt,
                             expectedFrameRate.min,
                             expectedFrameRate.max));
         }

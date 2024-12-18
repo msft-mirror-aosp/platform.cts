@@ -63,7 +63,7 @@
       <item name="android:taskCloseEnterAnimation">@anim/alpha</item>
       <item name="android:taskCloseExitAnimation">@anim/alpha</item>
     </style>
-    <style name="BackgroundImage" parent="@android:style/Theme.NoTitleBar.Fullscreen">
+    <style name="BackgroundImage" parent="Theme.TranslucentBars">
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode">always</item>
         <item name="android:windowSoftInputMode">stateHidden</item>
@@ -79,15 +79,21 @@
         <item name="android:windowBlurBehindEnabled">false</item>
     </style>
 
+    <style name="MoveAnimationTestTheme" parent="Floating" />
+
+    <style name="MoveAnimationTestTheme.NoMove">
+        <item name="android:windowNoMoveAnimation">true</item>
+    </style>
+
     <style name="Floating" parent="@android:style/Theme.DeviceDefault">
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:windowActionBar">false</item>
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowNoTitle">true</item>
     </style>
-    <style name="Floating.NoMove">
-        <item name="android:windowNoMoveAnimation">true</item>
-    </style>
+
+    <style name="BlurTestTheme" parent="TranslucentDialog" />
+
     <style name="TranslucentDialog" parent="@android:style/Theme.Material.Dialog">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
@@ -100,16 +106,38 @@
         <item name="android:windowSoftInputMode">stateHidden</item>
     </style>
 
+    <style name="LayoutInDisplayCutoutModeUnspecified">
+        <item name="android:windowIsFloating">false</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeNever">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">never</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeDefault">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">default</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeShortEdges">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+    <style name="LayoutInDisplayCutoutModeAlways">
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+    </style>
+    <style name="BlackSystemBars">
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:navigationBarDividerColor">@android:color/black</item>
+    </style>
+
     <!--
         TODO(b/309578419):
         1. Move insets and display cutout related tests to a targetSdk level which is lower than V.
         2. Make activities handle insets properly.
         3. Remove these styles.
     -->
-    <style name="OptOutEdgeToEdge" parent="@android:style/Theme.DeviceDefault">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
-    <style name="OptOutEdgeToEdge.NoActionBar" parent="@android:style/Theme.Material.NoActionBar">
-        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
-    </style>
+    <style name="OptOutEdgeToEdge" parent="@android:style/Theme.DeviceDefault" />
+    <style name="OptOutEdgeToEdge.NoActionBar" parent="@android:style/Theme.Material.NoActionBar" />
+    <style name="OptOutEdgeToEdge.NoStartingWindow" parent="no_starting_window" />
  </resources>

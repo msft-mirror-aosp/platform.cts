@@ -16,7 +16,6 @@
 
 package android.cts.statsdatom.alarm;
 
-import com.android.tradefed.util.RunUtil;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.ProcessStateEnum;
@@ -31,6 +30,7 @@ import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.util.RunUtil;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -38,7 +38,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
-    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final String ALARM_ATOM_TEST_APK = "CtsStatsdAlarmHelper.apk";
     private static final String ALARM_ATOM_TEST_APK_2 = "CtsStatsdAlarmHelper2.apk";
     private static final String ALARM_ATOM_TEST_PACKAGE =
@@ -113,10 +112,6 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testWakeupAlarmOccurred() throws Exception {
-        // For automotive, all wakeup alarm becomes normal alarm. So this
-        // test does not work.
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
-
         final int atomTag = AtomsProto.Atom.WAKEUP_ALARM_OCCURRED_FIELD_NUMBER;
 
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), ALARM_ATOM_TEST_PACKAGE,
@@ -134,8 +129,6 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testAlarmScheduled() throws Exception {
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
-
         final int atomId = AtomsProto.Atom.ALARM_SCHEDULED_FIELD_NUMBER;
 
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), ALARM_ATOM_TEST_PACKAGE, atomId);
@@ -171,8 +164,6 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testAlarmScheduled_exactWithUEA() throws Exception {
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
-
         final int atomId = AtomsProto.Atom.ALARM_SCHEDULED_FIELD_NUMBER;
 
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), ALARM_ATOM_TEST_PACKAGE, atomId);
@@ -199,8 +190,6 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testAlarmScheduled_exactWithSEA() throws Exception {
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
-
         grantAppOpSEA(ALARM_ATOM_TEST_PACKAGE_2);
 
         final int atomId = AtomsProto.Atom.ALARM_SCHEDULED_FIELD_NUMBER;
@@ -229,8 +218,6 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testAlarmBatchDelivered() throws Exception {
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
-
         final int atomId = AtomsProto.Atom.ALARM_BATCH_DELIVERED_FIELD_NUMBER;
 
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), ALARM_ATOM_TEST_PACKAGE, atomId);
@@ -261,8 +248,6 @@ public class AlarmStatsTests extends DeviceTestCase implements IBuildReceiver {
     }
 
     public void testPendingAlarmInfo() throws Exception {
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
-
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), ALARM_ATOM_TEST_PACKAGE,
                 AtomsProto.Atom.PENDING_ALARM_INFO_FIELD_NUMBER);
 

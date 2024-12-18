@@ -18,7 +18,7 @@ package com.android.bedstead.nene.appops;
 
 import static android.os.Build.VERSION_CODES.Q;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_APP_OPS_MODES;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_APP_OPS_MODES;
 
 import android.annotation.TargetApi;
 import android.app.AppOpsManager;
@@ -27,7 +27,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 

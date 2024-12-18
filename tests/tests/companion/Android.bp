@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_framework_cdm",
 }
 
 android_library {
@@ -33,8 +34,8 @@ android_library {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     target_sdk_version: "current",
@@ -58,8 +59,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     defaults: ["cts_defaults"],
@@ -92,8 +93,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     defaults: ["cts_defaults"],
@@ -122,8 +123,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
 
     defaults: ["cts_defaults"],
@@ -155,8 +156,8 @@ android_library {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     target_sdk_version: "current",
@@ -182,8 +183,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     defaults: ["cts_defaults"],
@@ -198,4 +199,35 @@ android_test {
     ],
 
     target_sdk_version: "current",
+}
+
+android_test {
+    name: "cdm_snippet",
+    srcs: [
+        "multidevice/client/src/**/*.kt",
+    ],
+    manifest: "multidevice/client/AndroidManifest.xml",
+
+    platform_apis: true,
+    target_sdk_version: "current",
+
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
+        "cts-companion-common",
+        "cts-companion-uicommon",
+        "kotlin-stdlib",
+        "mobly-bundled-snippets-lib",
+        "mobly-snippet-lib",
+    ],
+    libs: [
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
+    ],
+
+    optimize: {
+        proguard_compatibility: true,
+        proguard_flags_files: ["multidevice/client/proguard.flags"],
+    },
 }

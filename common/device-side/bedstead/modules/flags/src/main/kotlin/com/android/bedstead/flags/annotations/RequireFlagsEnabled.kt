@@ -1,6 +1,5 @@
 package com.android.bedstead.flags.annotations
 
-import com.android.bedstead.flags.FlagsAnnotationExecutor
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
@@ -23,7 +22,7 @@ import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.FUNCTION, AnnotationTarget.TYPE, AnnotationTarget.CLASS)
-@UsesAnnotationExecutor(FlagsAnnotationExecutor::class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.FLAGS)
 annotation class RequireFlagsEnabled(
     /**
      * The list of the feature flags that require to be enabled. Each item is the full flag name

@@ -21,7 +21,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
 import com.android.cts.packagemanager.verify.domain.java.DomainUtils.DOMAIN_1

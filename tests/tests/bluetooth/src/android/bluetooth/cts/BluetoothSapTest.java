@@ -17,23 +17,27 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
+import static android.content.pm.PackageManager.FEATURE_BLUETOOTH;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSap;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.util.Log;
+import android.sysprop.BluetoothProperties;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
@@ -43,213 +47,103 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.time.Duration;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class BluetoothSapTest {
     private static final String TAG = BluetoothSapTest.class.getSimpleName();
 
-    private static final int PROXY_CONNECTION_TIMEOUT_MS = 500;  // ms timeout for Proxy Connect
+    @Mock private BluetoothProfile.ServiceListener mListener;
 
-    private Context mContext;
-    private boolean mHasBluetooth;
-    private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
+    private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofMillis(500);
 
-    private BluetoothSap mBluetoothSap;
-    private boolean mIsProfileReady;
-    private Condition mConditionProfileConnection;
-    private ReentrantLock mProfileConnectionlock;
+    private final BluetoothAdapter mAdapter = BlockingBluetoothAdapter.getAdapter();
+    private final BluetoothDevice mDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final UiAutomation mUiAutomation =
+            InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
-    private boolean mIsSapSupported;
+    private BluetoothSap mService;
 
     @Before
-    public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
 
-        mHasBluetooth = mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_BLUETOOTH);
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
+        assumeTrue(BluetoothProperties.isProfileSapServerEnabled().orElse(false));
 
-        if (!mHasBluetooth) return;
+        assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 
-        mIsSapSupported = TestUtils.isProfileEnabled(BluetoothProfile.SAP);
-        if (!mIsSapSupported) return;
+        assertThat(mAdapter.getProfileProxy(mContext, mListener, BluetoothProfile.SAP)).isTrue();
 
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        ArgumentCaptor<BluetoothProfile> captor = ArgumentCaptor.forClass(BluetoothProfile.class);
+        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+                .onServiceConnected(eq(BluetoothProfile.SAP), captor.capture());
+        mService = (BluetoothSap) captor.getValue();
+        assertThat(mService).isNotNull();
+
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-
-        mAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
-        mProfileConnectionlock = new ReentrantLock();
-        mConditionProfileConnection = mProfileConnectionlock.newCondition();
-        mIsProfileReady = false;
-        mBluetoothSap = null;
-
-        mAdapter.getProfileProxy(mContext, new BluetoothSapServiceListener(),
-                BluetoothProfile.SAP);
     }
 
     @After
-    public void tearDown() throws Exception {
-        if (mHasBluetooth && mIsSapSupported) {
-            if (mAdapter != null && mBluetoothSap != null) {
-                mBluetoothSap.close();
-                mBluetoothSap = null;
-                mIsProfileReady = false;
-            }
-            mUiAutomation.dropShellPermissionIdentity();
-            mAdapter = null;
-        }
+    public void tearDown() {
+        mAdapter.closeProfileProxy(BluetoothProfile.SAP, mService);
+        mUiAutomation.dropShellPermissionIdentity();
     }
 
     @Test
     public void closeProfileProxy() {
-        assumeTrue(mHasBluetooth && mIsSapSupported);
-
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothSap);
-        assertTrue(mIsProfileReady);
-
-        mAdapter.closeProfileProxy(BluetoothProfile.SAP, mBluetoothSap);
-        assertTrue(waitForProfileDisconnect());
-        assertFalse(mIsProfileReady);
+        mAdapter.closeProfileProxy(BluetoothProfile.SAP, mService);
+        verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
+                .onServiceDisconnected(eq(BluetoothProfile.SAP));
     }
 
     @Test
     @MediumTest
     public void getConnectedDevices() {
-        assumeTrue(mHasBluetooth && mIsSapSupported);
-
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothSap);
-
-        assertNotNull(mBluetoothSap.getConnectedDevices());
+        assertThat(mService.getConnectedDevices()).isEmpty();
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mBluetoothSap.getConnectedDevices());
+        assertThrows(SecurityException.class, () -> mService.getConnectedDevices());
     }
 
     @Test
     @MediumTest
     public void getDevicesMatchingConnectionStates() {
-        assumeTrue(mHasBluetooth && mIsSapSupported);
+        int[] connectionState = new int[] {STATE_CONNECTED};
 
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothSap);
-
-        int[] connectionState = new int[]{BluetoothProfile.STATE_CONNECTED};
-
-        assertTrue(mBluetoothSap.getDevicesMatchingConnectionStates(connectionState).isEmpty());
+        assertThat(mService.getDevicesMatchingConnectionStates(connectionState)).isEmpty();
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class,
-                () -> mBluetoothSap.getDevicesMatchingConnectionStates(connectionState));
+        assertThrows(
+                SecurityException.class,
+                () -> mService.getDevicesMatchingConnectionStates(connectionState));
     }
 
     @Test
     @MediumTest
     public void getConnectionState() {
-        assumeTrue(mHasBluetooth && mIsSapSupported);
-
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothSap);
-
-        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-
-        assertEquals(mBluetoothSap.getConnectionState(testDevice),
-                BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(mDevice)).isEqualTo(STATE_DISCONNECTED);
 
         mUiAutomation.dropShellPermissionIdentity();
-        assertEquals(mBluetoothSap.getConnectionState(testDevice),
-                BluetoothProfile.STATE_DISCONNECTED);
+        assertThat(mService.getConnectionState(mDevice)).isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
     @MediumTest
     public void setgetConnectionPolicy() {
-        assumeTrue(mHasBluetooth && mIsSapSupported);
-
-        assertTrue(waitForProfileConnect());
-        assertNotNull(mBluetoothSap);
-
-        assertThrows(NullPointerException.class, () -> mBluetoothSap.setConnectionPolicy(null, 0));
-        assertThrows(NullPointerException.class, () -> mBluetoothSap.getConnectionPolicy(null));
+        assertThrows(NullPointerException.class, () -> mService.setConnectionPolicy(null, 0));
+        assertThrows(NullPointerException.class, () -> mService.getConnectionPolicy(null));
 
         mUiAutomation.dropShellPermissionIdentity();
-        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        assertThrows(SecurityException.class, () -> mBluetoothSap.setConnectionPolicy(testDevice,
-                BluetoothProfile.CONNECTION_POLICY_FORBIDDEN));
-        assertThrows(SecurityException.class, () -> mBluetoothSap.getConnectionPolicy(testDevice));
-    }
-
-    private boolean waitForProfileConnect() {
-        mProfileConnectionlock.lock();
-        try {
-            // Wait for the Adapter to be disabled
-            while (!mIsProfileReady) {
-                if (!mConditionProfileConnection.await(
-                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Profile Connect");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileConnect: interrupted");
-        } finally {
-            mProfileConnectionlock.unlock();
-        }
-        return mIsProfileReady;
-    }
-
-    private boolean waitForProfileDisconnect() {
-        mConditionProfileConnection = mProfileConnectionlock.newCondition();
-        mProfileConnectionlock.lock();
-        try {
-            while (mIsProfileReady) {
-                if (!mConditionProfileConnection.await(
-                        PROXY_CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-                    // Timeout
-                    Log.e(TAG, "Timeout while waiting for Profile Disconnect");
-                    break;
-                } // else spurious wakeups
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForProfileDisconnect: interrupted");
-        } finally {
-            mProfileConnectionlock.unlock();
-        }
-        return !mIsProfileReady;
-    }
-
-    private final class BluetoothSapServiceListener implements BluetoothProfile.ServiceListener {
-
-        @Override
-        public void onServiceConnected(int profile, BluetoothProfile proxy) {
-            mProfileConnectionlock.lock();
-            mBluetoothSap = (BluetoothSap) proxy;
-            mIsProfileReady = true;
-            try {
-                mConditionProfileConnection.signal();
-            } finally {
-                mProfileConnectionlock.unlock();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(int profile) {
-            mProfileConnectionlock.lock();
-            mIsProfileReady = false;
-            try {
-                mConditionProfileConnection.signal();
-            } finally {
-                mProfileConnectionlock.unlock();
-            }
-        }
+        assertThrows(
+                SecurityException.class,
+                () -> mService.setConnectionPolicy(mDevice, CONNECTION_POLICY_FORBIDDEN));
+        assertThrows(SecurityException.class, () -> mService.getConnectionPolicy(mDevice));
     }
 }

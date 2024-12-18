@@ -35,6 +35,7 @@ android_test {
         "Nene",
         "ActivityContext",
         "TestApp",
+        "android.multiuser.flags-aconfig-java",
     ],
     aidl: {
         local_include_dirs: [
@@ -70,4 +71,23 @@ android_test {
         ":CtsVoiceInteractionService",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsVoiceInteractionTestCases_android_server_attention",
+    base: "CtsVoiceInteractionTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.voiceinteraction.cts.HotwordDetectionServiceProximityTest",
+        "android.voiceinteraction.cts.unittests.HotwordDetectedResultTest",
+        "android.voiceinteraction.cts.HotwordDetectionServiceBasicTest",
+        "android.voiceinteraction.cts.AlwaysOnHotwordDetectorTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsVoiceInteractionTestCases_NoHotwordDetectionStressTest",
+    base: "CtsVoiceInteractionTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.voiceinteraction.cts.HotwordDetectionServiceStressTest"],
 }

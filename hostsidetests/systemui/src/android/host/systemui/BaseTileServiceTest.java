@@ -14,9 +14,9 @@
 
 package android.host.systemui;
 
-import com.android.tradefed.util.RunUtil;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.util.RunUtil;
 
 public class BaseTileServiceTest extends DeviceTestCase {
     // Constants for generating commands below.
@@ -162,7 +162,8 @@ public class BaseTileServiceTest extends DeviceTestCase {
 
     private boolean supportedHardware() throws DeviceNotAvailableException {
         String features = getDevice().executeShellCommand("pm list features");
-        return !features.contains("android.hardware.type.television") &&
-                !features.contains("android.hardware.type.watch");
+        return !features.contains("android.hardware.type.automotive")
+                && !features.contains("android.hardware.type.television")
+                && !features.contains("android.hardware.type.watch");
     }
 }

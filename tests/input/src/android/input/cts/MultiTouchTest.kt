@@ -19,15 +19,16 @@ import android.app.ActivityOptions
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.cts.input.EventVerifier
 import android.graphics.PointF
 import android.server.wm.WindowManagerStateHelper
-import android.view.Display.DEFAULT_DISPLAY
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager.LayoutParams.FLAG_SPLIT_TOUCH
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.compatibility.common.util.UserHelper
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withCoordsForPointerIndex
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -46,6 +47,7 @@ class MultiTouchTest {
     private val touchInjector = TouchInjector(instrumentation)
     private val activityName =
         ComponentName(instrumentation.targetContext, CaptureEventActivity::class.java)
+    private val displayId = UserHelper().mainDisplayId
 
     @JvmField
     @Parameterized.Parameter(0)
@@ -60,7 +62,9 @@ class MultiTouchTest {
 
     @Before
     fun setUp() {
-        val bundle = ActivityOptions.makeBasic().setLaunchDisplayId(0).toBundle()
+        val bundle = ActivityOptions.makeBasic().setLaunchDisplayId(
+            displayId
+        ).toBundle()
         val intent = Intent(Intent.ACTION_VIEW)
                 .setComponent(activityName)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -73,7 +77,7 @@ class MultiTouchTest {
         verifier = EventVerifier(activity::getInputEvent)
 
         val wmState = WindowManagerStateHelper()
-        wmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY)
+        wmState.waitForAppTransitionIdleOnDisplay(displayId)
         wmState.waitForActivityOrientation(activityName, orientation)
 
         instrumentation.uiAutomation.syncInputTransactions()
@@ -90,7 +94,10 @@ class MultiTouchTest {
         val secondPointer = PointF(testPointer.x + 10, testPointer.y + 10)
         val secondPointerInScreen = getViewPointerOnScreen(activity.window.decorView, secondPointer)
 
-        touchInjector.sendMultiTouchEvent(arrayOf(firstPointerInScreen, secondPointerInScreen))
+        touchInjector.sendMultiTouchEvent(
+            arrayOf(firstPointerInScreen, secondPointerInScreen),
+            displayId
+        )
 
         verifier.assertReceivedMotion(
             allOf(withMotionAction(MotionEvent.ACTION_DOWN), withCoords(testPointer))

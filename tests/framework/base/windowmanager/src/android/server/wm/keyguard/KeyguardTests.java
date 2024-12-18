@@ -62,6 +62,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
+import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
 import android.server.wm.RotationSession;
 import android.server.wm.UiDeviceUtils;
@@ -91,6 +92,8 @@ public class KeyguardTests extends KeyguardTestBase {
         super.setUp();
         assumeTrue(supportsInsecureLock());
         assertFalse(isUiModeLockedToVrHeadset());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     @Test
@@ -681,6 +684,41 @@ public class KeyguardTests extends KeyguardTestBase {
     }
 
     @Test
+    public void testDismissKeyguard_fromActivityOption_translucentDialog_dismissesKeyguard() {
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.gotoKeyguard();
+
+        launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
+        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY,
+                  "Activity with showWhenLocked attribute should be resumed.");
+        mWmState.assertKeyguardShowingAndOccluded();
+
+        launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
+
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.waitAndAssertKeyguardGone();
+
+        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY, DEFAULT_DISPLAY,
+                  "Activity with showWhenLocked attribute should be resumed.");
+        mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
+    }
+
+    @Test
+    public void testDismissKeyguard_fromActivityOption_translucentActivity_dismissesKeyguard() {
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.gotoKeyguard();
+
+        launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY);
+
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.computeState();
+        mWmState.assertKeyguardGone();
+
+        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY, DEFAULT_DISPLAY,
+                  "Activity with showWhenLocked attribute should be resumed.");
+    }
+
+    @Test
     public void testKeyguardLock() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.gotoKeyguard();
@@ -720,7 +758,7 @@ public class KeyguardTests extends KeyguardTestBase {
         mWmState.waitForDisplayUnfrozen();
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         mWmState.assertValidity();
-        mWmState.assertHomeActivityVisible(false);
+        mWmState.waitAndAssertVisibilityGone(mWmState.getHomeActivityName());
         mWmState.assertKeyguardShowingAndNotOccluded();
         // The {@link SHOW_WHEN_LOCKED_ACTIVITY} has gone because of the 'finish' broadcast.
         mWmState.waitAndAssertActivityRemoved(SHOW_WHEN_LOCKED_ACTIVITY);
@@ -766,9 +804,10 @@ public class KeyguardTests extends KeyguardTestBase {
             separateTestJournal();
             lockScreenSession.gotoKeyguard();
             mWmState.assertKeyguardShowingAndNotOccluded();
-            launchActivity(SHOW_WHEN_LOCKED_ATTR_ACTIVITY);
-            waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ATTR_ACTIVITY, DEFAULT_DISPLAY,
-                    "Activity with showWhenLocked attribute should be resumed.");
+            // TODO(b/375543394): use SHOW_WHEN_LOCKED_ATTR_ACTIVITY once no extra config change
+            launchActivity(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY);
+            waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY,
+                    DEFAULT_DISPLAY, "Activity with showWhenLocked attribute should be resumed.");
             mWmState.assertKeyguardShowingAndOccluded();
             if (assertAod) {
                 mWmState.assertAodNotShowing();
@@ -778,7 +817,7 @@ public class KeyguardTests extends KeyguardTestBase {
                 mWmState.assertAodShowing();
             }
             mWmState.waitForAllStoppedActivities();
-            assertSingleLaunchAndStop(SHOW_WHEN_LOCKED_ATTR_ACTIVITY);
+            assertSingleLaunchAndStop(SHOW_WHEN_LOCKED_ATTR_ROTATION_ACTIVITY);
         }
     }
 

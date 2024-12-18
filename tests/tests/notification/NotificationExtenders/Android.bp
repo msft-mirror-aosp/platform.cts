@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -26,8 +27,8 @@ android_test_helper_app {
         "truth",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "sdk_public_34_android.test.runner",
+        "sdk_public_34_android.test.base",
     ],
     srcs: [
         "src/android/app/notification/extenders/cts/api34/WearableExtenderApi34Test.kt",
@@ -53,8 +54,8 @@ android_test_helper_app {
         "truth",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "sdk_public_34_android.test.runner",
+        "sdk_public_34_android.test.base",
     ],
     srcs: [
         "src/android/app/notification/extenders/cts/current/WearableExtenderApiCurrentTest.kt",
@@ -89,7 +90,7 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    data: [
+    device_common_data: [
         ":CtsNotificationExtenders34TestApp",
         ":CtsNotificationExtendersCurrentTestApp",
     ],

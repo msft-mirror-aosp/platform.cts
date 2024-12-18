@@ -16,10 +16,9 @@
 
 package com.android.bedstead.testapp;
 
-import static com.android.compatibility.common.util.FileUtils.readInputStreamFully;
+import static com.android.bedstead.nene.utils.FileUtils.readInputStreamFully;
 
 import android.content.Context;
-import android.os.Bundle;
 import android.os.UserHandle;
 
 import androidx.annotation.Nullable;
@@ -31,6 +30,9 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.Users;
 import com.android.bedstead.testapp.processor.annotations.TestAppSender;
 import com.android.queryable.collections.QueryableActivityInfoHashSet;
+import com.android.queryable.info.MetadataInfo;
+
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -75,6 +77,7 @@ public final class TestApp {
     /**
      * Install the {@link TestApp} on the device for the given {@link UserReference}.
      */
+    @CanIgnoreReturnValue
     public TestAppInstance install(UserReference user) {
         try {
             pkg().installBytes(user, this::apkBytes);
@@ -162,8 +165,8 @@ public final class TestApp {
     /**
      * Returns an {@link InputStream} of the apk for this app.
      */
-    public InputStream apkStream() {
-        return sContext.getResources().openRawResource(mDetails.mResourceIdentifier);
+    public InputStream apkStream() throws IOException {
+        return sContext.getAssets().open("testapps/" + mDetails.mApp.getApkName());
     }
 
     /**
@@ -225,13 +228,24 @@ public final class TestApp {
         return new QueryableActivityInfoHashSet(mDetails.mActivities);
     }
 
+    /** The activity aliases which exist in the test app. */
+    public QueryableActivityInfoHashSet activityAliases() {
+        return new QueryableActivityInfoHashSet(mDetails.mActivityAliases);
+    }
+
     /**
      * The metadata declared by the test app.
      *
      * <p>Note that currently all values are of type String.
      */
-    public Bundle metadata() {
+    public Set<MetadataInfo> metadata() {
         return mDetails.mMetadata;
+    }
+
+    // TODO(b/325036316): Move policies to device admin test app
+    /** The policies used by the test app. */
+    public Set<Integer> policies() {
+        return mDetails.mPolicies;
     }
 
     @Override

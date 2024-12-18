@@ -4,6 +4,7 @@ package {
 
 android_test {
     name: "CtsProviderTestCases",
+    team: "trendy_team_fwk_telecom",
     defaults: ["cts_defaults"],
 
     compile_multilib: "both",
@@ -12,12 +13,13 @@ android_test {
         "cts",
         "general-tests",
         "sts",
+        "mts-documentsui",
     ],
 
     libs: [
-        "android.test.mock",
-        "android.test.base",
-        "android.test.runner",
+        "android.test.mock.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
         "telephony-common",
     ],
 
@@ -40,7 +42,6 @@ android_test {
 
     srcs: [
         "src/**/*.java",
-        "app/GalleryTestApp/src/**/*.java",
         "app/MultiAuthorityApp/src/**/*.java",
     ],
 
@@ -52,17 +53,62 @@ android_test {
     platform_apis: true,
 
     data: [
-        ":CtsProviderGalleryTestApp",
         ":CtsProviderMultiAuthorityApp",
     ],
-
-    host_required: ["compatibility-host-provider-preconditions"],
 }
 
 filegroup {
     name: "CtsProviderTestUtils",
     srcs: [
         "src/android/provider/cts/ProviderTestUtils.java",
-        "src/android/provider/cts/media/MediaStoreUtils.java",
     ],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_media",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.media."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_settings",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.settings."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_calendar",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.calendar."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_contacts",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.contacts."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_media_mediastore_downloadstest",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.media.MediaStore_DownloadsTest"],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_NoLarge",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_NoSettingsPanel",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.provider.cts.SettingsPanelTest"],
 }

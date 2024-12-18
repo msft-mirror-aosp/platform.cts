@@ -16,6 +16,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_mainline_modularization",
 }
 
 android_test {
@@ -29,7 +30,7 @@ android_test {
         "mts-extservices",
         "mcts-extservices",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
@@ -38,6 +39,6 @@ android_test {
     srcs: [
         "src/**/*.java",
     ],
-    sdk_version: "test_current",
+    platform_apis: true,
     min_sdk_version: "30",
 }

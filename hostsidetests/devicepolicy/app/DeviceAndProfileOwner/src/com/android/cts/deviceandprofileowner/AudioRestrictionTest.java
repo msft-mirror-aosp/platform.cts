@@ -30,7 +30,6 @@ import android.util.Log;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.regex.Pattern;
 
 public class AudioRestrictionTest extends BaseDeviceAdminTest {
     private static final String TAG = AudioRestrictionTest.class.getSimpleName();
@@ -58,7 +57,8 @@ public class AudioRestrictionTest extends BaseDeviceAdminTest {
 
     // Here we test that DISALLOW_ADJUST_VOLUME disallows to unmute volume.
     public void testDisallowAdjustVolume_muted() throws Exception {
-        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)) {
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)
+                || mIsAutomotive) {
             return;
         }
 
@@ -92,7 +92,7 @@ public class AudioRestrictionTest extends BaseDeviceAdminTest {
 
     public void testDisallowAdjustVolume() throws Exception {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT)
-                || mUseFixedVolume || mUseFullVolume) {
+                || mUseFixedVolume || mUseFullVolume || mIsAutomotive) {
             return;
         }
 

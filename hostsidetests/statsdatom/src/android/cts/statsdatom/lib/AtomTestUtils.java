@@ -56,7 +56,7 @@ public final class AtomTestUtils {
     public static void sendAppBreadcrumbReportedAtom(ITestDevice device)
             throws DeviceNotAvailableException {
         sendAppBreadcrumbReportedAtom(device,
-                AppBreadcrumbReported.State.START.ordinal(), /*label=*/ 1);
+                AppBreadcrumbReported.State.START.getNumber(), /*label=*/ 1);
     }
 
     /**

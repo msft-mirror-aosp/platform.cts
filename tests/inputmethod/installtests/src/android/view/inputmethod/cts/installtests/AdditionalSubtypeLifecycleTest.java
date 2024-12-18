@@ -18,6 +18,8 @@ package android.view.inputmethod.cts.installtests;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.ContentResolver;
@@ -40,15 +42,12 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
-import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
-
-import com.google.common.truth.Truth;
 
 import org.junit.After;
 import org.junit.Before;
@@ -61,14 +60,17 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @LargeTest
-@RequireFeature(CommonPackages.FEATURE_INPUT_METHODS)
 @RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public final class AdditionalSubtypeLifecycleTest {
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(15);
+
     private static final InputMethodSubtype TEST_SUBTYPE1 =
             new InputMethodSubtype.InputMethodSubtypeBuilder()
                     .setSubtypeId(1)
@@ -107,52 +109,55 @@ public final class AdditionalSubtypeLifecycleTest {
     }
 
     @Test
-    @EnsureHasSecondaryUser
+    @EnsureHasAdditionalUser
     public void testPerUserAdditionalInputMethodSubtype() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference secondaryUser = sDeviceState.secondaryUser();
+        final UserReference additionalUser = sDeviceState.additionalUser();
         final int currentUserId = currentUser.id();
-        final int secondaryUserId = secondaryUser.id();
+        final int additionalUserId = additionalUser.id();
+        assertThat(currentUserId).isNotEqualTo(additionalUserId);
 
         TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
-        TestApis.packages().install(secondaryUser, new File(Ime2Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime2Constants.APK_PATH));
 
         callSetAdditionalInputMethodSubtype(Ime1Constants.AUTHORITY, Ime1Constants.IME_ID,
                 new InputMethodSubtype[] {TEST_SUBTYPE1, TEST_SUBTYPE2}, currentUserId);
         callSetAdditionalInputMethodSubtype(Ime2Constants.AUTHORITY, Ime2Constants.IME_ID,
-                new InputMethodSubtype[] {TEST_SUBTYPE3}, secondaryUserId);
+                new InputMethodSubtype[] {TEST_SUBTYPE3}, additionalUserId);
 
         {
             final var subtypeHashCodes = getSubtypeHashCodes(Ime1Constants.IME_ID, currentUserId);
 
-            Truth.assertThat(subtypeHashCodes).asList().contains(TEST_SUBTYPE1.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().contains(TEST_SUBTYPE2.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE3.hashCode());
+            assertThat(subtypeHashCodes).contains(TEST_SUBTYPE1.hashCode());
+            assertThat(subtypeHashCodes).contains(TEST_SUBTYPE2.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE3.hashCode());
         }
         {
-            final var subtypeHashCodes = getSubtypeHashCodes(Ime2Constants.IME_ID, secondaryUserId);
+            final var subtypeHashCodes = getSubtypeHashCodes(Ime2Constants.IME_ID,
+                    additionalUserId);
 
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE1.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE2.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().contains(TEST_SUBTYPE3.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE1.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE2.hashCode());
+            assertThat(subtypeHashCodes).contains(TEST_SUBTYPE3.hashCode());
         }
     }
 
     @Test
-    @EnsureHasSecondaryUser
-    public void testClearAdditionalInputMethodSubtypeForForegroundUser() {
+    @EnsureHasAdditionalUser
+    public void testClearAdditionalInputMethodSubtypeUponApkUpdateForForegroundUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference secondaryUser = sDeviceState.secondaryUser();
+        final UserReference additionalUser = sDeviceState.additionalUser();
         final int currentUserId = currentUser.id();
-        final int secondaryUserId = secondaryUser.id();
+        final int additionalUserId = additionalUser.id();
+        assertThat(currentUserId).isNotEqualTo(additionalUserId);
 
         TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
-        TestApis.packages().install(secondaryUser, new File(Ime2Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime2Constants.APK_PATH));
 
         callSetAdditionalInputMethodSubtype(Ime1Constants.AUTHORITY, Ime1Constants.IME_ID,
                 new InputMethodSubtype[] {TEST_SUBTYPE1, TEST_SUBTYPE2}, currentUserId);
         callSetAdditionalInputMethodSubtype(Ime2Constants.AUTHORITY, Ime2Constants.IME_ID,
-                new InputMethodSubtype[] {TEST_SUBTYPE3}, secondaryUserId);
+                new InputMethodSubtype[] {TEST_SUBTYPE3}, additionalUserId);
 
         // Updating an already-installed APK clears additional subtypes (for the foreground user).
         TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
@@ -160,16 +165,17 @@ public final class AdditionalSubtypeLifecycleTest {
         {
             final var subtypeHashCodes = getSubtypeHashCodes(Ime1Constants.IME_ID, currentUserId);
 
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE1.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE2.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE3.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE1.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE2.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE3.hashCode());
         }
         {
-            final var subtypeHashCodes = getSubtypeHashCodes(Ime2Constants.IME_ID, secondaryUserId);
+            final var subtypeHashCodes = getSubtypeHashCodes(Ime2Constants.IME_ID,
+                    additionalUserId);
 
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE1.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE2.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().contains(TEST_SUBTYPE3.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE1.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE2.hashCode());
+            assertThat(subtypeHashCodes).contains(TEST_SUBTYPE3.hashCode());
         }
     }
 
@@ -177,38 +183,132 @@ public final class AdditionalSubtypeLifecycleTest {
      * Regression test for Bug 27859687.
      */
     @Test
-    @EnsureHasSecondaryUser
-    public void testClearAdditionalInputMethodSubtypeForBackgroundUser() {
+    @EnsureHasAdditionalUser
+    public void testClearAdditionalInputMethodSubtypeUponApkUpdateForBackgroundUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference secondaryUser = sDeviceState.secondaryUser();
+        final UserReference additionalUser = sDeviceState.additionalUser();
         final int currentUserId = currentUser.id();
-        final int secondaryUserId = secondaryUser.id();
+        final int additionalUserId = additionalUser.id();
+        assertThat(currentUserId).isNotEqualTo(additionalUserId);
 
         TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
-        TestApis.packages().install(secondaryUser, new File(Ime2Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime2Constants.APK_PATH));
 
         callSetAdditionalInputMethodSubtype(Ime1Constants.AUTHORITY, Ime1Constants.IME_ID,
                 new InputMethodSubtype[] {TEST_SUBTYPE1, TEST_SUBTYPE2}, currentUserId);
         callSetAdditionalInputMethodSubtype(Ime2Constants.AUTHORITY, Ime2Constants.IME_ID,
-                new InputMethodSubtype[] {TEST_SUBTYPE3}, secondaryUserId);
+                new InputMethodSubtype[] {TEST_SUBTYPE3}, additionalUserId);
 
         // Updating an already-installed APK clears additional subtypes (for a background user).
-        TestApis.packages().install(secondaryUser, new File(Ime2Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime2Constants.APK_PATH));
 
         {
             final var subtypeHashCodes = getSubtypeHashCodes(Ime1Constants.IME_ID, currentUserId);
 
-            Truth.assertThat(subtypeHashCodes).asList().contains(TEST_SUBTYPE1.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().contains(TEST_SUBTYPE2.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE3.hashCode());
+            assertThat(subtypeHashCodes).contains(TEST_SUBTYPE1.hashCode());
+            assertThat(subtypeHashCodes).contains(TEST_SUBTYPE2.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE3.hashCode());
         }
         {
-            final var subtypeHashCodes = getSubtypeHashCodes(Ime2Constants.IME_ID, secondaryUserId);
+            final var subtypeHashCodes = getSubtypeHashCodes(Ime2Constants.IME_ID,
+                    additionalUserId);
 
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE1.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE2.hashCode());
-            Truth.assertThat(subtypeHashCodes).asList().doesNotContain(TEST_SUBTYPE3.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE1.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE2.hashCode());
+            assertThat(subtypeHashCodes).doesNotContain(TEST_SUBTYPE3.hashCode());
         }
+    }
+
+    /**
+     * Regression test for Bug 267124364.
+     */
+    @Test
+    @EnsureHasAdditionalUser
+    public void testClearAdditionalInputMethodSubtypeUponClearDataForForegroundUser()
+            throws Exception {
+        final UserReference currentUser = sDeviceState.initialUser();
+        final UserReference additionalUser = sDeviceState.additionalUser();
+        final int currentUserId = currentUser.id();
+        final int additionalUserId = additionalUser.id();
+        assertThat(currentUserId).isNotEqualTo(additionalUserId);
+
+        TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime2Constants.APK_PATH));
+
+        callSetAdditionalInputMethodSubtype(Ime1Constants.AUTHORITY, Ime1Constants.IME_ID,
+                new InputMethodSubtype[] {TEST_SUBTYPE1, TEST_SUBTYPE2}, currentUserId);
+        callSetAdditionalInputMethodSubtype(Ime2Constants.AUTHORITY, Ime2Constants.IME_ID,
+                new InputMethodSubtype[] {TEST_SUBTYPE3}, additionalUserId);
+
+        // Updating an already-installed APK clears additional subtypes (for the foreground user).
+        runShellCommandOrThrow(
+                ShellCommandUtils.clearPackageData(Ime1Constants.PACKAGE, currentUserId));
+
+        PollingCheck.check(
+                "Additional Subtypes should be cleared for user" + currentUserId,
+                TIMEOUT, () -> {
+                    final var subtypeHashCodes =
+                            getSubtypeHashCodes(Ime1Constants.IME_ID, currentUserId);
+                    return !subtypeHashCodes.contains(TEST_SUBTYPE1.hashCode())
+                            && !subtypeHashCodes.contains(TEST_SUBTYPE2.hashCode())
+                            && !subtypeHashCodes.contains(TEST_SUBTYPE3.hashCode());
+                });
+
+        PollingCheck.check(
+                "Additional Subtypes should not be cleared for user" + additionalUserId,
+                TIMEOUT, () -> {
+                    final var subtypeHashCodes =
+                            getSubtypeHashCodes(Ime2Constants.IME_ID, additionalUserId);
+                    return !subtypeHashCodes.contains(TEST_SUBTYPE1.hashCode())
+                            && !subtypeHashCodes.contains(TEST_SUBTYPE2.hashCode())
+                            && subtypeHashCodes.contains(TEST_SUBTYPE3.hashCode());
+                });
+    }
+
+    /**
+     * Regression test for Bug 328098968.
+     */
+    @Test
+    @EnsureHasAdditionalUser
+    public void testClearAdditionalInputMethodSubtypeUponClearDataForBackgroundUser()
+            throws Exception  {
+        final UserReference currentUser = sDeviceState.initialUser();
+        final UserReference additionalUser = sDeviceState.additionalUser();
+        final int currentUserId = currentUser.id();
+        final int additionalUserId = additionalUser.id();
+        assertThat(currentUserId).isNotEqualTo(additionalUserId);
+
+        TestApis.packages().install(currentUser, new File(Ime1Constants.APK_PATH));
+        TestApis.packages().install(additionalUser, new File(Ime2Constants.APK_PATH));
+
+        callSetAdditionalInputMethodSubtype(Ime1Constants.AUTHORITY, Ime1Constants.IME_ID,
+                new InputMethodSubtype[] {TEST_SUBTYPE1, TEST_SUBTYPE2}, currentUserId);
+        callSetAdditionalInputMethodSubtype(Ime2Constants.AUTHORITY, Ime2Constants.IME_ID,
+                new InputMethodSubtype[] {TEST_SUBTYPE3}, additionalUserId);
+
+        // Updating an already-installed APK clears additional subtypes (for a background user).
+        runShellCommandOrThrow(
+                ShellCommandUtils.clearPackageData(Ime2Constants.PACKAGE, additionalUserId));
+
+        PollingCheck.check(
+                "Additional Subtypes should not be cleared for user" + currentUserId,
+                TIMEOUT, () -> {
+                    final var subtypeHashCodes =
+                            getSubtypeHashCodes(Ime1Constants.IME_ID, currentUserId);
+                    return subtypeHashCodes.contains(TEST_SUBTYPE1.hashCode())
+                            && subtypeHashCodes.contains(TEST_SUBTYPE2.hashCode())
+                            && !subtypeHashCodes.contains(TEST_SUBTYPE3.hashCode());
+                });
+
+        PollingCheck.check(
+                "Additional Subtypes should not be cleared for user" + additionalUserId,
+                TIMEOUT, () -> {
+                    final var subtypeHashCodes =
+                            getSubtypeHashCodes(Ime2Constants.IME_ID, additionalUserId);
+                    return !subtypeHashCodes.contains(TEST_SUBTYPE1.hashCode())
+                            && !subtypeHashCodes.contains(TEST_SUBTYPE2.hashCode())
+                            && !subtypeHashCodes.contains(TEST_SUBTYPE3.hashCode());
+                });
     }
 
     private static void callSetAdditionalInputMethodSubtype(
@@ -236,14 +336,15 @@ public final class AdditionalSubtypeLifecycleTest {
     }
 
     @NonNull
-    private static int[] getSubtypeHashCodes(@NonNull String imeId, int userId) {
+    private static List<Integer> getSubtypeHashCodes(@NonNull String imeId, int userId) {
         return getInputMethodList(userId)
                 .stream()
                 .filter(imi -> TextUtils.equals(imi.getId(), imeId))
                 .flatMap(imi -> StreamSupport.stream(
                         asSubtypeIterable(imi).spliterator(), false))
                 .mapToInt(InputMethodSubtype::hashCode)
-                .toArray();
+                .boxed()
+                .collect(Collectors.toList());
     }
 
     @NonNull

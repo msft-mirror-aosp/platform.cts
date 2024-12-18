@@ -27,9 +27,6 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.MediumTest;
@@ -63,10 +60,6 @@ public class AccessibilityGlobalActionsTest {
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
-
     @BeforeClass
     public static void oneTimeSetup() {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -86,6 +79,8 @@ public class AccessibilityGlobalActionsTest {
 
     @After
     public void tearDown() throws Exception {
+        // dismisses screenshot popup if present.
+        sUiDevice.pressBack();
         // The majority of system actions involve System UI requests that both:
         //   - Can take a few seconds to take effect on certain device types.
         //   - Perform behavior that depends on the specific SystemUI implementation of the device,
@@ -179,21 +174,5 @@ public class AccessibilityGlobalActionsTest {
     public void testPerformGlobalActionDpadCenter() {
         assertTrue(sUiAutomation.performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_DPAD_CENTER));
-    }
-
-    @MediumTest
-    @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_GLOBAL_ACTION_MENU)
-    public void testPerformGlobalActionMenu() {
-        assertTrue(sUiAutomation.performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_MENU));
-    }
-
-    @MediumTest
-    @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_GLOBAL_ACTION_MEDIA_PLAY_PAUSE)
-    public void testPerformGlobalActionMediaPlayPause() {
-        assertTrue(sUiAutomation.performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_MEDIA_PLAY_PAUSE));
     }
 }

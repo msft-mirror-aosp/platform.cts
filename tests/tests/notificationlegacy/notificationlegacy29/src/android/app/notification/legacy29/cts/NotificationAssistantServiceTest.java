@@ -50,6 +50,9 @@ import android.os.Process;
 import android.os.SystemClock;
 import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
@@ -60,18 +63,28 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "collapsePanels(), "
+        + "expandNotificationsPanel() and sendNotificationFeedback() don't support visible "
+        + "background user")
 public class NotificationAssistantServiceTest {
 
     private static final String PKG = "android.app.notification.legacy29.cts";
@@ -87,6 +100,14 @@ public class NotificationAssistantServiceTest {
     private Context mContext;
     private UiAutomation mUi;
     private NotificationHelper mHelper;
+    private String mPreviousAssistant;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -100,6 +121,7 @@ public class NotificationAssistantServiceTest {
         mStatusBarManager = (StatusBarManager) mContext.getSystemService(
                 Context.STATUS_BAR_SERVICE);
         mHelper = new NotificationHelper(mContext);
+        mPreviousAssistant = mHelper.getEnabledAssistant();
     }
 
     @After
@@ -121,6 +143,7 @@ public class NotificationAssistantServiceTest {
         mUi.adoptShellPermissionIdentity("android.permission.EXPAND_STATUS_BAR");
         mStatusBarManager.collapsePanels();
         mUi.dropShellPermissionIdentity();
+        mHelper.enableOtherPkgAssistantIfNeeded(mPreviousAssistant);
     }
 
     @Test
@@ -261,6 +284,7 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @Ignore("b/330193582")
     public void testAdjustNotifications_rankingScoreKey() throws Exception {
         setUpListeners();
 
@@ -392,6 +416,50 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testAdjustNotification_typeKey() throws Exception {
+        setUpListeners();
+
+        sendNotification(1, null, ICON_ID);
+        StatusBarNotification sbn = mHelper.findPostedNotification(
+                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        Bundle signals = new Bundle();
+        signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_NEWS);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+
+        CountDownLatch rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+
+        mNotificationAssistantService.adjustNotification(adjustment);
+
+        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertEquals(NotificationChannel.NEWS_ID, out.getChannel().getId());
+
+        // and can move it later
+        signals.putInt(Adjustment.KEY_TYPE, Adjustment.TYPE_PROMOTION);
+        adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+
+        rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+
+        mNotificationAssistantService.adjustNotification(adjustment);
+
+        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+        assertEquals(NotificationChannel.PROMOTIONS_ID, out.getChannel().getId());
+    }
+
+    @Test
     public void testGetAllowedAssistantAdjustments_permission() throws Exception {
         mHelper.disableAssistant(PKG);
 
@@ -440,6 +508,11 @@ public class NotificationAssistantServiceTest {
         assertTrue(
                 mNotificationAssistantService.mCurrentCapabilities.contains(
                         Adjustment.KEY_NOT_CONVERSATION));
+        if (android.service.notification.Flags.notificationClassification()) {
+            assertTrue(
+                    mNotificationAssistantService.mCurrentCapabilities.contains(
+                            Adjustment.KEY_TYPE));
+        }
 
         mUi.dropShellPermissionIdentity();
     }

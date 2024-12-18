@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_solutions_playback",
 }
 
 android_test {
@@ -30,13 +31,14 @@ android_test {
         "androidx.media3.media3-exoplayer",
         "androidx.media3.media3-ui",
         "ctsmediacujcommon",
+        "cts-media-common",
     ],
     srcs: [
         "src/**/*.java",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs",
+        "android.test.runner.stubs",
     ],
     test_suites: [
         "cts",

@@ -35,6 +35,7 @@ import android.util.Size;
 import android.hardware.camera2.cts.helpers.CameraErrorCollector;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
+import com.android.internal.camera.flags.Flags;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
 import static android.hardware.camera2.cts.helpers.CameraSessionUtils.*;
@@ -1032,7 +1033,9 @@ public class CaptureResultTest extends Camera2AndroidTestCase {
         resultKeys.add(CaptureResult.CONTROL_SETTINGS_OVERRIDE);
         resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING);
         resultKeys.add(CaptureResult.CONTROL_AUTOFRAMING_STATE);
-        resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
+        if (Flags.cameraAeModeLowLightBoost()) {
+            resultKeys.add(CaptureResult.CONTROL_LOW_LIGHT_BOOST_STATE);
+        }
         resultKeys.add(CaptureResult.EDGE_MODE);
         resultKeys.add(CaptureResult.FLASH_MODE);
         resultKeys.add(CaptureResult.FLASH_STATE);

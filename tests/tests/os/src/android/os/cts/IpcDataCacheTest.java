@@ -21,6 +21,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 
 import android.os.IpcDataCache;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.filters.SmallTest;
 
@@ -37,6 +38,7 @@ import org.junit.Test;
  *  atest CtsOsTestCases:IpcDataCacheTest
  */
 @SmallTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IpcDataCacheTest {
 
     // Configuration for creating caches

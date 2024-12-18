@@ -14,78 +14,60 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_codec_framework",
+}
+
+java_defaults {
+    name: "MediaV2TestCases_defaults",
+    defaults: ["cts_defaults"],
+    compile_multilib: "both",
+    static_libs: [
+        "androidx.test.core",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "ctstestserver",
+        "ctsmediav2common",
+        "aconfig_mediacodec_flags_java_lib",
+        "android.media.codec-aconfig-java",
+        "android.media.extractor.flags-aconfig-java",
+        "com.android.media.flags.editing-aconfig-java",
+
+    ],
+    libs: [
+        "org.apache.http.legacy.stubs.system",
+    ],
+    platform_apis: true,
+    jni_uses_sdk_apis: true,
+    jni_libs: [
+        "libctsmediav2codecdec_jni",
+        "libctsmediav2codecdecsurface_jni",
+        "libctsmediav2codecenc_jni",
+        "libctsmediav2codecencsurface_jni",
+        "libctsmediav2codecapiunit_jni",
+        "libctsmediav2utils_jni",
+    ],
+    srcs: ["src/**/*.java"],
+    min_sdk_version: "29",
 }
 
 android_test {
     name: "CtsMediaV2TestCases",
-    defaults: ["cts_defaults"],
-    compile_multilib: "both",
-    static_libs: [
-        "androidx.test.core",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "ctstestserver",
-        "ctsmediav2common",
-        "aconfig_mediacodec_flags_java_lib",
-    ],
-    libs: [
-        "org.apache.http.legacy",
-    ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    jni_libs: [
-        "libctsmediav2muxer_jni",
-        "libctsmediav2extractor_jni",
-        "libctsmediav2codecdec_jni",
-        "libctsmediav2codecdecsurface_jni",
-        "libctsmediav2codecenc_jni",
-        "libctsmediav2codecencsurface_jni",
-        "libctsmediav2codecapiunit_jni",
-        "libctsmediav2utils_jni",
-    ],
-    srcs: ["src/**/*.java"],
-    // Tag this module as a cts test artifact
+    defaults: ["MediaV2TestCases_defaults"],
+    test_config: "AndroidTest.xml",
     test_suites: [
         "cts",
         "general-tests",
     ],
-    min_sdk_version: "29",
 }
 
 android_test {
     name: "MctsMediaV2TestCases",
-    defaults: ["cts_defaults"],
-    compile_multilib: "both",
-    static_libs: [
-        "androidx.test.core",
-        "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-        "ctstestserver",
-        "ctsmediav2common",
-        "aconfig_mediacodec_flags_java_lib",
-    ],
-    libs: [
-        "org.apache.http.legacy",
-    ],
-    platform_apis: true,
-    jni_uses_sdk_apis: true,
-    jni_libs: [
-        "libctsmediav2muxer_jni",
-        "libctsmediav2extractor_jni",
-        "libctsmediav2codecdec_jni",
-        "libctsmediav2codecdecsurface_jni",
-        "libctsmediav2codecenc_jni",
-        "libctsmediav2codecencsurface_jni",
-        "libctsmediav2codecapiunit_jni",
-        "libctsmediav2utils_jni",
-    ],
-    srcs: ["src/**/*.java"],
+    defaults: ["MediaV2TestCases_defaults"],
     test_config: "AndroidTest-mcts.xml",
-    // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mcts-media",
         "mts-media",
     ],
-    min_sdk_version: "29",
 }

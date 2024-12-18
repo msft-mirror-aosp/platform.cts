@@ -29,6 +29,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony.Carriers;
@@ -111,7 +112,8 @@ public class ApnCarrierIdTest {
      * The original APN that belongs to the existing data connection. Required to re-insert it
      * during teardown.
      */
-    private ContentValues mExistingApn;
+    private ApnSetting mExistingApn;
+
     /** Selection args for the carrier ID APN. Required to delete the test APN during teardown. */
     private String[] mInsertedApnSelectionArgs;
 
@@ -139,7 +141,9 @@ public class ApnCarrierIdTest {
         PreciseDataConnectionStateListener preciseDataConnectionStateCallback =
                 new PreciseDataConnectionStateListener(
                         mTelephonyManager, /* desiredDataState= */ TelephonyManager.DATA_CONNECTED);
-        preciseDataConnectionStateCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
+        if (!preciseDataConnectionStateCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
+            fail("Timed out waiting for active data connection.");
+        }
 
         // The initial data state should be DATA_CONNECTED.
         if (mPreciseDataConnectionState == null
@@ -176,7 +180,23 @@ public class ApnCarrierIdTest {
                     new PreciseDataConnectionStateListener(
                             mTelephonyManager,
                             /* desiredDataState= */ TelephonyManager.DATA_CONNECTED);
-            mContentResolver.insert(CARRIER_TABLE_URI, mExistingApn);
+            // We want to restore the original APN. Before attempting to re-insert it, we should
+            // first try updating it in case it's still present with an `EDITED_STATUS` of
+            // `USER_DELETED`. If the update does not succeed because the APN doesn't exist, we can
+            // opt to insert it instead.
+            ContentValues edited = new ContentValues();
+            // We'll just reset the `EDITED` status of the APN.
+            edited.put(Carriers.EDITED_STATUS, mExistingApn.getEditedStatus());
+            int updatedRows =
+                    mContentResolver.update(
+                            CARRIER_TABLE_URI,
+                            edited,
+                            APN_SELECTION_STRING_WITH_NUMERIC,
+                            generateSelectionArgs(mExistingApn, mExistingApn.getOperatorNumeric()));
+            // If no row was updated, re-insert the APN instead.
+            if (updatedRows == 0) {
+                mContentResolver.insert(CARRIER_TABLE_URI, mExistingApn.toContentValues());
+            }
             try {
                 pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
             } catch (InterruptedException e) {
@@ -194,6 +214,7 @@ public class ApnCarrierIdTest {
      * as MCCMNC/numeric can establish a data connection.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sanboxes do not have access to telephony provider")
     public void validateDataConnectionWithCarrierIdApn() throws Exception {
         ApnSetting currentApn = mPreciseDataConnectionState.getApnSetting();
         validateAndSetupInitialState(currentApn);
@@ -209,7 +230,9 @@ public class ApnCarrierIdTest {
                 mContentResolver.bulkInsert(
                         CARRIER_TABLE_URI, new ContentValues[] {apnWithCarrierId});
         assertThat(rowsInserted).isEqualTo(1);
-        pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
+        if (!pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
+            fail("Timed out waiting for data connected");
+        }
         // Generate selection arguments for the APN and store it so we can delete it in cleanup.
         mInsertedApnSelectionArgs = generateSelectionArgs(currentApn, String.valueOf(carrierId));
 
@@ -245,8 +268,10 @@ public class ApnCarrierIdTest {
                         generateSelectionArgs(currentApn, currentApn.getOperatorNumeric()));
         assertThat(deletedRowCount).isEqualTo(1);
         // Store the APN so we can re-insert it once the test is complete.
-        mExistingApn = currentApn.toContentValues();
-        pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
+        mExistingApn = currentApn;
+        if (!pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
+            fail("Timed out waiting for data disconnected");
+        }
 
         // Data should disconnect without any identifying fields in the default APN.
         assertThat(mPreciseDataConnectionState.getState())
@@ -331,9 +356,9 @@ public class ApnCarrierIdTest {
             telephonyManager.registerTelephonyCallback(mSimpleExecutor, this);
         }
 
-        void awaitDataStateChanged(long timeoutMillis) throws InterruptedException {
+        boolean awaitDataStateChanged(long timeoutMillis) throws InterruptedException {
             try {
-                mCountDownLatch.await(timeoutMillis, MILLISECONDS);
+                return mCountDownLatch.await(timeoutMillis, MILLISECONDS);
             } finally {
                 mTelephonyManager.unregisterTelephonyCallback(this);
             }

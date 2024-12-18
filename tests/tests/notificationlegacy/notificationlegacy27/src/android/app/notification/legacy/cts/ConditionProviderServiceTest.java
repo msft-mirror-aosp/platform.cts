@@ -288,7 +288,8 @@ public class ConditionProviderServiceTest {
     private void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + mContext.getUserId();
 
         runCommand(command, instrumentation);
         AmUtils.waitForBroadcastBarrier();

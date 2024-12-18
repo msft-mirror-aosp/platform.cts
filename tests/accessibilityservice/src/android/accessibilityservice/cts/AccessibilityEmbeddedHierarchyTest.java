@@ -16,7 +16,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -43,9 +42,11 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -58,8 +59,6 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -72,9 +71,10 @@ import java.util.concurrent.TimeoutException;
 public class AccessibilityEmbeddedHierarchyTest {
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
+    private static UiDevice sUiDevice;
 
-    private final ActivityTestRule<AccessibilityEmbeddedHierarchyActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityEmbeddedHierarchyActivity.class, false, false);
+    private final ActivityScenarioRule<AccessibilityEmbeddedHierarchyActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityEmbeddedHierarchyActivity.class);
 
     private static final String HOST_PARENT_RESOURCE_NAME =
             "android.accessibilityservice.cts:id/host_surfaceview";
@@ -94,22 +94,28 @@ public class AccessibilityEmbeddedHierarchyTest {
     @BeforeClass
     public static void oneTimeSetup() {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
+        sInstrumentation.setInTouchMode(false);
         sUiAutomation = sInstrumentation.getUiAutomation();
+        sUiDevice = UiDevice.getInstance(sInstrumentation);
         AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
-        info.flags |= AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE;
+        info.flags |=
+                AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE
+                        | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         sUiAutomation.setServiceInfo(info);
     }
 
     @AfterClass
     public static void postTestTearDown() {
         sUiAutomation.destroy();
+        sInstrumentation.resetInTouchMode();
     }
 
     @Before
     public void setUp() throws Throwable {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(sInstrumentation, sUiAutomation,
-                mActivityRule);
-        mActivity.waitForEmbeddedHierarchy();
+        mActivityRule.getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
+        sUiDevice.waitForIdle();
     }
 
     @Test
@@ -262,8 +268,6 @@ public class AccessibilityEmbeddedHierarchyTest {
      */
     public static class AccessibilityEmbeddedHierarchyActivity extends
             AccessibilityTestActivity implements SurfaceHolder.Callback {
-        private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
-
         private SurfaceView mSurfaceView;
         private View mInputFocusableView;
         private SurfaceControlViewHost mViewHost;
@@ -289,7 +293,6 @@ public class AccessibilityEmbeddedHierarchyTest {
             final int viewSizePx = getResources().getDimensionPixelSize(
                     R.dimen.embedded_hierarchy_embedded_layout_size);
             mViewHost.setView(layout, viewSizePx, viewSizePx);
-            mCountDownLatch.countDown();
         }
 
         @Override
@@ -300,15 +303,6 @@ public class AccessibilityEmbeddedHierarchyTest {
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
             // No-op
-        }
-
-        private void waitForEmbeddedHierarchy() {
-            try {
-                assertWithMessage("timed out waiting for embedded hierarchy to init.").that(
-                        mCountDownLatch.await(3, TimeUnit.SECONDS)).isTrue();
-            } catch (InterruptedException e) {
-                throw new AssertionError(e);
-            }
         }
 
         private void moveSurfaceViewLayoutPosition(int x, int y, boolean offScreen)
@@ -340,6 +334,7 @@ public class AccessibilityEmbeddedHierarchyTest {
                         }
                         return hasExpectedPosition;
                     }, DEFAULT_TIMEOUT_MS);
+            sUiDevice.waitForIdle();
         }
     }
 }

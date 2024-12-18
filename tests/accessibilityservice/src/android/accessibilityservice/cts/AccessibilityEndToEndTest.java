@@ -103,6 +103,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
@@ -117,15 +118,18 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.view.accessibility.Flags;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -148,6 +152,8 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -1191,6 +1197,16 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             throws Throwable {
         mActivity.waitForEnterAnimationComplete();
 
+        // Layout. The LinearLayout has a touch delegate that covers the button's area extended to
+        // the right button (x's in the diagram)
+        //      ++++++++++++++++++++++++++++++++++++++++++++++++++ LinearLayout
+        //      +   |--------------------| |----------------------- | +
+        //      +   |xxxxxxxxxxxxxxxxxxxx|x|xxxx                    | +
+        //      +   |x                   | |   x  buttonWithTooltip  | +
+        //      +   |x       button      | | A x                     | +
+        //      +   |xxxxxxxxxxxxxxxxxxxx|x|xxxx                     | +
+        //      +   |--------------------| |----------------------- | +
+        //      +++++++++++++++++++++++++++++++++++++++++++++++++++++++
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.button);
         final Button button = mActivity.findViewById(R.id.button);
@@ -1214,6 +1230,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // common downTime for touch explorer injected events
             final long downTime = SystemClock.uptimeMillis();
             // hover through delegate, parent, 2nd view, parent and delegate again
+            // MOVE event at point A. We should delegate to button
             sUiAutomation.executeAndWaitForEvent(
                     () -> injectHoverEvent(downTime, false, hoverLeft, hoverY),
                     filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
@@ -1248,70 +1265,84 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         } catch (TimeoutException e) {
             fail("Accessibility events should be received as expected " + e.getMessage());
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
 
-    @MediumTest
     @Test
-    @ApiTest(apis = {"android.view.View#onHoverEvent",
-            "android.view.accessibility.AccessibilityManager#sendAccessibilityEvent"})
-    public void testTouchDelegateCoverParentWithEbt_HoverChildAndBack_FocusTargetAgain()
-            throws Throwable {
+    @RequiresFlagsEnabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
+    public void testTouchDelegate_ancestorHasTouchDelegate_sendsEventToDelegate()
+            throws InterruptedException {
         mActivity.waitForEnterAnimationComplete();
 
+        // Layout. buttonTargetGrandparent has a touch delegate that covers the buttonTarget and
+        // some area to the right of buttonTarget. buttonTargetParent has the same bounds as
+        // buttonTargetGrandparent
+        //      ++++++++++++++++++++++++++++++++++++++++++++++++++ buttonTargetGrandparent
+        //      + xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx +
+        //      + x   buttonTargetParent                        x +
+        //      + x  _______________                            x +
+        //      + x | buttonTarget  |                           x +
+        //      + x |_______________|                           x +
+        //      + xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx +
+        //      +++++++++++++++++++++++++++++++++++++++++++++++++++
+
         final Resources resources = sInstrumentation.getTargetContext().getResources();
+        final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
+        final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final int[] buttonLocation = new int[2];
+        buttonTarget.getLocationOnScreen(buttonLocation);
+        final int buttonY = buttonTarget.getHeight() / 2;
+        final int hoverY = buttonLocation[1] + buttonY;
         final int touchableSize = resources.getDimensionPixelSize(
                 R.dimen.button_touchable_width_increment_amount);
-        final String targetResourceName = resources.getResourceName(R.id.buttonDelegated);
-        final View textView = mActivity.findViewById(R.id.delegateText);
-        final Button target = mActivity.findViewById(R.id.buttonDelegated);
-        int[] location = new int[2];
-        textView.getLocationOnScreen(location);
-        final int textX = location[0] + touchableSize/2;
-        final int textY = location[1] + textView.getHeight() / 2;
-        final int delegateX = location[0] - touchableSize/2;
-        final int targetX = target.getWidth() / 2;
-        final int targetY = target.getHeight() / 2;
-        final View.OnHoverListener listener = CtsMouseUtil.installHoverListener(target, false);
+        final int hoverLeft = buttonLocation[0] + buttonTarget.getWidth() + touchableSize / 2;
         enableTouchExploration(true);
 
         try {
             final long downTime = SystemClock.uptimeMillis();
-            // Like switch bar, it has a text view, a button and a delegate covers parent layout.
-            // hover the delegate, text and delegate again.
             sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(downTime, false, delegateX, textY),
+                    () -> injectHoverEvent(downTime, false, hoverLeft, hoverY),
                     filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
-                           targetResourceName), DEFAULT_TIMEOUT_MS);
-            assertTrue(target.isHovered());
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(downTime, true, textX, textY),
-                    filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_EXIT,
-                           targetResourceName), DEFAULT_TIMEOUT_MS);
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(downTime, true, delegateX, textY),
-                    filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
-                           targetResourceName), DEFAULT_TIMEOUT_MS);
-            assertTrue(target.isHovered());
-
-            CtsMouseUtil.clearHoverListener(target);
-            View.OnHoverListener verifier = inOrder(listener).verify(listener);
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_ENTER, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_MOVE, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_MOVE, textX, textY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_EXIT, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_ENTER, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_MOVE, targetX, targetY));
+                            buttonResourceName), DEFAULT_TIMEOUT_MS);
         } catch (TimeoutException e) {
-            fail("Accessibility events should be received as expected " + e.getMessage());
+            fail("TYPE_VIEW_HOVER_ENTER from buttonTarget should be received as expected "
+                    + e.getMessage());
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
+            enableTouchExploration(false);
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
+    public void testTouchDelegate_ancestorHasTouchDelegate_doesNotSendEventToDelegate()
+            throws InterruptedException {
+        mActivity.waitForEnterAnimationComplete();
+
+        final Resources resources = sInstrumentation.getTargetContext().getResources();
+        final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
+        final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final int[] buttonLocation = new int[2];
+        buttonTarget.getLocationOnScreen(buttonLocation);
+        final int buttonY = buttonTarget.getHeight() / 2;
+        final int hoverY = buttonLocation[1] + buttonY;
+        final int touchableSize = resources.getDimensionPixelSize(
+                R.dimen.button_touchable_width_increment_amount);
+        final int hoverLeft = buttonLocation[0] + buttonTarget.getWidth() + touchableSize / 2;
+        enableTouchExploration(true);
+
+        try {
+            final long downTime = SystemClock.uptimeMillis();
+            assertThrows("Received TYPE_HOVER_ENTER from target view.",
+                    TimeoutException.class,
+                    () ->   sUiAutomation.executeAndWaitForEvent(
+                            () -> injectHoverEvent(downTime, false, hoverLeft, hoverY),
+                            filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
+                                    buttonResourceName), DEFAULT_TIMEOUT_MS));
+        } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1400,14 +1431,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
     public void testAccessibilityDataSensitive_canObserveHoverEvent() {
         final StubEventCapturingAccessibilityService service = getServiceForA11yToolTests(true);
+        final long time = SystemClock.uptimeMillis();
+        final View view = mActivity.findViewById(R.id.innerView);
+        final int[] viewLocation = new int[2];
+        view.getLocationOnScreen(viewLocation);
+        final int x = viewLocation[0] + view.getWidth() / 2;
+        final int y = viewLocation[1] + view.getHeight() / 2;
         try {
-            final long time = SystemClock.uptimeMillis();
-            final View view = mActivity.findViewById(R.id.innerView);
-            final int[] viewLocation = new int[2];
-            view.getLocationOnScreen(viewLocation);
-            final int x = viewLocation[0] + view.getWidth() / 2;
-            final int y = viewLocation[1] + view.getHeight() / 2;
-
             service.setEventFilter(
                     filterForEventTypeWithResource(
                             AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
@@ -1416,6 +1446,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             injectHoverEvent(time, true, x, y);
             service.waitOnEvent(DEFAULT_TIMEOUT_MS, "Expected TYPE_VIEW_HOVER_ENTER event");
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), x, y);
             service.disableSelfAndRemove();
         }
     }
@@ -2010,109 +2041,70 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_interceptsEventFromRequestedSource_SetAndUnset() {
-        final int requestedSource = InputDevice.SOURCE_JOYSTICK;
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
-        final Object waitObject = new Object();
-        final AtomicInteger eventCount = new AtomicInteger(0);
-        service.setOnMotionEventListener(motionEvent -> {
-            synchronized (waitObject) {
-                if (motionEvent.getSource() == requestedSource) {
-                    eventCount.incrementAndGet();
-                }
-                waitObject.notifyAll();
-            }
-        });
+        final int canarySource1 = InputDevice.SOURCE_JOYSTICK;
+        final int canarySource2 = InputDevice.SOURCE_SENSOR;
+        final int interestedSource = InputDevice.SOURCE_DPAD;
 
-        // Inject 2 events to the input filter.
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        // We should find 2 events.
-        TestUtils.waitOn(waitObject, () -> eventCount.get() == 2,
-                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                "Service did not receive MotionEvent");
+        // Set our interestedSource, inject an event, and assert it arrives.
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation, canarySource1, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
+        service.injectAndAwaitMotionEvent(sUiAutomation, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-        // Stop listening to events for this source, then inject 1 more event to the input filter.
-        service.setMotionEventSources(0 /* no sources */);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(0);
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        // Assert we only received the original 2.
-        try {
-            TestUtils.waitOn(waitObject, () -> eventCount.get() == 3,
-                    TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                    "(expected)");
-        } catch (AssertionError e) {
-            // expected
-        }
-        assertThat(eventCount.get()).isEqualTo(2);
+        // Then unset our interested MotionEvent source (by updating it to 0), inject an
+        // event of the interested source type, and assert it does not arrive back to us.
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation,
+                // Use a different canary to ensure we're waiting for this new update.
+                canarySource2,
+                /*interestedSource=*/0,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
+        assertThrows("Expected no event from source " + interestedSource, AssertionError.class,
+                () -> service.injectAndAwaitMotionEvent(sUiAutomation, interestedSource,
+                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_ignoresEventFromDifferentSource() {
-        final int requestedSource = InputDevice.SOURCE_JOYSTICK;
-        final int actualSource = InputDevice.SOURCE_ROTARY_ENCODER;
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        final Object waitObject = new Object();
-        final AtomicBoolean foundEvent = new AtomicBoolean(false);
-        service.setOnMotionEventListener(motionEvent -> {
-            synchronized (waitObject) {
-                if (motionEvent.getSource() == requestedSource) {
-                    foundEvent.set(true);
-                }
-                waitObject.notifyAll();
-            }
-        });
+        final int canarySource = InputDevice.SOURCE_JOYSTICK;
+        final int interestedSource = InputDevice.SOURCE_DPAD;
+        final int actualSource = InputDevice.SOURCE_ROTARY_ENCODER;
 
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(actualSource));
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation, canarySource, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-        try {
-            TestUtils.waitOn(waitObject, foundEvent::get, TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                    "(expected)");
-        } catch (AssertionError e) {
-            // expected
-        }
-        assertThat(foundEvent.get()).isFalse();
+        assertThrows("Expected no event from source " + actualSource, AssertionError.class,
+                () -> service.injectAndAwaitMotionEvent(sUiAutomation, actualSource,
+                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
-        final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
+        final int canarySource = InputDevice.SOURCE_JOYSTICK;
+        final int interestedSource = InputDevice.SOURCE_TOUCHSCREEN;
         final StubMotionInterceptingAccessibilityService motionInterceptingService =
                 mMotionInterceptingServiceRule.enableService();
         TouchExplorationStubAccessibilityService touchExplorationService =
                 enableService(TouchExplorationStubAccessibilityService.class);
         try {
-            motionInterceptingService.setMotionEventSources(requestedSource);
-            final Object waitObject = new Object();
-            final AtomicBoolean foundEvent = new AtomicBoolean(false);
-            motionInterceptingService.setOnMotionEventListener(motionEvent -> {
-                synchronized (waitObject) {
-                    if (motionEvent.getSource() == requestedSource) {
-                        foundEvent.set(true);
-                    }
-                    waitObject.notifyAll();
-                }
-            });
+            motionInterceptingService.setAndAwaitMotionEventSources(
+                    sUiAutomation, canarySource, interestedSource,
+                    TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-            sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-
-            try {
-                TestUtils.waitOn(waitObject, foundEvent::get,
-                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                        "(expected)");
-            } catch (AssertionError e) {
-                // expected
-            }
-            assertThat(foundEvent.get()).isFalse();
+            assertThrows("Expected no event from source " + interestedSource, AssertionError.class,
+                    () -> motionInterceptingService.injectAndAwaitMotionEvent(
+                            sUiAutomation, interestedSource,
+                            TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
         } finally {
             touchExplorationService.disableSelfAndRemove();
         }
@@ -2120,7 +2112,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     /** Test the case where we want to intercept but not consume motion events. */
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
     public void testOnMotionEvent_interceptsEventFromRequestedSource_observesMotionEvents() {
@@ -2204,93 +2195,397 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         assertThat(eventCount.get()).isEqualTo(2);
     }
 
-    /**
-     * Test the case where we want to intercept but not consume motion events, but another service
-     * has already enabled touch exploration. Motion event observing should not work.
-     */
+    @AsbSecurityTest(cveBugId = 326485767)
     @Test
-    @FlakyTest
-    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
-    public void testMotionEventObserving_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
-        // Don't run this test on systems without a touchscreen.
-        PackageManager pm = sInstrumentation.getTargetContext().getPackageManager();
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN));
+    public void testUpdateServiceWithoutIntent_disablesService() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
+        final String v1ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV1.apk";
+        final String v2ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV2.apk";
+        final String v3ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV3.apk";
+        final String packageName = "foo.bar.updateservice";
+        final ComponentName service = ComponentName.createRelative(packageName, ".StubService");
 
-        sUiAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.ACCESSIBILITY_MOTION_EVENT_OBSERVING);
-        final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
-        final StubMotionInterceptingAccessibilityService service =
-                mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        service.setObservedMotionEventSources(requestedSource);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
-        assertThat(service.getServiceInfo().getObservedMotionEventSources())
-                .isEqualTo(requestedSource);
-        TouchExplorationStubAccessibilityService touchExplorationService =
-                enableService(TouchExplorationStubAccessibilityService.class);
+        // Match AccessibilityManagerService#COMPONENT_NAME_SEPARATOR
+        final String componentNameSeparator = ":";
+        final String originalEnabledServicesSetting = getEnabledServicesSetting();
         try {
-            final Object waitObject = new Object();
-            final AtomicInteger eventCount = new AtomicInteger(0);
-            service.setOnMotionEventListener(
-                    motionEvent -> {
-                        synchronized (waitObject) {
-                            if (motionEvent.getSource() == requestedSource) {
-                                eventCount.incrementAndGet();
-                            }
-                            waitObject.notifyAll();
-                        }
-                    });
+            // Install the apk in this test method, instead of as part of the target preparer, to
+            // allow repeated --iterations of the test.
+            assertThat(ShellUtils.runShellCommand("pm install " + v1ApkPath)).startsWith("Success");
+            // Wait for the service to register as installed.
+            TestUtils.waitUntil(
+                    "Failed to install service:" + v1ApkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
 
-            // Simulate a tap on the center of the button.
-            final Button button = (Button) mActivity.findViewById(R.id.button);
-            final EventCapturingMotionEventListener listener =
-                    new EventCapturingMotionEventListener();
-            button.setOnTouchListener(listener);
-            button.setOnHoverListener(listener);
-            int[] buttonLocation = new int[2];
-            final int midX = button.getWidth() / 2;
-            final int midY = button.getHeight() / 2;
-            button.getLocationOnScreen(buttonLocation);
-            PointF tapLocation = new PointF(buttonLocation[0] + midX, buttonLocation[1] + midY);
-            try {
-                dispatch(service, click(tapLocation));
-            } catch (RuntimeException e) {
-                // The input filter could have been rebuilt causing this gesture to cancel.
-                // Reset state and try again.
-                eventCount.set(0);
-                listener.clear();
-                dispatch(service, click(tapLocation));
-            }
+            // Enable the service and wait until AccessibilityManager reports it is
+            // enabled.
+            final String servicesToEnable = service.flattenToShortString();
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, servicesToEnable)
+                    .run();
+            // Wait for the service to be enabled.
+            TestUtils.waitUntil(
+                    "Failed to enable service:" + servicesToEnable,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            getEnabledServices().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
 
-            // The view should have seen two hover events.
-            listener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-            // The observing service shouldn't see any events.
-            assertThat(eventCount.get()).isEqualTo(0);
+            // Update to a new version that doesn't have the intent declared.
+            assertThat(ShellUtils.runShellCommand("pm install " + v2ApkPath)).startsWith("Success");
+
+            // Wait for the install to finish and the service to be disabled.
+            TestUtils.waitUntil(
+                    "The service is still in the enabled services list.",
+                    TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            Arrays.asList(getEnabledServicesSetting().split(componentNameSeparator))
+                                            .stream()
+                                            .filter(comp -> comp.startsWith(packageName))
+                                            .count()
+                                    == 0);
+
+            // Update to version 3 that does have the intent declared.
+            // The service should not re-enable.
+            assertThat(ShellUtils.runShellCommand("pm install " + v3ApkPath)).startsWith("Success");
+
+            // confirm the service is still not enabled.
+            assertThrows(
+                    "The service is still in the enabled services list.",
+                    AssertionError.class,
+                    () ->
+                            TestUtils.waitUntil(
+                                    "The service is still in the enabled services list.",
+                                    TIMEOUT_SERVICE_ENABLE / 1000,
+                                    () ->
+                                            Arrays.asList(getEnabledServicesSetting()
+                                            .split(componentNameSeparator))
+                                                            .stream().filter(comp ->
+                                                            comp.startsWith(packageName))
+                                                            .count() == 1));
+
         } finally {
-            touchExplorationService.disableSelfAndRemove();
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                            originalEnabledServicesSetting)
+                    .run();
+            ShellUtils.runShellCommand("pm uninstall " + packageName);
         }
     }
 
-    private MotionEvent createMotionEvent(int source) {
-        // Only source is used by these tests, so set other properties to valid defaults.
-        final long eventTime = SystemClock.uptimeMillis();
-        final MotionEvent.PointerProperties props = new MotionEvent.PointerProperties();
-        props.id = 0;
-        return MotionEvent.obtain(eventTime,
-                eventTime,
-                MotionEvent.ACTION_MOVE,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{props},
-                new MotionEvent.PointerCoords[]{new MotionEvent.PointerCoords()},
-                0 /* metaState */,
-                0 /* buttonState */,
-                0 /* xPrecision */,
-                0 /* yPrecision */,
-                1 /* deviceId */,
-                0 /* edgeFlags */,
-                source,
-                0 /* flags */);
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_addZeroTimes_getLabeledByListGetsEmptyArray() {
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(editText).isNotNull();
+
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+
+        assertThat(labels).hasSize(0);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#addLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_addTwoTimes_getLabeledByListGetsTwo_getLabeledByGetsLast() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View labelTwo = mActivity.findViewById(R.id.labelTwo);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(labelTwo).isNotNull();
+        assertThat(editText).isNotNull();
+
+        editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.addLabeledBy(labelOne);
+                info.addLabeledBy(labelTwo);
+            }
+        });
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(2);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+        assertThat(labels.get(1).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#addLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_provider_addTwoTimes_getLabeledByListGetsTwo_getLabeledByGetsLast() {
+        final View root = mActivity.findViewById(R.id.autoImportantLinearLayout);
+        assertThat(root).isNotNull();
+
+        root.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Nullable
+            @Override
+            public AccessibilityNodeProvider getAccessibilityNodeProvider(@NonNull View host) {
+                return new LabelNodeProviderTest(root) {
+                    @Nullable
+                    @Override
+                    public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String text,
+                            int virtualViewId) {
+                        List<AccessibilityNodeInfo> result = new ArrayList<>();
+                        if (text.equals(LABELED)) {
+                            AccessibilityNodeInfo node =
+                                    new AccessibilityNodeInfo(root, LABELED_ID);
+                            node.setText(LABELED);
+                            node.addLabeledBy(root, LABEL_ONE_ID);
+                            node.addLabeledBy(root, LABEL_TWO_ID);
+                            result.add(node);
+                        }
+                        return result;
+                    }
+                };
+            }
+        });
+        final AccessibilityNodeInfo labeledNodeInfo = sUiAutomation.getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByText(LabelNodeProviderTest.LABELED).get(0);
+        assertThat(labeledNodeInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = labeledNodeInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = labeledNodeInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(2);
+        assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_ONE);
+        assertThat(labels.get(1).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+        assertThat(label).isNotNull();
+        assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#setLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_setTwoTimes_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View labelTwo = mActivity.findViewById(R.id.labelTwo);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(labelTwo).isNotNull();
+        assertThat(editText).isNotNull();
+
+        editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setLabeledBy(labelOne);
+                info.setLabeledBy(labelTwo);
+            }
+        });
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#setLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_provider_setTwoTimes_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View root = mActivity.findViewById(R.id.autoImportantLinearLayout);
+        assertThat(root).isNotNull();
+
+        root.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Nullable
+            @Override
+            public AccessibilityNodeProvider getAccessibilityNodeProvider(@NonNull View host) {
+                return new LabelNodeProviderTest(root) {
+                    @Nullable
+                    @Override
+                    public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String text,
+                            int virtualViewId) {
+                        List<AccessibilityNodeInfo> result = new ArrayList<>();
+                        if (text.equals(LABELED)) {
+                            AccessibilityNodeInfo node =
+                                    new AccessibilityNodeInfo(root, LABELED_ID);
+                            node.setText(LABELED);
+                            node.setLabeledBy(root, LABEL_ONE_ID);
+                            node.setLabeledBy(root, LABEL_TWO_ID);
+                            result.add(node);
+                        }
+                        return result;
+                    }
+                };
+            }
+        });
+        final AccessibilityNodeInfo labeledNodeInfo = sUiAutomation.getRootInActiveWindow()
+                .findAccessibilityNodeInfosByText(LabelNodeProviderTest.LABELED).get(0);
+        assertThat(labeledNodeInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = labeledNodeInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = labeledNodeInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+        assertThat(label).isNotNull();
+        assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#removeLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_removeFirst_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View labelTwo = mActivity.findViewById(R.id.labelTwo);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(labelTwo).isNotNull();
+        assertThat(editText).isNotNull();
+
+        editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.addLabeledBy(labelOne);
+                info.addLabeledBy(labelTwo);
+                info.removeLabeledBy(labelOne);
+            }
+        });
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#removeLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_provider_removeFirst_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View root = mActivity.findViewById(R.id.autoImportantLinearLayout);
+        assertThat(root).isNotNull();
+
+        root.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Nullable
+            @Override
+            public AccessibilityNodeProvider getAccessibilityNodeProvider(@NonNull View host) {
+                return new LabelNodeProviderTest(root) {
+                    @Nullable
+                    @Override
+                    public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String text,
+                            int virtualViewId) {
+                        List<AccessibilityNodeInfo> result = new ArrayList<>();
+                        if (text.equals(LABELED)) {
+                            AccessibilityNodeInfo node =
+                                    new AccessibilityNodeInfo(root, LABELED_ID);
+                            node.setText(LABELED);
+                            node.addLabeledBy(root, LABEL_ONE_ID);
+                            node.addLabeledBy(root, LABEL_TWO_ID);
+                            node.removeLabeledBy(root, LABEL_ONE_ID);
+                            result.add(node);
+                        }
+                        return result;
+                    }
+                };
+            }
+        });
+        final AccessibilityNodeInfo labeledNodeInfo = sUiAutomation.getRootInActiveWindow()
+                .findAccessibilityNodeInfosByText(LabelNodeProviderTest.LABELED).get(0);
+        assertThat(labeledNodeInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = labeledNodeInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = labeledNodeInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+        assertThat(label).isNotNull();
+        assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
+        static final int LABELED_ID = 1;
+        static final int LABEL_ONE_ID = 2;
+        static final int LABEL_TWO_ID = 3;
+        static final String LABELED = "labeled";
+        static final String LABEL_ONE = "labelOne";
+        static final String LABEL_TWO = "labelTwo";
+
+        private final View mRoot;
+
+        LabelNodeProviderTest(View root) {
+            this.mRoot = root;
+        }
+
+        @Nullable
+        @Override
+        public AccessibilityNodeInfo createAccessibilityNodeInfo(int virtualViewId) {
+            final AccessibilityNodeInfo node = new AccessibilityNodeInfo(mRoot, virtualViewId);
+            // This function is only used to get labels, so the below is sufficient.
+            if (virtualViewId == LABEL_ONE_ID) {
+                node.setText(LABEL_ONE);
+            } else if (virtualViewId == LABEL_TWO_ID) {
+                node.setText(LABEL_TWO);
+            }
+            return node;
+        }
     }
 
     private List<AccessibilityServiceInfo> getEnabledServices() {
@@ -2398,6 +2693,14 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             int xOnScreen, int yOnScreen) {
         final long eventTime = isFirstHoverEvent ? SystemClock.uptimeMillis() : downTime;
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_HOVER_MOVE,
+                xOnScreen, yOnScreen, 0);
+        event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        sInstrumentation.sendPointerSync(event);
+        event.recycle();
+    }
+
+    private static void injectHoverExit(long eventTime, int xOnScreen, int yOnScreen) {
+        MotionEvent event = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_HOVER_EXIT,
                 xOnScreen, yOnScreen, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         sInstrumentation.sendPointerSync(event);

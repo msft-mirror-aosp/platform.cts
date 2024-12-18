@@ -19,9 +19,11 @@ package android.devicepolicy.cts;
 import static android.Manifest.permission.READ_NEARBY_STREAMING_POLICY;
 import static android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.nene.devicepolicy.DevicePolicy.NearbyNotificationStreamingPolicy.NotManaged;
+import static com.android.bedstead.nene.devicepolicy.DevicePolicy.NearbyNotificationStreamingPolicy.SameManagedAccountOnly;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -29,26 +31,29 @@ import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManager;
-import android.content.Context;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
 import com.android.bedstead.harrier.policies.GetNearbyNotificationStreamingPolicy;
 import com.android.bedstead.harrier.policies.SetNearbyNotificationStreamingPolicy;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.nene.devicepolicy.DevicePolicy;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,28 +66,21 @@ public class NearbyNotificationStreamingPolicyTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final Context sContext = TestApis.context().instrumentedContext();
-    private static final DevicePolicyManager sLocalDevicePolicyManager =
-            sContext.getSystemService(DevicePolicyManager.class);
-
-    @PolicyAppliesTest(policy = GetNearbyNotificationStreamingPolicy.class)
+    @IncludeRunOnProfileOwnerProfileWithNoDeviceOwner
+    @IncludeRunOnSystemDeviceOwnerUser
     public void getNearbyNotificationStreamingPolicy_defaultToSameManagedAccountOnly() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
+        assertThat(TestApis.devicePolicy().getNearbyNotificationStreamingPolicy()).isEqualTo(SameManagedAccountOnly);
+    }
 
-        assertThat(dpm.getNearbyNotificationStreamingPolicy())
-                .isEqualTo(DevicePolicyManager.NEARBY_STREAMING_SAME_MANAGED_ACCOUNT_ONLY);
+    @EnsureHasNoDpc
+    public void getNearbyNotificationStreamingPolicy_defaultToUnmanaged() {
+        assertThat(TestApis.devicePolicy().getNearbyNotificationStreamingPolicy()).isEqualTo(NotManaged);
     }
 
     @CannotSetPolicyTest(policy = GetNearbyNotificationStreamingPolicy.class)
-    @Ignore
-    // TODO(b/191637162): We cannot reach a state without READ_NEARBY_STREAMING_POLICY because it
-    //  is a normal permission that is requested by all testapps. When we support adopting shell
-    //  permissions in test apps we can re-enable this and remove all normal permissions from
-    //  testapps.
+    @RequireRootInstrumentation(reason = "removal of permission from testapp")
     public void getNearbyNotificationStreamingPolicy_policyIsNotAllowedToBeSet_throwsException() {
-        RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
-
-        assertThrows(SecurityException.class, () -> dpm.getNearbyNotificationStreamingPolicy());
+        assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager().getNearbyNotificationStreamingPolicy());
     }
 
     @PolicyAppliesTest(policy = SetNearbyNotificationStreamingPolicy.class)
@@ -104,13 +102,13 @@ public class NearbyNotificationStreamingPolicyTest {
     @EnsureHasPermission(READ_NEARBY_STREAMING_POLICY)
     public void setNearbyNotificationStreamingPolicy_policyApplied_otherUsersUnaffected() {
         RemoteDevicePolicyManager dpm = sDeviceState.dpc().devicePolicyManager();
-        int originalLocalPolicy = sLocalDevicePolicyManager.getNearbyNotificationStreamingPolicy();
+        var originalLocalPolicy = TestApis.devicePolicy().getNearbyNotificationStreamingPolicy();
         int originalPolicy = dpm.getNearbyNotificationStreamingPolicy();
 
         dpm.setNearbyNotificationStreamingPolicy(DevicePolicyManager.NEARBY_STREAMING_DISABLED);
 
         try {
-            assertThat(sLocalDevicePolicyManager.getNearbyNotificationStreamingPolicy())
+            assertThat(TestApis.devicePolicy().getNearbyNotificationStreamingPolicy())
                     .isEqualTo(originalLocalPolicy);
         } finally {
             dpm.setNearbyNotificationStreamingPolicy(originalPolicy);
@@ -137,8 +135,8 @@ public class NearbyNotificationStreamingPolicyTest {
 
         try {
             assertThat(
-                    sLocalDevicePolicyManager.getNearbyNotificationStreamingPolicy()).isNotEqualTo(
-                    DevicePolicyManager.NEARBY_STREAMING_ENABLED);
+                    TestApis.devicePolicy().getNearbyNotificationStreamingPolicy()).isNotEqualTo(
+                    DevicePolicy.NearbyNotificationStreamingPolicy.Enabled);
         } finally {
             dpm.setNearbyNotificationStreamingPolicy(originalPolicy);
         }
@@ -150,14 +148,13 @@ public class NearbyNotificationStreamingPolicyTest {
     @EnsureHasPermission(READ_NEARBY_STREAMING_POLICY)
     @EnsureDoesNotHavePermission({INTERACT_ACROSS_USERS, INTERACT_ACROSS_USERS_FULL})
     public void getNearbyNotificationStreamingPolicy_calledAcrossUsers_throwsException() {
-        DevicePolicyManager dpm;
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            dpm = TestApis.context()
+            DevicePolicyManager dpm = TestApis.context()
                     .instrumentedContextAsUser(sDeviceState.secondaryUser())
                     .getSystemService(DevicePolicyManager.class);
-        }
 
-        assertThrows(SecurityException.class, () -> dpm.getNearbyNotificationStreamingPolicy());
+            assertThrows(SecurityException.class, () -> dpm.getNearbyNotificationStreamingPolicy());
+        }
     }
 }

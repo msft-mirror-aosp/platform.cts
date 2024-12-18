@@ -18,6 +18,8 @@ package android.media.extractor.cts;
 
 import static android.media.MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION;
 
+import static com.android.media.extractor.flags.Flags.FLAG_EXTRACTOR_MP4_ENABLE_APV;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -41,6 +43,9 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.view.Display;
 import android.view.Display.HdrCapabilities;
@@ -59,6 +64,7 @@ import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -85,6 +91,8 @@ public class MediaExtractorTest {
     static final String mInpPrefix = WorkDir.getMediaDirString();
     protected MediaExtractor mExtractor;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     @Before
     public void setUp() throws Exception {
         mExtractor = new MediaExtractor();
@@ -137,6 +145,18 @@ public class MediaExtractorTest {
         }
     }
 
+    @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_APV)
+    @Test
+    public void testApvMediaExtractor() throws Exception {
+        TestMediaDataSource dataSource =
+                setDataSource("pattern_640x480_30fps_8213kbps_apv_10bit.mp4");
+
+        MediaFormat trackFormat = mExtractor.getTrackFormat(0);
+
+        final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
+        assertEquals("video/apv", mimeType);
+    }
+
     private boolean advertisesDolbyVision() {
         // Device advertises support for DV if 1) it has a DV decoder, OR
         // 2) it lists DV on the Display HDR capabilities.
@@ -156,7 +176,7 @@ public class MediaExtractorTest {
     }
 
     // DolbyVisionMediaExtractor for profile-level (DvheDtr/Fhd30).
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvheDtr() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_30fps_dvhe_04.mp4");
@@ -205,7 +225,7 @@ public class MediaExtractorTest {
     }
 
     // DolbyVisionMediaExtractor for profile-level (DvheSt/Fhd60).
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvheSt() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvhe_08.mp4");
@@ -254,7 +274,7 @@ public class MediaExtractorTest {
     }
 
     // DolbyVisionMediaExtractor for profile-level (DvavSe/Fhd60).
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvavSe() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_1920x1080_60fps_dvav_09.mp4");
@@ -304,7 +324,7 @@ public class MediaExtractorTest {
 
     // DolbyVisionMediaExtractor for profile-level (Dvav1 10.0/Uhd30)
     @SmallTest
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvav1() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10.mp4");
@@ -330,7 +350,7 @@ public class MediaExtractorTest {
 
     // DolbyVisionMediaExtractor for profile-level (Dvav1 10.1/Uhd30)
     @SmallTest
-    @CddTest(requirement="5.3.8")
+    @CddTest(requirements = {"5.3.8/C-1-1", "5.3.8/C-1-3"})
     @Test
     public void testDolbyVisionMediaExtractorProfileDvav1_2() throws Exception {
         TestMediaDataSource dataSource = setDataSource("video_dovi_3840x2160_30fps_dav1_10_2.mp4");

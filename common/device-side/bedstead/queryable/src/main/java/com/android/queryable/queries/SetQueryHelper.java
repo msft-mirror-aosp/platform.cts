@@ -34,16 +34,17 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class SetQueryHelper<E extends Queryable, F> implements SetQuery<E, F>, Serializable {
+@SuppressWarnings("CheckReturnValue")
+public class SetQueryHelper<E extends Queryable, F> implements SetQuery<E, F>, Serializable {
 
     private static final long serialVersionUID = 1;
 
     private final transient E mQuery;
     private final IntegerQueryHelper<E> mSizeQuery;
     private final Set<Query<F>> mContainsByQuery;
-    private final Set<F> mContainsByType;
     private final Set<Query<F>> mDoesNotContainByQuery;
     private final Set<F> mDoesNotContainByType;
+    protected final Set<F> mContainsByType;
 
     public static final class SetQueryBase<T> extends
             QueryableBaseWithMatch<Set<T>, SetQueryHelper<SetQueryHelper.SetQueryBase<T>, T>> {
@@ -106,25 +107,25 @@ public final class SetQueryHelper<E extends Queryable, F> implements SetQuery<E,
 
     @Override
     public E contains(Query<F>... objects) {
-        mContainsByQuery.addAll(Arrays.asList(objects));
+        boolean unused = mContainsByQuery.addAll(Arrays.asList(objects));
         return mQuery;
     }
 
     @Override
     public E contains(F... objects) {
-        mContainsByType.addAll(Arrays.asList(objects));
+        boolean unused = mContainsByType.addAll(Arrays.asList(objects));
         return mQuery;
     }
 
     @Override
     public E doesNotContain(Query<F>... objects) {
-        mDoesNotContainByQuery.addAll(Arrays.asList(objects));
+        boolean unused = mDoesNotContainByQuery.addAll(Arrays.asList(objects));
         return mQuery;
     }
 
     @Override
     public E doesNotContain(F... objects) {
-        mDoesNotContainByType.addAll(Arrays.asList(objects));
+        boolean unused = mDoesNotContainByType.addAll(Arrays.asList(objects));
         return mQuery;
     }
 
@@ -133,7 +134,7 @@ public final class SetQueryHelper<E extends Queryable, F> implements SetQuery<E,
         for (H collection : collections) {
             Iterator<F> iterator = collection.iterator();
             while (iterator.hasNext()) {
-                contains(iterator.next());
+                E unused = contains(iterator.next());
             }
         }
         return  mQuery;
@@ -144,7 +145,7 @@ public final class SetQueryHelper<E extends Queryable, F> implements SetQuery<E,
         for (H collection : collections) {
             Iterator<F> iterator = collection.iterator();
             while (iterator.hasNext()) {
-                doesNotContain(iterator.next());
+                E unused = doesNotContain(iterator.next());
             }
         }
         return  mQuery;

@@ -27,6 +27,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigura
 import static android.hardware.camera2.cts.CameraTestUtils.checkSessionConfigurationWithSurfaces;
 import static android.hardware.camera2.cts.CameraTestUtils.configureReprocessableCameraSession;
 import static android.hardware.camera2.cts.CameraTestUtils.fail;
+import static android.hardware.camera2.cts.CameraTestUtils.getUnavailablePhysicalCameras;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigSupported;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
@@ -36,7 +37,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PREVIE
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.RAW;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.RECORD;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1440P_4_3;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_PREVIEW;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.USE_CASE_PREVIEW_VIDEO_STILL;
@@ -222,6 +223,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             ck = CameraCharacteristics.SCALER_MANDATORY_MAXIMUM_RESOLUTION_STREAM_COMBINATIONS;
         }
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : cameraIdsUnderTest) {
             openDevice(id);
             MandatoryStreamCombination[] combinations = mStaticInfo.getCharacteristics().get(ck);
@@ -259,6 +262,12 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                             // its stream combination through logical camera.
                             continue;
                         }
+                        if (unavailablePhysicalCameras.contains(new Pair<>(id, physicalId))) {
+                            // If physicalId is unavailable, do not attempt to test its
+                            // stream combinations.
+                            continue;
+                        }
+
                         StaticMetadata physicalStaticInfo = mAllStaticInfo.get(physicalId);
 
                         MandatoryStreamCombination[] phyCombinations =
@@ -414,7 +423,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         try {
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                     /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    true/*defaultSupport*/,
+                    mCameraManager, true/*defaultSupport*/,
                     String.format("Session configuration query from combination: %s failed",
                             combination.getDescription()));
 
@@ -591,13 +600,14 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             if (physicalCameraId == null) {
                 checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                         /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                        true/*defaultSupport*/, String.format(
+                        mCameraManager, true/*defaultSupport*/, String.format(
                         "Session configuration query from combination: %s failed",
                         combination.getDescription()));
             } else {
                 SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                         mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                        SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                        SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                        false/*defaultSupport*/);
                 assertTrue(
                         String.format("Session configuration query from combination: %s failed",
                         combination.getDescription()), !sessionConfigSupport.error);
@@ -623,7 +633,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                         eq(mCameraSession),
                         eq(request),
                         isA(TotalCaptureResult.class));
-           if (ultraHighResolution) {
+            if (ultraHighResolution) {
                 verify(mockCaptureCallback,
                         timeout(TIMEOUT_FOR_RESULT_MS).atLeast(1))
                         .onCaptureCompleted(
@@ -737,7 +747,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
         try {
             checkSessionConfigurationSupported(mCamera, mHandler, outputConfigs,
                     /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                    true/*defaultSupport*/,
+                    mCameraManager, true/*defaultSupport*/,
                     String.format("Session configuration query from combination: %s failed",
                             combination.getDescription()));
 
@@ -995,8 +1005,8 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             allOutputSurfaces.add(inputReader.getSurface());
 
             checkSessionConfigurationWithSurfaces(mCamera, mHandler, allOutputSurfaces,
-                    inputConfig, SessionConfiguration.SESSION_REGULAR, /*defaultSupport*/ true,
-                    String.format("Session configuration query %s failed",
+                    inputConfig, SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                    /*defaultSupport*/ true, String.format("Session configuration query %s failed",
                     combination.getDescription()));
 
             // Verify we can create a reprocessable session with the input and all outputs.
@@ -1989,7 +1999,18 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
                         OisSample[] oisSamples = result.get(CaptureResult.STATISTICS_OIS_SAMPLES);
 
-                        if (oisMode == CameraCharacteristics.STATISTICS_OIS_DATA_MODE_OFF) {
+                        boolean physicalDeviceSupportsOIS = true;
+                        if (staticInfo.isLogicalMultiCamera() &&
+                                staticInfo.isActivePhysicalCameraIdSupported()) {
+                            String physicalId = result.get(
+                                    CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
+                            assertNotNull(physicalId);
+                            StaticMetadata physicalStaticInfo = mAllStaticInfo.get(physicalId);
+                            physicalDeviceSupportsOIS = physicalStaticInfo.isOisDataModeSupported();
+                        }
+
+                        if (oisMode == CameraCharacteristics.STATISTICS_OIS_DATA_MODE_OFF ||
+                                !physicalDeviceSupportsOIS) {
                             mCollector.expectKeyValueEquals(result,
                                     CaptureResult.STATISTICS_OIS_DATA_MODE,
                                     CaptureResult.STATISTICS_OIS_DATA_MODE_OFF);
@@ -2366,19 +2387,19 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
         final int[][] concurrentStreamCombinations = {
             //In-app video / image processing.
-            {YUV, S1440P},
+            {YUV, S1440P_4_3},
             // In-app viewfinder analysis.
-            {PRIV, S1440P},
+            {PRIV, S1440P_4_3},
             // No viewfinder still image capture.
-            {JPEG, S1440P},
+            {JPEG, S1440P_4_3},
             // Standard still imaging.
-            {YUV, S720P, JPEG, S1440P},
-            {PRIV, S720P, JPEG, S1440P},
+            {YUV, S720P, JPEG, S1440P_4_3},
+            {PRIV, S720P, JPEG, S1440P_4_3},
             // In-app video / processing with preview.
-            {YUV, S720P, YUV, S1440P},
-            {YUV, S720P, PRIV, S1440P},
-            {PRIV, S720P, YUV, S1440P},
-            {PRIV, S720P, PRIV, S1440P}
+            {YUV, S720P, YUV, S1440P_4_3},
+            {YUV, S720P, PRIV, S1440P_4_3},
+            {PRIV, S720P, YUV, S1440P_4_3},
+            {PRIV, S720P, PRIV, S1440P_4_3}
         };
 
         final int[][] ultraHighResolutionsCombinations = {
@@ -2439,11 +2460,11 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             {YUV, MAXIMUM, USE_CASE_STILL_CAPTURE},
             {JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
             // Multi-purpose stream for preview, video and still image capture.
-            {YUV, S1440P, USE_CASE_PREVIEW_VIDEO_STILL},
-            {PRIV, S1440P, USE_CASE_PREVIEW_VIDEO_STILL},
+            {YUV, S1440P_4_3, USE_CASE_PREVIEW_VIDEO_STILL},
+            {PRIV, S1440P_4_3, USE_CASE_PREVIEW_VIDEO_STILL},
             // Simple video call.
-            {YUV, S1440P, USE_CASE_VIDEO_CALL},
-            {PRIV, S1440P, USE_CASE_VIDEO_CALL},
+            {YUV, S1440P_4_3, USE_CASE_VIDEO_CALL},
+            {PRIV, S1440P_4_3, USE_CASE_VIDEO_CALL},
             // Preview with JPEG or YUV still image capture.
             {PRIV, PREVIEW, USE_CASE_PREVIEW, YUV, MAXIMUM, USE_CASE_STILL_CAPTURE},
             {PRIV, PREVIEW, USE_CASE_PREVIEW, JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
@@ -2453,13 +2474,13 @@ public class RobustnessTest extends Camera2AndroidTestCase {
             // Preview with in-application image processing.
             {PRIV, PREVIEW, USE_CASE_PREVIEW, YUV, PREVIEW, USE_CASE_PREVIEW},
             // Preview with video call.
-            {PRIV, PREVIEW, USE_CASE_PREVIEW, YUV, S1440P, USE_CASE_VIDEO_CALL},
-            {PRIV, PREVIEW, USE_CASE_PREVIEW, PRIV, S1440P, USE_CASE_VIDEO_CALL},
+            {PRIV, PREVIEW, USE_CASE_PREVIEW, YUV, S1440P_4_3, USE_CASE_VIDEO_CALL},
+            {PRIV, PREVIEW, USE_CASE_PREVIEW, PRIV, S1440P_4_3, USE_CASE_VIDEO_CALL},
             // {Multi-purpose stream with JPEG or YUV still capture.
-            {YUV, S1440P, USE_CASE_PREVIEW_VIDEO_STILL, YUV, MAXIMUM, USE_CASE_STILL_CAPTURE},
-            {YUV, S1440P, USE_CASE_PREVIEW_VIDEO_STILL, JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
-            {PRIV, S1440P, USE_CASE_PREVIEW_VIDEO_STILL, YUV, MAXIMUM, USE_CASE_STILL_CAPTURE},
-            {PRIV, S1440P, USE_CASE_PREVIEW_VIDEO_STILL, JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
+            {YUV, S1440P_4_3, USE_CASE_PREVIEW_VIDEO_STILL, YUV, MAXIMUM, USE_CASE_STILL_CAPTURE},
+            {YUV, S1440P_4_3, USE_CASE_PREVIEW_VIDEO_STILL, JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
+            {PRIV, S1440P_4_3, USE_CASE_PREVIEW_VIDEO_STILL, YUV, MAXIMUM, USE_CASE_STILL_CAPTURE},
+            {PRIV, S1440P_4_3, USE_CASE_PREVIEW_VIDEO_STILL, JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
             // YUV and JPEG concurrent still image capture (for testing).
             {YUV, PREVIEW, USE_CASE_STILL_CAPTURE, JPEG, MAXIMUM, USE_CASE_STILL_CAPTURE},
             // Preview, video record and JPEG video snapshot.
@@ -2506,18 +2527,18 @@ public class RobustnessTest extends Camera2AndroidTestCase {
 
         final int[][] previewStabilizationCombinations = {
             // Stabilized preview, GPU video processing, or no-preview stabilized video recording.
-            {PRIV, S1440P},
-            {YUV, S1440P},
+            {PRIV, S1440P_4_3},
+            {YUV, S1440P_4_3},
             // Standard still imaging with stabilized preview.
-            {PRIV, S1440P, JPEG, MAXIMUM},
-            {PRIV, S1440P, YUV, MAXIMUM},
-            {YUV, S1440P, JPEG, MAXIMUM},
-            {YUV, S1440P, YUV, MAXIMUM},
+            {PRIV, S1440P_4_3, JPEG, MAXIMUM},
+            {PRIV, S1440P_4_3, YUV, MAXIMUM},
+            {YUV, S1440P_4_3, JPEG, MAXIMUM},
+            {YUV, S1440P_4_3, YUV, MAXIMUM},
             // High-resolution recording with stabilized preview and recording stream.
-            {PRIV, PREVIEW, PRIV, S1440P},
-            {PRIV, PREVIEW, YUV, S1440P},
-            {YUV, PREVIEW, PRIV, S1440P},
-            {YUV, PREVIEW, YUV, S1440P},
+            {PRIV, PREVIEW, PRIV, S1440P_4_3},
+            {PRIV, PREVIEW, YUV, S1440P_4_3},
+            {YUV, PREVIEW, PRIV, S1440P_4_3},
+            {YUV, PREVIEW, YUV, S1440P_4_3},
         };
 
         final int[][][] tables =
@@ -3014,7 +3035,7 @@ public class RobustnessTest extends Camera2AndroidTestCase {
                                     tableIdx, rowIdx, i + 1, maxSize),
                             maxSize == PREVIEW || maxSize == RECORD
                                     || maxSize == MAXIMUM || maxSize == VGA || maxSize == S720P
-                                    || maxSize == S1440P || maxSize == MAX_RES);
+                                    || maxSize == S1440P_4_3 || maxSize == MAX_RES);
                     if (useCaseSpecified) {
                         int useCase = row[i + 2];
                         assertTrue(String.format("table %d row %d index %d use case not valid: %d",

@@ -37,7 +37,7 @@ java_defaults {
         "flag-junit-host",
         "android.content.pm.flags-aconfig-java-host",
     ],
-    data: [
+    device_common_data: [
         ":CtsStatsdAtomEmptyApp",
         ":CtsStatsdAtomEmptyAppV2",
         ":CtsStatsdAtomEmptyApp2",
@@ -45,6 +45,7 @@ java_defaults {
         ":CtsStatsdAtomStaticSharedLibProviderV2",
         ":CtsStatsdAtomEmptySplitApp",
         ":CtsStatsdAtomApp",
+        ":CtsStatsdAtomTestComponentStateApp",
         ":PackageManagerStatsTestsHelper",
     ],
     java_resource_dirs: ["res"],
@@ -54,6 +55,7 @@ java_test_host {
     name: "CtsPackageManagerStatsHostTestCases",
     defaults: ["stats_host_cts_defaults"],
     srcs: [
+        "src/**/ComponentStateChangedReportedStatsTests.java",
         "src/**/PackageInstallationSessionReportedStatsTests.java",
         "src/**/PackageInstallerV2StatsTests.java",
         "src/**/PackageManagerStatsTestsBase.java",
@@ -74,4 +76,31 @@ java_test_host {
         "src/**/Utils.java",
     ],
     test_config: "IncrementalStatsTests.xml",
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerStatsHostTestCases_host_packageinstallerv2statstests",
+    base: "CtsPackageManagerStatsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.cts.packagemanager.stats.host.PackageInstallerV2StatsTests"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_LargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: [
+        "androidx.test.filters.LargeTest",
+        "android.platform.test.annotations.LargeTest",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_NoLargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "android.platform.test.annotations.LargeTest",
+        "androidx.test.filters.LargeTest",
+    ],
 }

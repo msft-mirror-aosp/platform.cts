@@ -16,31 +16,38 @@
 
 package android.packageinstaller.install.cts
 
-import com.android.bedstead.harrier.DeviceState
+import android.os.UserManager
+import android.text.TextUtils
+import com.android.compatibility.common.util.SystemUtil
 import org.junit.After
+import org.junit.Assume
 import org.junit.Before
-import org.junit.ClassRule
-import org.junit.Rule
 
 open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
 
     companion object {
-        @JvmField
-        @ClassRule
-        @Rule
-        val deviceState = DeviceState()
-
         const val TEST_INSTALLER_APK_NAME = "CtsEmptyInstallerApp.apk"
         const val TEST_INSTALLER_APK_PACKAGE_NAME = "android.packageinstaller.emptyinstaller.cts"
     }
 
     private var isUpdateOwnershipEnforcementAvailable: String? = null
 
+    private fun assumeRunOnPrimaryUser(): String {
+        val um = instrumentation.targetContext.getSystemService(UserManager::class.java)
+        val userType = um.userType
+        Assume.assumeTrue(
+            "Don't support to run the test cases in a profile.",
+            TextUtils.equals(userType, UserManager.USER_TYPE_FULL_SYSTEM)
+        )
+        return userType
+    }
+
     /**
      * Make sure the feature flag of update ownership enforcement is available.
      */
     @Before
     fun setUpdateOwnershipEnforcementAvailable() {
+        SystemUtil.callWithShellPermissionIdentity { assumeRunOnPrimaryUser() }
         isUpdateOwnershipEnforcementAvailable =
                 getDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE)
         setDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE, "true")

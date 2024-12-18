@@ -23,4 +23,7 @@ public class Components extends ComponentsBase {
 
     public static final ComponentName DRAG_SOURCE =
             component(Components.class, "DragSource");
+
+    public static final ComponentName DRAG_SOURCE_DROP_TARGET =
+            component(Components.class, "DropTarget");
 }

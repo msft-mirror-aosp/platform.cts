@@ -109,6 +109,19 @@ open class PackageInstallerTestBase {
         }
     }
 
+    /**
+     * Executes a shell command to deny the appOp here,
+     * instead of using {@link com.android.tradefed.targetprep.RunCommandTargetPreparer}.
+     * This is because the operation from RunCommandTargetPreparer can be executed before the test
+     * package is installed for the target user.
+     */
+    @Before
+    fun denyAppOp() {
+        val testUserId = context.user.identifier
+        val packageName = context.packageName
+        uiDevice.executeShellCommand("appops set --user $testUserId $packageName $APP_OP_STR deny");
+    }
+
     @Before
     fun registerInstallResultReceiver() {
         context.registerReceiver(receiver, IntentFilter(INSTALL_ACTION_CB), Context.RECEIVER_EXPORTED)

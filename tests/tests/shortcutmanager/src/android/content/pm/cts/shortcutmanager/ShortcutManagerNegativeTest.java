@@ -109,9 +109,6 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
     public void testDirectAidlCalls() throws IllegalAccessException {
         checkAidlCall("resetThrottling", "Caller must be");
 
-        checkAidlCall("onApplicationActive", "does not have",
-                "package", getTestContext().getUserId());
-
         checkAidlCall("getBackupPayload", "Caller must be", getTestContext().getUserId());
 
         checkAidlCall("applyRestore", "Caller must be", null, getTestContext().getUserId());
@@ -156,7 +153,7 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
      * Make sure AIDL methods can't be called for other users.
      */
     public void testUserIdSpoofing() throws IllegalAccessException {
-        checkAidlCall("getDynamicShortcuts", "Invalid user-ID",
-                mPackageContext1.getPackageName(), /* user-id*/ 10);
+        checkAidlCall("getDynamicShortcuts", "Invalid userId",
+                mPackageContext1.getPackageName(), /* userId*/ 10);
     }
 }

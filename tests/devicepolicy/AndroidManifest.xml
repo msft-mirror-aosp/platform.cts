@@ -18,7 +18,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="android.devicepolicy.cts"
           android:targetSandboxVersion="2">
-    <uses-sdk minSdkVersion="29" targetSdkVersion="29"/>
+    <uses-sdk minSdkVersion="33" targetSdkVersion="33"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <!-- TODO(b/191637162): This is required for
             canInteractAcrossProfiles_permissionIsSet_returnsTrue -->
@@ -35,7 +35,8 @@
     <application android:testOnly="true"
                  android:appComponentFactory="com.android.eventlib.premade.EventLibAppComponentFactory"
                  android:networkSecurityConfig="@xml/network_security_config"
-                 android:requestLegacyExternalStorage="true">
+                 android:requestLegacyExternalStorage="true"
+                 android:largeHeap="true">
         <uses-library android:name="android.test.runner" />
 
         <activity android:name=".MainActivity"

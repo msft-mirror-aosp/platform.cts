@@ -128,6 +128,9 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
                 false /* shouldApplyIndependently */);
         mTaskFragmentOrganizer.waitForTaskFragmentCreated();
 
+        waitAndAssertResumedActivity(mActivityA, "Activity A must still be resumed.");
+        waitAndAssertResumedActivity(mActivityB, "Activity B must still be resumed.");
+
         final TaskFragmentInfo infoA = mTaskFragmentOrganizer.getTaskFragmentInfo(
                 taskFragTokenA);
         final TaskFragmentInfo infoB = mTaskFragmentOrganizer.getTaskFragmentInfo(
@@ -138,9 +141,6 @@ public class SplitActivityLifecycleTest extends TaskFragmentOrganizerTestBase {
 
         mTaskFragA = new TaskFragmentRecord(infoA);
         mTaskFragB = new TaskFragmentRecord(infoB);
-
-        waitAndAssertResumedActivity(mActivityA, "Activity A must still be resumed.");
-        waitAndAssertResumedActivity(mActivityB, "Activity B must still be resumed.");
 
         mTaskFragmentOrganizer.resetLatch();
     }

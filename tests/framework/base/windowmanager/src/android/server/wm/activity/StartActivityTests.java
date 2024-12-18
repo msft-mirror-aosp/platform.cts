@@ -21,6 +21,7 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_DREAM;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
+import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
@@ -38,7 +39,6 @@ import static android.server.wm.app.Components.TestActivity.EXTRA_INTENT;
 import static android.server.wm.app.Components.TestActivity.EXTRA_INTENTS;
 import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.second.Components.SECOND_ACTIVITY;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -62,6 +62,7 @@ import android.server.wm.intent.Activities;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -75,6 +76,20 @@ import java.util.stream.Stream;
  */
 @Presubmit
 public class StartActivityTests extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_LAUNCHING_ACTIVITY.getPackageName();
+    private static final int[] ALL_ACTIVITY_TYPES = {
+            ACTIVITY_TYPE_UNDEFINED,
+            ACTIVITY_TYPE_STANDARD,
+            ACTIVITY_TYPE_HOME,
+            ACTIVITY_TYPE_RECENTS,
+            ACTIVITY_TYPE_ASSISTANT,
+            ACTIVITY_TYPE_DREAM,
+    };
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
+    }
 
     @Test
     public void testStartHomeIfNoActivities() {
@@ -83,10 +98,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
 	}
 
         final ComponentName defaultHome = getDefaultHomeComponent();
-        final int[] allActivityTypes = Arrays.copyOf(ALL_ACTIVITY_TYPE_BUT_HOME,
-                ALL_ACTIVITY_TYPE_BUT_HOME.length + 1);
-        allActivityTypes[allActivityTypes.length - 1] = ACTIVITY_TYPE_HOME;
-        removeRootTasksWithActivityTypes(allActivityTypes);
+        removeRootTasksWithAllActivityTypes();
 
         waitAndAssertResumedActivity(defaultHome,
                 "Home activity should be restarted after force-finish");
@@ -222,7 +234,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.RegularActivity> activitySession1 =
                 createManagedTestActivitySession();
         activitySession1.launchTestActivityOnDisplaySync(regularActivityName, rootIntent,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         final Intent navIntent = new Intent(mContext, Activities.RegularActivity.class);
         verifyNavigateUpTo(activitySession1, navIntent);
@@ -237,7 +249,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.SingleTopActivity> activitySession2 =
                 createManagedTestActivitySession();
         activitySession2.launchTestActivityOnDisplaySync(Activities.SingleTopActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         final CommandSession.ActivitySession activitySession3 =
                 createManagedActivityClientSession().startActivity(
@@ -255,7 +267,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         activitySession3.sendCommand(COMMAND_NAVIGATE_UP_TO, data);
 
         waitAndAssertTopResumedActivity(rootActivitySession.getActivity().getComponentName(),
-                DEFAULT_DISPLAY, "navigateUpTo should return to the first activity");
+                getMainDisplayId(), "navigateUpTo should return to the first activity");
         // Make sure the resumed first activity is the original instance.
         assertFalse("The target of navigateUpTo should not be destroyed",
                 rootActivitySession.getActivity().isDestroyed());
@@ -323,8 +335,9 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 // hence, check for its visibility instead.
                 mWmState.assertHomeActivityVisible(/* visible= */ true);
             } else {
-                mWmState.assertFrontStackActivityType(
-                        "The activity type should be same as requested.", type);
+                mWmState.assertFrontStackActivityTypeOnDisplay(
+                        "The activity type should be same as requested.", type,
+                        getMainDisplayId());
             }
             mBroadcastActionTrigger.finishBroadcastReceiverActivity();
             mWmState.waitAndAssertActivityRemoved(BROADCAST_RECEIVER_ACTIVITY);
@@ -380,7 +393,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.RegularActivity> activitySession =
                 createManagedTestActivitySession();
         activitySession.launchTestActivityOnDisplaySync(regularActivityName, baseIntent,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         mWmState.computeState(baseIntent.getComponent());
         final int taskId = mWmState.getTaskByActivity(baseIntent.getComponent()).getTaskId();
         final Activity baseActivity = activitySession.getActivity();
@@ -444,7 +457,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.RegularActivity> activitySession =
                 createManagedTestActivitySession();
         activitySession.launchTestActivityOnDisplaySync(regularActivityName, baseIntent,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         mWmState.computeState(baseIntent.getComponent());
         final int taskId = mWmState.getTaskByActivity(baseIntent.getComponent()).getTaskId();
         final Activity baseActivity = activitySession.getActivity();
@@ -494,5 +507,12 @@ public class StartActivityTests extends ActivityManagerTestBase {
             taskIds[i + 1] = mWmState.getTaskByActivity(intents[i].getComponent()).getTaskId();
         }
         return taskIds;
+    }
+
+    private void removeRootTasksWithAllActivityTypes() {
+        runWithShellPermission(() -> {
+            mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES);
+        });
+        waitForIdle();
     }
 }

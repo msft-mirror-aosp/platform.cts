@@ -22,6 +22,7 @@ import android.net.Uri;
 import android.os.ConditionVariable;
 import android.os.FileObserver;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.MediaStore;
 import android.test.AndroidTestCase;
 import java.io.File;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class FileObserverLegacyPathTest extends AndroidTestCase {
     ConditionVariable mCond;
     Context mContext;

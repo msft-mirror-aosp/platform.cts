@@ -18,14 +18,12 @@ package android.text.cts
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.text.LineBreaker
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.text.DynamicLayout
 import android.text.StaticLayout
 import android.text.TextPaint
 import android.text.cts.LayoutUseBoundsUtil.getDrawingHorizontalOffset
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,7 +31,6 @@ import org.junit.runners.Parameterized
 
 @SmallTest
 @RunWith(Parameterized::class)
-@RequiresFlagsEnabled(Flags.FLAG_USE_BOUNDS_FOR_WIDTH)
 class LayoutUseBoundsTest(val p: Param) {
 
     // In this test case, the SIMPLE and HIGH_QUALITY line breaker produces the same line break
@@ -75,6 +72,8 @@ class LayoutUseBoundsTest(val p: Param) {
     // U+0065(e), U+05D4(denoted as E in test comment): 1em, (-0.5, 0) - (1,   1)
     // U+0066(f), U+05D5(denoted as F in test comment): 1em, (-1.0, 0) - (1,   1)
     // U+0067(g), U+05D6(denoted as G in test comment): 1em, (-1.5, 0) - (1,   1)
+    // U+0068(h), U+05D7(denoted as H in test comment): 1em, ( 0.5, 0) - (1,   1)
+    // U+0068(i), U+05D8(denoted as I in test comment): 1em, (   0, 0) - (0.5, 1)
     private val overshootFont = Typeface.createFromAsset(context.assets, "fonts/OvershootTest.ttf")
     private val overshootPaint = TextPaint().apply {
         typeface = overshootFont
@@ -998,5 +997,37 @@ class LayoutUseBoundsTest(val p: Param) {
         assertThat(layout.getLineVisibleEnd(3)).isEqualTo(19)
         assertThat(layout.getLineWidth(3)).isEqualTo(55)
         assertThat(layout.getLineMax(3)).isEqualTo(55)
+    }
+
+    @Test
+    fun testOvershoot_bounds_inside_LTR() {
+        val text = "hhhh dddd"
+
+        // Width constraint: 1000px
+        // |hhhh dddd      : width: 90, max: 90, left: 5, right: 105
+        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
+        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
+        var layout = buildLayout(text, 1000)
+        assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(5f, 0f, 105f, 10f))
+        assertThat(layout.lineCount).isEqualTo(1)
+        assertThat(layout.getLineEnd(0)).isEqualTo(9)
+        assertThat(layout.getLineWidth(0)).isEqualTo(105)
+        assertThat(layout.getLineMax(0)).isEqualTo(105)
+    }
+
+    @Test
+    fun testOvershoot_bounds_inside_RTL() {
+        val text = "\u05D8\u05D8\u05D8\u05D8 \u05D6\u05D6\u05D6\u05D6"
+
+        // Width constraint: 1000px
+        // EEEE IIII| : width: 90, max: 90, left: 895, right: 1000
+        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, false))).isEqualTo(0)
+        assertThat(getDrawingHorizontalOffset(buildLayout(text, 1000, true))).isEqualTo(0)
+        var layout = buildLayout(text, 1000)
+        assertThat(layout.computeDrawingBoundingBox()).isEqualTo(RectF(895f, 0f, 1000f, 10f))
+        assertThat(layout.lineCount).isEqualTo(1)
+        assertThat(layout.getLineEnd(0)).isEqualTo(9)
+        assertThat(layout.getLineWidth(0)).isEqualTo(105)
+        assertThat(layout.getLineMax(0)).isEqualTo(105)
     }
 }

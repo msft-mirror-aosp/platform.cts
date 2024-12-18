@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.DEFAULT_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EXPAND_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_ATTRS;
@@ -34,6 +35,8 @@ import android.content.Intent;
 import android.server.wm.NestedShellPermission;
 import android.server.wm.RotationSession;
 import android.server.wm.TestTaskOrganizer;
+import android.server.wm.WindowManagerState.Task;
+import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 
 import androidx.annotation.NonNull;
@@ -137,7 +140,7 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
      * to expand split type.
      */
     @ApiTest(apis = "androidx.window.extensions.embedding.SplitAttributes"
-            + ".ExpandContainersSplitType")
+            + ".ExpandContainersSplitType#ExpandContainersSplitType")
     @Test
     public void testCalculatorSplitAttributesCustomization_expand() {
         testSplitAttributesCustomizationByCalculator(EXPAND_SPLIT_ATTRS);
@@ -147,7 +150,8 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
      * Verifies the behavior to use splitAttributes calculator function to customize a split pair
      * to hinge split type.
      */
-    @ApiTest(apis = "androidx.window.extensions.embedding.SplitAttributes.HingeSplitType")
+    @ApiTest(apis =
+            "androidx.window.extensions.embedding.SplitAttributes.HingeSplitType#HingeSplitType")
     @Test
     public void testCalculatorSplitAttributesCustomization_hinge() {
         testSplitAttributesCustomizationByCalculator(HINGE_SPLIT_ATTRS);
@@ -230,15 +234,27 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
             return;
         }
 
-        try (RotationSession rotationSession = new RotationSession()) {
-            final int initialRotation = activityA.getDisplay().getRotation();
-            for (int i = 1; i <= 3; i++) {
-                // Rotate the device by 90 degree clockwise.
-                final int rotation = (initialRotation + i) % 4;
-                rotationSession.set(rotation);
+        mWmState.computeState(activityA.getComponentName());
+        final Task activityATask = mWmState.getTaskByActivity(activityA.getComponentName());
+        if (activityATask.getWindowingMode() == WINDOWING_MODE_FREEFORM) {
+            // For form factors that force all Tasks to be freeform, rotating the device may not
+            // actually work. In this case, resize activity task to trigger a "rotation" instead.
+            resizeActivityTaskToSwitchOrientation((TestActivity) activityA);
 
-                verifier.waitAndAssertFunctionApplied("The calculator function must be called for"
-                        + " rotation:" + rotation);
+            verifier.waitAndAssertFunctionApplied("The calculator function must be called for"
+                    + " freeform orientation change.");
+        } else {
+            try (RotationSession rotationSession = new RotationSession()) {
+                final int initialRotation = activityA.getDisplay().getRotation();
+                for (int i = 1; i <= 3; i++) {
+                    // Rotate the device by 90 degree clockwise.
+                    final int rotation = (initialRotation + i) % 4;
+                    rotationSession.set(rotation);
+
+                    verifier.waitAndAssertFunctionApplied(
+                            "The calculator function must be called for rotation:"
+                                    + rotation);
+                }
             }
         }
     }
@@ -248,7 +264,7 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     public void testSplitAttributesCalculatorInvocation_pip() throws InterruptedException {
         assumeTrue(supportsPip());
 
-        final String tag = "testSplitAttributesCalculatorInvocation_screenRotation";
+        final String tag = "testSplitAttributesCalculatorInvocation_pip";
         final InvocationVerifier verifier = new InvocationVerifier(tag);
 
         // Set the calculator function before the split pair launch.

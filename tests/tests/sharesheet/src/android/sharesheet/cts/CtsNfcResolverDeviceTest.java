@@ -45,6 +45,8 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -95,6 +97,7 @@ public class CtsNfcResolverDeviceTest {
             mActivityTesterAppLabel, mActivityTesterActivityLabel,
             mIntentFilterTesterAppLabel, mIntentFilterTesterIntentFilterLabel;
 
+    private int mMyDisplayId;
 
     private static Intent createNfcResolverIntent(
             Intent target,
@@ -143,6 +146,9 @@ public class CtsNfcResolverDeviceTest {
         mIntentFilterTesterIntentFilterLabel =
                 mContext.getString(R.string.test_intent_filter_label_intentfilter);
 
+        UserHelper userHelper = new UserHelper(mContext);
+        mMyDisplayId = userHelper.getMainDisplayId();
+
         // We need to know the package used by the system Sharesheet so we can properly
         // wait for the UI to load. Do this by resolving which activity consumes the share intent.
         // There must be a system Sharesheet or fail, otherwise fetch its package.
@@ -161,7 +167,7 @@ public class CtsNfcResolverDeviceTest {
     }
 
     @Test
-    public void testNfcCustomizations() {
+    public void testNfcCustomizations_withAppAndActivityTarget() {
         final CountDownLatch appStarted = new CountDownLatch(1);
         final AtomicReference<Intent> targetLaunchIntent = new AtomicReference<>();
 
@@ -177,17 +183,16 @@ public class CtsNfcResolverDeviceTest {
                 PackageManager.MATCH_DEFAULT_ONLY | PackageManager.GET_META_DATA
         );
 
-        // Filter to include only the targets that we consider in our test design. Also filter out
-        // the "exclude tester" which would otherwise be included (i.e., otherwise no conditions
-        // would've been responsible for specifying its exclusion), because we want to ensure that
-        // the relevant test targets are on screen, and so we must limit the size of the list. Note
-        // that the "customized chooser" API doesn't *require* that no other targets are displayed,
-        // but we do test (at least for now) that *at least* the specified targets are included.
+        // Filter to include only the two targets that we expect to see in the UI for this test.
+        // Note that the "customized chooser" API doesn't *require* that no other targets are
+        // displayed, but we do test (at least for now) that *at least* the specified targets are
+        // included.
         final List<ResolveInfo> newTargets = matchingTargets
                 .stream()
                 .filter(t ->
                         t.activityInfo.packageName.startsWith("android.sharesheet.cts")
-                        && !t.activityInfo.packageName.contains("excludetester"))
+                        && !t.activityInfo.packageName.contains("excludetester")
+                        && !t.activityInfo.packageName.contains("intentfilterlabeltester"))
                 .collect(Collectors.toList());
 
         runAndExecuteCleanupBeforeAnyThrow(() -> {
@@ -197,13 +202,73 @@ public class CtsNfcResolverDeviceTest {
             mContext.startActivity(resolverIntent);
 
             waitAndAssertPkgVisible(mSharesheetPkg);
-            mSharesheet = mDevice.findObject(By.pkg(mSharesheetPkg).depth(0));
+            mSharesheet =
+                mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
             waitForIdle();
 
             waitAndAssertTextContains(title);
 
             showsApplicationLabel();
             showsAppAndActivityLabel();
+
+            UiObject2 shareTarget = findTextContains(mAppLabel);
+            assertNotNull(shareTarget);
+            // Start the event sequence and wait for results
+            // Must be run last, partial completion closes the Sharesheet
+            shareTarget.click();
+
+            appStarted.await(1000, TimeUnit.MILLISECONDS);
+            assertEquals(CTS_DATA_TYPE, targetLaunchIntent.get().getType());
+            assertEquals(Intent.ACTION_SEND, targetLaunchIntent.get().getAction());
+        }, () -> {
+            // The Sharesheet may or may not be open depending on test success, close it if it is.
+            closeSharesheetIfNeeded();
+            });
+    }
+
+    @Test
+    public void testNfcCustomizations_withAppAndIntentFilterTarget() {
+        final CountDownLatch appStarted = new CountDownLatch(1);
+        final AtomicReference<Intent> targetLaunchIntent = new AtomicReference<>();
+
+        CtsSharesheetDeviceActivity.setOnIntentReceivedConsumer(intent -> {
+            targetLaunchIntent.set(intent);
+            appStarted.countDown();
+        });
+
+        final String title = "custom title";
+        Intent sendIntent = createMatchingIntent();
+        List<ResolveInfo> matchingTargets = mContext.getPackageManager().queryIntentActivities(
+                sendIntent,
+                PackageManager.MATCH_DEFAULT_ONLY | PackageManager.GET_META_DATA
+        );
+
+        // Filter to include only the two targets that we expect to see in the UI for this test.
+        // Note that the "customized chooser" API doesn't *require* that no other targets are
+        // displayed, but we do test (at least for now) that *at least* the specified targets are
+        // included.
+        final List<ResolveInfo> newTargets = matchingTargets
+                .stream()
+                .filter(t ->
+                        t.activityInfo.packageName.startsWith("android.sharesheet.cts")
+                        && !t.activityInfo.packageName.contains("excludetester")
+                        && !t.activityInfo.packageName.contains("activitylabeltester"))
+                .collect(Collectors.toList());
+
+        runAndExecuteCleanupBeforeAnyThrow(() -> {
+            Intent resolverIntent = createNfcResolverIntent(
+                    sendIntent, title, newTargets);
+            resolverIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(resolverIntent);
+
+            waitAndAssertPkgVisible(mSharesheetPkg);
+            mSharesheet =
+                mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
+            waitForIdle();
+
+            waitAndAssertTextContains(title);
+
+            showsApplicationLabel();
             showsAppAndIntentFilterLabel();
 
             UiObject2 shareTarget = findTextContains(mAppLabel);
@@ -267,7 +332,8 @@ public class CtsNfcResolverDeviceTest {
     private boolean isSharesheetVisible() {
         // This method intentionally does not wait, looks to see if visible on method call
         try {
-            return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0)) != null;
+            return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId))
+                != null;
         } catch (StaleObjectException e) {
             // If we get a StaleObjectException, it means that the underlying View has
             // already been destroyed, meaning the sharesheet is no longer visible.
@@ -290,11 +356,11 @@ public class CtsNfcResolverDeviceTest {
     }
 
     private void waitAndAssertPkgVisible(String pkg) {
-        waitAndAssertFoundOnDevice(By.pkg(pkg).depth(0));
+        waitAndAssertFoundOnDevice(By.pkg(pkg).depth(0).displayId(mMyDisplayId));
     }
 
     private void waitAndAssertPkgNotVisible(String pkg) {
-        waitAndAssertNotFoundOnDevice(By.pkg(pkg));
+        waitAndAssertNotFoundOnDevice(By.pkg(pkg).displayId(mMyDisplayId));
     }
 
     private void waitAndAssertTextContains(String containsText) {
@@ -302,7 +368,8 @@ public class CtsNfcResolverDeviceTest {
     }
 
     private void waitAndAssertTextContains(String text, boolean caseSensitive) {
-        waitAndAssertFound(By.text(textContainsPattern(text, caseSensitive)));
+        waitAndAssertFound(
+            By.text(textContainsPattern(text, caseSensitive)).displayId(mMyDisplayId));
     }
 
     private static Pattern textContainsPattern(String text, boolean caseSensitive) {
@@ -356,7 +423,8 @@ public class CtsNfcResolverDeviceTest {
      * @return UiObject2 that can be used, for example, to execute a click
      */
     private UiObject2 findTextContains(String containsText) {
-        return mSharesheet.wait(Until.findObject(By.textContains(containsText)),
+        return mSharesheet.wait(
+            Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
     }
 

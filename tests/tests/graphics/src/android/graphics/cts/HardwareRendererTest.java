@@ -20,15 +20,21 @@ import static android.graphics.cts.utils.LeakTest.runNotLeakingTest;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.HardwareBufferRenderer;
 import android.graphics.HardwareRenderer;
 import android.graphics.RenderNode;
+import android.graphics.SurfaceTexture;
 import android.hardware.HardwareBuffer;
+import android.view.PixelCopy;
+import android.view.Surface;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.SynchronousPixelCopy;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,6 +61,21 @@ public class HardwareRendererTest {
     }
 
     @Test
+    public void lockHardwareCanvasSingleBuffer() {
+        SurfaceTexture st = new SurfaceTexture(true);
+        st.setDefaultBufferSize(50, 50);
+        Surface surface = new Surface(st);
+        Canvas canvas = surface.lockHardwareCanvas();
+        canvas.drawColor(Color.BLUE);
+        surface.unlockCanvasAndPost(canvas);
+        PixelCopy.Result result = SynchronousPixelCopy.copySurface(surface);
+        assertThat(result.getStatus()).isEqualTo(PixelCopy.SUCCESS);
+        Bitmap bitmap = result.getBitmap();
+        assertThat(bitmap).isNotNull();
+        assertThat(bitmap.getColor(1, 1).toArgb()).isEqualTo(Color.BLUE);
+    }
+
+    @Test
     @LargeTest
     public void hardwareBufferRendererLeakTest() {
         HardwareBuffer buffer = HardwareBuffer.create(128, 128, HardwareBuffer.RGBA_8888,
@@ -66,6 +87,7 @@ public class HardwareRendererTest {
 
         Executor executor = Runnable::run;
         Consumer<HardwareBufferRenderer.RenderResult> resultListener = renderResult -> {
+            renderResult.getFence().awaitForever();
             renderResult.getFence().close();
         };
 

@@ -19,8 +19,7 @@ package com.android.interactive;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.MANAGE_EXTERNAL_STORAGE;
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
-
-import static com.android.bedstead.nene.appops.CommonAppOps.OPSTR_MANAGE_EXTERNAL_STORAGE;
+import static android.app.AppOpsManager.OPSTR_MANAGE_EXTERNAL_STORAGE;
 
 import android.content.Context;
 import android.net.Uri;
@@ -33,8 +32,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.interactive.annotations.AutomationFor;
 
 import dalvik.system.DexClassLoader;

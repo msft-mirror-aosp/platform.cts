@@ -15,15 +15,15 @@
  */
 package com.android.bedstead.nene.notifications
 
+import android.annotation.SuppressLint
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.os.Build
-import android.service.notification.StatusBarNotification
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
-import com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_NOTIFICATION_LISTENERS
+import com.android.bedstead.permissions.CommonPermissions.MANAGE_NOTIFICATION_LISTENERS
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.Tags
@@ -72,7 +72,7 @@ object Notifications {
         }
         mListenerAccessIsGranted = true
         setNotificationListenerAccessGranted(
-            LISTENER_COMPONENT,  /* granted= */true, TestApis.users().instrumented()
+            LISTENER_COMPONENT, granted = true, TestApis.users().instrumented()
         )
     }
 
@@ -85,7 +85,7 @@ object Notifications {
         }
         mListenerAccessIsGranted = false
         setNotificationListenerAccessGranted(
-            LISTENER_COMPONENT,  /* granted= */false, TestApis.users().instrumented()
+            LISTENER_COMPONENT, granted = false, TestApis.users().instrumented()
         )
     }
 
@@ -98,6 +98,7 @@ object Notifications {
     /**
      * See [NotificationManager.setNotificationListenerAccessGranted].
      */
+    @SuppressLint("NewApi")
     fun setNotificationListenerAccessGranted(
         listener: ComponentReference, granted: Boolean, user: UserReference
     ) {

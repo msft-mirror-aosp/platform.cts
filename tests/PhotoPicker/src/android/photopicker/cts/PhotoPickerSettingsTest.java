@@ -49,6 +49,7 @@ import androidx.test.uiautomator.UiObject;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -119,7 +120,7 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
 
     @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
-    public void testSettingsLaunchFromOverflowMenu_WorkDisabled() throws Exception {
+    public void testSettingsLaunchFromOverflowMenu() throws Exception {
         String cmpAppLabel = getCmpAppLabel();
 
         // Launch PhotoPickerActivity.
@@ -139,14 +140,12 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
         verifySettingsDescriptionIsVisible();
         verifySettingsFragmentContainerExists();
         verifySettingsCloudProviderOptionIsVisible(cmpAppLabel);
-
-        // Verify Tab container (to switch profiles) is not visible since Work profile is disabled.
-        verifySettingsTabContainerIsNotVisible();
     }
 
     @Test
     @LargeTest
     @RequireRunOnWorkProfile
+    @RequireNotAutomotive(reason = "Profiles are not supported on AAOS")
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testSettingsLaunchedInPersonalProfile_WorkEnabled() throws Exception {
         mSettingsIntent.putExtra(EXTRA_TAB_USER_ID, sDeviceState.initialUser().id());
@@ -163,6 +162,7 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
     @Test
     @LargeTest
     @RequireRunOnWorkProfile
+    @RequireNotAutomotive(reason = "Profiles are not supported on AAOS")
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testSettingsLaunchedInWorkProfile() throws Exception {
         mSettingsIntent.putExtra(EXTRA_TAB_USER_ID, UserHandle.myUserId());
@@ -182,12 +182,6 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
                 .isTrue();
     }
 
-    private static void verifySettingsTabContainerIsNotVisible() {
-        assertWithMessage("Found the settings profile select tab container")
-                .that(PhotoPickerUiUtils.findObject(
-                        TAB_CONTAINER_RESOURCE_ID, sDevice).waitForExists(SHORT_TIMEOUT))
-                .isFalse();
-    }
     @Test
     // This test is required for API coverage in Android R
     public void testSettingsLaunchFromIntent() throws InterruptedException {

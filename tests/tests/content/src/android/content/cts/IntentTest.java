@@ -16,6 +16,9 @@
 
 package android.content.cts;
 
+import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
+import static android.content.Intent.FLAG_RECEIVER_OFFLOAD;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -24,6 +27,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -48,11 +52,10 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.test.mock.MockContext;
 import android.util.AttributeSet;
@@ -79,12 +82,8 @@ import java.util.Set;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IntentTest {
     @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
-            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
-            : DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Intent mIntent;
     private static final String TEST_ACTION = "android.content.IntentTest_test";
@@ -109,7 +108,7 @@ public class IntentTest {
 
     @Before
     public void setUp() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) {
+        if (RavenwoodRule.isOnRavenwood()) {
             // TODO: replace with mockito when better supported
             mContext = new MockContext() {
                 @Override
@@ -359,7 +358,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testResolveType1() {
         final ContentResolver contentResolver = mContext.getContentResolver();
         assertNull(mIntent.resolveType(mContext));
@@ -373,7 +372,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testResolveType2() {
         final ContentResolver contentResolver = mContext.getContentResolver();
         assertNull(mIntent.resolveType(contentResolver));
@@ -421,7 +420,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testParseIntent() throws XmlPullParserException, IOException,
         NameNotFoundException {
         mIntent = null;
@@ -492,7 +491,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testResolveTypeIfNeeded() {
         ContentResolver contentResolver = mContext.getContentResolver();
         assertNull(mIntent.resolveTypeIfNeeded(contentResolver));
@@ -742,7 +741,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityInfo() throws NameNotFoundException {
         ComponentName componentName = new
                 ComponentName(TEST_PACKAGE, TEST_ACTIVITY);
@@ -964,7 +963,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityEmpty() {
         final Intent emptyIntent = new Intent();
 
@@ -974,7 +973,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivitySingleMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
         intent.addCategory("android.content.cts.category.TEST_CATEGORY");
@@ -986,7 +985,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityShortcutMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
         intent.setComponent(
@@ -1000,7 +999,7 @@ public class IntentTest {
 
     @AppModeFull
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testResolveActivityMultipleMatch() {
         final Intent intent = new Intent("android.content.cts.action.TEST_ACTION");
 
@@ -1215,7 +1214,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(reason = "feature flag dependent test")
+    @DisabledOnRavenwood(reason = "feature flag dependent test")
     public void testUris() {
         checkIntentUri(
                 "intent:#Intent;action=android.test.FOO;end",
@@ -1426,6 +1425,14 @@ public class IntentTest {
                         .setData(Uri.parse("z39.50r://example.org/db?123")));
     }
 
+    @Test
+    public void testMalformedUris() {
+        assertThrows(URISyntaxException.class, () -> Intent.parseUri(
+                "intent:#Intent;scheme=mailto;package=com.myapp;d.double=10.4", 0));
+        assertThrows(URISyntaxException.class, () -> Intent.parseUri(
+                "android-app://com.myapp/mailto#Intent;d.double=10.4", 0));
+    }
+
     private boolean compareIntents(Intent expected, Intent actual) {
         if (!Objects.equals(expected.getAction(), actual.getAction())) {
             return false;
@@ -1547,7 +1554,7 @@ public class IntentTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PendingIntent.class)
+    @DisabledOnRavenwood(blockedBy = PendingIntent.class)
     public void testCreateChooser() {
         Intent target = Intent.createChooser(mIntent, null);
         assertEquals(Intent.ACTION_CHOOSER, target.getAction());
@@ -2202,6 +2209,24 @@ public class IntentTest {
     }
 
     @Test
+    public void testIntegerEncoding() throws Exception {
+        var intent = new Intent("action#action")
+                .setFlags(FLAG_RECEIVER_OFFLOAD | FLAG_RECEIVER_FOREGROUND)
+                .addExtendedFlags(FLAG_RECEIVER_OFFLOAD)
+                .addExtendedFlags(FLAG_RECEIVER_FOREGROUND);
+        var uri = intent.toUri(Intent.URI_INTENT_SCHEME);
+        var otherIntent = Intent.parseUri(uri, Intent.URI_INTENT_SCHEME);
+
+        assertEquals(otherIntent.getFlags(), intent.getFlags());
+        assertEquals(otherIntent.getExtendedFlags(), intent.getExtendedFlags());
+
+        var badUri = "intent:#Intent;action=action%23action;launchFlags=0x990000000;"
+                + "extendedLaunchFlags=0x890000000;end";
+        assertThrows(NumberFormatException.class,
+                () -> Intent.parseUri(badUri, Intent.URI_INTENT_SCHEME));
+    }
+
+    @Test
     public void testEncoding() throws URISyntaxException {
         // This doesn't validate setPackage, as it's not possible to have both an explicit package
         // and a selector but the inner selector Intent later on will cover setPackage
@@ -2229,12 +2254,15 @@ public class IntentTest {
                 .putExtra("extraKey#selector", "extraValue#selector");
         intent.setSelector(selectorIntent);
 
+        intent.setFlags(FLAG_RECEIVER_OFFLOAD | FLAG_RECEIVER_FOREGROUND);
+
         var uriString = intent.toUri(Intent.URI_INTENT_SCHEME);
         var deserialized = Intent.parseUri(uriString, Intent.URI_INTENT_SCHEME);
 
         assertThat(uriString).isEqualTo(
                 "intent:#Intent;action=action%23base;category=category%23base;type=type%23base;"
-                        + "identifier=identifier%23base;component=package.sub%23base/"
+                        + "identifier=identifier%23base;launchFlags=0x90000000;"
+                        + "component=package.sub%23base/"
                         + ".Class%23Base;S.extraKey%23base=extraValue%23base;SEL;"
                         + "category=category%23selector;type=type%23selector;"
                         + "identifier=identifier%23selector;package=package%23selector;"

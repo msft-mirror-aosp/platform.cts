@@ -16,39 +16,44 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothSocketException;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
-/** Unit test to test APIs and functionality for {@link BluetoothSocketException}. */
-public final class BluetoothSocketExceptionTest extends AndroidTestCase {
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-    @SmallTest
-    public void test_getErrorCode_returnsCorrectErrorCode() {
+/** Unit test to test APIs and functionality for {@link BluetoothSocketException}. */
+@RunWith(AndroidJUnit4.class)
+@SmallTest
+public final class BluetoothSocketExceptionTest {
+
+    @Test
+    public void getErrorCode_returnsCorrectErrorCode() {
         BluetoothSocketException exception =
                 new BluetoothSocketException(BluetoothSocketException.SOCKET_CONNECTION_FAILURE);
 
-        assertEquals(exception.getErrorCode(), BluetoothSocketException.SOCKET_CONNECTION_FAILURE);
+        assertThat(exception.getErrorCode())
+                .isEqualTo(BluetoothSocketException.SOCKET_CONNECTION_FAILURE);
     }
 
-    @SmallTest
-    public void test_getMessage_returnsCustomErrorMsg() {
+    @Test
+    public void getMessage_returnsCustomErrorMsg() {
         String customErrMsg = "This is a custom error message";
         BluetoothSocketException exception =
                 new BluetoothSocketException(BluetoothSocketException.UNSPECIFIED, customErrMsg);
 
-        assertEquals(exception.getMessage(), customErrMsg);
+        assertThat(exception.getMessage()).isEqualTo(customErrMsg);
     }
 
-    @SmallTest
-    public void test_getMessage_returnsErrorMsgWhenOnlyCodeIsProvided() {
+    @Test
+    public void getMessage_returnsErrorMsgWhenOnlyCodeIsProvided() {
         BluetoothSocketException exception =
                 new BluetoothSocketException(BluetoothSocketException.UNSPECIFIED);
 
-        assertNotNull(exception.getMessage());
+        assertThat(exception.getMessage()).isNotNull();
     }
 }

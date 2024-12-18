@@ -16,6 +16,7 @@
 
 package android.companion.cts.core
 
+import android.Manifest
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.assertOnlyPrimaryCompanionDeviceServiceNotified
@@ -23,10 +24,10 @@ import android.companion.cts.common.assertValidCompanionDeviceServicesUnbind
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.compatibility.common.util.SystemUtil
-import org.junit.Test
-import org.junit.runner.RunWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Test CDM system dump.
@@ -57,16 +58,20 @@ class DumpSysTest : CoreTestBase() {
         assertFalse(out[2].contains("u$userId\\$targetPackageName")) // App is not bound yet
 
         // Publish device's presence and wait for callback.
-        cdm.notifyDeviceAppeared(associationId)
+        withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
         assertOnlyPrimaryCompanionDeviceServiceNotified(associationId, appeared = true)
 
         out = dumpCurrentState()
         assertTrue(out[0].contains("mId=$associationId")) // Device is still associated
         assertTrue(out[1].contains("id=$associationId")) // And also present
-        assertTrue(out[2].contains("u$userId\\$targetPackageName")) // App is now bound
+        assertTrue(out[2].contains("u$userId, $targetPackageName")) // App is now bound
 
         // Clean up
-        cdm.notifyDeviceDisappeared(associationId)
+        withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceDisappeared(associationId)
+        }
         assertValidCompanionDeviceServicesUnbind()
     }
 
@@ -81,19 +86,23 @@ class DumpSysTest : CoreTestBase() {
         assertTrue(out[0].contains("mId=$idB")) // Device B associated
         assertFalse(out[1].contains("id=$idA")) // Device A not present
         assertFalse(out[1].contains("id=$idB")) // Device B not present
-        assertFalse(out[2].contains("u$userId\\$targetPackageName")) // App is not bound yet
+        assertFalse(out[2].contains("u$userId, $targetPackageName")) // App is not bound yet
 
         // Only publish device A's presence and wait for callback.
-        cdm.notifyDeviceAppeared(idA)
+        withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(idA)
+        }
         assertOnlyPrimaryCompanionDeviceServiceNotified(idA, appeared = true)
 
         out = dumpCurrentState()
         assertTrue(out[1].contains("id=$idA")) // Device A is now present
         assertFalse(out[1].contains("id=$idB")) // Device B still not present
-        assertTrue(out[2].contains("u$userId\\$targetPackageName")) // App is now bound
+        assertTrue(out[2].contains("u$userId, $targetPackageName")) // App is now bound
 
         // Clean up
-        cdm.notifyDeviceDisappeared(idA)
+        withShellPermissionIdentity(Manifest.permission.REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceDisappeared(idA)
+        }
         assertValidCompanionDeviceServicesUnbind()
     }
 

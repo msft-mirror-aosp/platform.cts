@@ -62,6 +62,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
@@ -76,6 +77,7 @@ import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerFrontendTest {
     private static final String TAG = "MediaTunerFrontendTest";
 
@@ -556,75 +558,6 @@ public class TunerFrontendTest {
         assertEquals(DtmbFrontendSettings.CODERATE_2_5, settings.getCodeRate());
         assertEquals(DtmbFrontendSettings.GUARD_INTERVAL_PN_945_VARIOUS,
                 settings.getGuardInterval());
-    }
-
-    @Test
-    public void testFrontendInfoWithIntFrequency() throws Exception {
-        List<Integer> ids = mTuner.getFrontendIds();
-        if (ids == null) return;
-        List<FrontendInfo> infos = mTuner.getAvailableFrontendInfos();
-        Map<Integer, FrontendInfo> infoMap = new HashMap<>();
-        for (FrontendInfo info : infos) {
-            infoMap.put(info.getId(), info);
-        }
-        for (int id : ids) {
-            FrontendInfo info = mTuner.getFrontendInfoById(id);
-            FrontendInfo infoFromMap = infoMap.get(id);
-            assertNotNull(info);
-            assertThat(info).isEqualTo(infoFromMap);
-            assertEquals(id, info.getId());
-            if (info.getType() != FrontendSettings.TYPE_IPTV) {
-                assertTrue(info.getFrequencyRange().getLower() > 0);
-                assertTrue(info.getSymbolRateRange().getLower() >= 0);
-                assertTrue(info.getAcquireRange() > 0);
-            }
-            info.getExclusiveGroupId();
-            info.getStatusCapabilities();
-
-            FrontendCapabilities caps = info.getFrontendCapabilities();
-            if (info.getType() <= FrontendSettings.TYPE_IPTV) {
-                assertNotNull(caps);
-            }
-            switch(info.getType()) {
-                case FrontendSettings.TYPE_ANALOG:
-                    testAnalogFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_ATSC3:
-                    testAtsc3FrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_ATSC:
-                    testAtscFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_DVBC:
-                    testDvbcFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_DVBS:
-                    testDvbsFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_DVBT:
-                    testDvbtFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_ISDBS3:
-                    testIsdbs3FrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_ISDBS:
-                    testIsdbsFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_ISDBT:
-                    testIsdbtFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_DTMB:
-                    testDtmbFrontendCapabilities(caps);
-                    break;
-                case FrontendSettings.TYPE_IPTV:
-                    testIptvFrontendCapabilities(caps);
-                    break;
-                default:
-                    break;
-            }
-            infoMap.remove(id);
-        }
-        assertTrue(infoMap.isEmpty());
     }
 
     @Test

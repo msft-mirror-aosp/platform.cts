@@ -18,9 +18,11 @@ package android.net.wifi.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
 import android.content.Context;
@@ -33,9 +35,16 @@ import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeFull;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,7 +52,9 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
-public class WifiScannerTest extends WifiJUnit3TestBase {
+@RunWith(AndroidJUnit4.class)
+@AppModeFull(reason = "Cannot get WifiManager in instant app mode")
+public class WifiScannerTest extends WifiJUnit4TestBase {
 
     private static Context sContext;
     private static WifiScanner sWifiScanner;
@@ -65,16 +76,14 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
         mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         sContext = InstrumentationRegistry.getInstrumentation().getContext();
         sWifiScanner =  sContext.getSystemService(WifiScanner.class);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
     }
 
     private static WifiScanner.ScanSettings createRequest(WifiScanner.ChannelSpec[] channels,
@@ -121,6 +130,7 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
      * Test ScanSettings object being serialized and deserialized while vendorIes keeping the
      * values unchanged.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testVendorIesParcelable() throws Exception {
         WifiScanner.ScanSettings requestSettings = createRequest(
@@ -144,6 +154,7 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
                 requestSettings.getVendorIes());
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     public void testPnoSettings() throws Exception {
         android.net.wifi.nl80211.PnoSettings pnoSettings =
@@ -154,6 +165,7 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
         assertEquals(4, pnoSettings.getScanIntervalMultiplier());
     }
 
+    @Test
     public void testParcelableScanData() {
         ScanResult scanResult = new ScanResult();
         scanResult.SSID = TEST_SSID;
@@ -181,8 +193,10 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
         assertThat(scanResult1.timestamp).isEqualTo(TEST_TIMESTAMP);
     }
 
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
     public void testGetCachedScanData() throws Exception {
+        assumeTrue(WifiFeature.isWifiSupported(sContext));
         mCachedScanDataReturned = false;
         Consumer<ScanData> listener = new Consumer<ScanData>() {
             @Override
@@ -193,7 +207,6 @@ public class WifiScannerTest extends WifiJUnit3TestBase {
                 }
             }
         };
-
         assertThrows(SecurityException.class,
                 () -> sWifiScanner.getCachedScanData(mExecutor, listener));
         // null executor

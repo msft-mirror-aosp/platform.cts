@@ -24,11 +24,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.provider.Settings;
 import android.telecom.TelecomManager;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.cts.verifier.R;
@@ -37,6 +37,7 @@ import com.android.cts.verifier.R;
  * Provides common UI for tests that needs to be set as the default dialer.
  */
 public class DefaultDialerChanger {
+    private static final String LOG_TAG = "DefaultDialerChanger";
 
     private final Activity mActivity;
 
@@ -50,6 +51,7 @@ public class DefaultDialerChanger {
 
     public DefaultDialerChanger(Activity activity) {
         mActivity = activity;
+        Log.i(LOG_TAG, "DefaultDialerChanger: init");
 
         mSetDefaultDialerImage = (ImageView) mActivity.findViewById(R.id.set_default_dialer_image);
         mRestoreDefaultDialerImage = (ImageView) mActivity
@@ -65,12 +67,14 @@ public class DefaultDialerChanger {
             @Override
             public void onClick(View v) {
                 if (telecomManager.getDefaultDialerPackage().equals(mActivity.getPackageName())) {
+                    Log.i(LOG_TAG, "setDefaultDialer: already default dialer");
                     Toast.makeText(mActivity,
                             R.string.voicemail_default_dialer_already_set, Toast.LENGTH_SHORT)
                             .show();
                     return;
                 }
 
+                Log.i(LOG_TAG, "setDefaultDialer: requesting dialer role");
                 final RoleManager roleManager = mActivity.getSystemService(RoleManager.class);
                 final Intent intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER);
                 mActivity.startActivityForResult(intent, 0);
@@ -81,12 +85,13 @@ public class DefaultDialerChanger {
             @Override
             public void onClick(View v) {
                 if (!telecomManager.getDefaultDialerPackage().equals(mActivity.getPackageName())) {
+                    Log.i(LOG_TAG, "restoreDefaultDialer: not default dialer already");
                     Toast.makeText(mActivity,
                             R.string.voicemail_default_dialer_already_restored, Toast.LENGTH_SHORT)
                             .show();
                     return;
                 }
-
+                Log.i(LOG_TAG, "restoreDefaultDialer: requesting user to restore dialer");
                 final Intent intent = new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
                 mActivity.startActivityForResult(intent, 0);
             }
@@ -106,12 +111,16 @@ public class DefaultDialerChanger {
             String packageName =
                     intent.getStringExtra(TelecomManager.EXTRA_CHANGE_DEFAULT_DIALER_PACKAGE_NAME);
             if (!mRestorePending) {
+                Log.i(LOG_TAG, "defaultDialerChanged: setting default to " + packageName);
                 updateSetDefaultDialerState(packageName);
             } else {
                 if (packageName.equals(mActivity.getPackageName())) {
+                    Log.i(LOG_TAG, "defaultDialerChanged: restored to " + packageName
+                            + "; expected not to be the verifier app (INDETERMINATE)");
                     mRestoreDefaultDialerImage
                             .setImageDrawable(mActivity.getDrawable(R.drawable.fs_indeterminate));
                 } else {
+                    Log.i(LOG_TAG, "defaultDialerChanged: restored to " + packageName + "; (PASS)");
                     mRestoreDefaultDialerImage
                             .setImageDrawable(mActivity.getDrawable(R.drawable.fs_good));
                 }
@@ -121,8 +130,10 @@ public class DefaultDialerChanger {
 
     private void updateSetDefaultDialerState(String packageName) {
         if (packageName.equals(mActivity.getPackageName())) {
+            Log.i(LOG_TAG, "defaultDialerChanged: CTS verifier is the default (PASS)");
             mSetDefaultDialerImage.setImageDrawable(mActivity.getDrawable(R.drawable.fs_good));
         } else {
+            Log.i(LOG_TAG, "defaultDialerChanged: CTS verifier is not the default (FAIL)");
             mSetDefaultDialerImage
                     .setImageDrawable(mActivity.getDrawable(R.drawable.fs_indeterminate));
         }

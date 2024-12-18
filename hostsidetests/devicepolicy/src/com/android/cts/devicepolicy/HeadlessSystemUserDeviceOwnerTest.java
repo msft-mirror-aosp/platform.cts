@@ -18,6 +18,7 @@ package com.android.cts.devicepolicy;
 
 import static org.junit.Assume.assumeTrue;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 // TODO(b/174859111): move to device-side, automotive specific module
@@ -42,11 +43,15 @@ public final class HeadlessSystemUserDeviceOwnerTest extends BaseDeviceOwnerTest
     }
 
     @Test
+    @Ignore("This is testing affiliated headless specific logic and we no longer have an affiliated"
+            + "headless DO setup in the tests. The test should be migrated to bedstead.")
     public void testProfileOwnerIsSetOnCurrentUser() throws Exception {
         executeDeviceTest("testProfileOwnerIsSetOnCurrentUser");
     }
 
     @Test
+    @Ignore("This is testing affiliated headless specific logic and we no longer have an affiliated"
+            + "headless DO setup in the tests. The test should be migrated to bedstead.")
     public void testProfileOwnerIsSetOnNewUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 

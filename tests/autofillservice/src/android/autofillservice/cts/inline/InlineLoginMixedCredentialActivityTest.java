@@ -152,7 +152,10 @@ public class InlineLoginMixedCredentialActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testCredmanProxyServiceIsNotPublic() throws Exception {
         // Set service.
         enableService();
@@ -176,7 +179,10 @@ public class InlineLoginMixedCredentialActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testAutofill_selectNonCredentialView() throws Exception {
         // Set service.
         enableService();
@@ -215,10 +221,15 @@ public class InlineLoginMixedCredentialActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testAutofill_selectCredentialView() throws Exception {
         // Set service.
         enableService();
+
+        mActivity.expectAutoFill("defaultUsername", "defaultPassword");
 
         // Trigger auto-fill.
         mUiBot.selectByRelativeId(ID_USERNAME);
@@ -230,15 +241,18 @@ public class InlineLoginMixedCredentialActivityTest
         mUiBot.selectDataset("defaultUsername");
         mUiBot.waitForIdleSync();
 
-        // TODO(b/314195644): Verify that credential dataset is autofilled through autofill value.
+        // Check the results.
+        mActivity.assertAutoFilled();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testAutofill_selectNonCredentialThenCredential() throws Exception {
         // Set service.
         enableService();
-
         final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
                 .addDataset(new CannedFillResponse.CannedDataset.Builder()
                         .setField(ID_USERNAME, "dude")
@@ -256,6 +270,7 @@ public class InlineLoginMixedCredentialActivityTest
                         .setInlinePresentation(createInlinePresentation("The Credit"))
                         .build());
         sReplier.addResponse(builder.build());
+        mActivity.expectAutoFill("defaultUsername", "defaultPassword");
 
         // Trigger auto-fill.
         mUiBot.selectByRelativeId(ID_CARD_NUMBER);
@@ -272,11 +287,15 @@ public class InlineLoginMixedCredentialActivityTest
         mUiBot.selectDataset("defaultUsername");
         mUiBot.waitForIdleSync();
 
-        // TODO(b/314195644): Verify that credential dataset is autofilled through autofill value.
+        // Check the results.
+        mActivity.assertAutoFilled();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testAutofill_selectCredentialThenNonCredential() throws Exception {
         // Set service.
         enableService();
@@ -318,7 +337,10 @@ public class InlineLoginMixedCredentialActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testAutofill_startAndEndWithCredential() throws Exception {
         // Set service.
         enableService();
@@ -340,6 +362,7 @@ public class InlineLoginMixedCredentialActivityTest
                         .setInlinePresentation(createInlinePresentation("The Credit"))
                         .build());
         sReplier.addResponse(builder.build());
+        mActivity.expectAutoFill("defaultUsername", "defaultPassword");
 
         // Trigger auto-fill.
         mUiBot.selectByRelativeId(ID_USERNAME);
@@ -357,11 +380,15 @@ public class InlineLoginMixedCredentialActivityTest
         mUiBot.selectDataset("defaultUsername");
         mUiBot.waitForIdleSync();
 
-        // TODO(b/314195644): Verify that credential dataset is autofilled through autofill value.
+        // Check the results.
+        mActivity.assertAutoFilled();
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void testAutofill_startAndEndWithNonCredential() throws Exception {
         // Set service.
         enableService();
@@ -405,7 +432,10 @@ public class InlineLoginMixedCredentialActivityTest
     }
 
     @Test
-    @RequiresFlagsEnabled("android.service.autofill.autofill_credman_integration")
+    @RequiresFlagsEnabled({
+            "android.service.autofill.autofill_credman_integration",
+            "android.service.autofill.autofill_credman_dev_integration"
+    })
     public void getCredentialProviderServices_returnsAllProviders() {
         Map<String, CredentialProviderInfo> results =
                 getCredentialProviderServices(
@@ -555,5 +585,4 @@ public class InlineLoginMixedCredentialActivityTest
         String[] delimitedServicesArray = new String[delimitedServices.size()];
         return delimitedServices.toArray(delimitedServicesArray);
     }
-
 }

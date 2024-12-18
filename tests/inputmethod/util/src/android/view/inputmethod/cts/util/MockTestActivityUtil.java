@@ -58,6 +58,15 @@ public final class MockTestActivityUtil {
      * A key to be used as the {@code key} of {@link Map} passed as {@code extras} parameter of
      * {@link #launchSync(boolean, long, Map)}.
      *
+     * <p>A valid {@code value} is the string representation of an integer.
+     */
+    public static final String EXTRA_SOFT_INPUT_MODE =
+            "android.view.inputmethod.ctstestapp.EXTRA_SOFT_INPUT_MODE";
+
+    /**
+     * A key to be used as the {@code key} of {@link Map} passed as {@code extras} parameter of
+     * {@link #launchSync(boolean, long, Map)}.
+     *
      * <p>A valid {@code value} is either {@code "true"} or {@code "false"}.</p>
      */
     public static final String EXTRA_KEY_SHOW_DIALOG =
@@ -139,17 +148,20 @@ public final class MockTestActivityUtil {
     public static AutoCloseable launchSync(boolean instant, long timeout,
             @Nullable Map<String, String> extras) {
         final StringBuilder commandBuilder = new StringBuilder();
+        final int testUserId = UserHandle.myUserId();
         if (instant) {
             // Override app-links domain verification.
             runShellCommandOrThrow(
-                    String.format("pm set-app-links-user-selection --user cur --package %s true %s",
-                            TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
+                    String.format("pm set-app-links-user-selection --user %d --package %s true %s",
+                            testUserId, TEST_ACTIVITY.getPackageName(),
+                            TEST_ACTIVITY_URI.getHost()));
             final Uri uri = formatStringIntentParam(TEST_ACTIVITY_URI, extras);
             commandBuilder.append(String.format("am start -a %s -c %s --activity-clear-task %s",
                     Intent.ACTION_VIEW, Intent.CATEGORY_BROWSABLE, uri.toString()));
         } else {
-            commandBuilder.append(String.format("am start -a %s -n %s --activity-clear-task",
-                    Intent.ACTION_MAIN, TEST_ACTIVITY.flattenToShortString()));
+            commandBuilder.append(
+                    String.format("am start -a %s -n %s --user %d --activity-clear-task",
+                            Intent.ACTION_MAIN, TEST_ACTIVITY.flattenToShortString(), testUserId));
             if (extras != null) {
                 extras.forEach((key, value) -> commandBuilder.append(" --es ")
                         .append(key).append(" ").append(value));
@@ -165,6 +177,43 @@ public final class MockTestActivityUtil {
 
         // Make sure to stop package after test finished for resource reclaim.
         return () -> TestUtils.forceStopPackage(TEST_ACTIVITY.getPackageName());
+    }
+
+    /**
+     * Launches {@link android.view.inputmethod.ctstestapp.MainActivity}.
+     *
+     * @param userId the user id for which the Activity should be started
+     * @param instant {@code true} when the Activity is installed as an instant app.
+     * @param extras extra parameters to be passed to the Activity.
+     * @return {@link AutoCloseable} object to automatically stop the test Activity package.
+     */
+    public static AutoCloseable launchAsUser(int userId, boolean instant,
+            @Nullable Map<String, String> extras) {
+        final StringBuilder commandBuilder = new StringBuilder();
+        if (instant) {
+            // Override app-links domain verification.
+            runShellCommandOrThrow(
+                    String.format("pm set-app-links-user-selection --user %d --package %s true %s",
+                            userId, TEST_ACTIVITY.getPackageName(), TEST_ACTIVITY_URI.getHost()));
+            final Uri uri = formatStringIntentParam(TEST_ACTIVITY_URI, extras);
+            commandBuilder.append(
+                    String.format("am start -a %s -c %s --user %d --activity-clear-task %s",
+                            Intent.ACTION_VIEW, Intent.CATEGORY_BROWSABLE, userId, uri.toString()));
+        } else {
+            commandBuilder.append(
+                    String.format("am start -a %s -n %s --user %d --activity-clear-task",
+                            Intent.ACTION_MAIN, TEST_ACTIVITY.flattenToShortString(), userId));
+            if (extras != null) {
+                extras.forEach((key, value) -> commandBuilder.append(" --es ")
+                        .append(key).append(" ").append(value));
+            }
+        }
+
+        runWithShellPermissionIdentity(() -> {
+            runShellCommandOrThrow(commandBuilder.toString());
+        });
+        // Make sure to stop package after test finished for resource reclaim.
+        return () -> TestUtils.forceStopPackage(TEST_ACTIVITY.getPackageName(), userId);
     }
 
     /**
@@ -207,7 +256,7 @@ public final class MockTestActivityUtil {
         }, Manifest.permission.INTERACT_ACROSS_USERS_FULL);
 
         // Make sure to stop package after test finished for resource reclaim.
-        return () -> TestUtils.forceStopPackage(TEST_ACTIVITY.getPackageName());
+        return () -> TestUtils.forceStopPackage(TEST_ACTIVITY.getPackageName(), userId);
     }
 
     /**
@@ -222,6 +271,26 @@ public final class MockTestActivityUtil {
         commandBuilder.append(" -f 0x").append(
                 Integer.toHexString(FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS));
         commandBuilder.append(" --receiver-registered-only");
+        commandBuilder.append(" --ez " + extra + " true");
+        runWithShellPermissionIdentity(() -> {
+            runShellCommand(commandBuilder.toString());
+        });
+    }
+
+    /**
+     * Sends a broadcast to {@link android.view.inputmethod.ctstestapp.MainActivity}.
+     *
+     * @param extra {@link #EXTRA_DISMISS_DIALOG} or {@link #EXTRA_SHOW_SOFT_INPUT}.
+     * @param userId The target user ID.
+     */
+    public static void sendBroadcastAction(String extra, int userId) {
+        final StringBuilder commandBuilder = new StringBuilder();
+        commandBuilder.append("am broadcast -a ").append(ACTION_TRIGGER).append(" -p ").append(
+                TEST_ACTIVITY.getPackageName());
+        commandBuilder.append(" -f 0x").append(
+                Integer.toHexString(FLAG_RECEIVER_VISIBLE_TO_INSTANT_APPS));
+        commandBuilder.append(" --receiver-registered-only");
+        commandBuilder.append(" --user " + userId);
         commandBuilder.append(" --ez " + extra + " true");
         runWithShellPermissionIdentity(() -> {
             runShellCommand(commandBuilder.toString());

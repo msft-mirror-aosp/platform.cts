@@ -20,6 +20,9 @@ import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -31,13 +34,24 @@ import com.android.cts.install.lib.Uninstall;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for package installation while Secure FRP mode is enabled. */
+/**
+ * Tests for package installation while Secure FRP mode is enabled.
+ *
+ * The test won't work once FRP hardening is done. On user build, the ground truth of FRP state
+ * can't be simply changed from shell.
+ */
 @RunWith(JUnit4.class)
+@RequiresFlagsDisabled(android.security.Flags.FLAG_FRP_ENFORCEMENT)
 public class SecureFrpInstallTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static PackageManager sPackageManager;
 

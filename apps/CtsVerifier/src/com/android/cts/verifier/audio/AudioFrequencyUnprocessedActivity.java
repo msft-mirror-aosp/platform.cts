@@ -35,8 +35,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -46,6 +44,9 @@ import com.android.cts.verifier.audio.wavelib.DspFftServer;
 import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Tests Audio built in Microphone response for Unprocessed audio source feature.
@@ -279,9 +280,9 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
         mSupportsUnprocessed = supportsUnprocessed();
         Log.v(TAG, "Supports unprocessed: " + mSupportsUnprocessed);
 
-        mResultsMic =  new Results("mic_response", mBands);
-        mResultsTone = new Results("tone_response", mBandsTone);
-        mResultsBack = new Results("background_response", mBandsBack);
+        mResultsMic =  new Results("mic_response", TEST_NOISE, mBands);
+        mResultsTone = new Results("tone_response", TEST_TONE, mBandsTone);
+        mResultsBack = new Results("background_response", TEST_USB_BACKGROUND, mBandsBack);
 
         connectRefMicUI();
     }
@@ -387,16 +388,16 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
         String name = "undefined";
         switch(testId) {
             case TEST_TONE:
-                name = "BuiltIn_tone";
+                name = "built_in_tone";
                 break;
             case TEST_NOISE:
-                name = "BuiltIn_noise";
+                name = "built_in_noise";
                 break;
             case TEST_USB_BACKGROUND:
-                name = "USB_background";
+                name = "usb_background";
                 break;
             case TEST_USB_NOISE:
-                name = "USB_noise";
+                name = "usb_noise";
                 break;
         }
         return name;
@@ -620,6 +621,7 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
 
         storeTestResults(mResultsTone);
         storeTestResults(mResultsMic);
+        storeTestResults(mResultsBack);
 
         boolean allTestsPassed = false;
         if (mResultsMic.testAll() && mResultsTone.testAll() && toneTestSuccess &&
@@ -815,13 +817,15 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
     };
 
     private class Results {
+        private int mTestId;
         private int mBandCount;
         private String mLabel;
         public double[] mValuesLog;
         int[] mPointsPerBand; // = new int[mBands];
         double[] mAverageEnergyPerBand;// = new double[mBands];
         int[] mInBoundPointsPerBand;// = new int[mBands];
-        public Results(String label, int bandCount) {
+        Results(String label, int testId, int bandCount) {
+            mTestId = testId;
             mLabel = label;
             mBandCount = bandCount;
             mPointsPerBand = new int[mBandCount];
@@ -920,49 +924,31 @@ public class AudioFrequencyUnprocessedActivity extends AudioFrequencyActivity im
     }
 
     private void storeTestResults(Results results) {
-        String channelLabel = "channel_" + results.mLabel;
-
-        CtsVerifierReportLog reportLog = getReportLog();
-        for (int b = 0; b < mBands; b++) {
-            String bandLabel = String.format(channelLabel + "_%d", b);
-            reportLog.addValue(
-                    bandLabel + "_Level",
-                    results.mAverageEnergyPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    bandLabel + "_pointsinbound",
-                    results.mInBoundPointsPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.COUNT);
-
-            reportLog.addValue(
-                    bandLabel + "_pointstotal",
-                    results.mPointsPerBand[b],
-                    ResultType.NEUTRAL,
-                    ResultUnit.COUNT);
+        try {
+            CtsVerifierReportLog reportLog = getReportLog();
+            JSONArray bandsArray = new JSONArray();
+            JSONObject resultsObject = new JSONObject();
+            for (int b = 0; b < mBands; b++) {
+                JSONObject bandObject = new JSONObject();
+                bandObject.put(KEY_LEVEL, results.mAverageEnergyPerBand[b]);
+                bandObject.put(KEY_POINTS_IN_BOUND, results.mInBoundPointsPerBand[b]);
+                bandObject.put(KEY_POINTS_TOTAL, results.mPointsPerBand[b]);
+                bandsArray.put(bandObject);
+            }
+            resultsObject.put(KEY_BANDS, bandsArray);
+            resultsObject.put(KEY_MAGNITUDE_SPECTRUM_LOG, new JSONArray(results.mValuesLog));
+            reportLog.addValue(results.mLabel, resultsObject);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR, e);
+            appendResultsToScreen(results.mTestId, LOG_ERROR_STR);
         }
 
-        reportLog.addValues(channelLabel + "_magnitudeSpectrumLog",
-                results.mValuesLog,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        Log.v(TAG, "Results Stored");
+        Log.v(TAG, "Results Recorded");
     }
 
     @Override // PassFailButtons
     public void recordTestResults() {
         getReportLog().submit();
-    }
-
-    private void recordHeasetPortFound(boolean found) {
-        getReportLog().addValue(
-                "User Reported Headset Port",
-                found ? 1.0 : 0,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
     }
 
     private void startRecording() {

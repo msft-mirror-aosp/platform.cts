@@ -33,6 +33,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** HDMI CEC system information tests (Section 11.2.6) */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class HdmiCecSystemInformationTest extends BaseHdmiCecCtsTest {
@@ -144,6 +147,50 @@ public final class HdmiCecSystemInformationTest extends BaseHdmiCecCtsTest {
         } else {
             // No Audio System, so ARC Rx bit has to be reset.
             assertThat(params & HdmiCecConstants.FEATURES_SINK_SUPPORTS_ARC_RX_BIT).isEqualTo(0);
+        }
+    }
+
+    /**
+     * Test HF4-2-13 (CEC 2.0)
+     * Check that the DUT sends an appropriately updated {@code <Report Features>} after any change
+     * in the DUT thats requires it to do so.
+     */
+    @Test
+    public void cect_hf_4_2_13_sendUpdatedReportFeature() throws Exception {
+        setCec20();
+        Map<String, Integer> menuMap = new HashMap<>();
+        menuMap.put(HdmiCecConstants.CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_ROOT_MENU,
+                        HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_ROOT_MENU);
+        menuMap.put(HdmiCecConstants.CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_SETUP_MENU,
+                        HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_SETUP_MENU);
+        menuMap.put(HdmiCecConstants.CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_CONTENTS_MENU,
+                        HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_CONTENTS_MENU);
+        menuMap.put(HdmiCecConstants.CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_TOP_MENU,
+                        HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_TOP_MENU);
+        menuMap.put(HdmiCecConstants
+                        .CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_MEDIA_CONTEXT_SENSITIVE_MENU,
+                        HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_MEDIA_CONTEXT_SENSITIVE_MENU);
+
+        for (Map.Entry<String, Integer> entry : menuMap.entrySet()) {
+            String settingName = entry.getKey();
+            int bitPosition = entry.getValue();
+            int mask = 1 << bitPosition;
+            // Check for handled case where RCProfile changes reflect in nibble 4 and 5
+            setSettingsValue(
+                    settingName, String.valueOf(HdmiCecConstants.RC_PROFILE_SOURCE_MENU_HANDLED));
+            assertThat((CecMessage.getParams(
+                                hdmiCecClient.checkExpectedOutput(CecOperand.REPORT_FEATURES), 4, 6)
+                               & mask)
+                    >> bitPosition)
+                    .isEqualTo(HdmiCecConstants.RC_PROFILE_SOURCE_MENU_HANDLED);
+            // Check for unhandled case where RCProfile changes reflect in nibble 4 and 5
+            setSettingsValue(settingName,
+                    String.valueOf(HdmiCecConstants.RC_PROFILE_SOURCE_MENU_NOT_HANDLED));
+            assertThat((CecMessage.getParams(
+                                hdmiCecClient.checkExpectedOutput(CecOperand.REPORT_FEATURES), 4, 6)
+                               & mask)
+                    >> bitPosition)
+                    .isEqualTo(HdmiCecConstants.RC_PROFILE_SOURCE_MENU_NOT_HANDLED);
         }
     }
 }

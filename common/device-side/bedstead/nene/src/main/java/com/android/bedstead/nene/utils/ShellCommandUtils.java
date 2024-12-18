@@ -17,7 +17,6 @@
 package com.android.bedstead.nene.utils;
 
 import static android.os.Build.VERSION_CODES.S;
-
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 import android.app.Instrumentation;
@@ -31,7 +30,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
-import com.android.compatibility.common.util.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -54,15 +52,12 @@ public final class ShellCommandUtils {
     private static final int OUT_DESCRIPTOR_INDEX = 0;
     private static final int IN_DESCRIPTOR_INDEX = 1;
     private static final int ERR_DESCRIPTOR_INDEX = 2;
-
-    private static final TestApis sTestApis = new TestApis();
-
     private static final boolean SHOULD_LOG = shouldLog();
 
     private static boolean shouldLog() {
         try {
             return Settings.Global.getInt(
-                    sTestApis.context().instrumentedContext().getContentResolver(),
+                    TestApis.context().instrumentedContext().getContentResolver(),
                     "nene_log") == 1;
         } catch (Settings.SettingNotFoundException e) {
             return false;
@@ -72,6 +67,8 @@ public final class ShellCommandUtils {
     private ShellCommandUtils() { }
 
     private static Boolean sRootAvailable = null;
+    private static Boolean sIsRunningAsRoot = null;
+    private static Boolean sSuperUserAvailable = null;
 
     /**
      * Execute an adb shell command.
@@ -95,7 +92,7 @@ public final class ShellCommandUtils {
      * API 29, but the NewApi warning doesn't understand this.
      */
     @SuppressWarnings("NewApi") // executeShellCommandRwe was @TestApi back to API 29, now public
-    private static ParcelFileDescriptor[] executeShellCommandRwe(String command) {
+    private static ParcelFileDescriptor[] executeShellCommandRweInternal(String command) {
         return uiAutomation().executeShellCommandRwe(command);
     }
 
@@ -109,7 +106,7 @@ public final class ShellCommandUtils {
     public static StreamingShellOutput executeCommandForStream(String command, byte[] stdInBytes)
             throws AdbException {
         try {
-            ParcelFileDescriptor[] fds = executeShellCommandRwe(command);
+            ParcelFileDescriptor[] fds = executeShellCommandRweInternal(command);
             ParcelFileDescriptor fdOut = fds[OUT_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdIn = fds[IN_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdErr = fds[ERR_DESCRIPTOR_INDEX];
@@ -135,7 +132,7 @@ public final class ShellCommandUtils {
         }
 
         try {
-            ParcelFileDescriptor[] fds = executeShellCommandRwe(command);
+            ParcelFileDescriptor[] fds = executeShellCommandRweInternal(command);
             ParcelFileDescriptor fdOut = fds[OUT_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdIn = fds[IN_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdErr = fds[ERR_DESCRIPTOR_INDEX];
@@ -173,7 +170,7 @@ public final class ShellCommandUtils {
         // TODO(scottjonathan): Add argument to force errors to stderr
         try {
 
-            ParcelFileDescriptor[] fds = executeShellCommandRwe(command);
+            ParcelFileDescriptor[] fds = executeShellCommandRweInternal(command);
             ParcelFileDescriptor fdOut = fds[OUT_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdIn = fds[IN_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdErr = fds[ERR_DESCRIPTOR_INDEX];
@@ -337,6 +334,70 @@ public final class ShellCommandUtils {
         return instrumentation().getUiAutomation();
     }
 
+    public static boolean isSuperUserAvailable() {
+        if (sSuperUserAvailable != null) {
+            return sSuperUserAvailable;
+        }
+
+        try {
+            // We run a basic command to check if the device can use the super user.
+            // Don't use .asRoot() here as it will cause infinite recursion, or add/keep the timeout
+            //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
+            String output = ShellCommand.builder("su root echo hello")
+                    .withTimeout(Duration.of(1, SECONDS)).execute();
+            if (output.contains("hello")) {
+                sSuperUserAvailable = true;
+            }
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking for super user.", e);
+        }
+
+        if (sSuperUserAvailable == null) {
+            Log.i(LOG_TAG,
+                    "Unable to run shell commands with super user as the device does not " +
+                            "allow that. The device is of type: " + Build.TYPE + ".\n However, " +
+                            "root may still be available. You can check with " +
+                            "ShellCommandUtils.isRootAvailable.");
+            sSuperUserAvailable = false;
+        }
+
+        return sSuperUserAvailable;
+    }
+
+    /**
+     * Check if the test instrumentation is running as root.
+     */
+    public static boolean isRunningAsRoot() {
+        if (sIsRunningAsRoot != null) {
+            return sIsRunningAsRoot;
+        }
+
+        try {
+            // We run a basic command to check if the device is running as root.
+            // If the command can be executed without the su root prefix, the device is running
+            // as root.
+            String output = ShellCommand.builder("cat /system/build.prop")
+                    .withTimeout(Duration.of(1, SECONDS)).execute();
+            System.out.println("output >> " + output);
+            if (output.contains("ro.build")) {
+                sIsRunningAsRoot = true;
+            }
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking if test instrumentation is running as root.", e);
+        }
+
+        if (sIsRunningAsRoot == null) {
+            Log.i(LOG_TAG,
+                    "Unable to run shell commands as root without the su root prefix. " +
+                            "The device is of type: " + Build.TYPE + ".\n However, the " +
+                            "super user may be available. You can check with " +
+                            "ShellCommandUtils.isRootAvailable.");
+            sIsRunningAsRoot = false;
+        }
+
+        return sIsRunningAsRoot;
+    }
+
     /**
      * Check if the device can run commands as root.
      */
@@ -345,15 +406,8 @@ public final class ShellCommandUtils {
             return sRootAvailable;
         }
 
-        try {
-            // We run a basic command to check if the device can run it as root.
-            //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
-            String output = ShellCommand.builder("echo hello").asRoot(true)
-                    .withTimeout(Duration.of(1, SECONDS)).execute();
-            if (output.contains("hello")) {
-                sRootAvailable = true;
-            }
-        } catch (AdbException ignored) {
+        if (isRunningAsRoot() || canRunAsRootWithSuperUser()) {
+            sRootAvailable = true;
         }
 
         if (sRootAvailable == null) {
@@ -364,6 +418,21 @@ public final class ShellCommandUtils {
         }
 
         return sRootAvailable;
+    }
+
+    private static boolean canRunAsRootWithSuperUser() {
+        try {
+            // We run a basic command to check if the device can run it as root.
+            //TODO(b/301478821): Remove the timeout once b/303377922 is fixed.
+            String output = ShellCommand.builder("cat /system/build.prop").asRoot(true)
+                    .withTimeout(Duration.of(1, SECONDS)).execute();
+            if (output.contains("ro.build")) {
+                return true;
+            }
+        } catch (AdbException e) {
+            Log.i(LOG_TAG, "Exception when checking for super user.", e);
+        }
+        return false;
     }
 
     /** Wrapper around {@link Stream} of lines output from a shell command. */

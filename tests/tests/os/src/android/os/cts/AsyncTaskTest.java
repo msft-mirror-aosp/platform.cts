@@ -18,6 +18,7 @@ package android.os.cts;
 
 import androidx.annotation.NonNull;
 import android.os.AsyncTask;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.InstrumentationTestCase;
 
 import com.android.compatibility.common.util.PollingCheck;
@@ -26,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AsyncTaskTest extends InstrumentationTestCase {
     private static final long COMPUTE_TIME = 1000;
     private static final long RESULT = 1000;

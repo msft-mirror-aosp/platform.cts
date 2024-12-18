@@ -16,12 +16,14 @@
 
 package com.android.cts.verifier.controls;
 
+import android.app.DreamManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
@@ -39,10 +41,24 @@ public abstract class ControlsPanelVerifierSettingTest extends PassFailButtons.A
 
     abstract int getInstructions();
 
+    abstract boolean checkDeviceSupportsDreamService();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.controls_panel_settings_pass_fail);
+
+        if (checkDeviceSupportsDreamService()) {
+            DreamManager dreamManager = getSystemService(DreamManager.class);
+            if (dreamManager == null || !dreamManager.areDreamsSupported()) {
+                Toast.makeText(this,
+                        R.string.controls_panel_settings_test_dreams_not_supported_message,
+                        Toast.LENGTH_LONG).show();
+                setTestResultAndFinish(true);
+                return;
+            }
+        }
+
         setPassFailButtonClickListeners();
         setInfoResources(
                 getTestNameResId(),
@@ -84,6 +100,11 @@ public abstract class ControlsPanelVerifierSettingTest extends PassFailButtons.A
         int getInstructions() {
             return R.string.controls_panel_setting_test_instructions;
         }
+
+        @Override
+        boolean checkDeviceSupportsDreamService() {
+            return false;
+        }
     }
 
     /**
@@ -103,6 +124,11 @@ public abstract class ControlsPanelVerifierSettingTest extends PassFailButtons.A
         @Override
         int getInstructions() {
             return R.string.controls_panel_setting_test_instructions;
+        }
+
+        @Override
+        boolean checkDeviceSupportsDreamService() {
+            return false;
         }
     }
 
@@ -124,6 +150,11 @@ public abstract class ControlsPanelVerifierSettingTest extends PassFailButtons.A
         int getInstructions() {
             return R.string.controls_panel_dream_false_test_instructions;
         }
+
+        @Override
+        boolean checkDeviceSupportsDreamService() {
+            return true;
+        }
     }
 
     /**
@@ -143,6 +174,11 @@ public abstract class ControlsPanelVerifierSettingTest extends PassFailButtons.A
         @Override
         int getInstructions() {
             return R.string.controls_panel_dream_true_test_instructions;
+        }
+
+        @Override
+        boolean checkDeviceSupportsDreamService() {
+            return true;
         }
     }
 }

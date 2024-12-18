@@ -20,6 +20,7 @@ package {
 
 java_test_host {
     name: "CtsMediaHostTestCases",
+    team: "trendy_team_android_media_solutions",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",
@@ -44,7 +45,7 @@ java_test_host {
         "flag-junit-host",
         "modules-utils-build-testing",
     ],
-    data: [
+    device_common_data: [
         ":CtsAudioHostTestApp",
         ":CtsMediaExtractorHostTestApp",
         ":CtsMediaMetricsHostTestApp",

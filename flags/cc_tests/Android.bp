@@ -41,6 +41,7 @@ cc_test {
         "libbase",
         "liblog",
         "server_configurable_flags",
+        "libaconfig_storage_read_api_cc",
     ],
     test_suites: ["device-tests"],
 }

@@ -17,27 +17,27 @@
 import logging
 import os.path
 
+from mobly import test_runner
+import numpy as np
+
+import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
-import its_base_test
 import its_session_utils
-from mobly import test_runner
-import numpy as np
+import opencv_processing_utils
 import zoom_capture_utils
 
+
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
-_JPEG_STR = 'jpg'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _TEST_FORMATS = ['yuv']  # list so can be appended for newer Android versions
 _TEST_REQUIRED_MPC = 33
-_ZOOM_MIN_THRESH = 2.0
 
 
 class ZoomTest(its_base_test.ItsBaseTest):
-  """Test the camera zoom behavior.
-  """
+  """Test the camera zoom behavior."""
 
   def test_zoom(self):
     with its_session_utils.ItsSession(
@@ -57,10 +57,18 @@ class ZoomTest(its_base_test.ItsBaseTest):
       z_range = props['android.control.zoomRatioRange']
       debug = self.debug_mode
       z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
       z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
+      if min(z_list) < 1 and max(z_list) > 1:
+        z_under_one = list(reversed([z for z in z_list if z < 1]))
+        z_over_one = [z for z in z_list if z > 1]
+        # Test zoom in two directions, with 1.0x as the baseline for both
+        z_list = [1.0] + z_under_one + [1.0] + z_over_one
+      else:
+        z_list = np.insert(z_list, 0, 1)  # make first (reference) zoom 1x
       logging.debug('Testing zoom range: %s', str(z_list))
 
       # Check media performance class
@@ -88,7 +96,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-        yuv_size = capture_request_utils.get_largest_yuv_format(props)
+        yuv_size = capture_request_utils.get_largest_format('yuv', props)
         size = [yuv_size['width'], yuv_size['height']]
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
@@ -97,16 +105,17 @@ class ZoomTest(its_base_test.ItsBaseTest):
       test_formats = _TEST_FORMATS
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       if first_api_level >= its_session_utils.ANDROID14_API_LEVEL:
-        test_formats.append(_JPEG_STR)
+        test_formats.append(zoom_capture_utils.JPEG_STR)
 
       # do captures over zoom range and find circles with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
       req = capture_request_utils.auto_capture_request()
       test_failed = False
+      id_to_fov = {}
       for fmt in test_formats:
         logging.debug('testing %s format', fmt)
-        test_data = {}
-        for i, z in enumerate(z_list):
+        test_data = []
+        for z in z_list:
           req['android.control.zoomRatio'] = z
           logging.debug('zoom ratio: %.3f', z)
           cam.do_3a(
@@ -124,11 +133,27 @@ class ZoomTest(its_base_test.ItsBaseTest):
 
           img = image_processing_utils.convert_capture_to_rgb_image(
               cap, props=props)
-          img_name = f'{img_name_stem}_{fmt}_{round(z, 2)}.{_JPEG_STR}'
+          img_name = (f'{img_name_stem}_{fmt}_{round(z, 2)}.'
+                      f'{zoom_capture_utils.JPEG_STR}')
           image_processing_utils.write_image(img, img_name)
 
           # determine radius tolerance of capture
           cap_fl = cap['metadata']['android.lens.focalLength']
+          cap_physical_id = (
+              cap['metadata']['android.logicalMultiCamera.activePhysicalId']
+          )
+          logging.debug('cap_physical_id: %s', cap_physical_id)
+          is_tele = False
+          if cap_physical_id:
+            if cap_physical_id not in id_to_fov:
+              physical_props = cam.get_camera_properties_by_id(cap_physical_id)
+              physical_fov = float(cam.calc_camera_fov(physical_props))
+              id_to_fov[cap_physical_id] = physical_fov
+            physical_fov = id_to_fov[cap_physical_id]
+            is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
+          if is_tele:
+            z_max = max(data.result_zoom for data in test_data)
+            break
           radius_tol, offset_tol = test_tols.get(
               cap_fl,
               (zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL)
@@ -148,11 +173,19 @@ class ZoomTest(its_base_test.ItsBaseTest):
           # Zoom is too large to find center circle
           if circle is None:
             break
-          test_data[i] = {'z': z, 'circle': circle, 'r_tol': radius_tol,
-                          'o_tol': offset_tol, 'fl': cap_fl}
+          test_data.append(
+              zoom_capture_utils.ZoomTestData(
+                  result_zoom=z,
+                  circle=circle,
+                  radius_tol=radius_tol,
+                  offset_tol=offset_tol,
+                  focal_length=cap_fl
+              )
+          )
 
         if not zoom_capture_utils.verify_zoom_results(
-            test_data, size, z_max, z_min):
+            test_data, size, z_max, z_min,
+            offset_plot_name_stem=f'{img_name_stem}_{fmt}'):
           test_failed = True
 
     if test_failed:

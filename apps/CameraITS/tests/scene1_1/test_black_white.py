@@ -17,10 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
 
-
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -34,7 +32,7 @@ _ANDROID10_API_LEVEL = 29
 _CH_FULL_SCALE = 255
 _CH_THRESH_BLACK = 6
 _CH_THRESH_WHITE = _CH_FULL_SCALE - 6
-_CH_TOL_WHITE = 2
+_CH_ATOL_WHITE = 2
 _COLOR_PLANES = ['R', 'G', 'B']
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_H = 0.1
@@ -130,14 +128,14 @@ class BlackWhiteTest(its_base_test.ItsBaseTest):
       b_means.append(white_means[2])
 
       # Draw plot
-      pylab.title('test_black_white')
-      pylab.plot([0, 1], r_means, '-ro')
-      pylab.plot([0, 1], g_means, '-go')
-      pylab.plot([0, 1], b_means, '-bo')
-      pylab.xlabel('Capture Number')
-      pylab.ylabel('Output Values [0:255]')
-      pylab.ylim([0, 255])
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+      plt.title('test_black_white')
+      plt.plot([0, 1], r_means, '-ro')
+      plt.plot([0, 1], g_means, '-go')
+      plt.plot([0, 1], b_means, '-bo')
+      plt.xlabel('Capture Number')
+      plt.ylabel('Output Values [0:255]')
+      plt.ylim([0, 255])
+      plt.savefig(f'{name_with_log_path}_plot_means.png')
 
       # Assert blacks below CH_THRESH_BLACK
       for ch, mean in enumerate(black_means):
@@ -155,9 +153,9 @@ class BlackWhiteTest(its_base_test.ItsBaseTest):
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       if first_api_level > _ANDROID10_API_LEVEL:
         if not math.isclose(
-            np.amin(white_means), np.amax(white_means), abs_tol=_CH_TOL_WHITE):
+            np.amin(white_means), np.amax(white_means), abs_tol=_CH_ATOL_WHITE):
           raise AssertionError('channel saturation not equal! '
-                               f'RGB: {white_means}, ATOL: {_CH_TOL_WHITE}')
+                               f'RGB: {white_means}, ATOL: {_CH_ATOL_WHITE}')
 
 if __name__ == '__main__':
   test_runner.main()

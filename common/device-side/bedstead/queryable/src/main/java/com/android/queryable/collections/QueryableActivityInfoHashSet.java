@@ -48,7 +48,7 @@ public final class QueryableActivityInfoHashSet extends QueryableHashSet<Activit
     public static QueryableActivityInfoHashSet of(ActivityInfo... values) {
         QueryableActivityInfoHashSet set = new QueryableActivityInfoHashSet();
         for (ActivityInfo value : values) {
-            set.add(value);
+            boolean unused = set.add(value);
         }
         return set;
     }

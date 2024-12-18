@@ -25,7 +25,11 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,8 +37,16 @@ import org.junit.runner.RunWith;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not have permission to use camera.")
+// TODO(b/352415049): Remove @RequireRunNotOnVisibleBackgroundNonProfileUser to run the test for
+//   visible background users, once cameras support visible background users.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(
+        reason = "Camera is currently not supported for visible background users")
 public class TextureViewCameraTest {
     private static final long WAIT_TIMEOUT_IN_SECS = 30;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private TextureViewCameraActivity mActivity;
     private int mNumberOfCameras;

@@ -27,12 +27,14 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
+    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
 
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
 
     <uses-feature android:name="android.software.companion_device_setup" />
 
-    <application android:theme="@android:style/Theme.Holo.NoActionBar"
+    <application android:theme="@style/AppTheme"
          android:requestLegacyExternalStorage="true">
 
         <uses-library android:name="android.test.runner"/>
@@ -58,9 +60,12 @@
              android:name=".activities.AccessibilityTextTraversalActivity"
              android:screenOrientation="locked"/>
 
+        <!-- Use windowSoftInputMode STATE_HIDDEN so that the IME does not launch
+             when opening the activity, which confuses the test window checks. -->
         <activity android:label="Activity for testing window accessibility reporting"
              android:name=".activities.AccessibilityWindowReportingActivity"
              android:supportsPictureInPicture="true"
+             android:windowSoftInputMode="stateHidden"
              android:screenOrientation="locked"/>
 
         <activity android:label="Activity for testing window accessibility reporting"

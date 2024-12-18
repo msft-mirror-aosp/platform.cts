@@ -16,6 +16,7 @@
 
 package android.telecom.cts.apps;
 
+import static android.os.SystemClock.sleep;
 import static android.telecom.Call.STATE_ACTIVE;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
@@ -25,6 +26,8 @@ import static android.telecom.cts.apps.AttributesUtil.getRandomAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getRandomAttributesForManaged;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_CLEANUP_STUCK_CALLS;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_RESET_CAR;
+import static android.telecom.cts.apps.ShellCommandExecutor.dumpTelecom;
+import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.WaitForInCallService.verifyCallState;
 import static android.telecom.cts.apps.WaitForInCallService.waitForInCallServiceBinding;
@@ -35,6 +38,7 @@ import static android.telecom.cts.apps.WaitUntil.waitUntilConditionIsTrueOrTimeo
 import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -42,6 +46,8 @@ import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -54,22 +60,41 @@ import android.telecom.CallException;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.util.Log;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements all the methods test classes call into to perform some action on an
  * application that is bound to in the cts/tests/tests/telecom-apps dir.
  */
 public class BaseAppVerifierImpl {
+    static final String TAG = BaseAppVerifierImpl.class.getSimpleName();
     static final boolean HAS_TELECOM = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     private static final String REGISTER_SIM_SUBSCRIPTION_PERMISSION =
             "android.permission.REGISTER_SIM_SUBSCRIPTION";
     private static final String MODIFY_PHONE_STATE_PERMISSION =
             "android.permission.MODIFY_PHONE_STATE";
+    private static final int FOCUS_TIMEOUT_MILLIS = 3000;
+    private static final int TIME_BETWEEN_FOCUS_ATTEMPTS_MILLIS = 500;
+    private static final int MAX_FOCUS_ATTEMPTS = 10;
+
+    /**
+     * Audio attributes for a typical music app.
+     * Adapted from the <a href="https://developer.android.com/media/optimize/audio-focus">Android
+     * Developers site</a>.
+     */
+    private static final AudioAttributes MUSIC_AUDIO_ATTRIBUTES = new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_MEDIA)
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .build();
+
     public Context mContext;
     public TelecomManager mTelecomManager;
     private final BindUtils mBindUtils = new BindUtils();
@@ -80,6 +105,31 @@ public class BaseAppVerifierImpl {
     private final AudioManager mAudioManager;
     public String mPreviousDefaultDialer = "";
     public PhoneAccountHandle mPreviousDefaultPhoneAccount = null;
+
+    // Stores the current audio focus
+    private final LinkedBlockingQueue<Integer> mMusicAudioFocusQueue =
+            new LinkedBlockingQueue<>();
+
+    /**
+     * Handle audio focus changes for simulated music playback; put these onto a focus queue so we
+     * can wait for it later.
+     */
+    private final AudioManager.OnAudioFocusChangeListener mMusicAudioFocusChangeListener =
+            mMusicAudioFocusQueue::offer;
+
+    /**
+     * Setup an audio focus request for simulated pre-call music playback.  We want to get notified
+     * of focus changes pertaining to the music playback.
+     * Adapted from the <a href="https://developer.android.com/media/optimize/audio-focus">Android
+     * Developers Site</a>.
+     */
+    public final AudioFocusRequest mMusicFocusRequest = new AudioFocusRequest
+            .Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(MUSIC_AUDIO_ATTRIBUTES)
+            .setAcceptsDelayedFocusGain(true)
+            .setWillPauseWhenDucked(true)
+            .setOnAudioFocusChangeListener(mMusicAudioFocusChangeListener)
+            .build();
 
     public BaseAppVerifierImpl(Instrumentation i, List<PhoneAccount> pAs, InCallServiceMethods vm) {
         mInstrumentation = i;
@@ -92,22 +142,43 @@ public class BaseAppVerifierImpl {
     }
 
     public void setUp() throws Exception {
-        ShellCommandExecutor.executeShellCommand(mInstrumentation, COMMAND_RESET_CAR);
+        executeShellCommand(mInstrumentation, COMMAND_RESET_CAR);
         AppOpsManager aom = mContext.getSystemService(AppOpsManager.class);
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(aom,
                 (appOpsMan) -> appOpsMan.setUidMode(AppOpsManager.OPSTR_PROCESS_OUTGOING_CALLS,
                         Process.myUid(), AppOpsManager.MODE_ALLOWED));
         mPreviousDefaultDialer = ShellCommandExecutor.getDefaultDialer(mInstrumentation);
         ShellCommandExecutor.setDefaultDialer(mInstrumentation, mCallingPackageName);
+        // In order to isolate cascading test failures, cleanup the telecom or cts test process
+        maybeCleanupTelecom();
     }
 
     public void tearDown() throws Exception {
-        ShellCommandExecutor.executeShellCommand(mInstrumentation, COMMAND_CLEANUP_STUCK_CALLS);
+        executeShellCommand(mInstrumentation, COMMAND_CLEANUP_STUCK_CALLS);
         if (!mPreviousDefaultDialer.equals("")) {
             ShellCommandExecutor.setDefaultDialer(mInstrumentation, mPreviousDefaultDialer);
         }
         clearUserDefaultPhoneAccountOverride();
         ShellIdentityUtils.dropShellPermissionIdentity();
+    }
+
+    public void maybeCleanupTelecom() {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+        try {
+            if (mTelecomManager.isInCall()) {
+                Log.w(TAG, "maybeCleanupTelecom: Telecom is in a call");
+                dumpTelecom(mInstrumentation);
+                executeShellCommand(mInstrumentation, COMMAND_CLEANUP_STUCK_CALLS);
+            }
+            if (BindUtils.hasBoundTestApp()) {
+                Log.w(TAG, "maybeCleanupTelecom: A test app is bound when it should not be");
+                BindUtils.printBoundTestApps();
+            }
+        } catch (Exception e) {
+            // ignore exception
+        }
     }
 
     public static boolean shouldTestTelecom(Context context) {
@@ -119,7 +190,7 @@ public class BaseAppVerifierImpl {
     }
 
     public AppControlWrapper bindToApp(TelecomTestApp applicationName) throws Exception {
-        AppControlWrapper control = mBindUtils.bindToApplication(mContext, applicationName);
+        AppControlWrapper control = mBindUtils.bindToApp(mContext, applicationName);
         if (isManagedConnectionService(applicationName)) {
             for (PhoneAccount pA : mManagedAccounts) {
                 registerManagedPhoneAccount(pA);
@@ -144,7 +215,7 @@ public class BaseAppVerifierImpl {
 
     public void tearDownApp(AppControlWrapper appControl) {
         if (appControl != null) {
-            mBindUtils.unbindFromApplication(mContext, appControl);
+            mBindUtils.unbindFromApp(mContext, appControl);
         }
     }
 
@@ -355,14 +426,15 @@ public class BaseAppVerifierImpl {
 
     public void setUserDefaultPhoneAccountOverride(PhoneAccountHandle handle) throws Exception {
         mPreviousDefaultPhoneAccount = mTelecomManager.getUserSelectedOutgoingPhoneAccount();
-        ShellCommandExecutor.setUserDefaultPhoneAccount(mInstrumentation, handle);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelecomManager,
+                (tm) -> tm.setUserSelectedOutgoingPhoneAccount(handle));
         assertEquals("Could not set " + handle + "as the user default" , handle,
                 mTelecomManager.getUserSelectedOutgoingPhoneAccount());
     }
 
     private void clearUserDefaultPhoneAccountOverride() throws Exception {
-        ShellCommandExecutor.setUserDefaultPhoneAccount(mInstrumentation,
-                mPreviousDefaultPhoneAccount);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelecomManager,
+                (tm) -> tm.setUserSelectedOutgoingPhoneAccount(mPreviousDefaultPhoneAccount));
     }
 
     public void unregisterPhoneAccountWithHandle(AppControlWrapper appControl,
@@ -417,7 +489,6 @@ public class BaseAppVerifierImpl {
                 "Audio mode was expected to be " + expectedMode
         );
     }
-
     public void verifyNotificationPostedForCall(AppControlWrapper appControlWrapper, String callId){
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
@@ -440,5 +511,63 @@ public class BaseAppVerifierImpl {
                                + "for application=[%s], but no notification was posted by the"
                                + " notification manager", callId,
                                 appControlWrapper.getTelecomApps()));
+    }
+
+    /**
+     * Acquire media focus for music playback; pretend we are listening to music so that we can
+     * verify that focus is lost during a call and restored later.
+     */
+    public void acquireAudioFocusForMusic() {
+        final int[] result = {AudioManager.AUDIOFOCUS_REQUEST_FAILED};
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            int attempts = 0;
+            while (result[0] == AudioManager.AUDIOFOCUS_REQUEST_FAILED
+                    && attempts <= MAX_FOCUS_ATTEMPTS) {
+                attempts++;
+                result[0] = mAudioManager.requestAudioFocus(mMusicFocusRequest);
+                if (result[0] == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
+                    sleep(TIME_BETWEEN_FOCUS_ATTEMPTS_MILLIS);
+                }
+            }
+        });
+        if (result[0] == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
+            waitForAndVerifyMusicFocus(new int[]{AudioManager.AUDIOFOCUS_REQUEST_GRANTED});
+        } else {
+            assertEquals("Failed to acquire focus for media playback in order to verify that "
+                            + "media focus is lost in calls.",
+                    AudioManager.AUDIOFOCUS_REQUEST_GRANTED,
+                    result[0]);
+        }
+    }
+
+    /**
+     * Waits to ensure that the music audio focus was one of the expected values.
+     */
+    public void waitForAndVerifyMusicFocus(int[] expectedValues) {
+        Integer newFocus = null;
+        try {
+            newFocus = mMusicAudioFocusQueue.poll(FOCUS_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ie) {
+            fail("Expected to get new music focus but timed out.");
+        }
+        assertNotNull(newFocus);
+        int newFocusValue = newFocus.intValue();
+
+        // We expect to have lost focus; it will likely be reported as transient focus lost.  Both
+        // of these focus lost types indicate that something else has gained exclusive access to the
+        // audio focus.
+        boolean wasExpectedFocusValue = Arrays.stream(expectedValues)
+                .anyMatch(v -> v == newFocusValue);
+        assertTrue("Expected focus to be one of " + Arrays.toString(expectedValues)
+                        + " but was " + newFocusValue,
+                wasExpectedFocusValue);
+    }
+
+    /**
+     * Release media focus for media playback; pretend we are not listening to music any longer.
+     */
+    public void releaseAudioFocusForMusic() {
+        int result = mAudioManager.abandonAudioFocusRequest(mMusicFocusRequest);
+        assertEquals(AudioManager.AUDIOFOCUS_REQUEST_GRANTED, result);
     }
 }

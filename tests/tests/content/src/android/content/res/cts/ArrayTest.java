@@ -16,21 +16,38 @@
 
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+
+import android.content.Context;
 import android.content.cts.R;
 import android.content.res.Resources;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
+import android.platform.test.ravenwood.RavenwoodRule;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class ArrayTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class ArrayTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     private Resources mResources;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mResources = mContext.getResources();
+    @Before
+    public void setUp() throws Exception {
+        mResources = getContext().getResources();
     }
 
     private void checkEntry(final int resid, final int index, final Object res,
@@ -65,6 +82,7 @@ public class ArrayTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testStrings() throws Exception {
         checkStringArray(R.array.strings, new String[] {"zero", "1", "here"});
         checkTextArray(R.array.strings, new String[] {"zero", "1", "here"});
@@ -73,6 +91,7 @@ public class ArrayTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testIntegers() throws Exception {
         checkIntArray(R.array.strings, new int[] {0, 0, 0});
         checkIntArray(R.array.integers, new int[] {0, 1, 101});

@@ -38,7 +38,6 @@ android_test {
     resource_dirs: ["res"],
     asset_dirs: ["assets"],
     static_libs: [
-        "CtsVirtualDeviceCommonLib",
         "android.view.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
@@ -49,6 +48,9 @@ android_test {
         "cts-wm-util",
         "flag-junit",
         "kotlin-test",
+        "ui-trace-collector",
+        "collector-device-lib",
+        "platform-screenshot-diff-core",
     ],
     sdk_version: "test_current",
     data: [

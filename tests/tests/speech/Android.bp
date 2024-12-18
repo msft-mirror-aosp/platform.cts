@@ -18,13 +18,14 @@ package {
 
 android_test {
     name: "CtsSpeechTestCases",
+    team: "trendy_team_text_to_speech",
     defaults: ["cts_defaults"],
     static_libs: [
         "ctstestrunner-axt",
         "androidx.test.rules",
         "compatibility-device-util-axt",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [

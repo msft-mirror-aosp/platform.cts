@@ -111,8 +111,7 @@ public class InputDeviceVibratorTest {
         assertNotNull(mInputManager);
         mParser = new InputJsonParser(mInstrumentation.getTargetContext());
 
-        mUinputDevice = UinputDevice.create(mInstrumentation, R.raw.google_gamepad_register,
-                InputDevice.SOURCE_KEYBOARD);
+        mUinputDevice = new UinputGoogleGamepad(mInstrumentation);
         mDeviceId = mUinputDevice.getRegisterCommandDeviceId();
         mVibrator = getVibrator(mUinputDevice.getVendorId(), mUinputDevice.getProductId());
         assertNotNull(mVibrator);
@@ -124,7 +123,9 @@ public class InputDeviceVibratorTest {
 
     @After
     public void tearDown() {
-        mUinputDevice.close();
+        if (mUinputDevice != null) {
+            mUinputDevice.close();
+        }
     }
 
     public void testInputVibratorEvents(int resourceId) {
@@ -203,5 +204,4 @@ public class InputDeviceVibratorTest {
     public void testInputVibrator() {
         testInputVibratorEvents(R.raw.google_gamepad_vibratortests);
     }
-
 }

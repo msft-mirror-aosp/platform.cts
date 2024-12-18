@@ -52,7 +52,7 @@ import androidx.test.core.app.ApplicationProvider;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.After;
@@ -85,8 +85,6 @@ public class ContentProviderTest {
     public static final DeviceState sDeviceState = new DeviceState();
 
     private static final Context sContext = ApplicationProvider.getApplicationContext();
-    private static final TestApis sTestApis = new TestApis();
-
     @After
     public void tearDown() throws Exception {
         sContext.deleteDatabase(TEST_DB_NAME);
@@ -386,7 +384,7 @@ public class ContentProviderTest {
     @AppModeFull
     public void createContentUriForUser_returnsCorrectUri() {
         final ContentResolver profileContentResolver =
-                sTestApis.context().androidContextAsUser(sDeviceState.workProfile())
+                TestApis.context().androidContextAsUser(sDeviceState.workProfile())
                         .getContentResolver();
         final String testContentDisplayName = "testContent.mp3";
         final Uri workProfileUriWithoutUserId = createAndInsertTestAudioFile(

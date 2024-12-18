@@ -1,12 +1,7 @@
 {
   "presubmit": [
       {
-          "name": "CtsHibernationTestCases",
-          "options": [
-              {
-                  "exclude-annotation": "androidx.test.filters.FlakyTest"
-              }
-          ]
+          "name": "CtsHibernationTestCases"
       }
   ],
   "mainline-presubmit": [
@@ -17,6 +12,11 @@
                   "exclude-annotation": "androidx.test.filters.FlakyTest"
               }
           ]
+      }
+  ],
+  "permission-mainline-presubmit": [
+      {
+          "name": "CtsHibernationTestCases"
       }
   ],
   "postsubmit": [

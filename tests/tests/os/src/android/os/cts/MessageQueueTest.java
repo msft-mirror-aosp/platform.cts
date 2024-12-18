@@ -32,6 +32,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.system.ErrnoException;
@@ -50,6 +51,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class MessageQueueTest {
     @Rule
@@ -269,6 +271,28 @@ public class MessageQueueTest {
                 mHandler.sendMessageAtTime(mHandler.obtainMessage(3), now + 3);
             }
         };
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
+    /**
+     * Use MessageQueue, pathological number of messages.
+     */
+    @Test
+    public void testPathologicalMessageCount() throws Exception {
+
+        OrderTestHelper tester = new OrderTestHelper() {
+
+            @Override
+            public void init() {
+                super.init();
+                long now = SystemClock.uptimeMillis() + 200;
+                mLastMessage = 1023;
+                for (int i = 0; i < 1024; i++) {
+                    mHandler.sendMessageAtTime(mHandler.obtainMessage(i), now);
+                }
+            }
+        };
+
         tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
     }
 

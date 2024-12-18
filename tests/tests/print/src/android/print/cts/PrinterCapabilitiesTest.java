@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.Presubmit;
 import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
@@ -53,6 +54,7 @@ import java.util.function.Function;
 /**
  * This test verifies changes to the printer capabilities are applied correctly.
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrinterCapabilitiesTest extends BasePrintTest {
     private static final String PRINTER_NAME = "Test printer";

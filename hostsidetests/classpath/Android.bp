@@ -26,7 +26,7 @@ java_test_host {
         "general-tests",
     ],
 
-    data: [":SharedLibraryInfoTestApp"],
+    device_common_data: [":SharedLibraryInfoTestApp"],
 
     per_testcase_directory: true,
 }

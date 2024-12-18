@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_mainline_modularization",
 }
 
 java_test_host {
@@ -26,8 +27,12 @@ java_test_host {
         "tradefed",
         "truth",
     ],
-    static_libs: ["cts-install-lib-host"],
-    data: [
+    static_libs: [
+        "android.crashrecovery.flags-aconfig-java-host",
+        "cts-install-lib-host",
+        "flag-junit-host",
+    ],
+    device_common_data: [
         ":CtsRollbackManagerHostTestHelperApp",
         ":CtsRollbackManagerHostTestHelperApp2",
     ],

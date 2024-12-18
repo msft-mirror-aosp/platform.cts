@@ -32,6 +32,8 @@ import com.android.queryable.queries.ServiceQuery;
 import com.android.queryable.queries.ServiceQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link Service#onStartCommand(Intent, int, int)}
  */
@@ -134,6 +136,7 @@ public class ServiceStartedEvent extends Event {
         }
 
         /** Sets the {@link Service} which received this event. */
+        @CanIgnoreReturnValue
         public ServiceStartedEventLogger setService(String serviceName) {
             mEvent.mService = ServiceInfo.builder()
                     .serviceClass(serviceName)
@@ -142,18 +145,21 @@ public class ServiceStartedEvent extends Event {
         }
 
         /** Sets the {@link Intent} supplied to {@link android.content.Context#startService}. */
+        @CanIgnoreReturnValue
         public ServiceStartedEventLogger setIntent(Intent intent) {
             mEvent.mIntent = new SerializableParcelWrapper<>(intent);
             return this;
         }
 
         /** Sets the flags used for the start request of this service. */
+        @CanIgnoreReturnValue
         public ServiceStartedEventLogger setFlags(int flags) {
             mEvent.mFlags = flags;
             return this;
         }
 
         /** Sets the startId. */
+        @CanIgnoreReturnValue
         public ServiceStartedEventLogger setStartId(int startId) {
             mEvent.mStartId = startId;
             return this;

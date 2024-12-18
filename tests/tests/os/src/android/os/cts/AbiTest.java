@@ -16,19 +16,21 @@
 
 package android.os.cts;
 
-import android.system.OsConstants;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.ErrnoException;
+import android.system.OsConstants;
 import android.util.ArraySet;
 
 import com.android.compatibility.common.util.ReadElf;
+
+import junit.framework.TestCase;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 
-import junit.framework.TestCase;
-
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AbiTest extends TestCase {
     public void testNoUnsupportedAbis() throws Exception {
         ArraySet<String> abiDirs = new ArraySet<>();

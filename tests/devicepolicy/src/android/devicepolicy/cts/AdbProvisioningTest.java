@@ -24,7 +24,7 @@ import android.stats.devicepolicy.EventId;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
@@ -56,10 +56,10 @@ public final class AdbProvisioningTest {
     @Postsubmit(reason = "new test")
     @Test
     public void setDeviceOwnerUsingAdb_isLogged() throws Exception {
-        try (TestAppInstance testApp = sRemoteDpcTestApp.install()) {
+        try (TestAppInstance testApp = sRemoteDpcTestApp.install(TestApis.users().system())) {
             try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
                 ShellCommand.builderForUser(
-                            TestApis.users().instrumented(), "dpm set-device-owner")
+                            TestApis.users().system(), "dpm set-device-owner")
                         .addOperand(sComponentName.flattenToShortString())
                         .execute();
 

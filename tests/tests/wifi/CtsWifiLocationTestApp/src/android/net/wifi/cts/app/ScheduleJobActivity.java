@@ -24,6 +24,8 @@ import android.os.Bundle;
 import android.os.ResultReceiver;
 import android.util.Log;
 
+import com.android.modules.utils.build.SdkLevel;
+
 /**
  * An activity that can be used to schedule a job inside the app.
  *
@@ -47,10 +49,14 @@ public class ScheduleJobActivity extends Activity {
 
         Bundle bundle = new Bundle();
         bundle.putParcelable(RESULT_RECEIVER_EXTRA, resultReceiver);
-        JobInfo jobInfo = new JobInfo.Builder(JOB_ID, serviceComponentName)
-                .setTransientExtras(bundle)
-                .setMinimumLatency(1)
-                .build();
+        JobInfo.Builder jobInfoBuilder = new JobInfo.Builder(JOB_ID, serviceComponentName)
+                .setTransientExtras(bundle);
+        if (SdkLevel.isAtLeastV()) {
+            jobInfoBuilder.setExpedited(true);
+        } else {
+            jobInfoBuilder.setMinimumLatency(1);
+        }
+        JobInfo jobInfo = jobInfoBuilder.build();
         JobScheduler jobScheduler = getSystemService(JobScheduler.class);
         jobScheduler.schedule(jobInfo);
 

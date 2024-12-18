@@ -22,7 +22,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppProvider;
 
-import org.jetbrains.annotations.Nullable;
+import androidx.annotation.Nullable;
 
 /** {@link RemotePolicyManager} which represents an app sets as the DevicePolicyManagerRoleHolder */
 public final class RemoteDevicePolicyManagerRoleHolder extends RemotePolicyManager {

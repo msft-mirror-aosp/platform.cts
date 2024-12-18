@@ -16,8 +16,8 @@
 
 package android.devicepolicy.cts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.CREATE_USERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -25,8 +25,8 @@ import android.os.UserManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.nene.TestApis;
 

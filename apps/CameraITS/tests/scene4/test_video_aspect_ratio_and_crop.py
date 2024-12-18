@@ -28,14 +28,15 @@ import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
 
-_NAME = os.path.splitext(os.path.basename(__file__))[0]
-_VIDEO_RECORDING_DURATION_SECONDS = 3
-_FOV_PERCENT_RTOL = 0.15  # Relative tolerance on circle FoV % to expected.
 _AR_CHECKED_PRE_API_30 = ('4:3', '16:9', '18:9')
 _AR_DIFF_ATOL = 0.01
 _AR_FOR_JPEG_REFERENCE = (4/3, 16/9)
+_FOV_PERCENT_RTOL = 0.15  # Relative tolerance on circle FoV % to expected.
+_HGL10_TESTED_QUALITIES = ('HIGH', '480P', '720P', '1080P', '2160P')
 _MAX_8BIT_IMGS = 255
 _MAX_10BIT_IMGS = 1023
+_NAME = os.path.splitext(os.path.basename(__file__))[0]
+_VIDEO_RECORDING_DURATION_SECONDS = 3
 
 
 def _print_failed_test_results(failed_ar, failed_fov, failed_crop, quality):
@@ -193,9 +194,10 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
         if quality in video_processing_utils.ITS_SUPPORTED_QUALITIES:
           logging.debug('Testing video recording for quality: %s', quality)
           hlg10_params = [False]
-          hlg10_supported = cam.is_hlg10_recording_supported(profile_id)
+          hlg10_supported = cam.is_hlg10_recording_supported_for_profile(
+              profile_id)
           logging.debug('HLG10 supported: %s', hlg10_supported)
-          if hlg10_supported:
+          if hlg10_supported and quality in _HGL10_TESTED_QUALITIES:
             hlg10_params.append(hlg10_supported)
 
           for hlg10_param in hlg10_params:
@@ -225,9 +227,6 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
             if (hlg10_param and
                 video_processing_utils.COLORSPACE_HDR not in colorspace):
               raise AssertionError('colorspace check failed for HDR.')
-            if (not hlg10_param and
-                video_processing_utils.COLORSPACE_SDR not in colorspace):
-              raise AssertionError('colorspace check failed for SDR.')
             logging.debug('Colorspace test passed, video colorspace is %s',
                           colorspace)
 

@@ -21,7 +21,9 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -30,8 +32,25 @@
         <option name="test-file-name" value="CtsAppSearchTestHelperB.apk" />
     </target_preparer>
 
+    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
+        <option name="cleanup" value="true" />
+        <option name="push" value="CtsAppSearchIndexerTestAppAV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV1.apk" />
+        <option name="push" value="CtsAppSearchIndexerTestAppAV2.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV2.apk" />
+        <option name="push" value="CtsAppSearchIndexerTestAppAV3.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV3.apk" />
+        <option name="push" value="CtsAppSearchIndexerTestAppBV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBV1.apk" />
+    </target_preparer>
+
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.cts.appsearch" />
+
+        <!-- Tests with these annotations should only be ran with their corresponding
+             configurations, e.g. Tests with the RequireRunOnWorkProfile annotation should be
+             ran with the run_on_work_profile configuration. Exclude these tests from running
+             with the normal configuration.
+             See go/bedstead-devicestate#androidtestxml
+        -->
+        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
     </test>
 
     <object type="module_controller"

@@ -32,7 +32,6 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.media.codec.flags.Flags;
 
 import org.junit.Rule;
@@ -72,7 +71,6 @@ import org.junit.runner.RunWith;
 @RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @FrameworkSpecificTest
-@NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class ResourceManagerTest {
 

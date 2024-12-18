@@ -32,7 +32,7 @@ java_test_host {
         "compatibility-host-util",
         "cts-host-utils",
     ],
-    data: [
+    device_common_data: [
         ":CtsExtractNativeLibsAppFalse32",
         ":CtsExtractNativeLibsAppFalse64",
         ":CtsExtractNativeLibsAppFalseBoth",

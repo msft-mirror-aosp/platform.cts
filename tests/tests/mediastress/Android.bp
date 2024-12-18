@@ -14,68 +14,53 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_codec_framework",
+}
+
+java_defaults {
+    name: "MediaStressTestCases_defaults",
+    defaults: ["cts_defaults"],
+    // Include both the 32 and 64 bit versions
+    compile_multilib: "both",
+    static_libs: [
+        "ctstestrunner-axt",
+        "compatibility-device-util-axt",
+        "cts-media-common",
+        "androidx.test.rules",
+    ],
+    libs: [
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
+    ],
+    jni_libs: [
+        "libctsmediastress_jni",
+        "libnativehelper_compat_libc++",
+    ],
+    srcs: ["src/**/*.java"],
+    host_required: ["cts-dynamic-config"],
+    sdk_version: "test_current",
+    min_sdk_version: "29",
+    required: ["CtsMediaPreparerApp"],
 }
 
 android_test {
     name: "CtsMediaStressTestCases",
-    defaults: ["cts_defaults"],
+    defaults: ["MediaStressTestCases_defaults"],
+    test_config: "AndroidTest.xml",
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-    // Include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "ctstestrunner-axt",
-        "compatibility-device-util-axt",
-        "cts-media-common",
-        "androidx.test.rules",
-    ],
-    libs: [
-        "android.test.runner",
-        "android.test.base",
-    ],
-    jni_libs: [
-        "libctsmediastress_jni",
-        "libnativehelper_compat_libc++",
-    ],
-    srcs: ["src/**/*.java"],
-    host_required: ["cts-dynamic-config"],
-    sdk_version: "test_current",
-    min_sdk_version: "29",
-    required: ["CtsMediaPreparerApp"],
 }
 
 android_test {
     name: "MctsMediaStressTestCases",
-    defaults: ["cts_defaults"],
+    defaults: ["MediaStressTestCases_defaults"],
     test_config: "AndroidTest-mcts.xml",
     // Tag this module as a cts test artifact
     test_suites: [
+        // b/344653352: drop from cts, mcts-media, and mts-media for now
         "general-tests",
-        "mcts-media",
-        "mts-media",
     ],
-    // Include both the 32 and 64 bit versions
-    compile_multilib: "both",
-    static_libs: [
-        "ctstestrunner-axt",
-        "compatibility-device-util-axt",
-        "cts-media-common",
-        "androidx.test.rules",
-    ],
-    libs: [
-        "android.test.runner",
-        "android.test.base",
-    ],
-    jni_libs: [
-        "libctsmediastress_jni",
-        "libnativehelper_compat_libc++",
-    ],
-    srcs: ["src/**/*.java"],
-    host_required: ["cts-dynamic-config"],
-    sdk_version: "test_current",
-    min_sdk_version: "29",
-    required: ["CtsMediaPreparerApp"],
 }

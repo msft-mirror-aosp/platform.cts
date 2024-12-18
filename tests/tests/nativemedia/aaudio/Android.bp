@@ -15,6 +15,7 @@
 package {
     // See: http://go/android-license-faq
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_audio_framework",
 }
 
 android_test {
@@ -35,4 +36,16 @@ android_test {
     srcs: ["src/**/*.java"],
     resource_dirs: ["res"],
     platform_apis: true,
+}
+
+test_module_config {
+    name: "CtsNativeMediaAAudioTestCases_TestBasic",
+    base: "CtsNativeMediaAAudioTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_DEFAULT__INPUT",
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_LOW_LATENCY__OUTPUT",
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_LOW_LATENCY__INPUT",
+        "android.nativemedia.aaudio.AAudioTests#AAudioBasic_TestAAudioBasic_TestBasic_DEFAULT__OUTPUT",
+    ],
 }
