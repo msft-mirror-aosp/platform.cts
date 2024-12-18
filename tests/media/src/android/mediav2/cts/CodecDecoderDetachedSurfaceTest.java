@@ -16,8 +16,11 @@
 
 package android.mediav2.cts;
 
-import static android.media.codec.Flags.FLAG_NULL_OUTPUT_SURFACE;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.codec.Flags.FLAG_NULL_OUTPUT_SURFACE;
+import static android.media.codec.Flags.apvSupport;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -136,6 +139,16 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                     {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_520x390_24fps_crf22_vp9_10bit.mkv"},
                     {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv"},
             }));
+        }
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            args.addAll(
+                    Arrays.asList(
+                            new Object[][] {
+                                {
+                                    MediaFormat.MIMETYPE_VIDEO_APV,
+                                    "pattern_640x480_30fps_16mbps_apv_10bit.mp4"
+                                },
+                            }));
         }
         for (Object[] arg : args) {
             for (int burstLength : BURST_LENGTHS) {
