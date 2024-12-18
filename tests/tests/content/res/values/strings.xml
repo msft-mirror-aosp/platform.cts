@@ -190,4 +190,6 @@ I think so, so how about double this string, like copy and paste! </string>
     <string name="config_overridden_string">default</string>
 
     <string name="smallestWidthTest">default</string>
+
+    <string name="looks_like_frro">frro://system/framework/framework-res.apk?offset=72&amp;size=44</string>
 </resources>
