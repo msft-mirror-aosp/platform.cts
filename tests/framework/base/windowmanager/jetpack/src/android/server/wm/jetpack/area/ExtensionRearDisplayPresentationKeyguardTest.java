@@ -46,7 +46,6 @@ import android.view.Display;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.window.extensions.area.ExtensionWindowAreaPresentation;
 import androidx.window.extensions.area.ExtensionWindowAreaStatus;
@@ -142,7 +141,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test (expected = SecurityException.class)
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_whenKeyguardLocked() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
@@ -175,7 +173,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_afterKeyguardLocked() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
@@ -224,7 +221,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_thenKeyguardLocked() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
@@ -276,7 +272,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_thenKeyguardLocked_activityFinishes() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
@@ -306,8 +301,8 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
-        TestPresentationView presentationView = new TestPresentationView(
-                presentation.getPresentationContext());
+        TestPresentationView presentationView =
+                new TestPresentationView(presentation.getPresentationContext());
         activitySession.getActivity().runOnUiThread(() ->
                 presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
@@ -333,7 +328,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_persistsAfterDismissingKeyguard() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
@@ -363,8 +357,8 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
-        TestPresentationView presentationView = new TestPresentationView(
-                presentation.getPresentationContext());
+        TestPresentationView presentationView =
+                new TestPresentationView(presentation.getPresentationContext());
         activitySession.getActivity().runOnUiThread(() ->
                 presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
@@ -391,7 +385,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_afterKeyguardLocked_thenScreenOff() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
@@ -421,10 +414,11 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
-        TestPresentationView presentationView = new TestPresentationView(
-                presentation.getPresentationContext());
-        activitySession.getActivity().runOnUiThread(() ->
-                presentation.setPresentationView(presentationView));
+        TestPresentationView presentationView =
+                new TestPresentationView(presentation.getPresentationContext());
+        activitySession
+                .getActivity()
+                .runOnUiThread(() -> presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         final Display presentationDisplay = presentationView.getDisplay();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplay.getDisplayId());
