@@ -18,7 +18,6 @@ package android.signature.cts.tests;
 
 import static org.junit.Assert.assertEquals;
 
-import android.signature.cts.AnnotationChecker;
 import android.signature.cts.ApiComplianceChecker;
 import android.signature.cts.ClassProvider;
 import android.signature.cts.FailureType;
@@ -30,12 +29,13 @@ import android.signature.cts.tests.data.ComplexEnum;
 import android.signature.cts.tests.data.ExtendedNormalInterface;
 import android.signature.cts.tests.data.NormalClass;
 import android.signature.cts.tests.data.NormalInterface;
-import java.lang.reflect.Modifier;
-import java.util.function.Consumer;
 
 import org.junit.Test;
-import org.junit.runners.JUnit4;
 import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+import java.lang.reflect.Modifier;
+import java.util.function.Consumer;
 
 /**
  * Test class for JDiffClassDescription.
@@ -100,7 +100,8 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
     @Test
     public void testConstructorThrowsException() {
         JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
-        JDiffClassDescription.JDiffConstructor constructor = ctor("NormalClass", Modifier.PROTECTED);
+        JDiffClassDescription.JDiffConstructor constructor =
+                ctor("NormalClass", Modifier.PROTECTED);
         constructor.addParam("java.lang.String");
         constructor.addParam("java.lang.String");
         constructor.addException("android.signature.cts.tests.data.NormalException");
@@ -410,11 +411,9 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
 
     @Test
     public void testRemovingFinalFromAClass() {
-        try (ExpectFailure observer = new ExpectFailure(FailureType.MISMATCH_CLASS)) {
-            JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
-            clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
-            checkSignatureCompliance(clz, observer);
-        }
+        JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
+        clz.setModifier(Modifier.PUBLIC | Modifier.FINAL);
+        checkSignatureCompliance(clz);
     }
 
     @Test
@@ -523,13 +522,11 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      */
     @Test
     public void testRemovingAbstractFromAClass() {
-        try (ExpectFailure observer = new ExpectFailure(FailureType.MISMATCH_CLASS)) {
-            JDiffClassDescription clz = new JDiffClassDescription(
-                    "android.signature.cts.tests.data", "NormalClass");
-            clz.setType(JDiffClassDescription.JDiffType.CLASS);
-            clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
-            checkSignatureCompliance(clz, observer);
-        }
+        JDiffClassDescription clz =
+                new JDiffClassDescription("android.signature.cts.tests.data", "NormalClass");
+        clz.setType(JDiffClassDescription.JDiffType.CLASS);
+        clz.setModifier(Modifier.PUBLIC | Modifier.ABSTRACT);
+        checkSignatureCompliance(clz);
     }
 
     /**
@@ -667,13 +664,11 @@ public class ApiComplianceCheckerTest extends ApiPresenceCheckerTest<ApiComplian
      */
     @Test
     public void testRemovingAbstractFromMethod() {
-        try (ExpectFailure observer = new ExpectFailure(FailureType.MISMATCH_METHOD)) {
-            JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
-            JDiffClassDescription.JDiffMethod method = method("notSyncMethod",
-                    Modifier.PUBLIC | Modifier.ABSTRACT, "void");
-            clz.addMethod(method);
-            checkSignatureCompliance(clz, observer);
-        }
+        JDiffClassDescription clz = createClass(NormalClass.class.getSimpleName());
+        JDiffClassDescription.JDiffMethod method =
+                method("notSyncMethod", Modifier.PUBLIC | Modifier.ABSTRACT, "void");
+        clz.addMethod(method);
+        checkSignatureCompliance(clz);
     }
 
     /**
