@@ -75,6 +75,7 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
             testItems.add(new ProgressStyleLargeIconTest());
             testItems.add(new ProgressStyleNotStyledByProgressTest());
             testItems.add(new ProgressStyleRTLTest());
+            testItems.add(new ProgressStyleManySegmentsSameColor());
         }
 
         return Collections.unmodifiableList(testItems);
@@ -658,6 +659,38 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                                     .setStyledByProgress(false)
                                     .setProgress(60)
                     )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleManySegmentsSameColor extends NotifyTestCase {
+        private static final String CHANNEL_ID = "NPSVA.ManySegmentsWithSameColor";
+
+        ProgressStyleManySegmentsSameColor() {
+            super(
+                    R.string.progress_style_many_segments_with_same_color,
+                    R.drawable.progress_style_many_segments_with_same_color);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            final Notification.ProgressStyle progressStyle =
+                    new Notification.ProgressStyle().setProgress(75);
+            for (int i = 0; i < 50; i++) {
+                progressStyle.addProgressSegment(
+                        new Notification.ProgressStyle.Segment(2).setColor(COLOR_ORANGE));
+            }
+
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Arrive 10:08 AM")
+                    .setContentText("Dominique Ansel Bakery Soho")
+                    .setStyle(progressStyle)
                     .build();
         }
     }

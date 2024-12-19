@@ -13,23 +13,7 @@
 # limitations under the License.
 #
 # proto-file: ../backported_fixes.proto
-# proto-message: BackportedFixes
+# proto-message: BackportedFix
 
-# Sort by known_issue
-# keep-sorted start block=yes newline_separated=yes
-fixes {
-    known_issue: 350037023
-    alias: 1
-}
-
-fixes {
-    known_issue: 350037348
-    alias: 3
-}
-
-fixes {
-    known_issue: 372917199
-    alias: 2
-}
-
-# keep-sorted end
+known_issue: 350037348
+alias: 3

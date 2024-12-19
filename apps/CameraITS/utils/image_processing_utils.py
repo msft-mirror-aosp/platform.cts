@@ -24,6 +24,8 @@ import os
 import sys
 
 import capture_request_utils
+import opencv_processing_utils
+import preview_processing_utils
 import error_util
 import noise_model_constants
 import numpy
@@ -31,6 +33,8 @@ from PIL import Image
 from PIL import ImageCms
 
 
+_ARUCO_MARKERS_COUNT = 4
+_CH_FULL_SCALE = 255
 _CMAP_BLUE = ('black', 'blue', 'lightblue')
 _CMAP_GREEN = ('black', 'green', 'lightgreen')
 _CMAP_RED = ('black', 'red', 'lightcoral')
@@ -1634,3 +1638,189 @@ def convert_sensor_coords_to_image_coords(
         (coords[1] - buffer) / aspect_ratio_multiplication_factor)
   logging.debug('Image coordinates: %s', image_coords)
   return image_coords
+
+
+def check_orientation_and_flip(props, img, img_name_stem):
+  """Checks the sensor orientation and flips image.
+
+  The preview stream captures are flipped based on the sensor
+  orientation while using the front camera. In such cases, check the
+  sensor orientation and flip the image if needed.
+
+  Args:
+    props: obj; camera properties object.
+    img: numpy array; image.
+    img_name_stem: str; prefix for the img name to be saved.
+  Returns:
+    numpy array of the two images.
+  """
+  img = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+      props['android.sensor.orientation'], img)
+  write_image(img / _CH_FULL_SCALE, f'{img_name_stem}.png')
+  return img
+
+
+def do_ae_check(
+    img1, img2, file_stem, suffix1, suffix2, rel_tol, abs_tol):
+  """Check two images' luma change is within specified tolerance.
+
+  Args:
+    img1: first image.
+    img2: second image.
+    file_stem: str; path to file.
+    suffix1: str; suffix for the first image file name.
+    suffix2: str; suffix for the second image file name.
+    rel_tol: float; relative threshold for delta between brightness.
+    abs_tol: float; absolute threshold for delta between brightness.
+  Returns:
+    failed_ae_msg: str; failed AE check messages if any. None otherwise.
+    y1_avg: float; y_avg value for the first image.
+    y2_avg: float; y_avg value for the second image.
+  """
+  failed_ae_msg = []
+  y1 = opencv_processing_utils.extract_y(
+      img1, f'{file_stem}_{suffix1}_y.png')
+  y1_avg = numpy.average(y1)
+  logging.debug('%s y avg: %.4f', suffix1, y1_avg)
+
+  y2 = opencv_processing_utils.extract_y(
+      img2, f'{file_stem}_{suffix2}_y.png')
+  y2_avg = numpy.average(y2)
+  logging.debug('%s y avg: %.4f', suffix2, y2_avg)
+  y_avg_change_percent = (abs(y2_avg - y1_avg) / y1_avg) * 100
+  logging.debug('Y avg change percentage: %.4f', y_avg_change_percent)
+
+  if not math.isclose(y1_avg, y2_avg, rel_tol=rel_tol, abs_tol=abs_tol):
+    failed_ae_msg.append('Y avg change is greater than threshold value for '
+                         f'patches: {suffix1} and {suffix2} '
+                         f'diff: {abs(y2_avg - y1_avg):.4f} '
+                         f'ATOL: {abs_tol} '
+                         f'RTOL: {rel_tol} '
+                         f'{suffix1} y avg: {y1_avg:.4f} '
+                         f'{suffix2} y avg: {y2_avg:.4f} ')
+  return failed_ae_msg, y1_avg, y2_avg
+
+
+def do_awb_check(img1, img2, c_atol, patch_color, suffix1, suffix2):
+  """Checks total chroma (saturation) difference between two images.
+
+  Args:
+    img1: first image.
+    img2: second image.
+    c_atol: float; threshold for delta C.
+    patch_color: str; color of the patch to be tested.
+    suffix1: str; suffix for the first image.
+    suffix2: str; suffix for the second image.
+  Returns:
+    failed_awb_msg: failed AWB check messages or None.
+  """
+  failed_awb_msg = []
+  l1, a1, b1 = get_lab_means(img1, suffix1)
+  l2, a2, b2 = get_lab_means(img2, suffix2)
+
+  # Calculate Delta C
+  delta_c = numpy.sqrt(abs(a1 - a2)**2 + abs(b1 - b2)**2)
+  logging.debug('Delta C: %.4f', delta_c)
+
+  if delta_c > c_atol:
+    failed_awb_msg.append('Delta C is greater than the threshold value for '
+                          f'patch: {patch_color} '
+                          f'Delta C ATOL: {c_atol} '
+                          f'Delta C: {delta_c:.4f} '
+                          f'{suffix1} L, a, b means: {l1:.4f}, '
+                          f'{a1:.4f}, {b1:.4f}'
+                          f'{suffix2} L, a, b means: {l2:.4f}, '
+                          f'{a2:.4f}, {b2:.4f}')
+  return failed_awb_msg
+
+
+def get_four_quadrant_patches(img, img_path, suffix, patch_margin):
+  """Divides the img in 4 equal parts and returns the patches.
+
+  Args:
+    img: openCV image in RGB order.
+    img_path: path to save the image.
+    suffix: str; suffix used to save the image.
+    patch_margin: int; pixels of the margin.
+  Returns:
+    four_quadrant_patches: list of 4 patches.
+  """
+  num_rows = 2
+  num_columns = 2
+  size_x = math.floor(img.shape[1])
+  size_y = math.floor(img.shape[0])
+  four_quadrant_patches = []
+  for i in range(0, num_rows):
+    for j in range(0, num_columns):
+      x = size_x / num_rows * j
+      y = size_y / num_columns * i
+      h = size_y / num_columns
+      w = size_x / num_rows
+      patch = img[int(y):int(y+h), int(x):int(x+w)]
+      patch_path = img_path.with_name(
+          f'{img_path.stem}_{suffix}_patch_'
+          f'{i}_{j}{img_path.suffix}')
+      write_image(patch/_CH_FULL_SCALE, patch_path)
+      cropped_patch = patch[patch_margin:-patch_margin,
+                            patch_margin:-patch_margin]
+      four_quadrant_patches.append(cropped_patch)
+      cropped_patch_path = img_path.with_name(
+          f'{img_path.stem}_{suffix}_cropped_patch_'
+          f'{i}_{j}{img_path.suffix}')
+      write_image(cropped_patch/_CH_FULL_SCALE, cropped_patch_path)
+  return four_quadrant_patches
+
+
+def get_lab_means(img, suffix):
+  """Computes the mean of L,a,b img in Cielab color space.
+
+  Args:
+    img: RGB img in numpy format.
+    suffix: suffix used to save the image.
+  Returns:
+    mean_l, mean_a, mean_b: mean of L, a, b channels.
+  """
+  # Convert to Lab color space
+  from skimage import color  # pylint: disable=g-import-not-at-top
+  img_lab = color.rgb2lab(img)
+
+  # Extract mean of L* channel (brightness)
+  mean_l = numpy.mean(img_lab[:, :, 0])
+  # Extract mean of a* channel (red-green axis)
+  mean_a = numpy.mean(img_lab[:, :, 1])
+  # Extract mean of b* channel (yellow-blue axis)
+  mean_b = numpy.mean(img_lab[:, :, 2])
+
+  logging.debug('Image: %s, mean_l: %.2f, mean_a: %.2f, mean_b: %.2f',
+                suffix, mean_l, mean_a, mean_b)
+  return mean_l, mean_a, mean_b
+
+
+def get_slanted_edge_patch(img, img_path, suffix, patch_margin):
+  """Crops the central slanted edge part of the img and returns the patch.
+
+  Args:
+    img: openCV image in RGB order.
+    img_path: str; path to save the image.
+    suffix: str; suffix used to save the image. ie: 'w' or 'uw'.
+    patch_margin: int; pixels of the margin.
+  Returns:
+    slanted_edge_patch: list of 4 coordinates.
+  """
+  num_rows = 3
+  num_columns = 5
+  size_x = math.floor(img.shape[1])
+  size_y = math.floor(img.shape[0])
+  slanted_edge_patch = []
+  x = int(round(size_x / num_columns * (num_columns // 2), 0))
+  y = int(round(size_y / num_rows * (num_rows // 2), 0))
+  w = int(round(size_x / num_columns, 0))
+  h = int(round(size_y / num_rows, 0))
+  patch = img[y:y+h, x:x+w]
+  slanted_edge_patch = patch[patch_margin:-patch_margin,
+                             patch_margin:-patch_margin]
+  filename_with_path = img_path.with_name(
+      f'{img_path.stem}_{suffix}_slanted_edge{img_path.suffix}'
+  )
+  write_rgb_uint8_image(slanted_edge_patch, filename_with_path)
+  return slanted_edge_patch

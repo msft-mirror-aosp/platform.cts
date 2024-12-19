@@ -19,6 +19,7 @@ package android.keystore.cts;
 import static android.keystore.cts.util.TestUtils.KmType;
 import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
+import static android.keystore.cts.util.TestUtils.checkDeviceCompatibility;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -458,6 +459,7 @@ public class KeyPairGeneratorTest {
     @Parameters(method = "kmTypes_x_algorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm) throws Exception {
+        checkDeviceCompatibility();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyPairGenerator generator = getGenerator(algorithm);
@@ -477,6 +479,7 @@ public class KeyPairGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
             throws Exception {
+        checkDeviceCompatibility();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyPairGenerator generator = getGenerator(algorithm);

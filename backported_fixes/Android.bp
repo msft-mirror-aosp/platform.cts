@@ -36,10 +36,33 @@ java_library {
     static_libs: [
         "cts_backported_fixes_annotation",
         "cts_backported_fixes_ids",
+        "cts_backported_fixes_resolver",
         "junit",
     ],
     sdk_version: "test_current",
+}
 
+// TODO b/382721475 - use androidx libarary when available.
+java_library {
+    name: "cts_backported_fixes_resolver",
+    srcs: [
+        "src/com/android/cts/backportedfixes/resolver/*.kt",
+    ],
+    static_libs: [
+        "android.os.flags-aconfig-java",
+        "cts_backported_fixes_bitset",
+    ],
+    sdk_version: "test_current",
+}
+
+// TODO b/382721475 - use androidx libarary when available.
+java_library {
+    name: "cts_backported_fixes_bitset",
+    srcs: [
+        "src/com/android/cts/backportedfixes/bitset/*.kt",
+    ],
+    host_supported: true,
+    sdk_version: "test_current",
 }
 
 java_library {
@@ -72,17 +95,33 @@ java_library {
 
 genrule {
     name: "cts_backported_fixes_binpb",
-    tools: ["aprotoc"],
-    srcs: [
-        "approved/backported_fixes.txtpb",
-    ],
-    tool_files: [
-        ":backported_fixes_proto_file",
-    ],
+    defaults: ["default_backported_fixes_combiner"],
+    srcs: [":cts_backported_fixes_binpbs"],
     out: ["com/android/cts/backportedfixes/backported_fixes.binpb"],
-    cmd: "$(location aprotoc)  " +
-        " --encode=com.android.build.backportedfixes.BackportedFixes" +
-        "  $(location :backported_fixes_proto_file)" +
-        " < $(location approved/backported_fixes.txtpb)" +
-        " > $(location com/android/cts/backportedfixes/backported_fixes.binpb)",
+}
+
+gensrcs {
+    name: "cts_backported_fixes_binpbs",
+    defaults: ["default_backported_fix_binpbs"],
+    output_extension: "binpb",
+    srcs: [
+        "approved/*.txtpb",
+    ],
+}
+
+java_test_host {
+    name: "cts_backported_fixes_bitset_tests",
+    srcs: [
+        "tests/com/android/cts/backportedfixes/bitset/*.java",
+        "tests/com/android/cts/backportedfixes/bitset/*.kt",
+    ],
+    static_libs: [
+        "cts_backported_fixes_bitset",
+        "junit",
+        "truth",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+    test_suites: ["general-tests"],
 }

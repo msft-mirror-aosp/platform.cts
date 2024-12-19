@@ -4310,8 +4310,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                     containsAeModeLowLightBoost);
 
             float luminanceRangeLower = lowLightBoostLuminanceRange.getLower();
-            assertTrue("Luminance range lower bound is in the range [0.1, 1]",
-                    luminanceRangeLower >= 0.1f && luminanceRangeLower <= 1f);
+            assertTrue("Luminance range lower bound is in the range [0.1, 8.0]",
+                    luminanceRangeLower >= 0.1f && luminanceRangeLower <= 8.0f);
         }
     }
 

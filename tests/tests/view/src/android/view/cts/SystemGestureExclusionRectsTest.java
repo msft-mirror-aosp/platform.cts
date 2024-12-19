@@ -112,7 +112,7 @@ public class SystemGestureExclusionRectsTest {
     public void animatingView() throws Throwable {
         final Activity activity = mActivityRule.getActivity();
 
-        final List<List<Rect>> results = new ArrayList<>();
+        final List<List<Rect>> results = Collections.synchronizedList(new ArrayList<>());
         final CountDownLatch doneAnimating = new CountDownLatch(1);
 
         final Consumer<List<Rect>> vtoListener = results::add;
@@ -135,16 +135,19 @@ public class SystemGestureExclusionRectsTest {
         List<Integer> sizeRange = Lists.newArrayList(5, 6);
         Rect prev = null;
         assertFalse("results empty", results.isEmpty());
-        for (List<Rect> list : results) {
-            assertEquals("one result rect", 1, list.size());
-            final Rect first = list.get(0);
-            if (prev != null) {
-                assertTrue("left edge " + first.left + " >= previous " + prev.left,
-                        first.left >= prev.left);
+        synchronized (results) {
+            for (List<Rect> list : results) {
+                assertEquals("one result rect", 1, list.size());
+                final Rect first = list.get(0);
+                if (prev != null) {
+                    assertTrue(
+                            "left edge " + first.left + " >= previous " + prev.left,
+                            first.left >= prev.left);
+                }
+                assertTrue("rect had expected width", sizeRange.contains(first.width()));
+                assertTrue("rect had expected height", sizeRange.contains(first.height()));
+                prev = first;
             }
-            assertTrue("rect had expected width", sizeRange.contains(first.width()));
-            assertTrue("rect had expected height", sizeRange.contains(first.height()));
-            prev = first;
         }
         // Consideration of left system bar
         assertEquals("reached expected animated destination", prev.right, 35 + location[0]);

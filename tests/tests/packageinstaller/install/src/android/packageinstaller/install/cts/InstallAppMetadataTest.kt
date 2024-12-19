@@ -29,9 +29,9 @@ import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
+import androidx.test.runner.AndroidJUnit4
 import androidx.test.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
-import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.io.File
 import java.io.FileNotFoundException
 import org.junit.Assert.assertEquals
@@ -39,7 +39,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(TestParameterInjector::class)
+@RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
 @ScreenRecord
 class InstallAppMetadataTest : PackageInstallerTestBase() {

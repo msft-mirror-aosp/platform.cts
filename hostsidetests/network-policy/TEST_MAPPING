@@ -1,27 +1,14 @@
 {
   "presubmit-large": [
     {
-      "name": "CtsHostsideNetworkPolicyTests",
-      "options": [
-        {
-          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
-        },
-        {
-          "exclude-annotation": "android.platform.test.annotations.RequiresDevice"
-        }
-      ]
+      "name": "CtsHostsideNetworkPolicyTests_NoRequiresDevice"
     }
   ],
   "postsubmit": [
     {
       // Postsubmit on virtual devices to monitor flakiness of all tests that don't require a
       // physical device
-      "name": "CtsHostsideNetworkPolicyTests",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.RequiresDevice"
-        }
-      ]
+      "name": "CtsHostsideNetworkPolicyTests_NoRequiresDevice"
     }
   ]
 }
