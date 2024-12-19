@@ -638,6 +638,15 @@ public class FrameRateCtsActivity extends Activity {
         }
     }
 
+    // Use this FrameRateTester to check if frame rate is at least
+    // the expectedFrameRate.
+    private static class IsAtLeastFrameRateTester implements FrameRateTester {
+        @Override
+        public boolean apply(float deviceFrameRate, float expectedFrameRate) {
+            return deviceFrameRate >= expectedFrameRate;
+        }
+    }
+
     // Set expectedFrameRate to 0.0 to verify only stable frame rate.
     private void verifyCompatibleAndStableFrameRate(float expectedFrameRate,
             FrameRateTester isCompatible, TestSurface... surfaces) throws InterruptedException {
@@ -801,6 +810,11 @@ public class FrameRateCtsActivity extends Activity {
             Display display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
             Display.Mode currentMode = display.getMode();
 
+            final FrameRateTester frameRateTester =
+                    compatibility == Surface.FRAME_RATE_COMPATIBILITY_AT_LEAST
+                            ? new IsAtLeastFrameRateTester()
+                            : new IsMultipleWithTolerance(FRAME_RATE_TOLERANCE_RELAXED);
+
             if (changeFrameRateStrategy == Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS) {
                 // Seamless rates should be seamlessly achieved with no resolution changes.
                 List<Float> seamlessRefreshRates =
@@ -809,8 +823,7 @@ public class FrameRateCtsActivity extends Activity {
                     int initialNumEvents = mModeChangedEvents.size();
                     surface.setFrameRate(
                             frameRate, compatibility, Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS);
-                    verifyCompatibleAndStableFrameRate(frameRate,
-                            new IsMultipleWithTolerance(FRAME_RATE_TOLERANCE_RELAXED), surface);
+                    verifyCompatibleAndStableFrameRate(frameRate, frameRateTester, surface);
                     verifyModeSwitchesAreSeamless(initialNumEvents, mModeChangedEvents.size());
                     verifyModeSwitchesDontChangeResolution(initialNumEvents,
                             mModeChangedEvents.size());
@@ -839,8 +852,7 @@ public class FrameRateCtsActivity extends Activity {
                     int initialNumEvents = mModeChangedEvents.size();
                     surface.setFrameRate(
                             frameRate, compatibility, Surface.CHANGE_FRAME_RATE_ALWAYS);
-                    verifyCompatibleAndStableFrameRate(frameRate,
-                            new IsMultipleWithTolerance(FRAME_RATE_TOLERANCE_RELAXED), surface);
+                    verifyCompatibleAndStableFrameRate(frameRate, frameRateTester, surface);
                     verifyModeSwitchesDontChangeResolution(initialNumEvents,
                             mModeChangedEvents.size());
                 }
