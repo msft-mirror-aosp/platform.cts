@@ -295,9 +295,12 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
     @Test
-    @ApiTest(apis = {"android.view.WindowManager.LayoutParams#setBlurBehindRadius",
-                     "android.R.styleable#Window_windowBlurBehindEnabled",
-                     "android.view.Window#setBackgroundBlurRadius"})
+    @ApiTest(
+            apis = {
+                "android.view.WindowManager.LayoutParams#setBlurBehindRadius",
+                "android.R.styleable#Window_windowBlurBehindEnabled",
+                "android.view.Window#setBackgroundBlurRadius"
+            })
     public void testAllBlurRemovedAndRestoredWhenToggleBlurDisabled() {
         final BlurActivity blurActivity = startTestActivity(BlurActivity.class);
         getInstrumentation().runOnMainSync(() -> {
@@ -331,6 +334,7 @@ public class BlurTests extends WindowManagerTestBase {
         verifyOnlyBackgroundImageVisible();
 
         setAndAssertForceBlurDisabled(false, blurActivity.mBlurEnabledListener);
+        waitForActivityIdle(blurActivity);
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX);
             blurActivity.setBackgroundBlurRadius(BACKGROUND_BLUR_PX);
