@@ -90,9 +90,15 @@ public class CodecEncoderTestBase extends CodecTestBase {
      */
     public static int findByteBufferColorFormat(String encoder, String mediaType)
             throws IOException {
-        MediaCodec codec = MediaCodec.createByCodecName(encoder);
-        MediaCodecInfo.CodecCapabilities cap =
-                codec.getCodecInfo().getCapabilitiesForType(mediaType);
+        MediaCodecInfo.CodecCapabilities cap = null;
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+            if (encoder.equals(codecInfo.getName())) {
+                cap = codecInfo.getCapabilitiesForType(mediaType);
+                break;
+            }
+        }
+        assertNotNull("did not receive capabilities for encoder: " + encoder + ", media type: "
+                        + mediaType + "\n", cap);
         int colorFormat = -1;
         for (int c : cap.colorFormats) {
             if (c == MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar
@@ -102,7 +108,6 @@ public class CodecEncoderTestBase extends CodecTestBase {
                 break;
             }
         }
-        codec.release();
         return colorFormat;
     }
 

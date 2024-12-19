@@ -92,6 +92,7 @@ android_test {
         "truth",
         "androidx.test.uiautomator_uiautomator",
         "bedstead",
+        "TestApp",
     ],
     platform_apis: false,
     test_suites: [

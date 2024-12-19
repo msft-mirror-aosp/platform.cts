@@ -202,10 +202,12 @@
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficFalseTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficTrueTestCases" />
     <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases" />
+    <option name="compatibility:include-filter" value="CtsNetTestCases" />
     <option name="compatibility:include-filter" value="CtsNetTestCasesInternetPermission" />
     <option name="compatibility:include-filter" value="CtsNetTestCasesLegacyApi22" />
     <option name="compatibility:include-filter" value="CtsNetTestCasesLegacyPermission22" />
     <option name="compatibility:include-filter" value="CtsNetTestCasesMaxTargetSdk33" />
+    <option name="compatibility:include-filter" value="CtsNetTestCasesUpdateStatsPermission" />
     <option name="compatibility:include-filter" value="CtsNfcTestCases" />
     <option name="compatibility:include-filter" value="CtsNNAPIJavaTestCases" />
     <option name="compatibility:include-filter" value="CtsNNAPITestCases" />

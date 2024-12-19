@@ -37,4 +37,5 @@ interface IAppOpsUserService {
     void callApiThatNotesAsyncOpWithAttributionAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesAsyncOpAndCheckDefaultMessage(in IAppOpsUserClient client);
     void callApiThatNotesAsyncOpAndCheckCustomMessage(in IAppOpsUserClient client);
+    void callApiThatNotesAsyncOpMultipleTimes(in IAppOpsUserClient client);
 }

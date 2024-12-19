@@ -32,6 +32,7 @@ import zoom_capture_utils
 _CRF = 23
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FPS = 30
+_MINIMUM_ARUCO_MARKERS_TO_DETECT = 1
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
@@ -215,13 +216,13 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         )
 
         # Find ArUco markers
-        # TODO: b/370585114 - improve test time and skip saving debug images.
         try:
           corners, ids, _ = opencv_processing_utils.find_aruco_markers(
               img_bgr,
               (f'{os.path.join(log_path, img_name)}_{z:.2f}_'
                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-              aruco_marker_count=1
+              aruco_marker_count=_MINIMUM_ARUCO_MARKERS_TO_DETECT,
+              save_images=debug
           )
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',

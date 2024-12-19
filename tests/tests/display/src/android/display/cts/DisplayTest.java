@@ -677,10 +677,16 @@ public class DisplayTest extends TestBase {
         assertEquals(SECONDARY_DISPLAY_HEIGHT, outMetrics.heightPixels);
 
         // The scale is in [0.1, 3], and density is the scale factor.
-        assertTrue(SCALE_DENSITY_LOWER_BOUND <= outMetrics.density
-                && outMetrics.density <= SCALE_DENSITY_UPPER_BOUND);
-        assertTrue(SCALE_DENSITY_LOWER_BOUND <= outMetrics.scaledDensity
-                && outMetrics.scaledDensity <= SCALE_DENSITY_UPPER_BOUND);
+        assertTrue("Density is out of bounds: " + outMetrics.density +
+                        " (Expected: [" + SCALE_DENSITY_LOWER_BOUND + ", "
+                              + SCALE_DENSITY_UPPER_BOUND + "])",
+                SCALE_DENSITY_LOWER_BOUND <= outMetrics.density
+                        && outMetrics.density <= SCALE_DENSITY_UPPER_BOUND);
+        assertTrue("ScaledDensity is out of bounds: " + outMetrics.scaledDensity +
+                        " (Expected: [" + SCALE_DENSITY_LOWER_BOUND + ", "
+                              + SCALE_DENSITY_UPPER_BOUND + "])",
+                SCALE_DENSITY_LOWER_BOUND <= outMetrics.scaledDensity
+                        && outMetrics.scaledDensity <= SCALE_DENSITY_UPPER_BOUND);
 
         assertEquals(SECONDARY_DISPLAY_DPI, outMetrics.densityDpi);
         assertEquals((float)SECONDARY_DISPLAY_DPI, outMetrics.xdpi, 0.0001f);

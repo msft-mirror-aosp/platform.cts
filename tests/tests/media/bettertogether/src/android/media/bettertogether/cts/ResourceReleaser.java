@@ -22,7 +22,6 @@ import org.junit.rules.TestRule;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Queue;
 
 /**
  * {@link TestRule} for releasing resources once a test ends.
@@ -47,7 +46,23 @@ import java.util.Queue;
  */
 public final class ResourceReleaser extends ExternalResource {
 
-    private final Queue<Runnable> mPendingRunnables = new ArrayDeque<>();
+    /** Equivalent to {@link #ResourceReleaser(boolean) new ResourceReleaser(false)}. */
+    public ResourceReleaser() {
+        this(false);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param useStack Whether to invoke {@link #add added runnables} in the inverse order of
+     *     addition. If false, runnables will be invoked in the same order in which they were added.
+     */
+    public ResourceReleaser(boolean useStack) {
+        mUseStack = useStack;
+    }
+
+    private final ArrayDeque<Runnable> mPendingRunnables = new ArrayDeque<>();
+    private final boolean mUseStack;
 
     /**
      * Adds a {@link Runnable} for execution after the end of the test run, regardless of the test
@@ -61,7 +76,8 @@ public final class ResourceReleaser extends ExternalResource {
     public void after() {
         ArrayList<Throwable> throwables = new ArrayList<>();
         while (!mPendingRunnables.isEmpty()) {
-            Runnable runnable = mPendingRunnables.remove();
+            Runnable runnable =
+                    mUseStack ? mPendingRunnables.removeLast() : mPendingRunnables.removeFirst();
             try {
                 runnable.run();
             } catch (Throwable e) {

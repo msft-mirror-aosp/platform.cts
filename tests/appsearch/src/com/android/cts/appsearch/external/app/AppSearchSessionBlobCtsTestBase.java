@@ -508,9 +508,9 @@ public abstract class AppSearchSessionBlobCtsTestBase {
         writeResponse.close();
 
         StorageInfo after = mDb1.getStorageInfoAsync().get();
-        assertThat(after.getBlobCount()).isEqualTo(before.getBlobCount() + 2);
-        assertThat(after.getBlobSizeBytes())
-                .isEqualTo(before.getBlobSizeBytes() + mData1.length + mData2.length);
+        assertThat(after.getBlobsCount()).isEqualTo(before.getBlobsCount() + 2);
+        assertThat(after.getBlobsSizeBytes())
+                .isEqualTo(before.getBlobsSizeBytes() + mData1.length + mData2.length);
     }
 
     @Test
@@ -541,22 +541,22 @@ public abstract class AppSearchSessionBlobCtsTestBase {
         writeResponse.close();
 
         StorageInfo after = mDb1.getStorageInfoAsync().get();
-        assertThat(after.getBlobCount()).isEqualTo(before.getBlobCount() + 2);
-        assertThat(after.getBlobSizeBytes())
-                .isEqualTo(before.getBlobSizeBytes() + mData1.length + mData2.length);
+        assertThat(after.getBlobsCount()).isEqualTo(before.getBlobsCount() + 2);
+        assertThat(after.getBlobsSizeBytes())
+                .isEqualTo(before.getBlobsSizeBytes() + mData1.length + mData2.length);
 
         // remove blob 1
         mDb1.removeBlobAsync(ImmutableSet.of(mHandle1)).get();
         StorageInfo afterRemove1 = mDb1.getStorageInfoAsync().get();
-        assertThat(afterRemove1.getBlobCount()).isEqualTo(before.getBlobCount() + 1);
-        assertThat(afterRemove1.getBlobSizeBytes())
-                .isEqualTo(before.getBlobSizeBytes() + mData2.length);
+        assertThat(afterRemove1.getBlobsCount()).isEqualTo(before.getBlobsCount() + 1);
+        assertThat(afterRemove1.getBlobsSizeBytes())
+                .isEqualTo(before.getBlobsSizeBytes() + mData2.length);
 
         // remove blob 2
         mDb1.removeBlobAsync(ImmutableSet.of(mHandle2)).get();
         StorageInfo afterRemove2 = mDb1.getStorageInfoAsync().get();
-        assertThat(afterRemove2.getBlobCount()).isEqualTo(before.getBlobCount());
-        assertThat(afterRemove2.getBlobSizeBytes()).isEqualTo(before.getBlobSizeBytes());
+        assertThat(afterRemove2.getBlobsCount()).isEqualTo(before.getBlobsCount());
+        assertThat(afterRemove2.getBlobsSizeBytes()).isEqualTo(before.getBlobsSizeBytes());
     }
 
     @Test

@@ -52,6 +52,7 @@ import android.view.WindowManager;
 import androidx.annotation.ColorInt;
 import androidx.annotation.Nullable;
 import androidx.core.view.WindowCompat;
+import androidx.test.filters.FlakyTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.UiDevice;
 
@@ -294,6 +295,7 @@ public class BlurTests extends WindowManagerTestBase {
         });
     }
 
+    @FlakyTest(bugId = 382609163)
     @Test
     @ApiTest(apis = {"android.view.WindowManager.LayoutParams#setBlurBehindRadius",
                      "android.R.styleable#Window_windowBlurBehindEnabled",
@@ -559,14 +561,13 @@ public class BlurTests extends WindowManagerTestBase {
         if (blurEnabledListener != null) {
             Mockito.verify(blurEnabledListener, timeout(BROADCAST_WAIT_TIMEOUT))
                 .accept(!disable);
-        } else {
-            PollingCheck.waitFor(BROADCAST_WAIT_TIMEOUT, () -> {
-                return disable != mContext.getSystemService(WindowManager.class)
-                        .isCrossWindowBlurEnabled();
-            });
-            assertTrue(!disable == mContext.getSystemService(WindowManager.class)
-                        .isCrossWindowBlurEnabled());
         }
+        PollingCheck.waitFor(BROADCAST_WAIT_TIMEOUT, () -> {
+            return disable != mContext.getSystemService(WindowManager.class)
+                    .isCrossWindowBlurEnabled();
+        });
+        assertTrue(!disable == mContext.getSystemService(WindowManager.class)
+                    .isCrossWindowBlurEnabled());
     }
 
     private void assertOnScreenshot(Consumer<Bitmap> assertion) {
@@ -637,34 +638,38 @@ public class BlurTests extends WindowManagerTestBase {
     private void assertBlur(Bitmap screenshot, int blurRadius, Rect blurRegion) {
         final double midX = (blurRegion.left + blurRegion.right - 1) / 2.0;
 
-        // Adjust the test to check a smaller part of the blurred area in order to accept
-        // various blur algorithm approximations used in RenderEngine
-        final int stepSize = blurRadius / 4;
-        final int blurAreaStartX = (int) Math.floor(midX) - blurRadius + stepSize;
-        final int blurAreaEndX = (int) Math.ceil(midX) + blurRadius;
-
         // At 2 * radius there should be no visible blur effects.
         final int unaffectedBluePixelX = (int) Math.floor(midX) - blurRadius * 2 - 1;
         final int unaffectedRedPixelX = (int) Math.ceil(midX) + blurRadius * 2 + 1;
 
-        for (int y = blurRegion.top; y < blurRegion.bottom; y++) {
-            Color previousColor = Color.valueOf(Color.BLUE);
-            for (int x = blurAreaStartX; x < blurAreaEndX; x += stepSize) {
-                Color currentColor = screenshot.getColor(x, y);
+        // Check a smaller part of the blurred area than strictly necessary, in order to accept
+        // various blur algorithm approximations used in RenderEngine
+        final int blurAreaStartX =
+                Math.max(blurRegion.left, (int) Math.floor(midX - blurRadius * 0.75f));
+        final int blurAreaEndX =
+                Math.min(blurRegion.right - 1, (int) Math.ceil(midX + blurRadius * 0.75f));
 
-                if (previousColor.blue() <= currentColor.blue()) {
-                    fail("assertBlur failed for blue for pixel (x, y) = ("
-                            + x + ", " + y + ");"
-                            + " previousColor blue: " + previousColor.blue()
-                            + ", currentColor blue: " + currentColor.blue());
-                }
-                if (previousColor.red() >= currentColor.red()) {
-                    fail("assertBlur failed for red for pixel (x, y) = ("
-                           + x + ", " + y + ");"
-                           + " previousColor red: " + previousColor.red()
-                           + ", currentColor red: " + currentColor.red());
+        // Check only a limited number of samples per row, instead of every pixel, in order to
+        // tolerate approximations other than a full numerically-stable Gaussian kernel.
+        final int samples = 6;
+
+        for (int y = blurRegion.top; y < blurRegion.bottom; y++) {
+            Color previousColor = null;
+            int previousX = -1;
+            for (int i = 0; i <= samples; i++) {
+                final int x = blurAreaStartX + (i * (blurAreaEndX - blurAreaStartX)) / samples;
+                final Color currentColor = screenshot.getColor(x, y);
+
+                if (previousColor != null
+                        && !(previousColor.blue() > currentColor.blue()
+                                && previousColor.red() < currentColor.red())) {
+                    fail(String.format(
+                            "Expected a gradient between pixels (%d, %d) and (%d, %d): %s -> %s"
+                                    + " should have LESS blue and MORE red",
+                            previousX, y, x, y, previousColor, currentColor));
                 }
                 previousColor = currentColor;
+                previousX = x;
             }
         }
 
@@ -672,13 +677,13 @@ public class BlurTests extends WindowManagerTestBase {
             final int unaffectedBluePixel = screenshot.getPixel(unaffectedBluePixelX, y);
             if (unaffectedBluePixel != Color.BLUE) {
                 ColorUtils.verifyColor(
-                        "failed for pixel (x, y) = (" + unaffectedBluePixelX + ", " + y + ")",
+                        "Expected BLUE for pixel (x, y) = (" + unaffectedBluePixelX + ", " + y + ")",
                         Color.BLUE, unaffectedBluePixel, 1);
             }
             final int unaffectedRedPixel = screenshot.getPixel(unaffectedRedPixelX, y);
             if (unaffectedRedPixel != Color.RED) {
                 ColorUtils.verifyColor(
-                        "failed for pixel (x, y) = (" + unaffectedRedPixelX + ", " + y + ")",
+                        "Expected RED for pixel (x, y) = (" + unaffectedRedPixelX + ", " + y + ")",
                         Color.RED, unaffectedRedPixel, 1);
             }
         }
@@ -699,7 +704,7 @@ public class BlurTests extends WindowManagerTestBase {
                 bounds.left, bounds.top, bounds.width(), bounds.height());
 
         // We should be making an assertion on a reasonable minimum number of pixels. Count how
-        // many pixels were actually checked so that we can fail
+        // many pixels were actually checked so that we can fail if we didn't check enough.
         int checkedPixels = 0;
 
         int i = 0;

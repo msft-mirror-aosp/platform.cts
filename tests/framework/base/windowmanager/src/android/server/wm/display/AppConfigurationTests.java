@@ -483,6 +483,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     @Test
     public void testRotatedInfoWithFixedRotationTransform() {
         assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
+        disableIgnoreOrientationRequest();
 
         // Start a portrait activity first to ensure that the orientation will change.
         launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);

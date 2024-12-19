@@ -228,12 +228,13 @@ public class WifiP2pConfigTest extends AndroidTestCase {
         WifiP2pPairingBootstrappingConfig pairingBootstrappingConfig =
                 new WifiP2pPairingBootstrappingConfig(WifiP2pPairingBootstrappingConfig
                         .PAIRING_BOOTSTRAPPING_METHOD_OUT_OF_BAND, "1234");
-        WifiP2pConfig config = new WifiP2pConfig.Builder()
-                .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
-                .setPairingBootstrappingConfig(pairingBootstrappingConfig)
-                .setGroupOperatingFrequency(2437)
-                .setAuthorizeConnectionFromPeerEnabled(true)
-                .build();
+        WifiP2pConfig config =
+                new WifiP2pConfig.Builder()
+                        .setDeviceAddress(MacAddress.fromString(TEST_DEVICE_ADDRESS))
+                        .setPairingBootstrappingConfig(pairingBootstrappingConfig)
+                        .setGroupOperatingFrequency(2437)
+                        .setAuthorizeConnectionFromPeerEnabled(true)
+                        .build();
         WifiP2pPairingBootstrappingConfig expectedPairingBootstrappingConfig =
                 config.getPairingBootstrappingConfig();
         assertNotNull(expectedPairingBootstrappingConfig);

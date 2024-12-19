@@ -50,7 +50,18 @@ java_library {
     ],
     static_libs: [
         "android.os.flags-aconfig-java",
+        "cts_backported_fixes_bitset",
     ],
+    sdk_version: "test_current",
+}
+
+// TODO b/382721475 - use androidx libarary when available.
+java_library {
+    name: "cts_backported_fixes_bitset",
+    srcs: [
+        "src/com/android/cts/backportedfixes/bitset/*.kt",
+    ],
+    host_supported: true,
     sdk_version: "test_current",
 }
 
@@ -96,4 +107,21 @@ gensrcs {
     srcs: [
         "approved/*.txtpb",
     ],
+}
+
+java_test_host {
+    name: "cts_backported_fixes_bitset_tests",
+    srcs: [
+        "tests/com/android/cts/backportedfixes/bitset/*.java",
+        "tests/com/android/cts/backportedfixes/bitset/*.kt",
+    ],
+    static_libs: [
+        "cts_backported_fixes_bitset",
+        "junit",
+        "truth",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+    test_suites: ["general-tests"],
 }
