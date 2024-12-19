@@ -1133,13 +1133,34 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         mTelephonyManager.iccCloseLogicalChannel(closedCh);
 
         int[] badChannels = {
-            closedCh,  // use after close
-            -2, -1, 50, 100,  // common wrong values
-            127,  // int8_t max
-            128,  // int8_t max + 1,
-            256,  // uint8_t max + 1,
-            32768,  // int16_t max + 1,
-            65536,  // uint16_t max + 1,
+            // use after close
+            closedCh,
+
+            // common wrong values
+            -2,
+            -1,
+            50,
+            100,
+
+            // int8_t max and max + 1
+            127,
+            128,
+
+            // uint8_t max - 1 to + 2,
+            254,
+            255,
+            256,
+            257,
+
+            // int16_t max and max + 1,
+            32767,
+            32768,
+
+            // uint16_t max + 1,
+            65536,
+
+            // int32_t max
+            2147483647,
         };
 
         for (int channel : badChannels) {
