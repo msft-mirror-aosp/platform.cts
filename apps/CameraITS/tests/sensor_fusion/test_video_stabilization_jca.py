@@ -67,6 +67,7 @@ def _collect_data(cam, dut, lens_facing, log_path,
       log_path,
       facing=lens_facing,
       aspect_ratio=aspect_ratio,
+      stabilization_mode=_VIDEO_STABILIZATION_MODE,
   )
   # Start camera movement.
   movement = threading.Thread(
