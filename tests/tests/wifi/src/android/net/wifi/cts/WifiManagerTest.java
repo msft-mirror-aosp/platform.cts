@@ -2175,9 +2175,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         }
     }
 
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
-    @Test
-    public void testStartLocalOnlyHotspotWithSupportedBand() throws Exception {
+    private void testStartLocalOnlyHotspotWithSupportedBand(boolean testSystemApi)
+            throws Exception {
         // check that softap mode is supported by the device
         if (!sWifiManager.isPortableHotspotSupported()) {
             return;
@@ -2228,7 +2227,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                     }
                 }
                 customConfigBuilder.setBand(testBand);
-                sWifiManager.startLocalOnlyHotspot(customConfigBuilder.build(), executor, callback);
+                if (testSystemApi) {
+                    sWifiManager.startLocalOnlyHotspot(
+                            customConfigBuilder.build(), executor, callback);
+                } else {
+                    uiAutomation.dropShellPermissionIdentity();
+                    sWifiManager.startLocalOnlyHotspotWithConfiguration(
+                            customConfigBuilder.build(), executor, callback);
+                    uiAutomation.adoptShellPermissionIdentity();
+                }
                 // now wait for callback
                 Thread.sleep(DURATION_SOFTAP_START_MS);
 
@@ -2256,6 +2263,20 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             sWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
             uiAutomation.dropShellPermissionIdentity();
         }
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
+    public void testStartLocalOnlyHotspotWithSupportedBand() throws Exception {
+        testStartLocalOnlyHotspotWithSupportedBand(true /* testSystemApi */);
+    }
+
+    /** Tests {@link WifiManager#startLocalOnlyHotspotWithConfiguration()}. */
+    @RequiresFlagsEnabled(Flags.FLAG_PUBLIC_BANDS_FOR_LOHS)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @Test
+    public void testStartLocalOnlyHotspotWithConfiguration() throws Exception {
+        testStartLocalOnlyHotspotWithSupportedBand(false /* testSystemApi */);
     }
 
     @Test
@@ -2635,9 +2656,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 .collect(Collectors.toList());
 
         if (uniquePackageNames.size() > 2) {
-            fail("The NETWORK_CARRIER_PROVISIONING permission must not be held by more than two "
-                    + "applications, but is held by " + uniquePackageNames.size() + " applications: "
-                    + String.join(", ", uniquePackageNames));
+            fail(
+                    "The NETWORK_CARRIER_PROVISIONING permission must not be held by more than two "
+                            + "applications, but is held by "
+                            + uniquePackageNames.size()
+                            + " applications: "
+                            + String.join(", ", uniquePackageNames));
         }
     }
 
