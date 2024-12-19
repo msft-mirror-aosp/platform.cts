@@ -28,6 +28,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.hardware.Camera.Size;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.cts.helpers.CameraUtils;
 import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
@@ -42,13 +47,20 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
+import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.IntStream;
 
 @FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
@@ -105,6 +117,17 @@ public class CamcorderProfileTest {
         LAST_TIMELAPSE_QUALITY + 1, // Unknown timelapse profile quality
         LAST_HIGH_SPEED_QUALITY + 1 // Unknown high speed timelapse profile quality
     };
+    private static final Map<Integer, Long> PROFILE_MAP = new HashMap<>();
+    static {
+        PROFILE_MAP.put(EncoderProfiles.VideoProfile.HDR_HLG,
+                DynamicRangeProfiles.HLG10);
+        PROFILE_MAP.put(EncoderProfiles.VideoProfile.HDR_HDR10,
+                DynamicRangeProfiles.HDR10);
+        PROFILE_MAP.put(EncoderProfiles.VideoProfile.HDR_HDR10PLUS,
+                DynamicRangeProfiles.HDR10_PLUS);
+        PROFILE_MAP.put(EncoderProfiles.VideoProfile.HDR_DOLBY_VISION,
+                DynamicRangeProfiles.DOLBY_VISION_10B_HDR_REF);
+    }
 
     // Uses get without id if cameraId == -1 and get with id otherwise.
     private CamcorderProfile getWithOptionalId(int quality, int cameraId) {
@@ -680,6 +703,74 @@ public class CamcorderProfileTest {
                 hasSupportedProfiles);
     }
 
+    public static boolean isHDRCaptureSupported(int id, Context context, long profile) {
+        CameraManager cm = context.getSystemService(CameraManager.class);
+        try {
+            CameraCharacteristics ch = cm.getCameraCharacteristics(String.valueOf(id));
+            int[] caps = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            if (IntStream.of(caps).anyMatch(x -> x
+                    == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                Set<Long> profiles =
+                        ch.get(CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES)
+                                .getSupportedProfiles();
+                if (profiles.contains(profile)) return true;
+            }
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "encountered " + e.getMessage()
+                    + " marking hdr capture to be available to catch your attention");
+            return false;
+        }
+        return false;
+    }
+
+    @CddTest (requirements = {"5.12/C-6-1", "5.12/C-6-3"})
+    @Test
+    public void testHlgHDRsupport() {
+        int nCamera = Camera.getNumberOfCameras();
+        Context context = InstrumentationRegistry.getContext();
+        assertNotNull("did not find context", context);
+        boolean[] hasHDRProfile = new boolean[EncoderProfiles.VideoProfile.HDR_DOLBY_VISION + 1];
+        for (int cameraId = 0; cameraId < nCamera; cameraId++) {
+            Arrays.fill(hasHDRProfile, false);
+            boolean hasHLG = false;
+            boolean hasHDR = false;
+            for (Integer quality : ALL_SUPPORTED_QUALITIES) {
+                if (!CamcorderProfile.hasProfile(cameraId, quality)) {
+                    continue;
+                }
+                CamcorderProfile profile = getWithOptionalId(quality, cameraId);
+                if (profile == null) {
+                    continue;
+                }
+                EncoderProfiles allProfiles =
+                        CamcorderProfile.getAll(String.valueOf(cameraId), quality);
+                for (EncoderProfiles.VideoProfile videoProfile : allProfiles.getVideoProfiles()) {
+                    if (videoProfile.getHdrFormat() != EncoderProfiles.VideoProfile.HDR_NONE) {
+                        hasHDR = true;
+                        hasHDRProfile[videoProfile.getHdrFormat()] = true;
+                        if (videoProfile.getHdrFormat() == EncoderProfiles.VideoProfile.HDR_HLG) {
+                            hasHLG = true;
+                        }
+                    }
+                }
+                for (int hdrProfile = 0; hdrProfile < hasHDRProfile.length; hdrProfile++) {
+                    if (hasHDRProfile[hdrProfile]) {
+                        assertTrue(String.format(Locale.getDefault(),
+                                "camera %d advertises encoding profile with hdr format %d without"
+                                        + " support for capture",
+                                cameraId, hdrProfile), isHDRCaptureSupported(cameraId, context,
+                                PROFILE_MAP.get(hdrProfile)));
+                    }
+                }
+                if (hasHDR) {
+                    assertTrue("MUST support (at the minimum) HLG capture", hasHLG);
+                    break;
+                }
+            }
+        }
+    }
+
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testHevcHlgEncoderSupport() {
         checkAllHdrProfile(
@@ -688,6 +779,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.HEVCProfileMain10));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testHevcHdr10EncoderSupport() {
         checkAllHdrProfile(
@@ -696,6 +788,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.HEVCProfileMain10HDR10));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testHevcHdr10PlusEncoderSupport() {
         checkAllHdrProfile(
@@ -704,6 +797,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.HEVCProfileMain10HDR10Plus));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testVp9HlgEncoderSupport() {
         checkAllHdrProfile(
@@ -712,6 +806,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.VP9Profile2, CodecProfileLevel.VP9Profile3));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testVp9Hdr10EncoderSupport() {
         checkAllHdrProfile(
@@ -720,6 +815,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.VP9Profile2HDR, CodecProfileLevel.VP9Profile3HDR));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testVp9Hdr10PlusEncoderSupport() {
         checkAllHdrProfile(
@@ -729,6 +825,7 @@ public class CamcorderProfileTest {
                         CodecProfileLevel.VP9Profile3HDR10Plus));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testAv1HlgEncoderSupport() {
         checkAllHdrProfile(
@@ -737,6 +834,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.AV1ProfileMain10));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testAv1Hdr10EncoderSupport() {
         checkAllHdrProfile(
@@ -745,6 +843,7 @@ public class CamcorderProfileTest {
                 List.of(CodecProfileLevel.AV1ProfileMain10HDR10));
     }
 
+    @CddTest (requirements = {"5.12/C-6-2"})
     @Test
     public void testAv1Hdr10PlusEncoderSupport() {
         checkAllHdrProfile(
