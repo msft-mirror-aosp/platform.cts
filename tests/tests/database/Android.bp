@@ -73,4 +73,5 @@ android_ravenwood_test {
         "src/android/database/cts/ObservableTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }
