@@ -29,6 +29,8 @@ import android.location.provider.IGnssAssistanceCallback;
 import android.location.provider.IGnssAssistanceProvider;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
@@ -49,6 +51,9 @@ import org.mockito.junit.MockitoRule;
 public class GnssAssistanceProviderBaseTest {
 
     private static final String TAG = "GnssAssistanceProviderBaseTest";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule public final MockitoRule mocks = MockitoJUnit.rule();
 
