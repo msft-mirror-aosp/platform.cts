@@ -21,6 +21,8 @@ import android.media.MediaDataSource;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -38,6 +40,16 @@ public class TestMediaDataSource extends MediaDataSource {
     private Integer mReturnFromReadAt;
     private Long mReturnFromGetSize;
     private boolean mIsClosed;
+
+    public static TestMediaDataSource fromString(String inpPath, boolean failSize, boolean failRead)
+            throws IOException {
+        try (FileInputStream fInp = new FileInputStream(inpPath)) {
+            int size = (int) new File(inpPath).length();
+            byte[] data = new byte[size];
+            fInp.read(data, 0, size);
+            return new TestMediaDataSource(data, failSize, failRead);
+        }
+    }
 
     // Read an asset fd into a new byte array data source. Closes afd.
     public static TestMediaDataSource fromAssetFd(AssetFileDescriptor afd) throws IOException {
@@ -59,6 +71,12 @@ public class TestMediaDataSource extends MediaDataSource {
 
     public TestMediaDataSource(byte[] data) {
         mData = data;
+    }
+
+    public TestMediaDataSource(byte[] data, boolean fatalGetSize, boolean fatalReadAt) {
+        mData = data;
+        mThrowFromGetSize = fatalGetSize;
+        mThrowFromReadAt = fatalReadAt;
     }
 
     @Override

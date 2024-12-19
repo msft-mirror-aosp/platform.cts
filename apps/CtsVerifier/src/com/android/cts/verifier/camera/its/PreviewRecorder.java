@@ -28,6 +28,7 @@ import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -229,6 +230,9 @@ class PreviewRecorder implements AutoCloseable {
                     return;
                 }
                 try {
+                    // Set EGL presentation time to camera timestamp
+                    EGLExt.eglPresentationTimeANDROID(
+                            mEGLDisplay, mEGLRecorderSurface, surfaceTexture.getTimestamp());
                     copyFrameToRecordSurface();
                     // Capture results are not collected for padded green frames
                     if (mIsPaintGreen) {

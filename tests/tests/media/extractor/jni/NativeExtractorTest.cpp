@@ -853,16 +853,16 @@ static jboolean nativeTestDataSource(JNIEnv* env, jobject, jstring jsrcPath, jst
     return static_cast<jboolean>(isPass);
 }
 
-int registerAndroidMediaV2CtsExtractorTestSetDS(JNIEnv* env) {
+int registerAndroidMediaCtsExtractorTestSetDS(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestDataSource", "(Ljava/lang/String;Ljava/lang/String;)Z",
              (void*)nativeTestDataSource},
     };
-    jclass c = env->FindClass("android/mediav2/cts/ExtractorTest$SetDataSourceTest");
+    jclass c = env->FindClass("android/media/extractor/cts/ExtractorTest$SetDataSourceTest");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-int registerAndroidMediaV2CtsExtractorTestFunc(JNIEnv* env) {
+int registerAndroidMediaCtsExtractorTestFunc(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestExtract", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z",
              (void*)nativeTestExtract},
@@ -873,28 +873,28 @@ int registerAndroidMediaV2CtsExtractorTestFunc(JNIEnv* env) {
              (void*)nativeTestSeekToZero},
             {"nativeTestFileFormat", "(Ljava/lang/String;)Z", (void*)nativeTestFileFormat},
     };
-    jclass c = env->FindClass("android/mediav2/cts/ExtractorTest$FunctionalityTest");
+    jclass c = env->FindClass("android/media/extractor/cts/ExtractorTest$FunctionalityTest");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-int registerAndroidMediaV2CtsExtractorTest(JNIEnv* env) {
+int registerAndroidMediaCtsExtractorTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeReadAllData",
              "(Ljava/lang/String;Ljava/lang/String;I[Ljava/lang/String;[Ljava/lang/String;Z)J",
              (void*)nativeReadAllData},
     };
-    jclass c = env->FindClass("android/mediav2/cts/ExtractorTest");
+    jclass c = env->FindClass("android/media/extractor/cts/ExtractorTest");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-extern int registerAndroidMediaV2CtsExtractorUnitTestApi(JNIEnv* env);
+extern int registerAndroidMediaCtsExtractorUnitTestApi(JNIEnv* env);
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsExtractorTest(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsExtractorTestSetDS(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsExtractorTestFunc(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsExtractorUnitTestApi(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsExtractorTest(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsExtractorTestSetDS(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsExtractorTestFunc(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsExtractorUnitTestApi(env) != JNI_OK) return JNI_ERR;
     return JNI_VERSION_1_6;
 }

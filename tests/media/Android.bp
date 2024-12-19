@@ -39,8 +39,6 @@ java_defaults {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     jni_libs: [
-        "libctsmediav2muxer_jni",
-        "libctsmediav2extractor_jni",
         "libctsmediav2codecdec_jni",
         "libctsmediav2codecdecsurface_jni",
         "libctsmediav2codecenc_jni",

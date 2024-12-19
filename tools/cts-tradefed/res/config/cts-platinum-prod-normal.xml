@@ -2133,6 +2133,8 @@
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ThumbnailUtilsTest#testCreateImageThumbnail_HEICSample[2]"/>
     <!-- CtsMediaMuxerTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MediaMuxerTest#testAVIFOutputInHEIF"/>
+    <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MuxerTest$TestSimpleMux#testSimpleMuxNative[6_aac]"/>
+    <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MuxerUnitTest$TestApi#testIfNonSeekableFdIsRejected"/>
     <!-- CtsMediaPerformanceClassTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaPerformanceClassTestCases android.mediapc.cts.VideoCodecRequirementsTest#testAVIFHwDecoderRequirements"/>
     <!-- CtsMediaPlayerTestCases -->
@@ -2171,8 +2173,6 @@
     <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecInfoTest#testAlignmentSupport[16_video/av01_c2.android.av1.encoder]"/>
     <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecInfoTest#testAlignmentSupport[26_video/x-vnd.on2.vp8_c2.android.vp8.encoder]"/>
     <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecInfoTest#testAlignmentSupport[28_video/x-vnd.on2.vp9_c2.android.vp9.encoder]"/>
-    <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.MuxerTest$TestSimpleMux#testSimpleMuxNative[6_aac]"/>
-    <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.MuxerUnitTest$TestApi#testIfNonSeekableFdIsRejected"/>
     <!-- CtsMemunreachableTestCases -->
     <option name="compatibility:include-filter" value="CtsMemunreachableTestCases android.memunreachable.cts.MemunreachableTests#testDumpsysMeminfoUnreachableDebuggableApp"/>
     <option name="compatibility:include-filter" value="CtsMemunreachableTestCases android.memunreachable.cts.MemunreachableTests#testDumpsysMeminfoUnreachableUndebuggableApp"/>

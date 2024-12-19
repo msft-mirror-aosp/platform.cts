@@ -38,24 +38,10 @@ cc_defaults {
 }
 
 cc_test_library {
-    name: "libctsmediav2muxer_jni",
+    name: "libctsmediav2common",
+    export_include_dirs: ["."],
     defaults: [
         "cts_mediav2_jni_defaults",
-    ],
-    srcs: [
-        "NativeMuxerTest.cpp",
-        "NativeMuxerUnitTest.cpp",
-    ],
-}
-
-cc_test_library {
-    name: "libctsmediav2extractor_jni",
-    defaults: [
-        "cts_mediav2_jni_defaults",
-    ],
-    srcs: [
-        "NativeExtractorTest.cpp",
-        "NativeExtractorUnitTest.cpp",
     ],
 }
 

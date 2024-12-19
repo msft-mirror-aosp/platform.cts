@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
@@ -101,7 +102,7 @@ public class BluetoothLeBroadcastReceiveStateTest {
     @Test
     public void createBroadcastReceiveState() {
         final Long bisSyncState = 1L;
-        final BluetoothLeAudioContentMetadata contentMetadata = null;
+        final BluetoothLeAudioContentMetadata[] contentMetadata = {null};
         BluetoothDevice testDevice =
                 mAdapter.getRemoteLeDevice(TEST_MAC_ADDRESS, TEST_SOURCE_ADDRESS_TYPE);
         BluetoothLeBroadcastReceiveState state =
@@ -116,7 +117,7 @@ public class BluetoothLeBroadcastReceiveStateTest {
                         null /* badCode */,
                         TEST_NUM_SUBGROUPS,
                         List.of(bisSyncState),
-                        List.of(contentMetadata));
+                        Arrays.asList(contentMetadata));
         assertThat(state.getSourceId()).isEqualTo(TEST_SOURCE_ID);
         assertThat(state.getSourceAddressType()).isEqualTo(TEST_SOURCE_ADDRESS_TYPE);
         assertThat(state.getSourceDevice()).isEqualTo(testDevice);

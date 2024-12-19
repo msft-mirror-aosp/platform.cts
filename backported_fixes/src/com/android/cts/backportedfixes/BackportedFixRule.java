@@ -17,6 +17,9 @@ package com.android.cts.backportedfixes;
 
 import android.os.Build;
 
+import com.android.cts.backportedfixes.resolver.Status;
+import com.android.cts.backportedfixes.resolver.StatusResolver;
+
 import org.junit.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -25,14 +28,15 @@ import org.junit.runners.model.Statement;
 /**
  * Validates test annotated with {@link BackportedFixTest}.
  *
- * <p>The test will fail if the {@link BackportedFixTest#id()} is not in the list of approved
+ * <p>The test will fail if the {@link BackportedFixTest#value()} is not in the list of approved
  * backported fixes.
  *
- * <p>Other test failures will be changed to an assumption failures if
- * {@link Build#getBackportedFixStatus(long)} returns false.
+ * <p>Other test failures will be changed to an assumption failures if {@link
+ * Build#getBackportedFixStatus(long)} returns false.
  */
 public class BackportedFixRule implements TestRule {
     private final ApprovedBackportedFixes mFixes = ApprovedBackportedFixes.getInstance();
+    private final StatusResolver mStatusResolver = StatusResolver.create();
 
     // TODO: make host version of this.
 
@@ -55,15 +59,14 @@ public class BackportedFixRule implements TestRule {
                     statement.evaluate();
                 } catch (AssertionError e) {
 
-
-                    if (Build.getBackportedFixStatus(alias)
-                            == Build.BACKPORTED_FIX_STATUS_FIXED) {
+                    if (mStatusResolver.getBackportedFixStatus(alias) == Status.Fixed) {
                         throw e;
                     }
                     throw new AssumptionViolatedException(
                             ("https://issuetracker.google.com/issues/%d with alias %d is not "
-                                    + "marked fixed on this device.")
-                                    .formatted(issue.value(), alias), e);
+                                            + "marked fixed on this device.")
+                                    .formatted(issue.value(), alias),
+                            e);
                 }
             }
         };

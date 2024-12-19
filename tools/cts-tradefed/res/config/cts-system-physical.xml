@@ -1009,6 +1009,17 @@
   <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNullPermissionRequest"/>
   <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PhotoPickerPermissionTest#testNonImplicitAutomaticallyShowsPickerWhenUserFixed"/>
   <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest22#testNoRuntimePrompt"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TrustAgentInfoTest#setTrustAgentConfiguration_trustAgentIsDisabled_isSet[IncludeRunOnSystemDeviceOwnerUser]"/>
+  <option name="compatibility:include-filter" value="CtsDexMetadataHostTestCases com.android.cts.dexmetadata.InstallDexMetadataHostTest#testInstallDmForSplitOnlyInstall"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testPrecisePermissionIsGranted"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BinderIntegrationTest#testOnFrozenStateChangedUsingExecutor"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BinderIntegrationTest#testOnFrozenStateChangedCalled"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.BinderIntegrationTest#testOnFrozenStateChangedNotCalledAfterCallbackRemoved"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.storage.cts.StorageManagerTest#testStorageRemainingLifetime"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_getPowerSaveMode"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_setDynamicPowerSavings"/>
+  <option name="compatibility:include-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_batteryDischargePrediction"/>
+  <option name="compatibility:include-filter" value="CtsUtilTestCases android.util.cts.ArrayMapTest#testDuplicateKeys"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />

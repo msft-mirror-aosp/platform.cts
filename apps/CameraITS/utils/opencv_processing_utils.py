@@ -1008,7 +1008,8 @@ def version_agnostic_detect_markers(image):
 
 def find_aruco_markers(
     input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT,
-    force_greyscale=False):
+    force_greyscale=False,
+    save_images=True):
   """Detects ArUco markers in the input_img.
 
   Finds ArUco markers in the input_img and draws the contours
@@ -1021,17 +1022,20 @@ def find_aruco_markers(
     aruco_marker_count: optional int for minimum markers to expect.
     force_greyscale: optional bool to force greyscale detection, even if enough
       markers are detected.
+    save_images: optional bool to save images with test artifacts.
   Returns:
     corners: list of detected corners
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
   corners, ids, rejected_params = version_agnostic_detect_markers(input_img)
+  normalized_input_img = input_img / CH_FULL_SCALE
   # Early return if sufficient markers found and greyscale detection not needed
   if ids is not None and len(ids) >= aruco_marker_count and not force_greyscale:
     logging.debug('All ArUco markers detected.')
     cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
-    image_processing_utils.write_image(input_img / 255, output_img_path)
+    if save_images:
+      image_processing_utils.write_image(normalized_input_img, output_img_path)
     return corners, ids, rejected_params
   # Try with high-contrast greyscale if needed
   logging.debug('Trying ArUco marker detection with greyscale image.')
@@ -1041,14 +1045,16 @@ def find_aruco_markers(
     logging.debug('All ArUco markers detected with greyscale image.')
   # Handle case where no markers are found
   if ids is None:
-    image_processing_utils.write_image(input_img/255, output_img_path)
+    if save_images:
+      image_processing_utils.write_image(normalized_input_img, output_img_path)
     raise AssertionError('ArUco markers not detected.')
   # Log and save results
   logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
   cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
-  image_processing_utils.write_image(bw_img / 255, output_img_path)
+  if save_images:
+    image_processing_utils.write_image(bw_img / CH_FULL_SCALE, output_img_path)
   return corners, ids, rejected_params
 
 
@@ -1335,3 +1341,45 @@ def convert_image_to_high_contrast_black_white(
   high_contrast_img = numpy.expand_dims(
       (CH_FULL_SCALE - high_contrast_img), axis=2)
   return high_contrast_img
+
+
+def extract_main_patch(corners, ids, img_rgb, img_path, suffix):
+  """Extracts the main rectangle patch from the captured frame.
+
+  Find aruco markers in the captured image and detects if the
+  expected number of aruco markers have been found or not.
+  It then, extracts the main rectangle patch and saves it
+  without the aruco markers in it.
+
+  Args:
+    corners: list of detected corners.
+    ids: list of int ids for each ArUco markers in the input_img.
+    img_rgb: An openCV image in RGB order.
+    img_path: Path to save the image.
+    suffix: str; suffix used to save the image.
+  Returns:
+    rectangle_patch: numpy float image array of the rectangle patch.
+  """
+  rectangle_patch = get_patch_from_aruco_markers(
+      img_rgb, corners, ids)
+  patch_path = img_path.with_name(
+      f'{img_path.stem}_{suffix}_patch{img_path.suffix}')
+  image_processing_utils.write_image(rectangle_patch/CH_FULL_SCALE, patch_path)
+  return rectangle_patch
+
+
+def extract_y(img_uint8, file_name):
+  """Converts an RGB uint8 image to YUV and returns Y.
+
+  The Y img is saved with file_name in the test dir.
+
+  Args:
+    img_uint8: openCV image in RGB order.
+    file_name: file name along with the path to save the image.
+  Returns:
+    OpenCV image converted to Y.
+  """
+  y_uint8 = convert_to_y(img_uint8, 'RGB')
+  y_uint8 = numpy.expand_dims(y_uint8, axis=2)  # add plane to save image
+  image_processing_utils.write_image(y_uint8/CH_FULL_SCALE, file_name)
+  return y_uint8

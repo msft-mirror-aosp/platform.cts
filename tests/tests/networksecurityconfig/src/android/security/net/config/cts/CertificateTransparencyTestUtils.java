@@ -15,6 +15,8 @@
  */
 package android.security.net.config.cts;
 
+import android.os.ConfigUpdate;
+
 import com.android.compatibility.common.util.ShellUtils;
 
 import java.io.IOException;
@@ -38,10 +40,6 @@ final class CertificateTransparencyTestUtils {
     private static final String CT_ROOT_DIRECTORY_PATH =
             CT_PARENT_DIRECTORY_PATH + CT_DIRECTORY_NAME;
 
-    // Path copied from com.android.server.net.ct.CertificateTransparencyJob
-    // Note: we do this to avoid a dependency on the module under test.
-    private static final String CT_JOB_INTENT_ACTION = "com.android.server.net.ct.action.JOB_START";
-
     /**
      * Returns whether the CT root directory is empty or not. For simplicity, we do not check
      * whether the correct log list file version is present.
@@ -63,7 +61,7 @@ final class CertificateTransparencyTestUtils {
     }
 
     static void downloadLogList() {
-        ShellUtils.runShellCommand("am broadcast -a " + CT_JOB_INTENT_ACTION);
+        ShellUtils.runShellCommand("am broadcast -a " + ConfigUpdate.ACTION_UPDATE_CT_LOGS);
     }
 
     static void deleteLogList() {

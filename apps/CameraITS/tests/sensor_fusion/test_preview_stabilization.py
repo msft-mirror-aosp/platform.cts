@@ -32,6 +32,7 @@ _TEST_REQUIRED_MPC_FRONT = 34
 _TEST_REQUIRED_MPC_REAR = 33
 _ZOOM_RATIO_UW = 0.9
 _ZOOM_RATIO_W = 1.0
+_ZOOM_RATIO_W_ALT = 1.1  # Alternate zoom ratio for Android 16 and above
 
 
 def _get_preview_sizes(cam, camera_id):
@@ -92,6 +93,11 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
           first_api_level >= its_session_utils.ANDROID13_API_LEVEL,
           'First API level should be {} or higher. Found {}.'.format(
               its_session_utils.ANDROID13_API_LEVEL, first_api_level))
+      testing_stabilization_mode = [True]
+      test_zoom_ratios = [_ZOOM_RATIO_W]
+      if first_api_level >= its_session_utils.ANDROID16_API_LEVEL:
+        testing_stabilization_mode.append(False)
+        test_zoom_ratios = [_ZOOM_RATIO_W_ALT]
 
       supported_stabilization_modes = props[
           'android.control.availableVideoStabilizationModes'
@@ -130,7 +136,6 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
       # If device doesn't support UW, only test W
       # If device's UW's zoom ratio is bigger than 0.9x, use that value
-      test_zoom_ratios = [_ZOOM_RATIO_W]
       if (zoom_range[0] < _ZOOM_RATIO_W and
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
         test_zoom_ratios.append(max(_ZOOM_RATIO_UW, zoom_range[0]))
@@ -147,28 +152,32 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
       # Preview recording with camera movement
       stabilization_result = {}
-      for preview_size in preview_sizes_to_test:
-        for zoom_ratio in test_zoom_ratios:
-          recording_obj = preview_processing_utils.collect_data(
-              cam, self.tablet_device, preview_size,
-              stabilize=True, rot_rig=rot_rig, zoom_ratio=zoom_ratio)
+      for stabilization_mode in testing_stabilization_mode:
+        logging.debug('Stabilization mode: %s', stabilization_mode)
+        for preview_size in preview_sizes_to_test:
+          for zoom_ratio in test_zoom_ratios:
+            recording_obj = preview_processing_utils.collect_data(
+                cam, self.tablet_device, preview_size,
+                stabilize=stabilization_mode, rot_rig=rot_rig,
+                zoom_ratio=zoom_ratio
+            )
 
-          # Get gyro events
-          logging.debug('Reading out inertial sensor events')
-          gyro_events = cam.get_sensor_events()['gyro']
-          logging.debug('Number of gyro samples %d', len(gyro_events))
+            # Get gyro events
+            logging.debug('Reading out inertial sensor events')
+            gyro_events = cam.get_sensor_events()['gyro']
+            logging.debug('Number of gyro samples %d', len(gyro_events))
 
-          # Grab the video from the save location on DUT
-          self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
+            # Grab the video from the save location on DUT
+            self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
 
-          # Verify stabilization was applied to preview stream
-          stabilization_result[preview_size] = (
-              executor.submit(
-                  preview_processing_utils.verify_preview_stabilization,
-                  recording_obj, gyro_events, _NAME, log_path, facing,
-                  zoom_ratio
-              )
-          )
+            # Verify stabilization was applied to preview stream
+            stabilization_result[preview_size] = (
+                executor.submit(
+                    preview_processing_utils.verify_preview_stabilization,
+                    recording_obj, gyro_events, _NAME, log_path, facing,
+                    zoom_ratio, stabilization_mode
+                )
+            )
 
       # Assert PASS/FAIL criteria
       test_failures = []

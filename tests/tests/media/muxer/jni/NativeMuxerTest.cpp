@@ -1342,7 +1342,7 @@ static jboolean nativeTestIgnoreLastGOPAppend(JNIEnv* env, jobject, jint joutFor
     return static_cast<jboolean>(isPass);
 }
 
-int registerAndroidMediaV2CtsMuxerTestApi(JNIEnv* env) {
+int registerAndroidMediaCtsMuxerTestApi(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSetOrientationHint", "(ILjava/lang/String;Ljava/lang/String;)Z",
              (void*)nativeTestSetOrientationHint},
@@ -1353,40 +1353,40 @@ int registerAndroidMediaV2CtsMuxerTestApi(JNIEnv* env) {
             {"nativeTestGetTrackFormat", "(Ljava/lang/String;Ljava/lang/String;I)Z",
              (void*)nativeTestGetTrackFormat},
     };
-    jclass c = env->FindClass("android/mediav2/cts/MuxerTest$TestApi");
+    jclass c = env->FindClass("android/media/muxer/cts/MuxerTest$TestApi");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-int registerAndroidMediaV2CtsMuxerTestMultiTrack(JNIEnv* env) {
+int registerAndroidMediaCtsMuxerTestMultiTrack(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestMultiTrack",
              "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z",
              (void*)nativeTestMultiTrack},
     };
-    jclass c = env->FindClass("android/mediav2/cts/MuxerTest$TestMultiTrack");
+    jclass c = env->FindClass("android/media/muxer/cts/MuxerTest$TestMultiTrack");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-int registerAndroidMediaV2CtsMuxerTestOffsetPts(JNIEnv* env) {
+int registerAndroidMediaCtsMuxerTestOffsetPts(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestOffsetPts", "(ILjava/lang/String;Ljava/lang/String;[I)Z",
              (void*)nativeTestOffsetPts},
     };
-    jclass c = env->FindClass("android/mediav2/cts/MuxerTest$TestOffsetPts");
+    jclass c = env->FindClass("android/media/muxer/cts/MuxerTest$TestOffsetPts");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-int registerAndroidMediaV2CtsMuxerTestSimpleMux(JNIEnv* env) {
+int registerAndroidMediaCtsMuxerTestSimpleMux(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSimpleMux",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z",
              (void*)nativeTestSimpleMux},
     };
-    jclass c = env->FindClass("android/mediav2/cts/MuxerTest$TestSimpleMux");
+    jclass c = env->FindClass("android/media/muxer/cts/MuxerTest$TestSimpleMux");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-int registerAndroidMediaV2CtsMuxerTestSimpleAppend(JNIEnv* env) {
+int registerAndroidMediaCtsMuxerTestSimpleAppend(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSimpleAppend",
              "(ILjava/lang/String;Ljava/lang/String;)Z",
@@ -1403,20 +1403,20 @@ int registerAndroidMediaV2CtsMuxerTestSimpleAppend(JNIEnv* env) {
              "(ILjava/lang/String;Ljava/lang/String;)Z",
              (void*)nativeTestIgnoreLastGOPAppend},
     };
-    jclass c = env->FindClass("android/mediav2/cts/MuxerTest$TestSimpleAppend");
+    jclass c = env->FindClass("android/media/muxer/cts/MuxerTest$TestSimpleAppend");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
-extern int registerAndroidMediaV2CtsMuxerUnitTestApi(JNIEnv* env);
+extern int registerAndroidMediaCtsMuxerUnitTestApi(JNIEnv* env);
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsMuxerTestApi(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsMuxerTestMultiTrack(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsMuxerTestOffsetPts(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsMuxerTestSimpleMux(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsMuxerTestSimpleAppend(env) != JNI_OK) return JNI_ERR;
-    if (registerAndroidMediaV2CtsMuxerUnitTestApi(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsMuxerTestApi(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsMuxerTestMultiTrack(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsMuxerTestOffsetPts(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsMuxerTestSimpleMux(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsMuxerTestSimpleAppend(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaCtsMuxerUnitTestApi(env) != JNI_OK) return JNI_ERR;
     return JNI_VERSION_1_6;
 }

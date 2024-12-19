@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.media.extractor.cts;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaDataSource;
 import android.media.MediaExtractor;
+import android.media.cts.TestMediaDataSource;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
@@ -41,6 +42,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileDescriptor;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -862,7 +864,7 @@ public class ExtractorUnitTest {
         public TestName testName = new TestName();
 
         static {
-            System.loadLibrary("ctsmediav2extractor_jni");
+            System.loadLibrary("ctsmediaextractor_jni");
         }
 
         @ApiTest(apis = "AMediaExtractor_getTrackCount")

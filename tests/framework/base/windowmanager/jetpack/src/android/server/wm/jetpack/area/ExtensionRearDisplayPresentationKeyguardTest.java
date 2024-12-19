@@ -28,11 +28,11 @@ import static com.android.compatibility.common.util.PollingCheck.waitFor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.content.res.Resources;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.platform.test.annotations.Presubmit;
@@ -46,7 +46,6 @@ import android.view.Display;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.window.extensions.area.ExtensionWindowAreaPresentation;
 import androidx.window.extensions.area.ExtensionWindowAreaStatus;
@@ -83,7 +82,6 @@ public class ExtensionRearDisplayPresentationKeyguardTest
     private WindowAreaComponent mWindowAreaComponent;
     private ExtensionWindowAreaStatus mWindowAreaPresentationStatus;
     private DeviceState mCurrentDeviceState;
-    private int mRearDisplayPresentationState;
 
     private final Consumer<ExtensionWindowAreaStatus> mStatusListener =
             (status) -> mWindowAreaPresentationStatus = status;
@@ -103,11 +101,15 @@ public class ExtensionRearDisplayPresentationKeyguardTest
 
     @Before
     public void setUp() {
-        // TODO(b/236022708) Move rear display presentation state to device state config file
-        mRearDisplayPresentationState = getInstrumentation().getTargetContext().getResources()
-                .getInteger(Resources.getSystem().getIdentifier(
-                        "config_deviceStateConcurrentRearDisplay", "integer", "android"));
-        assumeTrue(mRearDisplayPresentationState != -1);
+        final List<DeviceState> supportedStates = mDeviceStateManager.getSupportedDeviceStates();
+        boolean supportsConcurrentDisplay = false;
+        for (DeviceState state : supportedStates) {
+            if (state.hasProperty(DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT)) {
+                supportsConcurrentDisplay = true;
+                break;
+            }
+        }
+        assumeTrue(supportsConcurrentDisplay);
 
         mWindowAreaComponent =
                 (WindowAreaComponent) mWindowManagerJetpackTestRule.getExtensionComponent();
@@ -139,11 +141,12 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test (expected = SecurityException.class)
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_whenKeyguardLocked() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final TestActivitySession<TestRearDisplayActivity> activitySession =
@@ -170,11 +173,12 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_afterKeyguardLocked() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -191,7 +195,9 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         mWindowAreaComponent.startRearDisplayPresentationSession(activitySession.getActivity(),
                 mSessionStateListener);
         waitAndAssert(() -> SESSION_STATE_ACTIVE == mWindowAreaSessionState);
-        assertEquals(mRearDisplayPresentationState, mCurrentDeviceState.getIdentifier());
+        assertTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
@@ -215,11 +221,12 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_thenKeyguardLocked() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -236,7 +243,9 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         mWindowAreaComponent.startRearDisplayPresentationSession(activitySession.getActivity(),
                 mSessionStateListener);
         waitAndAssert(() -> SESSION_STATE_ACTIVE == mWindowAreaSessionState);
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
@@ -263,11 +272,12 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_thenKeyguardLocked_activityFinishes() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -284,13 +294,15 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         mWindowAreaComponent.startRearDisplayPresentationSession(activitySession.getActivity(),
                 mSessionStateListener);
         waitAndAssert(() -> SESSION_STATE_ACTIVE == mWindowAreaSessionState);
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
-        TestPresentationView presentationView = new TestPresentationView(
-                presentation.getPresentationContext());
+        TestPresentationView presentationView =
+                new TestPresentationView(presentation.getPresentationContext());
         activitySession.getActivity().runOnUiThread(() ->
                 presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
@@ -316,11 +328,12 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_persistsAfterDismissingKeyguard() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -337,13 +350,15 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         mWindowAreaComponent.startRearDisplayPresentationSession(activitySession.getActivity(),
                 mSessionStateListener);
         waitAndAssert(() -> SESSION_STATE_ACTIVE == mWindowAreaSessionState);
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
-        TestPresentationView presentationView = new TestPresentationView(
-                presentation.getPresentationContext());
+        TestPresentationView presentationView =
+                new TestPresentationView(presentation.getPresentationContext());
         activitySession.getActivity().runOnUiThread(() ->
                 presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
@@ -370,11 +385,12 @@ public class ExtensionRearDisplayPresentationKeyguardTest
             "androidx.window.extensions.area."
                     + "WindowAreaComponent#startRearDisplayPresentationSession"})
     @Test
-    @FlakyTest(bugId = 295878833)
     public void testStartRearDisplayPresentation_afterKeyguardLocked_thenScreenOff() {
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
-        assumeTrue(mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -391,15 +407,18 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         mWindowAreaComponent.startRearDisplayPresentationSession(activitySession.getActivity(),
                 mSessionStateListener);
         waitAndAssert(() -> SESSION_STATE_ACTIVE == mWindowAreaSessionState);
-        waitAndAssert(() -> mCurrentDeviceState.getIdentifier() == mRearDisplayPresentationState);
+        assumeTrue(
+                mCurrentDeviceState.hasProperty(
+                        DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         ExtensionWindowAreaPresentation presentation =
                 mWindowAreaComponent.getRearDisplayPresentation();
         assertNotNull(presentation);
-        TestPresentationView presentationView = new TestPresentationView(
-                presentation.getPresentationContext());
-        activitySession.getActivity().runOnUiThread(() ->
-                presentation.setPresentationView(presentationView));
+        TestPresentationView presentationView =
+                new TestPresentationView(presentation.getPresentationContext());
+        activitySession
+                .getActivity()
+                .runOnUiThread(() -> presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         final Display presentationDisplay = presentationView.getDisplay();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplay.getDisplayId());

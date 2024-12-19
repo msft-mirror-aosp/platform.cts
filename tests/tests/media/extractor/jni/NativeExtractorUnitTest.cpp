@@ -499,7 +499,7 @@ static jboolean nativeTestIfNullLocationIsRejectedBySetDataSource(JNIEnv*, jobje
     return static_cast<jboolean>(isPass);
 }
 
-int registerAndroidMediaV2CtsExtractorUnitTestApi(JNIEnv* env) {
+int registerAndroidMediaCtsExtractorUnitTestApi(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestGetTrackCountBeforeSetDataSource", "()Z",
              (void*)nativeTestGetTrackCountBeforeSetDataSource},
@@ -564,6 +564,6 @@ int registerAndroidMediaV2CtsExtractorUnitTestApi(JNIEnv* env) {
             {"nativeTestAudioSampleFileOffsetByGetSampleFormat", "(Ljava/lang/String;)Z",
              (void*)nativeTestAudioSampleFileOffsetByGetSampleFormat},
     };
-    jclass c = env->FindClass("android/mediav2/cts/ExtractorUnitTest$TestApiNative");
+    jclass c = env->FindClass("android/media/extractor/cts/ExtractorUnitTest$TestApiNative");
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }

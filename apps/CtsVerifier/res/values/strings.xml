@@ -2546,7 +2546,10 @@
          \n\u2022 S icon should appear on the right and it is not mirrored.
          \n\u2022 E icon should appear on the left and it is not mirrored.
     </string>
-
+    <string name="progress_style_many_segments_with_same_color" formatted="false">A progress style notification with 75% progress was posted. Expand it (if it’s not already expanded), and verify that:
+         \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.
+         \n\u2022 The progress bar color should be orange.
+    </string>
     <string name="notification_style_test">Notification Styles Test</string>
     <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
     <string name="ns_custom_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, collapse the notification (if it\'s expanded) and verify that:

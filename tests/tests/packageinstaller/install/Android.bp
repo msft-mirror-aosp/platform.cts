@@ -35,6 +35,7 @@ android_test {
         "src/android/packageinstaller/install/cts/PreapprovalInstallTest.kt",
         "src/android/packageinstaller/install/cts/SessionParamsPermissionStateTest.kt",
         "src/android/packageinstaller/install/cts/SessionTest.kt",
+        "src/android/packageinstaller/install/cts/SessionTestWithPia.kt",
         "src/android/packageinstaller/install/cts/SessionTestInstant.kt",
     ],
 

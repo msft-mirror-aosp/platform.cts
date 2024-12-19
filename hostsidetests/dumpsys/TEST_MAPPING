@@ -1,12 +1,7 @@
 {
   "postsubmit": [
     {
-      "name": "CtsDumpsysHostTestCases",
-      "options": [
-        {
-          "include-filter": "android.dumpsys.cts.GfxInfoDumpsysTest#testGfxinfoFramestats"
-        }
-      ]
+      "name": "CtsDumpsysHostTestCases-qualified"
     }
   ]
 }

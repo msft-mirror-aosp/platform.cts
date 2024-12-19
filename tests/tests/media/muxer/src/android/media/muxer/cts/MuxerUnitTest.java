@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.media.muxer.cts;
 
 import static android.system.Os.pipe;
 
@@ -764,7 +764,7 @@ public class MuxerUnitTest {
         public TestName testName = new TestName();
 
         static {
-            System.loadLibrary("ctsmediav2muxer_jni");
+            System.loadLibrary("ctsmediamuxertest_jni");
         }
 
         @Before
