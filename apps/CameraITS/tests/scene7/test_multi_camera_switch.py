@@ -320,10 +320,13 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       # Check the sensor orientation and flip image
       if (props['android.lens.facing'] ==
           camera_properties_utils.LENS_FACING['FRONT']):
-        img_name_stem = os.path.join(self.log_path, 'flipped_preview')
-        uw_img, w_img = image_processing_utils.check_orientation_and_flip(
-            props, uw_img, w_img, img_name_stem, _LENS_SUFFIX_UW,
-            _LENS_SUFFIX_W
+        img_name_stem = os.path.join(self.log_path, 'flipped_preview_uw')
+        uw_img = image_processing_utils.check_orientation_and_flip(
+            props, uw_img, img_name_stem
+        )
+        img_name_stem = os.path.join(self.log_path, 'flipped_preview_w')
+        w_img = image_processing_utils.check_orientation_and_flip(
+            props, w_img, img_name_stem
         )
 
       # Find ArUco markers in the image with UW lens
