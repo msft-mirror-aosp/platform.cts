@@ -898,7 +898,7 @@ public class NfcAdapterTest {
         }
 
         @Override
-        public void onRfFieldActivated(boolean isActivated) {
+        public void onRfFieldDetected(boolean isActive) {
             mTagDetectedCountDownLatch.countDown();
         }
 
