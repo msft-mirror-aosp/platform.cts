@@ -27,6 +27,6 @@ import android.util.Log
  * Activity which fires an intent when moving to top and from top, and registers a
  * receiver to trigger finishing the activity.
  */
-class TrampolineReceiver : android.media.audio.cts.audiorecordpermissiontests.common.TrampolineReceiver() {
+class TrampolineReceiver : android.media.audio.cts.audiopermissiontests.common.TrampolineReceiver() {
     override fun getAppName() : String = "CtsRecordServiceApi34"
 }

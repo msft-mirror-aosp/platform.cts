@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package android.media.audio.cts.audiorecordpermissiontests;
+package android.media.audio.cts.audiopermissiontests;
 
-import static android.media.audio.cts.audiorecordpermissiontests.common.ActionsKt.*;
+import static android.media.audio.cts.audiopermissiontests.common.ActionsKt.*;
 import static android.app.AppOpsManager.OP_RECORD_AUDIO;
 import static android.app.AppOpsManager.OPSTR_RECORD_AUDIO;
 import static android.app.AppOpsManager.MODE_ALLOWED;
@@ -41,7 +41,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
-import android.media.audio.cts.audiorecordpermissiontests.common.IAttrProvider;
+import android.media.audio.cts.audiopermissiontests.common.IAttrProvider;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.AppModeFull;
