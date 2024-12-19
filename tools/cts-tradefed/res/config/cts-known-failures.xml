@@ -467,4 +467,6 @@
     <!-- b/355586980 -->
     <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTest" />
 
+    <!-- b/381409777-->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
 </configuration>
