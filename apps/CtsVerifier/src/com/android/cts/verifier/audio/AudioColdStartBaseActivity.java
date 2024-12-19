@@ -126,6 +126,20 @@ public abstract class AudioColdStartBaseActivity
         }
     }
 
+    protected void showStartupError(String deviceName,
+                                    int buildResult, int openResult, int startResult) {
+        if (buildResult != StreamBase.OK) {
+            mResultsTxt.setText(String.format(getString(R.string.audio_general_build_fail),
+                    deviceName, buildResult));
+        } else if (openResult != StreamBase.OK) {
+            mResultsTxt.setText(String.format(getString(R.string.audio_general_open_fail),
+                    deviceName, openResult));
+        } else if (startResult != StreamBase.OK) {
+            mResultsTxt.setText(String.format(getString(R.string.audio_general_start_fail),
+                    deviceName, startResult));
+        }
+    }
+
     protected void clearResults() {
         mAttributesTxt.setText("");
         mOpenTimeTxt.setText("");

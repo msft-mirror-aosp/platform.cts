@@ -326,29 +326,48 @@ public abstract class AudioDataPathsBaseActivity
         // A set of classes to store information specific to the
         // different failure modes
         //
-        abstract  class TestStateData {
+        static class TestStateData {
             final TestModule  mTestModule;
 
-            TestStateData(TestModule testModule) {
+            final boolean mPlayerFailed;
+            final boolean mRecorderFailed;
+
+            TestStateData(TestModule testModule,
+                          boolean playerFailed, boolean recorderFailed) {
                 mTestModule = testModule;
+
+                mPlayerFailed = playerFailed;
+                mRecorderFailed = recorderFailed;
             }
 
-            abstract String buildErrorString(TestModule testModule);
+            // Recorder and/or Player
+            String buildComponentString() {
+                StringBuilder sb = new StringBuilder();
+                if (mPlayerFailed) {
+                    sb.append("Player");
+                    if (mRecorderFailed) {
+                        sb.append("|");
+                    }
+                }
+                if (mRecorderFailed) {
+                    sb.append("Recorder");
+                }
+                return sb.toString();
+            }
+
+            String buildErrorString(TestModule testModule) {
+                return "Error: - " + buildComponentString();
+            }
         }
 
         //
         // Stores information about sharing mode failures
         //
         class BadSharingTestState extends TestStateData {
-            final boolean mPlayerFailed;
-            final boolean mRecorderFailed;
 
             BadSharingTestState(TestModule testModule,
                                 boolean playerFailed, boolean recorderFailed) {
-                super(testModule);
-
-                mPlayerFailed = playerFailed;
-                mRecorderFailed = recorderFailed;
+                super(testModule, playerFailed, recorderFailed);
             }
 
             String buildErrorString(TestModule testModule) {
@@ -362,45 +381,23 @@ public abstract class AudioDataPathsBaseActivity
                     sb.append(" SKIP: can't set MMAP SHARED mode");
                 }
 
-                sb.append(" - ");
-                if (mPlayerFailed) {
-                    sb.append("Player");
-                    if (mRecorderFailed) {
-                        sb.append("|");
-                    }
-                }
-                if (mRecorderFailed) {
-                    sb.append("Recorder");
-                }
+                sb.append(" - " + buildComponentString());
+
                 return sb.toString();
             }
         }
 
         class BadMMAPTestState extends TestStateData {
-            final boolean mPlayerFailed;
-            final boolean mRecorderFailed;
-
             BadMMAPTestState(TestModule testModule,
                                 boolean playerFailed, boolean recorderFailed) {
-                super(testModule);
-
-                mPlayerFailed = playerFailed;
-                mRecorderFailed = recorderFailed;
+                super(testModule, playerFailed, recorderFailed);
             }
 
             String buildErrorString(TestModule testModule) {
                 StringBuilder sb = new StringBuilder();
                 sb.append(" Didn't get MMAP");
-                sb.append(" - ");
-                if (mPlayerFailed) {
-                    sb.append("Player");
-                    if (mRecorderFailed) {
-                        sb.append("|");
-                    }
-                }
-                if (mRecorderFailed) {
-                    sb.append("Recorder");
-                }
+                sb.append(" - " + buildComponentString());
+
                 return sb.toString();
             }
         }
@@ -691,8 +688,13 @@ public abstract class AudioDataPathsBaseActivity
         //
         // Process
         //
-        // TEMP
-        private int startTest(int api) {
+
+        /**
+         * Note: The caller unwinds the DuplexManager if the start fails.
+         * @param api Specifies the API (Java or Native) to use.
+         * @return a TESTSTATUS_ constant indicating the result.
+         */
+        private int startTestModule(int api) {
             logBeginning(api);
             if (mOutDeviceInfo != null && mInDeviceInfo != null) {
                 mAnalyzer.reset();
@@ -738,11 +740,25 @@ public abstract class AudioDataPathsBaseActivity
                 try {
                     // Open the streams.
                     // Note AudioSources and AudioSinks get allocated at this point
-                    int errorCode = mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
-                    if (errorCode != StreamBase.OK) {
-                        Log.e(TAG, "  mDuplexAudioManager.buildStreams() failed error:"
-                                + errorCode);
-                        return setTestState(api, TESTSTATUS_BAD_BUILD, null);
+                    int status = mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+                    if ((status & DuplexAudioManager.DUPLEX_ERROR_CODE)
+                            != DuplexAudioManager.DUPLEX_ERROR_NONE) {
+                        Log.e(TAG, "  mDuplexAudioManager.buildStreams() failed. status:0x"
+                                + Integer.toHexString(status));
+                        int processStep = status & DuplexAudioManager.DUPLEX_ERROR_CODE;
+
+                        boolean recorderFailed =
+                                (status & DuplexAudioManager.DUPLEX_STREAM_ID
+                                        & DuplexAudioManager.DUPLEX_RECORDER) != 0;
+                        boolean playerFailed =
+                                (status & DuplexAudioManager.DUPLEX_STREAM_ID
+                                        & DuplexAudioManager.DUPLEX_PLAYER) != 0;
+
+                        return setTestState(api,
+                                (processStep & DuplexAudioManager.DUPLEX_ERR_BUILD)
+                                        != DuplexAudioManager.DUPLEX_ERROR_NONE
+                                        ? TESTSTATUS_BAD_START : TESTSTATUS_BAD_BUILD,
+                                new TestStateData(this, playerFailed, recorderFailed));
                     }
                 } finally {
                     // handle the failure here...
@@ -779,6 +795,7 @@ public abstract class AudioDataPathsBaseActivity
                 boolean playerIsMMap = false;
                 boolean recorderIsMMap = false;
                 if (mTransferType != TRANSFER_LEGACY) {
+                    Log.w(TAG, "  Invalid Transfer Mode - " + getDescription());
                     // This is (should be) an MMAP stream
                     playerIsMMap = mDuplexAudioManager.isPlayerStreamMMap();
                     recorderIsMMap = mDuplexAudioManager.isRecorderStreamMMap();
@@ -790,15 +807,25 @@ public abstract class AudioDataPathsBaseActivity
                     }
                 }
 
-                if (mDuplexAudioManager.start() != StreamBase.OK) {
+                int status = mDuplexAudioManager.start();
+                boolean recorderFailed =
+                        (status & DuplexAudioManager.DUPLEX_STREAM_ID
+                                & DuplexAudioManager.DUPLEX_RECORDER) != 0;
+                boolean playerFailed =
+                        (status & DuplexAudioManager.DUPLEX_STREAM_ID
+                                & DuplexAudioManager.DUPLEX_PLAYER) != 0;
+                if ((status & DuplexAudioManager.DUPLEX_ERROR_CODE)
+                        !=  DuplexAudioManager.DUPLEX_ERROR_NONE)  {
                     Log.e(TAG, "  Couldn't start duplex streams - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_START, null);
+                    return setTestState(api, TESTSTATUS_BAD_START,
+                            new TestStateData(this, playerFailed, recorderFailed));
                 }
 
                 // Validate routing
                 if (!mDuplexAudioManager.validateRouting()) {
                     Log.w(TAG, "  Invalid Routing - " + getDescription());
-                    return setTestState(api, TESTSTATUS_BAD_ROUTING, null);
+                    return setTestState(api, TESTSTATUS_BAD_ROUTING,
+                            new TestStateData(this, playerFailed, recorderFailed));
                 }
 
                 BadMMAPTestState mmapState = null;
@@ -846,33 +873,37 @@ public abstract class AudioDataPathsBaseActivity
             }
 
             // Report Error
+            String componentString =
+                    stateData != null ?  " - " + stateData.buildComponentString() : "";
+
             if (hasRun(api) && hasError(api)) {
                 textFormatter.appendBreak();
                 switch (mTestStateCode[api]) {
                     case TESTSTATUS_BAD_START:
                         textFormatter.openTextColor("red");
-                        textFormatter.appendText("Error : Couldn't Start Stream");
+                        textFormatter.appendText("Error : Couldn't Start Stream" + componentString);
                         textFormatter.closeTextColor();
                         break;
                     case TESTSTATUS_BAD_BUILD:
                         textFormatter.openTextColor("red");
-                        textFormatter.appendText("Error : Couldn't Open Stream");
+                        textFormatter.appendText("Error : Couldn't Open Stream" + componentString);
                         textFormatter.closeTextColor();
                         break;
                     case TESTSTATUS_BAD_ROUTING:
                         textFormatter.openTextColor("red");
-                        textFormatter.appendText("Error : Invalid Route");
+                        textFormatter.appendText("Error : Invalid Route" + componentString);
                         textFormatter.closeTextColor();
                         break;
                     case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
                         textFormatter.openTextColor("red");
-                        textFormatter.appendText("Error : Invalid Analysis Channel");
+                        textFormatter.appendText("Error : Invalid Analysis Channel"
+                                + componentString);
                         textFormatter.closeTextColor();
                         break;
                     case TESTSTATUS_CANT_SET_MMAP:
                         textFormatter.openTextColor("red");
                         textFormatter.appendText("Error : Did not set MMAP mode - "
-                                + transferTypeToSharingString(mTransferType));
+                                + transferTypeToSharingString(mTransferType) + componentString);
                         textFormatter.closeTextColor();
                         break;
                     case TESTSTATUS_MISMATCH_MMAP: {
@@ -1413,7 +1444,7 @@ public abstract class AudioDataPathsBaseActivity
                 return TestModule.TESTSTATUS_NOT_RUN;
             }
 
-            return testModule.startTest(mApi);
+            return testModule.startTestModule(mApi);
         }
 
         private static final int MS_PER_SEC = 1000;
@@ -1579,7 +1610,7 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         public void advanceTestModule() {
-            Log.i(TAG, "advanceTestModule() user cancel:" + mTestCanceledByUser);
+            Log.d(TAG, "advanceTestModule() user cancel:" + mTestCanceledByUser);
             if (mTestCanceledByUser) {
                 // test shutting down. Bail.
                 return;
@@ -1596,14 +1627,14 @@ public abstract class AudioDataPathsBaseActivity
 
                 // Scan until we find a TestModule that starts playing/recording
                 TestModule testModule = mTestModules.get(mTestStep);
-                Log.i(TAG, " - testModule: " + testModule.getModuleIndex());
+                Log.d(TAG, " - testModule: " + testModule.getModuleIndex());
 
                 // Don't run if it has already been run. This to preserve (possible) error
                 // codes from previous runs
-                Log.i(TAG, " - hasRun:" + testModule.hasRun(mApi));
+                Log.d(TAG, " - hasRun:" + testModule.hasRun(mApi));
                 if (!testModule.hasRun(mApi)) {
                     int status = startTest(testModule);
-                    Log.i(TAG, " - status: " + status);
+                    Log.d(TAG, " - status: " + status);
                     if (status == TestModule.TESTSTATUS_RUN) {
                         // Allow this test to run to completion.
                         Log.d(TAG, "Run Test Module:" + testModule.getDescription());
@@ -1612,7 +1643,7 @@ public abstract class AudioDataPathsBaseActivity
                     Log.d(TAG, "Cancel Test Module:" + testModule.getDescription()
                             + " status:" + testModule.getTestStateString(mApi));
                     // Otherwise, playing/recording failed, look for the next TestModule
-                    mDuplexAudioManager.stop();
+                    mDuplexAudioManager.unwind();
                 }
             }
 
@@ -1856,7 +1887,7 @@ public abstract class AudioDataPathsBaseActivity
     //
     private class AudioDeviceConnectionCallback extends AudioDeviceCallback {
         void stateChangeHandler() {
-            Log.i(TAG, "  stateChangeHandler()");
+            Log.d(TAG, "  stateChangeHandler()");
             mTestManager.validateTestDevices();
             if (!mIsHandheld) {
                 displayNonHandheldMessage();
@@ -1872,13 +1903,13 @@ public abstract class AudioDataPathsBaseActivity
 
         @Override
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
-            Log.i(TAG, "onAudioDevicesAdded()");
+            Log.d(TAG, "onAudioDevicesAdded()");
             stateChangeHandler();
         }
 
         @Override
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
-            Log.i(TAG, "onAudioDevicesRemoved()");
+            Log.d(TAG, "onAudioDevicesRemoved()");
             stateChangeHandler();
         }
     }

@@ -31,6 +31,7 @@ import org.hyphonate.megaaudio.player.sources.SinAudioSourceProvider;
 
 public abstract class USBAudioPeripheralPlayerActivity extends USBAudioPeripheralActivity {
     private static final String TAG = "USBAudioPeripheralPlayerActivity";
+    private static final boolean LOG = true;
 
     // MegaPlayer
     static final int NUM_CHANNELS = 2;
@@ -42,6 +43,8 @@ public abstract class USBAudioPeripheralPlayerActivity extends USBAudioPeriphera
     protected boolean mIsPlaying = false;
 
     protected boolean mOverridePlayFlag = true;
+
+    AudioSourceProvider mSourceProvider = new SinAudioSourceProvider();
 
     public USBAudioPeripheralPlayerActivity(boolean requiresMandatePeripheral) {
         super(requiresMandatePeripheral); // Mandated peripheral is NOT required
@@ -60,50 +63,55 @@ public abstract class USBAudioPeripheralPlayerActivity extends USBAudioPeriphera
         DisplayUtils.setKeepScreenOn(this, true);
     }
 
-    protected void setupPlayer() {
-        //
-        // Allocate the source provider for the sort of signal we want to play
-        //
-        AudioSourceProvider sourceProvider = new SinAudioSourceProvider();
-        try {
-            PlayerBuilder builder = new PlayerBuilder();
-            builder.setPlayerType(PlayerBuilder.TYPE_JAVA)
-                .setSourceProvider(sourceProvider)
-                .setChannelCount(NUM_CHANNELS)
-                .setSampleRate(mSampleRate)
-                .setNumExchangeFrames(mNumExchangeFrames);
-            mAudioPlayer = (JavaPlayer) builder.build();
-        } catch (PlayerBuilder.BadStateException ex) {
-            Log.e(TAG, "Failed MegaPlayer build.");
-        }
-    }
-
-    // Returns whether the stream started correctly.
     protected boolean startPlay() {
         boolean result = false;
+        int buildResult = StreamBase.ERROR_UNKNOWN;
+        int openResult = StreamBase.ERROR_UNKNOWN;
+        int startResult = StreamBase.ERROR_UNKNOWN;
+
+        if (LOG) {
+            Log.d(TAG, "startPlay()");
+        }
         if (mOutputDevInfo != null && !mIsPlaying) {
-            result = (mAudioPlayer.startStream() == StreamBase.OK);
+            try {
+                PlayerBuilder builder = new PlayerBuilder();
+                builder.setPlayerType(PlayerBuilder.TYPE_JAVA)
+                        .setSourceProvider(mSourceProvider)
+                        .setChannelCount(NUM_CHANNELS)
+                        .setSampleRate(mSampleRate)
+                        .setNumExchangeFrames(mNumExchangeFrames);
+                mAudioPlayer = (JavaPlayer) builder.allocStream();
+                if ((buildResult = mAudioPlayer.build(builder)) == StreamBase.OK
+                        && (openResult = mAudioPlayer.open()) == StreamBase.OK
+                        && (startResult = mAudioPlayer.start()) == StreamBase.OK) {
+                    mIsPlaying = true;
+                } else {
+                    if (LOG) {
+                        if (buildResult != StreamBase.OK) {
+                            Log.e(TAG, "  buildResult:" + buildResult);
+                        } else if (openResult != StreamBase.OK) {
+                            Log.e(TAG, "  openResult:" + openResult);
+                        } else if (startResult != StreamBase.OK) {
+                            Log.e(TAG, "  startResult:" + startResult);
+                        }
+                    }
+                    mAudioPlayer.unwind();
+                    mAudioPlayer = null;
+                }
+            } catch (BuilderBase.BadStateException ex) {
+                Log.e(TAG, "Failed MegaPlayer setup ex:", ex);
+                mIsPlaying = false;
+                mAudioPlayer = null;
+            }
         }
-        if (result) {
-            mIsPlaying = true;
-        }
-        return result;
+        return mIsPlaying;
     }
 
-    // Returns whether the stream stopped correctly.
-    protected boolean stopPlay() {
-        boolean result = false;
+    protected void stopPlay() {
         if (mIsPlaying) {
-            result = (mAudioPlayer.stopStream() == StreamBase.OK);
-        }
-        if (result) {
+            mAudioPlayer.unwind();
             mIsPlaying = false;
         }
-        return result;
-    }
-
-    public boolean isPlaying() {
-        return mIsPlaying;
     }
 
     @Override

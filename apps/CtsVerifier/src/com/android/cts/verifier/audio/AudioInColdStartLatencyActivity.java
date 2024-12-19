@@ -25,6 +25,7 @@ import android.util.Log;
 import com.android.compatibility.common.util.CddTest;
 import com.android.cts.verifier.R;
 
+import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.recorder.Recorder;
 import org.hyphonate.megaaudio.recorder.RecorderBuilder;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallback;
@@ -102,10 +103,15 @@ public class AudioInColdStartLatencyActivity
     //
     @Override
     boolean runAudioTest() {
+        clearResults();
+
         mPreviousCallbackTime = 0;
         mAccumulatedTime = 0;
         mNumCallbacks = 0;
 
+        int buildResult = StreamBase.ERROR_UNKNOWN;
+        int openResult = StreamBase.ERROR_UNKNOWN;
+        int startResult = StreamBase.ERROR_UNKNOWN;
         try {
             mPreOpenTime = System.nanoTime();
             RecorderBuilder builder = new RecorderBuilder();
@@ -115,23 +121,28 @@ public class AudioInColdStartLatencyActivity
                 .setChannelCount(NUM_CHANNELS)
                 .setSampleRate(mSampleRate)
                 .setNumExchangeFrames(mNumExchangeFrames);
-            mRecorder = builder.build();
-            mPostOpenTime = System.nanoTime();
-
-            mIsTestRunning = true;
+            mRecorder = builder.allocStream();
+            mPreStartTime = System.nanoTime();
+            if ((buildResult = mRecorder.build(builder)) == StreamBase.OK
+                    && (openResult = mRecorder.open()) == StreamBase.OK
+                    && (startResult = mRecorder.start()) == StreamBase.OK) {
+                mPostStartTime = System.nanoTime();
+                mIsTestRunning = true;
+            }
         } catch (RecorderBuilder.BadStateException badStateException) {
-            mLatencyTxt.setText("Can't Start Recorder.");
+            mLatencyTxt.setText(getString(R.string.audio_coldstart_badrecorderstate));
             Log.e(TAG, "BadStateException: " + badStateException);
             mIsTestRunning = false;
         }
 
-        mPreStartTime = System.nanoTime();
-        mRecorder.startStream();
-        mPostStartTime = System.nanoTime();
-
         if (mIsTestRunning) {
             mStartBtn.setEnabled(false);
             mStopBtn.setEnabled(true);
+        } else {
+            // report error...
+            showStartupError("Recorder", buildResult, openResult, startResult);
+            // Unwind...
+            mRecorder.unwind();
         }
         return mIsTestRunning;
     }
@@ -142,8 +153,8 @@ public class AudioInColdStartLatencyActivity
             return;
         }
 
-        mRecorder.stopStream();
-        mRecorder.teardownStream();
+        // Unwind will call stop()
+        mRecorder.unwind();
 
         mIsTestRunning = false;
 

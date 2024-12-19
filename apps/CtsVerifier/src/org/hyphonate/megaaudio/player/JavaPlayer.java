@@ -59,13 +59,146 @@ public class JavaPlayer extends Player {
      * @param builder   Provides the attributes for the underlying AudioTrack.
      * @param sourceProvider The AudioSource object providing audio data to play.
      */
-    public JavaPlayer(PlayerBuilder builder, AudioSourceProvider sourceProvider) {
+    public JavaPlayer(AudioSourceProvider sourceProvider) {
         super(sourceProvider);
+        if (LOG) {
+            Log.d(TAG, "JavaPlayer()");
+        }
         mNumExchangeFrames = -1;   // TODO need error defines
-
-        setupStream(builder);
     }
 
+    //
+    // Lifecycle
+    //
+    @Override
+    public int build(BuilderBase builder) {
+        mChannelCount = builder.getChannelCount();
+        mChannelMask = builder.getChannelMask();
+        mSampleRate = builder.getSampleRate();
+        mNumExchangeFrames = builder.getNumExchangeFrames();
+        mPerformanceMode = builder.getJavaPerformanceMode();
+        int routeDeviceId = builder.getRouteDeviceId();
+        if (LOG) {
+            Log.d(TAG, "build()");
+            Log.d(TAG, "  chans:" + mChannelCount);
+            Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
+            Log.d(TAG, "  rate: " + mSampleRate);
+            Log.d(TAG, "  frames: " + mNumExchangeFrames);
+            Log.d(TAG, "  perf mode: " + mPerformanceMode);
+            Log.d(TAG, "  route device: " + routeDeviceId);
+        }
+
+        mAudioSource = mSourceProvider.getJavaSource();
+        mAudioSource.init(mNumExchangeFrames, mChannelCount);
+
+        try {
+            AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
+            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                    .setSampleRate(mSampleRate);
+            // setChannelIndexMask() won't give us a FAST_PATH
+            // .setChannelIndexMask(
+            //      StreamBase.channelCountToIndexMask(mChannelCount))
+            // .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount));
+            if (mChannelCount != 0) {
+                formatBuilder.setChannelMask(
+                        StreamBase.channelCountToOutPositionMask(mChannelCount));
+            } else {
+                formatBuilder.setChannelMask(mChannelMask);
+            }
+            AudioTrack.Builder audioTrackBuilder = new AudioTrack.Builder();
+            audioTrackBuilder.setAudioFormat(formatBuilder.build())
+                    .setPerformanceMode(mPerformanceMode);
+            mAudioTrack = audioTrackBuilder.build();
+
+            allocBurstBuffer();
+
+            AudioDeviceInfo routeDevice = builder.getRouteDevice();
+            // Check routing
+            if (routeDevice != null && !mAudioTrack.setPreferredDevice(routeDevice)) {
+                Log.e(TAG, "Routing Failure for AudioTrack.");
+            }
+
+            if (LOG) {
+                Log.d(TAG, "  mAudioTrack.getBufferSizeInFrames(): "
+                        + mAudioTrack.getBufferSizeInFrames());
+                Log.d(TAG, "  mAudioTrack.getBufferCapacityInFrames() :"
+                        + mAudioTrack.getBufferCapacityInFrames());
+            }
+        }  catch (UnsupportedOperationException ex) {
+            Log.e(TAG, "Couldn't build AudioTrack: " + ex);
+            return ERROR_UNSUPPORTED;
+        } catch (java.lang.IllegalArgumentException ex) {
+            Log.e(TAG, "Invalid arguments to AudioTrack.Builder: " + ex);
+            return ERROR_INVALID_ARGUMENT;
+        }
+        return trackBuild(OK);
+    }
+
+    @Override
+    public int open() {
+        if (LOG) {
+            Log.d(TAG, "open()");
+        }
+        return trackOpen(OK);
+    }
+
+    @Override
+    public int start() {
+        if (LOG) {
+            Log.d(TAG, "start()");
+        }
+        if (mAudioTrack == null) {
+            if (LOG) {
+                Log.d(TAG, " - ERROR_INVALID_STATE");
+            }
+            return ERROR_INVALID_STATE;
+        }
+        waitForStreamThreadToExit(); // just to be sure.
+
+        mStreamThread = new Thread(new StreamPlayerRunnable(), "StreamPlayer Thread");
+        mPlaying = true;
+        mStreamThread.start();
+
+        return trackStart(OK);
+    }
+
+    @Override
+    public int stop() {
+        if (LOG) {
+            Log.d(TAG, "stop()");
+        }
+        mPlaying = false;
+        return trackStop(OK);
+    }
+
+    @Override
+    public int close() {
+        return trackClose(OK);
+    }
+
+    @Override
+    public int teardown() {
+        if (LOG) {
+            Log.d(TAG, "teardown()");
+        }
+        stop();
+
+        waitForStreamThreadToExit();
+
+        if (mAudioTrack != null) {
+            mAudioTrack.release();
+            mAudioTrack = null;
+        }
+
+        mChannelCount = 0;
+        mSampleRate = 0;
+
+        return trackTeardown(OK);
+    }
+
+    //
+    // Attributes
+    //
     @Override
     public int getSharingMode() {
         // JAVA Audio API does not support a sharing mode
@@ -120,124 +253,6 @@ public class JavaPlayer extends Player {
     /*
      * State
      */
-    private int setupStream(PlayerBuilder builder) {
-        mChannelCount = builder.getChannelCount();
-        mChannelMask = builder.getChannelMask();
-        mSampleRate = builder.getSampleRate();
-        mNumExchangeFrames = builder.getNumExchangeFrames();
-        mPerformanceMode = builder.getJavaPerformanceMode();
-        int routeDeviceId = builder.getRouteDeviceId();
-        if (LOG) {
-            Log.d(TAG, "setupStream()");
-            Log.d(TAG, "  chans:" + mChannelCount);
-            Log.d(TAG, "  mask:0x" + Integer.toHexString(mChannelMask));
-            Log.d(TAG, "  rate: " + mSampleRate);
-            Log.d(TAG, "  frames: " + mNumExchangeFrames);
-            Log.d(TAG, "  perf mode: " + mPerformanceMode);
-            Log.d(TAG, "  route device: " + routeDeviceId);
-        }
-
-        mAudioSource = mSourceProvider.getJavaSource();
-        mAudioSource.init(mNumExchangeFrames, mChannelCount);
-
-        try {
-            AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
-            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                    .setSampleRate(mSampleRate);
-                // setChannelIndexMask() won't give us a FAST_PATH
-                // .setChannelIndexMask(
-                //      StreamBase.channelCountToIndexMask(mChannelCount))
-                // .setChannelMask(StreamBase.channelCountToOutPositionMask(mChannelCount));
-            if (mChannelCount != 0) {
-                formatBuilder.setChannelMask(
-                        StreamBase.channelCountToOutPositionMask(mChannelCount));
-            } else {
-                formatBuilder.setChannelMask(mChannelMask);
-            }
-            AudioTrack.Builder audioTrackBuilder = new AudioTrack.Builder();
-            audioTrackBuilder.setAudioFormat(formatBuilder.build())
-                .setPerformanceMode(mPerformanceMode);
-            mAudioTrack = audioTrackBuilder.build();
-
-            allocBurstBuffer();
-            mAudioTrack.setPreferredDevice(builder.getRouteDevice());
-
-            if (LOG) {
-                Log.d(TAG, "  mAudioTrack.getBufferSizeInFrames(): "
-                        + mAudioTrack.getBufferSizeInFrames());
-                Log.d(TAG, "  mAudioTrack.getBufferCapacityInFrames() :"
-                        + mAudioTrack.getBufferCapacityInFrames());
-            }
-        }  catch (UnsupportedOperationException ex) {
-            Log.e(TAG, "Couldn't open AudioTrack: " + ex);
-            return ERROR_UNSUPPORTED;
-        } catch (java.lang.IllegalArgumentException ex) {
-            Log.e(TAG, "Invalid arguments to AudioTrack.Builder: " + ex);
-            return ERROR_UNSUPPORTED;
-        }
-
-        return OK;
-    }
-
-    @Override
-    public int teardownStream() {
-        if (LOG) {
-            Log.d(TAG, "teardownStream()");
-        }
-        stopStream();
-
-        waitForStreamThreadToExit();
-
-        if (mAudioTrack != null) {
-            mAudioTrack.release();
-            mAudioTrack = null;
-        }
-
-        mChannelCount = 0;
-        mSampleRate = 0;
-
-        //TODO - Retrieve errors from above
-        return OK;
-    }
-
-    /**
-     * Allocates the underlying AudioTrack and begins Playback.
-     * @return True if the stream is successfully started.
-     *
-     * This method returns when the start operation is complete, but before the first
-     * call to the AudioSource.pull() method.
-     */
-    @Override
-    public int startStream() {
-        if (LOG) {
-            Log.d(TAG, "startStream() mAudioTrack:" + mAudioTrack);
-        }
-        if (mAudioTrack == null) {
-            if (LOG) {
-                Log.d(TAG, " - ERROR_INVALID_STATE");
-            }
-            return ERROR_INVALID_STATE;
-        }
-        waitForStreamThreadToExit(); // just to be sure.
-
-        mStreamThread = new Thread(new StreamPlayerRunnable(), "StreamPlayer Thread");
-        mPlaying = true;
-        mStreamThread.start();
-
-        return OK;
-    }
-
-    /**
-     * Marks the stream for stopping on the next callback from the underlying system.
-     *
-     * Returns immediately, though a call to AudioSource.pull() may be in progress.
-     */
-    @Override
-    public int stopStream() {
-        mPlaying = false;
-        return OK;
-    }
-
     /**
      * @return See StreamState constants
      */
@@ -292,14 +307,17 @@ public class JavaPlayer extends Player {
                 if (numSamplesWritten < 0) {
                     // error
                     Log.e(TAG, "AudioTrack write error - numSamplesWritten: " + numSamplesWritten);
-                    stopStream();
+                    stop();
                 } else if (numSamplesWritten < mNumPlaySamples) {
                     // end of stream
                     if (LOG) {
                         Log.d(TAG, "Stream Complete.");
                     }
-                    stopStream();
+                    stop();
                 }
+            }
+            if (LOG) {
+                Log.d(TAG, "Exit audio pump.");
             }
         }
     }

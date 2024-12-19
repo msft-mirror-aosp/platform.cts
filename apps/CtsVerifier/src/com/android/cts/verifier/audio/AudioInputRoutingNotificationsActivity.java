@@ -69,21 +69,6 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
         ((TextView) findViewById(R.id.audio_routingnotification_instructions))
                 .setText(getText(R.string.audio_input_routingnotification_instructions));
 
-        // Setup Recorder
-        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
-
-        try {
-            RecorderBuilder builder = new RecorderBuilder();
-            builder.setRecorderType(RecorderBuilder.TYPE_JAVA)
-                    .setAudioSinkProvider(new NopAudioSinkProvider())
-                    .setChannelCount(NUM_CHANNELS)
-                    .setSampleRate(SAMPLE_RATE)
-                    .setNumExchangeFrames(numExchangeFrames);
-            mAudioRecorder = (JavaRecorder) builder.build();
-        } catch (RecorderBuilder.BadStateException ex) {
-            Log.e(TAG, "Failed MegaRecorder build.");
-        }
-
         setInfoResources(R.string.audio_input_routingnotifications_test,
                 R.string.audio_input_routingnotification_instructions, -1);
 
@@ -97,31 +82,51 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
     //
     @Override
     void startAudio() {
-        if (mAudioRecorder == null) {
-            return; // failed to create the recorder
+        // Setup Recorder
+        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
+
+        int buildResult = StreamBase.ERROR_UNKNOWN;
+        int openResult = StreamBase.ERROR_UNKNOWN;
+        int startResult = StreamBase.ERROR_UNKNOWN;
+
+        try {
+            RecorderBuilder builder = new RecorderBuilder();
+            builder.setRecorderType(RecorderBuilder.TYPE_JAVA)
+                    .setAudioSinkProvider(new NopAudioSinkProvider())
+                    .setChannelCount(NUM_CHANNELS)
+                    .setSampleRate(SAMPLE_RATE)
+                    .setNumExchangeFrames(numExchangeFrames);
+            mAudioRecorder = (JavaRecorder) builder.allocStream();
+
+            if ((buildResult = mAudioRecorder.build(builder)) == StreamBase.OK
+                    && (openResult = mAudioRecorder.open()) == StreamBase.OK
+                    && (startResult = mAudioRecorder.start()) == StreamBase.OK) {
+                mNumRoutingNotifications = 0;
+
+                AudioRecord audioRecord = mAudioRecorder.getAudioRecord();
+                audioRecord.addOnRoutingChangedListener(mRouteChangeListener,
+                        new Handler());
+
+                mIsRecording = true;
+            }
+        } catch (BuilderBase.BadStateException ex) {
+            Log.e(TAG, "Failed MegaRecorder build.");
         }
 
         if (!mIsRecording) {
-            mNumRoutingNotifications = 0;
+            // Report Errors...
+            showStartupError("Recorder", buildResult, openResult, startResult);
 
-            mAudioRecorder.startStream();
-
-            AudioRecord audioRecord = mAudioRecorder.getAudioRecord();
-            audioRecord.addOnRoutingChangedListener(mRouteChangeListener,
-                    new Handler());
-
-            mIsRecording = true;
+            // Unwind
+            mAudioRecorder.unwind();
         }
     }
 
     @Override
     void stopAudio() {
-        if (mAudioRecorder == null) {
-            return; // failed to create the recorder
-        }
-
         if (mIsRecording) {
-            mAudioRecorder.stopStream();
+            // unwind() will call stop()
+            mAudioRecorder.unwind();
 
             AudioRecord audioRecord = mAudioRecorder.getAudioRecord();
             audioRecord.removeOnRoutingChangedListener(mRouteChangeListener);

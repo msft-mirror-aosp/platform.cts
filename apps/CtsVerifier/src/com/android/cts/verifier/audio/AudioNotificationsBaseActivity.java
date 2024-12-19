@@ -33,6 +33,8 @@ import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 
+import org.hyphonate.megaaudio.common.StreamBase;
+
 public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Activity {
     Context mContext;
 
@@ -60,6 +62,7 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
 
     // Widgets
     TextView mDevSupportStateText;
+    TextView mResultsText;
 
     // ReportLog schema
     private static final String KEY_WIRED_PORT_SUPPORTED = "wired_port_supported";
@@ -86,6 +89,8 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
         mDevSupportStateText =
                 ((TextView) findViewById(R.id.audio_routingnotification_devsupport));
         mDevSupportStateText.setText(buildDeviceSupportString());
+
+        mResultsText = ((TextView) findViewById(R.id.audio_routingnotification_testresult));
 
         // "Honor System" buttons
         setPassFailButtonClickListeners();
@@ -201,11 +206,25 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
 
     void calculatePass() {
         getPassButton().setEnabled(isReportLogOkToPass() && mRoutingNotificationReceived);
-        TextView textView = ((TextView) findViewById(R.id.audio_routingnotification_testresult));
+
         if (!isReportLogOkToPass()) {
-            textView.setText(getResources().getString(R.string.audio_general_reportlogtest));
+            mResultsText.setText(getResources().getString(R.string.audio_general_reportlogtest));
         } else if (mRoutingNotificationReceived) {
-            textView.setText(getString(R.string.audio_routingnotification_passmessage));
+            mResultsText.setText(getString(R.string.audio_routingnotification_passmessage));
+        }
+    }
+
+    protected void showStartupError(String deviceName,
+                                    int buildResult, int openResult, int startResult) {
+        if (buildResult != StreamBase.OK) {
+            mResultsText.setText(String.format(getString(R.string.audio_general_build_fail),
+                    deviceName, buildResult));
+        } else if (openResult != StreamBase.OK) {
+            mResultsText.setText(String.format(getString(R.string.audio_general_open_fail),
+                    deviceName, openResult));
+        } else if (startResult != StreamBase.OK) {
+            mResultsText.setText(String.format(getString(R.string.audio_general_start_fail),
+                    deviceName, startResult));
         }
     }
 
