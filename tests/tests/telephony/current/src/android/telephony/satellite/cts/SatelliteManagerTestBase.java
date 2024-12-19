@@ -68,7 +68,6 @@ import android.telephony.satellite.SatellitePosition;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
-import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.telephony.satellite.SystemSelectionSpecifier;
@@ -310,7 +309,9 @@ public class SatelliteManagerTestBase {
         }
 
         public boolean waitUntilOnSendDatagramStateChanged(int expectedNumberOfEvents) {
-            logd("waitUntilOnSendDatagramStateChanged expectedNumberOfEvents:" + expectedNumberOfEvents);
+            logd(
+                    "waitUntilOnSendDatagramStateChanged expectedNumberOfEvents:"
+                            + expectedNumberOfEvents);
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
                     if (!mSendSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
@@ -812,15 +813,14 @@ public class SatelliteManagerTestBase {
         }
     }
 
-    protected static class SatelliteSupportedStateCallbackTest implements
-            SatelliteSupportedStateCallback {
+    protected static class SatelliteSupportedStateCallbackTest implements Consumer<Boolean> {
         public boolean isSupported = false;
         private List<Boolean> mSupportedStates = new ArrayList<>();
         private final Object mSupportedStatesLock = new Object();
         private final Semaphore mSemaphore = new Semaphore(0);
 
         @Override
-        public void onSatelliteSupportedStateChanged(boolean supported) {
+        public void accept(Boolean supported) {
             logd("onSatelliteSupportedStateChanged: supported=" + supported);
             isSupported = supported;
             synchronized (mSupportedStatesLock) {
