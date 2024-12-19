@@ -16,7 +16,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      xmlns:tools="http://schemas.android.com/tools"
-    package="android.media.audio.cts.audiorecordpermissiontests" >
+    package="android.media.audio.cts.audiopermissiontests" >
 
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
@@ -25,7 +25,7 @@
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-         android:targetPackage="android.media.audio.cts.audiorecordpermissiontests"
+         android:targetPackage="android.media.audio.cts.audiopermissiontests"
          android:label="CTS test for record permissions">
     </instrumentation>
 

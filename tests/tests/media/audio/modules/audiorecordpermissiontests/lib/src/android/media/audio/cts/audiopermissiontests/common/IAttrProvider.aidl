@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package android.media.audio.cts.audiorecordpermissiontests.common;
+package android.media.audio.cts.audiopermissiontests.common;
 
-import android.content.AttributionSource;
+import android.media.audio.cts.audiopermissiontests.common.IAttrConsumer;
 
-interface IAttrConsumer {
-    void provideAttribution(in AttributionSource attr);
+interface IAttrProvider {
+    void inject(IAttrConsumer inject);
 }

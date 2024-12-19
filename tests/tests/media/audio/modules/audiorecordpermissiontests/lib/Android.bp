@@ -22,7 +22,7 @@ package {
 }
 
 android_library {
-    name: "audiorecordpermissiontests_shared",
+    name: "audiopermissiontests_shared",
     defaults: ["cts_support_defaults"],
     srcs: [
         "src/**/*.kt",
