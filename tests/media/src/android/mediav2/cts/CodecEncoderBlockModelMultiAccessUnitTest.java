@@ -124,7 +124,7 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
                         new int[]{2}, AudioFormat.ENCODING_PCM_FLOAT},
         }));
         List<Object[]> argsList = flattenParams(defArgsList);
-        return prepareParamList(argsList, true, true, false, true, ComponentClass.ALL,
+        return prepareParamList(argsList, true, true, false, false, ComponentClass.ALL,
                 new String[]{FEATURE_MultipleFrames});
     }
 

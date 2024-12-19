@@ -101,10 +101,13 @@ public class SurfaceControlInputReceiverTests {
 
     private WindowManager mWm;
 
+    private int mDisplayId;
+
     @Before
     public void setUp() throws InterruptedException {
         mActivityRule.getScenario().onActivity(a -> mActivity = a);
         mWm = mActivity.getWindowManager();
+        mDisplayId = mActivity.getDisplayId();
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
@@ -156,9 +159,9 @@ public class SurfaceControlInputReceiverTests {
                     waitForWindowOnTop(WAIT_TIME_S, TimeUnit.SECONDS, () -> clientToken));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, tappedCoords);
+                    () -> clientToken, tappedCoords, mDisplayId);
 
-            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
+            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken, mDisplayId);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
 
@@ -224,8 +227,8 @@ public class SurfaceControlInputReceiverTests {
 
             Rect bounds = new Rect();
             boolean success = waitForWindowOnTop(WAIT_TIME_S, TimeUnit.SECONDS,
-                    windowInfo -> getBoundsIfWindowIsVisible(windowInfo, mActivity.getDisplayId(),
-                            embeddedName, bounds));
+                    windowInfo -> getBoundsIfWindowIsVisible(windowInfo, mDisplayId, embeddedName,
+                            bounds));
             assertAndDumpWindowState(TAG, "Failed to find embedded SC on top", success);
 
             final Point tapCoord = new Point(bounds.left + bounds.width() / 2,
@@ -288,9 +291,9 @@ public class SurfaceControlInputReceiverTests {
                             () -> clientToken));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, tappedCoords);
+                    () -> clientToken, tappedCoords, mDisplayId);
 
-            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
+            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken, mDisplayId);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
 
@@ -327,11 +330,11 @@ public class SurfaceControlInputReceiverTests {
             Point tappedCoords = new Point();
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(helper.mEmbeddedSc);
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, tappedCoords);
+                    () -> clientToken, tappedCoords, mDisplayId);
             assertTrue("Failed to receive touch event on host",
                     hostReceivedTouchLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
 
-            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
+            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken, mDisplayId);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
 
@@ -386,7 +389,7 @@ public class SurfaceControlInputReceiverTests {
                             windowInfos -> {
                                 for (var windowInfo : windowInfos) {
                                     if (getBoundsIfWindowIsVisible(windowInfo,
-                                            mActivity.getDisplayId(),
+                                            mDisplayId,
                                             helper.mEmbeddedName, bounds)) {
                                         return true;
                                     }
@@ -433,10 +436,10 @@ public class SurfaceControlInputReceiverTests {
             Point tappedCoords = new Point();
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(helper.mEmbeddedSc);
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
-                    () -> clientToken, tappedCoords);
+                    () -> clientToken, tappedCoords, mDisplayId);
             assertTrue("Failed to receive touch event on embedded",
                     embeddedReceivedTouch.await(WAIT_TIME_S, TimeUnit.SECONDS));
-            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken);
+            Rect bounds = getWindowBoundsInDisplaySpace(() -> clientToken, mDisplayId);
             Point centerCoordRelativeToWindow = new Point(bounds.width() / 2,
                     bounds.height() / 2);
             assertMotionEventInWindow(hostMotionEvent, centerCoordRelativeToWindow);
@@ -475,8 +478,7 @@ public class SurfaceControlInputReceiverTests {
                     waitForWindowInfos(
                             windowInfos -> {
                                 for (var windowInfo : windowInfos) {
-                                    if (getBoundsIfWindowIsVisible(windowInfo,
-                                            mActivity.getDisplayId(),
+                                    if (getBoundsIfWindowIsVisible(windowInfo, mDisplayId,
                                             helper.mEmbeddedName, bounds)) {
                                         return true;
                                     }
@@ -656,7 +658,7 @@ public class SurfaceControlInputReceiverTests {
             waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be visible",
-                    waitForWindowVisible(clientToken));
+                    waitForWindowVisible(clientToken, mActivity.getDisplayId()));
         }
 
         private void tearDown() {

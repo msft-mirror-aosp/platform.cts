@@ -209,7 +209,8 @@ public class CapturedActivity extends Activity {
             assertTrue("Failed to wait for frame draw",
                     frameDrawnLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
 
-            Rect bounds = getWindowBoundsInWindowSpace(mParentLayout::getWindowToken);
+            Rect bounds = getWindowBoundsInWindowSpace(mParentLayout::getWindowToken,
+                    getDisplayId());
             assertNotNull("Failed to wait for test window bounds", bounds);
             mTestAreaSize.set(bounds.width(), bounds.height());
 

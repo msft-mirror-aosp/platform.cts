@@ -86,7 +86,7 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
-        return prepareParamList(exhaustiveArgsList, false, true, false, true, ComponentClass.ALL,
+        return prepareParamList(exhaustiveArgsList, false, true, false, false, ComponentClass.ALL,
                 new String[]{FEATURE_MultipleFrames});
     }
 
