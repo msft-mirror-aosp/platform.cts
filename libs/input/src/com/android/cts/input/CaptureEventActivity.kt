@@ -39,12 +39,6 @@ open class CaptureEventActivity : Activity() {
             val orientation = intent.getIntExtra(EXTRA_FIXED_ORIENTATION, 0)
             setRequestedOrientation(orientation)
         }
-
-        // Set the flag if requested
-        if (intent.hasExtra(EXTRA_WINDOW_FLAGS)) {
-            val flags = intent.getIntExtra(EXTRA_WINDOW_FLAGS, 0)
-            window.addFlags(flags)
-        }
     }
 
     private fun addMotionEvent(event: MotionEvent?) {
@@ -90,6 +84,5 @@ open class CaptureEventActivity : Activity() {
 
     companion object {
         const val EXTRA_FIXED_ORIENTATION = "fixed_orientation"
-        const val EXTRA_WINDOW_FLAGS = "window_flags"
     }
 }
