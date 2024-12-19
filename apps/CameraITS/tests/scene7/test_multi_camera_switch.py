@@ -24,19 +24,16 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
-import opencv_processing_utils
+import multi_camera_switch_utils
 import preview_processing_utils
 
 
 _AE_ATOL = 7.0
 _AE_RTOL = 0.04  # 4%
-_ARUCO_MARKERS_COUNT = 4
 _AWB_ATOL_AB = 10  # ATOL for A and B means in LAB color space
 _AWB_ATOL_L = 3  # ATOL for L means in LAB color space
-_CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
 _COLOR_GRAY = _COLORS[3]
-_CONVERGED_STATE = 2
 _IMG_FORMAT = 'png'
 _LENS_SUFFIX_UW = 'uw'
 _LENS_SUFFIX_W = 'w'
@@ -75,80 +72,8 @@ def _do_af_check(uw_img, w_img):
   return failed_af_msg, sharpness_uw, sharpness_w
 
 
-def _extract_main_patch(corners, ids, img_rgb, img_path, lens_suffix):
-  """Extracts the main rectangle patch from the captured frame.
-
-  Find aruco markers in the captured image and detects if the
-  expected number of aruco markers have been found or not.
-  It then, extracts the main rectangle patch and saves it
-  without the aruco markers in it.
-
-  Args:
-    corners: list of detected corners.
-    ids: list of int ids for each ArUco markers in the input_img.
-    img_rgb: An openCV image in RGB order.
-    img_path: Path to save the image.
-    lens_suffix: str; suffix used to save the image.
-  Returns:
-    rectangle_patch: numpy float image array of the rectangle patch.
-  """
-  rectangle_patch = opencv_processing_utils.get_patch_from_aruco_markers(
-      img_rgb, corners, ids)
-  patch_path = img_path.with_name(
-      f'{img_path.stem}_{lens_suffix}_patch{img_path.suffix}')
-  image_processing_utils.write_image(rectangle_patch/_CH_FULL_SCALE, patch_path)
-  return rectangle_patch
-
-
-def _find_aruco_markers(img, img_path, lens_suffix):
-  """Detect ArUco markers in the input image.
-
-  Args:
-    img: input img with ArUco markers.
-    img_path: path to save the image.
-    lens_suffix: suffix used to save the image.
-  Returns:
-    corners: list of detected corners.
-    ids: list of int ids for each ArUco markers in the input_img.
-  """
-  aruco_path = img_path.with_name(
-      f'{img_path.stem}_{lens_suffix}_aruco{img_path.suffix}')
-  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-      img, aruco_path)
-  if len(ids) != _ARUCO_MARKERS_COUNT:
-    raise AssertionError(
-        f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
-  return corners, ids
-
-
-def _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg):
-  """"Returns the error message string.
-
-  Args:
-    failed_awb_msg: list of awb error msgs
-    failed_ae_msg: list of ae error msgs
-    failed_af_msg: list of af error msgs
-  Returns:
-    error_msg: str; error_msg string
-  """
-  error_msg = ''
-  if failed_awb_msg:
-    error_msg = f'{error_msg}----AWB Check----\n'
-    for msg in failed_awb_msg:
-      error_msg = f'{error_msg}{msg}\n'
-  if failed_ae_msg:
-    error_msg = f'{error_msg}----AE Check----\n'
-    for msg in failed_ae_msg:
-      error_msg = f'{error_msg}{msg}\n'
-  if failed_af_msg:
-    error_msg = f'{error_msg}----AF Check----\n'
-    for msg in failed_af_msg:
-      error_msg = f'{error_msg}{msg}\n'
-  return error_msg
-
-
 class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
-  """Test that the switch from UW to W lens has similar RGB values.
+  """Test that the switch between cameras has similar RGB values.
 
   This test uses various zoom ratios within range android.control.zoomRatioRange
   to capture images and find the point when the physical camera changes
@@ -171,23 +96,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # check SKIP conditions
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      camera_properties_utils.skip_unless(
-          first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
-          camera_properties_utils.zoom_ratio_range(props) and
-          camera_properties_utils.logical_multi_camera(props) and
-          camera_properties_utils.ae_regions(props))
+      multi_camera_switch_utils.check_lens_switch_conditions(
+          props, first_api_level, _ZOOM_RANGE_UW_W)
 
-      # Check the zoom range
-      zoom_range = props['android.control.zoomRatioRange']
-      logging.debug('zoomRatioRange: %s', zoom_range)
-      camera_properties_utils.skip_unless(
-          len(zoom_range) > 1 and
-          (zoom_range[0] <= _ZOOM_RANGE_UW_W[0] <= zoom_range[1]) and
-          (zoom_range[0] <= _ZOOM_RANGE_UW_W[1] <= zoom_range[1]))
-
+      # Set up scene and configure preview size
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, chart_distance)
-
       preview_test_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)
       cam.do_3a()
@@ -200,54 +114,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
                 _ZOOM_RANGE_UW_W[1], _ZOOM_STEP, self.log_path)
         )
 
-        physical_id_before = None
-        counter = 0  # counter for the index of crossover point result
-        lens_changed = False
-        converged_state_counter = 0
-        converged_state = False
-
-        for capture_result in capture_results:
-          counter += 1
-          ae_state = capture_result['android.control.aeState']
-          awb_state = capture_result['android.control.awbState']
-          af_state = capture_result['android.control.afState']
-          physical_id = capture_result[
-              'android.logicalMultiCamera.activePhysicalId']
-          if not physical_id_before:
-            physical_id_before = physical_id
-          zoom_ratio = float(capture_result['android.control.zoomRatio'])
-          if physical_id_before == physical_id:
-            continue
-          else:
-            logging.debug('Active physical id changed')
-            logging.debug('Crossover zoom ratio point: %f', zoom_ratio)
-            physical_id_before = physical_id
-            lens_changed = True
-            if ae_state == awb_state == af_state == _CONVERGED_STATE:
-              converged_state = True
-              converged_state_counter = counter
-              logging.debug('3A converged at the crossover point')
-            break
-
-        # If the frame at crossover point was not converged, then
-        # traverse the list of capture results after crossover point
-        # to find the converged frame which will be used for AE,
-        # AWB and AF checks.
-        if not converged_state:
-          converged_state_counter = counter
-          for capture_result in capture_results[converged_state_counter-1:]:
-            converged_state_counter += 1
-            ae_state = capture_result['android.control.aeState']
-            awb_state = capture_result['android.control.awbState']
-            af_state = capture_result['android.control.afState']
-            if physical_id_before == capture_result[
-                'android.logicalMultiCamera.activePhysicalId']:
-              if ae_state == awb_state == af_state == _CONVERGED_STATE:
-                logging.debug('3A converged after crossover point.')
-                logging.debug('Zoom ratio at converged state after crossover'
-                              'point: %f', zoom_ratio)
-                converged_state = True
-                break
+        # Find the crossover point where the camera switches
+        converged_state_counter, lens_changed, converged_state, counter = (
+            multi_camera_switch_utils.find_crossover_point(capture_results))
 
       except Exception as e:
         # Remove all the files except mp4 recording in case of any error
@@ -269,32 +138,12 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         e_msg = '3A not converged after the lens change.'
         raise AssertionError(e_msg)
 
-      img_uw_file = file_list[counter-2]
-      capture_result_uw = capture_results[counter-2]
-      uw_phy_id = (
-          capture_result_uw['android.logicalMultiCamera.activePhysicalId']
+      # Process capture results and get camera properties
+      img_uw_file, img_w_file, min_focus_distance_w = (
+          multi_camera_switch_utils.get_camera_properties_and_log(
+              cam, capture_results, file_list, counter,
+              converged_state_counter, _LENS_SUFFIX_UW, _LENS_SUFFIX_W)
       )
-      physical_props_uw = cam.get_camera_properties_by_id(uw_phy_id)
-      min_focus_distance_uw = (
-          physical_props_uw['android.lens.info.minimumFocusDistance']
-      )
-      logging.debug('Min focus distance for UW phy_id: %s is %f',
-                    uw_phy_id, min_focus_distance_uw)
-
-      logging.debug('Capture results uw crossover: %s', capture_result_uw)
-      logging.debug('Capture results w crossover: %s',
-                    capture_results[counter-1])
-      img_w_file = file_list[converged_state_counter-1]
-      capture_result_w = capture_results[converged_state_counter-1]
-      logging.debug('Capture results w crossover converged: %s',
-                    capture_result_w)
-      w_phy_id = capture_result_w['android.logicalMultiCamera.activePhysicalId']
-      physical_props_w = cam.get_camera_properties_by_id(w_phy_id)
-      min_focus_distance_w = (
-          physical_props_w['android.lens.info.minimumFocusDistance']
-      )
-      logging.debug('Min focus distance for W phy_id: %s is %f',
-                    w_phy_id, min_focus_distance_w)
 
       # Remove unwanted frames and only save the UW and
       # W crossover point frames along with mp4 recording
@@ -331,18 +180,18 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       # Find ArUco markers in the image with UW lens
       # and extract the outer box patch
-      corners, ids = _find_aruco_markers(
+      corners, ids = multi_camera_switch_utils.find_aruco_markers(
           uw_img, uw_path, _LENS_SUFFIX_UW)
-      uw_chart_patch = _extract_main_patch(
+      uw_chart_patch = multi_camera_switch_utils.extract_main_patch(
           corners, ids, uw_img, uw_path, _LENS_SUFFIX_UW)
       uw_four_patches = image_processing_utils.get_four_quadrant_patches(
           uw_chart_patch, uw_path, _LENS_SUFFIX_UW, _PATCH_MARGIN)
 
       # Find ArUco markers in the image with W lens
       # and extract the outer box patch
-      corners, ids = _find_aruco_markers(
+      corners, ids = multi_camera_switch_utils.find_aruco_markers(
           w_img, w_path, _LENS_SUFFIX_W)
-      w_chart_patch = _extract_main_patch(
+      w_chart_patch = multi_camera_switch_utils.extract_main_patch(
           corners, ids, w_img, w_path, _LENS_SUFFIX_W)
       w_four_patches = image_processing_utils.get_four_quadrant_patches(
           w_chart_patch, w_path, _LENS_SUFFIX_W, _PATCH_MARGIN)
@@ -393,7 +242,8 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
 
       if failed_awb_msg or failed_ae_msg or failed_af_msg:
-        error_msg = _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg)
+        error_msg = multi_camera_switch_utils.get_error_msg(
+            failed_awb_msg, failed_ae_msg, failed_af_msg)
         raise AssertionError(f'{_NAME} failed with following errors:\n'
                              f'{error_msg}')
 
