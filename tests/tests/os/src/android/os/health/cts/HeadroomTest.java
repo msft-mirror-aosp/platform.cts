@@ -25,6 +25,7 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.os.CpuHeadroomParams;
@@ -40,6 +41,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +76,8 @@ public class HeadroomTest {
 
     @Before
     public void setup() {
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.DEVICE_POWER);
         final Context context = getInstrumentation().getTargetContext();
         mManager = context.getSystemService(SystemHealthManager.class);
         assertNotNull(mManager);
@@ -97,6 +101,13 @@ public class HeadroomTest {
             assertTrue(mGpuHeadroomInterval > 0);
             assertTrue(mGpuHeadroomInterval < 10000);
         }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
     }
 
     private void checkCpuHeadroomSupport() {
@@ -224,8 +235,7 @@ public class HeadroomTest {
     public void testGetCpuHeadroom_customTids() throws Exception {
         checkCpuHeadroomSupport();
         CountDownLatch latch = new CountDownLatch(1);
-        int[] tids = createThreads(2, latch);
-        Thread.sleep(mCpuHeadroomInterval);
+        int[] tids = createThreads(4, latch);
         CpuHeadroomParams params = new CpuHeadroomParams();
         params.setTids(tids);
         runCheckCpuHeadroom(params);

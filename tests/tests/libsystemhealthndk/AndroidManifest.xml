@@ -17,7 +17,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="android.systemhealth.cts">
-
+    <permission android:name="android.permission.DEVICE_POWER"/>
     <application>
         <uses-library android:name="android.test.runner" />
     </application>
