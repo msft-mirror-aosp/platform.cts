@@ -151,14 +151,7 @@ public class BluetoothLeBroadcastReceiveStateTest {
         out.writeInt(broadcastId);
         out.writeInt(paSyncState);
         out.writeInt(bigEncryptionState);
-
-        if (badCode != null) {
-            out.writeInt(badCode.length);
-            out.writeByteArray(badCode);
-        } else {
-            // -1 indicates that there is no "bad broadcast code"
-            out.writeInt(-1);
-        }
+        out.writeByteArray(badCode);
         out.writeInt(numSubgroups);
         out.writeList(bisSyncState);
         out.writeTypedList(subgroupMetadata);
