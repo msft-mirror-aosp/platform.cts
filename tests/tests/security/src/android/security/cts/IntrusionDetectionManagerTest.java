@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -30,6 +31,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -62,9 +64,24 @@ public class IntrusionDetectionManagerTest {
     @Before
     public void setup() throws InterruptedException {
         mContext = mInstrumentation.getContext();
+        assumeTrue(isTestableHardware(mContext));
         mIntrusionDetectionManager = mContext.getSystemService(IntrusionDetectionManager.class);
         assertNotNull(mIntrusionDetectionManager);
         reset();
+    }
+
+    private static boolean isTestableHardware(Context context) {
+        PackageManager pm = context.getPackageManager();
+        if (pm.hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            return false;
+        }
+        if (pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
+            return false;
+        }
+        if (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+            return false;
+        }
+        return true;
     }
 
     @After
