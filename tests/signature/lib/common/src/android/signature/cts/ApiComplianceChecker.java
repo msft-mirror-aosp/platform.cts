@@ -272,22 +272,25 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
             apiModifiers &= ~(Modifier.FINAL | Modifier.ABSTRACT);
         }
 
-        if (classDescription.isPreviousApi()) {
-            // If the final and/or abstract modifiers have been removed since the previous API was
-            // published then that is forwards compatible so remove the modifier in the previous API
-            // modifiers so they match the runtime modifiers.
-            apiModifiers = normalizePreviousModifiersIfModifierIsRemoved(
-                    apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
+        // If the final and/or abstract modifiers have been removed since the previous API was
+        // published then that is forwards compatible so remove the modifier in the previous API
+        // modifiers so they match the runtime modifiers.
+        apiModifiers =
+                normalizePreviousModifiersIfModifierIsRemoved(
+                        apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
 
-            if (classIsNotInstantiableOrExtensibleInPreviousApi(classDescription)) {
-                // Adding the final, abstract or static flags to the runtime class is forwards
-                // compatible as the class cannot be instantiated or extended. Clear the flags for
-                // any such added modifier from the current implementation's modifiers so that it
-                // does not cause a mismatch.
-                reflectionModifiers = normalizeCurrentModifiersIfModifierIsAdded(
-                        apiModifiers, reflectionModifiers,
-                        Modifier.FINAL, Modifier.ABSTRACT, Modifier.STATIC);
-            }
+        if (classIsNotInstantiableOrExtensibleInPreviousApi(classDescription)) {
+            // Adding the final, abstract or static flags to the runtime class is forwards
+            // compatible as the class cannot be instantiated or extended. Clear the flags for
+            // any such added modifier from the current implementation's modifiers so that it
+            // does not cause a mismatch.
+            reflectionModifiers =
+                    normalizeCurrentModifiersIfModifierIsAdded(
+                            apiModifiers,
+                            reflectionModifiers,
+                            Modifier.FINAL,
+                            Modifier.ABSTRACT,
+                            Modifier.STATIC);
         }
 
         if ((reflectionModifiers == apiModifiers)
@@ -627,21 +630,22 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
         }
 
         String genericString = reflectedMethod.toGenericString();
-        if (classDescription.isPreviousApi()) {
-            // If the final and/or abstract modifiers have been removed since the previous API was
-            // published then that is forwards compatible so remove the modifier in the previous API
-            // modifiers so they match the runtime modifiers.
-            apiModifiers = normalizePreviousModifiersIfModifierIsRemoved(
-                    apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
 
-            if (classIsNotInstantiableOrExtensibleInPreviousApi(classDescription)) {
-                // Adding the final, or abstract flags to the runtime method is forwards compatible
-                // as the class cannot be instantiated or extended. Clear the flags for any such
-                // added modifier from the current implementation's modifiers so that it does not
-                // cause a mismatch.
-                reflectionModifiers = normalizeCurrentModifiersIfModifierIsAdded(
+        // If the final and/or abstract modifiers have been removed since the previous API was
+        // published then that is forwards compatible so remove the modifier in the previous API
+        // modifiers so they match the runtime modifiers.
+        apiModifiers =
+                normalizePreviousModifiersIfModifierIsRemoved(
                         apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
-            }
+
+        if (classIsNotInstantiableOrExtensibleInPreviousApi(classDescription)) {
+            // Adding the final, or abstract flags to the runtime method is forwards compatible
+            // as the class cannot be instantiated or extended. Clear the flags for any such
+            // added modifier from the current implementation's modifiers so that it does not
+            // cause a mismatch.
+            reflectionModifiers =
+                    normalizeCurrentModifiersIfModifierIsAdded(
+                            apiModifiers, reflectionModifiers, Modifier.FINAL, Modifier.ABSTRACT);
         }
 
         if (reflectionModifiers == apiModifiers) {
