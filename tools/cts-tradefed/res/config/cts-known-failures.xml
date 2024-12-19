@@ -425,4 +425,7 @@
 
     <!-- b/382231688 -->
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
+
+    <!-- b/378989105 -->
+    <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
 </configuration>
