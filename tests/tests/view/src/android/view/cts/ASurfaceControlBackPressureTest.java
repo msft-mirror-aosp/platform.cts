@@ -32,10 +32,13 @@ import static android.view.cts.util.ASurfaceControlTestUtils.reparent;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
+import android.app.ActivityOptions;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.os.SystemClock;
 import android.test.suitebuilder.annotation.LargeTest;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.cts.surfacevalidator.CapturedActivity;
@@ -43,7 +46,9 @@ import android.view.cts.surfacevalidator.MultiFramePixelChecker;
 import android.view.cts.surfacevalidator.PixelColor;
 import android.view.cts.surfacevalidator.SurfaceControlTestCase;
 
-import androidx.test.rule.ActivityTestRule;
+import androidx.annotation.NonNull;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
@@ -60,6 +65,7 @@ import java.util.concurrent.CountDownLatch;
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class ASurfaceControlBackPressureTest {
+    private static final String TAG = "ASurfaceControlBackPressureTest";
 
     private static class SyncTransactionCompleteListener implements TransactionCompleteListener {
         private final CountDownLatch mCountDownLatch = new CountDownLatch(1);
@@ -73,7 +79,7 @@ public class ASurfaceControlBackPressureTest {
             try {
                 mCountDownLatch.await();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Log.e(TAG, "Exception while waiting for transaction to complete", e);
             }
         }
     }
@@ -82,26 +88,35 @@ public class ASurfaceControlBackPressureTest {
     private static final int DEFAULT_LAYOUT_HEIGHT = 50;
 
     @Rule
-    public ActivityTestRule<CapturedActivity> mActivityRule =
-            new ActivityTestRule<>(CapturedActivity.class);
+    public final ActivityScenarioRule<CapturedActivity> mActivityRule =
+            new ActivityScenarioRule<>(CapturedActivity.class, ActivityOptions.makeBasic().toBundle());
 
     private CapturedActivity mActivity;
+
+    private ActivityScenario<CapturedActivity> mScenario;
 
     @Rule
     public TestName mName = new TestName();
 
     @Before
     public void setup() {
-        mActivity = mActivityRule.getActivity();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
-        mActivity.setMinimumCaptureDurationMs(1000);
-        assumeFalse(mActivity.isOnWatch());
+        mScenario = mActivityRule.getScenario();
+        mScenario.onActivity(activity -> {
+                    assumeFalse("Test/capture infrastructure not supported on Watch",
+                            activity.getPackageManager().hasSystemFeature(
+                                    PackageManager.FEATURE_WATCH));
+                    activity.setLogicalDisplaySize(getLogicalDisplaySize());
+                    activity.setMinimumCaptureDurationMs(1000);
+                    assertTrue("Failed to accept ScreenCapture Dialog",
+                            activity.awaitClickAcceptButtonInPermissionDialog());
+                    mActivity = activity;
+                }
+        );
     }
 
     @After
-    public void tearDown() throws UiObjectNotFoundException {
-        mActivity.dismissPermissionDialog();
-        mActivity.restoreSettings();
+    public void tearDown() {
+        mScenario.close();
     }
 
     public abstract static class BasicSurfaceHolderCallback implements SurfaceHolder.Callback {
@@ -162,12 +177,13 @@ public class ASurfaceControlBackPressureTest {
         }
 
         @Override
-        public void surfaceDestroyed(SurfaceHolder holder) {
+        public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
             for (BasicSurfaceHolderCallback.BufferCycler cycler : mBufferCyclers) {
                 cycler.end();
                 try {
                     cycler.join();
                 } catch (InterruptedException e) {
+                    Log.e(TAG, "Exception while waiting for surfaceDestroyed", e);
                 }
             }
             for (Long surfaceControl : mSurfaceControls) {
@@ -223,6 +239,7 @@ public class ASurfaceControlBackPressureTest {
 
     @Test
     public void testSurfaceTransaction_setEnableBackPressure() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         int[] colors = new int[]{PixelColor.RED, PixelColor.GREEN, PixelColor.BLUE};
         BasicSurfaceHolderCallback callback = new BasicSurfaceHolderCallback() {
             @Override
@@ -255,6 +272,7 @@ public class ASurfaceControlBackPressureTest {
 
     @Test
     public void testSurfaceTransaction_defaultBackPressureDisabled() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         int[] colors = new int[]{PixelColor.RED, PixelColor.GREEN, PixelColor.BLUE};
         BasicSurfaceHolderCallback callback = new BasicSurfaceHolderCallback() {
             @Override
