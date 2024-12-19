@@ -40,6 +40,7 @@ import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
 import android.nfc.NfcRoutingTableEntry;
 import android.nfc.OemLogItems;
+import android.nfc.RoutingStatus;
 import android.nfc.T4tNdefNfcee;
 import android.nfc.T4tNdefNfceeCcFileInfo;
 import android.nfc.Tag;
@@ -711,7 +712,10 @@ public class NfcAdapterTest {
             nfcOemExtension.isTagPresent();
             nfcOemExtension.pausePolling(1000);
             nfcOemExtension.resumePolling();
-            nfcOemExtension.getRoutingStatus();
+            RoutingStatus status = nfcOemExtension.getRoutingStatus();
+            status.getDefaultRoute();
+            status.getDefaultIsoDepRoute();
+            status.getDefaultOffHostRoute();
             nfcOemExtension.setAutoChangeEnabled(true);
             assertThat(nfcOemExtension.isAutoChangeEnabled()).isTrue();
             T4tNdefNfcee ndefNfcee = nfcOemExtension.getT4tNdefNfcee();
@@ -741,6 +745,7 @@ public class NfcAdapterTest {
             assertThat(entries).isNotNull();
             entries.getFirst().getType();
             entries.getFirst().getRouteType();
+            entries.getFirst().getNfceeId();
             nfcOemExtension.forceRoutingTableCommit();
             assertEquals(MAX_POLLING_PAUSE_TIMEOUT,
                     nfcOemExtension.getMaxPausePollingTimeoutMills());
