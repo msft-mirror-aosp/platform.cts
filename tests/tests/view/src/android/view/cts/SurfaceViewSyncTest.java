@@ -17,15 +17,19 @@ package android.view.cts;
 
 import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.ActivityOptions;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.MediaPlayer;
-import android.support.test.uiautomator.UiObjectNotFoundException;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -39,9 +43,11 @@ import android.view.cts.surfacevalidator.PixelChecker;
 import android.view.cts.surfacevalidator.ViewFactory;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.RequiresDevice;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
@@ -59,29 +65,36 @@ public class SurfaceViewSyncTest {
     private static final String TAG = "SurfaceViewSyncTests";
 
     @Rule
-    public ActivityTestRule<CapturedActivityWithResource> mActivityRule =
-            new ActivityTestRule<>(CapturedActivityWithResource.class);
-
+    public final ActivityScenarioRule<CapturedActivityWithResource> mActivityRule =
+            new ActivityScenarioRule<>(CapturedActivityWithResource.class, ActivityOptions.makeBasic().toBundle());
     @Rule
     public TestName mName = new TestName();
 
     private CapturedActivityWithResource mActivity;
+
+    private ActivityScenario<CapturedActivityWithResource> mScenario;
+
     private MediaPlayer mMediaPlayer;
 
     @Before
     public void setup() {
-        mActivity = mActivityRule.getActivity();
-        mMediaPlayer = mActivity.getMediaPlayer();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        mScenario = mActivityRule.getScenario();
+        mScenario.onActivity(activity -> {
+                    assumeFalse("Test/capture infrastructure not supported on Watch",
+                            activity.getPackageManager().hasSystemFeature(
+                                    PackageManager.FEATURE_WATCH));
+                    mMediaPlayer = activity.getMediaPlayer();
+                    activity.setLogicalDisplaySize(getLogicalDisplaySize());
+                    assertTrue("Failed to accept ScreenCapture Dialog",
+                            activity.awaitClickAcceptButtonInPermissionDialog());
+                    mActivity = activity;
+                }
+        );
     }
 
-    /**
-     * Want to be especially sure we don't leave up the permission dialog, so try and dismiss
-     * after test.
-     */
     @After
-    public void tearDown() throws UiObjectNotFoundException {
-        mActivity.dismissPermissionDialog();
+    public void tearDown() {
+        mScenario.close();
     }
 
     private static ValueAnimator makeInfinite(ValueAnimator a) {
@@ -96,7 +109,7 @@ public class SurfaceViewSyncTest {
     // ViewFactories
     ///////////////////////////////////////////////////////////////////////////
 
-    private ViewFactory sEmptySurfaceViewFactory = context -> {
+    private final ViewFactory sEmptySurfaceViewFactory = context -> {
         SurfaceView surfaceView = new SurfaceView(context);
 
         // prevent transparent region optimization, which is invalid for a SurfaceView moving around
@@ -105,7 +118,7 @@ public class SurfaceViewSyncTest {
         return surfaceView;
     };
 
-    private ViewFactory sGreenSurfaceViewFactory = context -> {
+    private final ViewFactory sGreenSurfaceViewFactory = context -> {
         SurfaceView surfaceView = new SurfaceView(context);
 
         // prevent transparent region optimization, which is invalid for a SurfaceView moving around
@@ -114,22 +127,22 @@ public class SurfaceViewSyncTest {
         surfaceView.getHolder().setFixedSize(640, 480);
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
-            public void surfaceCreated(SurfaceHolder holder) {}
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {}
 
             @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
                 Canvas canvas = holder.lockCanvas();
                 canvas.drawColor(Color.GREEN);
                 holder.unlockCanvasAndPost(canvas);
             }
 
             @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {}
+            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {}
         });
         return surfaceView;
     };
 
-    private ViewFactory sVideoViewFactory = context -> {
+    private final ViewFactory sVideoViewFactory = context -> {
         SurfaceView surfaceView = new SurfaceView(context);
 
         // prevent transparent region optimization, which is invalid for a SurfaceView moving around
@@ -138,16 +151,16 @@ public class SurfaceViewSyncTest {
         surfaceView.getHolder().setFixedSize(640, 480);
         surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
-            public void surfaceCreated(SurfaceHolder holder) {
+            public void surfaceCreated(@NonNull SurfaceHolder holder) {
                 mMediaPlayer.setSurface(holder.getSurface());
                 mMediaPlayer.start();
             }
 
             @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {}
 
             @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
+            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
                 mMediaPlayer.pause();
                 mMediaPlayer.setSurface(null);
             }
@@ -159,7 +172,7 @@ public class SurfaceViewSyncTest {
     // AnimationFactories
     ///////////////////////////////////////////////////////////////////////////
 
-    private AnimationFactory sSmallScaleAnimationFactory = view -> {
+    private final AnimationFactory sSmallScaleAnimationFactory = view -> {
         view.setPivotX(0);
         view.setPivotY(0);
         PropertyValuesHolder pvhX = PropertyValuesHolder.ofFloat(View.SCALE_X, 0.01f, 1f);
@@ -167,7 +180,7 @@ public class SurfaceViewSyncTest {
         return makeInfinite(ObjectAnimator.ofPropertyValuesHolder(view, pvhX, pvhY));
     };
 
-    private AnimationFactory sBigScaleAnimationFactory = view -> {
+    private final AnimationFactory sBigScaleAnimationFactory = view -> {
         view.setTranslationX(10);
         view.setTranslationY(10);
         view.setPivotX(0);
@@ -177,7 +190,7 @@ public class SurfaceViewSyncTest {
         return makeInfinite(ObjectAnimator.ofPropertyValuesHolder(view, pvhX, pvhY));
     };
 
-    private AnimationFactory sTranslateAnimationFactory = view -> {
+    private final AnimationFactory sTranslateAnimationFactory = view -> {
         PropertyValuesHolder pvhX = PropertyValuesHolder.ofFloat(View.TRANSLATION_X, 10f, 30f);
         PropertyValuesHolder pvhY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 10f, 30f);
         return makeInfinite(ObjectAnimator.ofPropertyValuesHolder(view, pvhX, pvhY));
@@ -190,6 +203,7 @@ public class SurfaceViewSyncTest {
     /** Draws a moving 10x10 black rectangle, validates 100 pixels of black are seen each frame */
     @Test
     public void testSmallRect() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 context -> new View(context) {
                     // draw a single pixel
@@ -223,6 +237,7 @@ public class SurfaceViewSyncTest {
      */
     @Test
     public void testEmptySurfaceView() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sEmptySurfaceViewFactory,
                 new FrameLayout.LayoutParams(100, 100, Gravity.LEFT | Gravity.TOP),
@@ -237,6 +252,7 @@ public class SurfaceViewSyncTest {
 
     @Test
     public void testSurfaceViewSmallScale() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sGreenSurfaceViewFactory,
                 new FrameLayout.LayoutParams(320, 240, Gravity.LEFT | Gravity.TOP),
@@ -251,6 +267,7 @@ public class SurfaceViewSyncTest {
 
     @Test
     public void testSurfaceViewBigScale() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sGreenSurfaceViewFactory,
                 new FrameLayout.LayoutParams(640, 480, Gravity.LEFT | Gravity.TOP),
@@ -265,6 +282,7 @@ public class SurfaceViewSyncTest {
 
     @Test
     public void testVideoSurfaceViewTranslate() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sVideoViewFactory,
                 new FrameLayout.LayoutParams(640, 480, Gravity.LEFT | Gravity.TOP),
@@ -279,6 +297,7 @@ public class SurfaceViewSyncTest {
 
     @Test
     public void testVideoSurfaceViewRotated() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sVideoViewFactory,
                 new FrameLayout.LayoutParams(100, 100, Gravity.LEFT | Gravity.TOP),
@@ -296,6 +315,7 @@ public class SurfaceViewSyncTest {
 
     @Test
     public void testVideoSurfaceViewEdgeCoverage() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sVideoViewFactory,
                 new FrameLayout.LayoutParams(640, 480, Gravity.CENTER),
@@ -319,6 +339,7 @@ public class SurfaceViewSyncTest {
 
     @Test
     public void testVideoSurfaceViewCornerCoverage() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sVideoViewFactory,
                 new FrameLayout.LayoutParams(640, 480, Gravity.CENTER),

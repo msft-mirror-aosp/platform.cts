@@ -17,6 +17,7 @@ package android.view.cts.surfacevalidator;
 
 import static android.view.WindowInsets.Type.statusBars;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -39,6 +40,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.server.wm.settings.SettingsSession;
 import android.support.test.uiautomator.By;
@@ -90,33 +92,27 @@ public class CapturedActivity extends Activity {
 
     private SurfacePixelValidator2 mSurfacePixelValidator;
 
-    private static final int PERMISSION_DIALOG_WAIT_MS = 1000;
-    private static final int RETRY_COUNT = 2;
+    private static final int PERMISSION_DIALOG_WAIT_MS = 2000;
 
     private static final long START_CAPTURE_DELAY_MS = 4000;
 
     private static final String ACCEPT_RESOURCE_ID = "android:id/button1";
 
+    private static final int UI_WAIT_SECONDS =
+            SystemProperties.getInt("ro.hw_timeout_multiplier", 1) * 5;
+
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private volatile boolean mOnEmbedded;
-    private volatile boolean mOnWatch;
-    private CountDownLatch mCountDownLatch;
+    private final CountDownLatch mCaptureReadyLatch = new CountDownLatch(1);
     private boolean mProjectionServiceBound = false;
-    private Point mLogicalDisplaySize = new Point();
+    private final Point mLogicalDisplaySize = new Point();
     private long mMinimumCaptureDurationMs = 0;
-
-    private AtomicBoolean mIsSharingScreenDenied;
+    private final AtomicBoolean mIsSharingScreenAccepted = new AtomicBoolean(false);
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mIsSharingScreenDenied = new AtomicBoolean(false);
         final PackageManager packageManager = getPackageManager();
-        mOnWatch = packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
-        if (mOnWatch) {
-            // Don't try and set up test/capture infrastructure - they're not supported
-            return;
-        }
         // Embedded devices are significantly slower, and are given
         // longer duration to capture the expected number of frames
         mOnEmbedded = packageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED);
@@ -131,11 +127,8 @@ public class CapturedActivity extends Activity {
                 PointerIcon.getSystemIcon(this, PointerIcon.TYPE_NULL));
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-
         mProjectionManager =
                 (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
-
-        mCountDownLatch = new CountDownLatch(1);
         bindMediaProjectionService();
     }
 
@@ -143,7 +136,18 @@ public class CapturedActivity extends Activity {
         mLogicalDisplaySize.set(logicalDisplaySize.x, logicalDisplaySize.y);
     }
 
-    public void dismissPermissionDialog() {
+    public boolean awaitScreenCaptureReady() {
+        try {
+            if (mCaptureReadyLatch.await(UI_WAIT_SECONDS, TimeUnit.SECONDS)) {
+                return mIsSharingScreenAccepted.get();
+            }
+        } catch (InterruptedException e) {
+            Log.d(TAG, "Got interrupted while waiting for screen capture to be ready");
+        }
+        return false;
+    }
+
+    public boolean awaitClickAcceptButtonInPermissionDialog() {
         // The permission dialog will be auto-opened by the activity - find it and accept
         UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         UiObject2 acceptButton = uiDevice.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)),
@@ -151,10 +155,12 @@ public class CapturedActivity extends Activity {
         if (acceptButton != null) {
             Log.d(TAG, "found permission dialog after searching all windows, clicked");
             acceptButton.click();
+            return true;
         }
+        return false;
     }
 
-    private ServiceConnection mConnection = new ServiceConnection() {
+    private final ServiceConnection mConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -191,21 +197,19 @@ public class CapturedActivity extends Activity {
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (mOnWatch) return;
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
 
         if (requestCode != PERMISSION_CODE) {
             throw new IllegalStateException("Unknown request code: " + requestCode);
         }
-        mIsSharingScreenDenied.set(resultCode != RESULT_OK);
-        if (mIsSharingScreenDenied.get()) {
-            return;
+        mIsSharingScreenAccepted.set(resultCode == RESULT_OK);
+        Log.d(TAG, "onActivityResult resultCode= " + resultCode);
+        mCaptureReadyLatch.countDown();
+        if (mIsSharingScreenAccepted.get()) {
+            mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
+            mMediaProjection.registerCallback(new MediaProjectionCallback(), null);
         }
-        Log.d(TAG, "onActivityResult");
-        mMediaProjection = mProjectionManager.getMediaProjection(resultCode, data);
-        mMediaProjection.registerCallback(new MediaProjectionCallback(), null);
-        mCountDownLatch.countDown();
     }
 
     public long getCaptureDurationMs() {
@@ -216,43 +220,21 @@ public class CapturedActivity extends Activity {
         mMinimumCaptureDurationMs = durationMs;
     }
 
-    public TestResult runTest(ISurfaceValidatorTestCase animationTestCase) throws Throwable {
+    public TestResult runTest(ISurfaceValidatorTestCase testCase) throws Throwable {
         TestResult testResult = new TestResult();
-        if (mOnWatch) {
-            /**
-             * Watch devices not supported, since they may not support:
-             *    1) displaying unmasked windows
-             *    2) RenderScript
-             *    3) Video playback
-             */
-            Log.d(TAG, "Skipping test on watch.");
-            testResult.passFrames = 1000;
-            testResult.failFrames = 0;
-            return testResult;
-        }
-
         final long timeOutMs = mOnEmbedded ? 125000 : 62500;
-        final long captureDuration = animationTestCase.hasAnimation() ?
+        final long captureDuration = testCase.hasAnimation() ?
                 getCaptureDurationMs() : mMinimumCaptureDurationMs;
         final long endCaptureDelayMs = START_CAPTURE_DELAY_MS + captureDuration;
         final long endDelayMs = endCaptureDelayMs + 1000;
 
-        int count = 0;
-        // Sometimes system decides to rotate the permission activity to another orientation
-        // right after showing it. This results in: uiautomation thinks that accept button appears,
-        // we successfully click it in terms of uiautomation, but nothing happens,
-        // because permission activity is already recreated.
-        // Thus, we try to click that button multiple times.
-        do {
-            if (mIsSharingScreenDenied.get()) {
-                throw new IllegalStateException("User denied screen sharing permission.");
-            }
-            assertTrue("Can't get the permission", count <= RETRY_COUNT);
-            dismissPermissionDialog();
-            count++;
-        } while (!mCountDownLatch.await(timeOutMs, TimeUnit.MILLISECONDS));
-
         FrameLayout marginedLayout = new FrameLayout(this);
+        final CountDownLatch layoutLatch = new CountDownLatch(1);
+        marginedLayout.getViewTreeObserver().addOnPreDrawListener(
+                () -> {
+                    layoutLatch.countDown();
+                    return true;
+                });
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT);
@@ -274,41 +256,33 @@ public class CapturedActivity extends Activity {
             layoutParams.setMargins(statusBarInsets.left, statusBarInsets.top,
                     statusBarInsets.right, statusBarInsets.bottom);
             setContentView(marginedLayout, layoutParams);
-            animationTestCase.start(getApplicationContext(),
-                    marginedLayout);
+            testCase.start(getApplicationContext(), marginedLayout);
         });
 
+        assertTrue("Parent layout was never drawn", layoutLatch.await(
+                UI_WAIT_SECONDS, TimeUnit.SECONDS));
+        int minWidth = 40, minHeight = 40;
+        int actualWidth = marginedLayout.getWidth();
+        int actualHeight = marginedLayout.getHeight();
+        // Make sure parent view has a valid size after inflated
+        assertTrue("Parent bounds too small to be a fullscreen activity, was w=" + actualWidth
+            + " h=" + actualHeight + " requires at least w=" + minWidth + " h=" + minHeight,
+                actualWidth > minWidth && actualHeight > minHeight);
+
+        Display display = getWindow().getDecorView().getDisplay();
+        DisplayMetrics metrics = new DisplayMetrics();
+        display.getMetrics(metrics);
+
+        Rect boundsToCheck = testCase.getBoundsToCheck(marginedLayout);
+
+        if (boundsToCheck.width() < 40 || boundsToCheck.height() < 40) {
+            fail("capture bounds too small to be a fullscreen activity: " + boundsToCheck);
+        }
+
         mHandler.postDelayed(() -> {
-            Log.d(TAG, "Starting capture");
-
-            Display display = getWindow().getDecorView().getDisplay();
-            DisplayMetrics metrics = new DisplayMetrics();
-            display.getMetrics(metrics);
-
-            final DisplayManager displayManager =
-                    (DisplayManager) CapturedActivity.this.getSystemService(
-                    Context.DISPLAY_SERVICE);
-            final Display defaultDisplay = displayManager.getDisplay(Display.DEFAULT_DISPLAY);
-            final int rotation = defaultDisplay.getRotation();
-            Display.Mode mode = defaultDisplay.getMode();
-
-            int testAreaWidth = marginedLayout.getWidth();
-            int testAreaHeight = marginedLayout.getHeight();
-
-            Log.d(TAG, "testAreaWidth: " + testAreaWidth
-                    + ", testAreaHeight: " + testAreaHeight
-                    + ", displayWidth: " + mode.getPhysicalWidth()
-                    + ", displayHeight: " + mode.getPhysicalHeight());
-
-            Rect boundsToCheck = animationTestCase.getBoundsToCheck(marginedLayout);
-
-            if (boundsToCheck.width() < 40 || boundsToCheck.height() < 40) {
-                fail("capture bounds too small to be a fullscreen activity: " + boundsToCheck);
-            }
-
             mSurfacePixelValidator = new SurfacePixelValidator2(CapturedActivity.this,
-                    mLogicalDisplaySize, boundsToCheck, animationTestCase.getChecker());
-            Log.d("MediaProjection", "Size is " + mLogicalDisplaySize.toString()
+                    mLogicalDisplaySize, boundsToCheck, testCase.getChecker());
+            Log.d("MediaProjection", "Size is " + mLogicalDisplaySize
                     + ", bounds are " + boundsToCheck.toShortString());
             mVirtualDisplay = mMediaProjection.createVirtualDisplay("CtsCapturedActivity",
                     mLogicalDisplaySize.x, mLogicalDisplaySize.y,
@@ -327,19 +301,20 @@ public class CapturedActivity extends Activity {
             mVirtualDisplay = null;
         }, endCaptureDelayMs);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch resultLatch = new CountDownLatch(1);
         mHandler.postDelayed(() -> {
             Log.d(TAG, "Ending test case");
-            animationTestCase.end();
-            FrameLayout contentLayout = (FrameLayout) findViewById(android.R.id.content);
-            contentLayout.removeAllViews();
+            testCase.end();
+            final FrameLayout contentLayout = findViewById(android.R.id.content);
+            if (contentLayout != null) {
+                contentLayout.removeAllViews();
+            }
             mSurfacePixelValidator.finish(testResult);
-            latch.countDown();
             mSurfacePixelValidator = null;
+            resultLatch.countDown();
         }, endDelayMs);
 
-        boolean latchResult = latch.await(timeOutMs, TimeUnit.MILLISECONDS);
-        if (!latchResult) {
+        if (!resultLatch.await(timeOutMs, TimeUnit.MILLISECONDS)) {
             testResult.passFrames = 0;
             testResult.failFrames = 1000;
         }
@@ -371,7 +346,7 @@ public class CapturedActivity extends Activity {
             int frameNr = failFrames.keyAt(i);
             Bitmap bitmap = failFrames.valueAt(i);
 
-            String bitmapName =  "frame_" + frameNr + ".png";
+            String bitmapName = "frame_" + frameNr + ".png";
             Log.d(TAG, "Saving file : " + bitmapName + " in directory : " + directoryName);
 
             File file = new File(directoryName, bitmapName);
@@ -385,27 +360,21 @@ public class CapturedActivity extends Activity {
     }
 
     public void verifyTest(ISurfaceValidatorTestCase testCase, TestName name) throws Throwable {
-        if (mIsSharingScreenDenied.get()) {
-            throw new IllegalStateException("User denied screen sharing permission.");
-        }
-
         CapturedActivity.TestResult result = runTest(testCase);
         saveFailureCaptures(result.failures, name);
 
         float failRatio = 1.0f * result.failFrames / (result.failFrames + result.passFrames);
         assertTrue("Error: " + failRatio + " fail ratio - extremely high, is activity obstructed?",
                 failRatio < 0.95f);
-        assertTrue("Error: " + result.failFrames
-                        + " incorrect frames observed - incorrect positioning",
-                result.failFrames == 0);
+        assertEquals("Error: " + result.failFrames
+                + " incorrect frames observed - incorrect positioning", 0, result.failFrames);
 
         if (testCase.hasAnimation()) {
             float framesPerSecond = 1.0f * result.passFrames
                     / TimeUnit.MILLISECONDS.toSeconds(getCaptureDurationMs());
             assertTrue("Error, only " + result.passFrames
-                    + " frames observed, virtual display only capturing at "
-                    + framesPerSecond + " frames per second",
-                    result.passFrames > 100);
+                + " frames observed, virtual display only capturing at "
+                + framesPerSecond + " frames per second", result.passFrames > 100);
         }
     }
 
@@ -420,15 +389,10 @@ public class CapturedActivity extends Activity {
         }
     }
 
-    public void restoreSettings() {
+    private void restoreSettings() {
         if (mSettingsSession != null) {
             mSettingsSession.close();
             mSettingsSession = null;
         }
     }
-
-    public boolean isOnWatch() {
-        return mOnWatch;
-    }
-
 }
