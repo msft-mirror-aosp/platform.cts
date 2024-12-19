@@ -17,17 +17,21 @@ package android.view.cts;
 
 import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
+
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
+import android.app.ActivityOptions;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.Region;
-import android.support.test.uiautomator.UiObjectNotFoundException;
 import android.util.IntProperty;
 import android.util.Property;
 import android.view.Gravity;
@@ -43,9 +47,10 @@ import android.view.cts.surfacevalidator.PixelChecker;
 import android.view.cts.surfacevalidator.ViewFactory;
 import android.widget.FrameLayout;
 
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.RequiresDevice;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
@@ -63,15 +68,16 @@ public class AttachedSurfaceControlSyncTest {
     private static final String TAG = "AttachedSurfaceControlSyncTests";
 
     @Rule
-    public ActivityTestRule<CapturedActivityWithResource> mActivityRule =
-            new ActivityTestRule<>(CapturedActivityWithResource.class);
-
+    public final ActivityScenarioRule<CapturedActivityWithResource> mActivityRule =
+            new ActivityScenarioRule<>(CapturedActivityWithResource.class, ActivityOptions.makeBasic().toBundle());
     @Rule
     public TestName mName = new TestName();
 
     private CapturedActivityWithResource mActivity;
 
-      private static ValueAnimator makeInfinite(ValueAnimator a) {
+    private ActivityScenario<CapturedActivityWithResource> mScenario;
+
+    private static ValueAnimator makeInfinite(ValueAnimator a) {
         a.setRepeatMode(ObjectAnimator.REVERSE);
         a.setRepeatCount(ObjectAnimator.INFINITE);
         a.setDuration(200);
@@ -187,22 +193,28 @@ public class AttachedSurfaceControlSyncTest {
 
     @Before
     public void setup() {
-        mActivity = mActivityRule.getActivity();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
+        mScenario = mActivityRule.getScenario();
+        mScenario.onActivity(activity -> {
+                    assumeFalse("Test/capture infrastructure not supported on Watch",
+                            activity.getPackageManager().hasSystemFeature(
+                                    PackageManager.FEATURE_WATCH));
+                    activity.setLogicalDisplaySize(getLogicalDisplaySize());
+                    assertTrue("Failed to accept ScreenCapture Dialog",
+                            activity.awaitClickAcceptButtonInPermissionDialog());
+                    mActivity = activity;
+                }
+        );
     }
 
-    /**
-     * Want to be especially sure we don't leave up the permission dialog, so try and dismiss
-     * after test.
-     */
     @After
-    public void tearDown() throws UiObjectNotFoundException {
-        mActivity.dismissPermissionDialog();
+    public void tearDown() {
+        mScenario.close();
     }
 
     /** Draws a moving 10x10 green rectangle with hole punch, make sure we don't get any sync errors */
     @Test
     public void testSync() throws Throwable {
+        assertTrue("ScreenCapture not ready", mActivity.awaitScreenCaptureReady());
         mActivity.verifyTest(new AnimationTestCase(
                 sGreenSurfaceControlAnchorFactory,
                 new FrameLayout.LayoutParams(100, 100, Gravity.LEFT | Gravity.TOP),
