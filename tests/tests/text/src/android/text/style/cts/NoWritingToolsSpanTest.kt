@@ -52,6 +52,7 @@ class NoWritingToolsSpanTest {
         assertThat(spans.size).isEqualTo(1)
         val span = spans[0]
         assertThat(span is NoWritingToolsSpan).isTrue()
+        assertThat(span.spanTypeId).isEqualTo(NoWritingToolsSpan().spanTypeId)
     }
 
     private fun parcelUnparcelText(text: CharSequence): CharSequence {
