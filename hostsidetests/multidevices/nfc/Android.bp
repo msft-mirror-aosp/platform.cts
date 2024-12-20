@@ -25,7 +25,7 @@ python_defaults {
         "platform-test-py-annotations",
     ],
     test_suites: [
-        // Added this test suite to CTS-V
+        "cts-interactive",
         "general-tests",
     ],
     version: {
