@@ -23,14 +23,17 @@ import static android.media.bettertogether.cts.SystemMediaRoutingProviderService
 import static com.android.media.flags.Flags.FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.Manifest;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
+import android.media.ToneGenerator;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -51,6 +54,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,7 +67,12 @@ public class SystemMediaRoutingTest {
     /** Time to wait for routes to appear before giving up. */
     private static final int TIMEOUT_MS = 5_000;
 
-    @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
+    /* The volume for the tone to generate in order to test audio capturing. */
+    private static final int VOLUME_TONE = 100;
+    private static final int EXPECTED_NOISY_BYTE_COUNT = 20_000;
+
+    @Rule
+    public final ResourceReleaser mResourceReleaser = new ResourceReleaser(/* useStack= */ true);
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -73,10 +82,14 @@ public class SystemMediaRoutingTest {
 
     Context mContext;
     private MediaRouter2 mSelfProxyRoute;
+    private SystemMediaRoutingProviderService mService;
 
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        // TODO:  b/362507305 - Consider moving the enabling and disabling of the provider service
+        // to a before class, so that it's done only once per test class run. That should marginally
+        // speed up tests.
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_ROUTING_CONTROL,
@@ -101,6 +114,16 @@ public class SystemMediaRoutingTest {
                                 serviceComponent,
                                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                                 /* flags= */ PackageManager.DONT_KILL_APP));
+
+        triggerScan();
+        mService =
+                PollingCheck.waitFor(
+                        TIMEOUT_MS,
+                        /* supplier= */ SystemMediaRoutingProviderService::getInstance,
+                        /* condition= */ Objects::nonNull);
+        assertWithMessage("Service failed to launch after " + TIMEOUT_MS + " milliseconds.")
+                .that(mService)
+                .isNotNull();
     }
 
     // Tests.
@@ -108,7 +131,6 @@ public class SystemMediaRoutingTest {
     @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
     @Test
     public void getRoutes_withNoDiscoveryPreference_returnsSystemMediaRoutesOnly() {
-        triggerScan();
         var routes =
                 getSystemRoutesWithNames(
                         ROUTE_ID_ONLY_SYSTEM_AUDIO,
@@ -123,14 +145,59 @@ public class SystemMediaRoutingTest {
         assertThat(foundRouteNames).doesNotContain(ROUTE_ID_ONLY_REMOTE);
     }
 
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void transferTo_systemMediaProviderServiceRoute_readsAudioAsExpected() {
+        var route =
+                getSystemRoutesWithNames(ROUTE_ID_ONLY_SYSTEM_AUDIO).stream()
+                        .filter(it -> it.getName().toString().equals(ROUTE_ID_ONLY_SYSTEM_AUDIO))
+                        .findAny()
+                        .get();
+        var previouslySelectedRoute =
+                mSelfProxyRoute.getSystemController().getSelectedRoutes().getFirst();
+        mSelfProxyRoute.transferTo(route);
+        // Even though this test transfers to previouslySelectedRoute later, we still schedule a
+        // transfer back to the original route so that the routing gets reset, even if the test
+        // fails later.
+        mResourceReleaser.add(() -> mSelfProxyRoute.transferTo(previouslySelectedRoute));
+        waitForSelectedRouteWithName(/* name= */ ROUTE_ID_ONLY_SYSTEM_AUDIO);
+
+        var toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, VOLUME_TONE);
+        mResourceReleaser.add(toneGenerator::release);
+        toneGenerator.startTone(ToneGenerator.TONE_DTMF_0);
+        new PollingCheck(TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return mService.getNoisyBytesCount() > EXPECTED_NOISY_BYTE_COUNT;
+            }
+        }.run();
+
+        mSelfProxyRoute.transferTo(previouslySelectedRoute);
+        waitForSelectedRouteWithName(previouslySelectedRoute.getName().toString());
+
+        assertThat(mService.getSelectedRouteOriginalId()).isNull();
+        assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
+    }
+
     // Internal methods.
 
-    /** Triggers an active scan and schedules its cancelation after the end of the test. */
+    /** Triggers an active scan and schedules its cancellation after the end of the test. */
     private void triggerScan() {
         MediaRouter2.ScanToken scanToken =
                 mSelfProxyRoute.requestScan(
                         new MediaRouter2.ScanRequest.Builder().setScreenOffScan(true).build());
         mResourceReleaser.add(() -> mSelfProxyRoute.cancelScanRequest(scanToken));
+    }
+
+    /** Waits for the selected system route to have the given {@code name}. */
+    private void waitForSelectedRouteWithName(String name) {
+        new PollingCheck(TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                var controller = mSelfProxyRoute.getSystemController();
+                return controller.getSelectedRoutes().getFirst().getName().toString().equals(name);
+            }
+        }.run();
     }
 
     /**
