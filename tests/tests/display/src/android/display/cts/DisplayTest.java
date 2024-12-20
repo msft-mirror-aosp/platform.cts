@@ -54,6 +54,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.hardware.DataSpace;
 import android.hardware.HardwareBuffer;
+import android.hardware.LutProperties;
 import android.hardware.OverlayProperties;
 import android.hardware.display.DeviceProductInfo;
 import android.hardware.display.DisplayManager;
@@ -1088,7 +1089,17 @@ public class DisplayTest extends TestBase {
                      dest.isCombinationSupported(
                             DataSpace.DATASPACE_SRGB, HardwareBuffer.RGBA_8888));
         if (android.hardware.flags.Flags.lutsApi()) {
-            assertEquals(overlayProperties.getLutProperties(), dest.getLutProperties());
+            LutProperties[] lutProperties = overlayProperties.getLutProperties();
+            assertEquals(lutProperties, dest.getLutProperties());
+            if (lutProperties != null) {
+                for (LutProperties properties : lutProperties) {
+                    assertTrue(
+                            properties.getDimension() == LutProperties.ONE_DIMENSION
+                                    || properties.getDimension() == LutProperties.THREE_DIMENSION);
+                    assertTrue(properties.getSize() > 0);
+                    assertTrue(properties.getSamplingKeys().length > 0);
+                }
+            }
         }
         parcel.recycle();
     }
