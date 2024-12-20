@@ -35,15 +35,21 @@ import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
 import android.os.Looper;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,6 +70,13 @@ public class LoopbackPassthroughTest {
     private AudioSource mRecordReferenceSource;
     private int mBytesToRead;
     private float mBitrateInBytesPerSecond;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() {
@@ -91,6 +104,7 @@ public class LoopbackPassthroughTest {
 
     @CddTest(requirement="5.4.3/C-1-1")
     @Test
+    @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testPcmLoopback() {
         if (!supportsLoopback()) {
             return;
