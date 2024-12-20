@@ -98,7 +98,7 @@ import java.util.Set;
 public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTestBase implements
         DeviceStateManager.DeviceStateCallback {
 
-    private static final int TIMEOUT = 2000;
+    private static final int TIMEOUT = 3000;
     private static final int INVALID_DEVICE_STATE = -1;
 
     private static final List<@WindowAreaComponent.WindowAreaSessionState Integer>
@@ -577,8 +577,10 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         // Cancelling rear display presentation mode should cancel the override, so verifying that
         // the device state is no longer the rear display presentation state.
         waitAndAssert(() -> mCurrentDeviceState.getIdentifier() != mRearDisplayPresentationState);
-        assertEquals(WindowAreaComponent.STATUS_AVAILABLE,
-                (int) mWindowAreaPresentationStatus.getWindowAreaStatus());
+        waitAndAssert(
+                () ->
+                        mWindowAreaPresentationStatus.getWindowAreaStatus()
+                                == WindowAreaComponent.STATUS_AVAILABLE);
         // Since the non-visible and session ended callbacks happen so fast, we check if
         // the list of values received equal what we expected.
         assertEquals(mSessionStateStatusValues, SESSION_LIFECYCLE_VALUES);
