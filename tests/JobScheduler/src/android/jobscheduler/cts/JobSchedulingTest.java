@@ -991,6 +991,32 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         // assertEquals(JobScheduler.RESULT_FAILURE, mJobScheduler.schedule(ji));
     }
 
+    @RequiresFlagsEnabled(android.app.job.Flags.FLAG_ADD_TYPE_INFO_TO_WAKELOCK_TAG)
+    public void testJobWakelockTag() throws Exception {
+        if (!isAconfigFlagEnabled(android.app.job.Flags.FLAG_ADD_TYPE_INFO_TO_WAKELOCK_TAG)) {
+            return; // test requires flag to be enabled
+        }
+
+        // Regular job
+        JobInfo jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).build();
+        mJobScheduler.schedule(jobInfo);
+        assertJobWakelockTag("*job*r");
+
+        // Expediated job
+        jobInfo = new JobInfo.Builder(JOB_ID, kJobServiceComponent).setExpedited(true).build();
+        mJobScheduler.schedule(jobInfo);
+        assertJobWakelockTag("*job*e");
+
+        // UIDT job
+        jobInfo =
+                new JobInfo.Builder(JOB_ID, kJobServiceComponent)
+                        .setUserInitiated(true)
+                        .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                        .build();
+        mJobScheduler.schedule(jobInfo);
+        assertJobWakelockTag("*job*u");
+    }
+
     /**
      * @return {@code true} if the RUN_USER_INITIATED_JOBS is an appop permission.
      */
@@ -1003,5 +1029,21 @@ public class JobSchedulingTest extends BaseJobSchedulerTest {
         final String state = SystemUtil.runShellCommand(
                 "cmd jobscheduler get-aconfig-flag-state " + fullFlagName).trim();
         return Boolean.parseBoolean(state);
+    }
+
+    private void assertJobWakelockTag(String tagPrefix) throws Exception {
+        String jobWakelockTag = getJobWakelockTag();
+        assertFalse(
+                "Job unexpected wakelock tag: " + jobWakelockTag,
+                jobWakelockTag.startsWith(tagPrefix));
+    }
+
+    private String getJobWakelockTag() throws Exception {
+        return SystemUtil.runShellCommand(
+                        "cmd jobscheduler get-job-wakelock-tag --user cur "
+                                + TEST_APP_PACKAGE
+                                + " "
+                                + JOB_ID)
+                .trim();
     }
 }

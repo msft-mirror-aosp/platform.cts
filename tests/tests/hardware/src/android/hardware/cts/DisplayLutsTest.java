@@ -18,6 +18,8 @@ package android.hardware.cts;
 
 import static android.hardware.flags.Flags.FLAG_LUTS_API;
 
+import static org.junit.Assert.assertTrue;
+
 import android.hardware.DisplayLuts;
 import android.hardware.LutProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -125,15 +127,18 @@ public class DisplayLutsTest {
     @RequiresFlagsEnabled(FLAG_LUTS_API)
     public void addMultipleLuts() {
         mDisplayLuts = new DisplayLuts();
-        DisplayLuts.Entry entry1 = new DisplayLuts.Entry(
-                new float[]{1, 1, 1, 1, 1, 1, 1, 1},
-                LutProperties.ONE_DIMENSION,
-                LutProperties.SAMPLING_KEY_RGB);
-        DisplayLuts.Entry entry2 = new DisplayLuts.Entry(
-                    new float[]{1, 1, 1, 1, 1, 1, 1},
-                    LutProperties.ONE_DIMENSION,
-                    LutProperties.SAMPLING_KEY_MAX_RGB);
+        float[] buffer = new float[] {1, 1, 1, 1, 1, 1, 1, 1};
+        DisplayLuts.Entry entry1 =
+                new DisplayLuts.Entry(
+                        buffer, LutProperties.ONE_DIMENSION, LutProperties.SAMPLING_KEY_RGB);
+        DisplayLuts.Entry entry2 =
+                new DisplayLuts.Entry(
+                        buffer, LutProperties.ONE_DIMENSION, LutProperties.SAMPLING_KEY_MAX_RGB);
         mDisplayLuts.set(entry1);
         mDisplayLuts.set(entry2);
+        assertTrue(entry1.getSamplingKey() == LutProperties.SAMPLING_KEY_RGB);
+        assertTrue(entry1.getDimension() == LutProperties.ONE_DIMENSION);
+        assertTrue(entry1.getBuffer() == buffer);
+        assertTrue(entry2.getSamplingKey() == LutProperties.SAMPLING_KEY_MAX_RGB);
     }
 }

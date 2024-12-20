@@ -63,7 +63,7 @@ public final class ExplicitHealthCheckServiceTest {
                             countDownLatch.countDown();
                         });
         Consumer<Bundle> bundleConsumer = callback::sendResult;
-        mExplicitHealthCheckService.setHealthCheckResultCallback(null, bundleConsumer);
+        mExplicitHealthCheckService.setHealthCheckPassedCallback(null, bundleConsumer);
         mExplicitHealthCheckService.notifyHealthCheckPassed(PACKAGE_NAME);
         countDownLatch.await();
     }

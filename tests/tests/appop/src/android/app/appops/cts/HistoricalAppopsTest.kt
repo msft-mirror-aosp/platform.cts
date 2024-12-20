@@ -383,74 +383,97 @@ class HistoricalAppopsTest {
                 endTimeMillis = Long.MAX_VALUE
             }
 
-            // Get all ops for the package
-            val allOps = getHistoricalOps(appOpsManager, uid, packageName,
-                    null, beginTimeMillis, endTimeMillis)
+            // In case of noteOp batching enabled, use eventually to give it enough time for the
+            // async batched noteOp call to finish.
+            eventually {
+                // Get all ops for the package
+                val allOps = getHistoricalOps(
+                    appOpsManager, uid, packageName,
+                    null, beginTimeMillis, endTimeMillis
+                )
 
-            assertThat(allOps).isNotNull()
-            assertThat(allOps!!.uidCount).isEqualTo(1)
-            assertThat(allOps.beginTimeMillis).isEqualTo(beginTimeMillis)
-            assertThat(allOps.endTimeMillis).isGreaterThan(beginTimeMillis)
+                assertThat(allOps).isNotNull()
+                assertThat(allOps!!.uidCount).isEqualTo(1)
+                assertThat(allOps.beginTimeMillis).isEqualTo(beginTimeMillis)
+                assertThat(allOps.endTimeMillis).isGreaterThan(beginTimeMillis)
 
-            val uidOps = allOps.getUidOpsAt(0)
-            assertThat(uidOps).isNotNull()
-            assertThat(uidOps.uid).isEqualTo(Process.myUid())
-            assertThat(uidOps.packageCount).isEqualTo(1)
+                val uidOps = allOps.getUidOpsAt(0)
+                assertThat(uidOps).isNotNull()
+                assertThat(uidOps.uid).isEqualTo(Process.myUid())
+                assertThat(uidOps.packageCount).isEqualTo(1)
 
-            val packageOps = uidOps.getPackageOpsAt(0)
-            assertThat(packageOps).isNotNull()
-            assertThat(packageOps.packageName).isEqualTo(packageName)
-            assertThat(packageOps.opCount).isEqualTo(1)
+                val packageOps = uidOps.getPackageOpsAt(0)
+                assertThat(packageOps).isNotNull()
+                assertThat(packageOps.packageName).isEqualTo(packageName)
+                assertThat(packageOps.opCount).isEqualTo(1)
 
-            val op = packageOps.getOpAt(0)
-            assertThat(op).isNotNull()
-            assertThat(op.opName).isEqualTo(AppOpsManager.OPSTR_START_FOREGROUND)
+                val op = packageOps.getOpAt(0)
+                assertThat(op).isNotNull()
+                assertThat(op.opName).isEqualTo(AppOpsManager.OPSTR_START_FOREGROUND)
 
-            assertThat(op.getForegroundAccessCount(AppOpsManager.OP_FLAGS_ALL))
+                assertThat(op.getForegroundAccessCount(AppOpsManager.OP_FLAGS_ALL))
                     .isEqualTo(noteCount)
-            assertThat(op.getBackgroundAccessCount(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_PERSISTENT)).isEqualTo(0)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_TOP)).isEqualTo(noteCount)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE_LOCATION))
+                assertThat(op.getBackgroundAccessCount(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_PERSISTENT)).isEqualTo(0)
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_TOP)).isEqualTo(noteCount)
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE_LOCATION))
                     .isEqualTo(0)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE))
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE))
                     .isEqualTo(0)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_FOREGROUND)).isEqualTo(0)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_BACKGROUND)).isEqualTo(0)
-            assertThat(getAccessCount(op, AppOpsManager.UID_STATE_CACHED)).isEqualTo(0)
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_FOREGROUND)).isEqualTo(0)
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_BACKGROUND)).isEqualTo(0)
+                assertThat(getAccessCount(op, AppOpsManager.UID_STATE_CACHED)).isEqualTo(0)
 
-            assertThat(op.getForegroundAccessDuration(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
-            assertThat(op.getBackgroundAccessDuration(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
-            assertThat(op.getAccessDuration(AppOpsManager.UID_STATE_TOP,
-                    AppOpsManager.UID_STATE_BACKGROUND, AppOpsManager.OP_FLAGS_ALL))
+                assertThat(op.getForegroundAccessDuration(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
+                assertThat(op.getBackgroundAccessDuration(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
+                assertThat(
+                    op.getAccessDuration(
+                        AppOpsManager.UID_STATE_TOP,
+                        AppOpsManager.UID_STATE_BACKGROUND, AppOpsManager.OP_FLAGS_ALL
+                    )
+                )
                     .isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_PERSISTENT)).isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_TOP)).isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE_LOCATION))
+                assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_PERSISTENT)).isEqualTo(0)
+                assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_TOP)).isEqualTo(0)
+                assertThat(
+                    getAccessDuration(
+                        op,
+                        AppOpsManager.UID_STATE_FOREGROUND_SERVICE_LOCATION
+                    )
+                )
                     .isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE))
+                assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE))
                     .isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_FOREGROUND)).isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_BACKGROUND)).isEqualTo(0)
-            assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_CACHED)).isEqualTo(0)
+                assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_FOREGROUND)).isEqualTo(0)
+                assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_BACKGROUND)).isEqualTo(0)
+                assertThat(getAccessDuration(op, AppOpsManager.UID_STATE_CACHED)).isEqualTo(0)
 
-            assertThat(op.getForegroundRejectCount(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
-            assertThat(op.getBackgroundRejectCount(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
-            assertThat(op.getRejectCount(AppOpsManager.UID_STATE_TOP,
-                    AppOpsManager.UID_STATE_BACKGROUND, AppOpsManager.OP_FLAGS_ALL))
+                assertThat(op.getForegroundRejectCount(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
+                assertThat(op.getBackgroundRejectCount(AppOpsManager.OP_FLAGS_ALL)).isEqualTo(0)
+                assertThat(
+                    op.getRejectCount(
+                        AppOpsManager.UID_STATE_TOP,
+                        AppOpsManager.UID_STATE_BACKGROUND, AppOpsManager.OP_FLAGS_ALL
+                    )
+                )
                     .isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_PERSISTENT)).isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_TOP)).isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE_LOCATION))
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_PERSISTENT)).isEqualTo(0)
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_TOP)).isEqualTo(0)
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE_LOCATION))
                     .isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE))
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_FOREGROUND_SERVICE))
                     .isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_FOREGROUND)).isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_BACKGROUND)).isEqualTo(0)
-            assertThat(getRejectCount(op, AppOpsManager.UID_STATE_CACHED)).isEqualTo(0)
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_FOREGROUND)).isEqualTo(0)
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_BACKGROUND)).isEqualTo(0)
+                assertThat(getRejectCount(op, AppOpsManager.UID_STATE_CACHED)).isEqualTo(0)
+            }
         } finally {
             setUidMode(AppOpsManager.OPSTR_START_FOREGROUND, uid, AppOpsManager.MODE_FOREGROUND)
-            setUidMode(AppOpsManager.OPSTR_START_FOREGROUND, 2000, AppOpsManager.MODE_FOREGROUND)
+            setUidMode(
+                AppOpsManager.OPSTR_START_FOREGROUND,
+                2000,
+                AppOpsManager.MODE_FOREGROUND
+            )
         }
     }
 

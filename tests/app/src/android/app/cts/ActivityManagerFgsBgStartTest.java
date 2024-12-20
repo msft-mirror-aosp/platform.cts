@@ -165,6 +165,7 @@ public class ActivityManagerFgsBgStartTest {
             // the app from BG-FGS-launch restriction. Remove SYSTEM_ALERT_WINDOW permission to test
             // other BG-FGS-launch exemptions.
             allowBgActivityStart(PACKAGE_NAMES[i], false);
+            CtsAppTestUtils.clearBadProcess(PACKAGE_NAMES[i], mTestRunningUserId);
         }
         mOrigFgsTypeStartPermissionEnforcement = toggleBgFgsTypeStartPermissionEnforcement(false);
         CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);

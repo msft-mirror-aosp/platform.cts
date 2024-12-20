@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.location.AuxiliaryInformation;
 import android.location.BeidouAssistance;
 import android.location.BeidouSatelliteEphemeris;
 import android.location.BeidouSatelliteEphemeris.BeidouSatelliteClockModel;
@@ -44,6 +45,7 @@ import android.location.GnssAssistance.GnssSatelliteCorrections;
 import android.location.GnssCorrectionComponent;
 import android.location.GnssCorrectionComponent.GnssInterval;
 import android.location.GnssCorrectionComponent.PseudorangeCorrection;
+import android.location.GnssSignalType;
 import android.location.GnssStatus;
 import android.location.GpsAssistance;
 import android.location.GpsSatelliteEphemeris;
@@ -193,6 +195,9 @@ public class GnssAssistanceTest {
                 verifyTestRealTimeIntegrityModelList(gpsAssistance.getRealTimeIntegrityModels()));
         // verify satellite correction list
         assertTrue(verifyTestGnssCorrectionList(gpsAssistance.getSatelliteCorrections()));
+
+        // verify auxiliary information
+        assertTrue(verifyTestAuxiliaryInformation(gpsAssistance.getAuxiliaryInformation()));
         return true;
     }
 
@@ -262,6 +267,9 @@ public class GnssAssistanceTest {
                 verifyTestRealTimeIntegrityModelList(qzssAssistance.getRealTimeIntegrityModels()));
         // verify satellite correction list
         assertTrue(verifyTestGnssCorrectionList(qzssAssistance.getSatelliteCorrections()));
+
+        // verify auxiliary information
+        assertTrue(verifyTestAuxiliaryInformation(qzssAssistance.getAuxiliaryInformation()));
         return true;
     }
 
@@ -327,6 +335,9 @@ public class GnssAssistanceTest {
 
         // verify satellite correction list
         assertEquals(0, glonassAssistance.getSatelliteCorrections().size());
+
+        // verify auxiliary information
+        assertTrue(verifyTestAuxiliaryInformation(glonassAssistance.getAuxiliaryInformation()));
         return true;
     }
 
@@ -397,6 +408,9 @@ public class GnssAssistanceTest {
                         galileoAssistance.getRealTimeIntegrityModels()));
         // verify satellite correction list
         assertTrue(verifyTestGnssCorrectionList(galileoAssistance.getSatelliteCorrections()));
+
+        // verify auxiliary information
+        assertTrue(verifyTestAuxiliaryInformation(galileoAssistance.getAuxiliaryInformation()));
         return true;
     }
 
@@ -459,6 +473,9 @@ public class GnssAssistanceTest {
                         beidouAssistance.getRealTimeIntegrityModels()));
         // verify satellite correction list
         assertTrue(verifyTestGnssCorrections(beidouAssistance.getSatelliteCorrections()));
+
+        // verify auxiliary information
+        assertTrue(verifyTestAuxiliaryInformation(beidouAssistance.getAuxiliaryInformation()));
         return true;
     }
 
@@ -577,13 +594,31 @@ public class GnssAssistanceTest {
             List<RealTimeIntegrityModel> realTimeIntegrityModelList) {
         assertEquals(1, realTimeIntegrityModelList.size());
         RealTimeIntegrityModel realTimeIntegrityModel = realTimeIntegrityModelList.get(0);
-        assertEquals(1, realTimeIntegrityModel.getSvid());
-        assertEquals(true, realTimeIntegrityModel.isUsable());
+        List<GnssSignalType> badSignalTypes = realTimeIntegrityModel.getBadSignalTypes();
+        assertEquals(1, badSignalTypes.size());
+        GnssSignalType signalType = badSignalTypes.get(0);
+        assertEquals(GnssStatus.CONSTELLATION_BEIDOU, signalType.getConstellationType());
+        assertEqualsWithDelta(1575420000.0, signalType.getCarrierFrequencyHz());
+        assertEquals("BDS_B1C", signalType.getCodeType());
+        assertEquals(1, realTimeIntegrityModel.getBadSvid());
         assertEquals(1731065504, realTimeIntegrityModel.getPublishDateSeconds());
         assertEquals(1731065504, realTimeIntegrityModel.getStartDateSeconds());
         assertEquals(1731066504, realTimeIntegrityModel.getEndDateSeconds());
         assertEquals("USABINIT", realTimeIntegrityModel.getAdvisoryType());
         assertEquals("2018001", realTimeIntegrityModel.getAdvisoryNumber());
+        return true;
+    }
+
+    private boolean verifyTestAuxiliaryInformation(AuxiliaryInformation auxiliaryInformation) {
+        assertEquals(1, auxiliaryInformation.getAvailableSignalTypes().size());
+        GnssSignalType signalType = auxiliaryInformation.getAvailableSignalTypes().get(0);
+        assertEquals(GnssStatus.CONSTELLATION_BEIDOU, signalType.getConstellationType());
+        assertEqualsWithDelta(1575420000.0, signalType.getCarrierFrequencyHz());
+        assertEquals("BDS_B1C", signalType.getCodeType());
+        assertEquals(1, auxiliaryInformation.getSvid());
+        assertEquals(-1, auxiliaryInformation.getFrequencyChannelNumber());
+        assertEquals(
+                AuxiliaryInformation.BDS_B1C_ORBIT_TYPE_GEO, auxiliaryInformation.getSatType());
         return true;
     }
 
@@ -597,6 +632,7 @@ public class GnssAssistanceTest {
                 .setSatelliteEphemeris(getTestGalileoSatelliteEphemerisList())
                 .setRealTimeIntegrityModels(getTestRealTimeIntegrityModelList())
                 .setSatelliteCorrections(getTestSatelliteCorrections())
+                .setAuxiliaryInformation(getTestAuxiliaryInformation())
                 .build();
     }
 
@@ -672,6 +708,7 @@ public class GnssAssistanceTest {
                 .setUtcModel(getTestUtcModel())
                 .setTimeModels(getTestTimeModelList())
                 .setSatelliteEphemeris(getTestGlonassSatelliteEphemerisList())
+                .setAuxiliaryInformation(getTestAuxiliaryInformation())
                 .build();
     }
 
@@ -745,6 +782,7 @@ public class GnssAssistanceTest {
                 .setSatelliteEphemeris(getTestGpsSatelliteEphemerisList())
                 .setRealTimeIntegrityModels(getTestRealTimeIntegrityModelList())
                 .setSatelliteCorrections(getTestSatelliteCorrections())
+                .setAuxiliaryInformation(getTestAuxiliaryInformation())
                 .build();
     }
 
@@ -837,6 +875,7 @@ public class GnssAssistanceTest {
                 .setSatelliteEphemeris(getTestBeidouSatelliteEphemerisList())
                 .setRealTimeIntegrityModels(getTestRealTimeIntegrityModelList())
                 .setSatelliteCorrections(getTestSatelliteCorrections())
+                .setAuxiliaryInformation(getTestAuxiliaryInformation())
                 .build();
     }
 
@@ -904,6 +943,7 @@ public class GnssAssistanceTest {
                 .setSatelliteEphemeris(getTestQzssSatelliteEphemerisList())
                 .setRealTimeIntegrityModels(getTestRealTimeIntegrityModelList())
                 .setSatelliteCorrections(getTestSatelliteCorrections())
+                .setAuxiliaryInformation(getTestAuxiliaryInformation())
                 .build();
     }
 
@@ -973,10 +1013,13 @@ public class GnssAssistanceTest {
 
     private List<RealTimeIntegrityModel> getTestRealTimeIntegrityModelList() {
         final List<RealTimeIntegrityModel> realTimeIntegrityModelList = new ArrayList<>();
+        List<GnssSignalType> signalTypes = new ArrayList<>();
+        signalTypes.add(
+                GnssSignalType.create(GnssStatus.CONSTELLATION_BEIDOU, 1575420000.0, "BDS_B1C"));
         realTimeIntegrityModelList.add(
                 new RealTimeIntegrityModel.Builder()
-                        .setSvid(1)
-                        .setUsable(true)
+                        .setBadSvid(1)
+                        .setBadSignalTypes(signalTypes)
                         .setPublishDateSeconds(1731065504)
                         .setStartDateSeconds(1731065504)
                         .setEndDateSeconds(1731066504)
@@ -1073,6 +1116,18 @@ public class GnssAssistanceTest {
                 .setM0(-1.12)
                 .setDeltaN(4.611e-9)
                 .setSecondOrderHarmonicPerturbation(secondOrderHarmonicPerturbation)
+                .build();
+    }
+
+    private AuxiliaryInformation getTestAuxiliaryInformation() {
+        List<GnssSignalType> signalTypes = new ArrayList<>();
+        signalTypes.add(
+                GnssSignalType.create(GnssStatus.CONSTELLATION_BEIDOU, 1575420000.0, "BDS_B1C"));
+        return new AuxiliaryInformation.Builder()
+                .setSvid(1)
+                .setAvailableSignalTypes(signalTypes)
+                .setFrequencyChannelNumber(-1)
+                .setSatType(AuxiliaryInformation.BDS_B1C_ORBIT_TYPE_GEO)
                 .build();
     }
 }

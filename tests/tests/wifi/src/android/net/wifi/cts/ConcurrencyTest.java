@@ -1939,6 +1939,9 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                     }
                 });
 
+        assertTrue(
+                WifiP2pUsdBasedServiceConfig.getMaxAllowedServiceSpecificInfoLength()
+                        > TEST_USD_SERVICE_SPECIFIC_INFO.length);
         /* 1. Create a service discovery request with USD based service configuration */
         WifiP2pUsdBasedServiceConfig expectedUsdConfig = new WifiP2pUsdBasedServiceConfig.Builder(
                 TEST_USD_SERVICE_NAME)

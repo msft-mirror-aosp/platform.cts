@@ -37,8 +37,6 @@ import android.app.AsyncNotedAppOp
 import android.app.PendingIntent
 import android.app.SyncNotedAppOp
 import android.bluetooth.BluetoothManager
-import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
-import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 import android.bluetooth.le.ScanCallback
 import android.content.BroadcastReceiver
 import android.content.ComponentName
@@ -90,7 +88,9 @@ import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgrou
 import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import java.util.concurrent.TimeoutException
 import org.junit.After
@@ -102,6 +102,8 @@ import org.junit.ClassRule
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
+import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -376,6 +378,14 @@ class AppOpsLoggingTest {
     fun noteAsyncOpAndCheckCustomMessage() {
         rethrowThrowableFrom {
             testService.callApiThatNotesAsyncOpAndCheckCustomMessage(AppOpsUserClient(context))
+        }
+    }
+
+    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
+    @Test
+    fun noteAsyncOpsMultipleTimes() {
+        rethrowThrowableFrom {
+            testService.callApiThatNotesAsyncOpMultipleTimes(AppOpsUserClient(context))
         }
     }
 
@@ -985,6 +995,16 @@ class AppOpsLoggingTest {
         private val myUid = Process.myUid()
         private val myPackage = context.packageName
 
+        private lateinit var latch: CountDownLatch
+        private val notedWatcher = object: AppOpsManager.OnOpNotedListener {
+            override fun onOpNoted(
+                op: String, uid: Int, packageName: String, attributionTag: String?,
+                flag: Int, result: Int
+            ) {
+                latch.countDown()
+            }
+        }
+
         override fun noteSyncOp() {
             runWithShellPermissionIdentity {
                 appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, getCallingUid(),
@@ -1043,11 +1063,19 @@ class AppOpsLoggingTest {
 
         override fun noteAsyncOp() {
             val callingUid = getCallingUid()
-
+            latch = CountDownLatch(1)
+            runWithShellPermissionIdentity {
+                appOpsManager.startWatchingNoted(
+                    arrayOf(OPSTR_COARSE_LOCATION),
+                    Executors.newSingleThreadExecutor(),
+                    notedWatcher
+                )
+            }
             handler.post {
                 runWithShellPermissionIdentity {
                     appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
                         null, null)
+                    assertThat(latch.await(TIMEOUT_MILLIS, MILLISECONDS)).isTrue()
                 }
             }
         }
@@ -1070,6 +1098,32 @@ class AppOpsLoggingTest {
                 runWithShellPermissionIdentity {
                     appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
                             null, "custom msg")
+                }
+            }
+        }
+
+        override fun noteAsyncOpMultipleTimesWithAttribution(attributionTag: String) {
+            val callingUid = getCallingUid()
+            // OnOpNotedListener will be called twice, one for the first noteOp call, the other for
+            // the batched noteOp call.
+            latch = CountDownLatch(2)
+            runWithShellPermissionIdentity {
+                appOpsManager.startWatchingNoted(
+                    arrayOf(OPSTR_COARSE_LOCATION),
+                    Executors.newSingleThreadExecutor(),
+                    notedWatcher
+                )
+            }
+
+            handler.post {
+                runWithShellPermissionIdentity {
+                    repeat(5) {
+                        appOpsManager.noteOpNoThrow(
+                            OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
+                            attributionTag, "custom msg"
+                        )
+                    }
+                    assertThat(latch.await(TIMEOUT_MILLIS, MILLISECONDS)).isTrue()
                 }
             }
         }

@@ -16,9 +16,12 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderTestBase;
@@ -87,7 +90,7 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
         final boolean needVideo = true;
 
         // mediatype, testClip, colorRange, colorStandard, colorTransfer, areColorAspectsInStream
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
+        final List<Object[]> exhaustiveArgsList =  new ArrayList<>(Arrays.asList(new Object[][]{
                 // h264 clips
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_qcif_color_bt709_lr_sdr_avc.mp4",
                         MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT709,
@@ -261,7 +264,24 @@ public class DecoderColorAspectsTest extends CodecDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_352x288_hlg_av1.mkv",
                         MediaFormat.COLOR_RANGE_LIMITED, MediaFormat.COLOR_STANDARD_BT709,
                         MediaFormat.COLOR_TRANSFER_HLG, true, CODEC_OPTIONAL},
-        });
+        }));
+
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(
+                    Arrays.asList(
+                            new Object[][] {
+                                {
+                                    MediaFormat.MIMETYPE_VIDEO_APV,
+                                    "pattern_dynamic_aspect_1280x720_30fps_30mbps_apv_10bit.mp4",
+                                    MediaFormat.COLOR_RANGE_LIMITED,
+                                    MediaFormat.COLOR_STANDARD_BT2020,
+                                    MediaFormat.COLOR_TRANSFER_ST2084,
+                                    false,
+                                    CODEC_OPTIONAL
+                                },
+                            }));
+        }
+
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 

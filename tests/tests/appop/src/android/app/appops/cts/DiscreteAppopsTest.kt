@@ -65,7 +65,7 @@ private const val LOG_TAG = "DiscreteAppopsTest"
 private const val PACKAGE_NAME = "android.app.appops.cts.appfordiscretetest"
 private const val TIMEOUT_MILLIS = 45000L
 private const val DEFAULT_TIME_QUANT_MILLIS = 60000L
-private const val SHORT_TIME_QUANT_MILLIS = 2000L
+private const val SHORT_TIME_QUANT_MILLIS = 3000L
 private const val CALLBACK_PROPAGATION_DELAY = 5000L
 private const val SAFETY_MARGIN_MILLIS = 5000L
 private const val TEN_MINUTES_MILLIS = 600000L
@@ -165,6 +165,9 @@ class DiscreteAppopsTest {
 
     @After
     fun tearDownTest() {
+        // When noteOp batching is enabled, the async batched noteOp call has a delay of 1 sec.
+        // Hence we want to wait until the async call finishes before we clear history of app ops.
+        Thread.sleep(2000)
         runWithShellPermissionIdentity {
             appOpsManager.clearHistory()
             appOpsManager.resetHistoryParameters()
@@ -187,7 +190,6 @@ class DiscreteAppopsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled
     fun testRecordAndCheckAppOp() {
         waitUntilSafelyInTimeQuant(DEFAULT_TIME_QUANT_MILLIS, SAFETY_MARGIN_MILLIS)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, null, null)
@@ -397,7 +399,8 @@ class DiscreteAppopsTest {
 
         assertThat(discrete.getLastDuration(OP_FLAGS_ALL)).isEqualTo(-1)
         assertThat(discrete.getLastAccessTime(OP_FLAGS_ALL))
-                .isEqualTo(timeStamp - DEFAULT_TIME_QUANT_MILLIS)
+            .isEqualTo(timeStamp - DEFAULT_TIME_QUANT_MILLIS)
+
     }
 
     @Test
@@ -456,6 +459,7 @@ class DiscreteAppopsTest {
 
         makeTop()
 
+        Thread.sleep(2000)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         makeBackground()

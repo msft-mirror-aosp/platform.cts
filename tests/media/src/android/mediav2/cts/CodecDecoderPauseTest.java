@@ -16,7 +16,10 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.fail;
 
@@ -65,7 +68,7 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
         final boolean needAudio = true;
         final boolean needVideo = true;
         // mediaType, test file, SupportClass
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
+        final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_2ch_48kHz_he_aac.mp4", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_cif_avc_delay16.mp4", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_H263, "bbb_176x144_128kbps_15fps_h263.3gp", CODEC_ALL},
@@ -78,7 +81,19 @@ public class CodecDecoderPauseTest extends CodecDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_cif_768kbps_30fps_vp9.mkv", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
                         CODEC_ALL},
-        });
+        }));
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(
+                    Arrays.asList(
+                            new Object[][] {
+                                {
+                                    MediaFormat.MIMETYPE_VIDEO_APV,
+                                    "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                                    CODEC_ALL
+                                },
+                            }));
+        }
+
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 

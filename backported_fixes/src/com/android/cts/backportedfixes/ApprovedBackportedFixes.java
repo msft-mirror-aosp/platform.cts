@@ -18,11 +18,12 @@ package com.android.cts.backportedfixes;
 import com.android.build.backportedfixes.BackportedFix;
 import com.android.build.backportedfixes.BackportedFixes;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 
 import java.net.URL;
+import java.util.Set;
 
 /**
  * List of all known issues approved by Android Partner Engineering as a backported fix reportable
@@ -32,14 +33,18 @@ import java.net.URL;
  */
 public final class ApprovedBackportedFixes {
     private final ImmutableSet<Long> mAllIssues;
-    private final ImmutableMap<Long, Integer> mId2Alias;
+    private final ImmutableBiMap<Long, Integer> mId2Alias;
 
     private ApprovedBackportedFixes() {
         BackportedFixes fixes = readBackportedFixes();
         mAllIssues = fixes.getFixesList().stream().map(BackportedFix::getKnownIssue).collect(
                 ImmutableSet.toImmutableSet());
-        mId2Alias = fixes.getFixesList().stream().collect(
-                ImmutableMap.toImmutableMap(BackportedFix::getKnownIssue, BackportedFix::getAlias));
+        mId2Alias =
+                fixes.getFixesList().stream()
+                        .filter(fix -> fix.getAlias() > 0)
+                        .collect(
+                                ImmutableBiMap.toImmutableBiMap(
+                                        BackportedFix::getKnownIssue, BackportedFix::getAlias));
     }
 
 
@@ -52,6 +57,10 @@ public final class ApprovedBackportedFixes {
     public int getAlias(Long issueId) {
         Integer alias = mId2Alias.get(issueId);
         return alias == null ? 0 : alias;
+    }
+
+    public Set<Integer> getAllAliases() {
+        return mId2Alias.values();
     }
 
     /** Returns the ids of all known issues approved as a backported fix. */
