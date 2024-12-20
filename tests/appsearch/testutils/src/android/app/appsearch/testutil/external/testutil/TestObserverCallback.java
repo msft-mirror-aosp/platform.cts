@@ -16,13 +16,12 @@
 
 package android.app.appsearch.testutil;
 
+import android.annotation.NonNull;
 import android.app.appsearch.observer.DocumentChangeInfo;
 import android.app.appsearch.observer.ObserverCallback;
 import android.app.appsearch.observer.SchemaChangeInfo;
 
 import com.android.internal.annotations.GuardedBy;
-
-import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -100,7 +99,8 @@ public class TestObserverCallback implements ObserverCallback {
     // the executor provided to GlobalSearchSessionShim#adObserver dispatches the notifications.
     // Therefore they are declared as iterables instead of lists, to reduce the risk that they will
     // be inspected by index.
-    public @NonNull Iterable<SchemaChangeInfo> getSchemaChanges() {
+    @NonNull
+    public Iterable<SchemaChangeInfo> getSchemaChanges() {
         return mSchemaChanges;
     }
 
@@ -109,7 +109,8 @@ public class TestObserverCallback implements ObserverCallback {
     // the executor provided to GlobalSearchSessionShim#adObserver dispatches the notifications.
     // Therefore they are declared as iterables instead of lists, to reduce the risk that they will
     // be inspected by index.
-    public @NonNull Iterable<DocumentChangeInfo> getDocumentChanges() {
+    @NonNull
+    public Iterable<DocumentChangeInfo> getDocumentChanges() {
         return mDocumentChanges;
     }
 

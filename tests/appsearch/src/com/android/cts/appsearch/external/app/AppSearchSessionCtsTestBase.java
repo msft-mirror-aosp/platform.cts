@@ -30,6 +30,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.AppSearchSchema;
@@ -53,6 +54,7 @@ import android.app.appsearch.RemoveByDocumentIdRequest;
 import android.app.appsearch.ReportUsageRequest;
 import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SearchResult;
+import android.app.appsearch.SearchResults;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SearchSuggestionResult;
@@ -77,7 +79,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import org.jspecify.annotations.NonNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -11903,13 +11904,12 @@ public abstract class AppSearchSessionCtsTestBase {
                         .setListFilterQueryLanguageEnabled(true)
                         .addEmbeddingParameters(searchEmbedding)
                         .build();
+        SearchResultsShim results =
+                mDb1.search("semanticSearch(getEmbeddingParameter(0), -1, 1)", searchSpec);
         UnsupportedOperationException exception =
                 assertThrows(
                         UnsupportedOperationException.class,
-                        () ->
-                                mDb1.search(
-                                        "semanticSearch(getEmbeddingParameter(0), -1, 1)",
-                                        searchSpec));
+                        () -> results.getNextPageAsync().get());
         assertThat(exception)
                 .hasMessageThat()
                 .contains(

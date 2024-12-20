@@ -18,9 +18,9 @@ package android.app.appsearch.cts.app.customer;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.annotation.NonNull;
 import android.app.appsearch.GenericDocument;
 
-import org.jspecify.annotations.NonNull;
 import org.junit.Test;
 
 /**
