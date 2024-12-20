@@ -2201,8 +2201,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             // (ro.boot.wificountrycodeCountry) will return a null country code. Since country code
             // is mandatory for 5GHz/6GHz band, skip the softap operation on 5GHz & 6GHz only band.
             boolean skip5g6gBand = false;
-            String wifiCountryCode = ShellIdentityUtils.invokeWithShellPermissions(
-                    sWifiManager::getCountryCode);
+            String wifiCountryCode = sWifiManager.getCountryCode();
             if (wifiCountryCode == null) {
                 skip5g6gBand = true;
                 Log.e(TAG, "Country Code is not available - Skip 5GHz and 6GHz test");
