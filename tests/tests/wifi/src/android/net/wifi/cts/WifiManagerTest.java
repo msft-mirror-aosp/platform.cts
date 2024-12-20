@@ -2244,10 +2244,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 assertTrue(callback.onStartedCalled);
                 assertNotNull(callback.reservation);
                 SoftApConfiguration softApConfig = callback.reservation.getSoftApConfiguration();
-                assertEquals(
-                        WifiSsid.fromBytes(TEST_SSID_UNQUOTED.getBytes(StandardCharsets.UTF_8)),
-                        softApConfig.getWifiSsid());
-                assertEquals(TEST_PASSPHRASE, softApConfig.getPassphrase());
+                WifiSsid testSsid =
+                        WifiSsid.fromBytes(TEST_SSID_UNQUOTED.getBytes(StandardCharsets.UTF_8));
+                if (testSystemApi) {
+                    // Only system api call can force SSID and passphrase
+                    assertEquals(testSsid, softApConfig.getWifiSsid());
+                    assertEquals(TEST_PASSPHRASE, softApConfig.getPassphrase());
+                } else {
+                    assertNotEquals(testSsid, softApConfig.getWifiSsid());
+                }
                 // Automotive mode can force the LOHS to specific bands
                 if (!hasAutomotiveFeature()) {
                     assertEquals(testBand, softApConfig.getBand());
