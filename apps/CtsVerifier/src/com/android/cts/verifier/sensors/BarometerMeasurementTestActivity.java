@@ -134,7 +134,6 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
             throw new SensorTestStateNotSupportedException(
                     getString(R.string.snsr_baro_not_implemented));
         }
-        waitForUserToContinue();
     }
 
     @Override
@@ -316,7 +315,8 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         // Collect data while the flashlight is on
         getTestLogger().logInstructions(R.string.snsr_baro_flashlight_instruction);
         waitForUserToContinue();
-        sensorOperation = TestSensorOperation.createOperation(environment, 90, TimeUnit.SECONDS);
+        getTestLogger().logInstructions(R.string.snsr_baro_test_in_progress);
+        sensorOperation = TestSensorOperation.createOperation(environment, 65, TimeUnit.SECONDS);
         sensorOperation.execute(getCurrentTestNode());
         currentEvents = sensorOperation.getCollectedEvents();
         // Drop the first 20% of the readings to account for the sensor settling
@@ -329,7 +329,6 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
 
         // Finish with a final collection to get a baseline reading
         getTestLogger().logInstructions(R.string.snsr_baro_wait);
-        waitForUserToContinue();
         sensorOperation = TestSensorOperation.createOperation(environment, 10, TimeUnit.SECONDS);
         sensorOperation.execute(getCurrentTestNode());
         currentEvents = sensorOperation.getCollectedEvents();
@@ -337,8 +336,6 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
 
         playSound();
-        getTestLogger().logInstructions(R.string.snsr_baro_proceed);
-        waitForUserToContinue();
 
         Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(events));
@@ -397,11 +394,13 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         getTestLogger().logInstructions(R.string.snsr_baro_turn_on_airplane_mode);
         waitForUserToContinue();
         startActivity(new Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS));
+
         // Collect data for 15 seconds with radio off.
         sensorOperation = TestSensorOperation.createOperation(environment, 15, TimeUnit.SECONDS);
+        getTestLogger().logInstructions(R.string.snsr_baro_continue_test_instruction);
         waitForUserToContinue();
-        sensorOperation.execute(getCurrentTestNode());
         getTestLogger().logInstructions(R.string.snsr_baro_wait);
+        sensorOperation.execute(getCurrentTestNode());
         currentEvents = sensorOperation.getCollectedEvents();
         // Drop the first 20% of the readings to account for the sensor settling
         events.addAll(currentEvents.subList(currentEvents.size() / 5, currentEvents.size()));
@@ -638,8 +637,9 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
 
     @SuppressWarnings("unused")
     public String test8TemperatureCompensation() throws Throwable {
-        getTestLogger().logInstructions(R.string.snsr_baro_fridge_wait);
+        getTestLogger().logInstructions(R.string.snsr_baro_fridge_instruction);
         waitForUserToContinue();
+        getTestLogger().logInstructions(R.string.snsr_baro_fridge_wait);
         // Wait for 20 minutes while the device is in the fridge.
         SystemClock.sleep(1200000);
         // Prompt the user to set the date and time to one hour from now to ensure that the
@@ -653,7 +653,6 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         getTestLogger().logInstructions(R.string.snsr_baro_turn_bluetooth_on);
         waitForUserToContinue();
         startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
-        getTestLogger().logInstructions(R.string.snsr_baro_fridge_instruction);
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothChatService chatService =
                 new BluetoothChatService(
