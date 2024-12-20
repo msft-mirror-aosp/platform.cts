@@ -136,7 +136,7 @@ if [ "$USE_ATS" == "true" ]; then
     fi;
 
     # Add a new variable to control the dynamic downloader
-    ENABLE_XTS_DYNAMIC_DOWNLOADER=${ENABLE_XTS_DYNAMIC_DOWNLOADER:-"true"}
+    ENABLE_XTS_DYNAMIC_DOWNLOADER=${ENABLE_XTS_DYNAMIC_DOWNLOADER:-"false"}
 
     DEVICE_INFRA_SERVICE_FLAGS=" \
       --aapt='$(type -P aapt2 2>/dev/null)' \
