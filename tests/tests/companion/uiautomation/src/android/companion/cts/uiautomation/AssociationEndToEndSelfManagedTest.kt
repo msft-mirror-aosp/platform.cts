@@ -3,6 +3,7 @@ package android.companion.cts.uiautomation
 import android.app.Activity
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
+import android.companion.AssociationRequest.DEVICE_PROFILE_SENSOR_DEVICE_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.CompanionDeviceManager
@@ -47,6 +48,9 @@ class AssociationEndToEndSelfManagedTest(
         // Do not need to test the automotive_projection profile since it does not have
         // the UI.
         assumeFalse(profile == DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)
+        // Skip the DEVICE_PROFILE_SENSOR_DEVICE_STREAMING if the flag is disabled.
+        assumeFalse(profile == DEVICE_PROFILE_SENSOR_DEVICE_STREAMING
+                && !android.companion.virtualdevice.flags.Flags.enableLimitedVdmRole())
     }
 
     @Test
