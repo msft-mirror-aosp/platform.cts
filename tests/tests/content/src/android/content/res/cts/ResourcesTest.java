@@ -465,6 +465,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_fakeFrro() {
         var thrown =
                 assertThrows(
