@@ -169,6 +169,18 @@
                         android:layout_height="match_parent"
                         android:textStyle="bold"
                         android:id="@+id/audio_loopback_is_handheld"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="5sp"
+                        android:text="@string/audio_loopback_emulator"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:textStyle="bold"
+                        android:id="@+id/audio_loopback_emulator"/>
                 </LinearLayout>
 
                 <include layout="@layout/audio_loopback_utilities" />
