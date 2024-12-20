@@ -78,6 +78,18 @@ class RuntimeColorFilterTests : ActivityTestBase() {
           return inputBlender.eval(color, color).rgba;
         }"""
 
+    private val colorFilter = """
+       uniform vec4 inputColor;
+       vec4 main(half4 color) {
+          return inputColor;
+       }"""
+
+    private val intColorFilter = """
+       uniform int4 inputColor;
+       vec4 main(half4 color) {
+          return vec4(inputColor);
+       }"""
+
     private val bitmapShader = BitmapShader(
         Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
         Shader.TileMode.CLAMP,
@@ -333,6 +345,114 @@ class RuntimeColorFilterTests : ActivityTestBase() {
         val colorFilter = RuntimeColorFilter(samplingInputXfermode)
         colorFilter.setInputXfermode("inputBlender", redInputXfermode)
         paint.colorFilter = colorFilter
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetFloatsUniform() {
+        val cf = RuntimeColorFilter(colorFilter)
+
+        val color = Color.valueOf(Color.RED)
+        cf.setFloatUniform(
+            "inputColor",
+            color.red(),
+            color.blue(),
+            color.green(),
+            color.alpha()
+        )
+        val paint = Paint()
+        paint.colorFilter = cf
+        paint.blendMode = BlendMode.SRC
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetFloatArrayUniform() {
+        val cf = RuntimeColorFilter(colorFilter)
+
+        val color = Color.valueOf(Color.RED)
+        cf.setFloatUniform("inputColor", color.components)
+        val paint = Paint()
+        paint.colorFilter = cf
+        paint.blendMode = BlendMode.SRC
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetColorUniform() {
+        val cf = RuntimeColorFilter(simpleColorInputFilter)
+
+        val color = Color.valueOf(Color.RED)
+        cf.setColorUniform("inputColor", color.pack())
+        val paint = Paint()
+        paint.colorFilter = cf
+        paint.blendMode = BlendMode.SRC
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetIntUniform() {
+        val cf = RuntimeColorFilter(intColorFilter)
+
+        val color = Color.valueOf(Color.RED)
+        cf.setIntUniform(
+            "inputColor",
+            color.red().toInt(),
+            color.green().toInt(),
+            color.blue().toInt(),
+            color.alpha().toInt()
+        )
+        val paint = Paint()
+        paint.colorFilter = cf
+        paint.blendMode = BlendMode.SRC
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetIntArrayUniform() {
+        val cf = RuntimeColorFilter(intColorFilter)
+
+        val color = Color.valueOf(Color.RED)
+        val cVals: IntArray = intArrayOf(
+            color.red().toInt(),
+            color.green().toInt(),
+            color.blue().toInt(),
+            color.alpha().toInt()
+        )
+        cf.setIntUniform("inputColor", cVals)
+        val paint = Paint()
+        paint.colorFilter = cf
+        paint.blendMode = BlendMode.SRC
+
+        val rect = Rect(10, 10, 80, 80)
 
         createTest().addCanvasClient(
             { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
