@@ -16,9 +16,9 @@
 
 package android.app.appsearch;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import android.annotation.NonNull;
 
-import org.jspecify.annotations.NonNull;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.Closeable;
 import java.util.List;
@@ -48,7 +48,8 @@ public interface SearchResultsShim extends Closeable {
      *
      * @return a {@link ListenableFuture} which resolves to a list of {@link SearchResult} objects.
      */
-    @NonNull ListenableFuture<List<SearchResult>> getNextPageAsync();
+    @NonNull
+    ListenableFuture<List<SearchResult>> getNextPageAsync();
 
     @Override
     void close();
