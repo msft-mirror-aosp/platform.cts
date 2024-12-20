@@ -100,6 +100,7 @@ android_ravenwood_test {
         "src/android/app/cts/BroadcastOptionsTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }
 
 android_test {
