@@ -17,14 +17,13 @@
 package android.view.accessibility.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
 
 import android.os.Parcel;
 import android.platform.test.annotations.Presubmit;
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
