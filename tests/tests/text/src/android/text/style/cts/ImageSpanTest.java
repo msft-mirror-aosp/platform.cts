@@ -25,6 +25,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.cts.R;
 import android.text.style.DynamicDrawableSpan;
 import android.text.style.ImageSpan;
@@ -41,6 +42,7 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = ImageSpan.class)
 public class ImageSpanTest {
     private Context mContext;
 

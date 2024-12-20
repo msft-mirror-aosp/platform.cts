@@ -26,6 +26,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.LocaleList;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.StaticLayout;
@@ -50,6 +51,7 @@ import java.util.Locale;
 @RunWith(AndroidJUnit4.class)
 public class SuggestionSpanTest {
     @Test
+    @DisabledOnRavenwood(reason = "context.createConfigurationContext() not supported")
     public void testConstructorWithContext() {
         final String[] suggestions = new String[] {"suggestion1", "suggestion2"};
         final Configuration overrideConfig = new Configuration();

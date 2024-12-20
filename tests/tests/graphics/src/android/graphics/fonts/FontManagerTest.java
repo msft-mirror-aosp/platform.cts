@@ -28,6 +28,7 @@ import android.Manifest;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.FontConfig;
 import android.text.TextUtils;
 
@@ -55,6 +56,7 @@ import java.util.Set;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = FontManager.class)
 public class FontManagerTest {
 
     private Context getContext() {

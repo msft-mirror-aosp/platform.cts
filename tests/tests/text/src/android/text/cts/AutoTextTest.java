@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.res.Configuration;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.AutoText;
 import android.view.View;
 
@@ -39,6 +40,7 @@ import java.util.Locale;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = View.class)
 public class AutoTextTest {
     private Context mContext;
 
@@ -108,4 +110,3 @@ public class AutoTextTest {
         assertTrue(AutoText.getSize(view) > 0);
     }
 }
-

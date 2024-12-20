@@ -27,17 +27,18 @@ import android.graphics.Gainmap;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Shader;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ColorUtils;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
@@ -265,6 +266,7 @@ public class BitmapShaderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Gainmap.class)
     public void testBitmapShaderAppliesGainmapHLG() {
         Bitmap bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
         bitmap.eraseColor(Color.WHITE);

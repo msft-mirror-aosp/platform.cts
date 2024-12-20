@@ -16,19 +16,28 @@
 
 package android.text.cts;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.test.AndroidTestCase;
 import android.text.TextPaint;
 
-/**
- * Test {@link TextPaint}.
- */
-public class TextPaintTest extends AndroidTestCase {
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+/** Test {@link TextPaint}. */
+@RunWith(AndroidJUnit4.class)
+public class TextPaintTest {
     private static final int DEFAULT_PAINT_FLAGS = TextPaint.DEV_KERN_TEXT_FLAG
             | TextPaint.EMBEDDED_BITMAP_TEXT_FLAG | TextPaint.FILTER_BITMAP_FLAG;
 
+    @Test
     public void testConstructor() {
         TextPaint textPaint;
 
@@ -43,9 +52,10 @@ public class TextPaintTest extends AndroidTestCase {
         final Paint paint = new Paint();
         paint.setTextSize(42f);
         textPaint = new TextPaint(paint);
-        assertEquals(paint.getTextSize(), textPaint.getTextSize());
+        assertEquals(paint.getTextSize(), textPaint.getTextSize(), 0.0f);
     }
 
+    @Test
     public void testSet() {
         TextPaint textPaintSrc = new TextPaint(TextPaint.DITHER_FLAG);
         int[] drawableState = new int[] { 0, 1 };
@@ -70,7 +80,7 @@ public class TextPaintTest extends AndroidTestCase {
         assertEquals(textPaintSrc.bgColor, textPaint.bgColor);
         assertEquals(textPaintSrc.baselineShift, textPaint.baselineShift);
         assertEquals(textPaintSrc.linkColor, textPaint.linkColor);
-        assertSame(textPaintSrc.drawableState, textPaint.drawableState);
+        assertArrayEquals(textPaintSrc.drawableState, textPaint.drawableState);
         assertEquals(textPaintSrc.getTypeface(), textPaint.getTypeface());
         assertEquals(textPaintSrc.getFlags(), textPaint.getFlags());
         assertEquals(0x00112233, textPaint.underlineColor);
@@ -83,6 +93,7 @@ public class TextPaintTest extends AndroidTestCase {
         }
     }
 
+    @Test
     // b/169080922
     public void testInfinityTextSize_doesntCrash() {
         Paint paint = new Paint();

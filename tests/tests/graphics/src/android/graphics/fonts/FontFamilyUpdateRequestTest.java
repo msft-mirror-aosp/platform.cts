@@ -106,7 +106,7 @@ public final class FontFamilyUpdateRequestTest {
     @Test
     public void fontFamilyUpdateRequest() throws Exception {
         // Roboto-Regular.ttf is always available.
-        File robotoFile = new File("/system/fonts/Roboto-Regular.ttf");
+        File robotoFile = new File(FontTestUtil.getFontsDir() + "Roboto-Regular.ttf");
         ParcelFileDescriptor pfd = ParcelFileDescriptor.open(robotoFile,
                 ParcelFileDescriptor.MODE_READ_ONLY);
         byte[] signature = new byte[256];
