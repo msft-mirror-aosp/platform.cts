@@ -127,6 +127,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private boolean mIsTV;
     private boolean mIsAutomobile;
     private boolean mIsHandheld;
+    private boolean mIsEmulator;
     private int     mSpeakerDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
     private int     mMicDeviceId = AudioDeviceInfo.TYPE_UNKNOWN;
 
@@ -460,6 +461,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mIsTV = AudioSystemFlags.isTV(this);
         mIsAutomobile = AudioSystemFlags.isAutomobile(this);
         mIsHandheld = AudioSystemFlags.isHandheld(this);
+        mIsEmulator = Build.IS_EMULATOR;
 
         mUSBAudioSupport = AudioDeviceUtils.supportsUsbAudio(this);
         mAnalogJackSupport = AudioDeviceUtils.supportsAnalogHeadset(this);
@@ -521,6 +523,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                 (mIsAutomobile ? mYesString : mNoString));
         ((TextView) findViewById(R.id.audio_loopback_is_handheld)).setText(
                 (mIsHandheld ? mYesString : mNoString));
+        ((TextView) findViewById(R.id.audio_loopback_emulator)).setText(
+                (mIsEmulator ? mYesString : mNoString));
 
         // Individual Test Results
         mRouteStatus[TESTROUTE_DEVICE] =
@@ -930,7 +934,12 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     }
 
     private boolean mustRunTest() {
-        return mIsHandheld  && hasInternalPath();
+        // Special handling for emulators
+        if (mIsEmulator) {
+            return false;
+        }
+
+        return mIsHandheld && hasInternalPath();
     }
 
     boolean hasInternalPath() {
