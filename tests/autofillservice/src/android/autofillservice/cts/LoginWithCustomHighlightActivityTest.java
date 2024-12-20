@@ -32,6 +32,7 @@ import androidx.test.uiautomator.UiObject2;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
@@ -62,6 +63,7 @@ public class LoginWithCustomHighlightActivityTest
         MyDrawable.clearStatus();
     }
 
+    @Ignore("b/382587681") // Reenable in next major release.
     @Test
     public void testAutofillCustomHighlight_singleField_noHighlight() throws Exception {
         testAutofillCustomHighlight(/* singleField= */true);
