@@ -129,6 +129,7 @@ public class LoopbackPassthroughTest {
 
     @CddTest(requirement="5.4.3/C-1-1")
     @Test
+    @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testEac3JocLoopback() {
         if (!supportsLoopback()) {
             return;
