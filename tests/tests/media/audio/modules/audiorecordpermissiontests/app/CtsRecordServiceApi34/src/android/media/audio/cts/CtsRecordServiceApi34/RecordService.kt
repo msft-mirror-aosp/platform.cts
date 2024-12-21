@@ -18,7 +18,7 @@ package android.media.audio.cts.CtsRecordServiceApi34
 
 import android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
 
-class RecordService : android.media.audio.cts.audiorecordpermissiontests.common.RecordService() {
+class RecordService : android.media.audio.cts.audiopermissiontests.common.RecordService() {
     override fun getAppName() : String {
         return "CtsRecordServiceApi34"
     }

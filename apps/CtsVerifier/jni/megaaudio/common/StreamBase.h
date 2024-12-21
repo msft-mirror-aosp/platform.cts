@@ -30,9 +30,12 @@ public:
     //
     enum Result {
         OK = 0,
-        ERROR_UNKNOWN = -1,
-        ERROR_UNSUPPORTED = -2,
-        ERROR_INVALID_STATE = -3
+        ERROR_UNKNOWN = 1,
+        ERROR_UNSUPPORTED = 2,
+        ERROR_INVALID_STATE = 3,
+        ERROR_BAD_START = 4,
+        ERROR_BAD_OPEN = 5,
+        ERROR_INVALID_ARGUMENT = 6
     };
 
     StreamBase() :
@@ -58,15 +61,24 @@ public:
     //
 
     /**
-     * Deinitializes the stream.
-     * Concrete subclasses should stop the stream (is not already stopped) and deallocate any
-     * resources being used by the stream.
-     * The stream cannot be started again without another call to setupAudioStream().
+     * Build the stream.
      *
-     * The expectation is that this method will be synchronous in concrete subclasses.
-     * @return ERROR_NONE if successful, otherwise an error code
+     * @param channelCount The number of channels in the stream.
+     * @param channelMask  The Channel mask for the stream.
+     * @param sampleRate The sample rate.
+     * @param performanceMode A performance mode constant.
+     * @param sharingMode A sharing mode constant.
+     * @param routeDeviceId The ID of the device to route the stream to/from.
+     * @return A Result code indicating the outcome of the call.
      */
-    virtual Result teardownStream() = 0;
+    virtual Result buildStream(int32_t channelCount, int32_t channelMask, int32_t sampleRate,
+                       int32_t performanceMode, int32_t sharingMode, int32_t routeDeviceId) = 0;
+
+    /**
+     * Opens the stream. I.e. puts it in a state ready to be started.
+     * @return  A Result code indicating the outcome of the call.
+     */
+    virtual Result openStream() = 0;
 
     /**
      * Begin the playback/recording process.
@@ -82,6 +94,24 @@ public:
      * In concrete subclasses, this may be either synchronous or asynchronous.
      */
     virtual Result stopStream() = 0;
+
+    /**
+     * Closes the stream and releases resources needed for a started stream.
+     * The Stream cannot be started again without another call to openStream().
+     * @return
+     */
+    virtual Result closeStream() = 0;
+
+    /**
+     * Deinitializes the stream.
+     * Concrete subclasses should stop the stream (is not already stopped) and deallocate any
+     * resources being used by the stream.
+     * The stream cannot be started again without another call to buildStream().
+     *
+     * The expectation is that this method will be synchronous in concrete subclasses.
+     * @return ERROR_NONE if successful, otherwise an error code
+     */
+    virtual Result teardownStream() = 0;
 
 protected:
     // Audio attributes

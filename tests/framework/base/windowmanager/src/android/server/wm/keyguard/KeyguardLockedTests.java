@@ -167,7 +167,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     @RequiresFlagsEnabled(android.app.Flags.FLAG_DEVICE_UNLOCK_LISTENER)
-    public void testDeviceLockedAndUlockedWithStateListener() {
+    public void testLockAndUnlockWithStateListener() {
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 SUBSCRIBE_TO_KEYGUARD_LOCKED_STATE);
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -183,13 +183,11 @@ public class KeyguardLockedTests extends KeyguardTestBase {
             mWmState.assertKeyguardShowingAndNotOccluded();
             verify(listener, times(1)).onDeviceLockedStateChanged(true);
 
-            launchActivity(DISMISS_KEYGUARD_ACTIVITY);
             lockScreenSession.enterAndConfirmLockCredential();
 
             mWmState.waitAndAssertKeyguardGone();
-            assertFalse(mKeyguardManager.isDeviceLocked());
             assertFalse(mKeyguardManager.isKeyguardLocked());
-            mWmState.assertVisibility(DISMISS_KEYGUARD_ACTIVITY, true);
+            assertFalse(mKeyguardManager.isDeviceLocked());
             verify(listener, times(1)).onDeviceLockedStateChanged(false);
         } finally {
             mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(

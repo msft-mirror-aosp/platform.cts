@@ -63,9 +63,153 @@ public class JavaRecorder extends Recorder {
      */
     private JavaSinkHandler mListener = null;
 
-    public JavaRecorder(RecorderBuilder builder, AudioSinkProvider sinkProvider) {
+    public JavaRecorder(AudioSinkProvider sinkProvider) {
         super(sinkProvider);
-        setupStream(builder);
+    }
+
+    //
+    // Lifecycle
+    //
+    @Override
+    public int build(BuilderBase builder) {
+        mChannelCount = builder.getChannelCount();
+        mSampleRate = builder.getSampleRate();
+        mNumExchangeFrames = builder.getNumExchangeFrames();
+        mSharingMode = builder.getSharingMode();
+        mPerformanceMode = builder.getPerformanceMode();
+        mInputPreset = ((RecorderBuilder) builder).getInputPreset();
+
+        if (LOG) {
+            Log.i(TAG, "build()");
+            Log.i(TAG, "  chans:" + mChannelCount);
+            Log.i(TAG, "  rate: " + mSampleRate);
+            Log.i(TAG, "  frames: " + mNumExchangeFrames);
+            Log.i(TAG, "  perf mode: " + mPerformanceMode);
+            Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
+            Log.i(TAG, "  preset: " + mInputPreset);
+        }
+
+        try {
+            int bufferSizeInBytes = mNumExchangeFrames * mChannelCount
+                    * sampleSizeInBytes(AudioFormat.ENCODING_PCM_FLOAT);
+            Log.i(TAG, "  bufferSizeInBytes:" + bufferSizeInBytes);
+            Log.i(TAG, "  (in frames)" + (bufferSizeInBytes / 4 / mChannelCount));
+
+            AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
+            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                    .setSampleRate(mSampleRate)
+                    .setChannelIndexMask(StreamBase.channelCountToIndexMask(mChannelCount));
+
+            AudioRecord.Builder recordBuilder = new AudioRecord.Builder();
+            recordBuilder.setAudioFormat(formatBuilder.build())
+                    .setBufferSizeInBytes(bufferSizeInBytes);
+            if (mInputPreset != Recorder.INPUT_PRESET_NONE) {
+                recordBuilder.setAudioSource(mInputPreset);
+            }
+            mAudioRecord = recordBuilder.build();
+            mNumExchangeFrames = mAudioRecord.getBufferSizeInFrames();
+            if (LOG) {
+                Log.i(TAG, "  mAudioRecord.getBufferSizeInFrames(): "
+                        + mAudioRecord.getBufferSizeInFrames());
+            }
+            mAudioRecord.setPreferredDevice(builder.getRouteDevice());
+
+            mRecorderBuffer = new float[mNumExchangeFrames * mChannelCount];
+
+            if (mSinkProvider == null) {
+                mSinkProvider = new NopAudioSinkProvider();
+            }
+            mAudioSink = mSinkProvider.allocJavaSink();
+            mAudioSink.init(mNumExchangeFrames, mChannelCount);
+            mListener = new JavaSinkHandler(this, mAudioSink, Looper.getMainLooper());
+        } catch (UnsupportedOperationException ex) {
+            if (LOG) {
+                Log.e(TAG, "Couldn't open AudioRecord: " + ex);
+            }
+            return ERROR_UNSUPPORTED;
+        } catch (java.lang.IllegalArgumentException ex) {
+            if (LOG) {
+                Log.e(TAG, "Invalid arguments to AudioRecord.Builder: " + ex);
+            }
+            return ERROR_INVALID_ARGUMENT;
+        }
+        return trackBuild(OK);
+    }
+
+    @Override
+    public int open() {
+        if (LOG) {
+            Log.d(TAG, "open()");
+        }
+        return trackOpen(OK);
+    }
+
+    @Override
+    public int start() {
+        if (LOG) {
+            Log.d(TAG, "start()");
+        }
+        if (mAudioRecord == null) {
+            if (LOG) {
+                Log.i(TAG, " - ERROR_INVALID_STATE");
+            }
+            return ERROR_INVALID_STATE;
+        }
+        if (mListener != null) {
+            mListener.sendEmptyMessage(JavaSinkHandler.MSG_START);
+        }
+
+        try {
+            mAudioRecord.startRecording();
+        } catch (IllegalStateException ex) {
+            Log.e(TAG, "startRecording exception: " + ex);
+        }
+
+        waitForStreamThreadToExit(); // just to be sure.
+
+        mStreamThread = new Thread(new RecorderRunnable(), "JavaRecorder Thread");
+        mRecording = true;
+        mStreamThread.start();
+
+        return trackStart(OK);
+    }
+
+    @Override
+    public int stop() {
+        if (LOG) {
+            Log.d(TAG, "stop()");
+        }
+        mRecording = false;
+        return trackStop(OK);
+    }
+
+    @Override
+    public int close() {
+        if (LOG) {
+            Log.d(TAG, "close()");
+        }
+        return trackClose(OK);
+    }
+
+    @Override
+    public int teardown() {
+        if (LOG) {
+            Log.i(TAG, "teardown()");
+        }
+        stop();
+
+        waitForStreamThreadToExit();
+
+        if (mAudioRecord != null) {
+            mAudioRecord.release();
+            mAudioRecord = null;
+        }
+
+        mChannelCount = 0;
+        mSampleRate = 0;
+
+        //TODO Retrieve errors from above
+        return trackTeardown(OK);
     }
 
     //
@@ -98,133 +242,6 @@ public class JavaRecorder extends Recorder {
     // JavaRecorder-specific extension
     public AudioRecord getAudioRecord() {
         return mAudioRecord;
-    }
-
-    private int setupStream(RecorderBuilder builder) {
-        mChannelCount = builder.getChannelCount();
-        mSampleRate = builder.getSampleRate();
-        mNumExchangeFrames = builder.getNumExchangeFrames();
-        mSharingMode = builder.getSharingMode();
-        mPerformanceMode = builder.getPerformanceMode();
-        mInputPreset = builder.getInputPreset();
-
-        if (LOG) {
-            Log.i(TAG, "setupStream()");
-            Log.i(TAG, "  chans:" + mChannelCount);
-            Log.i(TAG, "  rate: " + mSampleRate);
-            Log.i(TAG, "  frames: " + mNumExchangeFrames);
-            Log.i(TAG, "  perf mode: " + mPerformanceMode);
-            Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
-            Log.i(TAG, "  preset: " + mInputPreset);
-        }
-
-        try {
-//            int bufferSizeInBytes = mNumExchangeFrames * mChannelCount
-//                    * sampleSizeInBytes(AudioFormat.ENCODING_PCM_FLOAT);
-//            Log.i(TAG, "  bufferSizeInBytes:" + bufferSizeInBytes);
-//            Log.i(TAG, "  (in frames)" + (bufferSizeInBytes / 4 / mChannelCount));
-
-            AudioFormat.Builder formatBuilder = new AudioFormat.Builder();
-            formatBuilder.setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
-                    .setSampleRate(mSampleRate)
-                    .setChannelIndexMask(StreamBase.channelCountToIndexMask(mChannelCount));
-
-            AudioRecord.Builder recordBuilder = new AudioRecord.Builder();
-            recordBuilder.setAudioFormat(formatBuilder.build())
-                    /*.setBufferSizeInBytes(bufferSizeInBytes)*/;
-            if (mInputPreset != Recorder.INPUT_PRESET_NONE) {
-                recordBuilder.setAudioSource(mInputPreset);
-            }
-            mAudioRecord = recordBuilder.build();
-            mNumExchangeFrames = mAudioRecord.getBufferSizeInFrames();
-            if (LOG) {
-                Log.i(TAG, "  mAudioRecord.getBufferSizeInFrames(): "
-                        + mAudioRecord.getBufferSizeInFrames());
-            }
-            mAudioRecord.setPreferredDevice(builder.getRouteDevice());
-
-            mRecorderBuffer = new float[mNumExchangeFrames * mChannelCount];
-
-            if (mSinkProvider == null) {
-                mSinkProvider = new NopAudioSinkProvider();
-            }
-            mAudioSink = mSinkProvider.allocJavaSink();
-            mAudioSink.init(mNumExchangeFrames, mChannelCount);
-            mListener = new JavaSinkHandler(this, mAudioSink, Looper.getMainLooper());
-            return OK;
-        } catch (UnsupportedOperationException ex) {
-            if (LOG) {
-                Log.e(TAG, "Couldn't open AudioRecord: " + ex);
-            }
-            return ERROR_UNSUPPORTED;
-        } catch (java.lang.IllegalArgumentException ex) {
-            if (LOG) {
-                Log.e(TAG, "Invalid arguments to AudioRecord.Builder: " + ex);
-            }
-            return ERROR_UNSUPPORTED;
-        }
-    }
-
-    @Override
-    public int teardownStream() {
-        if (LOG) {
-            Log.i(TAG, "teardownStream()");
-        }
-        stopStream();
-
-        waitForStreamThreadToExit();
-
-        if (mAudioRecord != null) {
-            mAudioRecord.release();
-            mAudioRecord = null;
-        }
-
-        mChannelCount = 0;
-        mSampleRate = 0;
-
-        //TODO Retrieve errors from above
-        return OK;
-    }
-
-    @Override
-    public int startStream() {
-        if (LOG) {
-            Log.d(TAG, "startStream() mAudioRecord:" + mAudioRecord);
-        }
-        if (mAudioRecord == null) {
-            if (LOG) {
-                Log.i(TAG, " - ERROR_INVALID_STATE");
-            }
-            return ERROR_INVALID_STATE;
-        }
-        if (mListener != null) {
-            mListener.sendEmptyMessage(JavaSinkHandler.MSG_START);
-        }
-
-        try {
-            mAudioRecord.startRecording();
-        } catch (IllegalStateException ex) {
-            Log.e(TAG, "startRecording exception: " + ex);
-        }
-
-        waitForStreamThreadToExit(); // just to be sure.
-
-        mStreamThread = new Thread(new RecorderRunnable(), "JavaRecorder Thread");
-        mRecording = true;
-        mStreamThread.start();
-
-        return OK;
-    }
-
-    /**
-     * Marks the stream for stopping on the next callback from the underlying system.
-     *
-     * Returns immediately, though a call to AudioSource.push() may be in progress.
-     */
-    @Override
-    public int stopStream() {
-        mRecording = false;
-        return OK;
     }
 
     /**
@@ -274,14 +291,14 @@ public class JavaRecorder extends Recorder {
                     if (LOG) {
                         Log.e(TAG, "AudioRecord write error - numReadSamples: " + numReadSamples);
                     }
-                    stopStream();
+                    stop();
                 } else if (numReadSamples < numRecordSamples) {
                     // got less than requested?
                     if (LOG) {
                         Log.e(TAG, "AudioRecord Underflow: " + numReadSamples +
                                 " vs. " + numRecordSamples);
                     }
-                    stopStream();
+                    stop();
                 }
 
                 if (mListener != null) {

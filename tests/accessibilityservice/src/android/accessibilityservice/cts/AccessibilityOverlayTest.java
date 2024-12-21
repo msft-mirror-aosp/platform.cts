@@ -58,9 +58,9 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.window.WindowInfosListenerForTest;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 

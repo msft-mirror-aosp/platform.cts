@@ -17,7 +17,6 @@
 package android.view.accessibility.cts;
 
 import android.os.Bundle;
-import android.view.accessibility.cts.R;
 
 /**
  * The accessibility shortcut target activity.

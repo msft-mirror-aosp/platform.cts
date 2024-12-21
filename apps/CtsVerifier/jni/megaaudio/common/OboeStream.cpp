@@ -20,6 +20,7 @@
 #include "OboeStream.h"
 
 static const char * const TAG = "OboeStream(native)";
+static const bool LOG = true;
 
 using namespace oboe;
 
@@ -45,27 +46,10 @@ StreamBase::Result OboeStream::OboeErrorToMegaAudioError(oboe::Result oboeError)
     return maErr;
 }
 
-StreamBase::Result OboeStream::teardownStream() {
-    std::lock_guard<std::mutex> lock(mStreamLock);
-    return teardownStream_l();
-}
-
-StreamBase::Result OboeStream::teardownStream_l() {
-    // tear down the player
-    if (mAudioStream == nullptr) {
-        return ERROR_INVALID_STATE;
-    } else {
-        oboe::Result result = oboe::Result::OK;
-        result = mAudioStream->stop();
-        if (result == oboe::Result::OK) {
-            result = mAudioStream->close();
-        }
-        mAudioStream = nullptr;
-        return OboeErrorToMegaAudioError(result);
-    }
-}
-
 StreamBase::Result OboeStream::startStream() {
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "[%p]::%s()", this, __FUNCTION__);
+    }
     // Don't cover up (potential) bugs in AAudio
     oboe::OboeGlobals::setWorkaroundsEnabled(false);
 
@@ -79,17 +63,39 @@ StreamBase::Result OboeStream::startStream() {
                     ANDROID_LOG_ERROR,
                     TAG,
                     "requestStart failed. Error: %s", convertToText(result));
-
-            // clean up
-            teardownStream_l();
         }
     }
     mStreamStarted = result == oboe::Result::OK;
+
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "[%p]::%s()  returns:%d",
+                            this, __FUNCTION__, OboeErrorToMegaAudioError(result));
+    }
+    return OboeErrorToMegaAudioError(result);
+}
+
+StreamBase::Result OboeStream::closeStream() {
+    // We might have gotten an error because the stream is already stopped,
+    // but we still want to try to close it to avoid a resource leak
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "[%p]::%s() mAudioStream:%p",
+                            this, __FUNCTION__, mAudioStream.get());
+    }
+
+    oboe::Result result = oboe::Result::OK;
+    if (mAudioStream != nullptr) {
+        result = mAudioStream->close();
+    }
 
     return OboeErrorToMegaAudioError(result);
 }
 
 StreamBase::Result OboeStream::stopStream() {
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "[%p]::%s() mAudioStream:%p",
+                            this, __FUNCTION__, mAudioStream.get());
+    }
+
     std::lock_guard<std::mutex> lock(mStreamLock);
 
     Result errCode = ERROR_UNKNOWN;
@@ -101,9 +107,37 @@ StreamBase::Result OboeStream::stopStream() {
 
         errCode = OboeErrorToMegaAudioError(result);
     }
-
-    mStreamStarted = false;
     return errCode;
+}
+
+StreamBase::Result OboeStream::teardownStream() {
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "[%p]::%s()", this, __FUNCTION__);
+    }
+    std::lock_guard<std::mutex> lock(mStreamLock);
+    return teardownStream_l();
+}
+
+StreamBase::Result OboeStream::teardownStream_l() {
+    // tear down the stream for this player/recorder
+    if (LOG) {
+        __android_log_print(ANDROID_LOG_DEBUG, TAG, "[%p]::%s()", this, __FUNCTION__);
+    }
+
+    if (mAudioStream == nullptr) {
+        return ERROR_INVALID_STATE;
+    } else {
+        oboe::Result resultStop = mAudioStream->stop();
+
+        // We might have gotten an error because the stream is already stopped,
+        // but we still want to try to close it to avoid a resource leak
+        oboe::Result resultClose = mAudioStream->close();
+
+        mAudioStream = nullptr;
+
+        return OboeErrorToMegaAudioError(
+                resultStop != oboe::Result::OK ? resultStop : resultClose);
+    }
 }
 
 StreamBase::Result OboeStream::getTimeStamp(oboe::FrameTimestamp* timeStamp) {

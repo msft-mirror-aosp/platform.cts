@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.media.audio.cts.audiorecordpermissiontests.common
+package android.media.audio.cts.audiopermissiontests.common
 
 import android.content.BroadcastReceiver
 import android.content.Context

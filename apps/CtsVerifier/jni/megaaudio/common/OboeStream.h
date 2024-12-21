@@ -26,10 +26,13 @@ class OboeStream: public StreamBase {
 public:
     static Result OboeErrorToMegaAudioError(oboe::Result oboeError);
 
-    virtual Result teardownStream() override;
-
     virtual Result startStream() override;
+
     virtual Result stopStream() override;
+
+    virtual Result closeStream() override;
+
+    virtual Result teardownStream() override;
 
     // Oboe-specific
     oboe::StreamState getState() const;
@@ -58,6 +61,9 @@ protected:
 
     std::mutex mStreamLock;
 
+    oboe::AudioStreamBuilder mBuilder;
+
+private:
     Result teardownStream_l();
 };
 

@@ -29,9 +29,11 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.bluetooth.AudioInputControl;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
@@ -244,6 +246,34 @@ public class BluetoothVolumeControlTest {
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertThat(mService.getAudioInputControlServices(mDevice)).isNotNull();
         }
+        // Cts doesn't run with a compatible aics device connected. We
+        AudioInputControl aics = mock(AudioInputControl.class);
+        aics.registerCallback(null, null);
+        aics.unregisterCallback(null);
+        aics.getAudioInputType();
+        aics.getGainSettingUnit();
+        aics.getGainSettingMin();
+        aics.getGainSettingMax();
+        aics.getDescription();
+        aics.isDescriptionWritable();
+        aics.setDescription(null);
+        aics.getAudioInputStatus();
+        aics.getGainSetting();
+        aics.setGainSetting(0);
+        aics.getGainMode();
+        aics.setGainMode(0);
+        aics.getMute();
+        aics.setMute(0);
+        AudioInputControl.AudioInputCallback aicsCallback =
+                mock(AudioInputControl.AudioInputCallback.class);
+        aicsCallback.onDescriptionChanged(null);
+        aicsCallback.onAudioInputStatusChanged(0);
+        aicsCallback.onGainSettingChanged(0);
+        aicsCallback.onSetGainSettingFailed();
+        aicsCallback.onMuteChanged(0);
+        aicsCallback.onSetMuteFailed();
+        aicsCallback.onGainModeChanged(0);
+        aicsCallback.onSetGainModeFailed();
     }
 
     private void enforceConnectAndPrivileged(ThrowingRunnable runnable) {

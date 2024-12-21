@@ -72,23 +72,6 @@ public class AudioOutputRoutingNotificationsActivity extends AudioNotificationsB
         ((TextView) findViewById(R.id.audio_routingnotification_instructions))
                 .setText(getText(R.string.audio_output_routingnotification_instructions));
 
-        // Setup Player
-        //
-        // Allocate the source provider for the sort of signal we want to play
-        //
-        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
-        try {
-            PlayerBuilder builder = new PlayerBuilder();
-            builder.setSourceProvider(new SilenceAudioSourceProvider())
-                    .setPlayerType(PlayerBuilder.TYPE_JAVA)
-                    .setChannelCount(NUM_CHANNELS)
-                    .setSampleRate(SAMPLE_RATE)
-                    .setNumExchangeFrames(numExchangeFrames);
-            mAudioPlayer = (JavaPlayer) builder.build();
-        } catch (PlayerBuilder.BadStateException ex) {
-            Log.e(TAG, "Failed MegaPlayer build.");
-        }
-
         setInfoResources(R.string.audio_output_routingnotifications_test,
                 R.string.audio_output_routingnotification_instructions, -1);
 
@@ -99,19 +82,42 @@ public class AudioOutputRoutingNotificationsActivity extends AudioNotificationsB
 
     @Override
     void startAudio() {
-        if (mAudioPlayer == null) {
-            return; // failed to create the player
+        mNumRoutingNotifications = 0;
+
+        int buildResult = StreamBase.ERROR_UNKNOWN;
+        int openResult = StreamBase.ERROR_UNKNOWN;
+        int startResult = StreamBase.ERROR_UNKNOWN;
+
+        try {
+            int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
+
+            PlayerBuilder builder = new PlayerBuilder();
+            builder.setSourceProvider(new SilenceAudioSourceProvider())
+                    .setPlayerType(PlayerBuilder.TYPE_JAVA)
+                    .setChannelCount(NUM_CHANNELS)
+                    .setSampleRate(SAMPLE_RATE)
+                    .setNumExchangeFrames(numExchangeFrames);
+            mAudioPlayer = (JavaPlayer) builder.allocStream();
+            if ((buildResult = mAudioPlayer.build(builder)) == StreamBase.OK
+                    && (openResult = mAudioPlayer.open()) == StreamBase.OK
+                    && (startResult = mAudioPlayer.start()) == StreamBase.OK) {
+
+                AudioTrack audioTrack = mAudioPlayer.getAudioTrack();
+                audioTrack.addOnRoutingChangedListener(mRoutingChangeListener,
+                        new Handler());
+
+                mIsPlaying = true;
+            }
+        } catch (BuilderBase.BadStateException ex) {
+            Log.e(TAG, "Failed MegaPlayer build. ex:", ex);
         }
+
         if (!mIsPlaying) {
-            mNumRoutingNotifications = 0;
+            // Report Error
+            showStartupError("Player", buildResult, openResult, startResult);
 
-            mAudioPlayer.startStream();
-
-            AudioTrack audioTrack = mAudioPlayer.getAudioTrack();
-            audioTrack.addOnRoutingChangedListener(mRoutingChangeListener,
-                    new Handler());
-
-            mIsPlaying = true;
+            // Unwind
+            mAudioPlayer.unwind();
         }
     }
 
@@ -121,7 +127,8 @@ public class AudioOutputRoutingNotificationsActivity extends AudioNotificationsB
             return; // failed to create the player
         }
         if (mIsPlaying) {
-            mAudioPlayer.stopStream();
+            // unwind will call stop()
+            mAudioPlayer.unwind();
 
             AudioTrack audioTrack = mAudioPlayer.getAudioTrack();
             audioTrack.removeOnRoutingChangedListener(mRoutingChangeListener);

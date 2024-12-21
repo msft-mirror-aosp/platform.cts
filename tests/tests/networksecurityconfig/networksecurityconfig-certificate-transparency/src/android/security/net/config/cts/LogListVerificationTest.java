@@ -24,6 +24,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.net.http.X509TrustManagerExtensions;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -37,8 +38,11 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.X509TrustManager;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled({
@@ -72,6 +76,30 @@ public class LogListVerificationTest extends BaseTestCase {
         urlConnection.connect();
 
         assertEquals(urlConnection.getResponseCode(), HTTP_OK_RESPONSE_CODE);
+        urlConnection.disconnect();
+    }
+
+    @Test
+    public void testX509TrustManagerExtensions_whenLogListPresent_sctDomain_connectionSucceeds()
+            throws Exception {
+        assumeTrue(isLogListFilePresent());
+        URL url = new URL(SCT_PROVIDED_DOMAIN);
+        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
+        // While the connection here already verifies the SCTs, we establish it
+        // to collect the certificates and manually call checkServerTrusted.
+        urlConnection.connect();
+        Certificate[] certs = urlConnection.getServerCertificates();
+        X509Certificate leaf = (X509Certificate) certs[0];
+        X509TrustManager tm = TestUtils.getDefaultTrustManager();
+        X509TrustManagerExtensions tme = new X509TrustManagerExtensions(tm);
+
+        tme.checkServerTrusted(
+                new X509Certificate[] {leaf},
+                /* ocspData */ null,
+                /* tlsSctData */ null,
+                "RSA",
+                "android.com");
+
         urlConnection.disconnect();
     }
 }

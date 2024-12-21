@@ -91,4 +91,5 @@ android_ravenwood_test {
         "src/android/view/inputmethod/cts/InputBindingTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }

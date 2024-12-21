@@ -52,4 +52,5 @@ android_ravenwood_test {
         "junit",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }

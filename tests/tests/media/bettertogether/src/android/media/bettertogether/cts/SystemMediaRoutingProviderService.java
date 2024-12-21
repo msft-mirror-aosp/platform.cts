@@ -19,10 +19,15 @@ package android.media.bettertogether.cts;
 import static android.media.MediaRoute2Info.FLAG_ROUTING_TYPE_REMOTE;
 import static android.media.MediaRoute2Info.FLAG_ROUTING_TYPE_SYSTEM_AUDIO;
 
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaRoute2Info;
 import android.media.MediaRoute2ProviderService;
 import android.media.RouteDiscoveryPreference;
+import android.media.RoutingSessionInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,6 +36,7 @@ import com.android.media.flags.Flags;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -42,16 +48,81 @@ import javax.annotation.concurrent.GuardedBy;
  */
 public class SystemMediaRoutingProviderService extends MediaRoute2ProviderService {
 
+    /** The format to pass to {@link #notifySystemMediaSessionCreated}. */
+    private static final AudioFormat AUDIO_FORMAT_RECORDING =
+            new AudioFormat.Builder()
+                    .setSampleRate(44100 /*Hz*/)
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                    .build();
+
     public static final String FEATURE_SAMPLE = "android.media.bettertogether.cts.FEATURE_SAMPLE";
     public static final String ROUTE_ID_ONLY_SYSTEM_AUDIO = "ROUTE_ID_ONLY_SYSTEM_AUDIO";
     public static final String ROUTE_ID_ONLY_REMOTE = "ROUTE_ID_ONLY_REMOTE";
     public static final String ROUTE_ID_BOTH_SYSTEM_AND_REMOTE = "ROUTE_ID_BOTH_SYSTEM_AND_REMOTE";
+    private static final String ROUTING_SESSION_ID = "ROUTING_SESSION_ID";
 
-    private final Object mLock = new Object();
+    private static final Object sLock = new Object();
 
     /** Maps route ids to routes. */
-    @GuardedBy("mLock")
+    @GuardedBy("sLock")
     private final Map<String, MediaRoute2Info> mRoutes = new HashMap<>();
+
+    private HandlerThread mHandlerThread;
+    private Handler mHandler;
+    private final byte[] mBuffer = new byte[1024 * 100];
+
+    @Nullable private volatile String mSelectedRouteOriginalId;
+
+    private final AtomicInteger mNoisyByteCount = new AtomicInteger(0);
+
+    @GuardedBy("sLock")
+    private static SystemMediaRoutingProviderService sInstance;
+
+    /** Returns the currently running service instance, or null if the service is not running. */
+    public static SystemMediaRoutingProviderService getInstance() {
+        synchronized (sLock) {
+            return sInstance;
+        }
+    }
+
+    /**
+     * Returns the {@link MediaRoute2Info#getOriginalId() original id} of the currently selected
+     * route, or null if there's no selected route at the moment.
+     */
+    @Nullable
+    public String getSelectedRouteOriginalId() {
+        return mSelectedRouteOriginalId;
+    }
+
+    /**
+     * Returns the number of non-zero bytes read from audio record since the {@link
+     * #getSelectedRouteOriginalId currently selected route} became selected.
+     */
+    public int getNoisyBytesCount() {
+        return mNoisyByteCount.get();
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mHandlerThread = new HandlerThread(getClass().getSimpleName());
+        mHandlerThread.start();
+        mHandler = new Handler(mHandlerThread.getLooper());
+        mNoisyByteCount.set(0);
+        synchronized (sLock) {
+            sInstance = this;
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        synchronized (sLock) {
+            sInstance = null;
+        }
+        mHandlerThread.quitSafely();
+        super.onDestroy();
+    }
 
     @Override
     public void onSetRouteVolume(long requestId, @NonNull String routeId, int volume) {
@@ -75,7 +146,7 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
 
     @Override
     public void onReleaseSession(long requestId, @NonNull String sessionId) {
-        // TODO: b/362507305 - Implement this when testing system media routing sessions.
+        mHandler.post(() -> releaseSessionOnHandler(sessionId));
     }
 
     @Override
@@ -98,10 +169,45 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
     }
 
     @Override
+    public void onCreateSystemRoutingSession(
+            long requestId,
+            @NonNull String packageName,
+            @NonNull String routeId,
+            @Nullable Bundle sessionHints) {
+        var routingSession =
+                new RoutingSessionInfo.Builder(ROUTING_SESSION_ID, packageName)
+                        .addSelectedRoute(routeId)
+                        .build();
+        var streams =
+                notifySystemMediaSessionCreated(
+                        requestId,
+                        routingSession,
+                        new MediaStreamsFormats.Builder()
+                                .setAudioFormat(AUDIO_FORMAT_RECORDING)
+                                .build());
+        var audioRecord = streams.getAudioRecord();
+        if (audioRecord != null) {
+            audioRecord.startRecording();
+            mNoisyByteCount.set(0);
+            synchronized (sLock) {
+                mSelectedRouteOriginalId = mRoutes.get(routeId).getOriginalId();
+            }
+            mHandler.post(() -> readFromAudioRecord(audioRecord));
+        }
+    }
+
+    private void releaseSessionOnHandler(String sessionId) {
+        mHandler.removeCallbacksAndMessages(/* token= */ null);
+        notifySessionReleased(sessionId);
+        mSelectedRouteOriginalId = null;
+        mNoisyByteCount.set(0);
+    }
+
+    @Override
     public void onDiscoveryPreferenceChanged(@NonNull RouteDiscoveryPreference preference) {
-        synchronized (mLock) {
+        synchronized (sLock) {
             if (preference.shouldPerformActiveScan()) {
-                initializeRoutes();
+                populateRoutes();
             } else {
                 mRoutes.clear();
             }
@@ -109,8 +215,8 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         }
     }
 
-    @GuardedBy("mLock")
-    private void initializeRoutes() {
+    @GuardedBy("sLock")
+    private void populateRoutes() {
         if (!Flags.enableMirroringInMediaRouter2()) {
             return;
         }
@@ -139,5 +245,20 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         mRoutes.put(onlySystemAudioRoute.getId(), onlySystemAudioRoute);
         mRoutes.put(onlyRemoteRoute.getId(), onlyRemoteRoute);
         mRoutes.put(bothSystemAudioAndRemoteRoute.getId(), bothSystemAudioAndRemoteRoute);
+    }
+
+    private void readFromAudioRecord(AudioRecord audioRecord) {
+        int bytesRead =
+                audioRecord.read(
+                        mBuffer,
+                        /* offsetInBytes= */ 0,
+                        mBuffer.length,
+                        AudioRecord.READ_NON_BLOCKING);
+        for (int i = 0; i < bytesRead; i++) {
+            if (mBuffer[i] != 0) {
+                mNoisyByteCount.incrementAndGet();
+            }
+        }
+        mHandler.post(() -> readFromAudioRecord(audioRecord));
     }
 }

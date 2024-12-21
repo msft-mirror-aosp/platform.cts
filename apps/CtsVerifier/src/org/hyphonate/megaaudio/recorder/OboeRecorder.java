@@ -17,6 +17,8 @@ package org.hyphonate.megaaudio.recorder;
 
 import android.util.Log;
 
+import org.hyphonate.megaaudio.common.BuilderBase;
+
 public class OboeRecorder extends Recorder {
     @SuppressWarnings("unused")
     private static final String TAG = OboeRecorder.class.getSimpleName();
@@ -26,14 +28,87 @@ public class OboeRecorder extends Recorder {
     private int mRecorderSubtype;
     private long mNativeRecorder;
 
-    public OboeRecorder(RecorderBuilder builder, AudioSinkProvider sinkProvider, int subType) {
+    public OboeRecorder(AudioSinkProvider sinkProvider, int subType) {
         super(sinkProvider);
+        if (LOG) {
+            Log.d(TAG, "OboeRecorder()");
+        }
 
         mRecorderSubtype = subType;
         mNativeRecorder = allocNativeRecorder(
                 sinkProvider.allocNativeSink().getNativeObject(), mRecorderSubtype);
+    }
 
-        setupStream(builder);
+    //
+    // Lifecycle
+    //
+    @Override
+    public int build(BuilderBase builder) {
+        mChannelCount = builder.getChannelCount();
+        mSampleRate = builder.getSampleRate();
+        mNumExchangeFrames = builder.getNumExchangeFrames();
+        mSharingMode = builder.getSharingMode();
+        mPerformanceMode = builder.getPerformanceMode();
+        mInputPreset = ((RecorderBuilder) builder).getInputPreset();
+
+        if (LOG) {
+            Log.i(TAG, "build()");
+            Log.i(TAG, "  chans:" + mChannelCount);
+            Log.i(TAG, "  rate: " + mSampleRate);
+            Log.i(TAG, "  frames: " + mNumExchangeFrames);
+            Log.i(TAG, "  perf mode: " + mPerformanceMode);
+            Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
+            Log.i(TAG, "  preset: " + mInputPreset);
+        }
+        return trackBuild(buildStreamN(mNativeRecorder, mChannelCount, mSampleRate,
+                mPerformanceMode, mSharingMode, builder.getRouteDeviceId(), mInputPreset));
+    }
+
+    @Override
+    public int open() {
+        if (LOG) {
+            Log.d(TAG, "open()");
+        }
+        return trackOpen(openStreamN(mNativeRecorder));
+    }
+
+    @Override
+    public int start() {
+        if (LOG) {
+            Log.d(TAG, "start()");
+        }
+        int retVal = startStreamN(mNativeRecorder, mRecorderSubtype);
+        mRecording = retVal == 0;
+        return trackStart(retVal);
+    }
+
+    @Override
+    public int stop() {
+        if (LOG) {
+            Log.d(TAG, "stop()");
+        }
+        mRecording = false;
+        return trackStop(stopStreamN(mNativeRecorder));
+    }
+
+    @Override
+    public int close() {
+        if (LOG) {
+            Log.d(TAG, "close()");
+        }
+        return trackClose(closeStreamN(mNativeRecorder));
+    }
+
+    @Override
+    public int teardown() {
+        if (LOG) {
+            Log.d(TAG, "teardown()");
+        }
+        int errCode = teardownStreamN(mNativeRecorder);
+        mChannelCount = 0;
+        mSampleRate = 0;
+
+        return trackTeardown(errCode);
     }
 
     //
@@ -44,7 +119,9 @@ public class OboeRecorder extends Recorder {
     }
 
     @Override
-    public int getRoutedDeviceId() { return getRoutedDeviceIdN(mNativeRecorder); }
+    public int getRoutedDeviceId() {
+        return getRoutedDeviceIdN(mNativeRecorder);
+    }
 
     @Override
     public int getSharingMode() {
@@ -59,50 +136,6 @@ public class OboeRecorder extends Recorder {
     @Override
     public boolean isMMap() {
         return isMMapN(mNativeRecorder);
-    }
-
-    private int setupStream(RecorderBuilder builder) {
-        mChannelCount = builder.getChannelCount();
-        mSampleRate = builder.getSampleRate();
-        mNumExchangeFrames = builder.getNumExchangeFrames();
-        mSharingMode = builder.getSharingMode();
-        mPerformanceMode = builder.getPerformanceMode();
-        mInputPreset = builder.getInputPreset();
-
-        if (LOG) {
-            Log.i(TAG, "setupStream()");
-            Log.i(TAG, "  chans:" + mChannelCount);
-            Log.i(TAG, "  rate: " + mSampleRate);
-            Log.i(TAG, "  frames: " + mNumExchangeFrames);
-            Log.i(TAG, "  perf mode: " + mPerformanceMode);
-            Log.i(TAG, "  route device: " + builder.getRouteDeviceId());
-            Log.i(TAG, "  preset: " + mInputPreset);
-        }
-        return setupStreamN(mNativeRecorder, mChannelCount, mSampleRate, mPerformanceMode,
-                mSharingMode, builder.getRouteDeviceId(), mInputPreset);
-    }
-
-    @Override
-    public int teardownStream() {
-        int errCode = teardownStreamN(mNativeRecorder);
-        mChannelCount = 0;
-        mSampleRate = 0;
-
-        return errCode;
-    }
-
-    @Override
-    public int startStream() {
-        int retVal = startStreamN(mNativeRecorder, mRecorderSubtype);
-        // TODO - Need Java constants defined for the C++ StreamBase.Result enum
-        mRecording = retVal == 0;
-        return retVal;
-    }
-
-    @Override
-    public int stopStream() {
-        mRecording = false;
-        return stopN(mNativeRecorder);
     }
 
     /**
@@ -128,18 +161,23 @@ public class OboeRecorder extends Recorder {
 
     private native int getSharingModeN(long nativeRecorder);
 
-    private native int getChannelCountN(long nativePlayer);
+    private native int getChannelCountN(long nativeRecorder);
 
-    private native boolean isMMapN(long nativePlayer);
+    private native boolean isMMapN(long nativeRecorder);
 
-    private native int setupStreamN(long nativeRecorder, int channelCount, int sampleRate,
+    private native int buildStreamN(long nativeRecorder, int channelCount, int sampleRate,
                                     int performanceMode, int sharingMode, int routeDeviceId,
                                     int inputPreset);
-    private native int teardownStreamN(long nativeRecorder);
+
+    private native int openStreamN(long nativeRecorder);
 
     private native int startStreamN(long nativeRecorder, int recorderSubtype);
 
-    private native int stopN(long nativeRecorder);
+    private native int stopStreamN(long nativeRecorder);
+
+    private native int closeStreamN(long nativeRecorder);
+
+    private native int teardownStreamN(long nativeRecorder);
 
     private native int getStreamStateN(long nativeRecorder);
     private native int getLastErrorCallbackResultN(long nativeRecorder);

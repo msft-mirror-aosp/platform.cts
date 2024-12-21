@@ -85,8 +85,6 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
         mPlayBtn = (Button) findViewById(R.id.uap_playPlayBtn);
         mPlayBtn.setOnClickListener(mButtonClickListener);
 
-        setupPlayer();
-
         connectUSBPeripheralUI();
 
         // Assume the device has host mode unless the user explicitly mentions it does not.
@@ -298,10 +296,8 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
             if (view.getId() == R.id.midiTestUSBInterfaceBtn) {
                 startWiredLoopbackTest();
             } else if (view.getId() == R.id.uap_playPlayBtn) {
-                Log.i(TAG, "Play Button Pressed");
-                if (!isPlaying()) {
-                    boolean result = startPlay();
-                    if (result) {
+                if (!mIsPlaying) {
+                    if (startPlay()) {
                         mPlayBtn.setText(getString(R.string.audio_uap_play_stopBtn));
                         if (!mHasAudioFinishedPlaying) {
                             mUsbAudioTestStatusTxt.setText(getString(R.string.uap_test_playing));
@@ -310,14 +306,12 @@ public class UsbMidiAudioActivity extends USBAudioPeripheralPlayerActivity {
                         mUsbAudioTestStatusTxt.setText(getString(R.string.audio_general_fail));
                     }
                 } else {
-                    boolean result = stopPlay();
-                    mHasAudioFinishedPlaying = result;
-                    if (result) {
-                        mPlayBtn.setText(getString(R.string.audio_uap_play_playBtn));
-                        mUsbAudioTestStatusTxt.setText(getString(R.string.audio_general_ok));
-                    } else {
-                        mUsbAudioTestStatusTxt.setText(getString(R.string.audio_general_fail));
-                    }
+                    stopPlay();
+                    mHasAudioFinishedPlaying = true;
+
+                    mPlayBtn.setText(getString(R.string.audio_uap_play_playBtn));
+                    mUsbAudioTestStatusTxt.setText(getString(R.string.audio_general_ok));
+
                     updateTestStateUI();
                 }
             }

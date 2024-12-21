@@ -34,8 +34,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.accessibility.AccessibilityEvent;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
@@ -146,9 +146,11 @@ public class AccessibilityServiceInfoTest extends StsExtraBusinessLogicTestCase 
                 AccessibilityServiceInfo.FLAG_REQUEST_ACCESSIBILITY_BUTTON));
         assertEquals("FLAG_REQUEST_FINGERPRINT_GESTURES", AccessibilityServiceInfo.flagToString(
                 AccessibilityServiceInfo.FLAG_REQUEST_FINGERPRINT_GESTURES));
-        assertEquals("FLAG_REQUEST_SHORTCUT_WARNING_DIALOG_SPOKEN_FEEDBACK", AccessibilityServiceInfo.flagToString(
-                AccessibilityServiceInfo.FLAG_REQUEST_SHORTCUT_WARNING_DIALOG_SPOKEN_FEEDBACK));
-
+        assertEquals(
+                "FLAG_REQUEST_SHORTCUT_WARNING_DIALOG_SPOKEN_FEEDBACK",
+                AccessibilityServiceInfo.flagToString(
+                        AccessibilityServiceInfo
+                                .FLAG_REQUEST_SHORTCUT_WARNING_DIALOG_SPOKEN_FEEDBACK));
     }
 
     @Test

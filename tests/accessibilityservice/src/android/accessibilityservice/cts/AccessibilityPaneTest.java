@@ -39,9 +39,9 @@ import android.platform.test.annotations.Presubmit;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 

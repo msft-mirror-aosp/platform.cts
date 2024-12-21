@@ -47,6 +47,7 @@ import android.service.autofill.FillResponse;
 import android.view.View;
 import android.view.autofill.AutofillId;
 
+import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
 
 import com.google.common.collect.ImmutableMap;
@@ -118,8 +119,8 @@ public class FillEventHistoryTest extends FillEventHistoryCommonTestCase {
         assertFillEventForSaveShown(events.get(1), NULL_DATASET_ID);
     }
 
-
     @Test
+    @FlakyTest(bugId = 385139273)
     public void testContextCommitted_idlessDatasets() throws Exception {
         enableService();
 

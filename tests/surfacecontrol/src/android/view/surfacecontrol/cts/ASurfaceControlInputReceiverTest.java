@@ -73,6 +73,8 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.backportedfixes.BackportedFixRule;
+import com.android.cts.backportedfixes.BackportedFixTest;
 import com.android.cts.input.FailOnTestThreadRule;
 import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
@@ -104,6 +106,8 @@ public class ASurfaceControlInputReceiverTest {
 
     @Rule
     public FailOnTestThreadRule mFailOnTestThreadRule = new FailOnTestThreadRule();
+
+    @Rule public BackportedFixRule mBackportedFixRule = new BackportedFixRule();
 
     @Before
     public void setUp() throws InterruptedException, RemoteException {
@@ -546,7 +550,7 @@ public class ASurfaceControlInputReceiverTest {
     }
 
     @Test
-    //TODO b/368251173 - annotate as @BackportedFixTest
+    @BackportedFixTest(385124056)
     public void debuggable() {
         // Setting the test application as debuggable to enable checkjni which will identify
         // JNI calls with incorrect signatures.

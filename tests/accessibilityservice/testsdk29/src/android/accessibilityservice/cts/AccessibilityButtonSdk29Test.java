@@ -34,8 +34,8 @@ import android.platform.test.annotations.AppModeFull;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityManager;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.AfterClass;
 import org.junit.Before;

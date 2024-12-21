@@ -117,8 +117,8 @@ public class VirtualDeviceRule implements TestRule {
     private VirtualDeviceRule(String deviceProfile, String... permissions) {
         mFakeAssociationRule = new FakeAssociationRule(deviceProfile);
         mRuleChain = RuleChain
-                .outerRule(mFakeAssociationRule)
-                .around(DeviceFlagsValueProvider.createCheckFlagsRule())
+                .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
+                .around(mFakeAssociationRule)
                 .around(new AdoptShellPermissionsRule(
                         getInstrumentation().getUiAutomation(), permissions))
                 .around(mTrackerRule);

@@ -27,6 +27,7 @@ python_test_host {
     test_suites: [
         "general-tests",
         "cts",
+        "cts-interactive",
     ],
     test_options: {
         unit_test: false,

@@ -21,6 +21,6 @@ android_test_helper_app {
     name: "CtsRecordServiceApi34NoCap",
     defaults: ["cts_support_defaults"],
     srcs: ["**/*.kt"],
-    static_libs: ["audiorecordpermissiontests_shared"],
+    static_libs: ["audiopermissiontests_shared"],
     sdk_version: "test_33",
 }

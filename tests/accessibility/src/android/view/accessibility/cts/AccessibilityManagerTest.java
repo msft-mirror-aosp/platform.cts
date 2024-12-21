@@ -28,7 +28,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-
 import android.Manifest;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
@@ -55,8 +54,8 @@ import android.view.accessibility.AccessibilityManager.AudioDescriptionRequested
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener;
 import android.view.accessibility.Flags;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SettingsStateChangerRule;

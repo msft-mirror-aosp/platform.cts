@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.media.audio.cts.audiorecordpermissiontests.common
+package android.media.audio.cts.audiopermissiontests.common
 
 import android.content.AttributionSource
 import android.content.Intent
@@ -51,4 +51,4 @@ const val EXTRA_RECORD_ID = "EXTRA_RECORD_ID"
 const val EXTRA_CAP_OVERRIDE = "EXTRA_CAP_OVERRIDE"
 
 // Test instrumentation package
-const val TARGET_PACKAGE = "android.media.audio.cts.audiorecordpermissiontests"
+const val TARGET_PACKAGE = "android.media.audio.cts.audiopermissiontests"

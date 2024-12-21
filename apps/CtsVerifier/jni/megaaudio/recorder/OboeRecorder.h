@@ -39,10 +39,12 @@ public:
     //
     virtual bool isRecording() override { return mStreamStarted; }
 
-    Result setupStream(int32_t channelCount, int32_t sampleRate, int32_t performanceMode,
+    Result buildStream(int32_t channelCount, int32_t sampleRate, int32_t performanceMode,
                         int32_t sharingMode, int32_t routeDeviceId, int32_t inputPreset);
 
-    virtual Result startStream() override;
+    Result openStream();
+
+    Result startStream();
 
     int getStreamState();
 

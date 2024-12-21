@@ -18,7 +18,6 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
-import static android.telephony.satellite.SatelliteSubscriberInfo.IMSI_MSISDN;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1051,12 +1050,17 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         final AtomicReference<Boolean> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         final int slotId0 = 0;
-        final int idType = IMSI_MSISDN;
-        final List<SatelliteSubscriberInfo> list = new ArrayList<>(
-                Collections.singleton(new SatelliteSubscriberInfo.Builder()
-                        .setSubscriberId("09876543").setCarrierId(12345).setNiddApn("")
-                        .setSubId(SubscriptionManager.getSubscriptionId(
-                                slotId0)).setSubscriberIdType(idType).build()));
+        final int idType = SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN;
+        final List<SatelliteSubscriberInfo> list =
+                new ArrayList<>(
+                        Collections.singleton(
+                                new SatelliteSubscriberInfo.Builder()
+                                        .setSubscriberId("09876543")
+                                        .setCarrierId(12345)
+                                        .setNiddApn("")
+                                        .setSubId(SubscriptionManager.getSubscriptionId(slotId0))
+                                        .setSubscriberIdType(idType)
+                                        .build()));
         OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override

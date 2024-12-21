@@ -16,6 +16,7 @@
 package org.hyphonate.megaaudio.recorder;
 
 import org.hyphonate.megaaudio.common.BuilderBase;
+import org.hyphonate.megaaudio.common.StreamState;
 
 /**
  * Class to construct contrete Recorder objects.
@@ -81,39 +82,41 @@ public class RecorderBuilder extends BuilderBase {
         return mInputPreset;
     }
 
-    public Recorder build() throws BadStateException {
+    /**
+     * Allocates and initializes an API-specific recorder stream.
+     * @return The allocated player or null in case of error or if a recorder type of TYPE_NONE
+     * is specified.
+     * @throws BadStateException if an invalid API has been specified.
+     */
+    public Recorder allocStream() throws BadStateException {
         if (mSinkProvider == null) {
-            throw new BadStateException();
+            throw new BadStateException("No SinkProvider Specified.", StreamState.UNINITIALIZED);
         }
 
         Recorder recorder = null;
-        int playerType = mType & TYPE_MASK;
-        switch (playerType) {
+        int recorderType = mType & TYPE_MASK;
+        switch (recorderType) {
             case TYPE_NONE:
                 // NOP
                 break;
 
             case TYPE_JAVA:
-                recorder = new JavaRecorder(this, mSinkProvider);
+                recorder = new JavaRecorder(mSinkProvider);
                 break;
 
             case TYPE_OBOE: {
                 int recorderSubType = mType & SUB_TYPE_MASK;
-                recorder = new OboeRecorder(this, mSinkProvider, recorderSubType);
+                recorder = new OboeRecorder(mSinkProvider, recorderSubType);
             }
             break;
 
             default:
-                throw new BadStateException();
+                throw new BuilderBase.BadStateException(
+                        "Invalid Audio API Specified [" + recorderType + "]",
+                        StreamState.UNKNOWN);
         }
 
         return recorder;
     }
 
-    /**
-     * Exception class used to signal a failure to allocate an API-specific stream in the build()
-     * method.
-     */
-    public class BadStateException extends Throwable {
-    }
 }

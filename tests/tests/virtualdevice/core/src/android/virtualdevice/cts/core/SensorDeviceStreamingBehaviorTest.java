@@ -25,8 +25,10 @@ import static org.junit.Assert.assertThrows;
 import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtualdevice.flags.Flags;
 import android.hardware.display.DisplayManager;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -39,6 +41,7 @@ import org.junit.runner.RunWith;
 /** Tests to verify the custom policies of SENSOR_DEVICE_STREAMING role. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIMITED_VDM_ROLE)
 public class SensorDeviceStreamingBehaviorTest {
 
     @Rule
@@ -83,7 +86,7 @@ public class SensorDeviceStreamingBehaviorTest {
     }
 
     @Test
-    public void createVirtualDevice_withCustomSensorPolicy_throwsException() {
+    public void createVirtualDevice_withCustomClipboardPolicy_throwsException() {
         assertThrows(SecurityException.class,
                 () -> mRule.createManagedVirtualDevice(new VirtualDeviceParams.Builder()
                         .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
@@ -91,7 +94,7 @@ public class SensorDeviceStreamingBehaviorTest {
     }
 
     @Test
-    public void dynamicallySetCustomSensorPolicy_throwsException() {
+    public void dynamicallySetCustomClipboardPolicy_throwsException() {
         assertThrows(SecurityException.class,
                 () -> mVirtualDevice.setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM));
     }

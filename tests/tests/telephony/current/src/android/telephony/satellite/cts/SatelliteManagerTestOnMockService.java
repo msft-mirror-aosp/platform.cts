@@ -6537,9 +6537,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             }
             for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
                 SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
-                // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
+                // Check SubscriberIdType is the
+                // SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN
                 if (info.getSubId() == sTestSubIDForCarrierSatellite) {
-                    assertEquals(SatelliteSubscriberInfo.IMSI_MSISDN,
+                    assertEquals(
+                            SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN,
                             info.getSubscriberIdType());
                 }
             }
@@ -6737,7 +6739,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
             // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
             if (info.getSubId() == sTestSubIDForCarrierSatellite) {
-                assertEquals(SatelliteSubscriberInfo.IMSI_MSISDN,
+                assertEquals(
+                        SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN,
                         info.getSubscriberIdType());
             }
 
@@ -7933,8 +7936,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void restoreNtnOnlySubscription() {
-        logd("restoreNtnOnlySubscription: sPreviousSatelliteIsOnlyNtn=" + sPreviousSatelliteIsOnlyNtn
-                + ", sNtnOnlySubId=" + sNtnOnlySubId);
+        logd(
+                "restoreNtnOnlySubscription: sPreviousSatelliteIsOnlyNtn="
+                        + sPreviousSatelliteIsOnlyNtn
+                        + ", sNtnOnlySubId="
+                        + sNtnOnlySubId);
         if (sNtnOnlySubId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
             logd("restoreNtnOnlySubscription: no need to restore");
             return;

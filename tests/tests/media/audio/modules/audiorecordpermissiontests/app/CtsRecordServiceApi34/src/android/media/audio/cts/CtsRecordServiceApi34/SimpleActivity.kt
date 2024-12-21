@@ -16,7 +16,7 @@
 
 package android.media.audio.cts.CtsRecordServiceApi34
 
-class SimpleActivity : android.media.audio.cts.audiorecordpermissiontests.common.SimpleActivity() {
+class SimpleActivity : android.media.audio.cts.audiopermissiontests.common.SimpleActivity() {
     override fun getAppName() : String {
         return "CtsRecordServiceApi34"
     }

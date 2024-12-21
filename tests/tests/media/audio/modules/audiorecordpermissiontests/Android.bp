@@ -29,7 +29,7 @@ android_test {
         "compatibility-device-util-axt",
         "mediatestutils",
         "sts-device-util",
-        "audiorecordpermissiontests_shared",
+        "audiopermissiontests_shared",
     ],
     srcs: [
         "src/**/*.java",

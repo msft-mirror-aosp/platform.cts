@@ -16,8 +16,6 @@
 
 package android.accessibilityservice.cts;
 
-import static androidx.test.InstrumentationRegistry.getContext;
-
 import static org.junit.Assert.assertTrue;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -28,8 +26,9 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -55,8 +54,9 @@ public class AccessibilitySettingsTest {
     @MediumTest
     @AppModeFull
     @Test
-    public void testAccessibilitySettingsIntentHandled() throws Throwable {
-        PackageManager packageManager = getContext().getPackageManager();
+    public void testAccessibilitySettingsIntentHandled() {
+        PackageManager packageManager =
+                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
         Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
         List<ResolveInfo> resolvedActivities = packageManager.queryIntentActivities(intent,
                 PackageManager.MATCH_DEFAULT_ONLY);

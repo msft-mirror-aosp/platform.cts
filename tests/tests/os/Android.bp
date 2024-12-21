@@ -131,6 +131,7 @@ android_ravenwood_test {
         "src/android/os/cts/UserHandleTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }
 
 test_module_config {
