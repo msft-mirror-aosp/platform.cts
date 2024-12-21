@@ -46,7 +46,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * USD CTS test suite: single device testing. Perform tests on a single device to validate USD.
@@ -56,10 +57,13 @@ import java.util.concurrent.TimeUnit;
 @RequiresFlagsEnabled(Flags.FLAG_USD)
 public class SingleDeviceTest extends WifiJUnit3TestBase {
     private static final String USD_SERVICE_NAME = "USD_CTS_TEST";
-    private static final int WAIT_FOR_USD_CHANGE_SECS = 15;
-
+    private static final int WAIT_FOR_USD_CALLBACK_SECS = 15;
     private UsdManager mUsdManager;
     private WifiManager mWifiManager;
+    private final Object mLock = new Object();
+    private AtomicBoolean mAvailability = new AtomicBoolean();
+    private AtomicBoolean mIsCallbackStatus = new AtomicBoolean();
+    private Consumer<Boolean> mListener;
 
     @Override
     protected void setUp() throws Exception {
@@ -81,6 +85,19 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 assertNotNull("Usd Manager", mUsdManager);
             }
         }
+        mAvailability.set(false);
+        mIsCallbackStatus.set(false);
+        mListener =
+                new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            mAvailability.set(value);
+                            mIsCallbackStatus.set(true);
+                            mLock.notify();
+                        }
+                    }
+                };
     }
 
     @Override
@@ -171,7 +188,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         int waitForAnyCallback() {
             try {
 
-                boolean noTimeout = mBlocker.await(WAIT_FOR_USD_CHANGE_SECS, TimeUnit.SECONDS);
+                boolean noTimeout = mBlocker.await(WAIT_FOR_USD_CALLBACK_SECS, TimeUnit.SECONDS);
                 mBlocker = new CountDownLatch(1);
                 if (noTimeout) {
                     return mCallbackCalled;
@@ -193,29 +210,50 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
     }
 
-    /**
-     * Test USD publish
-     */
-    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdPublisherSupported",
-            "android.net.wifi.usd.UsdManager#publish",
-            "android.net.wifi.usd.PublishSession#cancel",
-            "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
-            "android.net.wifi.usd.PublishSessionCallback#onSessionTerminated"})
-    public void testPublish() {
+    private boolean isCallbackCalled() {
+        return mIsCallbackStatus.get();
+    }
+
+    private boolean isUsdAvailable() throws Exception {
+        long now, deadline;
+        synchronized (mLock) {
+            now = System.currentTimeMillis();
+            deadline = now + WAIT_FOR_USD_CALLBACK_SECS * 1000;
+            while (!mAvailability.get() && now < deadline) {
+                mLock.wait(deadline - now);
+                now = System.currentTimeMillis();
+            }
+        }
+        return mAvailability.get();
+    }
+
+    /** Test USD publish */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#isUsdPublisherSupported",
+                "android.net.wifi.usd.UsdManager#registerPublisherStatusListener",
+                "android.net.wifi.usd.UsdManager#unregisterPublisherStatusListener",
+                "android.net.wifi.usd.UsdManager#publish",
+                "android.net.wifi.usd.PublishSession#cancel",
+                "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
+                "android.net.wifi.usd.PublishSessionCallback#onSessionTerminated"
+            })
+    public void testPublish() throws Exception {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdPublisherSupported()) {
                 return;
             }
             assertNotNull(mUsdManager);
-            // Check whether publish is available or not
-            if (!mUsdManager.isPublisherAvailable()) {
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            mUsdManager.registerPublisherStatusListener(executor, mListener);
+            if (!isUsdAvailable()) {
+                assertTrue("Publisher status never updated", isCallbackCalled());
                 return;
             }
             // Publish
             PublishConfig publishConfig = new PublishConfig.Builder(USD_SERVICE_NAME)
                     .build();
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
             mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
@@ -230,28 +268,34 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     publishSessionCallbackTest.waitForAnyCallback());
             assertEquals(PublishSessionCallback.TERMINATION_REASON_USER_INITIATED,
                     publishSessionCallbackTest.getReasonCode());
+            mUsdManager.unregisterPublisherStatusListener(mListener);
         }
     }
 
-    /**
-     * Test USD publish with operating frequencies
-     */
-    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdPublisherSupported",
-            "android.net.wifi.usd.UsdManager.PublishConfig.Builder#setOperatingFrequenciesMhz",
-            "android.net.wifi.usd.UsdManager.PublishConfig.Builder#getOperatingFrequenciesMhz",
-            "android.net.wifi.usd.UsdManager#publish",
-            "android.net.wifi.usd.PublishSession#cancel",
-            "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
-            "android.net.wifi.usd.PublishSessionCallback#onSessionTerminated"})
-    public void testPublishWithOperatingFrequencies() {
+    /** Test USD publish with operating frequencies */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#isUsdPublisherSupported",
+                "android.net.wifi.usd.UsdManager#registerPublisherStatusListener",
+                "android.net.wifi.usd.UsdManager#unregisterPublisherStatusListener",
+                "android.net.wifi.usd.UsdManager.PublishConfig.Builder#setOperatingFrequenciesMhz",
+                "android.net.wifi.usd.UsdManager.PublishConfig.Builder#getOperatingFrequenciesMhz",
+                "android.net.wifi.usd.UsdManager#publish",
+                "android.net.wifi.usd.PublishSession#cancel",
+                "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
+                "android.net.wifi.usd.PublishSessionCallback#onSessionTerminated"
+            })
+    public void testPublishWithOperatingFrequencies() throws Exception {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdPublisherSupported()) {
                 return;
             }
             assertNotNull(mUsdManager);
-            // Check whether publish is available or not
-            if (!mUsdManager.isPublisherAvailable()) {
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            mUsdManager.registerPublisherStatusListener(executor, mListener);
+            if (!isUsdAvailable()) {
+                assertTrue("Publisher status never updated", isCallbackCalled());
                 return;
             }
             // Publish only on channels 1, 6 and 11
@@ -260,7 +304,6 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     .setOperatingFrequenciesMhz(operatingFrequencies)
                     .build();
             assertEquals(operatingFrequencies, publishConfig.getOperatingFrequenciesMhz());
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
             mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
@@ -275,6 +318,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     publishSessionCallbackTest.waitForAnyCallback());
             assertEquals(PublishSessionCallback.TERMINATION_REASON_USER_INITIATED,
                     publishSessionCallbackTest.getReasonCode());
+            mUsdManager.unregisterPublisherStatusListener(mListener);
         }
     }
 
@@ -321,7 +365,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         int waitForAnyCallback() {
             try {
 
-                boolean noTimeout = mBlocker.await(WAIT_FOR_USD_CHANGE_SECS, TimeUnit.SECONDS);
+                boolean noTimeout = mBlocker.await(WAIT_FOR_USD_CALLBACK_SECS, TimeUnit.SECONDS);
                 mBlocker = new CountDownLatch(1);
                 if (noTimeout) {
                     return mCallbackCalled;
@@ -343,28 +387,32 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
     }
 
-    /**
-     * Test USD subscribe
-     */
-    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdSubscriberSupported",
-            "android.net.wifi.usd.UsdManager#subscribe",
-            "android.net.wifi.usd.SubscribeSession#cancel",
-            "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
-            "android.net.wifi.usd.SubscribeSessionCallback#onSessionTerminated"})
-    public void testSubscribe() {
+    /** Test USD subscribe */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#isUsdSubscriberSupported",
+                "android.net.wifi.usd.UsdManager#registerSubscriberStatusListener",
+                "android.net.wifi.usd.UsdManager#unregisterSubscriberStatusListener",
+                "android.net.wifi.usd.UsdManager#subscribe",
+                "android.net.wifi.usd.SubscribeSession#cancel",
+                "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
+                "android.net.wifi.usd.SubscribeSessionCallback#onSessionTerminated"
+            })
+    public void testSubscribe() throws Exception {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdSubscriberSupported()) {
                 return;
             }
             assertNotNull(mUsdManager);
-            // Check whether subscribe is available or not
-            if (!mUsdManager.isSubscriberAvailable()) {
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            mUsdManager.registerSubscriberStatusListener(executor, mListener);
+            if (!isUsdAvailable()) {
+                assertTrue("Subscriber status never updated", isCallbackCalled());
                 return;
             }
             // Subscribe
             SubscribeConfig subscribeConfig = new SubscribeConfig.Builder(USD_SERVICE_NAME).build();
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             SubscribeSessionCallbackTest subscribeSessionCallbackTest =
                     new SubscribeSessionCallbackTest();
             mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
@@ -379,28 +427,34 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     subscribeSessionCallbackTest.waitForAnyCallback());
             assertEquals(SubscribeSessionCallback.TERMINATION_REASON_USER_INITIATED,
                     subscribeSessionCallbackTest.getReasonCode());
+            mUsdManager.unregisterSubscriberStatusListener(mListener);
         }
     }
 
-    /**
-     * Test USD subscribe with operating frequencies
-     */
-    @ApiTest(apis = {"android.net.wifi.WifiManager#isUsdSubscriberSupported",
-            "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#setOperatingFrequenciesMhz",
-            "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#getOperatingFrequenciesMhz",
-            "android.net.wifi.usd.UsdManager#subscribe",
-            "android.net.wifi.usd.SubscribeSession#cancel",
-            "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
-            "android.net.wifi.usd.SubscribeSessionCallback#onSessionTerminated"})
-    public void testSubscribeWithOperatingFrequencies() {
+    /** Test USD subscribe with operating frequencies */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.WifiManager#isUsdSubscriberSupported",
+                "android.net.wifi.usd.UsdManager#registerSubscriberStatusListener",
+                "android.net.wifi.usd.UsdManager#unregisterSubscriberStatusListener",
+                "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#setOperatingFrequenciesMhz",
+                "android.net.wifi.usd.UsdManager.SubscribeConfig.Builder#getOperatingFrequenciesMhz",
+                "android.net.wifi.usd.UsdManager#subscribe",
+                "android.net.wifi.usd.SubscribeSession#cancel",
+                "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
+                "android.net.wifi.usd.SubscribeSessionCallback#onSessionTerminated"
+            })
+    public void testSubscribeWithOperatingFrequencies() throws Exception {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdSubscriberSupported()) {
                 return;
             }
             assertNotNull(mUsdManager);
-            // Check whether subscribe is available or not
-            if (!mUsdManager.isSubscriberAvailable()) {
+            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+            mUsdManager.registerSubscriberStatusListener(executor, mListener);
+            if (!isUsdAvailable()) {
+                assertTrue("Subscriber status never updated", isCallbackCalled());
                 return;
             }
             // Subscribe on channel 1, 6 or 11
@@ -409,7 +463,6 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     .setOperatingFrequenciesMhz(operatingFrequencies)
                     .build();
             assertEquals(operatingFrequencies, subscribeConfig.getOperatingFrequenciesMhz());
-            ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
             SubscribeSessionCallbackTest subscribeSessionCallbackTest =
                     new SubscribeSessionCallbackTest();
             mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
@@ -424,6 +477,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     subscribeSessionCallbackTest.waitForAnyCallback());
             assertEquals(SubscribeSessionCallback.TERMINATION_REASON_USER_INITIATED,
                     subscribeSessionCallbackTest.getReasonCode());
+            mUsdManager.unregisterSubscriberStatusListener(mListener);
         }
     }
 }
