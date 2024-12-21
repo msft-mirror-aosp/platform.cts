@@ -134,6 +134,7 @@ _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
 _BIT_HLG10 = 0x01  # bit 1 for feature mask
 _BIT_STABILIZATION = 0x02  # bit 2 for feature mask
+_CAMERA_RESTART_DELAY_SEC = 10
 
 
 def validate_tablet(tablet_name, brightness, device_id):
@@ -339,6 +340,8 @@ class ItsSession(object):
       raise error_util.CameraItsError(self._device_id,
                                       ' cannot find an available ' + 'port')
 
+    self._sock_port = port
+
     # Release the socket as mutex unlock
     socket_lock.close()
 
@@ -435,6 +438,26 @@ class ItsSession(object):
       self.close_camera()
       self.sock.close()
     return False
+
+  def reset_socket_and_camera(self):
+    """Reset by reconnecting socket and opening camera.
+
+    Returns: None
+    """
+    if hasattr(self, 'sock') and self.sock:
+      self.sock.close()
+
+    # Give more time for camera device to enumerate and initialize
+    # after crash.
+    time.sleep(_CAMERA_RESTART_DELAY_SEC)
+
+    # Reconnect to the socket
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock.connect((self.IPADDR, self._sock_port))
+    self.sock.settimeout(self.SOCK_TIMEOUT)
+
+    # Reopen camera
+    self.__open_camera()
 
   def override_with_hidden_physical_camera_props(self, props):
     """Check that it is a valid sub-camera backing the logical camera.
@@ -3112,12 +3135,15 @@ def remove_mp4_file(file_name_with_path):
 
 
 def check_features_passed(
-    features_passed, hlg10, is_stabilized):
+    features_passed, streams_name, fps_range_tuple,
+    hlg10, is_stabilized):
   """Check if the [hlg10, is_stabilized] combination is already tested
   to be supported.
 
   Args:
-    features_passed: The list of feature combinations already supported
+    features_passed: The 2d dictionary of feature combinations already passed
+    streams_name: The first key for features_passed dictionary
+    fps_range_tuple: The second key for features_passed dictionary
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
 
@@ -3128,25 +3154,34 @@ def check_features_passed(
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
   tested = False
-  for tested_feature in features_passed:
-    # Only test a combination if they aren't already a subset
-    # of another tested combination.
-    if (tested_feature | feature_mask) == tested_feature:
-      tested = True
-      break
+  if streams_name in features_passed:
+    if fps_range_tuple in features_passed[streams_name]:
+      for tested_feature in features_passed[streams_name][fps_range_tuple]:
+        # Only test a combination if they aren't already a subset
+        # of another tested combination.
+        if (tested_feature | feature_mask) == tested_feature:
+          tested = True
+          break
   return tested
 
 
 def mark_features_passed(
-    features_passed, hlg10, is_stabilized):
+    features_passed, streams_name, fps_range_tuple,
+    hlg10, is_stabilized):
   """Mark the [hlg10, is_stabilized] combination as tested to pass.
 
   Args:
-    features_passed: The list of feature combinations already tested
+    features_passed: The 2d dictionary of feature combinations already passed
+    streams_name: The first key for features_passed dictionary
+    fps_range_tuple: The second key for feature_passed dictionary
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
   """
   feature_mask = 0
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
-  features_passed.append(feature_mask)
+  if (streams_name in features_passed and
+      fps_range_tuple in features_passed[streams_name]):
+    features_passed[streams_name][fps_range_tuple].append(feature_mask)
+  else:
+    features_passed.setdefault(streams_name, {}).setdefault(fps_range_tuple, [feature_mask])

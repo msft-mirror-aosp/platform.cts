@@ -3285,6 +3285,9 @@ public class ItsService extends Service implements SensorEventListener {
             throw new ItsException("Error configuring and creating capture request", e);
         } catch (InterruptedException e) {
             throw new ItsException("Interrupted while recording preview", e);
+        } catch (IllegalStateException e) {
+            closeCameraDevice();
+            throw new ItsException("Illegal session state exception", e);
         }
 
         Log.i(TAG, "Preview recording complete: " + outputFilePath);

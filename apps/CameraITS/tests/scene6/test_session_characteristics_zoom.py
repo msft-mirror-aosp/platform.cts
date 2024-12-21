@@ -107,6 +107,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
 
       test_failures = []
+      features_tested = {}  # feature combinations already tested
       for stream_combination in combinations:
         streams_name = stream_combination['name']
         min_frame_duration = 0
@@ -149,17 +150,10 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             skip = True
             break
 
-          # Skip if size and format are not supported by the device.
           config = [x for x in configs if
                     x['format'] == fmt and
                     x['width'] == size[0] and
                     x['height'] == size[1]]
-          if not config:
-            logging.debug(
-                'stream combination %s not supported. Skip', streams_name)
-            skip = True
-            break
-
           min_frame_duration = max(
               config[0]['minFrameDuration'], min_frame_duration)
           logging.debug(
@@ -178,13 +172,13 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             max_achievable_fps >= fps[_MAX_FPS_INDEX] - _FPS_SELECTION_ATOL)]
 
         for fps_range in fps_params:
+          fps_range_tuple = tuple(fps_range)
           # HLG10. Make sure to test ON first.
           hlg10_params = []
           if camera_properties_utils.dynamic_range_ten_bit(props):
             hlg10_params.append(True)
           hlg10_params.append(False)
 
-          features_tested = []  # feature combinations already tested
           for hlg10 in hlg10_params:
             # Construct output surfaces
             output_surfaces = []
@@ -218,7 +212,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                   stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW
               )
               skip_test = its_session_utils.check_features_passed(
-                  features_tested, hlg10, is_stabilized)
+                  features_tested, streams_name, fps_range_tuple, hlg10, is_stabilized)
               if skip_test:
                 continue
 
@@ -326,7 +320,8 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                 test_failures.append(failure_msg)
 
               its_session_utils.mark_features_passed(
-                  features_tested, hlg10, is_stabilized)
+                  features_tested, streams_name, fps_range_tuple,
+                  hlg10, is_stabilized)
 
       if test_failures:
         raise AssertionError(test_failures)

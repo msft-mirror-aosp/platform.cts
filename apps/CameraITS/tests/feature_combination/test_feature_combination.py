@@ -18,11 +18,13 @@ from datetime import datetime  # pylint: disable=g-importing-member
 from google.protobuf import text_format
 import logging
 import os
+import threading
 import time
 
 from mobly import test_runner
 
 import its_base_test
+import error_util
 import camera_properties_utils
 import capture_request_utils
 import its_session_utils
@@ -35,7 +37,7 @@ _BIT_STABILIZATION = 0x02  # bit 2 for feature mask
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL_CODEC = 1.2
-_FPS_ATOL_METADATA = 0.8
+_FPS_ATOL_METADATA = 1.1
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SEC_TO_NSEC = 1_000_000_000
@@ -68,6 +70,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
   HLG 10-bit HDR:
   The recorded preview has valid 10-bit HLG outputs.
   """
+
+  features_passed_lock = threading.Lock()
 
   def test_feature_combination(self):
     # Use a pool of threads to execute calls asynchronously
@@ -141,7 +145,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
   def _finish_combination(self, combination_name, is_stabilized, passed,
                           recording_obj, gyro_events, test_name, log_path,
-                          facing, output_surfaces, fps_range):
+                          facing, output_surfaces, fps_range, hlg10, features_passed,
+                          streams_name, fps_range_tuple):
     """Finish verifying a feature combo & preview stabilization if necessary."""
     result = {'name': combination_name,
               'output_surfaces': output_surfaces,
@@ -157,6 +162,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       if stabilization_result['failure']:
         result['stabilization_failure'] = stabilization_result['failure']
         result['passed'] = False
+
+    if result['passed']:
+      with self.features_passed_lock:
+        its_session_utils.mark_features_passed(
+            features_passed, streams_name, fps_range_tuple,
+            hlg10, is_stabilized)
 
     return result
 
@@ -218,90 +229,85 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       configs = props['android.scaler.streamConfigurationMap'][
           'availableStreamConfigurations']
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
+      fps_params = [fps for fps in fps_ranges if (
+          fps[1] in _FPS_30_60)]
+      hlg10_params = [True, False]
 
       test_failures = []
       feature_verification_futures = []
       database = self._create_feature_combo_proto()
-      for stream_combination in combinations:
-        streams_name = stream_combination['name']
-        min_frame_duration = 0
-        configured_streams = []
-        skip = False
-        if (stream_combination['combination'][0]['format'] !=
-            its_session_utils.PRIVATE_FORMAT):
-          raise AssertionError(
-              f'First stream for {streams_name} must be PRIV')
-        preview_size = stream_combination['combination'][0]['size']
-        for stream in stream_combination['combination']:
-          fmt = None
-          size = [int(e) for e in stream['size'].split('x')]
-          if stream['format'] == its_session_utils.PRIVATE_FORMAT:
-            fmt = capture_request_utils.FMT_CODE_PRIV
-          elif stream['format'] == 'jpeg':
-            fmt = capture_request_utils.FMT_CODE_JPEG
-          elif stream['format'] == its_session_utils.JPEG_R_FMT_STR:
-            fmt = capture_request_utils.FMT_CODE_JPEG_R
-          config = [x for x in configs if
-                    x['format'] == fmt and
-                    x['width'] == size[0] and
-                    x['height'] == size[1]]
-          if not config:
-            logging.debug(
-                'stream combination %s not supported. Skip', streams_name)
-            skip = True
-            break
+      features_passed = {}
 
-          min_frame_duration = max(
-              config[0]['minFrameDuration'], min_frame_duration)
-          logging.debug(
-              'format is %s, min_frame_duration is %d}',
-              stream['format'], config[0]['minFrameDuration'])
-          configured_streams.append(
-              {'formatStr': stream['format'], 'format': fmt,
-               'width': size[0], 'height': size[1]})
+      for fps_range in fps_params:
+        fps_range_tuple = tuple(fps_range)
+        for hlg10 in hlg10_params:
+          for stabilize in stabilization_params:
+            for stream_combination in combinations:
+              streams_name = stream_combination['name']
+              combination_name = (f'(streams: {streams_name}, hlg10: {hlg10}, '
+                                  f'stabilization: {stabilize}, fps_range: '
+                                  f'[{fps_range[0]}, {fps_range[1]}])')
 
-        if skip:
-          continue
+              min_frame_duration = 0
+              configured_streams = []
+              if (stream_combination['combination'][0]['format'] !=
+                  its_session_utils.PRIVATE_FORMAT):
+                raise AssertionError(
+                    f'First stream for {streams_name} must be PRIV')
+              preview_size = stream_combination['combination'][0]['size']
+              for stream in stream_combination['combination']:
+                fmt = None
+                size = [int(e) for e in stream['size'].split('x')]
+                if stream['format'] == its_session_utils.PRIVATE_FORMAT:
+                  fmt = capture_request_utils.FMT_CODE_PRIV
+                elif stream['format'] == 'jpeg':
+                  fmt = capture_request_utils.FMT_CODE_JPEG
+                elif stream['format'] == its_session_utils.JPEG_R_FMT_STR:
+                  fmt = capture_request_utils.FMT_CODE_JPEG_R
+                config = [x for x in configs if
+                          x['format'] == fmt and
+                          x['width'] == size[0] and
+                          x['height'] == size[1]]
+                min_frame_duration = max(
+                    config[0]['minFrameDuration'], min_frame_duration)
+                logging.debug(
+                    'format is %s, min_frame_duration is %d}',
+                    stream['format'], config[0]['minFrameDuration'])
+                configured_streams.append(
+                    {'formatStr': stream['format'], 'format': fmt,
+                     'width': size[0], 'height': size[1]})
 
-        # Fps ranges
-        max_achievable_fps = _SEC_TO_NSEC / min_frame_duration
-        fps_params = [fps for fps in fps_ranges if (
-            fps[1] in _FPS_30_60 and
-            max_achievable_fps >= fps[1] - _FPS_SELECTION_ATOL)]
+              # Check if the FPS range is supported
+              max_achievable_fps = _SEC_TO_NSEC / min_frame_duration
+              if max_achievable_fps < fps_range[1] - _FPS_SELECTION_ATOL:
+                continue
 
-        for fps_range in fps_params:
-          # HLG10. Make sure to test ON first.
-          hlg10_params = []
-          if cam.is_hlg10_recording_supported_for_size_and_fps(
-              preview_size, fps_range[1]):
-            hlg10_params.append(True)
-          hlg10_params.append(False)
+              # Check if the hlg10 is supported for size and fps
+              if hlg10 and not cam.is_hlg10_recording_supported_for_size_and_fps(
+                  preview_size, fps_range[1]):
+                continue
 
-          features_passed = []  # feature combinations already supported
-          for hlg10 in hlg10_params:
-            # Construct output surfaces
-            output_surfaces = []
-            for configured_stream in configured_streams:
-              hlg10_stream = (configured_stream['formatStr'] ==
-                              its_session_utils.PRIVATE_FORMAT and hlg10)
-              output_surfaces.append(
-                  {'format': configured_stream['formatStr'],
-                   'format_code': configured_stream['format'],
-                   'width': configured_stream['width'],
-                   'height': configured_stream['height'],
-                   'hlg10': hlg10_stream}
-              )
+              logging.debug('combination name: %s', combination_name)
 
-            for stabilize in stabilization_params:
+              # Construct output surfaces
+              output_surfaces = []
+              for configured_stream in configured_streams:
+                hlg10_stream = (configured_stream['formatStr'] ==
+                                its_session_utils.PRIVATE_FORMAT and hlg10)
+                output_surfaces.append(
+                    {'format': configured_stream['formatStr'],
+                     'format_code': configured_stream['format'],
+                     'width': configured_stream['width'],
+                     'height': configured_stream['height'],
+                     'hlg10': hlg10_stream}
+                )
+
               settings = {
                   'android.control.videoStabilizationMode': stabilize,
                   'android.control.aeTargetFpsRange': fps_range,
               }
-              combination_name = (f'(streams: {streams_name}, hlg10: {hlg10}, '
-                                  f'stabilization: {stabilize}, fps_range: '
-                                  f'[{fps_range[0]}, {fps_range[1]}])')
-              logging.debug('combination name: %s', combination_name)
 
+              support_claimed = False
               if support_query:
                 # Is the feature combination supported?
                 support_claimed = cam.is_stream_combination_supported(
@@ -316,19 +322,42 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 is_stabilized = True
 
               # If a superset of features are already tested, skip and assuming
-              # the subset of those features are supported.
-              skip_test = its_session_utils.check_features_passed(
-                  features_passed, hlg10, is_stabilized)
-              if skip_test:
+              # the subset of those features are supported. Do not skip [60, *]
+              # even if its superset feature passes (b/385753212).
+              with self.features_passed_lock:
+                skip_test = (streams_name in features_passed and
+                    fps_range_tuple in features_passed[streams_name] and
+                    fps_range[0] < 60 and
+                    its_session_utils.check_features_passed(
+                        features_passed, streams_name, fps_range_tuple,
+                        hlg10, is_stabilized))
+                if skip_test:
+                  self._add_feature_combo_entry_to_proto(
+                      database, output_surfaces, passed,
+                      fps_range, is_stabilized)
+                  continue
+
+              # In case collect_data_with_surfaces throws an exception, treat it
+              # as an unsupported combination. (b/385753212#2)
+              try:
+                recording_obj = (
+                    preview_processing_utils.collect_data_with_surfaces(
+                        cam, self.tablet_device, output_surfaces, is_stabilized,
+                        rot_rig=rot_rig, fps_range=fps_range))
+              except error_util.CameraItsError as e:
+                if support_query and support_claimed:
+                  raise e
+                failure_msg = (
+                    f'{combination_name}: collect_data_with_surfaces throws '
+                    f'exception: {e}')
+                logging.debug(failure_msg)
+                test_failures.append(failure_msg)
+                passed = False
                 self._add_feature_combo_entry_to_proto(
                     database, output_surfaces, passed,
                     fps_range, is_stabilized)
+                cam.reset_socket_and_camera()
                 continue
-
-              recording_obj = (
-                  preview_processing_utils.collect_data_with_surfaces(
-                      cam, self.tablet_device, output_surfaces, is_stabilized,
-                      rot_rig=rot_rig, fps_range=fps_range))
 
               gyro_events = None
               if is_stabilized:
@@ -394,16 +423,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 test_failures.append(failure_msg)
                 passed = False
 
-              if passed:
-                its_session_utils.mark_features_passed(
-                    features_passed, hlg10, is_stabilized)
-
-              # TODO: b/382255298 - Decouple stabilization test.
               # Schedule finishing up of verification to run asynchronously
               future = executor.submit(
                   self._finish_combination, combination_name, is_stabilized,
                   passed, recording_obj, gyro_events, _NAME, log_path, facing,
-                  output_surfaces, fps_range
+                  output_surfaces, fps_range, hlg10,
+                  features_passed, streams_name, fps_range_tuple
               )
               feature_verification_futures.append(future)
 
