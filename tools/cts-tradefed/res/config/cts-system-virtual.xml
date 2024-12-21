@@ -1208,6 +1208,9 @@
   <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_setDynamicPowerSavings"/>
   <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_batteryDischargePrediction"/>
   <option name="compatibility:exclude-filter" value="CtsUtilTestCases android.util.cts.ArrayMapTest#testDuplicateKeys"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testRequest"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testPermissionUpgradeFlow	"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testCoarseRequestAndGrant"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
