@@ -19,7 +19,6 @@ package android.accessibilityservice.cts;
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_FULLSCREEN;
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_WINDOW;
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
@@ -86,10 +85,10 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
@@ -147,8 +146,7 @@ public class AccessibilityMagnificationTest {
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
-    private final ActivityTestRule<AccessibilityWindowQueryActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityWindowQueryActivity.class, false, false);
+    private ActivityScenario<? extends Activity> mActivityScenario;
 
     private InstrumentedAccessibilityServiceTestRule<InstrumentedAccessibilityService>
             mInstrumentedAccessibilityServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -162,12 +160,11 @@ public class AccessibilityMagnificationTest {
             DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
 
     @Rule
-    public final RuleChain mRuleChain = RuleChain
-            .outerRule(mActivityRule)
-            .around(mMagnificationAccessibilityServiceRule)
-            .around(mInstrumentedAccessibilityServiceRule)
-            .around(mDumpOnFailureRule)
-            .around(mCheckFlagsRule);
+    public final RuleChain mRuleChain =
+            RuleChain.outerRule(mMagnificationAccessibilityServiceRule)
+                    .around(mInstrumentedAccessibilityServiceRule)
+                    .around(mDumpOnFailureRule)
+                    .around(mCheckFlagsRule);
 
     @BeforeClass
     public static void oneTimeSetUp() {
@@ -198,6 +195,10 @@ public class AccessibilityMagnificationTest {
 
     @After
     public void tearDown() {
+        if (mActivityScenario != null) {
+            mActivityScenario.close();
+        }
+
         // Ensure the magnification is deactivated after each test case. For some test cases that
         // would disable mService during the test, they still need to reset magnification themselves
         // after the test.
@@ -1235,12 +1236,14 @@ public class AccessibilityMagnificationTest {
     @FlakyTest
     public void testA11yNodeInfoVisibility_whenOutOfMagnifiedArea_shouldVisible()
             throws Exception {
-        Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                mInstrumentation, sUiAutomation, mActivityRule);
+        mActivityScenario = ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
+        AtomicReference<Activity> activity = new AtomicReference<>();
+        mActivityScenario.onActivity(activity::set);
+
         final MagnificationController controller = mService.getMagnificationController();
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
         final float scale = 8.0f;
-        final Button button = activity.findViewById(R.id.button1);
+        final Button button = activity.get().findViewById(R.id.button1);
         adjustViewBoundsIfNeeded(button, scale, magnifyBounds);
 
         final AccessibilityNodeInfo buttonNode = sUiAutomation.getRootInActiveWindow()
@@ -1261,7 +1264,7 @@ public class AccessibilityMagnificationTest {
             waitOnMagnificationChanged(controller, scale, centerX, centerY);
 
             final DisplayMetrics displayMetrics = new DisplayMetrics();
-            activity.getDisplay().getMetrics(displayMetrics);
+            activity.get().getDisplay().getMetrics(displayMetrics);
             final Rect displayRect = new Rect(0, 0,
                     displayMetrics.widthPixels, displayMetrics.heightPixels);
 
@@ -1286,8 +1289,9 @@ public class AccessibilityMagnificationTest {
     @Test
     public void testShowMagnifiableWindow_outOfTheMagnifiedRegion_moveMagnification()
             throws Exception {
-        Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                mInstrumentation, sUiAutomation, mActivityRule);
+        mActivityScenario = ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
+        AtomicReference<Activity> activity = new AtomicReference<>();
+        mActivityScenario.onActivity(activity::set);
 
         final MagnificationController controller = mService.getMagnificationController();
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
@@ -1304,11 +1308,15 @@ public class AccessibilityMagnificationTest {
             waitOnMagnificationChanged(controller, scale, centerX, centerY);
 
             // Add window at left-top position
-            Button button = addMagnifiableWindowInActivity(R.string.button1, params -> {
-                params.width = magnifyBounds.width() / 4;
-                params.height = magnifyBounds.height() / 4;
-                params.gravity = Gravity.TOP | Gravity.LEFT;
-            }, activity);
+            Button button =
+                    addMagnifiableWindowInActivity(
+                            R.string.button1,
+                            params -> {
+                                params.width = magnifyBounds.width() / 4;
+                                params.height = magnifyBounds.height() / 4;
+                                params.gravity = Gravity.TOP | Gravity.LEFT;
+                            },
+                            activity.get());
             createdButton = button;
 
             TestUtils.waitUntil("bounds are not intersected:", TIMEOUT_CONFIG_SECONDS,
@@ -1322,7 +1330,7 @@ public class AccessibilityMagnificationTest {
 
         } finally {
             if (createdButton != null) {
-                activity.getWindowManager().removeView(createdButton);
+                activity.get().getWindowManager().removeView(createdButton);
             }
             mService.runOnServiceSync(() -> controller.reset(false));
         }
@@ -1373,12 +1381,13 @@ public class AccessibilityMagnificationTest {
     @Test
     public void testAccessibilityNodeInfo_getBoundsInWindow_noChangeWhenMagnified()
             throws Exception {
-        Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                mInstrumentation, sUiAutomation, mActivityRule);
+        mActivityScenario = ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
+        AtomicReference<Activity> activity = new AtomicReference<>();
+        mActivityScenario.onActivity(activity::set);
         final MagnificationController controller = mService.getMagnificationController();
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
         final float scale = 8.0f;
-        final Button button = activity.findViewById(R.id.button1);
+        final Button button = activity.get().findViewById(R.id.button1);
         adjustViewBoundsIfNeeded(button, scale, magnifyBounds);
 
         final AccessibilityNodeInfo buttonNode = sUiAutomation.getRootInActiveWindow()
@@ -1408,76 +1417,85 @@ public class AccessibilityMagnificationTest {
 
     @Test
     public void testTextLocations_changeWhenMagnified() throws Exception {
-        ActivityTestRule<AccessibilityTextTraversalActivity> textActivityRule =
-                new ActivityTestRule<>(AccessibilityTextTraversalActivity.class, false, false);
-        Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                mInstrumentation, sUiAutomation, textActivityRule);
-        final TextView textView = activity.findViewById(R.id.text);
-        assertThat(textView).isNotNull();
+        AtomicReference<AccessibilityNodeInfo> text = new AtomicReference<>();
+        mActivityScenario = ActivityScenario.launch(AccessibilityTextTraversalActivity.class);
+        mActivityScenario.onActivity(
+                activity -> {
+                    final TextView textView = activity.findViewById(R.id.text);
+                    assertThat(textView).isNotNull();
 
-        mInstrumentation.runOnMainSync(new Runnable() {
-            @Override
-            public void run() {
-                textView.setVisibility(View.VISIBLE);
-                textView.setText(activity.getString(R.string.a_b));
-            }
-        });
+                    textView.setVisibility(View.VISIBLE);
+                    textView.setText(activity.getString(R.string.a_b));
 
-        final AccessibilityNodeInfo text = sUiAutomation
-                .getRootInActiveWindow().findAccessibilityNodeInfosByText(
-                        activity.getString(R.string.a_b)).get(0);
-
+                    text.set(
+                            sUiAutomation
+                                    .getRootInActiveWindow()
+                                    .findAccessibilityNodeInfosByText(
+                                            activity.getString(R.string.a_b))
+                                    .get(0));
+                });
         assertWithMessage("Can't find text on the screen").that(text).isNotNull();
 
-        Bundle extras = waitForExtraTextData(text, EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+        Bundle extras = waitForExtraTextData(text.get(), EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
         final Parcelable[] initialParcelables = extras.getParcelableArray(
                 EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
         assertNotNull(initialParcelables);
         final RectF[] initialLocations = Arrays.copyOf(initialParcelables,
                 initialParcelables.length, RectF[].class);
-        assertThat(text.getText().length()).isEqualTo(initialLocations.length);
+        assertThat(text.get().getText().length()).isEqualTo(initialLocations.length);
 
         final MagnificationController controller = mService.getMagnificationController();
         // Pick some scale and center. The actual values are not important, but we do this
         // based on the magnifiable region size so that the values are valid.
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
         final float scale = 8.0f;
-        final float centerX = magnifyBounds.left + (((float) magnifyBounds.width() / (2.0f * scale))
-                * ((2.0f * scale) - 1.0f));
-        final float centerY = magnifyBounds.top + (((float) magnifyBounds.height() / (2.0f * scale))
-                * ((2.0f * scale) - 1.0f));
+        final float centerX =
+                magnifyBounds.left
+                        + (((float) magnifyBounds.width() / (2.0f * scale))
+                                * ((2.0f * scale) - 1.0f));
+        final float centerY =
+                magnifyBounds.top
+                        + (((float) magnifyBounds.height() / (2.0f * scale))
+                                * ((2.0f * scale) - 1.0f));
 
         try {
             waitOnMagnificationChanged(controller, scale, centerX, centerY);
-            TestUtils.waitUntil("Failed to update character coordinates after window magnification",
-                    TIMEOUT_CONFIG_SECONDS, () -> {
+            TestUtils.waitUntil(
+                    "Failed to update character coordinates after window magnification",
+                    TIMEOUT_CONFIG_SECONDS,
+                    () -> {
+                        Bundle finalExtras =
+                                waitForExtraTextData(
+                                        text.get(), EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
+                        final Parcelable[] finalParcelables =
+                                finalExtras.getParcelableArray(
+                                        EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
+                        assertNotNull(finalParcelables);
+                        final RectF[] finalLocations =
+                                Arrays.copyOf(
+                                        finalParcelables, finalParcelables.length, RectF[].class);
+                        assertThat(text.get().getText().length()).isEqualTo(finalLocations.length);
 
-                    Bundle finalExtras = waitForExtraTextData(text,
-                            EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
-                    final Parcelable[] finalParcelables = finalExtras.getParcelableArray(
-                            EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY, RectF.class);
-                    assertNotNull(finalParcelables);
-                    final RectF[] finalLocations = Arrays.copyOf(finalParcelables,
-                            finalParcelables.length, RectF[].class);
-                    assertThat(text.getText().length()).isEqualTo(finalLocations.length);
-
-                    float tolerance = 0.01f;
-                    for (int i = 0; i < initialLocations.length; i++) {
-                        // If any loctions match, we haven't updated the character
-                        // locations due to a viewport change. Fail the test.
-                        if (Math.abs(initialLocations[i].top - finalLocations[i].top) < tolerance
-                                || Math.abs(initialLocations[i].bottom - finalLocations[i].bottom)
-                                < tolerance || Math.abs(initialLocations[i].left
-                                - finalLocations[i].left) < tolerance
-                                || Math.abs(initialLocations[i].right - finalLocations[i].right)
-                                < tolerance
-                        ) {
-                            return false;
+                        float tolerance = 0.01f;
+                        for (int i = 0; i < initialLocations.length; i++) {
+                            // If any loctions match, we haven't updated the character
+                            // locations due to a viewport change. Fail the test.
+                            if (Math.abs(initialLocations[i].top - finalLocations[i].top)
+                                            < tolerance
+                                    || Math.abs(
+                                                    initialLocations[i].bottom
+                                                            - finalLocations[i].bottom)
+                                            < tolerance
+                                    || Math.abs(initialLocations[i].left - finalLocations[i].left)
+                                            < tolerance
+                                    || Math.abs(initialLocations[i].right - finalLocations[i].right)
+                                            < tolerance) {
+                                return false;
+                            }
                         }
-                    }
-                    // Success.
-                    return true;
-                });
+                        // Success.
+                        return true;
+                    });
         } finally {
             mService.runOnServiceSync(() -> controller.reset(false));
         }
@@ -1486,45 +1504,48 @@ public class AccessibilityMagnificationTest {
     @Test
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_CHARACTER_IN_WINDOW_API)
     public void testTextLocationsInWindow_noChangeWhenMagnified() throws Exception {
-        ActivityTestRule<AccessibilityTextTraversalActivity> textActivityRule =
-                new ActivityTestRule<>(AccessibilityTextTraversalActivity.class, false, false);
-        Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                mInstrumentation, sUiAutomation, textActivityRule);
-        final TextView textView = activity.findViewById(R.id.text);
-        assertThat(textView).isNotNull();
+        AtomicReference<AccessibilityNodeInfo> text = new AtomicReference<>();
+        mActivityScenario = ActivityScenario.launch(AccessibilityTextTraversalActivity.class);
+        mActivityScenario.onActivity(
+                activity -> {
+                    final TextView textView = activity.findViewById(R.id.text);
+                    assertThat(textView).isNotNull();
 
-        mInstrumentation.runOnMainSync(new Runnable() {
-            @Override
-            public void run() {
-                textView.setVisibility(View.VISIBLE);
-                textView.setText(activity.getString(R.string.a_b));
-            }
-        });
+                    textView.setVisibility(View.VISIBLE);
+                    textView.setText(activity.getString(R.string.a_b));
 
-        final AccessibilityNodeInfo text = sUiAutomation
-                .getRootInActiveWindow().findAccessibilityNodeInfosByText(
-                        activity.getString(R.string.a_b)).get(0);
+                    text.set(
+                            sUiAutomation
+                                    .getRootInActiveWindow()
+                                    .findAccessibilityNodeInfosByText(
+                                            activity.getString(R.string.a_b))
+                                    .get(0));
 
-        assertWithMessage("Can't find text on the screen").that(text).isNotNull();
+                    assertWithMessage("Can't find text on the screen").that(text).isNotNull();
+                });
 
-        Bundle extras = waitForExtraTextData(text,
-                EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+        Bundle extras =
+                waitForExtraTextData(text.get(), EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
         final Parcelable[] initialParcelables = extras.getParcelableArray(
                 EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY, RectF.class);
         assertNotNull(initialParcelables);
         final RectF[] initialLocations = Arrays.copyOf(initialParcelables,
                 initialParcelables.length, RectF[].class);
-        assertThat(text.getText().length()).isEqualTo(initialLocations.length);
+        assertThat(text.get().getText().length()).isEqualTo(initialLocations.length);
 
         final MagnificationController controller = mService.getMagnificationController();
         // Pick some scale and center. The actual values are not important, but we do this
         // based on the magnifiable region size so that the values are valid.
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
         final float scale = 8.0f;
-        final float centerX = magnifyBounds.left + (((float) magnifyBounds.width() / (2.0f * scale))
-                * ((2.0f * scale) - 1.0f));
-        final float centerY = magnifyBounds.top + (((float) magnifyBounds.height() / (2.0f * scale))
-                * ((2.0f * scale) - 1.0f));
+        final float centerX =
+                magnifyBounds.left
+                        + (((float) magnifyBounds.width() / (2.0f * scale))
+                                * ((2.0f * scale) - 1.0f));
+        final float centerY =
+                magnifyBounds.top
+                        + (((float) magnifyBounds.height() / (2.0f * scale))
+                                * ((2.0f * scale) - 1.0f));
 
         try {
             waitOnMagnificationChanged(controller, scale, centerX, centerY);
@@ -1533,13 +1554,15 @@ public class AccessibilityMagnificationTest {
             // It shouldn't impact bounds in window.
             SystemClock.sleep(1000);
 
-            extras = waitForExtraTextData(text, EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
+            extras =
+                    waitForExtraTextData(
+                            text.get(), EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
             final Parcelable[] finalParcelables = extras.getParcelableArray(
                     EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY, RectF.class);
             assertNotNull(finalParcelables);
-            final RectF[] finalLocations = Arrays.copyOf(finalParcelables, finalParcelables.length,
-                    RectF[].class);
-            assertThat(text.getText().length()).isEqualTo(finalLocations.length);
+            final RectF[] finalLocations =
+                    Arrays.copyOf(finalParcelables, finalParcelables.length, RectF[].class);
+            assertThat(text.get().getText().length()).isEqualTo(finalLocations.length);
 
             float tolerance = 0.01f;
             for (int i = 0; i < initialLocations.length; i++) {

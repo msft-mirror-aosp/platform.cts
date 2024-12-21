@@ -17,7 +17,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibility.cts.common.InstrumentedAccessibilityService.enableService;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 
 import static org.junit.Assert.assertTrue;
 
@@ -44,11 +43,11 @@ import android.view.inputmethod.InputConnection;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -78,8 +77,8 @@ public final class AccessibilityInputConnectionTest {
 
     private static StubImeAccessibilityService sStubImeAccessibilityService;
 
-    private ActivityTestRule<AccessibilityEndToEndActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityEndToEndActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityEndToEndActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityEndToEndActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -94,9 +93,9 @@ public final class AccessibilityInputConnectionTest {
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sUiAutomation = sInstrumentation.getUiAutomation();
-        sInstrumentation
-                .getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        sUiAutomation =
+                sInstrumentation.getUiAutomation(
+                        UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sStubImeAccessibilityService = enableService(StubImeAccessibilityService.class);
     }
 
@@ -116,28 +115,35 @@ public final class AccessibilityInputConnectionTest {
             }
         }));
 
-        final AccessibilityEndToEndActivity activity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
-
-        final LinearLayout layout = (LinearLayout) activity.findViewById(R.id.edittext).getParent();
-        sInstrumentation.runOnMainSync(() -> {
-            final EditText editText = new EditText(activity) {
-                @Override
-                public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
-                    final InputConnection ic = super.onCreateInputConnection(editorInfo);
-                    // For some reasons, Mockito.spy() for real Framework classes did not work...
-                    // Use NoOpInputConnection/InputConnectionSplitter instead.
-                    final InputConnection spy = Mockito.spy(new NoOpInputConnection());
-                    if (mLastInputConnectionSpy.get() == null) {
-                        mLastInputConnectionSpy.set(spy);
-                    }
-                    return new InputConnectionSplitter(ic, spy);
-                }
-            };
-            editText.setPrivateImeOptions(markerValue);
-            layout.addView(editText);
-            editText.requestFocus();
-        });
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            final LinearLayout layout =
+                                    (LinearLayout) activity.findViewById(R.id.edittext).getParent();
+                            final EditText editText =
+                                    new EditText(activity) {
+                                        @Override
+                                        public InputConnection onCreateInputConnection(
+                                                EditorInfo editorInfo) {
+                                            final InputConnection ic =
+                                                    super.onCreateInputConnection(editorInfo);
+                                            // For some reasons, Mockito.spy() for real Framework
+                                            // classes did not work...
+                                            // Use NoOpInputConnection/InputConnectionSplitter
+                                            // instead.
+                                            final InputConnection spy =
+                                                    Mockito.spy(new NoOpInputConnection());
+                                            if (mLastInputConnectionSpy.get() == null) {
+                                                mLastInputConnectionSpy.set(spy);
+                                            }
+                                            return new InputConnectionSplitter(ic, spy);
+                                        }
+                                    };
+                            editText.setPrivateImeOptions(markerValue);
+                            layout.addView(editText);
+                            editText.requestFocus();
+                        });
 
         // Wait until EditorInfo#privateImeOptions becomes the expected marker value.
         assertTrue("time out waiting for input to start",

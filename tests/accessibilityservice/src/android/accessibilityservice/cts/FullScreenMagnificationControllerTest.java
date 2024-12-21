@@ -18,7 +18,8 @@ package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.MagnificationConfig.MAGNIFICATION_MODE_FULLSCREEN;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.homeScreenOrBust;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -41,12 +42,15 @@ import android.graphics.Rect;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.TestUtils;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -74,8 +78,7 @@ public class FullScreenMagnificationControllerTest {
     private static UiAutomation sUiAutomation;
     private StubMagnificationAccessibilityService mService;
 
-    private final ActivityTestRule<AccessibilityWindowQueryActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityWindowQueryActivity.class, false, false);
+    private ActivityScenario<AccessibilityWindowQueryActivity> mActivityScenario = null;
 
     private InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
             mMagnificationAccessibilityServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -85,14 +88,12 @@ public class FullScreenMagnificationControllerTest {
             new AccessibilityDumpOnFailureRule();
 
     @Rule
-    public final RuleChain mRuleChain = RuleChain
-            .outerRule(mActivityRule)
-            .around(mMagnificationAccessibilityServiceRule)
-            .around(mDumpOnFailureRule);
+    public final RuleChain mRuleChain =
+            RuleChain.outerRule(mMagnificationAccessibilityServiceRule).around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetup() {
-        sInstrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();
+        sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
         AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
@@ -108,8 +109,14 @@ public class FullScreenMagnificationControllerTest {
     public void setUp() throws Exception {
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(sInstrumentation.getTargetContext()));
-
         mService = mMagnificationAccessibilityServiceRule.enableService();
+    }
+
+    @After
+    public void cleanUp() {
+        if (mActivityScenario != null) {
+            mActivityScenario.close();
+        }
     }
 
     @Test
@@ -117,7 +124,10 @@ public class FullScreenMagnificationControllerTest {
         assumeFalse(isKeepMagnifiedOnContextChangeEnabled());
 
         // wait for the activity to be on screen
-        launchActivityAndWaitForItToBeOnscreen(sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityScenario =
+                ActivityScenario.launch(AccessibilityWindowQueryActivity.class)
+                        .moveToState(Lifecycle.State.RESUMED);
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
 
         zoomIn(/* scale= */ 2.0f);
         // transition to home screen
@@ -135,7 +145,10 @@ public class FullScreenMagnificationControllerTest {
         assumeTrue(isKeepMagnifiedOnContextChangeEnabled());
 
         // wait for the activity to be on screen
-        launchActivityAndWaitForItToBeOnscreen(sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityScenario =
+                ActivityScenario.launch(AccessibilityWindowQueryActivity.class)
+                        .moveToState(Lifecycle.State.RESUMED);
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
 
         zoomIn(/* scale= */ 2.0f);
         // transition to home screen

@@ -82,6 +82,8 @@ public class AccessibilityGlobalActionsTest {
     @AfterClass
     public static void postTestTearDown() {
         sUiAutomation.destroy();
+        sInstrumentation.resetInTouchMode();
+        sInstrumentation.waitForIdleSync();
     }
 
     @After

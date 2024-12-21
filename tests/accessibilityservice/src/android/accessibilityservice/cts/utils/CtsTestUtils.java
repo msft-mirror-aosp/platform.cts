@@ -26,6 +26,12 @@ import java.util.function.Consumer;
 public class CtsTestUtils {
     private CtsTestUtils() {}
 
+    /** The timeout in milliseconds between two events to consider the device idle. */
+    public static final long DEFAULT_IDLE_TIMEOUT_MS = 500L;
+
+    /** The maximal global timeout in milliseconds in which to wait for an idle state. */
+    public static final long DEFAULT_GLOBAL_TIMEOUT_MS = 5000L;
+
     public static Throwable assertThrows(Runnable action) {
         return assertThrows(Throwable.class, action);
     }

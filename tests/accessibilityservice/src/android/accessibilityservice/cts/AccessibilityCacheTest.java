@@ -16,8 +16,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -38,9 +36,9 @@ import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -54,6 +52,7 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
@@ -64,13 +63,12 @@ public class AccessibilityCacheTest {
     private static UiAutomation sUiAutomation;
 
     private InstrumentedAccessibilityService mService;
-    private AccessibilityCacheActivity mActivity;
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
-    private final ActivityTestRule<AccessibilityCacheActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityCacheActivity.class, false, false);
+    private final ActivityScenarioRule<AccessibilityCacheActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityCacheActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<InstrumentedAccessibilityService>
             mInstrumentedAccessibilityServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -87,7 +85,9 @@ public class AccessibilityCacheTest {
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sUiAutomation = sInstrumentation.getUiAutomation();
+        sUiAutomation =
+                sInstrumentation.getUiAutomation(
+                        UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
     }
 
     @AfterClass
@@ -101,8 +101,6 @@ public class AccessibilityCacheTest {
         AccessibilityServiceInfo info = mService.getServiceInfo();
         info.flags &= ~AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
         mService.setServiceInfo(info);
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
     }
 
     @Test
@@ -264,9 +262,11 @@ public class AccessibilityCacheTest {
     public void testRequest_prefetchWithA11yWindowInfo() {
         List<AccessibilityWindowInfo> windows = mService.getWindows();
         AccessibilityWindowInfo activityWindowInfo = null;
+        AtomicReference<CharSequence> activityTitle = new AtomicReference<>();
+        mActivityRule.getScenario().onActivity(activity -> activityTitle.set(activity.getTitle()));
         for (AccessibilityWindowInfo window : windows) {
             if (window.getTitle() != null
-                    && TextUtils.equals(window.getTitle(), mActivity.getTitle())) {
+                    && TextUtils.equals(window.getTitle(), activityTitle.get())) {
                 activityWindowInfo = window;
             }
         }

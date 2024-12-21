@@ -15,7 +15,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibility.cts.common.InstrumentedAccessibilityService.enableService;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.AsyncUtils.awaitCancellation;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
@@ -34,8 +33,6 @@ import static android.accessibilityservice.cts.utils.GestureUtils.longClick;
 import static android.accessibilityservice.cts.utils.GestureUtils.path;
 import static android.accessibilityservice.cts.utils.GestureUtils.times;
 import static android.view.KeyCharacterMap.VIRTUAL_KEYBOARD;
-
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.any;
@@ -73,8 +70,9 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.TextView;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -107,8 +105,8 @@ public class AccessibilityGestureDispatchTest {
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
 
-    private ActivityTestRule<GestureDispatchActivity> mActivityRule =
-            new ActivityTestRule<>(GestureDispatchActivity.class, false, false);
+    private ActivityScenarioRule<GestureDispatchActivity> mActivityRule =
+            new ActivityScenarioRule<>(GestureDispatchActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<StubGestureAccessibilityService> mServiceRule =
             new InstrumentedAccessibilityServiceTestRule<>(
@@ -138,7 +136,7 @@ public class AccessibilityGestureDispatchTest {
 
     @BeforeClass
     public static void oneTimeSetup() {
-        sInstrumentation = getInstrumentation();
+        sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation(
                 UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
     }
@@ -157,8 +155,7 @@ public class AccessibilityGestureDispatchTest {
             return;
         }
 
-        mActivity = launchActivityAndWaitForItToBeOnscreen(sInstrumentation,
-                sUiAutomation, mActivityRule);
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         // Wait for window animation completed to ensure the input window is at the final position.
         sUiAutomation.syncInputTransactions();
 
