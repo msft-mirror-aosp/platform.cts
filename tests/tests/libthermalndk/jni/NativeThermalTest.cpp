@@ -311,6 +311,13 @@ static std::optional<std::string> testRegisterThermalHeadroomListener(JNIEnv *, 
         return "AThermal_acquireManager failed";
     }
 
+    float headroom = AThermal_getThermalHeadroom(ctx.mThermalMgr, 0);
+    if (isnan(headroom)) {
+        // If the device doesn't support thermal headroom, return early.
+        // This is not a failure.
+        return std::nullopt;
+    }
+
     // Register a listener with valid callback
     int ret = AThermal_registerThermalHeadroomListener(ctx.mThermalMgr, onHeadroomChange, &ctx);
     if (ret != 0) {
@@ -422,6 +429,13 @@ static std::optional<std::string> testThermalHeadroomListenerDoubleRegistration(
     ctx.mThermalMgr = AThermal_acquireManager();
     if (ctx.mThermalMgr == nullptr) {
         return "AThermal_acquireManager failed";
+    }
+
+    float headroom = AThermal_getThermalHeadroom(ctx.mThermalMgr, 0);
+    if (isnan(headroom)) {
+        // If the device doesn't support thermal headroom, return early.
+        // This is not a failure.
+        return std::nullopt;
     }
 
     // Register a listener with valid callback

@@ -21,6 +21,6 @@
 //
 // This function is in a separate C++ file to try to guard against the -fno-semantic-interposition
 // optimization that Clang enables by default.
-extern "C" int main(int argc __unused, char* argv[] __unused) {
-  return 42;
+int main(int argc __unused, char* argv[] __unused) {
+    return 42;
 }

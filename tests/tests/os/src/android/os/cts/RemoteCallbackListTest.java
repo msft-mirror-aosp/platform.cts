@@ -49,6 +49,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -207,6 +208,22 @@ public class RemoteCallbackListTest {
                 LinkedBlockingQueue<U> queue) {
         flush(rc);
         assertEmpty(queue);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testGetExecutor() throws Exception {
+        Executor executor =
+                new Executor() {
+                    @Override
+                    public void execute(Runnable r) {}
+                };
+        RemoteCallbackList<IInterface> rc =
+                new RemoteCallbackList.Builder<IInterface>(
+                                RemoteCallbackList.FROZEN_CALLEE_POLICY_DROP)
+                        .setExecutor(executor)
+                        .build();
+        assertEquals(executor, rc.getExecutor());
     }
 
     @Test

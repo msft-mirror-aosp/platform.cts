@@ -131,7 +131,7 @@ public class DisplayEventTest extends TestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
     public void testDisplayStateChangedEvent() throws Exception {
-        registerDisplayListener((int) DisplayManager.EVENT_FLAG_DISPLAY_STATE);
+        registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_STATE);
 
         // Change the display state
         switchDisplayState();
@@ -143,7 +143,7 @@ public class DisplayEventTest extends TestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
     public void testDisplayRefreshRateChangedEvent() throws InterruptedException {
-        registerDisplayListener((int) DisplayManager.EVENT_FLAG_DISPLAY_REFRESH_RATE);
+        registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_REFRESH_RATE);
 
         switchRefreshRate();
 

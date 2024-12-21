@@ -26,7 +26,7 @@ extern "C" jstring Java_com_android_bionic_1app_BionicAppTest_progname(JNIEnv* e
   return env->NewStringUTF(__progname);
 }
 
-extern "C" int main(int argc, char* argv[]);
+int main(int argc, char* argv[]);
 
 extern "C" jint Java_com_android_bionic_1app_BionicAppTest_callMainDirect(JNIEnv* env __unused) {
   return main(0, nullptr);

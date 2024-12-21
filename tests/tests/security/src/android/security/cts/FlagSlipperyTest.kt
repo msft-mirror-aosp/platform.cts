@@ -145,13 +145,14 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase() {
     @Before
     fun setup() {
         scenario = rule.scenario
-        windowManager = getInstrumentation().getTargetContext().getSystemService(
-                WindowManager::class.java)!!
+        val display = getDisplay(scenario)
+        val displayContext = getInstrumentation().getTargetContext().createDisplayContext(display)
+        windowManager = displayContext.getSystemService(WindowManager::class.java)!!
         setDimensionsToQuarterScreen()
 
         waitForWindowFocusOnBottomActivity()
 
-        touchScreen = UinputTouchScreen(getInstrumentation(), getDisplay(scenario))
+        touchScreen = UinputTouchScreen(getInstrumentation(), display)
     }
 
     @After
