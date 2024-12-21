@@ -115,6 +115,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
                 (WindowAreaComponent) mWindowManagerJetpackTestRule.getExtensionComponent();
         mWindowAreaComponent.addRearDisplayPresentationStatusListener(mStatusListener);
         mDeviceStateManager.registerCallback(Runnable::run, this);
+        waitAndAssert(() -> mWindowAreaPresentationStatus != null);
     }
 
     @After
