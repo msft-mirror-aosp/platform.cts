@@ -23,6 +23,8 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.util.Log;
 
 /**
@@ -34,15 +36,41 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
     private static final String NOTIFICATION_CHANNEL_ID = "cts/" + TAG;
     public static final String EXTRA_FOREGROUND_SERVICE_TYPE = "ForegroundService.type";
     public static final int COMMAND_START_FOREGROUND_WITH_TYPE = 1;
+    public static final int COMMAND_PLAY_MEDIA = 100;
+    public static final int COMMAND_POST_MEDIA_NOTIFICATION = 101;
     public static String ACTION_START_FGSM_RESULT =
             "android.app.stubs.LocalForegroundServiceMedia.RESULT";
     public static String FGSM_NOTIFICATION_ID =
             "android.app.stubs.LocalForegroundServiceMedia.NOTIFICATION_ID";
     private int mNotificationId = 1000;
 
+    private MediaSession mMediaSession = null;
+
     /** Returns the channel id for this service */
     public static String getNotificationChannelId() {
         return NOTIFICATION_CHANNEL_ID;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mMediaSession = new MediaSession(this, TAG);
+        mMediaSession.setActive(true);
+        Log.d(
+                getTag(),
+                "service created: "
+                        + this
+                        + " in "
+                        + android.os.Process.myPid()
+                        + "with media session: "
+                        + mMediaSession);
+    }
+
+    @Override
+    public void onDestroy() {
+        mMediaSession.release();
+        mMediaSession = null;
+        super.onDestroy();
     }
 
     @Override
@@ -66,6 +94,9 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
                         new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
                                 .setContentTitle(getNotificationTitle(mNotificationId))
                                 .setSmallIcon(R.drawable.black)
+                                .setStyle(
+                                        new Notification.MediaStyle()
+                                                .setMediaSession(mMediaSession.getSessionToken()))
                                 .build();
                 try {
                     startForeground(mNotificationId, notification, type);
@@ -81,6 +112,37 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
                 break;
             case COMMAND_START_NO_FOREGROUND:
                 Log.d(TAG, "Starting without calling startForeground()");
+                break;
+            case COMMAND_POST_MEDIA_NOTIFICATION:
+                Log.d(TAG, "Posting media style notification");
+                final Notification notification1 =
+                        new Notification.Builder(context, NOTIFICATION_CHANNEL_ID)
+                                .setContentTitle(getNotificationTitle(mNotificationId))
+                                .setSmallIcon(R.drawable.black)
+                                .setStyle(
+                                        new Notification.MediaStyle()
+                                                .setMediaSession(mMediaSession.getSessionToken()))
+                                .build();
+                notificationManager.notify(mNotificationId++, notification1);
+                break;
+
+            case COMMAND_PLAY_MEDIA:
+                Log.d(TAG, "Setting media session state to playing");
+                final long allActions =
+                        PlaybackState.ACTION_PLAY
+                                | PlaybackState.ACTION_PAUSE
+                                | PlaybackState.ACTION_PLAY_PAUSE
+                                | PlaybackState.ACTION_STOP
+                                | PlaybackState.ACTION_SKIP_TO_NEXT
+                                | PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                                | PlaybackState.ACTION_FAST_FORWARD
+                                | PlaybackState.ACTION_REWIND;
+                PlaybackState playbackState =
+                        new PlaybackState.Builder()
+                                .setActions(allActions)
+                                .setState(PlaybackState.STATE_PLAYING, 0L, 0.0f)
+                                .build();
+                mMediaSession.setPlaybackState(playbackState);
                 break;
             default:
                 Log.e(TAG, "Unknown command: " + command);
