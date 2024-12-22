@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsClassLoaderFactoryPathClassLoaderTestCases",
+    team: "trendy_team_framework_android_packages",
     defaults: [ "cts_classloaderfactorytest_defaults" ],
     srcs: [ ":cts-classloaderfactorytest-srcs" ],
     test_suites: [

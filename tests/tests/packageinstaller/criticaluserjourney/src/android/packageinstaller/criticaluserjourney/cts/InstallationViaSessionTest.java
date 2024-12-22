@@ -17,6 +17,7 @@
 package android.packageinstaller.criticaluserjourney.cts;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -27,8 +28,16 @@ import org.junit.runner.RunWith;
  * Tests for PackageInstaller CUJs via PackageInstaller.Session APIs.
  */
 @RunWith(AndroidJUnit4.class)
+@PlatinumTest(focusArea = "pm")
 @AppModeFull
-public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
+public class InstallationViaSessionTest extends InstallationTestBase {
+
+    @Test
+    public void newInstall_grantedInstallPackages_noConfirmedDialog_success() throws Exception {
+        startInstallationViaPackageInstallerSessionWithPermission();
+
+        assertTestPackageInstalled();
+    }
 
     @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {
@@ -174,6 +183,14 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         assertInstallFailureAborted();
         assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void update_grantedInstallPackages_noConfirmedDialog_success() throws Exception {
+        installTestPackage();
+        startInstallationUpdateViaPackageInstallerSessionWithPermission();
+
+        assertTestPackageVersion2Installed();
     }
 
     @Test

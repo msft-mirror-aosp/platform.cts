@@ -19,15 +19,14 @@ package android.keystore.cts;
 import static android.keystore.cts.util.TestUtils.KmType;
 import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
+import static android.keystore.cts.util.TestUtils.checkDeviceCompatibility;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
@@ -902,11 +901,5 @@ public class KeyGeneratorTest {
     private static KeyGenerator getKeyGenerator(String algorithm) throws NoSuchAlgorithmException,
             NoSuchProviderException {
         return KeyGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
-    }
-
-
-    private void checkDeviceCompatibility() {
-        assumeFalse("Skipping test as DUT does not support this operation",
-                getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 }

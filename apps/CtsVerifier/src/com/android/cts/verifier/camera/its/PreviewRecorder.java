@@ -206,7 +206,7 @@ class PreviewRecorder implements AutoCloseable {
             setupMediaRecorder(cameraId, outputFile, context);
         }
 
-        initEGL(); // requires recording surfaces to be set up
+        initEGL(hlg10Enabled); // requires recording surfaces to be set up
         compileShaders(); // requires EGL context to be set up
         setupCameraTexture(); // requires EGL context to be set up
 
@@ -230,6 +230,9 @@ class PreviewRecorder implements AutoCloseable {
                     return;
                 }
                 try {
+                    // Set EGL presentation time to camera timestamp
+                    EGLExt.eglPresentationTimeANDROID(
+                            mEGLDisplay, mEGLRecorderSurface, surfaceTexture.getTimestamp());
                     copyFrameToRecordSurface();
                     // Capture results are not collected for padded green frames
                     if (mIsPaintGreen) {
@@ -304,7 +307,7 @@ class PreviewRecorder implements AutoCloseable {
         assert (mRecordSurface != null);
     }
 
-    private void initEGL() throws ItsException {
+    private void initEGL(boolean hlg10Enabled) throws ItsException {
         // set up EGL Display
         mEGLDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
         if (mEGLDisplay == EGL14.EGL_NO_DISPLAY) {
@@ -318,15 +321,20 @@ class PreviewRecorder implements AutoCloseable {
             throw new ItsException("unable to initialize EGL14");
         }
 
+        int colorBits = 8;
+        int alphaBits = 8;
+        if (hlg10Enabled) {
+            colorBits = 10;
+            alphaBits = 2;
+        }
         int[] configAttribList = {
                 EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT,
-                EGL14.EGL_RED_SIZE, 8,
-                EGL14.EGL_GREEN_SIZE, 8,
-                EGL14.EGL_BLUE_SIZE, 8,
-                EGL14.EGL_ALPHA_SIZE, 8,
+                EGL14.EGL_RED_SIZE, colorBits,
+                EGL14.EGL_GREEN_SIZE, colorBits,
+                EGL14.EGL_BLUE_SIZE, colorBits,
+                EGL14.EGL_ALPHA_SIZE, alphaBits,
                 EGL14.EGL_DEPTH_SIZE, 0,
                 EGL14.EGL_STENCIL_SIZE, 0,
-                EGLExt.EGL_RECORDABLE_ANDROID, 1,
                 EGL14.EGL_NONE
         };
 

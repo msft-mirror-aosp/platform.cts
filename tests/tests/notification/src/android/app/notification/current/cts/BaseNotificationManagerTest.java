@@ -310,11 +310,16 @@ public abstract class BaseNotificationManagerTest {
 
     protected void sendNotification(final int id,
             String groupKey, final int icon) {
-        sendNotification(id, groupKey, icon, false, null);
+        sendNotification(id, groupKey, false, icon, false, null);
+    }
+
+    protected void sendNotification(final int id, String groupKey, final int icon, boolean isCall,
+            Uri phoneNumber) {
+        sendNotification(id, groupKey, false, icon, isCall, phoneNumber);
     }
 
     protected void sendNotification(final int id,
-            String groupKey, final int icon,
+            String groupKey, boolean isSummary, final int icon,
             boolean isCall, Uri phoneNumber) {
         final Intent intent = new Intent(Intent.ACTION_MAIN, Telephony.Threads.CONTENT_URI);
 
@@ -331,7 +336,8 @@ public abstract class BaseNotificationManagerTest {
                 .setContentTitle("notify#" + id)
                 .setContentText("This is #" + id + "notification  ")
                 .setContentIntent(pendingIntent)
-                .setGroup(groupKey);
+                .setGroup(groupKey)
+                .setGroupSummary(isSummary);
 
         if (isCall) {
             nb.setCategory(CATEGORY_CALL);

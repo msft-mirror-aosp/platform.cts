@@ -368,6 +368,10 @@ public final class CarPowerManagerTest extends AbstractCarTestCase {
 
         executeShellCommand(
                 "settings put global %s %s", DISPLAY_POWER_MODE, value.toString());
+
+        // Wait for 1s to make sure the settings change is picked up by car service and taking
+        // effect.
+        Thread.sleep(1000);
     }
 
     private void makeSureExecutorReady() throws Exception {

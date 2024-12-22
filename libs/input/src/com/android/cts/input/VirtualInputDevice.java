@@ -28,7 +28,10 @@ import android.os.SystemProperties;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
+import android.view.Display;
 import android.view.InputDevice;
+
+import androidx.annotation.Nullable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -52,15 +55,15 @@ public abstract class VirtualInputDevice implements
             "ro.hw_timeout_multiplier", 1);
     private InputStream mInputStream;
     private OutputStream mOutputStream;
-    final Instrumentation mInstrumentation;
+    private final Instrumentation mInstrumentation;
     private final Thread mResultThread;
     private final HandlerThread mHandlerThread;
     private final Handler mHandler;
-    private InputManager mInputManager;
+    private final InputManager mInputManager;
     private volatile CountDownLatch mDeviceAddedSignal; // to wait for onInputDeviceAdded signal
     private volatile CountDownLatch mDeviceRemovedSignal; // to wait for onInputDeviceRemoved signal
     // Input device ID assigned by input manager
-    int mDeviceId = Integer.MIN_VALUE;
+    private int mDeviceId = Integer.MIN_VALUE;
     private final int mVendorId;
     private final int mProductId;
     private final int mSources;
@@ -68,6 +71,9 @@ public abstract class VirtualInputDevice implements
     protected final int mId;
     protected JsonReader mReader;
     protected final Object mLock = new Object();
+
+    @Nullable
+    private InputDeviceAssociationByDescriptor mDisplayAssociation;
 
     /**
      * To be implemented with device specific shell command to execute.
@@ -80,7 +86,7 @@ public abstract class VirtualInputDevice implements
     abstract void readResults();
 
     public VirtualInputDevice(Instrumentation instrumentation, int id, int vendorId, int productId,
-            int sources, RegisterCommand registerCommand) {
+            int sources, RegisterCommand registerCommand, @Nullable Display display) {
         mInstrumentation = instrumentation;
         mInputManager = mInstrumentation.getContext().getSystemService(InputManager.class);
         setupPipes();
@@ -111,6 +117,11 @@ public abstract class VirtualInputDevice implements
         mInputManager.registerInputDeviceListener(VirtualInputDevice.this, mHandler);
         // Register virtual input device
         registerInputDevice(registerCommand.toString());
+
+        if (display != null) {
+            mDisplayAssociation = new InputDeviceAssociationByDescriptor.Associator(
+                    mInstrumentation).associate(mDeviceId, display);
+        }
     }
 
     protected byte[] readData() throws IOException {
@@ -197,6 +208,15 @@ public abstract class VirtualInputDevice implements
         mInstrumentation.runOnMainSync(() -> {
             mInputManager.unregisterInputDeviceListener(VirtualInputDevice.this);
         });
+        // Close device/display association (if established).
+        if (mDisplayAssociation != null) {
+            try {
+                mDisplayAssociation.close();
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to close the device/display association: "
+                        + mDisplayAssociation, e);
+            }
+        }
     }
 
     public int getDeviceId() {

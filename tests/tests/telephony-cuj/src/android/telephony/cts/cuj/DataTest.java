@@ -32,6 +32,7 @@ import android.telephony.CellInfoLte;
 import android.telephony.CellInfoNr;
 import android.telephony.CellInfoTdscdma;
 import android.telephony.CellInfoWcdma;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 
 import androidx.annotation.NonNull;
@@ -50,10 +51,12 @@ import java.util.concurrent.CountDownLatch;
  */
 public class DataTest {
     private TelephonyManager mTelephonyManager;
+    private SubscriptionManager mSubscriptionManager;
 
     @Before
     public void setUp() throws Exception {
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class);
+        mSubscriptionManager = getContext().getSystemService(SubscriptionManager.class);
         // For some reason PackageManager is always null, but the HAL version check should fail on
         // devices without FEATURE_TELEPHONY anyways.
         // assumeTrue("Skipping test without FEATURE_TELEPHONY.",
@@ -80,7 +83,8 @@ public class DataTest {
         assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getNetworkOperatorName)).isNotEmpty();
         assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getLine1Number)).isNotEmpty();
+                mSubscriptionManager,
+                sm -> sm.getPhoneNumber(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID))).isNotEmpty();
         assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, TelephonyManager::getDataNetworkType))
                         .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);

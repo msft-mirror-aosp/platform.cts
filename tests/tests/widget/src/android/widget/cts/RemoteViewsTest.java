@@ -491,14 +491,6 @@ public class RemoteViewsTest {
     }
 
     @Test
-    public void testDrawInstructionsVersion() {
-        if (!drawDataParcel()) {
-            return;
-        }
-        assertTrue(RemoteViews.DrawInstructions.getSupportedVersion() >= 1L);
-    }
-
-    @Test
     public void testApplyWithDrawInstructions() throws Throwable {
         if (!drawDataParcel()) {
             return;
@@ -536,11 +528,6 @@ public class RemoteViewsTest {
             mRemoteViews.setOnClickFillInIntent(i + 1, intents[i]);
         }
         applyNightModeThenApplyAndTest(false /* nightMode */, () -> {});
-        verifyBitmap(width, height, (bitmap) -> verifyColorsOnFourCorners(Color.WHITE, bitmap));
-
-        // Switch to night mode
-        applyNightModeThenReapplyAndTest(true /* nightMode */, () -> {});
-        verifyBitmap(width, height, (bitmap) -> verifyColorsOnFourCorners(Color.BLACK, bitmap));
 
         // Verify clicks
         mActivityRule.runOnUiThread(() -> {

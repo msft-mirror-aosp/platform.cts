@@ -43,7 +43,7 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 public class AdvertiseCallbackTest {
     private final MockAdvertiser mMockAdvertiser = new MockAdvertiser();
-    @Mock AdvertiseCallback mAdvertiseCallback;
+    @Mock private AdvertiseCallback mAdvertiseCallback;
 
     @Before
     public void setUp() {

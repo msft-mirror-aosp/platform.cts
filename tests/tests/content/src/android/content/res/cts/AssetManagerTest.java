@@ -27,6 +27,7 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TypedValue;
 
 import androidx.test.InstrumentationRegistry;
@@ -34,6 +35,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
@@ -49,6 +51,9 @@ import java.util.HashSet;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AssetManagerTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private AssetManager mAssets;
     private Context mContext;
 

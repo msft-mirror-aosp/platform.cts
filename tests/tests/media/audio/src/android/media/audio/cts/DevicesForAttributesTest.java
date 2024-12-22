@@ -16,12 +16,15 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_AUDIO_ROUTING;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Instrumentation;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -36,14 +39,18 @@ import android.media.audiopolicy.AudioPolicy;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,16 +76,23 @@ public class DevicesForAttributesTest {
             .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION).build();
     private static final int TEST_TIMING_TOLERANCE_MS = 300;
 
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+
+    @Rule(order = 1)
+    public  final AdoptShellPermissionsRule mPermissionRule = new AdoptShellPermissionsRule(
+            mInstrumentation.getUiAutomation(), MODIFY_AUDIO_ROUTING);
+
+    @Rule(order = 2)
+    public final PermissionUpdateBarrierRule mBarrierRule = new PermissionUpdateBarrierRule(
+            mInstrumentation.getContext());
+
     private AudioManager mAudioManager;
     private AudioPolicy mAudioPolicy;
 
     /** Test setup */
     @Before
     public void setUp() throws Exception {
-        Context context = InstrumentationRegistry.getTargetContext();
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_ROUTING);
-        mAudioManager = context.getSystemService(AudioManager.class);
+        mAudioManager = mInstrumentation.getContext().getSystemService(AudioManager.class);
     }
 
     /** Test teardown */
@@ -145,7 +159,7 @@ public class DevicesForAttributesTest {
         // route MEDIA_ATTR with audio policy
         final AudioMix mediaMix = makeMixFromAttr(MEDIA_ATTR);
         final AudioPolicy.Builder policyBuilder =
-                new AudioPolicy.Builder(InstrumentationRegistry.getTargetContext());
+                new AudioPolicy.Builder(mInstrumentation.getContext());
         policyBuilder.addMix(mediaMix);
         mAudioPolicy = policyBuilder.build();
         assertNotNull(mAudioPolicy);
@@ -193,7 +207,7 @@ public class DevicesForAttributesTest {
         // test routing change for each attribute
         final AudioMix[] mixes = new AudioMix[attributes.length];
         final AudioPolicy.Builder policyBuilder =
-                new AudioPolicy.Builder(InstrumentationRegistry.getTargetContext());
+                new AudioPolicy.Builder(mInstrumentation.getContext());
         for (int i = 0; i < attributes.length; ++i) {
             mixes[i] = makeMixFromAttr(attributes[i]);
             policyBuilder.addMix(mixes[i]);
@@ -289,7 +303,7 @@ public class DevicesForAttributesTest {
     }
 
     private boolean isAutomotive() {
-        Context context = InstrumentationRegistry.getTargetContext();
+        Context context = mInstrumentation.getContext();
         PackageManager packageManager = context.getPackageManager();
         return (packageManager != null
                 && packageManager.hasSystemFeature(packageManager.FEATURE_AUTOMOTIVE));

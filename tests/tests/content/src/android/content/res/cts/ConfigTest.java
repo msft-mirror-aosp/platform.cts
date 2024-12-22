@@ -34,12 +34,15 @@ import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.content.res.TypedArray;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.DisplayMetrics;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -50,10 +53,12 @@ import java.util.Locale;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ConfigTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private static final String TEST_PACKAGE = "android.content.cts";
 
     private Context mContext;
-    private int mTargetSdkVersion;
 
     enum Properties {
         LANGUAGE,
@@ -261,14 +266,18 @@ public class ConfigTest {
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getContext();
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
+    private int getTargetSdkVersion() {
         final PackageManager pm = mContext.getPackageManager();
         try {
             ApplicationInfo appInfo = pm.getApplicationInfo(TEST_PACKAGE,
                     PackageManager.ApplicationInfoFlags.of(0));
-            mTargetSdkVersion = appInfo.targetSdkVersion;
+            return appInfo.targetSdkVersion;
         } catch (NameNotFoundException e) {
             fail("Should be able to find application info for this package");
+            return -1;
         }
     }
 
@@ -1231,18 +1240,19 @@ public class ConfigTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Concept of SDK_INT, etc is unclear?")
     public void testVersions() {
         final boolean isReleaseBuild = "REL".equals(android.os.Build.VERSION.CODENAME);
-
+        final int targetSdkVersion = getTargetSdkVersion();
         // Release builds must not have a dev SDK version
         if (isReleaseBuild) {
             assertTrue("Release builds must build with a valid SDK version",
-                    mTargetSdkVersion < 10000);
+                    targetSdkVersion < 10000);
         }
 
         // ...and skip this test if this is a dev-SDK-version build
         assumeTrue("This product was built with non-release SDK level 10000",
-                mTargetSdkVersion < 10000);
+                targetSdkVersion < 10000);
 
         // Check that we get the most recent resources that are <= our
         // current version.  Note the special version adjustment, so that

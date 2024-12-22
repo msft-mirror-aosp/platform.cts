@@ -22,6 +22,8 @@ import static android.graphics.Paint.CURSOR_AT_OR_AFTER;
 import static android.graphics.Paint.CURSOR_AT_OR_BEFORE;
 import static android.graphics.Paint.CURSOR_BEFORE;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -50,6 +52,7 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.os.LocaleList;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannedString;
@@ -60,6 +63,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ColorUtils;
+import com.android.text.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -1381,7 +1385,7 @@ public class PaintTest {
         new Paint().getTextPath("HIJKLMN", 3, 9, 0, 0, new Path());
     }
 
-    @CddTest(requirement="3.8.13/C-1-2")
+    @CddTest(requirements = {"3.8.13/C-1-2"})
     @Test
     public void testHasGlyph() {
         Paint p = new Paint();
@@ -1404,7 +1408,7 @@ public class PaintTest {
         // Note: U+FE0F is variation selection, unofficially reserved for emoji
     }
 
-    @CddTest(requirement = "3.8.13/C-1-2")
+    @CddTest(requirements = {"3.8.13/C-1-2"})
     @Test
     public void testHasEmojiGlyph() {
         Paint p = new Paint();
@@ -2281,5 +2285,47 @@ public class PaintTest {
     public void testSetShadowLayerUnknown() {
         Paint p = new Paint();
         p.setShadowLayer(10.0f, 1.0f, 1.0f, -1L);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_CACHE_FOR_VAR_SETTINGS)
+    public void testFontVariationTypefaceInstance_Cached() {
+        final Paint p = new Paint();
+        assertThat(p.setFontVariationSettings("'wght' 450")).isTrue();
+        Typeface typeface = p.getTypeface();
+
+        final Paint p2 = new Paint();
+        assertThat(p2.setFontVariationSettings("'wght' 450")).isTrue();
+        Typeface typeface2 = p2.getTypeface();
+
+        assertThat(typeface2).isSameInstanceAs(typeface);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_CACHE_FOR_VAR_SETTINGS)
+    public void testFontVariationTypefaceInstance_Cached_EquivalentFontVariationSettings() {
+        final Paint p = new Paint();
+        assertThat(p.setFontVariationSettings("'wght' 450, 'wdth' 50")).isTrue();
+        Typeface typeface = p.getTypeface();
+
+        final Paint p2 = new Paint();
+        assertThat(p2.setFontVariationSettings(" 'wdth' 50, 'wght' 450")).isTrue();
+        Typeface typeface2 = p2.getTypeface();
+
+        assertThat(typeface2).isSameInstanceAs(typeface);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_CACHE_FOR_VAR_SETTINGS)
+    public void testFontVariationTypefaceInstance_NotCachedForOtherConfig() {
+        final Paint p = new Paint();
+        assertThat(p.setFontVariationSettings("'wght' 450")).isTrue();
+        Typeface typeface = p.getTypeface();
+
+        final Paint p2 = new Paint();
+        assertThat(p2.setFontVariationSettings("'wght' 400")).isTrue();
+        Typeface typeface2 = p2.getTypeface();
+
+        assertThat(typeface2).isNotEqualTo(typeface);
     }
 }

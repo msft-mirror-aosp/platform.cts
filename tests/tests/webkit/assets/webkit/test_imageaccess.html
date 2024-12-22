@@ -15,14 +15,21 @@
 
 <html>
     <head>
-        <title>TEST FAILED</title>
-	<script>
-            function success() {
-              document.title=document.getElementById('img').naturalHeight;
-            }
+        <title>IMAGE TEST</title>
+        <script>
+            let loadImage;
+            let imageLoadPromise = new Promise(res => {
+                loadImage = res;
+            });
+
+            onmessage = async (e) => {
+                await imageLoadPromise;
+                const port = e.ports[0];
+                port.postMessage('complete');
+            };
         </script>
     </head>
     <body>
-        <img id='img' src="../images/tomato.png" onload="success()" />
+        <img id='img' src="../images/tomato.png" onload="loadImage()" />
     </body>
 </html>

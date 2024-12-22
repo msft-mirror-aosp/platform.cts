@@ -23,6 +23,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchA
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_WINDOW_MAGNIFICATION;
+import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
 
 import static org.junit.Assert.assertEquals;
@@ -109,15 +110,17 @@ import java.util.function.Consumer;
 public class AccessibilityMagnificationTest {
 
     /** Maximum timeout when waiting for a magnification callback. */
-    public static final int LISTENER_TIMEOUT_MILLIS = 500;
+    public static final int LISTENER_TIMEOUT_MILLIS = 500 * HW_TIMEOUT_MULTIPLIER;
     /** Maximum animation timeout when waiting for a magnification callback. */
-    public static final int LISTENER_ANIMATION_TIMEOUT_MILLIS = 1000;
+    public static final int LISTENER_ANIMATION_TIMEOUT_MILLIS = 1000 * HW_TIMEOUT_MULTIPLIER;
     public static final int BOUNDS_TOLERANCE = 1;
     public static final String ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED =
             "accessibility_display_magnification_enabled";
 
     /** Maximum timeout while waiting for a config to be updated */
     public static final int TIMEOUT_CONFIG_SECONDS = 15;
+
+    private static final int TEARDOWN_SLEEP_TIMEOUT_MS = 200 * HW_TIMEOUT_MULTIPLIER;
 
     // From WindowManager.java.
     public static final int TYPE_NAVIGATION_BAR_PANEL = 2024;
@@ -190,6 +193,7 @@ public class AccessibilityMagnificationTest {
             mService.runOnServiceSync(() -> {
                 mService.getMagnificationController().resetCurrentMagnification(/* animate= */
                         false);
+                mService.disableSelfAndRemove();
             });
         }
 
@@ -209,6 +213,11 @@ public class AccessibilityMagnificationTest {
                                || doesAccessibilityMagnificationOverlayExist()));
             }
         }
+
+        // A slight sleep to wait for the service asynchronous teardown process, such as
+        // magnification system ui connection releasing.
+        // It's to prevent the releasing from affecting next test's system ui connection creating.
+        SystemClock.sleep(TEARDOWN_SLEEP_TIMEOUT_MS);
     }
 
     @Test

@@ -34,11 +34,14 @@ import android.hardware.camera2.params.RggbChannelVector;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.hardware.camera2.params.TonemapCurve;
 import android.location.Location;
+import android.os.Build;
 import android.util.Pair;
 import android.util.Range;
 import android.util.Rational;
 import android.util.Size;
 import android.util.SizeF;
+
+import androidx.annotation.RequiresApi;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -280,6 +283,7 @@ public class ItsSerializer {
     }
 
     @SuppressWarnings("unchecked")
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     private static Object serializeIntrinsicsSamples(LensIntrinsicsSample [] samples)
             throws org.json.JSONException {
         JSONArray top = new JSONArray();
@@ -381,17 +385,28 @@ public class ItsSerializer {
             } else if (keyType == LensShadingMap.class) {
                 return new MetadataEntry(keyName,
                         serializeLensShadingMap((LensShadingMap)keyValue));
-            } else if (keyValue instanceof LensIntrinsicsSample[]) {
-                return new MetadataEntry(keyName,
-                        serializeIntrinsicsSamples((LensIntrinsicsSample []) keyValue));
             } else if (keyValue instanceof float[]) {
                 return new MetadataEntry(keyName, new JSONArray(keyValue));
+            } else if (ItsUtils.isAtLeastV()) {
+                return serializeEntryV(keyName, keyType, keyValue);
             } else {
                 Logt.w(TAG, String.format("Serializing unsupported key type: " + keyType));
                 return null;
             }
         } catch (org.json.JSONException e) {
             throw new ItsException("JSON error for key: " + keyName + ": ", e);
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private static MetadataEntry serializeEntryV(String keyName, Type keyType, Object keyValue)
+            throws org.json.JSONException {
+        if (keyValue instanceof LensIntrinsicsSample[]) {
+            return new MetadataEntry(keyName,
+                    serializeIntrinsicsSamples((LensIntrinsicsSample []) keyValue));
+        } else {
+            Logt.w(TAG, String.format("Serializing unsupported key type: " + keyType));
+            return null;
         }
     }
 
