@@ -14,7 +14,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.GestureUtils.add;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.diff;
@@ -34,7 +33,7 @@ import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
 import android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
 import android.accessibilityservice.cts.utils.GestureUtils;
-import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
@@ -51,11 +50,14 @@ import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -66,6 +68,8 @@ import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Verify that motion events are recognized as accessibility gestures. */
 @RunWith(AndroidJUnit4.class)
@@ -187,23 +191,32 @@ public class AccessibilityGestureDetectorTest {
             return;
         }
 
-        try (final VirtualDisplaySession displaySession = new VirtualDisplaySession()) {
+        final VirtualDisplaySession displaySession = new VirtualDisplaySession();
+        AtomicReference<ActivityScenario<AccessibilityWindowQueryActivity>> activityScenario =
+                new AtomicReference<>();
+        try {
             final int displayId = displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                     sInstrumentation.getTargetContext(), false).getDisplayId();
             // Launches an activity on virtual display to meet a real situation.
-            final Activity activity = launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                    sInstrumentation, sUiAutomation, AccessibilityWindowQueryActivity.class,
-                    displayId);
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(displayId);
+            SystemUtil.runWithShellPermissionIdentity(
+                    sUiAutomation,
+                    () -> {
+                        activityScenario.set(
+                                ActivityScenario.launch(
+                                                AccessibilityWindowQueryActivity.class,
+                                                options.toBundle())
+                                        .moveToState(Lifecycle.State.RESUMED));
+                    });
 
-            try {
-                runGestureDetectionTestOnDisplay(displayId);
-                runMultiFingerGestureDetectionTestOnDisplay(displayId);
-            } finally {
-                sInstrumentation.runOnMainSync(() -> {
-                    activity.finish();
-                });
-                sInstrumentation.waitForIdleSync();
+            runGestureDetectionTestOnDisplay(displayId);
+            runMultiFingerGestureDetectionTestOnDisplay(displayId);
+        } finally {
+            if (activityScenario.get() != null) {
+                activityScenario.get().close();
             }
+            displaySession.close();
         }
     }
 
@@ -431,31 +444,39 @@ public class AccessibilityGestureDetectorTest {
 
     @Test
     @AppModeFull
-    public void testVerifyGestureTouchEventOnVirtualDisplay() throws Exception {
+    public void testVerifyGestureTouchEventOnVirtualDisplay() {
         assumeTrue(sInstrumentation.getContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
         if (!mHasTouchScreen || !mScreenBigEnough) {
             return;
         }
-
-        try (final VirtualDisplaySession displaySession = new VirtualDisplaySession()) {
+        AtomicReference<ActivityScenario<AccessibilityWindowQueryActivity>> activityScenario =
+                new AtomicReference<>();
+        final VirtualDisplaySession displaySession = new VirtualDisplaySession();
+        try {
             final int displayId = displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                     sInstrumentation.getTargetContext(),
                     false).getDisplayId();
 
             // Launches an activity on virtual display to meet a real situation.
-            final Activity activity = launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                    sInstrumentation, sUiAutomation, AccessibilityWindowQueryActivity.class,
-                    displayId);
-            try {
-                verifyGestureTouchEventOnDisplay(displayId);
-                verifyMultiFingerGestureTouchEventOnDisplay(displayId);
-            } finally {
-                sInstrumentation.runOnMainSync(() -> {
-                    activity.finish();
-                });
-                sInstrumentation.waitForIdleSync();
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(displayId);
+            SystemUtil.runWithShellPermissionIdentity(
+                    sUiAutomation,
+                    () -> {
+                        activityScenario.set(
+                                ActivityScenario.launch(
+                                                AccessibilityWindowQueryActivity.class,
+                                                options.toBundle())
+                                        .moveToState(Lifecycle.State.RESUMED));
+                    });
+            verifyGestureTouchEventOnDisplay(displayId);
+            verifyMultiFingerGestureTouchEventOnDisplay(displayId);
+        } finally {
+            if (activityScenario.get() != null) {
+                activityScenario.get().close();
             }
+            displaySession.close();
         }
     }
 

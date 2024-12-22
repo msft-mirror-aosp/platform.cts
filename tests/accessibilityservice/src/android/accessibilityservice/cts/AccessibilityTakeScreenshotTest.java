@@ -19,10 +19,12 @@ package android.accessibilityservice.cts;
 import static android.accessibilityservice.AccessibilityServiceInfo.CAPABILITY_CAN_RETRIEVE_WINDOW_CONTENT;
 import static android.accessibilityservice.AccessibilityServiceInfo.CAPABILITY_CAN_TAKE_SCREENSHOT;
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
+import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
 
@@ -38,9 +40,11 @@ import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityService.ScreenshotResult;
 import android.accessibilityservice.AccessibilityService.TakeScreenshotCallback;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
 import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
@@ -58,12 +62,16 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.ImageView;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.Configurator;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,6 +88,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -120,8 +129,12 @@ public class AccessibilityTakeScreenshotTest {
 
     @BeforeClass
     public static void oneTimeSetup() {
+        Configurator.getInstance().setUiAutomationFlags(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sUiAutomation = sInstrumentation.getUiAutomation();
+        sUiAutomation = sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        AccessibilityServiceInfo serviceInfo = sUiAutomation.getServiceInfo();
+        serviceInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        sUiAutomation.setServiceInfo(serviceInfo);
     }
 
     @AfterClass
@@ -177,25 +190,38 @@ public class AccessibilityTakeScreenshotTest {
     @Test
     public void testTakeScreenshotOnVirtualDisplay_GetScreenshotResult() throws Exception {
         assumeTrue(supportsMultiDisplay(sInstrumentation.getContext()));
-        try (VirtualDisplaySession displaySession = new VirtualDisplaySession()) {
+        AtomicReference<ActivityScenario<AccessibilityWindowQueryActivity>> activityScenario =
+                new AtomicReference<>();
+        final VirtualDisplaySession displaySession = new VirtualDisplaySession();
+        try {
             final int virtualDisplayId =
                     displaySession.createDisplayWithDefaultDisplayMetricsAndWait(mContext,
                             false).getDisplayId();
             // Launches an activity on virtual display.
-            final Activity activity = launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                    sInstrumentation, sUiAutomation, AccessibilityWindowQueryActivity.class,
-                    virtualDisplayId);
-            try {
-                takeScreenshot(virtualDisplayId);
-                verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onSuccess(
-                        mSuccessResultArgumentCaptor.capture());
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(virtualDisplayId);
+            SystemUtil.runWithShellPermissionIdentity(
+                    sUiAutomation,
+                    () -> {
+                        activityScenario.set(
+                                ActivityScenario.launch(
+                                                AccessibilityWindowQueryActivity.class,
+                                                options.toBundle())
+                                        .moveToState(Lifecycle.State.RESUMED));
+                    });
+            sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
 
-                verifyScreenshotResult(mSuccessResultArgumentCaptor.getValue());
-            } finally {
-                sInstrumentation.runOnMainSync(() -> {
-                    activity.finish();
-                });
+            takeScreenshot(virtualDisplayId);
+
+            verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS))
+                    .onSuccess(mSuccessResultArgumentCaptor.capture());
+            verifyScreenshotResult(mSuccessResultArgumentCaptor.getValue());
+
+        } finally {
+            if (activityScenario.get() != null) {
+                activityScenario.get().close();
             }
+            displaySession.close();
         }
     }
 
@@ -213,49 +239,73 @@ public class AccessibilityTakeScreenshotTest {
 
     @Test
     public void testTakeScreenshotWithSecureWindow_GetScreenshotAndVerifyBitmap() throws Throwable {
-        final Activity activity = launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, AccessibilityWindowQueryActivity.class,
-                Display.DEFAULT_DISPLAY);
+        ActivityScenario<AccessibilityWindowQueryActivity> scenario =
+                ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
+        final AtomicReference<ImageView> image = new AtomicReference<>();
+        try {
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
 
-        final ImageView image = new ImageView(activity);
-        image.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN);
-        image.setImageDrawable(new ColorDrawable(SECURE_WINDOW_CONTENT_COLOR));
+            sUiAutomation.executeAndWaitForEvent(
+                    () ->
+                            scenario.onActivity(
+                                    activity -> {
+                                        final ImageView imgView = new ImageView(activity);
+                                        imgView.setSystemUiVisibility(
+                                                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+                                        imgView.setImageDrawable(
+                                                new ColorDrawable(SECURE_WINDOW_CONTENT_COLOR));
 
-        final WindowManager.LayoutParams params = new WindowManager.LayoutParams();
-        params.width = WindowManager.LayoutParams.MATCH_PARENT;
-        params.height = WindowManager.LayoutParams.MATCH_PARENT;
-        params.layoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-        params.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
-                | WindowManager.LayoutParams.FLAG_SECURE;
+                                        final WindowManager.LayoutParams params =
+                                                new WindowManager.LayoutParams();
+                                        params.width = WindowManager.LayoutParams.MATCH_PARENT;
+                                        params.height = WindowManager.LayoutParams.MATCH_PARENT;
+                                        params.layoutInDisplayCutoutMode =
+                                                LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                                        params.flags =
+                                                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                                                        | WindowManager.LayoutParams.FLAG_SECURE;
+                                        activity.getWindowManager().addView(imgView, params);
+                                        image.set(imgView);
+                                    }),
+                    filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_ADDED),
+                    DEFAULT_TIMEOUT_MS);
+            takeScreenshot(Display.DEFAULT_DISPLAY);
 
-        sUiAutomation.executeAndWaitForEvent(() -> sInstrumentation.runOnMainSync(
-                () -> {
-                    activity.getWindowManager().addView(image, params);
-                }),
-                filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_ADDED),
-                DEFAULT_TIMEOUT_MS);
-        takeScreenshot(Display.DEFAULT_DISPLAY);
+            verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS))
+                    .onSuccess(mSuccessResultArgumentCaptor.capture());
 
-        verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onSuccess(
-                mSuccessResultArgumentCaptor.capture());
-
-        assertThat(doesScreenshotContainColor(mSuccessResultArgumentCaptor.getValue(),
-                SECURE_WINDOW_CONTENT_COLOR)).isFalse();
+            assertThat(
+                            doesScreenshotContainColor(
+                                    mSuccessResultArgumentCaptor.getValue(),
+                                    SECURE_WINDOW_CONTENT_COLOR))
+                    .isFalse();
+        } finally {
+            scenario.onActivity(
+                    activity -> {
+                        if (image.get() != null) {
+                            activity.getWindowManager().removeView(image.get());
+                        }
+                    });
+            scenario.close();
+        }
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#takeScreenshotOfWindow"})
     public void testTakeScreenshotOfWindow_GetScreenshotResult() throws Throwable {
-        final Activity activity = launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, AccessibilityWindowQueryActivity.class,
-                Display.DEFAULT_DISPLAY);
-        try {
+        try (ActivityScenario<AccessibilityWindowQueryActivity> scenario =
+                ActivityScenario.launch(AccessibilityWindowQueryActivity.class)
+                        .moveToState(Lifecycle.State.RESUMED)) {
+            sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
+            final AtomicReference<Activity> activity = new AtomicReference<>();
+            scenario.onActivity(activity::set);
             final AccessibilityWindowInfo activityWindowInfo =
-                    ActivityLaunchUtils.findWindowByTitle(sUiAutomation, activity.getTitle());
+                    ActivityLaunchUtils.findWindowByTitle(sUiAutomation, activity.get().getTitle());
             assertThat(activityWindowInfo).isNotNull();
 
             final long timestampBeforeTakeScreenshot = SystemClock.uptimeMillis();
@@ -264,14 +314,10 @@ public class AccessibilityTakeScreenshotTest {
             verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onSuccess(
                     mSuccessResultArgumentCaptor.capture());
 
-            final View activityRootView = activity.getWindow().getDecorView();
+            final View activityRootView = activity.get().getWindow().getDecorView();
             verifyScreenshotResult(mSuccessResultArgumentCaptor.getValue(),
                     activityRootView.getWidth(), activityRootView.getHeight(),
                     timestampBeforeTakeScreenshot);
-        } finally {
-            if (activity != null) {
-                activity.finish();
-            }
         }
     }
 
@@ -279,21 +325,30 @@ public class AccessibilityTakeScreenshotTest {
     @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#takeScreenshotOfWindow"})
     public void testTakeScreenshotOfWindow_ErrorForSecureWindow() throws Throwable {
-        final Activity activity = launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, AccessibilityWindowQueryActivity.class,
-                Display.DEFAULT_DISPLAY);
+        ActivityScenario<AccessibilityWindowQueryActivity> scenario =
+                ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
+        final AtomicReference<ImageView> image = new AtomicReference<>();
         try {
-            final ImageView image = new ImageView(activity);
-            image.setImageDrawable(new ColorDrawable(SECURE_WINDOW_CONTENT_COLOR));
+            scenario.moveToState(Lifecycle.State.RESUMED);
+            sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
             final String secureWindowTitle = "Secure Window";
-            final WindowManager.LayoutParams params = new WindowManager.LayoutParams();
-            params.width = WindowManager.LayoutParams.MATCH_PARENT;
-            params.height = WindowManager.LayoutParams.MATCH_PARENT;
-            params.flags = WindowManager.LayoutParams.FLAG_SECURE;
-            params.accessibilityTitle = secureWindowTitle;
+
             sUiAutomation.executeAndWaitForEvent(
-                    () -> sInstrumentation.runOnMainSync(
-                            () -> activity.getWindowManager().addView(image, params)),
+                    () ->
+                            scenario.onActivity(
+                                    activity -> {
+                                        ImageView imgView = new ImageView(activity);
+                                        imgView.setImageDrawable(
+                                                new ColorDrawable(SECURE_WINDOW_CONTENT_COLOR));
+                                        final WindowManager.LayoutParams params =
+                                                new WindowManager.LayoutParams();
+                                        params.width = WindowManager.LayoutParams.MATCH_PARENT;
+                                        params.height = WindowManager.LayoutParams.MATCH_PARENT;
+                                        params.flags = WindowManager.LayoutParams.FLAG_SECURE;
+                                        params.accessibilityTitle = secureWindowTitle;
+                                        activity.getWindowManager().addView(imgView, params);
+                                        image.set(imgView);
+                                    }),
                     filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_ADDED),
                     DEFAULT_TIMEOUT_MS);
 
@@ -306,9 +361,13 @@ public class AccessibilityTakeScreenshotTest {
             verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onFailure(
                     AccessibilityService.ERROR_TAKE_SCREENSHOT_SECURE_WINDOW);
         } finally {
-            if (activity != null) {
-                activity.finish();
-            }
+            scenario.onActivity(
+                    activity -> {
+                        if (image.get() != null) {
+                            activity.getWindowManager().removeView(image.get());
+                        }
+                    });
+            scenario.close();
         }
     }
 

@@ -55,6 +55,10 @@ public class NotTouchableWindowTestActivity extends AccessibilityTestActivity  {
                     break;
 
                 case FINISH_ACTIVITY:
+                    // need to remove the view from window to prevent WindowLeaked reporting
+                    // NotTouchableWindowTestActivity has leaked window
+                    context.getSystemService(WindowManager.class).removeView(rootView);
+                    rootView = null;
                     finish();
             }
         }

@@ -14,8 +14,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -37,9 +35,9 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -68,8 +66,8 @@ public class AccessibilityViewTreeReportingTest {
 
     private AccessibilityViewTreeReportingActivity mActivity;
 
-    private ActivityTestRule<AccessibilityViewTreeReportingActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityViewTreeReportingActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityViewTreeReportingActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityViewTreeReportingActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -92,11 +90,9 @@ public class AccessibilityViewTreeReportingTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = (AccessibilityViewTreeReportingActivity) launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         setGetNonImportantViews(false);
     }
-
 
     @Test
     public void testDescendantsOfNotImportantViewReportedInOrder1() throws Exception {

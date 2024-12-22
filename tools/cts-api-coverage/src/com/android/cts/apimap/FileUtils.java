@@ -42,14 +42,14 @@ public final class FileUtils {
         } else if (inputFile.endsWith(".apk")) {
             // Search for the corresponding jar file for the given apk file. This only works for apk
             // packages installed under out/soong/.intermediate. For example, if the apk file path
-            // is out/soong/.intermediate/.../Module/xxx/android_common/Module.apk, then search for
+            // is out/soong/.intermediate/.../Module/android_common/Module.apk, then search for
             // the jar file under
-            // out/soong/.intermediate/.../Module/xxx/android_common/withres(combines, javac)/.
+            // out/soong/.intermediate/.../Module/android_common/withres(combines, javac)/.
             String[] arrOsStr = inputFile.split("/");
-            if (arrOsStr.length < 4) {
+            if (arrOsStr.length < 3) {
                 return null;
             }
-            String moduleName = arrOsStr[arrOsStr.length - 4];
+            String moduleName = arrOsStr[arrOsStr.length - 3];
             // Search for the jar file under withres, combined and javac directories in order.
             for (String jarDir : JAR_DIRS) {
                 Path jarFile = Paths.get(String.format(
@@ -74,7 +74,7 @@ public final class FileUtils {
         List<String> lines = Files.readAllLines(filePath);
         List<Path> jarFiles = new ArrayList<>();
         for (String line : lines) {
-            for (String file : line.split(" ")) {
+            for (String file : line.split("\\s+")) {
                 Path jarFile = getJarFile(file);
                 if (jarFile == null) {
                     continue;

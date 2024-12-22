@@ -14,7 +14,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 
 import static org.junit.Assert.assertEquals;
@@ -38,10 +37,10 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -70,8 +69,8 @@ public class AccessibilityTextTraversalTest {
 
     private AccessibilityTextTraversalActivity mActivity;
 
-    private ActivityTestRule<AccessibilityTextTraversalActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityTextTraversalActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityTextTraversalActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityTextTraversalActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -94,8 +93,7 @@ public class AccessibilityTextTraversalTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
     }
 
     @MediumTest
@@ -3773,67 +3771,76 @@ public class AccessibilityTextTraversalTest {
             return;
         }
 
-        final EditText editText = (EditText) mActivity.findViewById(R.id.edit);
-        final String textContent = getString(R.string.foo_bar_baz);
+        try {
+            sInstrumentation.setInTouchMode(false);
+            sInstrumentation.waitForIdleSync();
+            final EditText editText = mActivity.findViewById(R.id.edit);
+            final String textContent = getString(R.string.foo_bar_baz);
 
-        sInstrumentation.runOnMainSync(new Runnable() {
-            @Override
-            public void run() {
-                editText.setVisibility(View.VISIBLE);
-                editText.setFocusable(true);
-                editText.requestFocus();
-                editText.setText(getString(R.string.foo_bar_baz));
-                Selection.removeSelection(editText.getText());
-            }
-        });
+            sInstrumentation.runOnMainSync(
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            editText.setVisibility(View.VISIBLE);
+                            editText.setFocusable(true);
+                            editText.requestFocus();
+                            editText.setText(getString(R.string.foo_bar_baz));
+                            Selection.removeSelection(editText.getText());
+                        }
+                    });
 
-        final AccessibilityNodeInfo text = sUiAutomation
-               .getRootInActiveWindow().findAccessibilityNodeInfosByText(
-                       getString(R.string.foo_bar_baz)).get(0);
+            final AccessibilityNodeInfo text =
+                    sUiAutomation
+                            .getRootInActiveWindow()
+                            .findAccessibilityNodeInfosByText(getString(R.string.foo_bar_baz))
+                            .get(0);
 
-        // Select all text.
-        Bundle arguments = new Bundle();
-        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
-        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT,
-                editText.getText().length());
-        assertTrue(text.performAction(
-                AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments));
+            // Select all text.
+            Bundle arguments = new Bundle();
+            arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
+            arguments.putInt(
+                    AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT,
+                    editText.getText().length());
+            assertTrue(text.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments));
 
-        // Copy the selected text.
-        text.performAction(AccessibilityNodeInfo.ACTION_COPY);
+            // Copy the selected text.
+            text.performAction(AccessibilityNodeInfo.ACTION_COPY);
 
-        // Set selection at the end.
-        final int textLength = editText.getText().length();
-        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, textLength);
-        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, textLength);
-        // Don't check the return value, because the copy action could move the selection and the
-        // operation will fail if the selection is already at the end.
-        text.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments);
+            // Set selection at the end.
+            final int textLength = editText.getText().length();
+            arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, textLength);
+            arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, textLength);
+            // Don't check the return value, because the copy action could move the selection and
+            // the
+            // operation will fail if the selection is already at the end.
+            text.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments);
 
-        // Verify the selection position.
-        assertEquals(textLength, Selection.getSelectionStart(editText.getText()));
-        assertEquals(textLength, Selection.getSelectionEnd(editText.getText()));
+            // Verify the selection position.
+            assertEquals(textLength, Selection.getSelectionStart(editText.getText()));
+            assertEquals(textLength, Selection.getSelectionEnd(editText.getText()));
 
-        // Paste the selected text.
-        assertTrue(text.performAction(
-                AccessibilityNodeInfo.ACTION_PASTE));
+            // Paste the selected text.
+            assertTrue(text.performAction(AccessibilityNodeInfo.ACTION_PASTE));
 
-        // Verify the content.
-        assertEquals(editText.getText().toString(), textContent + textContent);
+            // Verify the content.
+            assertEquals(editText.getText().toString(), textContent + textContent);
 
-        // Select all text.
-        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
-        arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT,
-                editText.getText().length());
-        assertTrue(text.performAction(
-                AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments));
+            // Select all text.
+            arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, 0);
+            arguments.putInt(
+                    AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT,
+                    editText.getText().length());
+            assertTrue(text.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, arguments));
 
-        // Cut the selected text.
-        assertTrue(text.performAction(
-                AccessibilityNodeInfo.ACTION_CUT));
+            // Cut the selected text.
+            assertTrue(text.performAction(AccessibilityNodeInfo.ACTION_CUT));
 
-        // Verify the content.
-        assertTrue(TextUtils.isEmpty(editText.getText()));
+            // Verify the content.
+            assertTrue(TextUtils.isEmpty(editText.getText()));
+        } finally {
+            sInstrumentation.resetInTouchMode();
+            sInstrumentation.waitForIdleSync();
+        }
     }
 
     @Test

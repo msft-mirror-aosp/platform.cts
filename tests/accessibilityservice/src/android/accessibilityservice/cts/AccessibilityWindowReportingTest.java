@@ -21,10 +21,9 @@ import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUti
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWindowByTitle;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWindowByTitleAndDisplay;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActivityTitle;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
 import static android.accessibilityservice.cts.utils.WindowCreationUtils.TOP_WINDOW_TITLE;
@@ -54,7 +53,9 @@ import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.accessibilityservice.cts.utils.DisplayUtils;
 import android.accessibilityservice.cts.utils.WindowCreationUtils;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.PictureInPictureParams;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -71,13 +72,16 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -89,6 +93,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests that window changes produce the correct events and that AccessibilityWindowInfos are
@@ -103,8 +108,8 @@ public class AccessibilityWindowReportingTest {
     private Activity mActivity;
     private CharSequence mActivityTitle;
 
-    private final ActivityTestRule<AccessibilityWindowReportingActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityWindowReportingActivity.class, false, false);
+    private final ActivityScenarioRule<AccessibilityWindowReportingActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityWindowReportingActivity.class);
 
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -130,9 +135,21 @@ public class AccessibilityWindowReportingTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
-        mActivityTitle = getActivityTitle(sInstrumentation, mActivity);
+        sInstrumentation.setInTouchMode(false);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            mActivity = activity;
+                            mActivityTitle = mActivity.getTitle();
+                        });
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
+    }
+
+    @After
+    public void cleanUp() {
+        sInstrumentation.resetInTouchMode();
     }
 
     private static boolean perDisplayFocusEnabled() {
@@ -188,7 +205,14 @@ public class AccessibilityWindowReportingTest {
             return;
         }
         sUiAutomation.executeAndWaitForEvent(
-                () -> sInstrumentation.runOnMainSync(() -> mActivity.enterPictureInPictureMode()),
+                () ->
+                        mActivityRule
+                                .getScenario()
+                                .onActivity(
+                                        activity ->
+                                                activity.enterPictureInPictureMode(
+                                                        new PictureInPictureParams.Builder()
+                                                                .build())),
                 (event) -> {
                     if (event.getEventType() != TYPE_WINDOWS_CHANGED) return false;
                     // Look for a picture-in-picture window
@@ -200,7 +224,11 @@ public class AccessibilityWindowReportingTest {
                         }
                     }
                     return false;
-                }, TIMEOUT_ASYNC_PROCESSING);
+                },
+                TIMEOUT_ASYNC_PROCESSING);
+        // wait for activity fully enter picture in picture mode, so that the ActivityScenario
+        // recognize it and able to close it properly after the test finishes.
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
 
         // There should be exactly one picture-in-picture window now
         int numPictureInPictureWindows = 0;
@@ -269,60 +297,66 @@ public class AccessibilityWindowReportingTest {
         assertThat(activityWindow.isFocused()).isTrue();
 
         // Creates a virtual display.
-        try (VirtualDisplaySession displaySession = new VirtualDisplaySession()) {
+        VirtualDisplaySession displaySession = new VirtualDisplaySession();
+        AtomicReference<ActivityScenario<NonDefaultDisplayActivity>> activityOnVirtualDisplay =
+                new AtomicReference<>();
+        try {
             final int virtualDisplayId =
                     displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                             sInstrumentation.getContext(), false).getDisplayId();
             // Launches an activity on virtual display.
-            final Activity activityOnVirtualDisplay =
-                    launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(sInstrumentation,
-                            sUiAutomation,
-                            NonDefaultDisplayActivity.class,
-                            virtualDisplayId);
+            SystemUtil.runWithShellPermissionIdentity(
+                    sUiAutomation,
+                    () -> {
+                        final ActivityOptions options = ActivityOptions.makeBasic();
+                        options.setLaunchDisplayId(virtualDisplayId);
+                        activityOnVirtualDisplay.set(
+                                ActivityScenario.launch(
+                                                NonDefaultDisplayActivity.class, options.toBundle())
+                                        .moveToState(Lifecycle.State.RESUMED));
+                    });
 
-            final CharSequence activityTitle = getActivityTitle(sInstrumentation,
-                    activityOnVirtualDisplay);
+            AtomicReference<CharSequence> activityTitleOnVirtualDisplay = new AtomicReference<>();
+            activityOnVirtualDisplay
+                    .get()
+                    .onActivity(
+                            activity -> {
+                                activityTitleOnVirtualDisplay.set(activity.getTitle());
+                            });
 
             // Window manager changed the behavior of focused window at a virtual display. A window
             // at virtual display needs to be touched then it becomes to be focused one. Adding this
             // touch event on the activity window of the virtual display to pass this test case.
             sUiAutomation.executeAndWaitForEvent(
-                    () -> DisplayUtils.touchDisplay(sUiAutomation, virtualDisplayId, activityTitle),
-                    filterWindowsChangedWithChangeTypes(WINDOWS_CHANGE_FOCUSED |
-                            WINDOWS_CHANGE_ACTIVE),
+                    () ->
+                            DisplayUtils.touchDisplay(
+                                    sUiAutomation,
+                                    virtualDisplayId,
+                                    activityTitleOnVirtualDisplay.get()),
+                    filterWindowsChangedWithChangeTypes(
+                            WINDOWS_CHANGE_FOCUSED | WINDOWS_CHANGE_ACTIVE),
                     TIMEOUT_ASYNC_PROCESSING);
 
             // Make sure activityWindow on virtual display is focused.
             AccessibilityWindowInfo activityWindowOnVirtualDisplay =
-                    findWindowByTitleAndDisplay(sUiAutomation, activityTitle, virtualDisplayId);
+                    findWindowByTitleAndDisplay(
+                            sUiAutomation, activityTitleOnVirtualDisplay.get(), virtualDisplayId);
             // Windows may have changed - refresh.
             activityWindow = findWindowByTitle(sUiAutomation, mActivityTitle);
-            try {
-                if (!perDisplayFocusEnabled()) {
-                    assertThat(activityWindow.isActive()).isFalse();
-                    assertThat(activityWindow.isFocused()).isFalse();
-                } else {
-                    assertThat(activityWindow.isActive()).isTrue();
-                    assertThat(activityWindow.isFocused()).isTrue();
-                }
-                assertThat(activityWindowOnVirtualDisplay.isActive()).isTrue();
-                assertThat(activityWindowOnVirtualDisplay.isFocused()).isTrue();
-            } finally {
-                sUiAutomation.executeAndWaitForEvent(
-                        () -> sInstrumentation.runOnMainSync(activityOnVirtualDisplay::finish),
-                        filterWaitForAll(
-                                filterWindowsChangedWithChangeTypes(
-                                        WINDOWS_CHANGE_FOCUSED | WINDOWS_CHANGE_ACTIVE),
-                                event -> {
-                                    // The focused window should be returned to activity at
-                                    // default display after
-                                    // the activity at virtual display is destroyed.
-                                    AccessibilityWindowInfo window = findWindowByTitle(
-                                            sUiAutomation, mActivityTitle);
-                                    return window.isActive() && window.isFocused();
-                                }),
-                        TIMEOUT_ASYNC_PROCESSING);
+            if (!perDisplayFocusEnabled()) {
+                assertThat(activityWindow.isActive()).isFalse();
+                assertThat(activityWindow.isFocused()).isFalse();
+            } else {
+                assertThat(activityWindow.isActive()).isTrue();
+                assertThat(activityWindow.isFocused()).isTrue();
             }
+            assertThat(activityWindowOnVirtualDisplay.isActive()).isTrue();
+            assertThat(activityWindowOnVirtualDisplay.isFocused()).isTrue();
+        } finally {
+            if (activityOnVirtualDisplay.get() != null) {
+                activityOnVirtualDisplay.get().close();
+            }
+            displaySession.close();
         }
     }
 
@@ -473,26 +507,34 @@ public class AccessibilityWindowReportingTest {
     // Use shell command instead of ActivityLaunchUtils to get INTERNAL_SYSTEM_WINDOW
     // permission when the Session is created.
     private void launchNotTouchableWindowTestActivityFromShell() {
-        SystemUtil.runWithShellPermissionIdentity(sUiAutomation,
-                () -> sUiAutomation.executeAndWaitForEvent(
-                        () -> {
-                            final ComponentName componentName = new ComponentName(
-                                    sInstrumentation.getContext(),
-                                    NotTouchableWindowTestActivity.class);
+        SystemUtil.runWithShellPermissionIdentity(
+                sUiAutomation,
+                () ->
+                        sUiAutomation.executeAndWaitForEvent(
+                                () -> {
+                                    final ComponentName componentName =
+                                            new ComponentName(
+                                                    sInstrumentation.getContext(),
+                                                    NotTouchableWindowTestActivity.class);
 
-                            String command = "am start -n " + componentName.flattenToString();
-                            try {
-                                SystemUtil.runShellCommand(sInstrumentation, command);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        },
-                        (event) -> {
-                            final AccessibilityWindowInfo window =
-                                    findWindowByTitleAndDisplay(sUiAutomation,
-                                            NotTouchableWindowTestActivity.TITLE, 0);
-                            return window != null;
-                        }, TIMEOUT_ASYNC_PROCESSING), Manifest.permission.INTERNAL_SYSTEM_WINDOW);
+                                    String command =
+                                            "am start -n " + componentName.flattenToString();
+                                    try {
+                                        SystemUtil.runShellCommand(sUiAutomation, command);
+                                    } catch (IOException e) {
+                                        throw new RuntimeException(e);
+                                    }
+                                },
+                                (event) -> {
+                                    final AccessibilityWindowInfo window =
+                                            findWindowByTitleAndDisplay(
+                                                    sUiAutomation,
+                                                    NotTouchableWindowTestActivity.TITLE,
+                                                    0);
+                                    return window != null;
+                                },
+                                TIMEOUT_ASYNC_PROCESSING),
+                Manifest.permission.INTERNAL_SYSTEM_WINDOW);
     }
 
     private void closeNotTouchableWindowTestActivity() {
@@ -562,5 +604,4 @@ public class AccessibilityWindowReportingTest {
                 filter,
                 TIMEOUT_ASYNC_PROCESSING);
     }
-
 }

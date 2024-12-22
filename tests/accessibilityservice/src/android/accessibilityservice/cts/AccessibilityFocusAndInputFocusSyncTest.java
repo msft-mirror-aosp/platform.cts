@@ -15,7 +15,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterForEventTypeWithAction;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED;
@@ -46,10 +45,11 @@ import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
@@ -92,8 +92,8 @@ public class AccessibilityFocusAndInputFocusSyncTest {
 
     private AccessibilityFocusAndInputFocusSyncActivity mActivity;
 
-    private ActivityTestRule<AccessibilityFocusAndInputFocusSyncActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityFocusAndInputFocusSyncActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityFocusAndInputFocusSyncActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityFocusAndInputFocusSyncActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<StubFocusIndicatorService>
             mFocusIndicatorServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -114,6 +114,8 @@ public class AccessibilityFocusAndInputFocusSyncTest {
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
+        sInstrumentation.setInTouchMode(false);
+        sInstrumentation.waitForIdleSync();
         sUiAutomation = sInstrumentation.getUiAutomation(
                 UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
@@ -126,6 +128,8 @@ public class AccessibilityFocusAndInputFocusSyncTest {
 
     @AfterClass
     public static void postTestTearDown() {
+        sInstrumentation.resetInTouchMode();
+        sInstrumentation.waitForIdleSync();
         sUiAutomation.destroy();
     }
 
@@ -136,8 +140,10 @@ public class AccessibilityFocusAndInputFocusSyncTest {
         info.flags &= ~AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
         sUiAutomation.setServiceInfo(info);
 
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
     }
 
     @MediumTest

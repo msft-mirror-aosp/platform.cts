@@ -284,9 +284,7 @@ public class AccessibilitySoftKeyboardTest {
             } else {
                 enableImeCommand = ShellCommandUtils.disableIme(imeId, userId);
             }
-            ShellCommandBuilder.create(sInstrumentation)
-                    .addCommand(enableImeCommand)
-                    .run();
+            ShellCommandBuilder.create(sUiAutomation).addCommand(enableImeCommand).run();
 
             try {
                 PollingCheck.check(imeId + " is not " + (enabled ? " enabled" : "disabled"),
@@ -306,7 +304,7 @@ public class AccessibilitySoftKeyboardTest {
         @Override
         public void close() throws Exception {
             // Reset IMEs by shell command.
-            ShellCommandBuilder.create(sInstrumentation)
+            ShellCommandBuilder.create(sUiAutomation)
                     .addCommand(ShellCommandUtils.resetImesForAllUsers())
                     .run();
         }

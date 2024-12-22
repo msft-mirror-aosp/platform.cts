@@ -17,7 +17,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibility.cts.common.InstrumentedAccessibilityService.enableService;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,11 +43,11 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
@@ -81,10 +80,8 @@ public class AccessibilityImeTest {
     private static StubImeAccessibilityService sStubImeAccessibilityService;
     private static StubNonImeAccessibilityService sStubNonImeAccessibilityService;
 
-    private AccessibilityEndToEndActivity mActivity;
-
-    private ActivityTestRule<AccessibilityEndToEndActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityEndToEndActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityEndToEndActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityEndToEndActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -100,9 +97,9 @@ public class AccessibilityImeTest {
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sUiAutomation = sInstrumentation.getUiAutomation();
-        sInstrumentation
-                .getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        sUiAutomation =
+                sInstrumentation.getUiAutomation(
+                        UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sStubImeAccessibilityService = enableService(StubImeAccessibilityService.class);
         sStubNonImeAccessibilityService = enableService(StubNonImeAccessibilityService.class);
     }
@@ -116,12 +113,15 @@ public class AccessibilityImeTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
-        // focus the edit text
-        mEditText = mActivity.findViewById(R.id.edittext);
-        // initial text
-        mInitialText = mActivity.getString(R.string.text_input_blah);
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            // focus the edit text
+                            mEditText = activity.findViewById(R.id.edittext);
+                            // initial text
+                            mInitialText = activity.getString(R.string.text_input_blah);
+                        });
     }
 
     /**

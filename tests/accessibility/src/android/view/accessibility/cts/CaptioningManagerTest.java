@@ -16,8 +16,6 @@
 
 package android.view.accessibility.cts;
 
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -32,6 +30,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.res.Resources;
 import android.os.ParcelFileDescriptor;
@@ -40,6 +39,7 @@ import android.view.accessibility.CaptioningManager.CaptionStyle;
 import android.view.accessibility.CaptioningManager.CaptioningChangeListener;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -64,16 +64,17 @@ public class CaptioningManagerTest {
 
     private static final int LISTENER_TIMEOUT = 3000;
     private CaptioningManager mManager;
+    private Instrumentation mInstrumentation;
     private UiAutomation mUiAutomation;
 
     @Before
     public void setUp() throws Exception {
-        mManager = getInstrumentation().getTargetContext().getSystemService(
-                CaptioningManager.class);
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mManager = mInstrumentation.getTargetContext().getSystemService(CaptioningManager.class);
 
         assertNotNull("Obtained captioning manager", mManager);
 
-        mUiAutomation = getInstrumentation().getUiAutomation();
+        mUiAutomation = mInstrumentation.getUiAutomation();
     }
 
     /**
@@ -98,7 +99,7 @@ public class CaptioningManagerTest {
 
         // Style change gets posted in a Runnable, so we need to wait for idle.
         putSecureSetting("accessibility_captioning_preset", "-1");
-        getInstrumentation().waitForIdleSync();
+        mInstrumentation.waitForIdleSync();
         verify(mockListener, timeout(LISTENER_TIMEOUT)).onUserStyleChanged(anyObject());
 
         putSecureSetting("accessibility_captioning_locale", "ja_JP");
@@ -162,8 +163,7 @@ public class CaptioningManagerTest {
 
     @Test
     public void testIsCallCaptioningEnabled() {
-        Resources resources =
-                getInstrumentation().getTargetContext().getResources();
+        Resources resources = mInstrumentation.getTargetContext().getResources();
         // com.android.internal.R is not visible to this test so we need
         // to query for the resource id.
         int resourceId = resources.getIdentifier(

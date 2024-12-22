@@ -20,14 +20,19 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_genrule {
-    name: "multidevice-test-apps",
-    srcs: [
+filegroup {
+    name: "multidevice-test-app-list",
+    device_first_srcs: [
         ":NfcEmulatorTestApp",
     ],
+}
+
+java_genrule {
+    name: "multidevice-test-apps",
+    srcs: [":multidevice-test-app-list"],
     tools: ["soong_zip"],
     out: ["multidevice-test-apps.zip"],
-    cmd: "echo $(location :NfcEmulatorTestApp) >$(genDir)/list && " +
+    cmd: "echo $(location :multidevice-test-app-list) >$(genDir)/list && " +
         "$(location soong_zip) -o $(out) -j -P android-cts-verifier/MultiDevice -l $(genDir)/list",
 }
 

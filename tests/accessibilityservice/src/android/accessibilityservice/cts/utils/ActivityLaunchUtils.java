@@ -25,7 +25,6 @@ import static org.junit.Assert.fail;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
-import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.app.UiAutomation;
@@ -90,34 +89,6 @@ public class ActivityLaunchUtils {
         };
         return launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(instrumentation,
                 uiAutomation, activityLauncher, Display.DEFAULT_DISPLAY);
-    }
-
-    /**
-     * If this activity would be launched at virtual display, please finishes this activity before
-     * this test ended. Otherwise it will be displayed on default display and impacts the next test.
-     */
-    public static <T extends Activity> T launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-            Instrumentation instrumentation, UiAutomation uiAutomation, Class<T> clazz,
-            int displayId) throws Exception {
-        final ActivityOptions options = ActivityOptions.makeBasic();
-        options.setLaunchDisplayId(displayId);
-        final Intent intent = new Intent(instrumentation.getTargetContext(), clazz);
-        // Add clear task because this activity may on other display.
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        ActivityLauncher activityLauncher = new ActivityLauncher() {
-            @Override
-            Activity launchActivity() {
-                uiAutomation.adoptShellPermissionIdentity();
-                try {
-                    return instrumentation.startActivitySync(intent, options.toBundle());
-                } finally {
-                    uiAutomation.dropShellPermissionIdentity();
-                }
-            }
-        };
-        return launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(instrumentation,
-                uiAutomation, activityLauncher, displayId);
     }
 
     public static CharSequence getActivityTitle(

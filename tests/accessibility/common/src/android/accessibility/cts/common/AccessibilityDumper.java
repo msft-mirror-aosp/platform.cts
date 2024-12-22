@@ -19,9 +19,6 @@ package android.accessibility.cts.common;
 import static android.accessibilityservice.AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 
-import static androidx.test.InstrumentationRegistry.getContext;
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertFalse;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
@@ -35,6 +32,8 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BitmapUtils;
 
@@ -95,7 +94,9 @@ public class AccessibilityDumper {
      * @param flag control what to dump
      */
     private AccessibilityDumper(int flag) {
-        mRoot = getDumpRoot(getContext().getPackageName());
+        mRoot =
+                getDumpRoot(
+                        InstrumentationRegistry.getInstrumentation().getContext().getPackageName());
         mFlag = flag;
     }
 
@@ -139,8 +140,9 @@ public class AccessibilityDumper {
     }
 
     private void dumpHierarchyOnLogcat() {
-        try(ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            UiDevice.getInstance(getInstrumentation()).dumpWindowHierarchy(os);
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+                    .dumpWindowHierarchy(os);
             Log.w(TAG, "Window hierarchy:");
             for (String line : os.toString("UTF-8").split("\\n")) {
                 Log.w(TAG, line);
@@ -251,8 +253,9 @@ public class AccessibilityDumper {
         // Reuse UiAutomation from UiAutomator with the same flag
         Configurator.getInstance().setUiAutomationFlags(
                 FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
-        final UiAutomation automation = getInstrumentation().getUiAutomation(
-                FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        final UiAutomation automation =
+                InstrumentationRegistry.getInstrumentation()
+                        .getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         // Dump window info & node tree
         final AccessibilityServiceInfo info = automation.getServiceInfo();
         if (info != null && ((info.flags & FLAG_RETRIEVE_INTERACTIVE_WINDOWS) == 0)) {

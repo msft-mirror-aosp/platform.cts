@@ -34,6 +34,7 @@ android_test {
     static_libs: [
         "android.view.accessibility.flags-aconfig-java",
         "ctstestrunner-axt",
+        "androidx.test.core",
         "hamcrest-library",
         "CtsAccessibilityCommon",
         "CtsAccessibilityServiceUtils",

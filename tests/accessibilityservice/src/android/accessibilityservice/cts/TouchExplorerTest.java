@@ -17,6 +17,8 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.GestureUtils.IS_ACTION_DOWN;
 import static android.accessibilityservice.cts.utils.GestureUtils.IS_ACTION_UP;
 import static android.accessibilityservice.cts.utils.GestureUtils.add;
@@ -171,7 +173,7 @@ public class TouchExplorerTest {
 
     @AfterClass
     public static void postTestTearDown() {
-        ShellCommandBuilder.create(sInstrumentation)
+        ShellCommandBuilder.create(sUiAutomation)
                 .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, sEnabledServices)
                 .run();
         sUiAutomation.destroy();
@@ -180,6 +182,7 @@ public class TouchExplorerTest {
     @Before
     public void setUp() throws Exception {
         mActivityRule.getScenario().moveToState(Lifecycle.State.RESUMED);
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
         PackageManager pm = sInstrumentation.getContext().getPackageManager();
         mHasTouchscreen =
                 pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
