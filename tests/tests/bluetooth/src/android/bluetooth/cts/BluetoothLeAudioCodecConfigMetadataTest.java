@@ -21,8 +21,6 @@ import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertArrayEquals;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothLeAudioCodecConfigMetadata;
 import android.bluetooth.BluetoothProfile;
@@ -127,7 +125,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         assertThat(codecMetadata.getFrameDuration()).isEqualTo(TEST_FRAME_DURATION_10000);
         assertThat(codecMetadata.getOctetsPerFrame()).isEqualTo(TEST_OCTETS_PER_FRAME);
         // TODO: Implement implicit LTV byte conversion in the API class
-        // assertArrayEquals(TEST_METADATA_BYTES, codecMetadata.getRawMetadata());
+        // assertThat(codecMetadata.getRawMetadata()).isEqualTo(TEST_METADATA_BYTES);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -147,7 +145,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         assertThat(codecMetadataCopy.getSampleRate()).isEqualTo(TEST_SAMPLE_RATE_44100);
         assertThat(codecMetadataCopy.getFrameDuration()).isEqualTo(TEST_FRAME_DURATION_10000);
         assertThat(codecMetadataCopy.getOctetsPerFrame()).isEqualTo(TEST_OCTETS_PER_FRAME);
-        assertArrayEquals(codecMetadata.getRawMetadata(), codecMetadataCopy.getRawMetadata());
+        assertThat(codecMetadataCopy.getRawMetadata()).isEqualTo(codecMetadata.getRawMetadata());
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -156,8 +154,7 @@ public class BluetoothLeAudioCodecConfigMetadataTest {
         BluetoothLeAudioCodecConfigMetadata codecMetadata =
                 BluetoothLeAudioCodecConfigMetadata.fromRawBytes(TEST_METADATA_BYTES);
         byte[] metadataBytes = codecMetadata.getRawMetadata();
-        assertThat(metadataBytes).isNotNull();
-        assertArrayEquals(TEST_METADATA_BYTES, metadataBytes);
+        assertThat(metadataBytes).isEqualTo(TEST_METADATA_BYTES);
         assertThat(codecMetadata.getAudioLocation()).isEqualTo(TEST_AUDIO_LOCATION_FRONT_LEFT);
         assertThat(codecMetadata.getSampleRate()).isEqualTo(TEST_SAMPLE_RATE_44100);
         assertThat(codecMetadata.getFrameDuration()).isEqualTo(TEST_FRAME_DURATION_10000);

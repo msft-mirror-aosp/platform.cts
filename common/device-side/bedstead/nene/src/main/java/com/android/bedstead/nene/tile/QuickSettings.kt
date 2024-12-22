@@ -16,15 +16,17 @@
 
 package com.android.bedstead.nene.tile
 
+import android.cts.testapisreflection.*
 import android.service.quicksettings.TileService
 
+/** Helper methods related to quick settings. */
 object QuickSettings {
 
     /**
      * See [android.service.quicksettings.TileService#isQuickSettingsSupported].
      */
     fun isSupported(): Boolean {
-        return TileService.isQuickSettingsSupported()
+        return TileService().quickSettingsSupported
     }
 
 }

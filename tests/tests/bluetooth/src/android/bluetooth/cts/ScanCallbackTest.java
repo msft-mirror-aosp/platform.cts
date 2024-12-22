@@ -44,7 +44,7 @@ import java.util.Set;
 @RunWith(AndroidJUnit4.class)
 public class ScanCallbackTest {
     private MockScanner mMockScanner = new MockScanner();
-    @Mock ScanCallback mScanCallback;
+    @Mock private ScanCallback mScanCallback;
 
     @Before
     public void setUp() {

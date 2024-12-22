@@ -56,7 +56,6 @@ import android.accessibility.cts.common.ShellCommandBuilder;
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
-import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.accessibilityservice.cts.utils.EventCapturingClickListener;
 import android.accessibilityservice.cts.utils.EventCapturingLongClickListener;
 import android.accessibilityservice.cts.utils.EventCapturingMotionEventListener;
@@ -75,12 +74,13 @@ import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
-import android.view.WindowManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.Configurator;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -124,8 +124,8 @@ public class TouchExplorerTest {
     private EventCapturingLongClickListener mLongClickListener =
             new EventCapturingLongClickListener();
 
-    private ActivityTestRule<GestureDispatchActivity> mActivityRule =
-            new ActivityTestRule<>(GestureDispatchActivity.class, false, false);
+    private ActivityScenarioRule<GestureDispatchActivity> mActivityRule =
+            new ActivityScenarioRule<>(GestureDispatchActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<TouchExplorationStubAccessibilityService>
             mServiceRule =
@@ -151,6 +151,8 @@ public class TouchExplorerTest {
 
     @BeforeClass
     public static void oneTimeSetup() {
+        Configurator.getInstance()
+                .setUiAutomationFlags(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         // Save enabled accessibility services before disabling them so they can be re-enabled after
         // the test.
@@ -177,9 +179,7 @@ public class TouchExplorerTest {
 
     @Before
     public void setUp() throws Exception {
-        ActivityLaunchUtils.homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
-
-        mActivityRule.launchActivity(null);
+        mActivityRule.getScenario().moveToState(Lifecycle.State.RESUMED);
         PackageManager pm = sInstrumentation.getContext().getPackageManager();
         mHasTouchscreen =
                 pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
@@ -187,37 +187,37 @@ public class TouchExplorerTest {
         // Find window size, check that it is big enough for gestures.
         // Gestures will start in the center of the window, so we need enough horiz/vert space.
         mService = mServiceRule.enableService();
-        mView = mActivityRule.getActivity().findViewById(R.id.full_screen_text_view);
-        WindowManager windowManager =
-                sInstrumentation.getContext().getSystemService(WindowManager.class);
         final DisplayMetrics metrics = new DisplayMetrics();
-        windowManager.getDefaultDisplay().getRealMetrics(metrics);
-        mScreenBigEnough =
-                mView.getWidth()
-                        > TypedValue.applyDimension(
-                                TypedValue.COMPLEX_UNIT_MM, MIN_SCREEN_WIDTH_MM, metrics);
-        mView.setOnHoverListener(mMotionEventListener);
-        mView.setOnTouchListener(mMotionEventListener);
+        mActivityRule.getScenario().onActivity(activity -> {
+            mView = activity.findViewById(R.id.full_screen_text_view);
+            activity.getDisplay().getRealMetrics(metrics);
+            mScreenBigEnough =
+                    mView.getWidth()
+                            > TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_MM, MIN_SCREEN_WIDTH_MM, metrics);
+            mView.setOnHoverListener(mMotionEventListener);
+            mView.setOnTouchListener(mMotionEventListener);
+        });
         assume().that(mHasTouchscreen).isTrue();
         assume().that(mScreenBigEnough).isTrue();
-        sInstrumentation.runOnMainSync(
-                () -> {
-                    int[] viewLocation = new int[2];
-                    mView = mActivityRule.getActivity().findViewById(R.id.full_screen_text_view);
-                    final int midX = mView.getWidth() / 2;
-                    final int midY = mView.getHeight() / 2;
-                    mView.getLocationOnScreen(viewLocation);
-                    mTapLocation = new PointF(viewLocation[0] + midX, viewLocation[1] + midY);
-                    mSwipeDistance =
-                            TypedValue.applyDimension(
-                                    TypedValue.COMPLEX_UNIT_MM, GESTURE_LENGTH_MMS, metrics);
-                    // This must be slower than 10mm per 150ms to be detected as touch exploration
-                    // instead of a "swipe" gesture. Use 250ms per 10mm to be safely past
-                    // that threshold.
-                    mSwipeTimeMillis = (long) ((GESTURE_LENGTH_MMS / 10) * 250);
-                    mView.setOnClickListener(mClickListener);
-                    mView.setOnLongClickListener(mLongClickListener);
-                });
+
+        mActivityRule.getScenario().onActivity(activity -> {
+            int[] viewLocation = new int[2];
+            mView = activity.findViewById(R.id.full_screen_text_view);
+            final int midX = mView.getWidth() / 2;
+            final int midY = mView.getHeight() / 2;
+            mView.getLocationOnScreen(viewLocation);
+            mTapLocation = new PointF(viewLocation[0] + midX, viewLocation[1] + midY);
+            mSwipeDistance =
+                    TypedValue.applyDimension(
+                            TypedValue.COMPLEX_UNIT_MM, GESTURE_LENGTH_MMS, metrics);
+            // This must be slower than 10mm per 150ms to be detected as touch exploration instead
+            // of a "swipe" gesture. Use 250ms per 10mm to be safely past that threshold.
+            mSwipeTimeMillis = (long) ((GESTURE_LENGTH_MMS / 10) * 250);
+            mView.setOnClickListener(mClickListener);
+            mView.setOnLongClickListener(mLongClickListener);
+            mView.requestFocusFromTouch();
+        });
     }
 
     /** Test a slow swipe which should initiate touch exploration. */
@@ -398,7 +398,6 @@ public class TouchExplorerTest {
     @Test
     @AppModeFull
     public void testDoubleTapNoAccessibilityFocus_sendsTouchEvents() {
-
         // Do a single tap so there is a valid last touch-explored location.
         dispatch(click(mTapLocation));
         mMotionEventListener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);

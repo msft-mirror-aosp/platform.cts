@@ -22,7 +22,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -38,8 +38,8 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@EnsureHasNoProfileAnnotation("android.os.usertype.profile.MANAGED")
 @RequireFeature("android.software.managed_users")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface EnsureHasNoWorkProfile {
     /** Which user type the work profile should not be attached to. */
     UserType forUser() default INSTRUMENTED_USER;
@@ -56,4 +56,6 @@ public @interface EnsureHasNoWorkProfile {
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
     int priority() default MIDDLE;
+
+    String PROFILE_TYPE = "android.os.usertype.profile.MANAGED";
 }

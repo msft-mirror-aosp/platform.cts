@@ -274,6 +274,28 @@ public class MessageQueueTest {
         tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
     }
 
+    /**
+     * Use MessageQueue, pathological number of messages.
+     */
+    @Test
+    public void testPathologicalMessageCount() throws Exception {
+
+        OrderTestHelper tester = new OrderTestHelper() {
+
+            @Override
+            public void init() {
+                super.init();
+                long now = SystemClock.uptimeMillis() + 200;
+                mLastMessage = 1023;
+                for (int i = 0; i < 1024; i++) {
+                    mHandler.sendMessageAtTime(mHandler.obtainMessage(i), now);
+                }
+            }
+        };
+
+        tester.doTest(TEST_TIMEOUT, TEST_INTERVAL);
+    }
+
 
     @Test
     @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)

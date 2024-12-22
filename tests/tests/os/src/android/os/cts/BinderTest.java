@@ -29,9 +29,8 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
-import android.os.WorkSource;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import org.junit.Before;
@@ -77,7 +76,6 @@ public class BinderTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testDump() {
         final String[] dumpArgs = new String[]{"one", "two", "three"};
         mBinder.dump(new FileDescriptor(),
@@ -88,7 +86,6 @@ public class BinderTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testHandleShellCommand() throws Exception {
         String[] cmdArgs = new String[]{"4", "8", "15", "16", "23", "42"};
 
@@ -103,7 +100,7 @@ public class BinderTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testJoinThreadPool() {
         final CountDownLatch waitLatch = new CountDownLatch(1);
         final CountDownLatch alertLatch = new CountDownLatch(1);
@@ -239,14 +236,12 @@ public class BinderTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = WorkSource.class)
     public void testClearCallingWorkSource() {
         final long token = Binder.clearCallingWorkSource();
         Binder.restoreCallingWorkSource(token);
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = WorkSource.class)
     public void testSetCallingWorkSourceUid() {
         final int otherUid = android.os.Process.myUid() + 1;
         assertFalse(Binder.getCallingWorkSourceUid() == otherUid);

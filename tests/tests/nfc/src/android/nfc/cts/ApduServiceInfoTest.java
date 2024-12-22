@@ -176,7 +176,7 @@ public class ApduServiceInfoTest {
                 WalletRoleTestUtils.getAssociatedService());
         assertNotNull(resolvedService);
         ApduServiceInfo apduServiceInfo = new ApduServiceInfo(pm, resolvedService, true);
-        assertTrue(apduServiceInfo.shareRolePriority());
+        assertTrue(apduServiceInfo.wantsRoleHolderPriority());
     }
 
     @Test

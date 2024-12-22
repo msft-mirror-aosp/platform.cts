@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.credentials;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.isServiceEnabled;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.QUERY_ADMIN_POLICY;
 import static android.Manifest.permission.READ_DEVICE_CONFIG;
@@ -29,7 +30,6 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.credentials.CredentialManager;
 import android.credentials.CredentialProviderInfo;
-import android.cts.testapisreflection.TestApisReflectionKt;
 
 import androidx.annotation.RequiresApi;
 
@@ -41,7 +41,6 @@ import com.android.bedstead.nene.utils.Versions;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Helper methods for using credential manager. */
 public final class Credentials {
@@ -95,8 +94,7 @@ public final class Credentials {
 
         Context context = TestApis.context().androidContextAsUser(user);
 
-        if (!TestApisReflectionKt.isServiceEnabled(
-                context.getSystemService(CredentialManager.class), context)) {
+        if (!CredentialManager.isServiceEnabled(context)) {
             throw new UnsupportedOperationException(
                     "Credential Manager is not available on this device");
         }

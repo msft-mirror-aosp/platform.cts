@@ -16,47 +16,37 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
-import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.cts.testapisreflection.TestApisReflectionKt.setProfileOwnerOnOrganizationOwnedDevice;
+import static android.cts.testapisreflection.TestApisReflectionKt.forceRemoveActiveAdmin;
+import static android.cts.testapisreflection.TestApisReflectionKt.isRemovingAdmin;
+import static android.cts.testapisreflection.TestApisReflectionKt.setDeviceOwnerType;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
-import static com.android.bedstead.testapisreflection.TestApisConstants.ACTION_DISABLE_SELF;
-
-import static com.google.common.truth.Truth.assertThat;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
-import com.android.bedstead.nene.utils.Retry;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.PermissionContext;
 
-import java.time.Duration;
 import java.util.Objects;
 
 /**
  * A reference to a Profile Owner.
  */
 public final class ProfileOwner extends DevicePolicyController {
-
-    private static final String TEST_APP_APP_COMPONENT_FACTORY =
-            "com.android.bedstead.testapp.TestAppAppComponentFactory";
 
     ProfileOwner(UserReference user,
             Package pkg,
@@ -97,7 +87,7 @@ public final class ProfileOwner extends DevicePolicyController {
 
             try (PermissionContext p = TestApis.permissions().withPermission(
                     MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-                TestApisReflectionKt.setProfileOwnerOnOrganizationOwnedDevice(
+                setProfileOwnerOnOrganizationOwnedDevice(
                         devicePolicyManager, mComponentName, isOrganizationOwned);
             }
         } finally {
@@ -119,8 +109,7 @@ public final class ProfileOwner extends DevicePolicyController {
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            TestApisReflectionKt.forceRemoveActiveAdmin(devicePolicyManager, mComponentName,
-                    mUser.id());
+            forceRemoveActiveAdmin(devicePolicyManager, mComponentName, mUser.id());
         } catch (SecurityException e) {
             if (e.getMessage().contains("Attempt to remove non-test admin")
                     && TEST_APP_APP_COMPONENT_FACTORY.equals(mPackage.appComponentFactory())
@@ -152,44 +141,6 @@ public final class ProfileOwner extends DevicePolicyController {
                 throw new NeneException("Error removing profile owner " + this, e);
             }
         }
-    }
-
-    private void removeTestApp() {
-        // Special case for removing TestApp DPCs - this works even when not testOnly
-        // but not on profiles
-        Intent intent = new Intent(ACTION_DISABLE_SELF);
-        intent.setComponent(new ComponentName(pkg().packageName(),
-                "com.android.bedstead.testapp.TestAppBroadcastController"));
-        Context context = TestApis.context().androidContextAsUser(mUser);
-
-        try (PermissionContext p =
-                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL)) {
-            // If the profile isn't ready then the broadcast won't be sent and the profile owner
-            // will not be removed. So we can retry until the broadcast has been dealt with.
-            Retry.logic(() -> {
-                BlockingBroadcastReceiver b = new BlockingBroadcastReceiver(
-                        TestApis.context().instrumentedContext());
-
-                context.sendOrderedBroadcast(
-                        intent, /* receiverPermission= */ null, b, /* scheduler= */
-                        null, /* initialCode= */
-                        Activity.RESULT_CANCELED, /* initialData= */ null, /* initialExtras= */
-                        null);
-
-                b.awaitForBroadcastOrFail(Duration.ofSeconds(30).toMillis());
-                assertThat(b.getResultCode()).isEqualTo(Activity.RESULT_OK);
-            }).timeout(Duration.ofMinutes(5)).runAndWrapException();
-
-            DevicePolicyManager dpm = context.getSystemService(DevicePolicyManager.class);
-
-            Poll.forValue(() -> TestApisReflectionKt.isRemovingAdmin(dpm, mComponentName,
-                            mUser.id()))
-                    .toNotBeEqualTo(true)
-                    .timeout(Duration.ofMinutes(5))
-                    .errorOnFail()
-                    .await();
-        }
-
     }
 
     @Override

@@ -226,6 +226,7 @@ filegroup {
 
 android_test {
     name: "CtsWindowManagerDeviceActivity",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -237,6 +238,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceAm",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -247,6 +249,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceBackNavigation",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -257,6 +260,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceAnimations",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -267,6 +271,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceDisplay",
+    team: "trendy_team_display_framework",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -278,6 +283,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceKeyguard",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -288,6 +294,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceInput",
+    team: "trendy_team_android_input",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     kotlincflags: [
@@ -302,6 +309,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceInsets",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -312,6 +320,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceIme",
+    team: "trendy_team_input_method_framework",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -322,6 +331,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceTaskFragment",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -333,6 +343,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceMultiDisplay",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -344,6 +355,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceWindow",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -355,6 +367,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceOther",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [

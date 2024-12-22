@@ -116,7 +116,7 @@ public class VirtualCameraPermissionTest {
                         .build());
         createVirtualCamera();
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(
-                mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                mVirtualDevice, VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
         Context virtualDeviceContext = getApplicationContext().createDeviceContext(
                 mVirtualDevice.getDeviceId());

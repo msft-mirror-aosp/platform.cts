@@ -106,6 +106,16 @@ public class BackNavigationTests {
     }
 
     @Test
+    public void onUserInteractionCalled() {
+        mScenario.moveToState(Lifecycle.State.RESUMED);
+        CountDownLatch latch = registerBackCallback();
+        invokeBackAndAssertCallbackIsCalled(latch);
+        mScenario.onActivity((activity) ->
+                assertTrue("Activity.onUserInteraction should be called",
+                        activity.mOnUserInteractionCalled));
+    }
+
+    @Test
     public void registerCallback_relaunch() {
         mScenario.moveToState(Lifecycle.State.RESUMED);
         CountDownLatch latch1 = registerBackCallback();

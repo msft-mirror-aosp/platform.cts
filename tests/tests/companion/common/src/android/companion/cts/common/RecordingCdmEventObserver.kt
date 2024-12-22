@@ -23,6 +23,7 @@ import android.companion.cts.common.RecordingCallback.OnAssociationCreated
 import android.companion.cts.common.RecordingCallback.OnAssociationPending
 import android.companion.cts.common.RecordingCallback.OnDeviceFound
 import android.companion.cts.common.RecordingCallback.OnFailure
+import android.companion.cts.common.RecordingCallback.OnFailureCode
 import android.content.IntentSender
 
 /**
@@ -59,6 +60,10 @@ private constructor(container: InvocationContainer<CdmEvent>) :
 
     override fun onFailure(error: CharSequence?) =
         recordInvocation(CdmCallback(OnFailure(error)))
+
+    override fun onFailure(resultCode: Int, error: CharSequence?) {
+        recordInvocation(CdmCallback(OnFailureCode(resultCode, error)))
+    }
 
     sealed interface CdmEvent
     data class AssociationChange(val associations: List<AssociationInfo>) : CdmEvent

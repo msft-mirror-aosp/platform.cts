@@ -17,41 +17,39 @@
 package com.android.cts.input
 
 import android.app.Instrumentation
+import android.graphics.Matrix
 import android.graphics.Point
+import android.server.wm.CtsWindowInfoUtils
 import android.view.Display
-import android.view.Surface
+import android.view.View
+import kotlin.math.round
 
-// Attempt to transform coordinates from the logical display (screen) space to the physical display
-// space. To do this, we assume the unrotated logical display has the same aspect ratio as the
-// physical display. This will not work for cases where the aspect ration of the logical display
-// is different than that of the physical display.
-@Suppress("DEPRECATION")
 private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
-    val unrotatedLogicalPoint = when (display.rotation) {
-        Surface.ROTATION_0 -> Point(x, y)
-        Surface.ROTATION_90 -> Point(display.height - 1 - y, x)
-        Surface.ROTATION_180 -> Point(
-            display.width - 1 - x,
-            display.height - 1 - y
-        )
+    val displayInfos = CtsWindowInfoUtils.getWindowAndDisplayState().second
 
-        Surface.ROTATION_270 -> Point(y, display.width - 1 - x)
-        else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
+    var displayTransform: Matrix? = null
+    for (displayInfo in displayInfos) {
+        if (displayInfo.displayId == display.displayId) {
+            displayTransform = displayInfo.transform
+        }
     }
 
-    val unrotatedLogicalWidth = when (display.rotation) {
-        Surface.ROTATION_0, Surface.ROTATION_180 -> display.width
-        else -> display.height
-    }
-    val unrotatedLogicalHeight = when (display.rotation) {
-        Surface.ROTATION_0, Surface.ROTATION_180 -> display.height
-        else -> display.width
+    if (displayTransform == null) {
+        throw IllegalStateException(
+            "failed to find display transform for display ${display.displayId}"
+            )
     }
 
-    return Point(
-        unrotatedLogicalPoint.x * display.mode.physicalWidth / unrotatedLogicalWidth,
-        unrotatedLogicalPoint.y * display.mode.physicalHeight / unrotatedLogicalHeight,
-    )
+    // The display transform is the transform from physical display space to
+    // logical display space. We need to go from logical display space to
+    // physical display space so we take the inverse transform.
+    val inverseTransform = Matrix()
+    displayTransform.invert(inverseTransform)
+
+    val point = floatArrayOf(x.toFloat(), y.toFloat())
+    inverseTransform.mapPoints(point)
+
+    return Point(round(point[0]).toInt(), round(point[1]).toInt())
 }
 
 /**
@@ -63,6 +61,7 @@ open class UinputTouchDevice(
     private val display: Display,
     private val registerCommand: UinputRegisterCommand,
     source: Int,
+    private val defaultToolType: Int,
 ) : AutoCloseable {
 
     val uinputDevice = UinputDevice(instrumentation, source, registerCommand, display)
@@ -83,17 +82,31 @@ open class UinputTouchDevice(
         injectEvent(intArrayOf(EV_KEY, btnCode, if (isDown) 1 else 0))
     }
 
-    fun sendDown(id: Int, location: Point, toolType: Int? = null) {
+    /**
+     * Send events signifying a new pointer is being tracked.
+     *
+     * Note: The [physicalLocation] parameter is specified in the touch device's
+     * raw coordinate space, and does not factor display rotation or scaling. Use
+     * [touchDown] to start tracking a pointer in screen (a.k.a. logical display)
+     * coordinate space.
+     */
+    fun sendDown(id: Int, physicalLocation: Point) {
         injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
         injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, id))
-        if (toolType != null) injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, toolType))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, location.x))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, location.y))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, defaultToolType))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y))
     }
 
-    fun sendMove(id: Int, location: Point) {
+    /**
+     * Send events signifying a tracked pointer is being moved.
+     *
+     * Note: The [physicalLocation] parameter is specified in the touch device's
+     * raw coordinate space, and does not factor display rotation or scaling.
+    */
+    fun sendMove(id: Int, physicalLocation: Point) {
         // Use same events of down.
-        sendDown(id, location)
+        sendDown(id, physicalLocation)
     }
 
     fun sendUp(id: Int) {
@@ -126,16 +139,29 @@ open class UinputTouchDevice(
         uinputDevice.close()
     }
 
+    fun tapOnViewCenter(view: View) {
+        val xy = IntArray(2)
+        view.getLocationOnScreen(xy)
+        val x = xy[0] + view.width / 2
+        val y = xy[1] + view.height / 2
+        val pointer = touchDown(x, y)
+        pointer.lift()
+    }
+
     private val pointerIds = mutableSetOf<Int>()
 
     /**
      * Send a new pointer to the screen, generating an ACTION_DOWN if there aren't any other
      * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
+     * @param x The x coordinate in screen (logical display) space.
+     * @param y The y coordinate in screen (logical display) space.
+     * @param pressure The pressure value to be used, default not sending pressure.
      */
-    fun touchDown(x: Int, y: Int): Pointer {
+    @JvmOverloads
+    fun touchDown(x: Int, y: Int, pressure: Int? = null): Pointer {
         val pointerId = firstUnusedPointerId()
         pointerIds.add(pointerId)
-        return Pointer(pointerId, x, y)
+        return Pointer(pointerId, pressure, x, y)
     }
 
     private fun firstUnusedPointerId(): Int {
@@ -155,18 +181,21 @@ open class UinputTouchDevice(
     /**
      * A single pointer interacting with the screen. This class simplifies the interactions by
      * removing the need to separately manage the pointer id.
-     * Works in the screen coordinate space.
+     * Works in the screen (logical display) coordinate space.
      */
     inner class Pointer(
         private val id: Int,
+        private val pressure: Int?,
         x: Int,
         y: Int,
     ) : AutoCloseable {
         private var active = true
+
         init {
             // Send ACTION_DOWN or ACTION_POINTER_DOWN
             sendBtnTouch(true)
-            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display))
+            pressure?.let { sendPressure(pressure) }
             sync()
         }
 
@@ -192,6 +221,7 @@ open class UinputTouchDevice(
                 sendBtnTouch(false)
             }
             sendUp(id)
+            pressure?.let { sendPressure(0) }
             sync()
             active = false
             removePointer(id)
@@ -232,6 +262,16 @@ open class UinputTouchDevice(
         const val MT_TOOL_PEN = 1
         const val MT_TOOL_PALM = 2
         const val INVALID_TRACKING_ID = -1
+
+        /**
+         * The allowed error when making assertions on touch coordinates.
+         *
+         * Coordinates are transformed from logical display space to physical display space and
+         * then rounded to the nearest integer, introducing error. The epsilon value effectively
+         * sets the maximum allowed scaling factor for a display. This value allows a maximum scale
+         * factor of 2.
+         */
+        const val TOUCH_COORDINATE_EPSILON = 1.001f
 
         fun toolBtnForFingerCount(numFingers: Int): Int {
             return when (numFingers) {

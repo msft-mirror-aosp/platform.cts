@@ -41,7 +41,9 @@ android_test {
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
+        "dts",
         "general-tests",
+        "mcts-bluetooth",
         "mts-bluetooth",
     ],
     min_sdk_version: "Tiramisu",

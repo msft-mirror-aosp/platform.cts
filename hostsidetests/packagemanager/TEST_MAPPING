@@ -19,12 +19,7 @@
       "name": "CtsPackageManagerPreferredActivityHostTestCases"
     },
     {
-      "name": "CtsPackageManagerIncrementalStatsHostTestCases",
-      "options": [
-        {
-          "exclude-annotation": "android.platform.test.annotations.LargeTest"
-        }
-      ]
+      "name": "CtsPackageManagerIncrementalStatsHostTestCases_NoLargeTest"
     },
     {
       "name": "CtsPackageManagerStatsHostTestCases"
@@ -62,15 +57,13 @@
   ],
   "postsubmit": [
     {
-      "name": "CtsPackageManagerIncrementalStatsHostTestCases",
-      "options": [
-        {
-          "include-annotation": "android.platform.test.annotations.LargeTest"
-        }
-      ]
+      "name": "CtsPackageManagerIncrementalStatsHostTestCases_LargeTest"
     },
     {
       "name": "CtsDeleteKeepDataHostTestCases"
+    },
+    {
+      "name": "CtsAppMetadataHostTestCases"
     }
   ]
 }

@@ -339,7 +339,9 @@ public class DragDropTest extends WindowManagerTestBase {
     }
 
     @Before
-    public void setUp() throws InterruptedException {
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
         assumeFalse(isWatchDevice());
         UiAutomatorUtils.getUiDevice().waitForIdle();
         mActivity = startActivityInWindowingMode(DragDropActivity.class, WINDOWING_MODE_FULLSCREEN);

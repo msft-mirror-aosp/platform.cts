@@ -18,24 +18,26 @@ package android.content.res.cts;
 
 import static android.system.OsConstants.S_ISFIFO;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.system.Os;
 import android.system.StructStat;
-import android.test.MoreAsserts;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,6 +56,9 @@ import java.nio.channels.WritableByteChannel;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AssetFileDescriptor_AutoCloseInputStreamTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
@@ -125,7 +130,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest {
         assertEquals(3, mInput.read(buf, 0, 3));
         assertEquals(3, mInput.read(buf, 3, 3));
         assertEquals(3, mInput.read(buf, 6, 4));
-        MoreAsserts.assertEquals(FILE_DATA, buf);
+        assertArrayEquals(FILE_DATA, buf);
         assertEquals(FILE_END, mInput.read(buf, 0, 4));
     }
 

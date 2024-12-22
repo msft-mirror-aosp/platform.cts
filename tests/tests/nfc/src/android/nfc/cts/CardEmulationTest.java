@@ -467,8 +467,7 @@ public class CardEmulationTest {
                 });
     }
 
-    class EventPollLoopReceiver extends PollLoopReceiver
-            implements CardEmulation.NfcEventListener {
+    class EventPollLoopReceiver extends PollLoopReceiver implements CardEmulation.NfcEventCallback {
         static final int OBSERVE_MODE = 1;
         static final int PREFERRED_SERVICE = 2;
         static final int AID_CONFLICT_OCCURRED = 3;
@@ -502,7 +501,7 @@ public class CardEmulationTest {
             ExecutorService pool = Executors.newFixedThreadPool(2);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
-            cardEmulation.registerNfcEventListener(pool, this);
+            cardEmulation.registerNfcEventCallback(pool, this);
 
             if (shouldBroadcastToRemoteEventListener) {
                 broadcastToRemoteEventListener();
@@ -543,7 +542,7 @@ public class CardEmulationTest {
         void cleanup() {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
-            cardEmulation.unregisterNfcEventListener(this);
+            cardEmulation.unregisterNfcEventCallback(this);
             final Intent intent = new Intent();
             intent.setAction("com.cts.UnregisterEventListener");
             intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
@@ -2505,6 +2504,30 @@ public class CardEmulationTest {
         CardEmulation instance = CardEmulation.getInstance(adapter);
         instance.setDefaultNfcSubscriptionId(0); // This may not be set on all OEM devices.
         instance.getDefaultNfcSubscriptionId(); // This may not be set on all OEM devices.
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_APDU_SERVICE_INFO_CONSTRUCTOR)
+    @Test
+    public void testApduServiceInfoConstructor() {
+        ResolveInfo ndefNfceeAppInfo = new ResolveInfo();
+        List<String> ndefNfceeAid = new ArrayList<String>();
+        AidGroup ndefNfceeAidGroup = new AidGroup(ndefNfceeAid, "other");
+        ArrayList<AidGroup> ndefNfceeAidStaticGroups = new ArrayList<>();
+        ndefNfceeAidStaticGroups.add(ndefNfceeAidGroup);
+        ArrayList<AidGroup> ndefNfceeAidDynamicGroups = new ArrayList<>();
+        ApduServiceInfo apduServiceINfo =
+                new ApduServiceInfo(
+                        ndefNfceeAppInfo,
+                        false,
+                        "test service",
+                        ndefNfceeAidStaticGroups,
+                        ndefNfceeAidDynamicGroups,
+                        false,
+                        0,
+                        0,
+                        "test service",
+                        "test",
+                        "test");
     }
 
     private void assumeObserveModeSupported(@NonNull NfcAdapter adapter) {

@@ -30,6 +30,11 @@ import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.util.Log;
 
+import androidx.annotation.WorkerThread;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * A test {@link Activity} with capability of cross-user connections.
  *
@@ -43,6 +48,8 @@ import android.util.Log;
 public abstract class ConcurrentUserActivityBase extends Activity {
 
     private static final String TAG = ConcurrentUserActivityBase.class.getSimpleName();
+
+    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
 
     // This field is accessed on the main thread only.
     private boolean mReceiverRegistered;
@@ -65,8 +72,10 @@ public abstract class ConcurrentUserActivityBase extends Activity {
                 Log.e(TAG, "Null callback in the Broadcast");
                 return;
             }
-            Bundle replyBundle = onBundleReceived(receivedBundle);
-            callback.sendResult(replyBundle);
+            mExecutor.execute(() -> {
+                Bundle replyBundle = onBundleReceived(receivedBundle);
+                callback.sendResult(replyBundle);
+            });
         }
     };
 
@@ -93,12 +102,14 @@ public abstract class ConcurrentUserActivityBase extends Activity {
         if (mReceiverRegistered) {
             unregisterReceiver(mBroadcastReceiver);
         }
+        mExecutor.shutdown();
         super.onDestroy();
     }
 
     /**
-     * Invoked when this Activity (running as the responder user) receives a {@code bundle} from
-     * the initiator user. Returns a Bundle to reply.
+     * Invoked (on a worker thread) when this Activity (running as the responder user) receives a
+     * {@code bundle} from the initiator user. Returns a Bundle to reply.
      */
+    @WorkerThread
     protected abstract Bundle onBundleReceived(Bundle bundle);
 }

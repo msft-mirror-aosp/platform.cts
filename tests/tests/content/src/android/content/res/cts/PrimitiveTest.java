@@ -23,6 +23,7 @@ import android.content.cts.R;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TypedValue;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -30,12 +31,16 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class PrimitiveTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
@@ -86,7 +91,7 @@ public class PrimitiveTest {
 
     private void tryBoolean(final int resid, final boolean expected) {
         final TypedValue v = new TypedValue();
-        getContext().getResources().getValue(resid, v, true);
+        mResources.getValue(resid, v, true);
         assertEquals(TypedValue.TYPE_INT_BOOLEAN, v.type);
         assertEquals("Expecting boolean value " + expected + " got " + v
                 + " from TypedValue: in resource 0x" + Integer.toHexString(resid),
@@ -105,7 +110,7 @@ public class PrimitiveTest {
 
     private void tryString(final int resid, final String expected) {
         final TypedValue v = new TypedValue();
-        getContext().getResources().getValue(resid, v, true);
+        mResources.getValue(resid, v, true);
         assertEquals(TypedValue.TYPE_STRING, v.type);
         assertEquals("Expecting string value " + expected + " got " + v
                 + ": in resource 0x" + Integer.toHexString(resid),

@@ -105,7 +105,7 @@ public class TransportBlockTest {
         assertThat(dataFromParcel.getTdsFlags()).isEqualTo(3);
         assertThat(data.getTransportDataLength()).isEqualTo(2);
         assertThat(dataFromParcel.getTransportDataLength()).isEqualTo(2);
-        TestUtils.assertArrayEquals(data.getTransportData(), dataFromParcel.getTransportData());
+        assertThat(dataFromParcel.getTransportData()).isEqualTo(data.getTransportData());
         assertThat(dataFromParcel).isEqualTo(data);
     }
 
@@ -118,7 +118,7 @@ public class TransportBlockTest {
         data.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         TransportBlock dataFromParcel = TransportBlock.CREATOR.createFromParcel(parcel);
-        TestUtils.assertArrayEquals(data.toByteArray(), dataFromParcel.toByteArray());
+        assertThat(dataFromParcel.toByteArray()).isEqualTo(data.toByteArray());
         assertThat(dataFromParcel).isEqualTo(data);
     }
 }

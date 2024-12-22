@@ -38,7 +38,6 @@ android_test {
     resource_dirs: ["res"],
     asset_dirs: ["assets"],
     static_libs: [
-        "CtsVirtualDeviceCommonLib",
         "android.view.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",

@@ -299,6 +299,32 @@ public class MediaStoreAudioTestHelper {
         }
     }
 
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    public static class Audio8 extends Audio1 {
+
+        public static final String MIMETYPE = "audio/x-wav";
+        public static final int SAMPLERATE = 44100;
+        public static final int BITS_PER_SAMPLE = 16;
+
+        private Audio8() {
+        }
+
+        private static Audio8 sInstance = new Audio8();
+
+        public static Audio8 getInstance() {
+            return sInstance;
+        }
+
+        @Override
+        public ContentValues getContentValues(String volumeName) {
+            ContentValues values = super.getContentValues(volumeName);
+            values.put(Media.DATA, values.getAsString(Media.DATA) + ".wav");
+            values.put(Media.SAMPLERATE, SAMPLERATE);
+            values.put(Media.BITS_PER_SAMPLE, BITS_PER_SAMPLE);
+            return values;
+        }
+    }
+
     @Test
     public void testStub() {
         // No-op test here to keep atest happy

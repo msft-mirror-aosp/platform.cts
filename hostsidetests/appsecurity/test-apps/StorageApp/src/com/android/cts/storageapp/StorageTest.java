@@ -46,10 +46,12 @@ import android.os.storage.StorageManager;
 import android.provider.Settings;
 import android.test.InstrumentationTestCase;
 
+import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import java.io.File;
 import java.io.IOException;
@@ -164,13 +166,20 @@ public class StorageTest extends InstrumentationTestCase {
 
     private void clearSpaceCar(UiDevice device) throws UiObjectNotFoundException {
         String storageString = "internal storage";
-        int i = device.findObjects(androidx.test.uiautomator.By.scrollable(true)).size();
+        UiSelector storageSelector = new UiSelector().textContains(storageString);
+
+        // Wait for all scrollables to appear
+        device.wait(
+                Until.findObjects(By.scrollable(true)),
+                10000
+        );
+        int i = device.findObjects(By.scrollable(true)).size();
         for (int j = 0; j < i; j++) {
             UiScrollable localObject = new UiScrollable(
                     new UiSelector().scrollable(true).instance(j));
             localObject.setMaxSearchSwipes(10);
             try {
-                boolean found = localObject.scrollTextIntoView(storageString);
+                boolean found = localObject.scrollIntoView(storageSelector);
                 if (found) {
                     break;
                 }

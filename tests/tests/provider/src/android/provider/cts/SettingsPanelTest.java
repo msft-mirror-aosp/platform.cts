@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -35,6 +36,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.StaleObjectException;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -264,7 +267,9 @@ public class SettingsPanelTest {
         Intent intent = new Intent(action);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                 | Intent.FLAG_ACTIVITY_CLEAR_TASK);    // Clear out any previous instances
-        mContext.startActivity(intent);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> mContext.startActivity(intent),
+                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
         // Wait for the app to appear
         mDevice.wait(Until.hasObject(By.pkg(mSettingsPackage).depth(0)), TIMEOUT);

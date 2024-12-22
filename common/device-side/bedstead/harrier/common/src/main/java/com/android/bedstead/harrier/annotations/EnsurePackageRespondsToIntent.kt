@@ -35,6 +35,7 @@ import com.google.auto.value.AutoAnnotation
     AnnotationTarget.CLASS,
 )
 @Retention(AnnotationRetention.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 annotation class EnsurePackageRespondsToIntent (
 
     /** The intent to check if any package responds to. */
