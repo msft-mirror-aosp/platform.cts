@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.cts.backup.backuptransportapp;
+package android.backup.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -29,10 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Device side routines to be invoked by the host side BackupTransportHostSideTest. These are not
- * designed to be called in any other way, as they rely on state set up by the host side test.
- */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 public class BackupTransportTest {
