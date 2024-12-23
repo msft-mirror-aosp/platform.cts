@@ -63,6 +63,7 @@ import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.UserSettings;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -216,6 +217,8 @@ public class QuickAccessWalletClientTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.service.quickaccesswallet.QuickAccessWalletService"
+            + "#getGestureTargetActivityPendingIntent"})
     @RequiresFlagsEnabled(Flags.FLAG_LAUNCH_WALLET_OPTION_ON_POWER_DOUBLE_TAP)
     public void testGetGestureTargetActivityPendingIntent_serviceWithOverride_notNull_ableToSend()
             throws Exception {
@@ -252,6 +255,8 @@ public class QuickAccessWalletClientTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.service.quickaccesswallet.QuickAccessWalletService"
+            + "#getGestureTargetActivityPendingIntent"})
     @RequiresFlagsEnabled(Flags.FLAG_LAUNCH_WALLET_OPTION_ON_POWER_DOUBLE_TAP)
     public void testGetGestureTargetActivityPendingIntent_serviceWithNoOverride_isNull()
             throws Exception {
