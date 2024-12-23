@@ -126,6 +126,7 @@ import static org.junit.Assume.assumeTrue;
 
 import static java.lang.Integer.toHexString;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
@@ -148,6 +149,7 @@ import android.graphics.Rect;
 import android.hardware.display.AmbientDisplayConfiguration;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
@@ -177,6 +179,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -297,6 +300,8 @@ public abstract class ActivityManagerTestBase {
 
     @NonNull
     private SplitScreenActivityUtils mSplitScreenActivityUtils;
+
+    private final PartialWakeLockSession mPartialWakeLockSession = new PartialWakeLockSession();
 
     /**
      * @return the am command to start the given activity with the following extra key/value pairs.
@@ -732,6 +737,9 @@ public abstract class ActivityManagerTestBase {
 
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
+
+        // Releases the wake lock after wakeUpAndUnlock wakes up the device.
+        mPartialWakeLockSession.close();
 
         // Synchronous execution of finishAndRemoveCurrentTestActivityTasks() ensures that activity
         // tasks associated with this test package are cleaned up at the end of each test. Am force
@@ -1584,6 +1592,10 @@ public abstract class ActivityManagerTestBase {
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
     protected void disableIgnoreOrientationRequest() {
         mObjectTracker.manage(new IgnoreOrientationRequestSession(false /* enable */));
+    }
+
+    protected void acquirePartialWakeLock() {
+        mPartialWakeLockSession.acquireWakelock();
     }
 
     /**
@@ -2971,6 +2983,31 @@ public abstract class ActivityManagerTestBase {
             Size size = getInitialDisplayMetrics().getSize();
             return Math.max(size.getHeight(), size.getWidth())
                     / (float) (Math.min(size.getHeight(), size.getWidth()));
+        }
+    }
+
+    private static class PartialWakeLockSession implements AutoCloseable {
+        private final PowerManager.WakeLock mWakeLock =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(PowerManager.class)
+                        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "cts:ActivityManagerTestBase");
+
+        public void acquireWakelock() {
+            if (mWakeLock.isHeld()) {
+                return;
+            }
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mWakeLock.acquire(), Manifest.permission.WAKE_LOCK);
+        }
+
+        @Override
+        public void close() {
+            if (!mWakeLock.isHeld()) {
+                return;
+            }
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mWakeLock.release(), Manifest.permission.WAKE_LOCK);
         }
     }
 
