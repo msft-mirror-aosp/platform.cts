@@ -19,6 +19,7 @@ package android.input.cts
 import android.app.StatusBarManager
 import android.graphics.Point
 import android.os.UserManager
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice.SOURCE_STYLUS
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -31,6 +32,7 @@ import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.VirtualDisplayActivityScenario
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import com.google.common.truth.TruthJUnit.assume
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -47,6 +49,7 @@ import org.junit.runner.RunWith
  */
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class StylusButtonInputEventTest {
     private companion object {
         // The settings namespace and key for enabling stylus button interactions.

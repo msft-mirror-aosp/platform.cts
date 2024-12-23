@@ -22,6 +22,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.hardware.input.VirtualMouse
 import android.os.SystemProperties
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.MotionEvent
 import android.view.PointerIcon
 import android.virtualdevice.cts.common.VirtualDeviceRule
@@ -31,6 +32,7 @@ import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.TestPointerDevice
 import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withMotionAction
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import kotlin.test.assertNotNull
 import org.junit.After
 import org.junit.Assume.assumeTrue
@@ -60,6 +62,7 @@ import platform.test.screenshot.matchers.BitmapMatcher
  */
 @MediumTest
 @RunWith(Parameterized::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class PointerIconTest {
     private lateinit var activity: CaptureEventActivity
     private lateinit var verifier: EventVerifier

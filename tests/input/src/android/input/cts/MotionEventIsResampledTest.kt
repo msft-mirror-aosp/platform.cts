@@ -17,6 +17,7 @@
 package android.input.cts
 
 import android.cts.input.EventVerifier
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.util.Log
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -25,6 +26,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withMotionAction
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -47,6 +49,7 @@ import org.junit.runner.RunWith
  */
 @LargeTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class MotionEventIsResampledTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchScreen
