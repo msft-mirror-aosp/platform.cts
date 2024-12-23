@@ -78,6 +78,31 @@ class SettingsPreferenceServiceClientTest {
 
     @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
     @Test
+    fun verifyConstructor_nonSystemApp_noBinding() {
+        val connectionLatch = CountDownLatch(1)
+        TestApis.permissions().withPermission(Manifest.permission.READ_SYSTEM_PREFERENCES).use {
+            client = SettingsPreferenceServiceClient(
+                context,
+                "android.service.settings.preferences.cts",
+                context.mainExecutor,
+                object : OutcomeReceiver<SettingsPreferenceServiceClient, Exception> {
+                    override fun onResult(result: SettingsPreferenceServiceClient) {
+                        throw AssertionError("Invalid binding")
+                    }
+
+                    override fun onError(error: Exception) {
+                        connectionLatch.countDown()
+                    }
+                }
+            )
+            if (!connectionLatch.await(1, TimeUnit.SECONDS)) {
+                throw AssertionError("Binding timeout")
+            }
+        }
+    }
+
+    @RequiresFlagsEnabled(FLAG_SETTINGS_CATALYST)
+    @Test
     fun getAllPreferenceMetadata_retrievesResult() {
         val statusLatch = CountDownLatch(1)
         TestApis.permissions().withPermission(Manifest.permission.READ_SYSTEM_PREFERENCES).use {
