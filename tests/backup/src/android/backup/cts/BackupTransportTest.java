@@ -29,6 +29,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 public class BackupTransportTest {
@@ -231,5 +233,13 @@ public class BackupTransportTest {
     @Test
     public void testGetBackupManagerMonitor_returnsNull() {
         assertThat(mBackupTransport.getBackupManagerMonitor()).isNull();
+    }
+
+    @Test
+    public void testGetPackagesThatShouldNotUseRestrictedMode_returnsEmptyList() {
+        assertThat(
+                        mBackupTransport.getPackagesThatShouldNotUseRestrictedMode(
+                                List.of("package1", "package2"), /* operationType= */ 0))
+                .isEmpty();
     }
 }
