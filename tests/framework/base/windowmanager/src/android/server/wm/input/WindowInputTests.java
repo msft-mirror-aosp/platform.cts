@@ -121,7 +121,7 @@ public class WindowInputTests {
     private View mView;
     private final Random mRandom = new Random(1);
 
-    private int mClickCount = 0;
+    private volatile int mClickCount = 0;
     private static final long EVENT_FLAGS_WAIT_TIME = 10L * HW_TIMEOUT_MULTIPLIER;
 
     @Before
@@ -358,7 +358,7 @@ public class WindowInputTests {
                 0,
                 eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                         & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-        assertEquals(1, mClickCount);
+        PollingCheck.waitFor(() -> mClickCount == 1);
     }
 
     @Test
@@ -425,7 +425,7 @@ public class WindowInputTests {
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            PollingCheck.waitFor(() -> mClickCount == 1);
         }
     }
 
@@ -459,7 +459,7 @@ public class WindowInputTests {
                     0,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            PollingCheck.waitFor(() -> mClickCount == 1);
         }
     }
 
@@ -493,7 +493,7 @@ public class WindowInputTests {
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_OBSCURED);
-            assertEquals(1, mClickCount);
+            PollingCheck.waitFor(() -> mClickCount == 1);
         }
     }
 
@@ -531,7 +531,7 @@ public class WindowInputTests {
                     MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED,
                     eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS)
                             & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
-            assertEquals(1, mClickCount);
+            PollingCheck.waitFor(() -> mClickCount == 1);
         }
     }
 
@@ -567,7 +567,7 @@ public class WindowInputTests {
             assertEquals(0, eventFlags.get(EVENT_FLAGS_WAIT_TIME, TimeUnit.SECONDS) & (
                     MotionEvent.FLAG_WINDOW_IS_OBSCURED
                             | MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED));
-            assertEquals(1, mClickCount);
+            PollingCheck.waitFor(() -> mClickCount == 1);
         }
     }
 
