@@ -15,6 +15,8 @@
  */
 package android.app.appsearch.cts.appindexer;
 
+import static android.app.appsearch.testutil.AppFunctionConstants.DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.appsearch.GenericDocument;
@@ -26,6 +28,7 @@ import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
 import android.content.Context;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.util.ArrayMap;
 
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
@@ -41,6 +44,7 @@ import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 @RequiresFlagsEnabled(Flags.FLAG_APPS_INDEXER_ENABLED)
@@ -59,6 +63,8 @@ public class AppIndexerCtsTest {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV3.apk";
     private static final String TEST_APP_B_V1_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk";
+    private static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
     private static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
     private static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
     private static final String NAMESPACE_MOBILE_APPLICATION = "apps";
@@ -348,6 +354,55 @@ public class AppIndexerCtsTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @Test
+    public void indexAppWithDynamicSchema() throws Throwable {
+        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // A MobileApplication for it should be inserted.
+                    GenericDocument mobileApplication =
+                            searchMobileApplicationWithId(TEST_APP_A_PKG);
+                    assertThat(mobileApplication).isNotNull();
+                });
+        // Its app functions should be indexed.
+        Map<String, GenericDocument> appFnMap =
+                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+        assertThat(appFnMap).hasSize(1);
+        assertThat(
+                        clearTimestampsAndParentTypesInDocument(
+                                appFnMap.get("com.example.utils#print1")))
+                .isEqualTo(DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+    }
+
+    private GenericDocument clearTimestampsAndParentTypesInDocument(
+            @NonNull GenericDocument document) {
+        GenericDocument.Builder<?> builder =
+                new GenericDocument.Builder<>(document)
+                        .setCreationTimestampMillis(0)
+                        // GenericDocument#PARENT_TYPES_SYNTHETIC_PROPERTY is hidden
+                        .clearProperty("$$__AppSearch__parentTypes");
+
+        for (String propertyName : document.getPropertyNames()) {
+            Object property = document.getProperty(propertyName);
+            if (property instanceof GenericDocument[] nestedDocuments) {
+                GenericDocument[] clearedNestedDocuments =
+                        new GenericDocument[nestedDocuments.length];
+
+                for (int i = 0; i < nestedDocuments.length; i++) {
+                    clearedNestedDocuments[i] =
+                            clearTimestampsAndParentTypesInDocument(nestedDocuments[i]);
+                }
+
+                builder.setPropertyDocument(propertyName, clearedNestedDocuments);
+            }
+        }
+
+        return builder.build();
+    }
+
     private GenericDocument searchMobileApplicationWithId(String id)
             throws ExecutionException, InterruptedException {
         GlobalSearchSessionShim globalSearchSession =
@@ -384,6 +439,18 @@ public class AppIndexerCtsTest {
                                 .setVerbatimSearchEnabled(true)
                                 .build());
         return collectAllResults(searchResults);
+    }
+
+    private Map<String, GenericDocument> searchAppFunctionsIntoAFunctionIdMap(String packageName)
+            throws ExecutionException, InterruptedException {
+        Map<String, GenericDocument> appFns = new ArrayMap<>();
+        for (GenericDocument document : searchAppFunctionsWithPackageName(packageName)) {
+            String fnId = document.getPropertyString(PROPERTY_FUNCTION_ID);
+
+            appFns.put(fnId, document);
+        }
+
+        return appFns;
     }
 
     private List<GenericDocument> collectAllResults(SearchResultsShim searchResults)
