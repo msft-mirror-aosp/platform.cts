@@ -35,6 +35,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_TRACK_DISABLED;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
@@ -1240,6 +1241,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * until stylus ACTION_UP.
      */
     @Test
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testHandwriting_fingerTouchIsIgnored() throws Exception {
         int displayId = 0;
         String initialUserRotation = null;
@@ -1413,6 +1415,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withStylusTap() throws Exception {
         UinputTouchDevice stylus = null;
         int displayId = 0;
@@ -1491,6 +1494,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withFingerTap() throws Exception {
         UinputTouchDevice touch = null;
         int displayId = 0;
@@ -1550,6 +1554,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     @FlakyTest
     @DebugInputRule.DebugInput(bug = 380535703)
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withStylusHandwriting() throws Exception {
         int displayId;
         String initialUserRotation = null;
@@ -2041,7 +2046,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * Tap on a view with stylus to launch a new activity with Editor. The editor's
      * editor ToolType should match stylus.
      */
-    @RequiresFlagsEnabled(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)
+    @RequiresFlagsEnabled({FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE, FLAG_DEVICE_ASSOCIATIONS})
     @Test
     public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -3222,7 +3227,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             "android.view.inputmethod.InputMethodService#setStylusHandwritingRegion",
     })
     @Test
-    @RequiresFlagsEnabled(FLAG_ADAPTIVE_HANDWRITING_BOUNDS)
+    @RequiresFlagsEnabled({FLAG_ADAPTIVE_HANDWRITING_BOUNDS, FLAG_DEVICE_ASSOCIATIONS})
     public void testSetStylusHandwritingRegion() throws Exception {
         final InputMethodManager imm = mContext.getSystemService(InputMethodManager.class);
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
