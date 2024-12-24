@@ -50,6 +50,7 @@ android_test {
         "cts_window-extensions",
         "statsdprotonano",
         "android.view.inputmethod.flags-aconfig-java",
+        "com.android.input.flags-aconfig-java",
         "com.android.text.flags-aconfig-java",
         "flag-junit",
         "ravenwood-junit",
