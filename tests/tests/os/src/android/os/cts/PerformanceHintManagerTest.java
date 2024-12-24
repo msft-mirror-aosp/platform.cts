@@ -402,8 +402,8 @@ public class PerformanceHintManagerTest {
     }
 
     @Test
-    public void testNativeCreateGraphicsPipelineSessionOverLimit() {
-        final String resultMessage = nativeTestCreateGraphicsPipelineSessionOverLimit();
+    public void testNativeCreateGraphicsPipelineSession() {
+        final String resultMessage = nativeTestCreateGraphicsPipelineSession();
         if (!Strings.isNullOrEmpty(resultMessage)) {
             fail(resultMessage);
         }
@@ -431,7 +431,13 @@ public class PerformanceHintManagerTest {
         }
     }
 
-    private native String nativeTestCreateGraphicsPipelineSessionOverLimit();
+    @Test
+    public void testNativeSupportChecking() {
+        final String resultMessage = nativeTestReportActualWorkDuration2();
+    }
+
+    private native String nativeTestCreateGraphicsPipelineSession();
+
     private native String nativeTestCreateHintSession();
     private native String nativeTestCreateHintSessionUsingConfig();
     private native String nativeTestGetMaxGraphicsPipelineThreadsCount();
@@ -449,4 +455,6 @@ public class PerformanceHintManagerTest {
     private native String nativeTestSetNativeSurfaces(
             SurfaceControl surfaceControl, Surface surface);
     private native String nativeTestAutoSessionTiming(SurfaceControl surfaceControl);
+
+    private native String nativeTestSupportChecking();
 }

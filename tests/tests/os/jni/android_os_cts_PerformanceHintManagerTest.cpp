@@ -33,14 +33,23 @@ static jstring toJString(JNIEnv *env, const char* c_str) {
 
 constexpr int64_t DEFAULT_TARGET_NS = 16666666L;
 
+#define CHECK_SESSION_RETURN(retval, session, situation)                               \
+    if (retval != 0 || session == nullptr) {                                           \
+        return toJString(env,                                                          \
+                         std::format(situation " returned status: {}{}", retval,       \
+                                     session == nullptr ? " with a null session" : "") \
+                                 .c_str());                                            \
+    }
+
 template <class T, void (*D)(T*)>
 std::shared_ptr<T> wrapSP(T* incoming) {
-    return std::shared_ptr<T>(incoming, [](T* ptr) { D(ptr); });
+    return incoming == nullptr ? nullptr : std::shared_ptr<T>(incoming, [](T* ptr) { D(ptr); });
 }
 
 // Preferable to template specialization bc if we wrap something unsupported, it's more obvious
 constexpr auto&& wrapSession = wrapSP<APerformanceHintSession, APerformanceHint_closeSession>;
 constexpr auto&& wrapConfig = wrapSP<ASessionCreationConfig, ASessionCreationConfig_release>;
+constexpr auto&& wrapWorkDuration = wrapSP<AWorkDuration, AWorkDuration_release>;
 constexpr auto&& wrapSurfaceControl = wrapSP<ASurfaceControl, ASurfaceControl_release>;
 constexpr auto&& wrapNativeWindow = wrapSP<ANativeWindow, ANativeWindow_release>;
 
@@ -50,8 +59,11 @@ std::shared_ptr<APerformanceHintSession> createSession(APerformanceHintManager* 
 }
 
 std::shared_ptr<APerformanceHintSession> createSessionWithConfig(
-        APerformanceHintManager* manager, std::shared_ptr<ASessionCreationConfig> config) {
-    return wrapSession(APerformanceHint_createSessionUsingConfig(manager, config.get()));
+        APerformanceHintManager* manager, std::shared_ptr<ASessionCreationConfig> config,
+        int* out) {
+    APerformanceHintSession* sessionOut;
+    *out = APerformanceHint_createSessionUsingConfig(manager, config.get(), &sessionOut);
+    return wrapSession(sessionOut);
 }
 
 std::shared_ptr<ASessionCreationConfig> createConfig() {
@@ -76,70 +88,53 @@ struct ConfigCreator {
     bool autoGpu = false;
 };
 
-std::shared_ptr<ASessionCreationConfig> configFromCreator(ConfigCreator& creator, std::string& out,
-                                                          int& failureCode) {
+struct SupportHelper {
+    bool hintSessions : 1;
+    bool powerEfficiency : 1;
+    bool bindToSurface : 1;
+    bool graphicsPipeline : 1;
+    bool autoCpu : 1;
+    bool autoGpu : 1;
+};
+
+SupportHelper getSupportHelper() {
+    return {
+            .hintSessions = APerformanceHint_isFeatureSupported(APERF_HINT_SESSIONS),
+            .powerEfficiency = APerformanceHint_isFeatureSupported(APERF_HINT_POWER_EFFICIENCY),
+            .bindToSurface = APerformanceHint_isFeatureSupported(APERF_HINT_SURFACE_BINDING),
+            .graphicsPipeline = APerformanceHint_isFeatureSupported(APERF_HINT_GRAPHICS_PIPELINE),
+            .autoCpu = APerformanceHint_isFeatureSupported(APERF_HINT_AUTO_CPU),
+            .autoGpu = APerformanceHint_isFeatureSupported(APERF_HINT_AUTO_GPU),
+    };
+}
+
+std::shared_ptr<ASessionCreationConfig> configFromCreator(ConfigCreator&& creator) {
     auto config = createConfig();
 
-#define WRAP_FAILURE(featureName)                                                           \
-    if (failureCode != 0) {                                                                 \
-        if (failureCode != ENOTSUP) {                                                       \
-            out += std::format("setting {} failed with code {}", featureName, failureCode); \
-        }                                                                                   \
-        return nullptr;                                                                     \
-    }
-
-    failureCode =
-            ASessionCreationConfig_setTids(config.get(), creator.tids.data(), creator.tids.size());
-    WRAP_FAILURE("tids")
-
-    if (creator.targetDuration > 0) {
-        failureCode = ASessionCreationConfig_setTargetWorkDurationNanos(config.get(),
-                                                                        creator.targetDuration);
-        WRAP_FAILURE("target duration")
-    }
-
-    if (creator.powerEfficient) {
-        failureCode = ASessionCreationConfig_setPreferPowerEfficiency(config.get(),
-                                                                      creator.powerEfficient);
-        WRAP_FAILURE("power efficient")
-    }
-
-    if (creator.graphicsPipeline) {
-        failureCode =
-                ASessionCreationConfig_setGraphicsPipeline(config.get(), creator.graphicsPipeline);
-        WRAP_FAILURE("graphics pipeline")
-    }
-
-    if (creator.nativeWindows.size() > 0 || creator.surfaceControls.size() > 0) {
-        failureCode =
-                ASessionCreationConfig_setNativeSurfaces(config.get(),
-                                                         creator.nativeWindows.size() > 0
-                                                                 ? creator.nativeWindows.data()
-                                                                 : nullptr,
-                                                         creator.nativeWindows.size(),
-                                                         creator.surfaceControls.size() > 0
-                                                                 ? creator.surfaceControls.data()
-                                                                 : nullptr,
-                                                         creator.surfaceControls.size());
-        WRAP_FAILURE("native surfaces")
-    }
-
-    if (creator.autoCpu || creator.autoGpu) {
-        failureCode = ASessionCreationConfig_setUseAutoTiming(config.get(), creator.autoCpu,
-                                                              creator.autoGpu);
-        WRAP_FAILURE("auto mode")
-    }
-
+    ASessionCreationConfig_setTids(config.get(), creator.tids.data(), creator.tids.size());
+    ASessionCreationConfig_setTargetWorkDurationNanos(config.get(), creator.targetDuration);
+    ASessionCreationConfig_setPreferPowerEfficiency(config.get(), creator.powerEfficient);
+    ASessionCreationConfig_setGraphicsPipeline(config.get(), creator.graphicsPipeline);
+    ASessionCreationConfig_setNativeSurfaces(config.get(),
+                                             creator.nativeWindows.size() > 0
+                                                     ? creator.nativeWindows.data()
+                                                     : nullptr,
+                                             creator.nativeWindows.size(),
+                                             creator.surfaceControls.size() > 0
+                                                     ? creator.surfaceControls.data()
+                                                     : nullptr,
+                                             creator.surfaceControls.size());
+    ASessionCreationConfig_setUseAutoTiming(config.get(), creator.autoCpu, creator.autoGpu);
     return config;
 }
 
-static AWorkDuration* createWorkDuration(WorkDurationCreator creator) {
+static std::shared_ptr<AWorkDuration> createWorkDuration(WorkDurationCreator creator) {
     AWorkDuration* out = AWorkDuration_create();
     AWorkDuration_setWorkPeriodStartTimestampNanos(out, creator.workPeriodStart);
     AWorkDuration_setActualTotalDurationNanos(out, creator.totalDuration);
     AWorkDuration_setActualCpuDurationNanos(out, creator.cpuDuration);
     AWorkDuration_setActualGpuDurationNanos(out, creator.gpuDuration);
-    return out;
+    return wrapWorkDuration(out);
 }
 
 static jstring nativeTestCreateHintSession(JNIEnv *env, jobject) {
@@ -160,25 +155,19 @@ static jstring nativeTestCreateHintSession(JNIEnv *env, jobject) {
 static jstring nativeTestCreateHintSessionUsingConfig(JNIEnv* env, jobject) {
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
-    auto config = createConfig();
+    auto config = configFromCreator({});
     if (config == nullptr) {
         return toJString(env, "config is null");
     }
-    int32_t pid = getpid();
-    int ret = ASessionCreationConfig_setTids(config.get(), &pid, 1u);
-    if (ret == EINVAL) {
-        return toJString(env, "creation config setTids ret is EINVAL");
-    } else if (ret == ENOTSUP) {
-        return nullptr;
+
+    int returnVal = 0;
+    auto a = createSessionWithConfig(manager, config, &returnVal);
+    if (returnVal != 0) {
+        return toJString(env,
+                         std::format("Session creation failed with status: {}", returnVal).c_str());
     }
-    ret = ASessionCreationConfig_setTargetWorkDurationNanos(config.get(), DEFAULT_TARGET_NS);
-    if (ret == EINVAL) {
-        return toJString(env, "creation config setTargetWorkDurationNanos ret is EINVAL");
-    } else if (ret == ENOTSUP) {
-        return nullptr;
-    }
-    auto a = wrapSession(APerformanceHint_createSessionUsingConfig(manager, config.get()));
-    auto b = wrapSession(APerformanceHint_createSessionUsingConfig(manager, config.get()));
+
+    auto b = createSessionWithConfig(manager, config, &returnVal);
     if (a == nullptr) {
         return toJString(env, "a is null");
     } else if (b == nullptr) {
@@ -355,19 +344,17 @@ static jstring nativeTestReportActualWorkDuration2(JNIEnv* env, jobject) {
     };
 
     for (auto && testCase : testCases) {
-        AWorkDuration* testObj = createWorkDuration(testCase);
-        int result = APerformanceHint_reportActualWorkDuration2(session.get(), testObj);
+        auto&& testObj = createWorkDuration(testCase);
+        int result = APerformanceHint_reportActualWorkDuration2(session.get(), testObj.get());
         if (result != 0) {
             std::stringstream stream;
             stream << "APerformanceHint_reportActualWorkDuration2({"
-            << "workPeriodStartTimestampNanos = " << testCase.workPeriodStart << ", "
-            << "actualTotalDurationNanos = " << testCase.totalDuration << ", "
-            << "actualCpuDurationNanos = " << testCase.cpuDuration << ", "
-            << "actualGpuDurationNanos = " << testCase.gpuDuration << "}) did not return 0";
-            AWorkDuration_release(testObj);
+                   << "workPeriodStartTimestampNanos = " << testCase.workPeriodStart << ", "
+                   << "actualTotalDurationNanos = " << testCase.totalDuration << ", "
+                   << "actualCpuDurationNanos = " << testCase.cpuDuration << ", "
+                   << "actualGpuDurationNanos = " << testCase.gpuDuration << "}) did not return 0";
             return toJString(env, stream.str().c_str());
         }
-        AWorkDuration_release(testObj);
     }
 
     return nullptr;
@@ -413,19 +400,18 @@ static jstring nativeTestReportActualWorkDuration2WithIllegalArgument(JNIEnv* en
     };
 
     for (auto && testCase : testCases) {
-        AWorkDuration* testObj = createWorkDuration(testCase);
-        int result = APerformanceHint_reportActualWorkDuration2(session.get(), testObj);
+        auto&& testObj = createWorkDuration(testCase);
+        int result = APerformanceHint_reportActualWorkDuration2(session.get(), testObj.get());
         if (result != EINVAL) {
             std::stringstream stream;
             stream << "APerformanceHint_reportActualWorkDuration2({"
-            << "workPeriodStartTimestampNanos = " << testCase.workPeriodStart << ", "
-            << "actualTotalDurationNanos = " << testCase.totalDuration << ", "
-            << "actualCpuDurationNanos = " << testCase.cpuDuration << ", "
-            << "actualGpuDurationNanos = " << testCase.gpuDuration << "}) did not return EINVAL";
-            AWorkDuration_release(testObj);
+                   << "workPeriodStartTimestampNanos = " << testCase.workPeriodStart << ", "
+                   << "actualTotalDurationNanos = " << testCase.totalDuration << ", "
+                   << "actualCpuDurationNanos = " << testCase.cpuDuration << ", "
+                   << "actualGpuDurationNanos = " << testCase.gpuDuration
+                   << "}) did not return EINVAL";
             return toJString(env, stream.str().c_str());
         }
-        AWorkDuration_release(testObj);
     }
 
     return nullptr;
@@ -434,60 +420,61 @@ static jstring nativeTestReportActualWorkDuration2WithIllegalArgument(JNIEnv* en
 static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
+    SupportHelper supportInfo = getSupportHelper();
     auto session = createSession(manager);
     if (session == nullptr) return nullptr;
 
     int result = APerformanceHint_notifyWorkloadIncrease(session.get(), true, false, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadIncrease(true, false) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadReset(session.get(), false, true, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadReset(false, true) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadIncrease(session.get(), true, true, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadIncrease(true, true) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadIncrease(session.get(), false, false, "CTS hint");
-    if (result != EINVAL && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadIncrease(false, false) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadReset(session.get(), false, false, "CTS hint");
-    if (result != EINVAL && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadReset(false, false) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadSpike(session.get(), true, false, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadSpike(true, false) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadSpike(session.get(), false, true, "CTS hint");
-    if (result != 0 && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadSpike(false, true) returned {}", result)
                                  .c_str());
     }
 
     result = APerformanceHint_notifyWorkloadSpike(session.get(), false, false, "CTS hint");
-    if (result != EINVAL && result != ENOTSUP) {
+    if (result != 0) {
         return toJString(env,
                          std::format("notifyWorkloadSpike(false, false) returned {}", result)
                                  .c_str());
@@ -511,32 +498,15 @@ static jlong nativeBorrowSessionFromJava(JNIEnv* env, jobject, jobject sessionOb
 
     return reinterpret_cast<jlong>(session);
 }
-static jstring nativeTestCreateGraphicsPipelineSessionOverLimit(JNIEnv* env, jobject) {
+static jstring nativeTestCreateGraphicsPipelineSession(JNIEnv* env, jobject) {
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
 
+    int errCode = 0;
     const int count = APerformanceHint_getMaxGraphicsPipelineThreadsCount(manager);
-
-    auto config = createConfig();
-    int32_t pid = getpid();
-    int ret = ASessionCreationConfig_setTids(config.get(), &pid, 1u);
-    if (ret == EINVAL) {
-        return toJString(env, "creation config setTids ret is EINVAL");
-    } else if (ret == ENOTSUP) {
-        return nullptr;
-    }
-    ret = ASessionCreationConfig_setTargetWorkDurationNanos(config.get(), DEFAULT_TARGET_NS);
-    if (ret == EINVAL) {
-        return toJString(env, "creation config setTargetWorkDurationNanos ret is EINVAL");
-    } else if (ret == ENOTSUP) {
-        return nullptr;
-    }
-    ret = ASessionCreationConfig_setGraphicsPipeline(config.get(), true);
-    if (ret == EINVAL) {
-        return toJString(env, "creation config setGraphicsPipeline ret is EINVAL");
-    } else if (ret == ENOTSUP) {
-        return nullptr;
-    }
+    auto config = configFromCreator({.graphicsPipeline = true});
+    auto session = createSessionWithConfig(manager, config, &errCode);
+    CHECK_SESSION_RETURN(errCode, session, "Graphics pipeline session creation");
 
     return nullptr;
 }
@@ -546,78 +516,45 @@ static jstring nativeTestSetNativeSurfaces(JNIEnv* env, jobject, jobject surface
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
 
-    std::string out;
-    int errCode;
+    auto supportInfo = getSupportHelper();
+    if (!supportInfo.bindToSurface) {
+        return nullptr;
+    }
+
+    int errCode = 0;
 
     auto surfaceControl = wrapSurfaceControl(ASurfaceControl_fromJava(env, surfaceControlFromJava));
     auto nativeWindow = wrapNativeWindow(ANativeWindow_fromSurface(env, surfaceFromJava));
 
     // Test native window session creation
-    ConfigCreator nativeWindowCreator{
+    auto nativeWindowConfig = configFromCreator({
             .graphicsPipeline = true,
             .nativeWindows = {nativeWindow.get()},
-    };
-
-    auto nativeWindowConfig = configFromCreator(nativeWindowCreator, out, errCode);
-    if (nativeWindowConfig == nullptr) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
-        return toJString(env, out.c_str());
-    }
-
-    auto nativeWindowSession = createSessionWithConfig(manager, nativeWindowConfig);
-    if (nativeWindowSession == nullptr) {
-        return toJString(env, "Session failed to be created with ANativeWindow");
-    }
+    });
+    auto nativeWindowSession = createSessionWithConfig(manager, nativeWindowConfig, &errCode);
+    CHECK_SESSION_RETURN(errCode, nativeWindowSession, "Session creation with an ANativeWindow");
 
     // Test surfaceControl session creation
-    ConfigCreator surfaceControlCreator{
+    auto surfaceControlConfig = configFromCreator({
             .graphicsPipeline = true,
             .surfaceControls = {surfaceControl.get()},
-    };
-
-    auto surfaceControlConfig = configFromCreator(surfaceControlCreator, out, errCode);
-    if (surfaceControlConfig == nullptr) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
-        return toJString(env, out.c_str());
-    }
-
-    auto surfaceControlSession = createSessionWithConfig(manager, surfaceControlConfig);
-    if (surfaceControlSession == nullptr) {
-        return toJString(env, "Session failed to be created with ASurfaceControl");
-    }
+    });
+    auto surfaceControlSession = createSessionWithConfig(manager, surfaceControlConfig, &errCode);
+    CHECK_SESSION_RETURN(errCode, nativeWindowSession, "Session creation with an ASurfaceControl");
 
     // Test both
-    ConfigCreator bothCreator{
+    auto bothConfig = configFromCreator({
             .graphicsPipeline = true,
             .nativeWindows = {nativeWindow.get()},
             .surfaceControls = {surfaceControl.get()},
-    };
-
-    auto bothConfig = configFromCreator(surfaceControlCreator, out, errCode);
-    if (bothConfig == nullptr) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
-        return toJString(env, out.c_str());
-    }
-
-    auto bothSession = createSessionWithConfig(manager, bothConfig);
-    if (bothSession == nullptr) {
-        return toJString(env,
-                         "Session failed to be created with both ASurfaceControl and "
-                         "ANativeWindow");
-    }
+    });
+    auto bothSession = createSessionWithConfig(manager, bothConfig, &errCode);
+    CHECK_SESSION_RETURN(errCode, bothSession,
+                         "Session creation with both ASurfaceControl and ANativeWindow");
 
     // Test unsetting
     errCode = APerformanceHint_setNativeSurfaces(bothSession.get(), nullptr, 0, nullptr, 0);
     if (errCode != 0) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
         return toJString(env,
                          std::format("Setting empty native surfaces failed with: {}", errCode)
                                  .c_str());
@@ -629,9 +566,6 @@ static jstring nativeTestSetNativeSurfaces(JNIEnv* env, jobject, jobject surface
 
     errCode = APerformanceHint_setNativeSurfaces(bothSession.get(), windowArr, 1, controlArr, 1);
     if (errCode != 0) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
         return toJString(env,
                          std::format("Setting native surfaces on re-used empty session failed "
                                      "with: {}",
@@ -640,30 +574,16 @@ static jstring nativeTestSetNativeSurfaces(JNIEnv* env, jobject, jobject surface
     }
 
     // Create new empty sessions
-    ConfigCreator unassociatedCreator{
+    auto unassociatedConfig = configFromCreator({
             .graphicsPipeline = true,
-    };
+    });
 
-    auto unassociatedConfig = configFromCreator(unassociatedCreator, out, errCode);
-    if (unassociatedConfig == nullptr) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
-        return toJString(env, out.c_str());
-    }
-
-    auto unassociatedSession = createSessionWithConfig(manager, unassociatedConfig);
-    if (unassociatedSession == nullptr) {
-        return toJString(env,
-                         "Session failed to be created while unassociated to a native surface");
-    }
+    auto unassociatedSession = createSessionWithConfig(manager, unassociatedConfig, &errCode);
+    CHECK_SESSION_RETURN(errCode, unassociatedSession, "Session creation while unassociated");
 
     errCode = APerformanceHint_setNativeSurfaces(nativeWindowSession.get(), windowArr, 1,
                                                  controlArr, 1);
     if (errCode != 0) {
-        if (errCode == ENOTSUP) {
-            return nullptr;
-        }
         return toJString(env,
                          std::format("Setting native surfaces on fresh unassociated session failed "
                                      "with: {}",
@@ -678,70 +598,91 @@ static jstring nativeTestAutoSessionTiming(JNIEnv* env, jobject, jobject surface
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
 
+    auto supportInfo = getSupportHelper();
+
     std::string out;
     int errCode;
 
     auto surfaceControl = wrapSurfaceControl(ASurfaceControl_fromJava(env, surfaceControlFromJava));
 
-    // Create a surfaceControl-associated session for auto GPU
-    ConfigCreator autoCpuSessionCreator{
-            .graphicsPipeline = true,
-            .surfaceControls = {surfaceControl.get()},
-            .autoCpu = true,
-    };
+    if (supportInfo.autoCpu) {
+        // Create a surfaceControl-associated session for auto CPU
+        auto autoCpuSessionConfig = configFromCreator({
+                .graphicsPipeline = true,
+                .surfaceControls = {surfaceControl.get()},
+                .autoCpu = true,
+        });
+        if (autoCpuSessionConfig == nullptr) {
+            return toJString(env, out.c_str());
+        }
 
-    auto autoCpuSessionConfig = configFromCreator(autoCpuSessionCreator, out, errCode);
-    if (autoCpuSessionConfig == nullptr) {
-        return toJString(env, out.c_str());
+        auto autoCpuSession = createSessionWithConfig(manager, autoCpuSessionConfig, &errCode);
+        CHECK_SESSION_RETURN(errCode, autoCpuSession, "Cpu auto session creation");
     }
 
-    auto autoCpuSession = createSessionWithConfig(manager, autoCpuSessionConfig);
-    if (autoCpuSessionConfig == nullptr) {
-        return toJString(env, "Failed to create auto cpu+gpu session!");
+    if (supportInfo.autoGpu) {
+        // Create a surfaceControl-associated session for auto GPU
+        auto autoGpuSessionConfig = configFromCreator({
+                .graphicsPipeline = true,
+                .surfaceControls = {surfaceControl.get()},
+                .autoGpu = true,
+        });
+        if (autoGpuSessionConfig == nullptr) {
+            return toJString(env, out.c_str());
+        }
+
+        auto autoGpuSession = createSessionWithConfig(manager, autoGpuSessionConfig, &errCode);
+        CHECK_SESSION_RETURN(errCode, autoGpuSession, "Gpu auto session creation");
     }
 
-    // Create a surfaceControl-associated session for auto GPU
-    ConfigCreator autoGpuSessionCreator{
-            .graphicsPipeline = true,
-            .surfaceControls = {surfaceControl.get()},
-            .autoGpu = true,
-    };
+    if (supportInfo.autoCpu && supportInfo.autoGpu) {
+        // Create a surfaceControl-associated session for both
+        auto fullAutoSessionConfig = configFromCreator({
+                .graphicsPipeline = true,
+                .surfaceControls = {surfaceControl.get()},
+                .autoCpu = true,
+                .autoGpu = true,
+        });
+        if (fullAutoSessionConfig == nullptr) {
+            return toJString(env, out.c_str());
+        }
 
-    auto autoGpuSessionConfig = configFromCreator(autoGpuSessionCreator, out, errCode);
-    if (autoGpuSessionConfig == nullptr) {
-        return toJString(env, out.c_str());
-    }
-
-    auto autoGpuSession = createSessionWithConfig(manager, autoGpuSessionConfig);
-    if (autoGpuSessionConfig == nullptr) {
-        return toJString(env, "Failed to create auto cpu+gpu session!");
-    }
-
-    // Create a surfaceControl-associated session
-    ConfigCreator fullAutoSessionCreator{
-            .graphicsPipeline = true,
-            .surfaceControls = {surfaceControl.get()},
-            .autoCpu = true,
-            .autoGpu = true,
-    };
-
-    auto fullAutoSessionConfig = configFromCreator(fullAutoSessionCreator, out, errCode);
-    if (fullAutoSessionConfig == nullptr) {
-        return toJString(env, out.c_str());
-    }
-
-    auto fullAutoSession = createSessionWithConfig(manager, fullAutoSessionConfig);
-    if (fullAutoSessionConfig == nullptr) {
-        return toJString(env, "Failed to create auto cpu+gpu session!");
+        auto fullAutoSession = createSessionWithConfig(manager, fullAutoSessionConfig, &errCode);
+        CHECK_SESSION_RETURN(errCode, fullAutoSession, "Full auto session creation");
     }
 
     return nullptr;
 }
 
+static jstring nativeTestSupportChecking(JNIEnv* env, jobject) {
+    union {
+        // This checks every single support enum
+        SupportHelper supportInfo = getSupportHelper();
+        int32_t supportInt;
+    };
+    if (!supportInfo.hintSessions) {
+        // If any mode other than hintSessions is enabled
+        if (supportInt & -2) {
+            return toJString(env, "Exposed support for session functionality but not for sessions");
+        }
+    } else if (supportInfo.autoCpu || supportInfo.autoGpu) {
+        if (!supportInfo.graphicsPipeline) {
+            return toJString(env,
+                             "Exposed support for auto timing without support for graphics "
+                             "pipelines");
+        } else if (!supportInfo.bindToSurface) {
+            return toJString(env,
+                             "Exposed support for auto timing without support for native surface"
+                             "binding");
+        }
+    }
+    return nullptr;
+}
+
 static JNINativeMethod gMethods[] = {
         {"nativeTestCreateHintSession", "()Ljava/lang/String;", (void*)nativeTestCreateHintSession},
-        {"nativeTestCreateGraphicsPipelineSessionOverLimit", "()Ljava/lang/String;",
-         (void*)nativeTestCreateGraphicsPipelineSessionOverLimit},
+        {"nativeTestCreateGraphicsPipelineSession", "()Ljava/lang/String;",
+         (void*)nativeTestCreateGraphicsPipelineSession},
         {"nativeTestCreateHintSessionUsingConfig", "()Ljava/lang/String;",
          (void*)nativeTestCreateHintSessionUsingConfig},
         {"nativeTestGetPreferredUpdateRateNanos", "()Ljava/lang/String;",
@@ -770,6 +711,7 @@ static JNINativeMethod gMethods[] = {
          (void*)nativeTestSetNativeSurfaces},
         {"nativeTestAutoSessionTiming", "(Landroid/view/SurfaceControl;)Ljava/lang/String;",
          (void*)nativeTestAutoSessionTiming},
+        {"nativeTestSupportChecking", "()Ljava/lang/String;", (void*)nativeTestSupportChecking},
 };
 
 int register_android_os_cts_PerformanceHintManagerTest(JNIEnv* env) {
