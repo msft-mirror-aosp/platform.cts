@@ -132,17 +132,17 @@ public final class MediaRouterTestConstants {
 
     public static final String TARGET_USER_ID_KEY = "TARGET_USER_ID_KEY";
 
+    // These all need to be runtime grantable/revocable.
     public static final String REQUIRED_PERMISSIONS_SET_1_1 =
-            "android.permission.CHANGE_WIFI_STATE";
-    public static final String REQUIRED_PERMISSIONS_SET_2_1 =
             "android.permission.ACCESS_BACKGROUND_LOCATION";
-    public static final String REQUIRED_PERMISSIONS_SET_2_2 =
+    public static final String REQUIRED_PERMISSIONS_SET_2_1 =
             "android.permission.ACCESS_FINE_LOCATION";
-    public static final String REQUIRED_PERMISSIONS_SET_3_1 =
-            "android.permission.CONFIGURE_WIFI_DISPLAY";
-    public static final String REQUIRED_PERMISSIONS_SET_3_2 =
-            "android.permission.ACTIVITY_RECOGNITION";
-    public static final String REQUIRED_PERMISSIONS_SET_3_3 = "android.permission.DISABLE_KEYGUARD";
+    public static final String REQUIRED_PERMISSIONS_SET_2_2 =
+            "android.permission.ACCESS_MEDIA_LOCATION";
+    public static final String REQUIRED_PERMISSIONS_SET_3_1 = "android.permission.READ_MEDIA_AUDIO";
+    public static final String REQUIRED_PERMISSIONS_SET_3_2 = "android.permission.READ_MEDIA_VIDEO";
+    public static final String REQUIRED_PERMISSIONS_SET_3_3 =
+            "android.permission.READ_MEDIA_IMAGES";
 
     private MediaRouterTestConstants() {
         // Private to prevent instantiation.
