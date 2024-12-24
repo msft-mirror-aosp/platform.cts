@@ -38,6 +38,7 @@ import android.content.IntentFilter;
 import android.content.IntentSender;
 import android.content.pm.PackageInstaller;
 import android.net.Uri;
+import android.os.UserHandle;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -306,6 +307,18 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
             throws Exception {
         final Intent intent = getIntentAndGrantPermission(action, packageName);
         getContext().startActivity(intent);
+    }
+
+    /**
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} on {@code userHandle} via
+     * startActivityAsUser with ACTION_UNINSTALL_PACKAGE for the {@code context}.
+     */
+    public static void startUninstallationViaIntentActionUninstallPackageForUser(
+            Context context, UserHandle userHandle) throws Exception {
+        final Intent intent =
+                getIntentAndGrantPermission(Intent.ACTION_UNINSTALL_PACKAGE, TEST_APP_PACKAGE_NAME);
+        intent.putExtra(Intent.EXTRA_USER, userHandle);
+        getContext().startActivityAsUser(intent, context.getUser());
     }
 
     private static Intent getIntentAndGrantPermission(String action, String packageName) {
