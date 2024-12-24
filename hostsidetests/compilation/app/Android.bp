@@ -27,6 +27,7 @@ java_defaults {
         "general-tests",
     ],
     certificate: ":cts-compilation-testkey",
+    uncompress_dex: true,
 }
 
 android_test_helper_app {
