@@ -50,6 +50,12 @@ import java.util.List;
 @android.server.wm.annotation.Group3
 public class DisplayTests extends MultiDisplayTestBase {
 
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        acquirePartialWakeLock();
+    }
+
     /**
      * Tests that the global configuration is equal to the default display's override configuration.
      */
