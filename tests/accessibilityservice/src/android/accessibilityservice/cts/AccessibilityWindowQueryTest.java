@@ -664,19 +664,20 @@ public class AccessibilityWindowQueryTest {
     public void testGetWindowsOnAllDisplays_resultIsSortedByLayerDescending() throws Exception {
         assumeTrue(supportsMultiDisplay(sInstrumentation.getContext()));
 
-        View[] views = addTwoAppPanelWindows(mActivity);
+        final View[] views = addTwoAppPanelWindows(mActivity);
 
         // Creates a virtual display.
-        AtomicReference<ActivityScenario<NonDefaultDisplayActivity>>
+        final AtomicReference<ActivityScenario<NonDefaultDisplayActivity>>
                 activityVirtualDisplayScenario = new AtomicReference<>();
-        VirtualDisplaySession displaySession = new VirtualDisplaySession();
+        View[] viewsInVirtualDisplay = null;
+        final VirtualDisplaySession displaySession = new VirtualDisplaySession();
         try {
             final int virtualDisplayId =
                     displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                             sInstrumentation.getContext(), false).getDisplayId();
             // Launches an activity on virtual display.
-            AtomicReference<Activity> activityOnVirtualDisplay = new AtomicReference<>();
-            ActivityOptions options = ActivityOptions.makeBasic();
+            final AtomicReference<Activity> activityOnVirtualDisplay = new AtomicReference<>();
+            final ActivityOptions options = ActivityOptions.makeBasic();
             options.setLaunchDisplayId(virtualDisplayId);
             SystemUtil.runWithShellPermissionIdentity(
                     () -> {
@@ -688,23 +689,23 @@ public class AccessibilityWindowQueryTest {
                     });
 
             // Adds two app panel windows on activity of virtual display.
-            addTwoAppPanelWindows(activityOnVirtualDisplay.get());
+            viewsInVirtualDisplay = addTwoAppPanelWindows(activityOnVirtualDisplay.get());
 
             // Gets all windows.
-            SparseArray<List<AccessibilityWindowInfo>> allWindows =
+            final SparseArray<List<AccessibilityWindowInfo>> allWindows =
                     sUiAutomation.getWindowsOnAllDisplays();
             assertNotNull(allWindows);
 
             // Gets windows on default display.
             assertTrue(allWindows.contains(Display.DEFAULT_DISPLAY));
-            List<AccessibilityWindowInfo> windowsOnDefaultDisplay =
+            final List<AccessibilityWindowInfo> windowsOnDefaultDisplay =
                     allWindows.get(Display.DEFAULT_DISPLAY);
             assertNotNull(windowsOnDefaultDisplay);
             assertTrue(windowsOnDefaultDisplay.size() > 0);
 
-            AccessibilityWindowInfo windowAddedFirst =
+            final AccessibilityWindowInfo windowAddedFirst =
                     findWindow(windowsOnDefaultDisplay, R.string.button1);
-            AccessibilityWindowInfo windowAddedSecond =
+            final AccessibilityWindowInfo windowAddedSecond =
                     findWindow(windowsOnDefaultDisplay, R.string.button2);
             assertThat(windowAddedFirst.getLayer(), lessThan(windowAddedSecond.getLayer()));
             assertThat(windowsOnDefaultDisplay,
@@ -712,14 +713,14 @@ public class AccessibilityWindowQueryTest {
 
             // Gets windows on virtual display.
             assertTrue(allWindows.contains(virtualDisplayId));
-            List<AccessibilityWindowInfo> windowsOnVirtualDisplay =
+            final List<AccessibilityWindowInfo> windowsOnVirtualDisplay =
                     allWindows.get(virtualDisplayId);
             assertNotNull(windowsOnVirtualDisplay);
             assertTrue(windowsOnVirtualDisplay.size() > 0);
 
-            AccessibilityWindowInfo windowAddedFirstOnVirtualDisplay =
+            final AccessibilityWindowInfo windowAddedFirstOnVirtualDisplay =
                     findWindow(windowsOnVirtualDisplay, R.string.button1);
-            AccessibilityWindowInfo windowAddedSecondOnVirtualDisplay =
+            final AccessibilityWindowInfo windowAddedSecondOnVirtualDisplay =
                     findWindow(windowsOnVirtualDisplay, R.string.button2);
             assertThat(windowAddedFirstOnVirtualDisplay.getLayer(),
                     lessThan(windowAddedSecondOnVirtualDisplay.getLayer()));
@@ -727,6 +728,19 @@ public class AccessibilityWindowQueryTest {
                     new IsSortedBy<>(w -> w.getLayer(), /* ascending */ false));
         } finally {
             if (activityVirtualDisplayScenario.get() != null) {
+                if (viewsInVirtualDisplay != null) {
+                    final View[] finalViewsInVirtualDisplay = viewsInVirtualDisplay;
+                    activityVirtualDisplayScenario
+                            .get()
+                            .onActivity(
+                                    activity -> {
+                                        final WindowManager windowManager =
+                                                activity.getWindowManager();
+                                        for (View view : finalViewsInVirtualDisplay) {
+                                            windowManager.removeView(view);
+                                        }
+                                    });
+                }
                 activityVirtualDisplayScenario.get().close();
             }
             displaySession.close();

@@ -19,6 +19,7 @@ package android.app.appfunctions.cts
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
 import android.app.appsearch.GenericDocument
+import android.os.Bundle
 import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -41,8 +42,8 @@ class ExecuteAppFunctionResponseTest {
             [
                 "android.app.appfunctions.ExecuteAppFunctionResponse#CREATOR",
                 "android.app.appfunctions.ExecuteAppFunctionResponse#writeToParcel",
-                "android.app.appfunctions.ExecuteAppFunctionResponse#getResultCode",
                 "android.app.appfunctions.ExecuteAppFunctionResponse#getResultDocument",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResponseDataSize",
             ]
     )
     @Test
@@ -52,6 +53,7 @@ class ExecuteAppFunctionResponseTest {
                 .setPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, true)
                 .build()
         val response = ExecuteAppFunctionResponse(resultGd)
+        val expectedDataSize = response.responseDataSize
 
         val restoredResponse = parcelAndUnparcel(response)
 
@@ -61,6 +63,40 @@ class ExecuteAppFunctionResponseTest {
                 )
             )
             .isEqualTo(booleanArrayOf(true))
+        assertThat(restoredResponse.responseDataSize).isEqualTo(expectedDataSize)
+    }
+
+    @ApiTest(
+        apis =
+            [
+                "android.app.appfunctions.ExecuteAppFunctionResponse#CREATOR",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#writeToParcel",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getExtras",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResultDocument",
+                "android.app.appfunctions.ExecuteAppFunctionResponse#getResponseDataSize",
+            ]
+    )
+    @Test
+    fun build_nonEmptySuccessResponse_withExtras() {
+        val resultGd: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, true)
+                .build()
+        val extras = Bundle()
+        extras.putString("key", "value")
+        val response = ExecuteAppFunctionResponse(resultGd, extras)
+        val expectedDataSize = response.responseDataSize
+
+        val restoredResponse = parcelAndUnparcel(response)
+
+        assertThat(
+            restoredResponse.resultDocument.getProperty(
+                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+            )
+        )
+            .isEqualTo(booleanArrayOf(true))
+        assertThat(restoredResponse.extras.getString("key")).isEqualTo("value")
+        assertThat(restoredResponse.responseDataSize).isEqualTo(expectedDataSize)
     }
 
     private fun parcelAndUnparcel(

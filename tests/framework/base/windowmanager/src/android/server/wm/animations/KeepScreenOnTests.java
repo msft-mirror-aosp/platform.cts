@@ -27,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -41,7 +40,6 @@ import android.server.wm.WindowManagerState;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,7 +52,6 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     private PowerManager mPowerManager;
     private ContentResolver mContentResolver;
     private boolean mIsTv;
-    private PowerManager.WakeLock mWakeLock;
 
     @Before
     public void setUp() throws Exception {
@@ -67,10 +64,7 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
                 Settings.Global.getInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN);
         Settings.Global.putInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN, 0);
         mPowerManager = mContext.getSystemService(PowerManager.class);
-        mWakeLock =
-                mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "cts:KeepScreenOnTests");
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mWakeLock.acquire(), Manifest.permission.WAKE_LOCK);
+        acquirePartialWakeLock();
         assumeFalse("Automotive main display is always on - skipping test",
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
     }
@@ -81,8 +75,6 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
         Settings.Global.putInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN,
                 mInitialStayOnWhilePluggedInSetting);
         UiDeviceUtils.wakeUpAndUnlock(mContext);
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mWakeLock.release(), Manifest.permission.WAKE_LOCK);
     }
 
     @ApiTest(apis = "android.view.WindowManager.LayoutParams#FLAG_KEEP_SCREEN_ON")
