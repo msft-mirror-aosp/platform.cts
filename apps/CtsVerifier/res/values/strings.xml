@@ -5834,8 +5834,9 @@ You should be prompted to select credentials; choose the ones you just installed
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
-    <string name="audio_loopback_automobile">Automobile:</string>
+    <string name="audio_loopback_automobile">Auto:</string>
     <string name="audio_loopback_handheld">Handheld:</string>
+    <string name="audio_loopback_emulator">Emulator:</string>
     <string name="audio_loopback_tv">TV:</string>
     <string name="audio_loopback_watch">Watch:</string>
     <string name="audio_loopback_mmapexclusive">MMAP Exclusive:</string>

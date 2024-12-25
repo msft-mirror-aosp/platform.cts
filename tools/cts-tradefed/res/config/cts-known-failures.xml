@@ -385,4 +385,10 @@
 
     <!-- b/382231688 -->
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
+
+    <!-- b/381409777-->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
+
+    <!-- b/378989105 -->
+    <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
 </configuration>
