@@ -1255,6 +1255,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                      new ImeSettings.Builder())) {
             final var stream = imeSession.openEventStream();
 
+            assumeTrue("IME Switcher button should be shown at the start of the test",
+                    imeSession.shouldShowImeSwitcherButtonForTest());
+
             createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
             notExpectEvent(stream, eventMatcher("onCustomImeSwitcherButtonRequestedVisible"),
@@ -1309,6 +1312,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                         InstrumentationRegistry.getInstrumentation().getUiAutomation(),
                         new ImeSettings.Builder())) {
             final var stream = imeSession.openEventStream();
+
+            assumeTrue("IME Switcher button should be shown at the start of the test",
+                    imeSession.shouldShowImeSwitcherButtonForTest());
 
             createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
             expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
