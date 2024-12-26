@@ -85,6 +85,13 @@ public class StartActivityTests extends ActivityManagerTestBase {
             ACTIVITY_TYPE_ASSISTANT,
             ACTIVITY_TYPE_DREAM,
     };
+    private static final int[] ALL_ACTIVITY_TYPES_BUT_HOME = {
+            ACTIVITY_TYPE_UNDEFINED,
+            ACTIVITY_TYPE_STANDARD,
+            ACTIVITY_TYPE_RECENTS,
+            ACTIVITY_TYPE_ASSISTANT,
+            ACTIVITY_TYPE_DREAM,
+    };
 
     @After
     public void tearDown() {
@@ -94,8 +101,8 @@ public class StartActivityTests extends ActivityManagerTestBase {
     @Test
     public void testStartHomeIfNoActivities() {
         if (!hasHomeScreen()) {
-	    return;
-	}
+            return;
+        }
 
         final ComponentName defaultHome = getDefaultHomeComponent();
         removeRootTasksWithAllActivityTypes();
@@ -104,6 +111,11 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 "Home activity should be restarted after force-finish");
 
         stopTestPackage(defaultHome.getPackageName());
+        // On automotive, where home might be = fn(MULTI_WINDOW root tasks containing specified
+        // app tasks), there will be multiple tasks visible in the system right now.
+        // Killing home alone might not bring it back. So kill all the activity types but home to
+        // test the correct policy behavior from core.
+        removeRootTasksWithAllActivityTypesButHome();
 
         waitAndAssertResumedActivity(defaultHome,
                 "Home activity should be restarted after force-stop");
@@ -378,9 +390,12 @@ public class StartActivityTests extends ActivityManagerTestBase {
 
         assertNotEquals("The activity in a different application (uid) started by flag NEW_TASK"
                 + " should be in a different task", taskIds[0], taskIds[1]);
-        assertWithMessage("The last started activity should be in a different task because "
-                + SECOND_ACTIVITY + " has a different uid from the source caller")
-                        .that(taskIds[2]).isNotIn(Arrays.asList(taskIds[0], taskIds[1]));
+        assertWithMessage(
+                        "The last started activity should be in a different task because "
+                                + SECOND_ACTIVITY
+                                + " has a different uid from the source caller")
+                .that(taskIds[2])
+                .isNotIn(Arrays.asList(taskIds[0], taskIds[1]));
     }
 
     /**
@@ -421,15 +436,14 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 .map(WindowManagerState.Activity::getName)
                 .collect(Collectors.toList());
 
-        final List<String> expectedOrder = Stream.of(
-                SECOND_ACTIVITY,
-                TEST_ACTIVITY,
-                baseIntent.getComponent())
-                .map(c -> c.flattenToShortString())
-                .collect(Collectors.toList());
+        final List<String> expectedOrder =
+                Stream.of(SECOND_ACTIVITY, TEST_ACTIVITY, baseIntent.getComponent())
+                        .map(c -> c.flattenToShortString())
+                        .collect(Collectors.toList());
         assertEquals(activitiesOrder, expectedOrder);
-        mWmState.assertResumedActivity("TaskOverlay activity should be remained on top and "
-                        + "resumed", taskOverlay.getComponent());
+        mWmState.assertResumedActivity(
+                "TaskOverlay activity should be remained on top and " + "resumed",
+                taskOverlay.getComponent());
     }
 
     /**
@@ -514,6 +528,14 @@ public class StartActivityTests extends ActivityManagerTestBase {
         runWithShellPermission(() -> {
             mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES);
         });
+        waitForIdle();
+    }
+
+    private void removeRootTasksWithAllActivityTypesButHome() {
+        runWithShellPermission(
+                () -> {
+                    mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES_BUT_HOME);
+                });
         waitForIdle();
     }
 }
