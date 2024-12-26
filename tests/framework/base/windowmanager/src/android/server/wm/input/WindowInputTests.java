@@ -72,6 +72,7 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.input.UinputTouchScreen;
 
 import org.junit.After;
@@ -124,12 +125,17 @@ public class WindowInputTests {
 
     private volatile int mClickCount = 0;
     private static final long EVENT_FLAGS_WAIT_TIME = 10L * HW_TIMEOUT_MULTIPLIER;
+    private final UserHelper mUserHelper = new UserHelper(getInstrumentation().getContext());
 
     @Before
     public void setUp() throws InterruptedException {
         pressWakeupButton();
         pressUnlockButton();
         launchHomeActivityNoWait();
+        final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
+        // Wait for app transition idle on display to avoid having Home and further activities
+        // launch in the same transition
+        wmState.waitForAppTransitionIdleOnDisplay(mUserHelper.getMainDisplayId());
 
         mInstrumentation = getInstrumentation();
         mActivity = mActivityRule.launchActivity(null);
