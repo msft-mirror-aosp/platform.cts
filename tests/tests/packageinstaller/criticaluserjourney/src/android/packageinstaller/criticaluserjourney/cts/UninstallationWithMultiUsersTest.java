@@ -140,6 +140,37 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
     }
 
     @Test
+    public void uninstallPackageIntent_uninstallWorkProfileAppOnPrimaryUser_okButton_success()
+            throws Exception {
+        startUninstallationViaIntentActionUninstallPackageForUser(
+                mPrimaryUserContext, mWorkProfileUser.userHandle());
+
+        waitForUiIdle();
+
+        clickUninstallAppFromWorkProfileOkButton();
+
+        assertTestPackageInstalledOnUser(mPrimaryUserContext);
+        assertTestPackageNotInstalledOnUser(mWorkProfileUserContext);
+    }
+
+    @Test
+    public void uninstallPackageIntent_uninstallPrimaryAppOnWorkProfile_fail() throws Exception {
+        startUninstallationViaIntentActionUninstallPackageForUser(
+                mWorkProfileUserContext, mPrimaryUser.userHandle());
+
+        waitForUiIdle();
+
+        findPackageInstallerObject(
+                "The current user is not allowed to perform this uninstallation.");
+
+        // close the error dialog
+        pressBack();
+
+        assertTestPackageInstalledOnUser(mPrimaryUserContext);
+        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
+    }
+
+    @Test
     public void uninstallPackageIntent_uninstallOnWorkProfile_okButton_success()
             throws Exception {
         startUninstallationViaIntentActionUninstallPackageForUser(mWorkProfileUserContext);
