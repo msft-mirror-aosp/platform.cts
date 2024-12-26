@@ -3839,10 +3839,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
-        SatelliteCommunicationAllowedStateCallbackTest allowStatecallback =
-                new SatelliteCommunicationAllowedStateCallbackTest();
-        long registerResultAllowState = sSatelliteManager
-                .registerForCommunicationAllowedStateChanged(
+        SatelliteCommunicationAccessStateCallbackTest allowStatecallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+        long registerResultAllowState =
+                sSatelliteManager.registerForCommunicationAccessStateChanged(
                         getContext().getMainExecutor(), allowStatecallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
         assertTrue(allowStatecallback.waitUntilResult(1));
@@ -3923,10 +3923,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
-        SatelliteCommunicationAllowedStateCallbackTest allowStateCallback =
-                new SatelliteCommunicationAllowedStateCallbackTest();
-        long registerResultAllowState = sSatelliteManager
-                .registerForCommunicationAllowedStateChanged(
+        SatelliteCommunicationAccessStateCallbackTest allowStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+        long registerResultAllowState =
+                sSatelliteManager.registerForCommunicationAccessStateChanged(
                         getContext().getMainExecutor(), allowStateCallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
         assertTrue(
@@ -4184,10 +4184,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager
                 .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
                         "cache_clear_and_not_allowed"));
-        SatelliteCommunicationAllowedStateCallbackTest allowStateCallback =
-                new SatelliteCommunicationAllowedStateCallbackTest();
-        long registerResultAllowState = sSatelliteManager
-                .registerForCommunicationAllowedStateChanged(
+        SatelliteCommunicationAccessStateCallbackTest allowStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+        long registerResultAllowState =
+                sSatelliteManager.registerForCommunicationAccessStateChanged(
                         getContext().getMainExecutor(), allowStateCallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
         assertTrue(
@@ -6539,7 +6539,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
                 // Check SubscriberIdType is the
                 // SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN
-                if (info.getSubId() == sTestSubIDForCarrierSatellite) {
+                if (info.getSubscriptionId() == sTestSubIDForCarrierSatellite) {
                     assertEquals(
                             SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN,
                             info.getSubscriberIdType());
@@ -6738,7 +6738,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
             SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
             // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
-            if (info.getSubId() == sTestSubIDForCarrierSatellite) {
+            if (info.getSubscriptionId() == sTestSubIDForCarrierSatellite) {
                 assertEquals(
                         SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN,
                         info.getSubscriberIdType());
