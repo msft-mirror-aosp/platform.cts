@@ -162,16 +162,15 @@ abstract class BaseBlobStoreHostTest extends BaseHostJUnit4Test {
         while (checkRoleHolderRetries-- > 0) {
             final String roleServiceDump = getDevice().executeShellCommand("dumpsys role");
             final Matcher matcher = pattern.matcher(roleServiceDump);
-            if (!matcher.find()) {
-                Thread.sleep(10000);
-                continue;
+            if (matcher.find()) {
+                String group = matcher.group(1)
+                        .replaceAll("\\s+", "")
+                        .replaceAll("fallback_enabled=(true|false)", "");
+                if (group.contains(roleHolder)) {
+                    break;
+                }
             }
-            String group = matcher.group(1)
-                    .replaceAll("\\s+", "")
-                    .replaceAll("fallback_enabled=(true|false)", "");
-            if (group.contains(roleHolder)) {
-                break;
-            }
+            Thread.sleep(10000);
         }
     }
 
