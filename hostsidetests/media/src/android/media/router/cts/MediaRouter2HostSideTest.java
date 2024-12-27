@@ -37,6 +37,11 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_1_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_2_2;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_1;
+import static android.media.cts.MediaRouterTestConstants.REQUIRED_PERMISSIONS_SET_3_3;
 
 import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
 
@@ -243,6 +248,12 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
     @Test
     public void testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld() throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                "android.permission.POST_NOTIFICATIONS",
+                true,
+                mUserId);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
@@ -256,6 +267,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @Test
     public void testRequiredPermissions_routeNotVisibleWhenOnePermissionNotHeld()
             throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
@@ -269,6 +281,7 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @Test
     public void testRequiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld()
             throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
@@ -281,6 +294,12 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
     @Test
     public void testRequiredPermissions_routeVisibleWhenFirstSetInListIsHeld() throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                REQUIRED_PERMISSIONS_SET_1_1,
+                true,
+                mUserId);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
@@ -293,6 +312,17 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
     @Test
     public void testRequiredPermissions_routeVisibleWhenSecondSetInListIsHeld() throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                REQUIRED_PERMISSIONS_SET_2_1,
+                true,
+                mUserId);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                REQUIRED_PERMISSIONS_SET_2_2,
+                true,
+                mUserId);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
@@ -306,6 +336,17 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @Test
     public void testRequiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld()
             throws Exception {
+        revokeAllPermissions(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                REQUIRED_PERMISSIONS_SET_3_1,
+                true,
+                mUserId);
+        setPermissionEnabled(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                REQUIRED_PERMISSIONS_SET_3_3,
+                true,
+                mUserId);
         runDeviceTests(
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
                 DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
@@ -596,15 +637,51 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException");
     }
 
+    private void revokeAllPermissions(String packageName) throws DeviceNotAvailableException {
+        setPermissionEnabled(
+                packageName,
+                /* permission= */ null,
+                /* enabled= */ false,
+                mUserId,
+                /* allPermissions= */ true);
+    }
+
     private void setPermissionEnabled(
             String packageName, String permission, boolean enabled, int userId)
             throws DeviceNotAvailableException {
+        setPermissionEnabled(packageName, permission, enabled, userId, /* allPermissions= */ false);
+    }
+
+    private void setPermissionEnabled(
+            String packageName,
+            String permission,
+            boolean enabled,
+            int userId,
+            boolean allPermissions)
+            throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
+        String allPermissionsFlag = "";
+        if (permission == null) {
+            if (!allPermissions) {
+                throw new IllegalArgumentException(
+                        "permission should not be null unless intending to operate on all "
+                                + "permissions");
+            } else {
+                allPermissionsFlag = "--all-permissions ";
+            }
+            permission = "";
+        }
+
         String result =
                 getDevice()
                         .executeShellCommand(
-                                "pm %s --user %d %s %s"
-                                        .formatted(action, userId, packageName, permission));
+                                "pm %s --user %d %s%s %s"
+                                        .formatted(
+                                                action,
+                                                userId,
+                                                allPermissionsFlag,
+                                                packageName,
+                                                permission));
         if (!result.isEmpty()) {
             assertWithMessage("Setting permission %s failed: %s".formatted(permission, result))
                     .fail();
