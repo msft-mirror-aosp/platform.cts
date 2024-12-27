@@ -547,6 +547,12 @@ public class MockImeSession implements AutoCloseable {
         return latestExitReasons.isEmpty() ? null : latestExitReasons.get(0);
     }
 
+    /** Checks whether the IME Switcher button should be shown when the IME is shown. */
+    public boolean shouldShowImeSwitcherButtonForTest() {
+        final var imm = mContext.getSystemService(InputMethodManager.class);
+        return runWithShellPermissionIdentity(imm::shouldShowImeSwitcherButtonForTest);
+    }
+
     /**
      * Common logic to send a special command to {@link MockIme}.
      *
