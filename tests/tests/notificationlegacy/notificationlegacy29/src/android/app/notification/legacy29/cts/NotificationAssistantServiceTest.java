@@ -937,7 +937,8 @@ public class NotificationAssistantServiceTest {
 
             int originalImportance = out.getImportance();
 
-            CountDownLatch notificationRankingLatch = mAssistant.setRankingUpdateCountDown(1);
+            CountDownLatch notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
 
             Bundle signals = new Bundle();
             signals.putFloat(KEY_IMPORTANCE, originalImportance + 1);
@@ -986,8 +987,8 @@ public class NotificationAssistantServiceTest {
             int newImportance = currentImportance == NotificationManager.IMPORTANCE_DEFAULT
                     ? NotificationManager.IMPORTANCE_HIGH : NotificationManager.IMPORTANCE_DEFAULT;
 
-            CountDownLatch notificationRankingLatch
-                    = mAssistant.setRankingUpdateCountDown(1);
+            CountDownLatch notificationRankingLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
 
             Bundle signals = new Bundle();
             signals.putInt(KEY_IMPORTANCE, newImportance);
