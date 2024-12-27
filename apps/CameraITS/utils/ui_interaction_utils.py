@@ -74,6 +74,15 @@ RATIO_TO_UI_DESCRIPTION = {
     '9 to 16 aspect ratio': 'QuickSettingsRatio9:16Button'
 }
 REMOVE_CAMERA_FILES_CMD = 'rm '
+SETTINGS_BACK_BUTTON_RESOURCE_ID = 'BackButton'
+SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
+SETTINGS_CLOSE_TEXT = 'Close'
+SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
+SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
+SETTINGS_SELECT_STABILIZATION_HIGH_QUALITY_TEXT = 'High Quality'
+SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
+SETTINGS_MENU_STABILIZATION_OFF_TEXT = 'Stabilization Off'
+SETTINGS_SELECT_STABILIZATION_OFF_TEXT = 'Off'
 THREE_TO_FOUR_ASPECT_RATIO_DESC = '3 to 4 aspect ratio'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
@@ -316,7 +325,7 @@ def change_jca_aspect_ratio(dut, log_path, aspect_ratio):
   dut.ui(res=QUICK_SETTINGS_RESOURCE_ID).click()
 
 
-def do_jca_video_setup(dut, log_path, facing, aspect_ratio):
+def do_jca_video_setup(dut, log_path, facing, aspect_ratio, stabilization_mode):
   """Change video capture settings using the UI.
 
   Selects UI elements to modify settings.
@@ -328,10 +337,59 @@ def do_jca_video_setup(dut, log_path, facing, aspect_ratio):
       Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
     aspect_ratio: str; Aspect ratios that JCA supports.
       Acceptable values: _RATIO_TO_UI_DESCRIPTION
+    stabilization_mode: int; constant describing the video stabilization mode.
+      Acceptable values: 0, 1, 2
   """
   open_jca_viewfinder(dut, log_path, request_video_capture=True)
   switch_jca_camera(dut, log_path, facing)
   change_jca_aspect_ratio(dut, log_path, aspect_ratio)
+  _set_jca_video_stabilization(dut, log_path, stabilization_mode)
+
+
+def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
+  """Change video stabilization mode using the UI.
+
+  Args:
+    dut: An Android controller device object.
+    log_path: str; log path to save screenshots.
+    stabilization_mode: int; constant describing the video stabilization mode.
+      Acceptable values: 0, 1, 2
+  """
+  dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
+  if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.take_screenshot(
+        log_path, prefix='failed_to_find_video_stabilization_settings')
+    raise AssertionError(
+        'Set Video Stabilization settings not found!'
+        'Make sure you have the latest JCA app.'
+    )
+  if stabilization_mode == 0:
+    if not dut.ui(text=SETTINGS_MENU_STABILIZATION_OFF_TEXT).wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      try:
+        dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
+        dut.ui(text=SETTINGS_SELECT_STABILIZATION_OFF_TEXT).click()
+      except Exception as e:
+        dut.take_screenshot(
+            log_path, prefix='failed_to_set_video_stabilization_to_off')
+        raise AssertionError('Set Video Stabilization to Off failed!') from e
+
+  if stabilization_mode == 1:
+    if not dut.ui(
+        text=SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT).wait.exists(
+            UI_OBJECT_WAIT_TIME_SECONDS):
+      try:
+        dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
+        dut.ui(text=SETTINGS_SELECT_STABILIZATION_HIGH_QUALITY_TEXT).click()
+      except Exception as e:
+        dut.take_screenshot(
+            log_path, prefix='failed_to_set_video_stabilization_to_high_quality'
+        )
+        raise AssertionError(
+            'Set Video Stabilization to High Quality failed!') from e
+  dut.ui(text=SETTINGS_CLOSE_TEXT).click()
+  dut.ui(res=SETTINGS_BACK_BUTTON_RESOURCE_ID).click()
 
 
 def default_camera_app_setup(device_id, pkg_name):
