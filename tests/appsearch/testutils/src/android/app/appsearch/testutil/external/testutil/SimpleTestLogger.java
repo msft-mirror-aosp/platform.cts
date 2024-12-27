@@ -16,6 +16,8 @@
 
 package android.app.appsearch.testutil;
 
+import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.app.appsearch.stats.SchemaMigrationStats;
 
 import com.android.server.appsearch.external.localstorage.AppSearchLogger;
@@ -28,9 +30,6 @@ import com.android.server.appsearch.external.localstorage.stats.SearchSessionSta
 import com.android.server.appsearch.external.localstorage.stats.SearchStats;
 import com.android.server.appsearch.external.localstorage.stats.SetSchemaStats;
 
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,31 +40,31 @@ import java.util.List;
  */
 public final class SimpleTestLogger implements AppSearchLogger {
     /** Holds {@link CallStats} after logging. */
-    public @Nullable CallStats mCallStats;
+    @Nullable public CallStats mCallStats;
 
     /** Holds {@link PutDocumentStats} after logging. */
-    public @Nullable PutDocumentStats mPutDocumentStats;
+    @Nullable public PutDocumentStats mPutDocumentStats;
 
     /** Holds {@link InitializeStats} after logging. */
-    public @Nullable InitializeStats mInitializeStats;
+    @Nullable public InitializeStats mInitializeStats;
 
     /** Holds {@link SearchStats} after logging. */
-    public @Nullable SearchStats mSearchStats;
+    @Nullable public SearchStats mSearchStats;
 
     /** Holds {@link RemoveStats} after logging. */
-    public @Nullable RemoveStats mRemoveStats;
+    @Nullable public RemoveStats mRemoveStats;
 
     /** Holds {@link OptimizeStats} after logging. */
-    public @Nullable OptimizeStats mOptimizeStats;
+    @Nullable public OptimizeStats mOptimizeStats;
 
     /** Holds {@link SetSchemaStats} after logging. */
-    public @NonNull List<SetSchemaStats> mSetSchemaStats = new ArrayList<>();
+    @NonNull public List<SetSchemaStats> mSetSchemaStats = new ArrayList<>();
 
     /** Holds {@link android.app.appsearch.stats.SchemaMigrationStats} after logging. */
-    public @Nullable SchemaMigrationStats mSchemaMigrationStats;
+    @Nullable public SchemaMigrationStats mSchemaMigrationStats;
 
     /** Holds {@link SearchSessionStats} after logging. */
-    public @NonNull List<SearchSessionStats> mSearchSessionsStats = new ArrayList<>();
+    @NonNull public List<SearchSessionStats> mSearchSessionsStats = new ArrayList<>();
 
     @Override
     public void logStats(@NonNull CallStats stats) {

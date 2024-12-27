@@ -15,7 +15,7 @@
  */
 package android.app.appsearch;
 
-import org.jspecify.annotations.NonNull;
+import android.annotation.NonNull;
 
 import java.util.Set;
 

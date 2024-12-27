@@ -16,14 +16,13 @@
 
 package android.app.appsearch.testutil;
 
+import android.annotation.NonNull;
+import android.annotation.Nullable;
 import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.annotation.CanIgnoreReturnValue;
-
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Encapsulates a {@link GenericDocument} that represent an email.
@@ -98,7 +97,8 @@ public class AppSearchEmail extends GenericDocument {
      *
      * @return The subject of {@link AppSearchEmail} or {@code null} if it's not been set yet.
      */
-    public @Nullable String getFrom() {
+    @Nullable
+    public String getFrom() {
         return getPropertyString(KEY_FROM);
     }
 
@@ -108,7 +108,8 @@ public class AppSearchEmail extends GenericDocument {
      * @return The destination addresses of {@link AppSearchEmail} or {@code null} if it's not been
      *     set yet.
      */
-    public String @Nullable [] getTo() {
+    @Nullable
+    public String[] getTo() {
         return getPropertyStringArray(KEY_TO);
     }
 
@@ -117,7 +118,8 @@ public class AppSearchEmail extends GenericDocument {
      *
      * @return The CC list of {@link AppSearchEmail} or {@code null} if it's not been set yet.
      */
-    public String @Nullable [] getCc() {
+    @Nullable
+    public String[] getCc() {
         return getPropertyStringArray(KEY_CC);
     }
 
@@ -126,7 +128,8 @@ public class AppSearchEmail extends GenericDocument {
      *
      * @return The BCC list of {@link AppSearchEmail} or {@code null} if it's not been set yet.
      */
-    public String @Nullable [] getBcc() {
+    @Nullable
+    public String[] getBcc() {
         return getPropertyStringArray(KEY_BCC);
     }
 
@@ -135,7 +138,8 @@ public class AppSearchEmail extends GenericDocument {
      *
      * @return The value subject of {@link AppSearchEmail} or {@code null} if it's not been set yet.
      */
-    public @Nullable String getSubject() {
+    @Nullable
+    public String getSubject() {
         return getPropertyString(KEY_SUBJECT);
     }
 
@@ -144,7 +148,8 @@ public class AppSearchEmail extends GenericDocument {
      *
      * @return The body of {@link AppSearchEmail} or {@code null} if it's not been set yet.
      */
-    public @Nullable String getBody() {
+    @Nullable
+    public String getBody() {
         return getPropertyString(KEY_BODY);
     }
 
@@ -162,43 +167,50 @@ public class AppSearchEmail extends GenericDocument {
 
         /** Sets the from address of {@link AppSearchEmail} */
         @CanIgnoreReturnValue
-        public @NonNull Builder setFrom(@NonNull String from) {
+        @NonNull
+        public Builder setFrom(@NonNull String from) {
             return setPropertyString(KEY_FROM, from);
         }
 
         /** Sets the destination address of {@link AppSearchEmail} */
         @CanIgnoreReturnValue
-        public @NonNull Builder setTo(String @NonNull ... to) {
+        @NonNull
+        public Builder setTo(@NonNull String... to) {
             return setPropertyString(KEY_TO, to);
         }
 
         /** Sets the CC list of {@link AppSearchEmail} */
         @CanIgnoreReturnValue
-        public @NonNull Builder setCc(String @NonNull ... cc) {
+        @NonNull
+        public Builder setCc(@NonNull String... cc) {
             return setPropertyString(KEY_CC, cc);
         }
 
         /** Sets the BCC list of {@link AppSearchEmail} */
         @CanIgnoreReturnValue
-        public @NonNull Builder setBcc(String @NonNull ... bcc) {
+        @NonNull
+        public Builder setBcc(@NonNull String... bcc) {
             return setPropertyString(KEY_BCC, bcc);
         }
 
         /** Sets the subject of {@link AppSearchEmail} */
         @CanIgnoreReturnValue
-        public @NonNull Builder setSubject(@NonNull String subject) {
+        @NonNull
+        public Builder setSubject(@NonNull String subject) {
             return setPropertyString(KEY_SUBJECT, subject);
         }
 
         /** Sets the body of {@link AppSearchEmail} */
         @CanIgnoreReturnValue
-        public @NonNull Builder setBody(@NonNull String body) {
+        @NonNull
+        public Builder setBody(@NonNull String body) {
             return setPropertyString(KEY_BODY, body);
         }
 
         /** Builds the {@link AppSearchEmail} object. */
+        @NonNull
         @Override
-        public @NonNull AppSearchEmail build() {
+        public AppSearchEmail build() {
             return new AppSearchEmail(super.build());
         }
     }
