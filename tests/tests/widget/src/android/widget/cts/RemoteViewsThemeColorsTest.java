@@ -27,11 +27,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
+import android.widget.cts.util.RemoteViewsUtil;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
@@ -40,13 +40,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 public class RemoteViewsThemeColorsTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
 
@@ -64,6 +65,19 @@ public class RemoteViewsThemeColorsTest {
 
     @Rule
     public ExpectedException mExpectedException = ExpectedException.none();
+
+    @Parameterized.Parameters(name = "isProtoTest={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
+    /**
+     * When this parameter is true, the test serializes and deserializes the RemoteViews to/from
+     * proto before applying. This ensures that proto serialization does not cause a change in the
+     * structure or function of RemoteViews, apart from PendingIntent based APIs.
+     */
+    @Parameterized.Parameter(0)
+    public boolean isProtoTest;
 
     private Instrumentation mInstrumentation;
 
@@ -150,8 +164,19 @@ public class RemoteViewsThemeColorsTest {
     }
 
     private View setUpViewInternal(SparseIntArray colorResources) {
-        View result = mRemoteViews.apply(mContext, null /* parent */, null /* handler */,
-                null /* size */, RemoteViews.ColorResources.create(mContext, colorResources));
+        View result = null;
+        try {
+            result =
+                    RemoteViewsUtil.applyRemoteViews(
+                            mActivityRule,
+                            mContext,
+                            mRemoteViews,
+                            isProtoTest,
+                            null,
+                            RemoteViews.ColorResources.create(mContext, colorResources));
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
 
         // Add our host view to the activity behind this test. This is similar to how launchers
         // add widgets to the on-screen UI.

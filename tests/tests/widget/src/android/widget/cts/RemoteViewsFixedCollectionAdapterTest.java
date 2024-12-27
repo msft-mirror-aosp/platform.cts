@@ -38,9 +38,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Parcel;
-import android.os.Parcelable;
 import android.util.SizeF;
 import android.util.TypedValue;
+import android.util.proto.ProtoInputStream;
+import android.util.proto.ProtoOutputStream;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -53,16 +54,14 @@ import android.widget.RemoteViews;
 import android.widget.RemoteViews.RemoteCollectionItems;
 import android.widget.StackView;
 import android.widget.TextView;
+import android.widget.cts.util.RemoteViewsUtil;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.WidgetTestUtils;
 
 import com.google.common.collect.Lists;
 
@@ -70,6 +69,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.List;
 import java.util.Map;
@@ -80,7 +80,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 public class RemoteViewsFixedCollectionAdapterTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
 
@@ -94,6 +94,19 @@ public class RemoteViewsFixedCollectionAdapterTest {
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
             new ActivityTestRule<>(RemoteViewsCtsActivity.class);
 
+    @Parameterized.Parameters(name = "isProtoTest={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
+    /**
+     * When this parameter is true, the test serializes and deserializes the RemoteViews to/from
+     * proto before applying. This ensures that proto serialization does not cause a change in the
+     * structure or function of RemoteViews, apart from PendingIntent based APIs.
+     */
+    @Parameterized.Parameter(0)
+    public boolean isProtoTest;
+
     private Instrumentation mInstrumentation;
 
     private Activity mActivity;
@@ -106,19 +119,20 @@ public class RemoteViewsFixedCollectionAdapterTest {
     private StackView mStackView;
     private AdapterViewFlipper mAdapterViewFlipper;
 
-    @UiThreadTest
     @Before
     public void setUp() throws Throwable {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
         mRemoteViews = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_adapters);
+        applyRemoteViews();
 
         ViewGroup parent = mActivity.findViewById(R.id.remoteView_host);
         AppWidgetHostView hostView = new AppWidgetHostView(mActivity);
-        parent.addView(hostView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-
-        mView = mRemoteViews.apply(mActivity, hostView);
-        hostView.addView(mView);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    parent.addView(hostView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+                    hostView.addView(mView);
+                });
 
         mListView = mView.findViewById(R.id.remoteView_list);
         mGridView = mView.findViewById(R.id.remoteView_grid);
@@ -191,14 +205,18 @@ public class RemoteViewsFixedCollectionAdapterTest {
     public void testParcelingAndUnparceling_multiplePackages() {
         Optional<String> otherPackageName = getAnotherPackageName();
         if (!otherPackageName.isPresent()) return;
-        RemoteCollectionItems items = new RemoteCollectionItems.Builder()
-                .setHasStableIds(true)
-                .setViewTypeCount(10)
-                .addItem(3 /* id */, new RemoteViews(PACKAGE_NAME, R.layout.textview_singleline))
-                .addItem(
-                    5 /* id */,
-                    new RemoteViews(otherPackageName.get(), R.layout.textview_gravity))
-                .build();
+        RemoteCollectionItems items =
+                new RemoteCollectionItems.Builder()
+                        .setHasStableIds(true)
+                        .setViewTypeCount(10)
+                        .addItem(
+                                3 /* id */,
+                                new RemoteViews(PACKAGE_NAME, R.layout.textview_singleline))
+                        .addItem(
+                                5 /* id */,
+                                new RemoteViews(
+                                        otherPackageName.get(), android.R.layout.list_content))
+                        .build();
 
         RemoteViews parent = new RemoteViews(PACKAGE_NAME, R.layout.listview_layout);
         parent.setRemoteAdapter(R.id.listview_default, items);
@@ -208,7 +226,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertEquals(3, unparceled.getItemId(0));
         assertEquals(5, unparceled.getItemId(1));
         assertEquals(R.layout.textview_singleline, unparceled.getItemView(0).getLayoutId());
-        assertEquals(R.layout.textview_gravity, unparceled.getItemView(1).getLayoutId());
+        assertEquals(android.R.layout.list_content, unparceled.getItemView(1).getLayoutId());
         assertTrue(unparceled.hasStableIds());
         assertEquals(10, unparceled.getViewTypeCount());
         assertNotNull(unparceled.getItemView(0).mApplication);
@@ -322,7 +340,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
     public void testSerializationSize_largeCollection() {
         RemoteCollectionItems items = createSampleCollectionItems(/* size= */ 100);
 
-        int dataSize = parcelAndRun(items, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(items);
 
         // 7,408 when test was written.
         assertLessThan(10_000, dataSize);
@@ -335,7 +353,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
         RemoteCollectionItems items =
                 createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackageName.get());
 
-        int dataSize = parcelAndRun(items, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(items);
 
         // 9,140 when test was written.
         assertLessThan(12_000, dataSize);
@@ -345,10 +363,15 @@ public class RemoteViewsFixedCollectionAdapterTest {
     public void testSerializationSize_extraLargeCollection() {
         RemoteCollectionItems items = createSampleCollectionItems(/* size= */ 1000);
 
-        int dataSize = parcelAndRun(items, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(items);
 
-        // 50,608 when test was written.
-        assertLessThan(70_000, dataSize);
+        if (isProtoTest) {
+            // 71,876 when test was written
+            assertLessThan(80_000, dataSize);
+        } else {
+            // 50,608 when test was written.
+            assertLessThan(70_000, dataSize);
+        }
     }
 
     @Test
@@ -364,7 +387,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
         RemoteViews joinedRemoteViews = new RemoteViews(landscape, portrait);
 
-        int dataSize = parcelAndRun(joinedRemoteViews, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 12,336 when test was written.
         assertLessThan(15_000, dataSize);
@@ -385,7 +408,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
         RemoteViews joinedRemoteViews = new RemoteViews(landscape, portrait);
 
-        int dataSize = parcelAndRun(joinedRemoteViews, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 14,068 when test was written.
         assertLessThan(20_000, dataSize);
@@ -408,7 +431,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 }));
         RemoteViews joinedRemoteViews = new RemoteViews(sizeToRemoteViews);
 
-        int dataSize = parcelAndRun(joinedRemoteViews, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 22,100 when test was written.
         assertLessThan(30_000, dataSize);
@@ -435,7 +458,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 }));
         RemoteViews joinedRemoteViews = new RemoteViews(sizeToRemoteViews);
 
-        int dataSize = parcelAndRun(joinedRemoteViews, Parcel::dataSize);
+        int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 23,832 when test was written.
         assertLessThan(30_000, dataSize);
@@ -446,8 +469,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
     public void testSetRemoteAdapter_emptyCollection() {
         RemoteCollectionItems items = new RemoteCollectionItems.Builder().build();
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(
-                mActivityRule, mListView, () -> mRemoteViews.reapply(mActivity, mView));
+        reapplyRemoteViews(mListView);
 
         assertEquals(0, mListView.getChildCount());
         assertEquals(0, mListView.getAdapter().getCount());
@@ -470,8 +492,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(
-                mActivityRule, mListView, () -> mRemoteViews.reapply(mActivity, mView));
+        reapplyRemoteViews(mListView);
 
         Adapter adapter = mListView.getAdapter();
         assertEquals(2, adapter.getCount());
@@ -528,8 +549,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, parcelAndUnparcel(items));
-        WidgetTestUtils.runOnMainAndLayoutSync(mActivityRule,
-                () -> mRemoteViews.reapply(mActivity, mView), true);
+        reapplyRemoteViews();
 
         Adapter adapter = listView.getAdapter();
         assertEquals(3, adapter.getCount());
@@ -554,8 +574,11 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertEquals("Checkbox", checkBox2.getText());
         assertTrue(checkBox2.isChecked());
 
+        // Proto serialization removes PendingIntents from the RemoteViews.
+        if (isProtoTest) return;
+
         // View being checked to false should launch the intent.
-        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mActivity, mView));
+        reapplyRemoteViews();
         mActivityRule.runOnUiThread(() -> checkBox2.setChecked(false));
         Intent checkChangeIntent = receiver.awaitIntent();
         assertFalse(checkChangeIntent.getBooleanExtra(RemoteViews.EXTRA_CHECKED, true));
@@ -593,8 +616,10 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        WidgetTestUtils.runOnMainAndLayoutSync(mActivityRule,
-                () -> mRemoteViews.reapply(mActivity, mView), true);
+        reapplyRemoteViews();
+
+        // Proto serialization removes PendingIntents from the RemoteViews.
+        if (isProtoTest) return;
 
         mActivityRule.runOnUiThread(() -> listView.performItemClick(listView.getChildAt(0), 0, 10));
         Intent itemClickIntent = receiver.awaitIntent();
@@ -611,7 +636,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
+        reapplyRemoteViews();
 
         Adapter initialAdapter = listView.getAdapter();
         AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
@@ -624,7 +649,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .setViewTypeCount(2)
                 .build();
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
+        reapplyRemoteViews();
 
         // The adapter should have been reused and simply updated. The view type for the first
         // layoutId should have been maintained (as 0) and the next view type assigned to the
@@ -646,8 +671,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
-
+        reapplyRemoteViews();
         Adapter initialAdapter = listView.getAdapter();
         AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
         TextView initialFirstItemView = (TextView) child0.getChildAt(0);
@@ -657,8 +681,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .addItem(10 /* id= */, new RemoteViews(PACKAGE_NAME, R.layout.listitemfixed_layout))
                 .build();
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
-
+        reapplyRemoteViews();
         // The adapter should have been replaced, which is required when the view type increases.
         AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
         assertEquals(2, listView.getAdapter().getViewTypeCount());
@@ -677,8 +700,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, parcelAndUnparcel(items));
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
-
+        reapplyRemoteViews();
         Adapter initialAdapter = listView.getAdapter();
         AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
         TextView initialSecondItemView = (TextView) child1.getChildAt(0);
@@ -689,8 +711,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .setViewTypeCount(2)
                 .build();
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, parcelAndUnparcel(items));
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
-
+        reapplyRemoteViews();
         // The adapter should have been kept, and the second item should have maintained its view
         // type of 1 even though its now the only view type.
         AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
@@ -710,8 +731,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .build();
 
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, parcelAndUnparcel(items));
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
-
+        reapplyRemoteViews();
         Adapter initialAdapter = listView.getAdapter();
         AppWidgetHostView child1 = (AppWidgetHostView) listView.getChildAt(1);
         TextView initialSecondItemView = (TextView) child1.getChildAt(0);
@@ -721,8 +741,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .addItem(10 /* id= */, new RemoteViews(PACKAGE_NAME, R.layout.listitemfixed_layout))
                 .build();
         mRemoteViews.setRemoteAdapter(R.id.remoteView_list, items);
-        runOnMainAndDrawSync(mActivityRule, listView, () -> mRemoteViews.reapply(mActivity, mView));
-
+        reapplyRemoteViews();
         // The adapter should have been kept, and kept its higher view count to allow for views to
         // be recycled.
         AppWidgetHostView child0 = (AppWidgetHostView) listView.getChildAt(0);
@@ -757,14 +776,17 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .addItem(13 /* id= */, item3)
                 .build();
 
-        runOnMainAndDrawSync(
-                mActivityRule,
-                mGridView, () -> {
-                    mListView.setVisibility(View.GONE);
-                    mGridView.setVisibility(View.VISIBLE);
-                    mRemoteViews.setRemoteAdapter(R.id.remoteView_grid, parcelAndUnparcel(items));
-                    mRemoteViews.reapply(mActivity, mView);
-                });
+        try {
+            mActivityRule.runOnUiThread(
+                    () -> {
+                        mListView.setVisibility(View.GONE);
+                        mGridView.setVisibility(View.VISIBLE);
+                    });
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        mRemoteViews.setRemoteAdapter(R.id.remoteView_grid, parcelAndUnparcel(items));
+        reapplyRemoteViews(mGridView);
 
         Adapter adapter = mGridView.getAdapter();
         assertEquals(4, adapter.getCount());
@@ -803,14 +825,17 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 .addItem(11 /* id= */, item1)
                 .build();
 
-        runOnMainAndDrawSync(
-                mActivityRule,
-                mStackView, () -> {
-                    mListView.setVisibility(View.GONE);
-                    mStackView.setVisibility(View.VISIBLE);
-                    mRemoteViews.setRemoteAdapter(R.id.remoteView_stack, items);
-                    mRemoteViews.reapply(mActivity, mView);
-                });
+        try {
+            mActivityRule.runOnUiThread(
+                    () -> {
+                        mListView.setVisibility(View.GONE);
+                        mStackView.setVisibility(View.VISIBLE);
+                    });
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        mRemoteViews.setRemoteAdapter(R.id.remoteView_stack, items);
+        reapplyRemoteViews(mStackView);
 
         Adapter adapter = mStackView.getAdapter();
         assertEquals(2, adapter.getCount());
@@ -841,6 +866,17 @@ public class RemoteViewsFixedCollectionAdapterTest {
                     mRemoteViews.setRemoteAdapter(R.id.remoteView_flipper, items);
                     mRemoteViews.reapply(mActivity, mView);
                 });
+        try {
+            mActivityRule.runOnUiThread(
+                    () -> {
+                        mListView.setVisibility(View.GONE);
+                        mAdapterViewFlipper.setVisibility(View.VISIBLE);
+                    });
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
+        mRemoteViews.setRemoteAdapter(R.id.remoteView_flipper, items);
+        reapplyRemoteViews(mAdapterViewFlipper);
 
         Adapter adapter = mAdapterViewFlipper.getAdapter();
         assertEquals(2, adapter.getCount());
@@ -850,19 +886,105 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertEquals(11, adapter.getItemId(1));
     }
 
-    private static RemoteCollectionItems parcelAndUnparcel(RemoteCollectionItems items) {
-        return parcelAndRun(items, RemoteCollectionItems.CREATOR::createFromParcel);
+    /**
+     * Serialize and deserialize the RemoteCollectionItems to test serialization code. When the
+     * isProtoTest parameter is true, this function uses proto serialization instead of parcels.
+     */
+    private RemoteCollectionItems parcelAndUnparcel(RemoteCollectionItems items) {
+        if (isProtoTest) {
+            ProtoOutputStream out = new ProtoOutputStream();
+            items.writeToProto(mActivity, out);
+            ProtoInputStream in = new ProtoInputStream(out.getBytes());
+            try {
+                return RemoteCollectionItems.createFromProto(mActivity, in);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            Parcel parcel = Parcel.obtain();
+            items.writeToParcel(parcel, /* flags= */ 0);
+            parcel.setDataPosition(0);
+            return RemoteCollectionItems.CREATOR.createFromParcel(parcel);
+        }
     }
 
-    private static <T> T parcelAndRun(Parcelable parcelable, Function<Parcel, T> function) {
-        Parcel parcel = Parcel.obtain();
-        parcelable.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        try {
-            return function.apply(parcel);
-        } finally {
-            parcel.recycle();
+    /**
+     * Serialize the RemoteCollectionItems and return its size in bytes. When the isProtoTest
+     * parameter is true, this function uses proto serialization instead of parcels.
+     */
+    private int parcelAndGetDataSize(RemoteCollectionItems items) {
+        if (isProtoTest) {
+            ProtoOutputStream out = new ProtoOutputStream();
+            items.writeToProto(mActivity, out);
+            return out.getBytes().length;
+        } else {
+            Parcel parcel = Parcel.obtain();
+            items.writeToParcel(parcel, /* flags= */ 0);
+            parcel.setDataPosition(0);
+            try {
+                return parcel.dataSize();
+            } finally {
+                parcel.recycle();
+            }
         }
+    }
+
+    /**
+     * Serialize the RemoteViews and return its size in bytes. When the isProtoTest parameter is
+     * true, this function uses proto serialization instead of parcels.
+     */
+    private int parcelAndGetDataSize(RemoteViews views) {
+        if (isProtoTest) {
+            ProtoOutputStream out = new ProtoOutputStream();
+            views.writePreviewToProto(mActivity, out);
+            return out.getBytes().length;
+        } else {
+            Parcel parcel = Parcel.obtain();
+            views.writeToParcel(parcel, /* flags= */ 0);
+            parcel.setDataPosition(0);
+            try {
+                return parcel.dataSize();
+            } finally {
+                parcel.recycle();
+            }
+        }
+    }
+
+    private void applyRemoteViews(View syncView) {
+        runOnMainAndDrawSync(
+                mActivityRule,
+                syncView,
+                () -> {
+                    try {
+                        mView =
+                                RemoteViewsUtil.applyRemoteViews(
+                                        mActivityRule, mActivity, mRemoteViews, isProtoTest);
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+    private void applyRemoteViews() {
+        applyRemoteViews(mActivity.findViewById(R.id.remoteView_host));
+    }
+
+    private void reapplyRemoteViews(View syncView) {
+        runOnMainAndDrawSync(
+                mActivityRule,
+                syncView,
+                () -> {
+                    try {
+                        RemoteViewsUtil.reapplyRemoteViews(
+                                mActivityRule, mActivity, mRemoteViews, mView, isProtoTest);
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+    }
+
+    private void reapplyRemoteViews() {
+        reapplyRemoteViews(mView);
     }
 
     private static void assertLessThan(int expected, int actual) {
@@ -927,7 +1049,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
         RemoteCollectionItems.Builder builder = new RemoteCollectionItems.Builder();
         for (int i = 0; i < size; i++) {
             String packageName = i % 2 == 0 ? PACKAGE_NAME : otherPackage;
-            builder.addItem(i, new RemoteViews(packageName, R.layout.textview_singleline));
+            builder.addItem(i, new RemoteViews(packageName, android.R.layout.list_content));
         }
         return builder.build();
     }
