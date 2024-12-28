@@ -130,10 +130,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
                 WAITFOR_MSEC);
         try {
-            WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
-
             // Stop the media foreground service in APP1.
-            waiter.prepare(ACTION_START_FGSM_RESULT);
             CommandReceiver.sendCommand(mContext,
                     CommandReceiver.COMMAND_STOP_FOREGROUND_SERVICE_MEDIA, PACKAGE_NAME_APP1,
                     PACKAGE_NAME_APP1, 0, null);
@@ -143,10 +140,54 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         }
     }
 
+    private void setupMediaService() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        try {
+            // Put APP1 in TOP state.
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+
+            // Start the media service in APP1.
+            Bundle extras =
+                    LocalForegroundServiceMedia.newCommand(
+                            LocalForegroundServiceMedia.COMMAND_START_NO_FOREGROUND);
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    extras);
+
+            // Stop the activity.
+            CommandReceiver.sendCommand(
+                    mContext,
+                    CommandReceiver.COMMAND_STOP_ACTIVITY,
+                    PACKAGE_NAME_APP1,
+                    PACKAGE_NAME_APP1,
+                    0,
+                    null);
+
+            uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        } finally {
+            uid1Watcher.finish();
+        }
+    }
+
+    // This test tests activity manager internal API to set media foreground service inactive.
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testNotifyInactiveMediaForegroundService() throws Exception {
+    public void testNotifyInactiveMediaForegroundServiceInternal() throws Exception {
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);
         WatchUidRunner uid1Watcher = new WatchUidRunner(mInstrumentation, app1Info.uid,
@@ -164,6 +205,8 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         uid1Watcher.finish();
     }
 
+    // This test tests activity manager internal API to set media foreground service
+    // inactive/active.
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
@@ -187,5 +230,41 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
         cleanUpMediaForegroundService();
         uid1Watcher.finish();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithUserEngagedMediaSessionIsInBg() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        setupMediaService();
+        // Post media style notification.
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_POST_MEDIA_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Move media session to user engaged state.
+        extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_PLAY_MEDIA);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 }

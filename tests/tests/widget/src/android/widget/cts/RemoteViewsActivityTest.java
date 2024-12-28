@@ -23,12 +23,11 @@ import android.app.Activity;
 import android.os.Parcel;
 import android.view.InflateException;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.RemoteViews;
+import android.widget.cts.util.RemoteViewsUtil;
 
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
 
@@ -36,12 +35,26 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 public class RemoteViewsActivityTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
     private Activity mActivity;
+
+    @Parameterized.Parameters(name = "isProtoTest={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
+    /**
+     * When this parameter is true, the test serializes and deserializes the RemoteViews to/from
+     * proto before applying. This ensures that proto serialization does not cause a change in the
+     * structure or function of RemoteViews, apart from PendingIntent based APIs.
+     */
+    @Parameterized.Parameter(0)
+    public boolean isProtoTest;
 
     @Rule
     public ActivityTestRule<RemoteViewsCtsActivity> mActivityRule =
@@ -53,17 +66,14 @@ public class RemoteViewsActivityTest {
     }
 
     @Test
-    public void testGood() {
+    public void testGood() throws Throwable {
         RemoteViews orig = new RemoteViews(PACKAGE_NAME, R.layout.remote_view_test_good);
         Parcel p = Parcel.obtain();
         orig.writeToParcel(p, 0);
         p.setDataPosition(0);
 
-        RemoteViews r = RemoteViews.CREATOR.createFromParcel(p);
-
-        ViewGroup parent = (ViewGroup) mActivity.findViewById(R.id.remoteView_host);
-
-        View result = r.apply(mActivity, parent);
+        RemoteViews remoteViews = RemoteViews.CREATOR.createFromParcel(p);
+        View result = applyRemoteViews(remoteViews);
 
         p.recycle();
 
@@ -79,21 +89,19 @@ public class RemoteViewsActivityTest {
     }
 
     @Test
-    public void testDerivedClass() {
+    public void testDerivedClass() throws Throwable {
         RemoteViews orig = new RemoteViews(PACKAGE_NAME, R.layout.remote_view_test_bad_1);
         Parcel p = Parcel.obtain();
         orig.writeToParcel(p, 0);
         p.setDataPosition(0);
 
-        RemoteViews r = RemoteViews.CREATOR.createFromParcel(p);
-
-        ViewGroup parent = (ViewGroup) mActivity.findViewById(R.id.remoteView_host);
-
-        boolean exceptionThrown = false;
+        RemoteViews remoteViews = RemoteViews.CREATOR.createFromParcel(p);
         View result = null;
 
+        boolean exceptionThrown = false;
+
         try {
-            result = r.apply(mActivity, parent);
+            result = applyRemoteViews(remoteViews);
         } catch (InflateException e) {
             exceptionThrown = true;
         }
@@ -105,7 +113,7 @@ public class RemoteViewsActivityTest {
     }
 
     @Test
-    public void testWebView() {
+    public void testWebView() throws Throwable {
         if (!NullWebViewUtils.isWebViewAvailable()) {
             return;
         }
@@ -114,15 +122,13 @@ public class RemoteViewsActivityTest {
         orig.writeToParcel(p, 0);
         p.setDataPosition(0);
 
-        RemoteViews r = RemoteViews.CREATOR.createFromParcel(p);
-
-        ViewGroup parent = (ViewGroup) mActivity.findViewById(R.id.remoteView_host);
-
-        boolean exceptionThrown = false;
+        RemoteViews remoteViews = RemoteViews.CREATOR.createFromParcel(p);
         View result = null;
 
+        boolean exceptionThrown = false;
+
         try {
-            result = r.apply(mActivity, parent);
+            result = applyRemoteViews(remoteViews);
         } catch (InflateException e) {
             exceptionThrown = true;
         }
@@ -131,5 +137,9 @@ public class RemoteViewsActivityTest {
 
         assertTrue("WebView allowed to be inflated", exceptionThrown);
         assertNull("WebView allowed to be inflated", result);
+    }
+
+    private View applyRemoteViews(RemoteViews remoteViews) throws Throwable {
+        return RemoteViewsUtil.applyRemoteViews(mActivityRule, mActivity, remoteViews, isProtoTest);
     }
 }
