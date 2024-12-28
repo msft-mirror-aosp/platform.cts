@@ -65,11 +65,12 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
     @Test
     public void testGetFeatures_mteAvailable() {
         assumeTrue(isAvailable());
-        assertEquals(
-                "The Memory Tagging feature is not in the feature list",
+        assertEquals("The Memory Tagging feature is not in the feature list",
                 1,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(feature -> feature.getId() == FEATURE_ID_ENABLE_MTE)
+                mManager.getAdvancedProtectionFeatures()
+                        .stream()
+                        .filter(feature -> feature.getId().equals(
+                                FEATURE_ID_ENABLE_MTE))
                         .count());
     }
 
@@ -82,11 +83,12 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
     @Test
     public void testGetFeatures_mteUnavailable() {
         assumeFalse(isAvailable());
-        assertEquals(
-                "The memory tagging feature should not be in the feature list",
+        assertEquals("The memory tagging feature should not be in the feature list",
                 0,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(feature -> feature.getId() == FEATURE_ID_ENABLE_MTE)
+                mManager.getAdvancedProtectionFeatures()
+                        .stream()
+                        .filter(feature -> feature.getId().equals(
+                                FEATURE_ID_ENABLE_MTE))
                         .count());
     }
 

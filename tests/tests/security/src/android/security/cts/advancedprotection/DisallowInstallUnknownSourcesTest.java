@@ -57,14 +57,12 @@ public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTes
     })
     @Test
     public void testGetFeatures() {
-        assertEquals(
-                "The Disallow Install Unknown Sources feature is not in the feature list",
+        assertEquals("The Disallow Install Unknown Sources feature is not in the feature list",
                 1,
-                mManager.getAdvancedProtectionFeatures().stream()
-                        .filter(
-                                feature ->
-                                        feature.getId()
-                                                == FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES)
+                mManager.getAdvancedProtectionFeatures()
+                        .stream()
+                        .filter(feature -> feature.getId().equals(
+                                FEATURE_ID_DISALLOW_INSTALL_UNKNOWN_SOURCES))
                         .count());
     }
 
