@@ -92,6 +92,7 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final int COMMAND_RELEASE_CONTENT_PROVIDER = 35;
     public static final int COMMAND_START_FOREGROUND_SERVICE_MEDIA = 36;
     public static final int COMMAND_STOP_FOREGROUND_SERVICE_MEDIA = 37;
+    public static final int COMMAND_START_SERVICE_MEDIA = 38;
 
     public static final String KEY_PENDING_INTENT = "android.app.stubs.key.PENDING_INTENT";
     public static final String KEY_STICKY_BROADCAST_FILTER =
@@ -182,6 +183,9 @@ public class CommandReceiver extends BroadcastReceiver {
                 break;
             case COMMAND_STOP_FOREGROUND_SERVICE_STICKY:
                 doStopService(context, intent, FG_STICKY_SERVICE_NAME);
+                break;
+            case COMMAND_START_SERVICE_MEDIA:
+                doStartServiceMedia(context, intent);
                 break;
             case COMMAND_START_FOREGROUND_SERVICE_MEDIA:
                 doStartForegroundServiceMedia(context, intent);
@@ -352,6 +356,14 @@ public class CommandReceiver extends BroadcastReceiver {
             Log.d(TAG, "startForegroundService gets an "
                     + "ForegroundServiceStartNotAllowedException", e);
         }
+    }
+
+    private void doStartServiceMedia(Context context, Intent commandIntent) {
+        String targetPackage = getTargetPackage(commandIntent);
+        Intent fgsIntent = new Intent();
+        fgsIntent.putExtras(commandIntent);
+        fgsIntent.setComponent(new ComponentName(targetPackage, FG_MEDIA_SERVICE_NAME));
+        context.startService(fgsIntent);
     }
 
     private void doStartForegroundServiceMedia(Context context, Intent commandIntent) {
