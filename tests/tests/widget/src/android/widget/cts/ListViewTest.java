@@ -1611,7 +1611,14 @@ public class ListViewTest {
             mListViewStretch.setDividerHeight(0);
         });
         // Give it an opportunity to finish layout.
-        mActivityRule.runOnUiThread(() -> {});
+        CountDownLatch latch = new CountDownLatch(1);
+        mActivityRule.runOnUiThread(() -> {
+            mListViewStretch.getViewTreeObserver().addOnPreDrawListener(() -> {
+                latch.countDown();
+                return true;
+            });
+        });
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
     }
 
     private static class StableArrayAdapter<T> extends ArrayAdapter<T> {
