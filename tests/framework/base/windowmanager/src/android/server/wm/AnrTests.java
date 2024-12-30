@@ -25,10 +25,17 @@ import static android.server.wm.app.Components.UnresponsiveActivity.EXTRA_ON_CRE
 import static android.server.wm.app.Components.UnresponsiveActivity.EXTRA_ON_KEYDOWN_DELAY_MS;
 import static android.server.wm.app.Components.UnresponsiveActivity.EXTRA_ON_MOTIONEVENT_DELAY_MS;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
+
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.ActivityManager;
+import android.app.ApplicationExitInfo;
+import android.app.Instrumentation;
 import android.content.ComponentName;
+import android.content.Context;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
@@ -46,10 +53,13 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.compatibility.common.util.PollingCheck;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
@@ -97,7 +107,7 @@ public class AnrTests extends ActivityManagerTestBase {
         // listing to input about the focused app.
         SystemClock.sleep(500);
         injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, false /* sync */);
-        clickCloseAppOnAnrDialog();
+        clickCloseAppOnAnrDialog(UNRESPONSIVE_ACTIVITY.getPackageName());
         assertEventLogsContainsAnr(UnresponsiveActivity.PROCESS_NAME);
     }
 
@@ -106,7 +116,7 @@ public class AnrTests extends ActivityManagerTestBase {
         startUnresponsiveActivity(EXTRA_DELAY_UI_THREAD_MS, true /* waitForCompletion */,
                 UNRESPONSIVE_ACTIVITY);
         injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, false /* sync */);
-        clickCloseAppOnAnrDialog();
+        clickCloseAppOnAnrDialog(UNRESPONSIVE_ACTIVITY.getPackageName());
         assertEventLogsContainsAnr(UnresponsiveActivity.PROCESS_NAME);
     }
 
@@ -115,7 +125,7 @@ public class AnrTests extends ActivityManagerTestBase {
         startUnresponsiveActivity(EXTRA_ON_KEYDOWN_DELAY_MS, true /* waitForCompletion */,
                 UNRESPONSIVE_ACTIVITY);
         injectKey(KeyEvent.KEYCODE_A, false /* longpress */, false /* sync */);
-        clickCloseAppOnAnrDialog();
+        clickCloseAppOnAnrDialog(UNRESPONSIVE_ACTIVITY.getPackageName());
         assertEventLogsContainsAnr(UnresponsiveActivity.PROCESS_NAME);
     }
 
@@ -129,7 +139,7 @@ public class AnrTests extends ActivityManagerTestBase {
         final WindowManagerState.Task unresponsiveActivityTask =
                 mWmState.getTaskByActivity(UNRESPONSIVE_ACTIVITY);
         mTouchHelper.tapOnTaskCenterAsync(unresponsiveActivityTask);
-        clickCloseAppOnAnrDialog();
+        clickCloseAppOnAnrDialog(UNRESPONSIVE_ACTIVITY.getPackageName());
         assertEventLogsContainsAnr(UnresponsiveActivity.PROCESS_NAME);
     }
 
@@ -148,7 +158,7 @@ public class AnrTests extends ActivityManagerTestBase {
                     mWmState.getTaskByActivity(new ComponentName("android.server.wm.cts",
                             "android.server.wm.HostActivity"));
             mTouchHelper.tapOnTaskCenterAsync(hostActivityTask);
-            clickCloseAppOnAnrDialog();
+            clickCloseAppOnAnrDialog("android.server.wm.app");
         } catch (InterruptedException ignored) {
         }
         assertEventLogsContainsAnr(RenderService.PROCESS_NAME);
@@ -167,17 +177,26 @@ public class AnrTests extends ActivityManagerTestBase {
         fail("Could not find anr kill event for " + processName);
     }
 
-    private void clickCloseAppOnAnrDialog() {
+    private void clickCloseAppOnAnrDialog(String packageName) {
         // Find anr dialog and kill app
+        final long timestamp = System.currentTimeMillis();
         UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         UiObject2 closeAppButton = uiDevice.wait(Until.findObject(By.res("android:id/aerr_close")),
                 20000);
-        if (closeAppButton != null) {
-            Log.d(TAG, "found permission dialog after searching all windows, clicked");
-            closeAppButton.click();
+        if (closeAppButton == null) {
+            fail("Could not find anr dialog");
             return;
         }
-        fail("Could not find anr dialog");
+        closeAppButton.click();
+        Log.d(TAG, "found permission dialog after searching all windows, clicked");
+        /*
+          We must wait for the app to be fully closed before exiting this test. This is because
+          another test may again invoke 'am start' for the same activity.
+          If the 1st process that got ANRd isn't killed by the time second 'am start' runs,
+          the killing logic will apply to the newly launched 'am start' instance, and the second
+          test will fail because the unresponsive activity will never be launched.
+         */
+        waitForNewExitReasonAfter(timestamp, packageName);
     }
 
     private void startUnresponsiveActivity(String delayTypeExtra, boolean waitForCompletion,
@@ -186,5 +205,25 @@ public class AnrTests extends ActivityManagerTestBase {
         String startCmd = "am start" + flags + activity.flattenToString() +
                 " --ei " + delayTypeExtra + " 30000";
         executeShellCommand(startCmd);
+    }
+
+    private List<ApplicationExitInfo> getExitReasons(String packageName) {
+        final List<ApplicationExitInfo>[] infos = new List[]{new ArrayList<>()};
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        instrumentation.runOnMainSync(() -> {
+            ActivityManager am = (ActivityManager) instrumentation.getContext()
+                    .getSystemService(Context.ACTIVITY_SERVICE);
+            infos[0] = am.getHistoricalProcessExitReasons(packageName, /*all pids*/0, /* no max*/0);
+        });
+        return infos[0];
+    }
+    private void waitForNewExitReasonAfter(long timestamp, String packageName) {
+        PollingCheck.waitFor(() -> {
+            List<ApplicationExitInfo> reasons = getExitReasons(packageName);
+            return !reasons.isEmpty() && reasons.get(0).getTimestamp() >= timestamp;
+        });
+        List<ApplicationExitInfo> reasons = getExitReasons(packageName);
+        assertTrue(reasons.get(0).getTimestamp() > timestamp);
+        assertEquals(ApplicationExitInfo.REASON_ANR, reasons.get(0).getReason());
     }
 }
