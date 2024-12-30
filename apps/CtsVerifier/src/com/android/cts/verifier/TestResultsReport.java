@@ -65,6 +65,7 @@ class TestResultsReport {
     private static final String TEST_DETAILS_TAG = "details";
 
     private static final String TEST_CASE_NAME = "manualTests";
+    private static final String INTERACTIVE_TEST_CASE_NAME = "interactiveTests";
 
     private final Context mContext;
 
@@ -123,6 +124,7 @@ class TestResultsReport {
 
         // Get test result, including test name, result, report log, details and histories.
         getCaseResult(moduleResult);
+        getInteractiveCaseResult(moduleResult);
 
         return result;
     }
@@ -139,47 +141,73 @@ class TestResultsReport {
      */
     private void getCaseResult(IModuleResult moduleResult) {
         ICaseResult caseResult = moduleResult.getOrCreateResult(TEST_CASE_NAME);
+        String interactiveTestTitle =
+                mContext.getResources().getString(R.string.interactive_tests_title);
         int notExecutedCount = 0;
         for (DisplayMode mode: DisplayMode.values()) {
             String displayMode = mode.toString();
             int count = mAdapter.getCount(displayMode);
             for (int i = 0; i < count; i++) {
                 TestListItem item = mAdapter.getItem(displayMode, i);
-                if (item.isTest()) {
-                    ITestResult currentTestResult = caseResult.getOrCreateResult(item.testName);
-                    TestStatus resultStatus =
-                        getTestResultStatus(mAdapter.getTestResult(displayMode, i));
-                    if (resultStatus == null) {
+                String testName = item.testName;
+                if (item.isTest() && !item.title.equals(interactiveTestTitle)) {
+                    createTestResult(caseResult, testName, testName);
+                    if (mAdapter.getTestResult(testName) == TestResult.TEST_RESULT_NOT_EXECUTED) {
                         ++notExecutedCount;
-                    }
-                    currentTestResult.setResultStatus(resultStatus);
-                    // TODO: report test details with Extended Device Info (EDI) or CTS metrics
-                    String details = mAdapter.getTestDetails(displayMode, i);
-                    currentTestResult.setMessage(details);
-
-                    ReportLog reportLog = mAdapter.getReportLog(displayMode, i);
-                    if (reportLog != null) {
-                        currentTestResult.setReportLog(reportLog);
-                    }
-
-                    TestResultHistoryCollection historyCollection = mAdapter
-                        .getHistoryCollection(displayMode, i);
-                    if (historyCollection != null) {
-                        List<TestResultHistory> leafTestHistories =
-                            getTestResultHistories(historyCollection);
-                        currentTestResult.setTestResultHistories(leafTestHistories);
-                    }
-
-                    TestScreenshotsMetadata screenshotsMetadata = mAdapter
-                            .getScreenshotsMetadata(displayMode, i);
-                    if (screenshotsMetadata != null) {
-                        currentTestResult.setTestScreenshotsMetadata(screenshotsMetadata);
                     }
                 }
             }
         }
         moduleResult.setDone(true);
         moduleResult.setNotExecuted(notExecutedCount);
+    }
+
+    /**
+     * Get case results per interactive test, including result, report log, details and histories.
+     *
+     * @param moduleResult The module result bound with {@link IInvocationResult}.
+     */
+    private void getInteractiveCaseResult(IModuleResult moduleResult) {
+        ICaseResult caseResult = moduleResult.getOrCreateResult(INTERACTIVE_TEST_CASE_NAME);
+        for (String module : mContext.getResources().getStringArray(R.array.interactive_modules)) {
+            for (String testName : mAdapter.getTestResultNames()) {
+                if (!testName.startsWith(module)) {
+                    continue;
+                }
+                // Split Module and Class#TestCase
+                String[] parts = testName.split(HostTestsActivity.TEST_ID_SEPARATOR, 2);
+                if (parts.length < 2 || !parts[1].contains(HostTestsActivity.TEST_ID_SEPARATOR)) {
+                    continue;
+                }
+                createTestResult(caseResult, testName, parts[1]);
+            }
+        }
+    }
+
+    private void createTestResult(ICaseResult caseResult, String testName, String resultName) {
+        ITestResult currentTestResult = caseResult.getOrCreateResult(resultName);
+        TestStatus resultStatus = getTestResultStatus(mAdapter.getTestResult(testName));
+
+        currentTestResult.setResultStatus(resultStatus);
+        // TODO: report test details with Extended Device Info (EDI) or CTS metrics
+        String details = mAdapter.getTestDetails(testName);
+        currentTestResult.setMessage(details);
+
+        ReportLog reportLog = mAdapter.getReportLog(testName);
+        if (reportLog != null) {
+            currentTestResult.setReportLog(reportLog);
+        }
+
+        TestResultHistoryCollection historyCollection = mAdapter.getHistoryCollection(testName);
+        if (historyCollection != null) {
+            List<TestResultHistory> leafTestHistories = getTestResultHistories(historyCollection);
+            currentTestResult.setTestResultHistories(leafTestHistories);
+        }
+
+        TestScreenshotsMetadata screenshotsMetadata = mAdapter.getScreenshotsMetadata(testName);
+        if (screenshotsMetadata != null) {
+            currentTestResult.setTestScreenshotsMetadata(screenshotsMetadata);
+        }
     }
 
     private TestStatus getTestResultStatus(int testResult) {
