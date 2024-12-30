@@ -13,6 +13,7 @@
 # limitations under the License.
 """Utility functions to detect a set of patterns in the chart image."""
 
+import enum
 import logging
 import os
 
@@ -36,6 +37,47 @@ _MIN_REPROJECTION_THRESHOLD = 5.0
 # These thresholds are customized for SIFT descriptors.
 _DISTANCE_THRESHOLD = 300
 _RATIO_THRESHOLD = 0.85
+_TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
+_TEST_CHART_FILE_PATH = os.path.join(_TEST_IMG_DIR, 'ip-test-chart-gen2.jpg')
+_PRECALCULATED_QR_CODE_TO_TEST_CHART_HOMOGRAPHY = np.array([
+    [6.779971102933098, 0.013987338118243198, 3607.3750756216737],
+    [-0.020449324384403368, 6.811438682306467, 4868.505503109079],
+    [-0.0000028107426441194394, 0.0000028798060528285107, 1.0],
+])
+_MAX_INTENSITY = 255
+
+
+class _TestChartConstants:
+  """Constants related to the test chart original image file at `_TEST_CHART_FILE_PATH`.
+  """
+  FULL_CHART_WIDTH = 9600
+  FULL_CHART_HEIGHT = 12000
+
+
+@enum.unique
+class TestChartFeature(enum.Enum):
+  FULL_CHART = 'full_chart'
+  CENTER_QR_CODE = 'center_qr_code'
+  COLOR_CHECKER_CELLS = 'color_checker_cells'
+  DYNAMIC_RANGE_PATCHES = 'dynamic_range_patches'
+  DEAD_LEAF_PATCH = 'dead_leaf_patch'
+
+
+def _process_input_image(
+    image: str | np.ndarray,
+) -> (np.ndarray, str):
+  """Processes the input image argument and returns numpy array image and original file name (if possible) after verification.
+  """
+  image_path = None
+  if isinstance(image, str):
+    if not os.path.exists(image):
+      logging.debug('Missing file %s', image)
+      return None
+    image_path = image
+    image = cv2.imread(image, cv2.IMREAD_COLOR)
+  _assert_image_type(image, cv2.IMREAD_COLOR)
+
+  return image, image_path
 
 
 def _assert_image_type(image, colorspace):
@@ -191,3 +233,238 @@ def detect_pattern(query_image: str | np.ndarray):
 
   logging.debug('Query image did not match any patterns.')
   return None
+
+
+def find_center_qr_code_homography(
+    dst_image: str | np.ndarray,
+    can_return_precalculated_value: bool = True,
+) -> (np.ndarray, bool):
+  """Finds the homography matrix transforming the center QR code test chart feature to the provided image.
+
+  Args:
+    dst_image:  The image which the center QR code is transformed to. Must be a
+      file path string or 3 channel BGR color image data in numpy matrix format.
+    can_return_precalculated_value: Whether precalculated value can be returned
+      if possible, or need to recalculate again. This is used only when
+      `dst_image` is a `str` type (i.e. the path of image is provided).
+
+  Returns:
+    A tuple of homography transformation matrix as 2-d numpy array if the query
+    image matched a QR code pattern and whether horizontal flip was required for
+    the matching. `None` is provided in case of no matching.
+  """
+  if isinstance(dst_image, str):
+    if not os.path.exists(dst_image):
+      logging.debug('Missing file %s', dst_image)
+      return None
+
+    if (
+        can_return_precalculated_value
+        and dst_image == _TEST_CHART_FILE_PATH
+    ):
+      # Use previously calculated homography matrix to save time, must be
+      # updated each time the qr_code.png or test_chart_gen2.jpg file is changed
+      return (_PRECALCULATED_QR_CODE_TO_TEST_CHART_HOMOGRAPHY, False)
+
+    dst_image = cv2.imread(dst_image, cv2.IMREAD_COLOR)
+  _assert_image_type(dst_image, cv2.IMREAD_COLOR)
+
+  _, homography, flip_status = detect_pattern(dst_image)
+  return (homography, flip_status)
+
+
+def _get_test_chart_horizontal_mirror_transformation() -> np.ndarray:
+  """Gets the horizontal mirror transformation matrix for test chart image.
+
+  Returns:
+    The transformation matrix.
+  """
+  chart_width = _TestChartConstants.FULL_CHART_WIDTH
+  chart_height = _TestChartConstants.FULL_CHART_HEIGHT
+
+  src = np.array(
+      [
+          [0, 0],
+          [chart_width - 1, 0],
+          [chart_width - 1, chart_height - 1],
+          [0, chart_height - 1],
+      ],
+      dtype='float32',
+  )
+
+  dst = np.array(
+      [
+          [chart_width - 1, 0],
+          [0, 0],
+          [0, chart_height - 1],
+          [chart_width - 1, chart_height - 1],
+      ],
+      dtype='float32',
+  )
+
+  return cv2.getPerspectiveTransform(src, dst)
+
+
+def find_test_chart_transformation(
+    dst_image: str | np.ndarray,
+) -> np.ndarray:
+  """Finds the `TestChartTransformation` that maps test_chart_gen2.jpg positions to the provided destination image.
+
+  The center QR code is used as reference to find the mapping between test chart
+  and query image. If the QR code can not be found either image, this method
+  will return None.
+
+  Args:
+    dst_image: The image which test chart is transformed to. Must be a file path
+    string or 3 channel BGR color image data in numpy matrix format.
+
+  Returns:
+    Homography transformation matrix as 2-d numpy array if the query image
+    matched a QR code pattern, or None otherwise
+  """
+  dst_image, _ = _process_input_image(dst_image)
+
+  # Find homography matrix mapping center QR code to dst_image
+  dst_image_transform_info = find_center_qr_code_homography(dst_image)
+
+  # Error if no QR code pattern is detected.
+  if dst_image_transform_info is None:
+    logging.debug('No pattern detected for %s', dst_image)
+    return None
+
+  qr_to_dst_homography, is_horizontally_flipped = dst_image_transform_info
+
+  # Find homography matrix mapping center QR code to test chart
+  qr_to_test_chart_homography, _ = find_center_qr_code_homography(
+      _TEST_CHART_FILE_PATH,
+  )
+
+  # Error if no QR code pattern is detected.
+  if qr_to_test_chart_homography is None:
+    logging.debug('No pattern detected for %s', _TEST_CHART_FILE_PATH)
+    return None
+
+  # Combine the homography matrices to get a final matrix transforming whole
+  # test chart image to dst_image
+  test_chart_to_qr_homography = np.linalg.inv(qr_to_test_chart_homography)
+
+  if is_horizontally_flipped:
+    # Since dst_image is horizontally flipped, test chart also needs to be
+    # flipped first.
+    test_chart_to_qr_homography = (
+        test_chart_to_qr_homography
+        @ _get_test_chart_horizontal_mirror_transformation()
+    )
+
+  test_chart_to_dst_transform_matrix = (
+      qr_to_dst_homography @ test_chart_to_qr_homography
+  )
+
+  return test_chart_to_dst_transform_matrix
+
+
+def get_test_chart_features_aligned_to_image(
+    image: str | np.ndarray,
+    transform_matrix: np.ndarray = None,
+    test_chart_features: list[TestChartFeature] = None,
+) -> np.ndarray:
+  """Gets the test chart features aligned to the provided image.
+
+  Args:
+    image: Must be a file path string or 3 channel BGR color image data in numpy
+      matrix format.
+    transform_matrix: Used to transform the points in test chart to query image,
+      `find_transform_matrix_mapping_from_test_chart` method will be used to
+      calculate it if None provided.
+    test_chart_features: List of `TestChartFeature`, will be replaced with
+      [TestChartFeature.FULL_CHART] as default if None provided.
+
+  Returns:
+    BGRA color space image with only the test chart features in query image, any
+      pixel not within feature will be fully transparent. Returns None in case
+      of any error.
+  """
+  logging.debug('Finding feature %s', test_chart_features)
+  image, image_path = _process_input_image(image)
+
+  if test_chart_features is None:
+    test_chart_features = [TestChartFeature.FULL_CHART]
+
+  if transform_matrix is None:
+    transform_matrix = find_test_chart_transformation(image)
+    if transform_matrix is None:
+      if image_path is not None:
+        logging.debug('No pattern detected for %s', image_path)
+      else:
+        logging.debug('No pattern detected')
+      return None
+
+  test_chart_image = cv2.imread(
+      _TEST_CHART_FILE_PATH
+  )
+
+  test_chart_mask = np.zeros(test_chart_image.shape[0:2]).astype(np.uint8)
+
+  for feature in test_chart_features:
+    match feature:
+      case TestChartFeature.FULL_CHART:
+        test_chart_mask.fill(_MAX_INTENSITY)
+
+  test_chart_mask = (test_chart_mask != 0).astype(bool)
+
+  test_chart_image = cv2.cvtColor(test_chart_image, cv2.COLOR_BGR2BGRA)
+  test_chart_image[:, :, 3] = np.where(
+      test_chart_mask, test_chart_image[:, :, 3], 0
+  )
+
+  aligned_test_chart_image = cv2.warpPerspective(
+      src=test_chart_image,
+      M=transform_matrix,
+      dsize=(image.shape[1], image.shape[0]),
+      flags=cv2.INTER_CUBIC,
+      borderMode=cv2.BORDER_CONSTANT,
+      borderValue=(0, 0, 0, 0),
+  )
+
+  return aligned_test_chart_image
+
+
+def get_test_chart_features_from_image(
+    image: str | np.ndarray,
+    transform_matrix: np.ndarray = None,
+    test_chart_features: list[TestChartFeature] = None,
+    feature_area_mask: np.ndarray = None,
+) -> np.ndarray:
+  """Gets test chart features from the provided image.
+
+  Args:
+    image: Must be a file path string or 3 channel BGR color image data in numpy
+      matrix format.
+    transform_matrix: Used to transform the points in test chart to query image,
+      `find_transform_matrix_mapping_from_test_chart` method will be used to
+      calculate it if None provided.
+    test_chart_features: List of chart_features. TestChartFeature.FULL_CHART as
+      default if None provided.
+    feature_area_mask: Boolean mask of feature area, will be calculated based on
+      test_chart_features if None.
+
+  Returns:
+    BGRA color space image with only the test chart features in query image, any
+      pixel not within feature will be fully transparent. Returns None in case
+      of any error.
+  """
+  image, _ = _process_input_image(image)
+
+  if test_chart_features is None:
+    test_chart_features = [TestChartFeature.FULL_CHART]
+
+  if feature_area_mask is None:
+    aligned_test_chart_image = get_test_chart_features_aligned_to_image(
+        image, transform_matrix, test_chart_features
+    )
+    feature_area_mask = aligned_test_chart_image[:, :, 3] != 0
+
+  image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+  image[:, :, 3] = np.where(feature_area_mask, image[:, :, 3], 0)
+
+  return image

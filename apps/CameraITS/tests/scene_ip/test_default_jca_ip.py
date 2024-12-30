@@ -19,6 +19,8 @@ import pathlib
 import types
 
 import camera_properties_utils
+import ip_chart_extraction_utils as ce
+import ip_chart_pattern_detector as pd
 import its_base_test
 import its_device_utils
 import its_session_utils
@@ -127,6 +129,23 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           f'{jca_capture_path.stem}_jca{jca_capture_path.suffix}'
       )
       os.rename(jca_path, jca_capture_path)
+
+      # Extract FULL_CHART from the captured image.
+      _, _ = (
+          ce.get_feature_from_image(
+              default_capture_path,
+              'default_full_chart',
+              self.log_path,
+              pd.TestChartFeature.FULL_CHART,
+          )
+      )
+
+      _, _ = ce.get_feature_from_image(
+          jca_capture_path,
+          'jca_full_chart',
+          self.log_path,
+          pd.TestChartFeature.FULL_CHART,
+      )
 
 
 if __name__ == '__main__':
