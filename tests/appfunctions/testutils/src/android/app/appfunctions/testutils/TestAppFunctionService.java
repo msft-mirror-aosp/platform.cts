@@ -16,11 +16,13 @@
 
 package android.app.appfunctions.testutils;
 
-import android.app.appfunctions.AppFunctionService;
 import android.app.appfunctions.AppFunctionException;
+import android.app.appfunctions.AppFunctionService;
 import android.app.appfunctions.ExecuteAppFunctionRequest;
 import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.appsearch.GenericDocument;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 
@@ -50,9 +52,7 @@ public class TestAppFunctionService extends AppFunctionService {
             @NonNull ExecuteAppFunctionRequest request,
             @NonNull String callingPackage,
             @NonNull CancellationSignal cancellationSignal,
-            @NonNull
-                    OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException>
-                            callback) {
+            @NonNull OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> callback) {
 
         cancellationSignal.setOnCancelListener(
                 () -> {
@@ -120,8 +120,7 @@ public class TestAppFunctionService extends AppFunctionService {
                                         } catch (InterruptedException e) {
                                             callback.onError(
                                                     new AppFunctionException(
-                                                            AppFunctionException
-                                                                    .ERROR_CANCELLED,
+                                                            AppFunctionException.ERROR_CANCELLED,
                                                             "Operation Interrupted"));
                                             return null;
                                         }
@@ -138,6 +137,19 @@ public class TestAppFunctionService extends AppFunctionService {
                                 AppFunctionException.ERROR_APP_UNKNOWN_ERROR,
                                 /* errorMessage= */ null));
         }
+    }
+
+    private boolean canGetPackageInfo() {
+        String appFunctionExecutorPackageName = "android.app.appfunctions.cts";
+        try {
+            getPackageManager()
+                    .getPackageInfo(
+                            appFunctionExecutorPackageName,
+                            PackageManager.GET_META_DATA | PackageManager.GET_PERMISSIONS);
+        } catch (NameNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 
     private void cancelOperation() {
@@ -158,6 +170,8 @@ public class TestAppFunctionService extends AppFunctionService {
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
                         .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
+                        .setPropertyBoolean(
+                                "TEST_PROPERTY_HAS_CALLER_VISIBILITY", canGetPackageInfo())
                         .build();
         return new ExecuteAppFunctionResponse(result);
     }
