@@ -19,6 +19,7 @@ package android.input.cts
 import android.Manifest
 import android.cts.input.EventVerifier
 import android.hardware.input.InputManager
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.provider.Settings
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -32,6 +33,7 @@ import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.inputeventmatchers.withKeyAction
 import com.android.cts.input.inputeventmatchers.withKeyCode
 import com.android.cts.input.inputeventmatchers.withModifierState
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Before
@@ -45,6 +47,7 @@ import org.junit.runner.RunWith
  */
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class ModifierKeyRemappingTest {
 
     companion object {
