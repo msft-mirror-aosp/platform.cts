@@ -52,6 +52,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
@@ -139,6 +140,7 @@ public final class UserManagerTest {
     }
 
     @Test
+    @RequireRunOnPrimaryUser
     public void testIsUserForeground_currentUser() throws Exception {
         assertWithMessage("isUserForeground() for current user")
                 .that(mUserManager.isUserForeground()).isTrue();
