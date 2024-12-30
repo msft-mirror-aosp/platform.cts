@@ -1250,15 +1250,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         });
     }
 
-    /**
-     * Validate Publish config with setRangingResultsEnabled and see if results
-     * are received.
-     */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName =
-            "Baklava")
+    /** Validate Publish config with setRangingResultsEnabled and see if results are received. */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_RTT_ENABLED)
-    @ApiTest(apis = {"android.net.wifi.aware.PublishConfig"
-            + ".Builder#setPeriodicRangingResultsEnabled"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.aware.PublishConfig.Builder#setPeriodicRangingResultsEnabled",
+                "android.net.wifi.aware.Characteristics#getMaxSupportedRangingPacketBandwidth"
+            })
     public void testPublishWithPeriodicRangingEnabled() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1267,6 +1266,14 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         if (!characteristics.isPeriodicRangingSupported()) {
             return;
         }
+        int maxSupportedRangingPacketBandwidth =
+                characteristics.getMaxSupportedRangingPacketBandwidth();
+        assertTrue(
+                maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_20MHZ
+                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_40MHZ
+                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_80MHZ
+                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_160MHZ
+                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_320MHZ);
         final String serviceName = "PublishName";
         WifiAwareSession session = attachAndGetSession();
 
