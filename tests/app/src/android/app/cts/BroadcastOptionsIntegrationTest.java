@@ -70,7 +70,7 @@ public class BroadcastOptionsIntegrationTest {
         CommandReceiver.sendCommandWithBroadcastOptions(instrumentation.getContext(),
                 CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                 PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                options.toBundle());
+                options);
         waiter.doWait(WAITFOR_MSEC);
     }
 
@@ -81,7 +81,7 @@ public class BroadcastOptionsIntegrationTest {
         CommandReceiver.sendCommandWithBroadcastOptions(instrumentation.getContext(),
                 CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                 PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                options.toBundle());
+                options);
         assertThrows(Exception.class, () -> waiter.doWait(WAITFOR_MSEC));
     }
 
