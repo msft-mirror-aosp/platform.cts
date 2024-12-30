@@ -37,6 +37,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.ActivityTestRule
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.UiAutomatorUtils
+import com.android.compatibility.common.util.UserHelper
 import com.android.modules.utils.build.SdkLevel
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
 import java.util.concurrent.CompletableFuture
@@ -53,10 +54,14 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
     protected val packageManager = mContext.packageManager
     protected val uiAutomation: UiAutomation = mInstrumentation.uiAutomation
     protected val uiDevice: UiDevice = UiDevice.getInstance(mInstrumentation)
+    protected val uiDevice2: androidx.test.uiautomator.UiDevice =
+        androidx.test.uiautomator.UiDevice.getInstance(mInstrumentation)
 
     protected val isAutomotive = packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
     protected val isTv = packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
     protected val isWatch = packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+
+    protected val userHelper = UserHelper(mInstrumentation.context)
 
     companion object {
         const val SPLIT_PERMISSION_APK_PATH =
@@ -305,7 +310,17 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
 
     protected fun clickPermissionRequestDenyButton() {
         if (isAutomotive || isWatch || isTv) {
-            click(By.text(getPermissionControllerString(DENY_BUTTON_TEXT)))
+            if (isAutomotive && userHelper.isVisibleBackgroundUser()) {
+                // Visible background users are background users that have access to UI on assigned
+                // displays on devices that have config_multiuserVisibleBackgroundUsers enabled.
+                // The main use case is the passenger in Automotive's multi display configuration.
+                // TODO(b/382327037): Avoid specifying the display ID for each UiSelector.
+                uiDevice2.findObject(androidx.test.uiautomator.By.text(
+                    getPermissionControllerString(DENY_BUTTON_TEXT))
+                        .displayId(userHelper.mainDisplayId))!!.click()
+            } else {
+                click(By.text(getPermissionControllerString(DENY_BUTTON_TEXT)))
+            }
         } else {
             click(By.res(DENY_BUTTON))
         }
@@ -313,7 +328,14 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
 
     protected fun clickPermissionRequestAllowButton(timeoutMillis: Long = 20000) {
         if (isAutomotive) {
-            click(By.text(getPermissionControllerString(ALLOW_BUTTON_TEXT)), timeoutMillis)
+            if (userHelper.isVisibleBackgroundUser()) {
+                // TODO(b/382327037): Avoid specifying the display ID for each UiSelector.
+                uiDevice2.findObject(androidx.test.uiautomator.By.text(
+                    getPermissionControllerString(ALLOW_BUTTON_TEXT))
+                        .displayId(userHelper.mainDisplayId))!!.click()
+            } else {
+                click(By.text(getPermissionControllerString(ALLOW_BUTTON_TEXT)), timeoutMillis)
+            }
         } else {
             click(By.res(ALLOW_BUTTON), timeoutMillis)
         }
