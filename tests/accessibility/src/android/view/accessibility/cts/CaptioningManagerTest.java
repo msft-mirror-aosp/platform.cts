@@ -30,6 +30,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
+import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.res.Resources;
@@ -41,6 +42,7 @@ import android.view.accessibility.CaptioningManager.CaptioningChangeListener;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,6 +77,17 @@ public class CaptioningManagerTest {
         assertNotNull("Obtained captioning manager", mManager);
 
         mUiAutomation = mInstrumentation.getUiAutomation();
+    }
+
+    @After
+    public void cleanUp() {
+        // Turn off all captioning related settings
+        putSecureSetting("odi_captions_enabled", "0");
+        putSecureSetting("odi_captions_volume_ui_enabled", "0");
+        putSecureSetting("accessibility_captioning_enabled", "0");
+
+        // Remove all system dialogs and go back home
+        ActivityLaunchUtils.homeScreenOrBust(mInstrumentation.getContext(), mUiAutomation);
     }
 
     /**
