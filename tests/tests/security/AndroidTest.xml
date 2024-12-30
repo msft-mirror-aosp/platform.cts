@@ -20,6 +20,7 @@
     <!-- CtsDeviceInfo target API is 23; instant app requires target API >= 26. -->
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
@@ -37,8 +38,9 @@
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.CrashReporter" />
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="test-user-token" value="%TEST_USER%"/>
         <option name="run-command"
-            value="appops set android.security.cts REQUEST_INSTALL_PACKAGES allow" />
+            value="appops set --user %TEST_USER% android.security.cts REQUEST_INSTALL_PACKAGES allow" />
         <option name="teardown-command"
             value="appops reset android.security.cts" />
     </target_preparer>
