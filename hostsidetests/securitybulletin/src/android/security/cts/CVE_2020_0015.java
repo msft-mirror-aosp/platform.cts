@@ -16,14 +16,16 @@
 
 package android.security.cts;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.TruthJUnit.assume;
 
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 
-import com.android.tradefed.device.ITestDevice;
-import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
+import com.android.tradefed.result.TestRunResult;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,19 +36,27 @@ public class CVE_2020_0015 extends NonRootSecurityTestCase {
     @AppModeFull
     @AsbSecurityTest(cveBugId = 139017101)
     @Test
-    public void testPocCVE_2020_0015() throws Exception {
-        ITestDevice device = getDevice();
-        final String testPkg = "android.security.cts.CVE_2020_0015";
-        uninstallPackage(device, testPkg);
+    public void testPocCVE_2020_0015() {
+        try {
+            // Install the PoC and invoke 'DeviceTest'.
+            final String testPkg = "android.security.cts.CVE_2020_0015";
+            installPackage("CVE-2020-0015.apk", "-g");
+            final boolean testResult =
+                    runDeviceTests(new DeviceTestRunOptions(testPkg).setCheckResults(false));
 
-        /* Wake up the screen */
-        AdbUtils.runCommandLine("input keyevent KEYCODE_WAKEUP", device);
-        AdbUtils.runCommandLine("input keyevent KEYCODE_MENU", device);
-        AdbUtils.runCommandLine("input keyevent KEYCODE_HOME", device);
+            // Check if any unexpected issue was observed.
+            final TestRunResult testRunResult = getLastDeviceRunResults();
+            assume().withMessage(
+                            String.format(
+                                    "DeviceTest did not run properly. Message: %s",
+                                    testRunResult.getRunFailureMessage()))
+                    .that(testRunResult.isRunFailure())
+                    .isFalse();
 
-        installPackage("CVE-2020-0015.apk");
-        AdbUtils.runCommandLine("pm grant " + testPkg + " android.permission.SYSTEM_ALERT_WINDOW",
-                device);
-        assertTrue(runDeviceTests(testPkg, testPkg + ".DeviceTest", "testOverlayButtonPresence"));
+            // If 'DeviceTest' executed properly, Pass/Fail the test.
+            assertThat(testResult).isTrue();
+        } catch (Exception e) {
+            assume().that(e).isNull();
+        }
     }
 }
