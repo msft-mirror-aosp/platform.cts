@@ -537,7 +537,7 @@ public abstract class TestListAdapter extends BaseAdapter {
                             null,
                             null,
                             null);
-            if (cursor.moveToFirst()) {
+            if (cursor != null && cursor.moveToFirst()) {
                 do {
                     String testName = cursor.getString(1);
                     int testResult = cursor.getInt(2);
@@ -717,21 +717,19 @@ public abstract class TestListAdapter extends BaseAdapter {
         return null;
     }
 
-    public int getTestResult(int position) {
+    int getTestResult(int position) {
         TestListItem item = getItem(position);
-        return mTestResults.containsKey(item.testName)
-                ? mTestResults.get(item.testName)
-                : TestResult.TEST_RESULT_NOT_EXECUTED;
+        return mTestResults.getOrDefault(item.testName, TestResult.TEST_RESULT_NOT_EXECUTED);
     }
 
-    public String getTestDetails(int position) {
+    String getTestDetails(int position) {
         TestListItem item = getItem(position);
-        return mTestDetails.containsKey(item.testName) ? mTestDetails.get(item.testName) : null;
+        return mTestDetails.getOrDefault(item.testName, null);
     }
 
-    public ReportLog getReportLog(int position) {
+    ReportLog getReportLog(int position) {
         TestListItem item = getItem(position);
-        return mReportLogs.containsKey(item.testName) ? mReportLogs.get(item.testName) : null;
+        return mReportLogs.getOrDefault(item.testName, null);
     }
 
     /**
@@ -741,25 +739,31 @@ public abstract class TestListAdapter extends BaseAdapter {
      * @return A {@link TestResultHistoryCollection} object containing test result histories of
      *     tests.
      */
-    public TestResultHistoryCollection getHistoryCollection(int position) {
+    TestResultHistoryCollection getHistoryCollection(int position) {
         TestListItem item = getItem(position);
         if (item == null) {
             return null;
         }
-        return mHistories.containsKey(item.testName) ? mHistories.get(item.testName) : null;
+        return mHistories.getOrDefault(item.testName, null);
+    }
+
+    /**
+     * Get test names from test results.
+     *
+     * @return A set of test names.
+     */
+    Set<String> getTestResultNames() {
+        return mTestResults.keySet();
     }
 
     /**
      * Get test screenshots metadata
      *
-     * @param position The position of test
+     * @param testName The test name
      * @return A {@link TestScreenshotsMetadata} object containing test screenshots metadata.
      */
-    public TestScreenshotsMetadata getScreenshotsMetadata(String mode, int position) {
-        TestListItem item = getItem(mode, position);
-        return mScreenshotsMetadata.containsKey(item.testName)
-                ? mScreenshotsMetadata.get(item.testName)
-                : null;
+    TestScreenshotsMetadata getScreenshotsMetadata(String testName) {
+        return mScreenshotsMetadata.getOrDefault(testName, null);
     }
 
     /**
@@ -769,7 +773,7 @@ public abstract class TestListAdapter extends BaseAdapter {
      * @param position The position of test.
      * @return A {@link TestListItem} object containing the test item.
      */
-    public TestListItem getItem(String mode, int position) {
+    TestListItem getItem(String mode, int position) {
         return mDisplayModesTests.get(mode).get(position);
     }
 
@@ -779,59 +783,49 @@ public abstract class TestListAdapter extends BaseAdapter {
      * @param mode The display mode.
      * @return A count of test items.
      */
-    public int getCount(String mode) {
+    int getCount(String mode) {
         return mDisplayModesTests.getOrDefault(mode, new ArrayList<>()).size();
     }
 
     /**
-     * Get test result by the given display mode and position.
+     * Get test result by the given test name.
      *
-     * @param mode The display mode.
-     * @param position The position of test.
+     * @param testName The test name
      * @return The test item result.
      */
-    public int getTestResult(String mode, int position) {
-        TestListItem item = mDisplayModesTests.get(mode).get(position);
-        return mTestResults.containsKey(item.testName)
-                ? mTestResults.get(item.testName)
-                : TestResult.TEST_RESULT_NOT_EXECUTED;
+    int getTestResult(String testName) {
+        return mTestResults.getOrDefault(testName, TestResult.TEST_RESULT_NOT_EXECUTED);
     }
 
     /**
-     * Get test details by the given display mode and position.
+     * Get test details by the given test name.
      *
-     * @param mode The display mode.
-     * @param position The position of test.
+     * @param testName The test name
      * @return A string containing the test details.
      */
-    public String getTestDetails(String mode, int position) {
-        TestListItem item = mDisplayModesTests.get(mode).get(position);
-        return mTestDetails.containsKey(item.testName) ? mTestDetails.get(item.testName) : null;
+    String getTestDetails(String testName) {
+        return mTestDetails.getOrDefault(testName, null);
     }
 
     /**
-     * Get test report log by the given display mode and position.
+     * Get test report log by the given test name.
      *
-     * @param mode The display mode.
-     * @param position The position of test.
+     * @param testName The test name
      * @return A {@link ReportLog} object containing the test report log of the test item.
      */
-    public ReportLog getReportLog(String mode, int position) {
-        TestListItem item = mDisplayModesTests.get(mode).get(position);
-        return mReportLogs.containsKey(item.testName) ? mReportLogs.get(item.testName) : null;
+    ReportLog getReportLog(String testName) {
+        return mReportLogs.getOrDefault(testName, null);
     }
 
     /**
-     * Get test result histories by the given display mode and position.
+     * Get test result histories by the given test name.
      *
-     * @param mode The display mode.
-     * @param position The position of test.
+     * @param testName The test name
      * @return A {@link TestResultHistoryCollection} object containing the test result histories of
      *     the test item.
      */
-    public TestResultHistoryCollection getHistoryCollection(String mode, int position) {
-        TestListItem item = mDisplayModesTests.get(mode).get(position);
-        return mHistories.containsKey(item.testName) ? mHistories.get(item.testName) : null;
+    TestResultHistoryCollection getHistoryCollection(String testName) {
+        return mHistories.getOrDefault(testName, null);
     }
 
     public boolean allTestsPassed() {

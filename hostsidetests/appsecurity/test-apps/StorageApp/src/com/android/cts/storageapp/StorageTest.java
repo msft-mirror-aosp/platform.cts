@@ -132,6 +132,12 @@ public class StorageTest extends InstrumentationTestCase {
         device.findObject(new UiSelector().textContains("internal storage")).click();
         device.waitForIdle();
 
+        try {
+            ((UiScrollable) localObject).scrollIntoView(new UiSelector().textContains("Clear"));
+        } catch (UiObjectNotFoundException localUiObjectNotFoundException) {
+            // Scrolling can fail if the UI is not scrollable
+        }
+
         device.findObject(new UiSelector().textContains("Clear")).click();
         device.waitForIdle();
 

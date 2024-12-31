@@ -64,6 +64,12 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
     private static final String TEST_RESULT_PASS = "PASS";
     // Represents a fail test result.
     private static final String TEST_RESULT_FAIL = "FAIL";
+    // The key for a test details string in the JSON data.
+    private static final String TEST_DETAILS_KEY = "details";
+    // The key for subtests in the JSON data.
+    private static final String TEST_SUBTESTS_KEY = "subtests";
+    // Separator between module, class and testcase of host-side tests
+    static final String TEST_ID_SEPARATOR = "#";
 
     /** Represents a host-side test case in CtsVerifier. It's a test without an {@link Intent}. */
     public static final class HostTestListItem extends TestListItem {
@@ -132,8 +138,19 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
      * The {@link BroadcastReceiver} to receive the broadcast {@link Intent} to update
      * status/results of tests.
      *
-     * <p>The result data is in JSON format by default, a sample result data is: { "test_id_1": {
-     * "result":"PASS" }, "test_id_2": { "result":"FAIL" } }
+     * <p>The result data is in JSON format by default, a sample result data is:
+     *
+     * <pre>
+     * {
+     *   "test_id_1": {
+     *     "result": "PASS"
+     *   },
+     *   "test_id_2": {
+     *     "result": "FAIL",
+     *     "details": "expected 'true' but was 'false'"
+     *   }
+     * }
+     * </pre>
      */
     public final class ResultsReceiver extends BroadcastReceiver {
 
@@ -153,35 +170,53 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
                     Log.e(TAG, "Error parsing json result string: " + testResults, e);
                     return;
                 }
-                Log.i(TAG, "Parsed test results: " + jsonResults.toString());
-                Iterator<String> testIds = jsonResults.keys();
-                while (testIds.hasNext()) {
-                    String testId = testIds.next();
-                    if (!mAllTestIds.contains(testId)) {
-                        Log.e(
-                                TAG,
-                                "Unknown test ID "
-                                        + testId
-                                        + " that doesn't belong to this activity.");
-                        continue;
-                    }
-                    String result;
-                    try {
-                        result = jsonResults.getJSONObject(testId).getString(TEST_RESULT_KEY);
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error getting result of test " + testId);
-                        continue;
-                    }
-                    if (TEST_RESULT_PASS.equals(result)) {
-                        updateTestResult(TestResult.TEST_RESULT_PASSED, testId);
-                    } else if (TEST_RESULT_FAIL.equals(result)) {
-                        updateTestResult(TestResult.TEST_RESULT_FAILED, testId);
-                    } else {
-                        Log.e(TAG, "Unrecognized result " + result + " for test " + testId);
-                    }
-                }
+                Log.i(TAG, "Parsed test results: " + jsonResults);
+                handleJsonResults(jsonResults, /* prefix= */ "");
             } else {
                 Log.e(TAG, "Unknown Intent action " + intent.getAction());
+            }
+        }
+
+        private void handleJsonResults(JSONObject jsonResults, String prefix) {
+            Iterator<String> testIds = jsonResults.keys();
+            while (testIds.hasNext()) {
+                String testId = testIds.next();
+                if (prefix.isEmpty() && !mAllTestIds.contains(testId)) {
+                    Log.e(
+                            TAG,
+                            "Unknown test ID " + testId + " that doesn't belong to this activity.");
+                    continue;
+                }
+                String fullTestId = prefix.isEmpty() ? testId : prefix + TEST_ID_SEPARATOR + testId;
+                JSONObject testObject;
+                String result;
+                String testDetails = null;
+                try {
+                    testObject = jsonResults.getJSONObject(testId);
+                    result = testObject.getString(TEST_RESULT_KEY);
+                    if (testObject.has(TEST_DETAILS_KEY)) {
+                        testDetails = testObject.getString(TEST_DETAILS_KEY);
+                    }
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error getting result of test " + fullTestId, e);
+                    continue;
+                }
+
+                if (TEST_RESULT_PASS.equals(result)) {
+                    updateTestResult(TestResult.TEST_RESULT_PASSED, fullTestId, testDetails);
+                } else if (TEST_RESULT_FAIL.equals(result)) {
+                    updateTestResult(TestResult.TEST_RESULT_FAILED, fullTestId, testDetails);
+                } else {
+                    Log.w(TAG, "Unrecognized result " + result + " for test " + fullTestId);
+                }
+
+                if (testObject.has(TEST_SUBTESTS_KEY)) {
+                    try {
+                        handleJsonResults(testObject.getJSONObject(TEST_SUBTESTS_KEY), fullTestId);
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error getting subtest results of test " + fullTestId, e);
+                    }
+                }
             }
         }
     }
@@ -194,11 +229,12 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
     private final List<HostTestCategory> mHostTestCategories;
     // IDs of all tests belong to this activity.
     private final Set<String> mAllTestIds;
-    // The adapter to render all tests in a list.
-    private ArrayTestListAdapter mTestListAdapter;
     // The receiver to update test results via broadcast.
     private final ResultsReceiver mResultsReceiver = new ResultsReceiver();
     private boolean mReceiverRegistered = false;
+
+    // The adapter to render all tests in a list.
+    protected ArrayTestListAdapter mTestListAdapter;
 
     public HostTestsActivity(int titleId, int messageId, HostTestCategory... hostTestCategories) {
         mTitleId = titleId;
@@ -261,13 +297,13 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
     }
 
     /** Updates a test with the given test result. */
-    private void updateTestResult(int testResult, String testId) {
+    private void updateTestResult(int testResult, String testId, String testDetails) {
         Intent resultIntent = new Intent();
         TestResult.addResultData(
                 resultIntent,
                 testResult,
                 testId,
-                /* testDetails= */ null,
+                testDetails,
                 /* reportLog= */ null,
                 /* historyCollection= */ null);
         handleLaunchTestResult(RESULT_OK, resultIntent);

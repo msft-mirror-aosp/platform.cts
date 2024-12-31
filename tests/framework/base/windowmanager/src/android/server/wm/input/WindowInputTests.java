@@ -58,6 +58,7 @@ import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 import android.util.ArraySet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -245,7 +246,12 @@ public class WindowInputTests {
         selectBounds.offsetTo(0, 0);
         mActivityRule.runOnUiThread(() -> {
             var lp = (WindowManager.LayoutParams) mView.getLayoutParams();
-            var insets = windowInsets.getInsetsIgnoringVisibility(lp.getFitInsetsTypes());
+            int insetsTypes = lp.getFitInsetsTypes();
+            var insets = windowInsets.getInsetsIgnoringVisibility(insetsTypes);
+            // b/380004295 appeared to be caused by the test not respecting the window insets, so
+            // log the insets we're using in case that bug appears again.
+            Log.i(TAG, String.format("Got %s for insets types %s", insets,
+                                     WindowInsets.Type.toString(insetsTypes)));
             selectBounds.inset(
                     0, 0, insets.left + insets.right + lp.width,
                     insets.top + insets.bottom + lp.height);

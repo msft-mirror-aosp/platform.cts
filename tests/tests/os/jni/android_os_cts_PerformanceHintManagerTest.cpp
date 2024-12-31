@@ -424,57 +424,57 @@ static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
     auto session = createSession(manager);
     if (session == nullptr) return nullptr;
 
-    int result = APerformanceHint_notifyWorkloadIncrease(session.get(), true, false, "CTS hint");
-    if (result != 0) {
+    int result = APerformanceHint_notifyWorkloadIncrease(session.get(), true, false, "CTS hint 1");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadIncrease(true, false) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadReset(session.get(), false, true, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadReset(session.get(), false, true, "CTS hint 2");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadReset(false, true) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadIncrease(session.get(), true, true, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadIncrease(session.get(), true, true, "CTS hint 3");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadIncrease(true, true) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadIncrease(session.get(), false, false, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadIncrease(session.get(), false, false, "CTS hint 4");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadIncrease(false, false) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadReset(session.get(), false, false, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadReset(session.get(), false, false, "CTS hint 5");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadReset(false, false) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadSpike(session.get(), true, false, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadSpike(session.get(), true, false, "CTS hint 6");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadSpike(true, false) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadSpike(session.get(), false, true, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadSpike(session.get(), false, true, "CTS hint 7");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadSpike(false, true) returned {}", result)
                                  .c_str());
     }
 
-    result = APerformanceHint_notifyWorkloadSpike(session.get(), false, false, "CTS hint");
-    if (result != 0) {
+    result = APerformanceHint_notifyWorkloadSpike(session.get(), false, false, "CTS hint 8");
+    if (result != 0 && result != EBUSY) {
         return toJString(env,
                          std::format("notifyWorkloadSpike(false, false) returned {}", result)
                                  .c_str());

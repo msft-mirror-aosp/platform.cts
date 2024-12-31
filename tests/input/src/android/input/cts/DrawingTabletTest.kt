@@ -19,6 +19,7 @@ package android.input.cts
 import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.graphics.PointF
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputDevice
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -37,6 +38,7 @@ import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
 import com.android.cts.input.inputeventmatchers.withToolType
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -48,6 +50,7 @@ import org.junit.runner.RunWith
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class DrawingTabletTest {
     private lateinit var drawingTablet: UinputTouchDevice
     private lateinit var verifier: EventVerifier

@@ -18,6 +18,7 @@ package android.input.cts
 
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.Instrumentation
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.KeyCharacterMap.VIRTUAL_KEYBOARD
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityManager
@@ -27,6 +28,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.cts.input.UinputGamepad
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -65,6 +67,7 @@ private fun setTouchExplorationEnabled(instrumentation: Instrumentation, enabled
  */
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class GamepadWithAccessibilityTest {
     @get:Rule
     val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)

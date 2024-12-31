@@ -1008,10 +1008,11 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         NotificationManager.Policy ruleOnPolicy = (NotificationManager.Policy) brOn.getExtra(
                 NotificationManager.EXTRA_NOTIFICATION_POLICY, 0, 0);
         assertThat(ruleOnPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS).isEqualTo(0);
+        if (com.android.server.notification.Flags.nmBinderPerfReduceZenBroadcasts()) {
+            Thread.sleep(500);
+            assertThat(brOn.results).hasSize(1); // Also no *extra* broadcasts received.
+        }
 
-        // TODO: b/324376849 - Registered BR in a DND-access pkg gets broadcast twice.
-        // Thread.sleep(500);
-        // assertThat(brOn.results).hasSize(1); // Also no *extra* broadcasts received.
         brOn.unregister();
 
         // Disable rule, and check for broadcast.
@@ -1025,10 +1026,11 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         NotificationManager.Policy ruleOffPolicy = (NotificationManager.Policy) brOff.getExtra(
                 NotificationManager.EXTRA_NOTIFICATION_POLICY, 0, 0);
         assertThat(ruleOffPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS).isNotEqualTo(0);
+        if (com.android.server.notification.Flags.nmBinderPerfReduceZenBroadcasts()) {
+            Thread.sleep(500);
+            assertThat(brOff.results).hasSize(1); // Also no *extra* broadcasts received.
+        }
 
-        // TODO: b/324376849 - Registered BR in a DND-access pkg gets broadcast twice.
-        // Thread.sleep(500);
-        // assertThat(brOff.results).hasSize(1); // Also no *extra* broadcasts received.
         brOff.unregister();
     }
 
@@ -1050,6 +1052,11 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             NotificationManager.Policy broadcastPolicy = (NotificationManager.Policy) br.getExtra(
                     NotificationManager.EXTRA_NOTIFICATION_POLICY, 0, 0);
             assertThat(broadcastPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS).isEqualTo(0);
+        }
+
+        if (com.android.server.notification.Flags.nmBinderPerfReduceZenBroadcasts()) {
+            Thread.sleep(500);
+            assertThat(br.results).hasSize(1); // Also no *extra* broadcasts received.
         }
     }
 

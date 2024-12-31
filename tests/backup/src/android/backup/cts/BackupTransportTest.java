@@ -22,10 +22,16 @@ import static org.testng.Assert.assertThrows;
 
 import android.app.backup.BackupTransport;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.server.backup.Flags;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -34,6 +40,9 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
 public class BackupTransportTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private BackupTransport mBackupTransport;
 
     @Before
@@ -236,6 +245,7 @@ public class BackupTransportTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RESTRICTED_MODE_CHANGES)
     public void testGetPackagesThatShouldNotUseRestrictedMode_returnsEmptyList() {
         assertThat(
                         mBackupTransport.getPackagesThatShouldNotUseRestrictedMode(

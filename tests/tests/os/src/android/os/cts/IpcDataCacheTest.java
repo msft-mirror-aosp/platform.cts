@@ -166,38 +166,38 @@ public class IpcDataCacheTest {
                         new ServerQuery(tester));
 
         // Caches are enabled upon creation.
-        assertEquals(false, cache1.getDisabledState());
-        assertEquals(false, cache2.getDisabledState());
-        assertEquals(false, cache3.getDisabledState());
+        assertEquals(false, cache1.isDisabled());
+        assertEquals(false, cache2.isDisabled());
+        assertEquals(false, cache3.isDisabled());
 
         // Disable the cache1 instance.  Only cache1 is disabled
         cache1.disableInstance();
-        assertEquals(true, cache1.getDisabledState());
-        assertEquals(false, cache2.getDisabledState());
-        assertEquals(false, cache3.getDisabledState());
+        assertEquals(true, cache1.isDisabled());
+        assertEquals(false, cache2.isDisabled());
+        assertEquals(false, cache3.isDisabled());
 
         // Disable cache1.  This will disable cache1 and cache2 because they share the
         // same name.  cache3 has a different name and will not be disabled.
         cache1.disableForCurrentProcess();
-        assertEquals(true, cache1.getDisabledState());
-        assertEquals(true, cache2.getDisabledState());
-        assertEquals(false, cache3.getDisabledState());
+        assertEquals(true, cache1.isDisabled());
+        assertEquals(true, cache2.isDisabled());
+        assertEquals(false, cache3.isDisabled());
 
         // Create a new cache1.  Verify that the new instance is disabled.
         cache1 = new IpcDataCache<>(4, MODULE, API, "cacheA",
                 new ServerQuery(tester));
-        assertEquals(true, cache1.getDisabledState());
+        assertEquals(true, cache1.isDisabled());
 
         // Remove the record of caches being locally disabled.  This is a clean-up step.
         cache1.forgetDisableLocal();
-        assertEquals(true, cache1.getDisabledState());
-        assertEquals(true, cache2.getDisabledState());
-        assertEquals(false, cache3.getDisabledState());
+        assertEquals(true, cache1.isDisabled());
+        assertEquals(true, cache2.isDisabled());
+        assertEquals(false, cache3.isDisabled());
 
         // Create a new cache1.  Verify that the new instance is not disabled.
         cache1 = new IpcDataCache<>(4, MODULE, API, "cacheA",
                 new ServerQuery(tester));
-        assertEquals(false, cache1.getDisabledState());
+        assertEquals(false, cache1.isDisabled());
     }
 
     private static class TestQuery
