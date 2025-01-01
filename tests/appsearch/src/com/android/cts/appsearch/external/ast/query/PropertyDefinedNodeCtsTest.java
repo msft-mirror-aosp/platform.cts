@@ -79,7 +79,7 @@ public class PropertyDefinedNodeCtsTest {
     }
 
     @Test
-    public void testGetProperty_returnsCorrectProperty() {
+    public void testGetPropertyPath_returnsCorrectPropertyPath() {
         List<PropertyPath.PathSegment> pathSegmentList =
                 List.of(
                         PropertyPath.PathSegment.create("property"),
@@ -88,11 +88,11 @@ public class PropertyDefinedNodeCtsTest {
 
         PropertyDefinedNode propertyDefinedNode = new PropertyDefinedNode(propertyPath);
 
-        assertThat(propertyDefinedNode.getProperty()).isEqualTo(propertyPath);
+        assertThat(propertyDefinedNode.getPropertyPath()).isEqualTo(propertyPath);
     }
 
     @Test
-    public void testSetProperty_throwsOnNullPointer() {
+    public void testSetPropertyPath_throwsOnNullPointer() {
         List<PropertyPath.PathSegment> pathSegmentList =
                 List.of(
                         PropertyPath.PathSegment.create("property"),
@@ -101,11 +101,11 @@ public class PropertyDefinedNodeCtsTest {
 
         PropertyDefinedNode propertyDefinedNode = new PropertyDefinedNode(propertyPath);
 
-        assertThrows(NullPointerException.class, () -> propertyDefinedNode.setProperty(null));
+        assertThrows(NullPointerException.class, () -> propertyDefinedNode.setPropertyPath(null));
     }
 
     @Test
-    public void testSetProperty_setsCorrectProperty() {
+    public void testSetPropertyPath_setsCorrectPropertyPath() {
         List<PropertyPath.PathSegment> pathSegmentList =
                 List.of(
                         PropertyPath.PathSegment.create("property"),
@@ -118,9 +118,9 @@ public class PropertyDefinedNodeCtsTest {
                         PropertyPath.PathSegment.create("another"),
                         PropertyPath.PathSegment.create("property"));
         PropertyPath anotherProperty = new PropertyPath(anotherPathSegmentList);
-        propertyDefinedNode.setProperty(anotherProperty);
+        propertyDefinedNode.setPropertyPath(anotherProperty);
 
-        assertThat(propertyDefinedNode.getProperty()).isEqualTo(anotherProperty);
+        assertThat(propertyDefinedNode.getPropertyPath()).isEqualTo(anotherProperty);
     }
 
     @Test

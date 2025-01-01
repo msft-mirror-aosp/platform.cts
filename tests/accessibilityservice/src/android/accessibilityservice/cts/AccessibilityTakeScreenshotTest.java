@@ -167,21 +167,20 @@ public class AccessibilityTakeScreenshotTest {
 
     @Test
     public void testTakeScreenshot_RequestIntervalTime() throws Exception {
+        final long halfOfIntervalMs =
+                AccessibilityService.ACCESSIBILITY_TAKE_SCREENSHOT_REQUEST_INTERVAL_TIMES_MS / 2;
         takeScreenshot(Display.DEFAULT_DISPLAY);
-        verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onSuccess(
-                mSuccessResultArgumentCaptor.capture());
-
-        Thread.sleep(
-                AccessibilityService.ACCESSIBILITY_TAKE_SCREENSHOT_REQUEST_INTERVAL_TIMES_MS / 2);
         // Requests the API again during interval time from calling the first time.
+        Thread.sleep(halfOfIntervalMs);
         takeScreenshot(Display.DEFAULT_DISPLAY);
+
+        verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS))
+                .onSuccess(mSuccessResultArgumentCaptor.capture());
         verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onFailure(
                 AccessibilityService.ERROR_TAKE_SCREENSHOT_INTERVAL_TIME_SHORT);
 
-        Thread.sleep(
-                AccessibilityService.ACCESSIBILITY_TAKE_SCREENSHOT_REQUEST_INTERVAL_TIMES_MS / 2 +
-                        1);
         // Requests the API again after interval time from calling the first time.
+        Thread.sleep(halfOfIntervalMs + 1);
         takeScreenshot(Display.DEFAULT_DISPLAY);
         verify(mCallback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onSuccess(
                 mSuccessResultArgumentCaptor.capture());
@@ -379,15 +378,20 @@ public class AccessibilityTakeScreenshotTest {
         final List<Integer> accessibilityWindowIds = sUiAutomation.getWindows()
                 .stream().map(AccessibilityWindowInfo::getId).collect(Collectors.toList());
 
+        // Take two consecutive screenshots within given interval
+        final List<TakeScreenshotCallback> firstScreenshotCallbacks =
+                takeScreenshotsOfWindows(accessibilityWindowIds);
+        Thread.sleep(halfInterval);
+        final List<TakeScreenshotCallback> secondScreenshotCallbacks =
+                takeScreenshotsOfWindows(accessibilityWindowIds);
+
         // The initial batch of window screenshots should succeed.
-        for (TakeScreenshotCallback callback : takeScreenshotsOfWindows(accessibilityWindowIds)) {
+        for (TakeScreenshotCallback callback : firstScreenshotCallbacks) {
             verify(callback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onSuccess(
                     Mockito.any());
         }
-
         // The next batch of window screenshots, taken during the interval time, should fail.
-        Thread.sleep(halfInterval);
-        for (TakeScreenshotCallback callback : takeScreenshotsOfWindows(accessibilityWindowIds)) {
+        for (TakeScreenshotCallback callback : secondScreenshotCallbacks) {
             verify(callback, timeout(TIMEOUT_TAKE_SCREENSHOT_DONE_MILLIS)).onFailure(
                     AccessibilityService.ERROR_TAKE_SCREENSHOT_INTERVAL_TIME_SHORT);
         }

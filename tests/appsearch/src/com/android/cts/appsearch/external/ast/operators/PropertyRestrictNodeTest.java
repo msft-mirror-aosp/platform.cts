@@ -70,7 +70,7 @@ public class PropertyRestrictNodeTest {
         PropertyRestrictNode propertyRestrictNode =
                 new PropertyRestrictNode(propertyPath, textNode);
 
-        assertThat(propertyRestrictNode.getProperty()).isEqualTo(propertyPath);
+        assertThat(propertyRestrictNode.getPropertyPath()).isEqualTo(propertyPath);
         assertThat(propertyRestrictNode.getChild()).isEqualTo(textNode);
     }
 
@@ -124,7 +124,7 @@ public class PropertyRestrictNodeTest {
     }
 
     @Test
-    public void testSetProperty_throwsOnNullPointer() {
+    public void testSetPropertyPath_throwsOnNullPointer() {
         List<PropertyPath.PathSegment> pathSegmentList =
                 List.of(
                         PropertyPath.PathSegment.create("example"),
@@ -137,7 +137,7 @@ public class PropertyRestrictNodeTest {
         PropertyRestrictNode propertyRestrictNode =
                 new PropertyRestrictNode(propertyPath, textNode);
 
-        assertThrows(NullPointerException.class, () -> propertyRestrictNode.setProperty(null));
+        assertThrows(NullPointerException.class, () -> propertyRestrictNode.setPropertyPath(null));
     }
 
     @Test

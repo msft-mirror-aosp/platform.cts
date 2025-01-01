@@ -38,6 +38,7 @@ YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
 TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
+TEST_KEY_GEN2 = 'gen2'
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -619,6 +620,9 @@ def main():
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
     for i in config_file_contents['TestBeds']:
+      if scenes in (['scene_ip'],):
+        if TEST_KEY_GEN2 not in i['Name'].lower():
+          config_file_contents['TestBeds'].remove(i)
       if scenes in (
           ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
           ['feature_combination']
@@ -674,6 +678,9 @@ def main():
     logging.debug('Tablet name: %s', tablet_name)
     brightness = test_params_content['brightness']
     its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
+  elif TEST_KEY_GEN2 in config_file_test_key:
+    tablet_id = None
+    tablet_name = 'ip_chart'
   else:
     tablet_id = None
     tablet_name = 'sensor_fusion'
@@ -765,11 +772,13 @@ def main():
         possible_scenes = _FLASH_SCENES
       elif 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
+      elif 'scene_ip' in scenes:
+        possible_scenes = _GEN2_RIG_SCENES
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
 
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or
-        'scene_extensions' in scenes):
+        'scene_extensions' in scenes or 'scene_ip' in scenes):
       per_camera_scenes = possible_scenes
     else:
       # Validate user input scene names

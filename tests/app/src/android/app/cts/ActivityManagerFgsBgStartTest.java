@@ -1389,7 +1389,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
             if (type == TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED) {
                 uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -1889,7 +1889,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
             if (reasonCode == REASON_PUSH_MESSAGING) {
                 uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -1951,7 +1951,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null,
-                        options.toBundle());
+                        options);
             });
             // Although APP1 is background-restricted, FGS can still start because temp allowlist
             // reasonCode is REASON_ALARM_MANAGER_ALARM_CLOCK.
@@ -2024,7 +2024,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null,
-                        options.toBundle());
+                        options);
             });
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             waiter.doWait(WAITFOR_MSEC);
@@ -2334,7 +2334,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
 
             uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -2363,7 +2363,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
             uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             waiter.doWait(WAITFOR_MSEC);

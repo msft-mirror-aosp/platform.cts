@@ -20,6 +20,7 @@ import static android.content.ContentResolver.SCHEME_CONTENT;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.BroadcastOptions;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.IActivityManager;
 import android.app.Notification;
@@ -756,7 +757,8 @@ public class CommandReceiver extends BroadcastReceiver {
             String targetPackage, int flags, Bundle extras) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast " + intent);
-        context.sendOrderedBroadcast(intent, null);
+        sendOrderedBroadcast(context, intent, null /* resultReceiver */,
+                null /* broadcastOptions */);
     }
 
     public static void sendCommandWithResultReceiver(Context context, int command,
@@ -764,16 +766,25 @@ public class CommandReceiver extends BroadcastReceiver {
             BroadcastReceiver resultReceiver) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast with result receiver " + intent);
-        context.sendOrderedBroadcast(intent, null, resultReceiver, null,
-                Activity.RESULT_OK, null, null);
+        sendOrderedBroadcast(context, intent, resultReceiver, null /* broadcastOptions */);
     }
 
     public static void sendCommandWithBroadcastOptions(Context context, int command,
             String sourcePackage, String targetPackage, int flags, Bundle extras,
-            Bundle broadcastOptions) {
+            BroadcastOptions broadcastOptions) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast with BroadcastOptions " + intent);
-        context.sendOrderedBroadcast(intent, null, broadcastOptions, null, null, 0, null, null);
+        sendOrderedBroadcast(context, intent, null /* resultReceiver */, broadcastOptions);
+    }
+
+    private static void sendOrderedBroadcast(Context context, Intent intent,
+            BroadcastReceiver resultReceiver, BroadcastOptions broadcastOptions) {
+        final BroadcastOptions effectiveOptions = broadcastOptions == null
+                ? BroadcastOptions.makeBasic() : broadcastOptions;
+        effectiveOptions.setDebugLogEnabled(true);
+        context.sendOrderedBroadcast(intent, null /* receiverPermission */,
+                effectiveOptions.toBundle(), resultReceiver, null /* scheduler */,
+                Activity.RESULT_OK, null /* initialData */, null /* initialExtras */);
     }
 
     private static Intent makeIntent(int command, String sourcePackage,

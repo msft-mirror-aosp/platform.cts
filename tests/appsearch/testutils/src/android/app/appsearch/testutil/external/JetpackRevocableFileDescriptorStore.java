@@ -16,13 +16,14 @@
 
 package com.android.server.appsearch.external.localstorage;
 
-import android.annotation.NonNull;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.exceptions.AppSearchException;
 import android.os.ParcelFileDescriptor;
 import android.util.ArrayMap;
 
 import com.android.internal.annotations.GuardedBy;
+
+import org.jspecify.annotations.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,8 +58,7 @@ public class JetpackRevocableFileDescriptorStore implements RevocableFileDescrip
             mSentAppSearchParcelFileDescriptorsLocked = new ArrayMap<>();
 
     @Override
-    @NonNull
-    public ParcelFileDescriptor wrapToRevocableFileDescriptor(
+    public @NonNull ParcelFileDescriptor wrapToRevocableFileDescriptor(
             @NonNull String packageName, @NonNull ParcelFileDescriptor parcelFileDescriptor) {
         JetpackRevocableFileDescriptor revocableFileDescriptor =
                 new JetpackRevocableFileDescriptor(parcelFileDescriptor);
@@ -163,7 +163,7 @@ public class JetpackRevocableFileDescriptorStore implements RevocableFileDescrip
             super(parcelFileDescriptor);
         }
 
-        void setCloseListener(@NonNull ParcelFileDescriptor.OnCloseListener onCloseListener) {
+        void setCloseListener(ParcelFileDescriptor.@NonNull OnCloseListener onCloseListener) {
             if (mOnCloseListener != null) {
                 throw new IllegalStateException("The close listener has already been set.");
             }

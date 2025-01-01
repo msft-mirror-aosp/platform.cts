@@ -373,6 +373,7 @@ public class PackageInstallerCujTestBase {
         long startTime = System.currentTimeMillis();
         while (startTime + timeoutMs > System.currentTimeMillis()) {
             try {
+                waitForUiIdle();
                 object = getUiDevice().wait(Until.findObject(bySelector), /* timeout= */ 10 * 1000);
                 if (object != null) {
                     Log.d(TAG, "Found bounds: " + object.getVisibleBounds()
@@ -382,7 +383,6 @@ public class PackageInstallerCujTestBase {
                             + ", contentDescription: " + object.getContentDescription()
                             + ", resourceName: " + object.getResourceName() + ", visibleCenter: "
                             + object.getVisibleCenter());
-                    waitForUiIdle();
                     return object;
                 } else {
                     // Maybe the screen is small. Scroll forward and attempt to click

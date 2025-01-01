@@ -16,8 +16,9 @@
 
 package com.android.server.appsearch.external.localstorage;
 
-import android.annotation.NonNull;
 import android.app.appsearch.Features;
+
+import org.jspecify.annotations.NonNull;
 
 /**
  * An implementation of {@link Features} available on the local backend.

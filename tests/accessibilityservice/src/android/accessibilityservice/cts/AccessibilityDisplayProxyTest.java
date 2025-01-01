@@ -262,7 +262,6 @@ public class AccessibilityDisplayProxyTest {
     public static void oneTimeSetup() {
         Configurator.getInstance().setUiAutomationFlags(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sUiDevice = UiDevice.getInstance(sInstrumentation);
         // Save enabled accessibility services before disabling them so they can be re-enabled after
         // the test.
         sEnabledServices = Settings.Secure.getString(
@@ -276,6 +275,7 @@ public class AccessibilityDisplayProxyTest {
         final AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         sUiAutomation.setServiceInfo(info);
+        sUiDevice = UiDevice.getInstance(sInstrumentation);
     }
 
     @AfterClass
@@ -973,15 +973,23 @@ public class AccessibilityDisplayProxyTest {
             mProxyActivityA11yManager.addAccessibilityStateChangeListener(listener);
             sUiAutomation = sInstrumentation.getUiAutomation(FLAG_DONT_USE_ACCESSIBILITY);
             // Ensure a11y is disabled when FLAG_DONT_USE_ACCESSIBILITY is set.
-            waitOn(listener.mWaitObject, ()-> !listener.mAtomicBoolean.get(), TIMEOUT_MS,
+            waitOn(
+                    listener.mWaitObject,
+                    () -> !listener.mAtomicBoolean.get(),
+                    TIMEOUT_MS,
                     "Accessibility state change listener called");
 
             mA11yManager.registerDisplayProxy(mA11yProxy);
 
-            waitOn(listener.mWaitObject, ()-> listener.mAtomicBoolean.get(), TIMEOUT_MS,
+            waitOn(
+                    listener.mWaitObject,
+                    () -> listener.mAtomicBoolean.get(),
+                    TIMEOUT_MS,
                     "Accessibility state change listener called");
         } finally {
             mProxyActivityA11yManager.removeAccessibilityStateChangeListener(listener);
+            sUiAutomation =
+                    sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         }
     }
 
@@ -1010,6 +1018,8 @@ public class AccessibilityDisplayProxyTest {
             assertThat(a11yEnabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isFalse();
         } finally {
             stopSeparateProcess();
+            sUiAutomation =
+                    sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         }
     }
 
