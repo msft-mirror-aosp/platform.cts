@@ -28,7 +28,6 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildca
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.EXTRA_EMBED_ACTIVITY;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityFromActivity;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.startActivityOnDisplaySingleTop;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
 
@@ -53,7 +52,6 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.jetpack.utils.TestActivityKnownEmbeddingCerts;
 import android.server.wm.jetpack.utils.TestActivityLauncher;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
-import android.view.Display;
 import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
@@ -171,21 +169,21 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
 
         try {
             // Start an activity that will attempt to embed TestActivityKnownEmbeddingCerts
-            startActivityOnDisplaySingleTop(mContext, DEFAULT_DISPLAY, SIGNED_EMBEDDING_ACTIVITY,
+            startActivityOnDisplaySingleTop(mContext, getMainDisplayId(), SIGNED_EMBEDDING_ACTIVITY,
                     Bundle.EMPTY);
             mWmState.waitForActivityState(SIGNED_EMBEDDING_ACTIVITY,
                     WindowManagerState.STATE_RESUMED);
-            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+            mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
 
             Bundle embedExtra = new Bundle();
             embedExtra.putBoolean(EXTRA_EMBED_ACTIVITY, true);
-            startActivityOnDisplaySingleTop(mContext, DEFAULT_DISPLAY, SIGNED_EMBEDDING_ACTIVITY,
+            startActivityOnDisplaySingleTop(mContext, getMainDisplayId(), SIGNED_EMBEDDING_ACTIVITY,
                     embedExtra);
 
             // Verify that the embedded activity drops input during animation
             final ComponentName embeddedActivityComponent = new ComponentName(mContext,
                     TestActivityKnownEmbeddingCerts.class);
-            mWmState.waitForAppTransitionRunningOnDisplay(DEFAULT_DISPLAY);
+            mWmState.waitForAppTransitionRunningOnDisplay(getMainDisplayId());
             waitForOrFailWithRapidRetry(
                     "Embedded activity must drop all input for the duration of animation",
                     () -> {
@@ -195,7 +193,7 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
                     });
 
             // Verify that the embedded activity drops input if obscured after animation
-            mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+            mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
             assertEquals(
                     "Embedded activity must not drop input if obscured in trusted embedding",
                     0 /* DropInputMode.NONE */,
@@ -235,7 +233,7 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
         assumeTrue(getDisplayConfiguration().orientation == ORIENTATION_LANDSCAPE);
 
         // Launch a fixed-portrait activity
-        startActivityOnDisplay(Display.DEFAULT_DISPLAY, PORTRAIT_ACTIVITY);
+        startActivityOnDisplay(getMainDisplayId(), PORTRAIT_ACTIVITY);
 
         // The display should be remained in landscape.
         assertEquals("The display should be remained in landscape", ORIENTATION_LANDSCAPE,
@@ -244,7 +242,7 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
 
     private Configuration getDisplayConfiguration() {
         mWmState.computeState();
-        WindowManagerState.DisplayContent display = mWmState.getDisplay(DEFAULT_DISPLAY);
+        WindowManagerState.DisplayContent display = mWmState.getDisplay(getMainDisplayId());
         return display.getFullConfiguration();
     }
 
