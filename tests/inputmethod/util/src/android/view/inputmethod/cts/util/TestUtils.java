@@ -682,12 +682,14 @@ public final class TestUtils {
         int steps = 10;
 
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
-        UinputTouchDevice device = (toolType == MotionEvent.TOOL_TYPE_STYLUS)
-                ? new UinputStylus(instrumentation, activity.getDisplay())
-                : new UinputTouchScreen(instrumentation, activity.getDisplay());
-        UinputTouchDevice.Pointer pointer;
-        pointer = TestUtils.injectStylusDownEvent(device, startX, startY);
-        TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, steps);
-        TestUtils.injectStylusUpEvent(pointer);
+        try (UinputTouchDevice device =
+                toolType == MotionEvent.TOOL_TYPE_STYLUS
+                        ? new UinputStylus(instrumentation, activity.getDisplay())
+                        : new UinputTouchScreen(instrumentation, activity.getDisplay())) {
+            UinputTouchDevice.Pointer pointer;
+            pointer = TestUtils.injectStylusDownEvent(device, startX, startY);
+            TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, steps);
+            TestUtils.injectStylusUpEvent(pointer);
+        }
     }
 }
