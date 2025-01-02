@@ -38,8 +38,7 @@ import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.MaximumTimeOff;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.notifications.NotificationListener;
-import com.android.bedstead.nene.notifications.NotificationListenerQuerySubject;
-import com.android.bedstead.nene.packages.ComponentReference;
+import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
@@ -78,16 +77,9 @@ public final class MaximumTimeOffTest {
             TestAppActivityReference activity = personalInstance.activities().any();
             sDeviceState.dpc().devicePolicyManager().setManagedProfileMaximumTimeOff(
                     sDeviceState.dpc().componentName(), /* timeoutMs= */ 1);
+            sDeviceState.workProfile().setQuietMode(true);
 
-            try (NotificationListener notifications = TestApis.notifications().createListener()) {
-                sDeviceState.workProfile().setQuietMode(true);
-
-                // Wait for us to be notified that personal apps are disabled
-                assertThat(notifications.query()
-                        .wherePackageName().isEqualTo("android")
-                        .whereNotification().channelId().isEqualTo("DEVICE_ADMIN_ALERTS"))
-                        .wasPosted();
-            }
+            assertPackageSuspended(sTestApp.pkg());
 
             startActivityWithoutBlocking(activity);
 
@@ -165,11 +157,16 @@ public final class MaximumTimeOffTest {
 
     private void assertBlockedByAdminDialogAppears() {
         // TODO: We should move this into the enterprise/bedstead infra
-        Poll.forValue(
-                "foreground activity", () -> TestApis.activities().foregroundActivity())
-                .toMeet(
-                        (v) -> v.className()
-                                .equals(BLOCKED_BY_ADMIN_DIALOG_CLASSNAME))
-                .errorOnFail().await();
+        Poll.forValue("foreground activity", () -> TestApis.activities().foregroundActivity())
+                .toMeet((v) -> v.className().equals(BLOCKED_BY_ADMIN_DIALOG_CLASSNAME))
+                .errorOnFail()
+                .await();
+    }
+
+    private static void assertPackageSuspended(Package pkg) {
+        Poll.forValue("package suspended", () -> pkg.isSuspended(TestApis.users().instrumented()))
+                .toBeEqualTo(true)
+                .errorOnFail()
+                .await();
     }
 }
