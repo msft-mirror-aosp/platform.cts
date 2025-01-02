@@ -46,6 +46,7 @@ class DebugInputRule : TestWatcher() {
                 "InputTransportResampling",
                 "InputManager",
                 "InputManagerGlobal",
+                "TouchpadInputMapperGestures",
         )
 
         @JvmStatic
