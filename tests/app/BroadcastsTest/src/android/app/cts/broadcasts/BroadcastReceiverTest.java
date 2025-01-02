@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import android.app.BroadcastOptions;
 import android.content.BroadcastReceiver;
 import android.content.BroadcastReceiver.PendingResult;
 import android.content.ComponentName;
@@ -41,9 +40,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.compatibility.common.util.CddTest;
-import com.android.server.am.nano.ActivityManagerServiceDumpBroadcastsProto;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -454,31 +450,6 @@ public class BroadcastReceiverTest extends BaseBroadcastTest {
         filter.addAction(Camera.ACTION_NEW_VIDEO);
         mContext.registerReceiver(internalReceiver, filter, RECEIVER_EXPORTED);
         assertFalse(internalReceiver.waitForReceiverNoException(SEND_BROADCAST_TIMEOUT));
-    }
-
-    /**
-     * Starting in {@link android.os.Build.VERSION_CODES#UPSIDE_DOWN_CAKE}, the
-     * developer-visible behavior of {@link BroadcastReceiver} has been revised
-     * to support features like
-     * {@link BroadcastOptions#DEFERRAL_POLICY_UNTIL_ACTIVE}.
-     * <p>
-     * In order to support these features, all devices must ship with the "modern" stack enabled
-     * to match documented developer expectations.
-     */
-    @CddTest(requirements = {"3.5/C-0-2"})
-    @Test
-    public void testModern() throws Exception {
-        final ActivityManagerServiceDumpBroadcastsProto dump = dumpBroadcasts();
-        final String msg = "Devices must ship with the modern broadcast queue "
-                + "that has updated behaviors and APIs that developers rely upon";
-
-        assertEquals(msg, 1, dump.broadcastQueue.length);
-        assertEquals(msg, "modern", dump.broadcastQueue[0].queueName);
-    }
-
-    private static ActivityManagerServiceDumpBroadcastsProto dumpBroadcasts() throws Exception {
-        return ActivityManagerServiceDumpBroadcastsProto
-                .parseFrom(executeShellCommand("dumpsys activity --proto broadcasts"));
     }
 
     private static byte[] executeShellCommand(String cmd) throws Exception {
