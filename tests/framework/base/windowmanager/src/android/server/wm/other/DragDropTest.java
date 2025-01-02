@@ -30,6 +30,7 @@ import android.app.UiAutomation;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -48,6 +49,7 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -837,6 +839,12 @@ public class DragDropTest extends WindowManagerTestBase {
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.drag_drop_layout);
+
+            if (getResources().getConfiguration().orientation
+                    == Configuration.ORIENTATION_LANDSCAPE) {
+                ((LinearLayout) findViewById(R.id.drag_drop_activity_main))
+                        .setOrientation(LinearLayout.HORIZONTAL);
+            }
         }
     }
 
