@@ -524,40 +524,28 @@ public class RemoteViewsTest {
                         0,
                         intent,
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
-        final Intent[] intents = new Intent[]{
-                new Intent().putExtra(key, 1),
-                new Intent().putExtra(key, 2),
-                new Intent().putExtra(key, 3),
-                new Intent().putExtra(key, 4)
-        };
         final ActivityMonitor am = mInstrumentation.addMonitor(
                 MockURLSpanTestActivity.class.getName(), null, false);
         Activity newActivity = am.waitForActivityWithTimeout(TEST_TIMEOUT);
         assertNull(newActivity);
-        final int width = 100;
-        final int height = 100;
-        final int offset = 2;
-        mRemoteViews = new RemoteViews(drawInstructions);
-        for (int i = 0; i < 4; i++) {
-            mRemoteViews.setPendingIntentTemplate(i + 1, pendingIntent);
-            mRemoteViews.setOnClickFillInIntent(i + 1, intents[i]);
-        }
-        applyNightModeThenApplyAndTest(false /* nightMode */, () -> {});
 
         // Proto serialization removes PendingIntents from the RemoteViews.
         if (isProtoTest) return;
 
-        // Verify clicks
-        mActivityRule.runOnUiThread(() -> {
-            final ViewGroup root = (ViewGroup) mActivityRule.getActivity().findViewById(
-                    R.id.remoteView_host);
-            root.removeAllViews();
-            root.addView(mResult);
-        });
-        verifyClick(receiver, offset, offset, 1);
-//        verifyClick(receiver, width - offset, offset, 2);
-//        verifyClick(receiver, offset, height - offset, 3);
-//        verifyClick(receiver, width - offset, height - offset, 4);
+        final RemoteViews remoteViews = new RemoteViews(drawInstructions);
+        remoteViews.setPendingIntentTemplate(1, pendingIntent);
+        remoteViews.setOnClickFillInIntent(1, new Intent().putExtra(key, 1));
+        final View result = remoteViews.apply(mContext, null);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final ViewGroup root =
+                            (ViewGroup)
+                                    mActivityRule.getActivity().findViewById(R.id.remoteView_host);
+                    root.removeAllViews();
+                    root.addView(result);
+                });
+        final int offset = 2;
+        verifyClick(result, receiver, offset, offset, 1);
     }
 
     @Test
@@ -907,9 +895,14 @@ public class RemoteViewsTest {
         assertEquals(expectedColor, bitmap.getPixel(w - offset, h - offset));
     }
 
-    private void verifyClick(final MockBroadcastReceiver receiver, final int x, final int y,
-            final int expectedValue) throws Throwable {
-        mActivityRule.runOnUiThread(() -> performClick(mResult, x, y));
+    private void verifyClick(
+            final View result,
+            final MockBroadcastReceiver receiver,
+            final int x,
+            final int y,
+            final int expectedValue)
+            throws Throwable {
+        mActivityRule.runOnUiThread(() -> performClick(result, x, y));
         final Intent intent = receiver.awaitIntent();
         assertNotNull(intent);
         assertEquals(expectedValue, intent.getIntExtra("mykey", 0));
