@@ -20,13 +20,21 @@ import static android.scopedstorage.cts.device.OtherAppFilesRule.GrantModificati
 import static android.scopedstorage.cts.device.OtherAppFilesRule.GrantModifications.REVOKE;
 import static android.scopedstorage.cts.device.OtherAppFilesRule.modifyReadAccess;
 import static android.scopedstorage.cts.device.OwnedAndOtherFilesRule.getResultForFilesQuery;
+import static android.scopedstorage.cts.lib.TestUtils.executeShellCommand;
 import static android.scopedstorage.cts.lib.TestUtils.getContentResolver;
+import static android.scopedstorage.cts.lib.TestUtils.getDcimDir;
+import static android.scopedstorage.cts.lib.TestUtils.getExternalMediaDir;
 import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import android.Manifest;
+import android.compat.testing.PlatformCompatChangeRule;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.database.Cursor;
@@ -41,12 +49,16 @@ import android.provider.MediaStore;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
 
+import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
+import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,6 +74,11 @@ public class StorageOtherAndOwnedFilesTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule
+    public final TestRule mCompatChangeRule = new PlatformCompatChangeRule();
+    public static final long ENABLE_OWNED_PHOTOS = 310703690L;
+
     @ClassRule
     public static final OwnedAndOtherFilesRule sFilesRule =
             new OwnedAndOtherFilesRule(sContentResolver);
@@ -161,6 +178,134 @@ public class StorageOtherAndOwnedFilesTest {
                     c.getInt(c.getColumnIndex(
                             MediaStore.Files.FileColumns._ID))).isEqualTo(
                     ContentUris.parseId(expectedMediaUri));
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled("com.android.providers.media.flags.revoke_access_owned_photos")
+    @EnableCompatChanges({ENABLE_OWNED_PHOTOS})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testRevokeOwnershipWhenOwnedPhotosEnabled() throws Exception {
+        File testFile = new File(getDcimDir(), "testFile" + System.nanoTime() + ".jpg");
+        testFile.createNewFile();
+        try {
+            /* Normal scenario, all files created by the app is owned by the app. */
+            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+                assertThat(c).isNotNull();
+                assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
+            }
+
+            /*
+             * Revoke access from testFile, of one of the owned files.
+             * This will set owner_package_name as null in files table for this file.
+             */
+            modifyReadAccess(testFile, THIS_PACKAGE_NAME, REVOKE);
+            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+                assertThat(c).isNotNull();
+                assertEquals(TOTAL_OWNED_ITEMS, c.getCount());
+            }
+
+            /*
+             * Grant access to testFile, not a owned file as access was previously revoked.
+             * This will add entry in media_grants and give access to this package for this file.
+             */
+            modifyReadAccess(testFile, THIS_PACKAGE_NAME, GRANT);
+            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+                assertThat(c).isNotNull();
+                assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
+            }
+        } finally {
+            modifyReadAccess(testFile, THIS_PACKAGE_NAME, REVOKE);
+            executeShellCommand("rm " + testFile);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled("com.android.providers.media.flags.revoke_access_owned_photos")
+    @DisableCompatChanges({ENABLE_OWNED_PHOTOS})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testRevokeOwnershipWhenOwnedPhotosDisabled() throws Exception {
+        File testFile = new File(getDcimDir(), "testFile" + System.nanoTime() + ".jpg");
+        testFile.createNewFile();
+        try {
+            /* Normal scenario, all files created by the app is owned by the app. */
+            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+                assertThat(c).isNotNull();
+                assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
+            }
+
+            /*
+             * Try to revoke access from testFile, of one of the owned files.
+             * This will not be able to revoke access since owned photos is disabled.
+             * So total owned photos remain the same.
+             */
+            modifyReadAccess(testFile, THIS_PACKAGE_NAME, REVOKE);
+            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+                assertThat(c).isNotNull();
+                assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
+            }
+        } finally {
+            testFile.delete();
+        }
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled("com.android.providers.media.flags.revoke_access_owned_photos")
+    @EnableCompatChanges({ENABLE_OWNED_PHOTOS})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testRenameOperationInSharedStorageForOwnedPhotos() throws Exception {
+        performRenameOperationsForDirectory(getDcimDir());
+    }
+
+    @Test
+    @RequiresFlagsEnabled("com.android.providers.media.flags.revoke_access_owned_photos")
+    @EnableCompatChanges({ENABLE_OWNED_PHOTOS})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testRenameOperationInMediaDirectoryForOwnedPhotos() throws Exception {
+        performRenameOperationsForDirectory(getExternalMediaDir());
+    }
+
+    private static void performRenameOperationsForDirectory(File dir) throws IOException {
+        File testFile = new File(dir, "testFile_" + System.nanoTime() + ".jpg");
+        File renamedFile1 = new File(dir, "renamed1_" + System.nanoTime() + ".jpg");
+        File renamedFile2 = new File(dir, "renamed2_" + System.nanoTime() + ".jpg");
+        File renamedFile3 = new File(dir, "renamed3_" + System.nanoTime() + ".jpg");
+        testFile.createNewFile();
+
+        try {
+            // only test file should originally exists and all other files should not exist
+            assertTrue(testFile.exists());
+            assertFalse(renamedFile1.exists());
+            assertFalse(renamedFile2.exists());
+            assertFalse(renamedFile3.exists());
+
+            // the test file is owned by the package and hence has write access
+            // so we should be able to rename it
+            assertTrue(testFile.renameTo(renamedFile1));
+            assertTrue(renamedFile1.exists());
+            assertFalse(testFile.exists());
+
+            // Revoke access of renamedFile1 and try to rename it.
+            // The package does not have write access and hence should not be able to rename it
+            modifyReadAccess(renamedFile1, THIS_PACKAGE_NAME, REVOKE);
+            assertFalse(renamedFile1.renameTo(renamedFile2));
+            assertTrue(renamedFile1.exists());
+            assertFalse(renamedFile2.exists());
+
+            // Grant access of renamedFile1 and try to rename it.
+            // The package would have read access but not write access.
+            // It should not be able to rename the file
+            modifyReadAccess(renamedFile1, THIS_PACKAGE_NAME, GRANT);
+            assertFalse(renamedFile1.renameTo(renamedFile3));
+            assertTrue(renamedFile1.exists());
+            assertFalse(renamedFile3.exists());
+        } finally {
+            modifyReadAccess(renamedFile1, THIS_PACKAGE_NAME, REVOKE);
+            executeShellCommand("rm " + renamedFile1);
+            testFile.delete();
+            renamedFile2.delete();
+            renamedFile3.delete();
         }
     }
 }
