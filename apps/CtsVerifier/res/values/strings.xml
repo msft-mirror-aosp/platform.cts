@@ -7756,7 +7756,7 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <!-- Strings for Interactive Tests. -->
     <string name="interactive_tests_title">Interactive Tests</string>
-    <string name="interactive_tests_dialog_title">Interactive Tests Dialog</string>
+    <string name="interactive_tests_dialog_title">Interactive Tests</string>
     <string name="interactive_tests_dialog_content">
         Host side interactive CTS-V tests.
         Connect DUTs to a host and use cts-interactive-tradefed in the android-cts-verifier.zip to run these tests.
