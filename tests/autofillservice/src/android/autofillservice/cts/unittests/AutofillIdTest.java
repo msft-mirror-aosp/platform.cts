@@ -23,6 +23,8 @@ import static org.testng.Assert.assertThrows;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.View;
 import android.view.autofill.AutofillId;
 
@@ -30,6 +32,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -38,6 +41,10 @@ import org.mockito.junit.MockitoJUnitRunner;
 @AppModeFull(reason = "unit test")
 @RunWith(MockitoJUnitRunner.class)
 public class AutofillIdTest {
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final Context mContext = InstrumentationRegistry.getTargetContext();
     private View mHost;
