@@ -57,12 +57,16 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.service.autofill.SaveInfo;
 import android.text.InputType;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.autofill.AutofillManager;
 import android.view.flags.Flags;
 
 import androidx.test.filters.FlakyTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -79,6 +83,8 @@ public class VirtualContainerActivityTest
     private static final boolean BUG_74256300_FIXED = false;
 
     private final boolean mCompatMode;
+    private UiDevice mUiDevice;
+    private int mBottomInset;
     private AutofillActivityTestRule<VirtualContainerActivity> mActivityRule;
     protected VirtualContainerActivity mActivity;
 
@@ -118,11 +124,29 @@ public class VirtualContainerActivityTest
                                     new AutofillOptions(
                                             /*logginLevel=AutofillManager.NO_LOGGING*/
                                             0, mCompatMode));
+                            WindowInsets insets =
+                                    mActivity
+                                            .getWindow()
+                                            .getDecorView()
+                                            .getRootView()
+                                            .getRootWindowInsets();
+                            if (insets != null) {
+                                mBottomInset =
+                                        insets.getInsets(
+                                                        WindowInsets.Type.systemBars()
+                                                                | WindowInsets.Type.displayCutout())
+                                                .bottom;
+                            }
                             postActivityLaunched();
                         }
                     };
         }
         return mActivityRule;
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     }
 
     @Presubmit
@@ -850,8 +874,15 @@ public class VirtualContainerActivityTest
         final Rect pickerBounds = datasetPicker.getVisibleBounds();
         final Rect fieldBounds = line.getAbsCoordinates();
         if (autofillViewBoundsMatches) {
-            assertWithMessage("vertical coordinates don't match; picker=%s, field=%s", pickerBounds,
-                    fieldBounds).that(pickerBounds.top).isEqualTo(fieldBounds.bottom);
+            // On scaled or smaller vertical screens with large system bars, if the picker bounds
+            // reach the bottom of the screen it may not align with the field bounds
+            if ((mUiDevice.getDisplayHeight() - mBottomInset) != pickerBounds.bottom) {
+                assertWithMessage(
+                                "vertical coordinates don't match; picker=%s, field=%s",
+                                pickerBounds, fieldBounds)
+                        .that(pickerBounds.top)
+                        .isEqualTo(fieldBounds.bottom);
+            }
             assertWithMessage("horizontal coordinates don't match; picker=%s, field=%s",
                     pickerBounds, fieldBounds).that(pickerBounds.left).isEqualTo(fieldBounds.left);
         }

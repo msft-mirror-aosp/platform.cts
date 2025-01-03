@@ -139,7 +139,7 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     @Override
     public int getCachedMinTimeOptimizeThresholdMs() {
         throwIfClosed();
-        return DEFAULT_MIN_TIME_OPTIMIZE_THRESHOLD_MILLIS;
+        return defaultMinTimeOptimizeThresholdMillis();
     }
 
     @Override
