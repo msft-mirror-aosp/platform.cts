@@ -117,7 +117,6 @@ private fun <T : Activity> getDisplay(scenario: ActivityScenario<T>): Display {
 class FlagSlipperyTest : StsExtraBusinessLogicTestCase() {
     private lateinit var scenario: ActivityScenario<SlipperyEnterBottomActivity>
     private lateinit var windowManager: WindowManager
-    private lateinit var touchScreen: UinputTouchScreen
 
     private val nonSlipperyLayoutParams = WindowManager.LayoutParams(
         TYPE_APPLICATION_OVERLAY,
@@ -151,8 +150,6 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase() {
         setDimensionsToQuarterScreen()
 
         waitForWindowFocusOnBottomActivity()
-
-        touchScreen = UinputTouchScreen(getInstrumentation(), display)
     }
 
     @After
@@ -320,14 +317,15 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase() {
         // bottom right, which will make the next touch slip into the current window if the top
         // window is actually slippery
         val (x, y) = getViewCenterOnScreen(topView)
-        val pointer = touchScreen.touchDown(x, y)
-        topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
-        waitForLayoutToComplete()
-        pointer.moveTo(x + 1, y + 1)
-        pointer.lift()
-
-        topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
-        topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
+        UinputTouchScreen(getInstrumentation(), getDisplay(scenario)).use { touchScreen ->
+            val pointer = touchScreen.touchDown(x, y)
+            topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
+            waitForLayoutToComplete()
+            pointer.moveTo(x + 1, y + 1)
+            pointer.lift()
+            topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
+            topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
+        }
         scenario.onActivity {
             // Bottom activity should not get any events
             assertNull(it.getEvent())
