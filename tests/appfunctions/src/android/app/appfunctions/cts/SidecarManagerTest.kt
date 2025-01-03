@@ -93,9 +93,7 @@ class SidecarManagerTest {
         )
     }
 
-    @ApiTest(
-        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
-    )
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
@@ -129,9 +127,7 @@ class SidecarManagerTest {
         }
     }
 
-    @ApiTest(
-        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
-    )
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
@@ -141,15 +137,7 @@ class SidecarManagerTest {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             // Only run test if sidecar library is available.
             CtsTestUtil.assumeSidecarAvailable()
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
-                    .setParameters(parameters)
-                    .build()
+            val request = SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
             val response = sidecarExecuteFunction(context, request)
 
@@ -165,9 +153,7 @@ class SidecarManagerTest {
         }
     }
 
-    @ApiTest(
-        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
-    )
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
@@ -204,9 +190,7 @@ class SidecarManagerTest {
         }
     }
 
-    @ApiTest(
-        apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"]
-    )
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
@@ -272,9 +256,7 @@ class SidecarManagerTest {
         }
     }
 
-    @ApiTest(
-        apis = ["com.android.extensions.appfunctions.AppFunctionManager#isAppFunctionEnabled"]
-    )
+    @ApiTest(apis = ["com.android.extensions.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
@@ -319,8 +301,7 @@ class SidecarManagerTest {
             request: SidecarExecuteAppFunctionRequest,
             cancellationSignal: CancellationSignal = CancellationSignal(),
         ): Result<SidecarExecuteAppFunctionResponse> {
-            return suspendCancellableCoroutine { continuation
-                ->
+            return suspendCancellableCoroutine { continuation ->
                 SidecarAppFunctionManager(context)
                     .executeAppFunction(
                         request,
@@ -328,9 +309,9 @@ class SidecarManagerTest {
                         cancellationSignal,
                         object :
                             OutcomeReceiver<
-                                    SidecarExecuteAppFunctionResponse,
-                                    SidecarAppFunctionException,
-                                    > {
+                                SidecarExecuteAppFunctionResponse,
+                                SidecarAppFunctionException,
+                            > {
                             override fun onResult(result: SidecarExecuteAppFunctionResponse) {
                                 continuation.resume(Result.success(result))
                             }
@@ -349,16 +330,15 @@ class SidecarManagerTest {
 
         suspend fun sidecarIsAppFunctionEnabled(
             context: Context,
-            functionIdentifier: String
-        ): Boolean =
-            suspendCancellableCoroutine { continuation ->
-                SidecarAppFunctionManager(context)
-                    .isAppFunctionEnabled(
-                        functionIdentifier,
-                        Runnable::run,
-                        continuation.asOutcomeReceiver(),
-                    )
-            }
+            functionIdentifier: String,
+        ): Boolean = suspendCancellableCoroutine { continuation ->
+            SidecarAppFunctionManager(context)
+                .isAppFunctionEnabled(
+                    functionIdentifier,
+                    Runnable::run,
+                    continuation.asOutcomeReceiver(),
+                )
+        }
 
         suspend fun sidecarIsAppFunctionEnabled(
             context: Context,
