@@ -127,8 +127,7 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
                         m.getAdvancedProtectionFeatures().stream()
                                 .filter(
                                         feature ->
-                                                feature.getId()
-                                                        .equals(FEATURE_ID_DISALLOW_CELLULAR_2G))
+                                                feature.getId() == FEATURE_ID_DISALLOW_CELLULAR_2G)
                                 .count(),
                 Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
     }
