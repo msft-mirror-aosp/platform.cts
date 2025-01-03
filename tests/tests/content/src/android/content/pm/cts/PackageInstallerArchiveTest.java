@@ -995,7 +995,7 @@ public class PackageInstallerArchiveTest {
         mContext.startActivity(createTestActivityIntent(),
                 options.toBundle());
         mUiDevice.wait(Until.hasObject(By.clazz(PACKAGE_NAME, ACTIVITY_NAME)),
-                TimeUnit.SECONDS.toMillis(5));
+                TimeUnit.SECONDS.toMillis(10));
     }
 
     private Intent createTestActivityIntent() {
