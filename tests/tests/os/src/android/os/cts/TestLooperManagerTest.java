@@ -67,6 +67,7 @@ public class TestLooperManagerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void testOnMainThread() {
         InstrumentationRegistry.getInstrumentation()
                 .runOnMainSync(
