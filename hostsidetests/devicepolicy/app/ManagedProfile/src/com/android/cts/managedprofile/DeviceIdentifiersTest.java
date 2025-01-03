@@ -37,9 +37,9 @@ public class DeviceIdentifiersTest extends BaseManagedProfileTest {
 
         boolean mayReturnNull = !hasTelephonyFeature;
 
-        assertAccessDenied(telephonyManager::getDeviceId, mayReturnNull);
+        assertAccessDenied(telephonyManager::getDeviceId, true);
         assertAccessDenied(telephonyManager::getImei, mayReturnNull);
-        assertAccessDenied(telephonyManager::getMeid, mayReturnNull);
+        assertAccessDenied(telephonyManager::getMeid, true);
         assertAccessDenied(telephonyManager::getSubscriberId, mayReturnNull);
         assertAccessDenied(telephonyManager::getSimSerialNumber, mayReturnNull);
         assertAccessDenied(telephonyManager::getNai, mayReturnNull);
