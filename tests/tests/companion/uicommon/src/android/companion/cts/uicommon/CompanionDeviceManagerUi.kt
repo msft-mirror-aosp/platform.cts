@@ -50,6 +50,11 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
         "NOTIFICATION UI has not appeared."
     )
 
+    fun waitUntilTimeoutMessageVisible() = ui.wait(
+        Until.hasObject(TIMEOUT_MESSAGE),
+        "Device discovery timeout message has not appeared."
+    )
+
     fun waitUntilGone() = ui.waitShort(Until.gone(CONFIRMATION_UI), "CDM UI has not disappeared")
 
     fun waitAndClickOnFirstFoundDevice() {
@@ -146,6 +151,8 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
         private val NOTIFICATION_UI = By.pkg(NOTIFICATION_PACKAGE_NAME).depth(0)
 
         private val NOTIFICATION_UI_AUTO = By.pkg(NOTIFICATION_PACKAGE_NAME_AUTO).depth(0)
+
+        private val TIMEOUT_MESSAGE = By.res(PACKAGE_NAME, "timeout_message")
 
         private val CLICKABLE_BUTTON =
                 By.pkg(PACKAGE_NAME).clazz(".Button").clickable(true)

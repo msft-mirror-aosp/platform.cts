@@ -39,15 +39,36 @@ class AssociationEndToEndSingleDeviceTest(
     }
 
     @Test
-    fun test_userRejected() =
-            super.test_userRejected(singleDevice = true, selfManaged = false, displayName = null)
+    fun test_userRejected() = super.test_userRejected(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = false,
+            displayName = null
+    )
 
     @Test
-    fun test_userDismissed() =
-            super.test_userDismissed(singleDevice = true, selfManaged = false, displayName = null)
+    fun test_userDismissed() = super.test_userDismissed(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = false,
+            displayName = null
+    )
 
     @Test
-    fun test_timeout() = super.test_timeout(singleDevice = true)
+    fun test_userRejectedDiscovery() = super.test_userRejected(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = true,
+            displayName = null
+    )
+
+    @Test
+    fun test_userDismissedDiscovery() = super.test_userDismissed(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = true,
+            displayName = null
+    )
 
     @Test
     fun test_userConfirmed() = super.test_userConfirmed_foundDevice(singleDevice = true) {
@@ -55,6 +76,9 @@ class AssociationEndToEndSingleDeviceTest(
         // the button.
         confirmationUi.waitUntilPositiveButtonIsEnabledAndClick()
     }
+
+    @Test
+    fun test_timeout() = super.test_timeout(singleDevice = true)
 
     companion object {
         /**

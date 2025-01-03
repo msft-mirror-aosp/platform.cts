@@ -29,9 +29,7 @@ import android.companion.BluetoothDeviceFilter
 import android.companion.BluetoothDeviceFilterUtils
 import android.companion.CompanionDeviceManager
 import android.companion.CompanionDeviceManager.REASON_CANCELED
-import android.companion.CompanionDeviceManager.REASON_DISCOVERY_TIMEOUT
 import android.companion.CompanionDeviceManager.REASON_USER_REJECTED
-import android.companion.CompanionDeviceManager.RESULT_DISCOVERY_TIMEOUT
 import android.companion.CompanionDeviceManager.RESULT_USER_REJECTED
 import android.companion.DeviceFilter
 import android.companion.Flags
@@ -127,52 +125,70 @@ open class UiAutomationTestBase(
     protected fun test_userRejected(
         singleDevice: Boolean = false,
         selfManaged: Boolean = false,
+        timeout: Boolean = false,
         displayName: String? = null
-    ) = test_cancelled(singleDevice, selfManaged, userRejected = true, displayName) {
-            // User "rejects" the request.
-            if (singleDevice || selfManaged) {
-                confirmationUi.scrollToBottom()
-                confirmationUi.clickNegativeButton()
-            } else {
-                confirmationUi.clickNegativeButtonMultipleDevices()
-            }
-    }
+    ) = test_canceled(singleDevice, selfManaged, timeout, userRejected = true, displayName)
 
     protected fun test_userDismissed(
         singleDevice: Boolean = false,
         selfManaged: Boolean = false,
+        timeout: Boolean = false,
         displayName: String? = null
-    ) = test_cancelled(singleDevice, selfManaged, userRejected = false, displayName) {
-            // User "dismisses" the request.
-            uiDevice.pressBack()
-        }
+    ) = test_canceled(singleDevice, selfManaged, timeout, userRejected = false, displayName)
 
-    private fun test_cancelled(
+    private fun test_canceled(
         singleDevice: Boolean,
         selfManaged: Boolean,
+        timeout: Boolean,
         userRejected: Boolean,
-        displayName: String?,
-        cancelAction: () -> Unit
+        displayName: String?
     ) {
+        if (!singleDevice && profile == null && userRejected && !timeout) {
+            // Multi-device association flow for null-profile does not have a dedicated user
+            // consent prompt after the device selection, so it cannot be rejected.
+            return
+        }
+
+        fun cancelAction() {
+            if (!userRejected) {
+                // User "dismisses" the request.
+                uiDevice.pressBack()
+            } else if (timeout && !selfManaged) {
+                // User "cancels" the device discovery (may or may not have timed out)
+                confirmationUi.clickNegativeButtonMultipleDevices()
+            } else {
+                // User "rejects" the association confirmation prompt
+                confirmationUi.scrollToBottom()
+                confirmationUi.clickNegativeButton()
+            }
+        }
+
         // Give the discovery service extra time to find the first match device before
         // pressing the negative button for singleDevice && userRejected.
-        if (singleDevice) {
+        if (singleDevice || timeout) {
             setSystemPropertyDuration(2.seconds, SYS_PROP_DEBUG_DISCOVERY_TIMEOUT)
         }
 
-        sendRequestAndLaunchConfirmation(singleDevice, selfManaged, displayName)
+        val deviceFilter = if (timeout) UNMATCHABLE_BT_FILTER else null
+        sendRequestAndLaunchConfirmation(singleDevice, selfManaged, displayName, deviceFilter)
 
-        if (singleDevice) {
-            // The discovery timeout is 2 sec, but let's wait for 3. So that we have enough
-            // time to wait until the dialog appeared.
-            sleep(3.seconds.inWholeMilliseconds)
+        if (!timeout) {
+            // Wait until dialog proceeds to association confirmation
+            if (singleDevice) {
+                // The discovery timeout is 2 sec, but let's wait for 3. So that we have enough
+                // time to wait until the dialog appeared.
+                sleep(3.seconds.inWholeMilliseconds)
+            } else if (!selfManaged && profile != null) {
+                // Click the first found device for multiple device dialog
+                confirmationUi.waitAndClickOnFirstFoundDevice()
+            }
+
+            // If device profile exists, permissions list must be scrolled to enable the buttons
+            if (profile != null) {
+                confirmationUi.scrollToBottom()
+            }
         }
 
-        if ((singleDevice || selfManaged) && profile != null) {
-            confirmationUi.scrollToBottom()
-        }
-        // Test can stop here since there's no device found after discovery timeout.
-        assumeFalse(callback.invocations.contains(OnFailure(REASON_DISCOVERY_TIMEOUT)))
         // Check callback invocations: There should be 0 invocation before any actions are made.
         assertEmpty(callback.invocations)
 
@@ -218,43 +234,19 @@ open class UiAutomationTestBase(
         // there's a chance CDM UI is disappeared before waitUntilVisible
         // is called.
         setSystemPropertyDuration(2.seconds, SYS_PROP_DEBUG_DISCOVERY_TIMEOUT)
-        var minOccurrences: Int
-        if (Flags.associationFailureCode()) {
-            minOccurrences = 2
-        } else {
-            minOccurrences = 1
-        }
 
-        callback.assertInvokedByActions(timeout = 2.seconds, minOccurrences = minOccurrences) {
-            // Make sure no device will match the request
-            sendRequestAndLaunchConfirmation(
-                singleDevice = singleDevice,
-                deviceFilter = UNMATCHABLE_BT_FILTER
-            )
-        }
+        // Make sure no device will match the request
+        sendRequestAndLaunchConfirmation(
+            singleDevice = singleDevice,
+            deviceFilter = UNMATCHABLE_BT_FILTER
+        )
 
-        if (Flags.associationFailureCode()) {
-            assertTrue {
-                callback.invocations.contains(OnFailure(REASON_DISCOVERY_TIMEOUT)) &&
-                        callback.invocations.contains(
-                            OnFailureCode(RESULT_DISCOVERY_TIMEOUT, REASON_DISCOVERY_TIMEOUT))
-            }
-        } else {
-            assertContentEquals(
-                actual = callback.invocations,
-                expected = listOf(OnFailure(REASON_DISCOVERY_TIMEOUT))
-            )
-        }
+        sleep(2.seconds.inWholeMilliseconds) // Wait for discovery to timeout
+        confirmationUi.waitUntilTimeoutMessageVisible()
 
-        // Wait until the Confirmation UI goes away.
-        confirmationUi.waitUntilGone()
-
-        // Check the result code delivered via onActivityResult()
-        val (resultCode: Int, _) = CompanionActivity.waitForActivityResult()
-        assertEquals(actual = resultCode, expected = RESULT_DISCOVERY_TIMEOUT)
-
-        // Make sure no Associations were created.
-        assertEmpty(cdm.myAssociations)
+        // Make sure cancel button is available and click it
+        confirmationUi.clickNegativeButtonMultipleDevices()
+        assertEmpty(cdm.myAssociations) // No associations were created
     }
 
     protected fun test_userConfirmed_foundDevice(
