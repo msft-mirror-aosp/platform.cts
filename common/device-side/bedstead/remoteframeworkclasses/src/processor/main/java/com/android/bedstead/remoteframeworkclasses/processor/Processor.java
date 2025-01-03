@@ -206,14 +206,19 @@ public final class Processor extends AbstractProcessor {
             TypeElement frameworkClass,
             Set<MethodSignature> allowListedMethods,
             Elements elements) {
-        Set<Api> apis = filterMethods(frameworkClass,
-                getMethods(frameworkClass, processingEnv.getElementUtils()),
-                Apis.forClass(frameworkClass.getQualifiedName().toString(),
-                        processingEnv.getTypeUtils(), processingEnv.getElementUtils()), elements)
-                .stream()
-                .filter(api -> !usesBlocklistedType(api, allowListedMethods, elements))
-                .filter(api -> !parametersHaveWildcards(api.method))
-                .collect(Collectors.toSet());
+        Set<Api> apis =
+                filterMethods(
+                                frameworkClass,
+                                getMethods(frameworkClass, processingEnv.getElementUtils()),
+                                Apis.forClass(
+                                        frameworkClass.getQualifiedName().toString(),
+                                        processingEnv.getTypeUtils(),
+                                        processingEnv.getElementUtils()),
+                                elements)
+                        .stream()
+                        .filter(api -> !usesBlocklistedType(api, allowListedMethods, elements))
+                        .filter(api -> !parametersHaveWildcards(api.method))
+                        .collect(Collectors.toSet());
 
         generateFrameworkInterface(frameworkClass, apis);
         generateFrameworkImpl(frameworkClass, apis);
@@ -244,7 +249,7 @@ public final class Processor extends AbstractProcessor {
             return true;
         }
         if (type.getKind() == TypeKind.DECLARED) {
-            DeclaredType declaredtype = (DeclaredType)type;
+            DeclaredType declaredtype = (DeclaredType) type;
 
             List<? extends TypeMirror> typeArguments = declaredtype.getTypeArguments();
 
@@ -509,28 +514,37 @@ public final class Processor extends AbstractProcessor {
                     if (paramNames.isEmpty()) {
                         methodBuilder.addStatement(
                                 "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
-                                TEST_APIS_REFLECTION_FILE, method.getSimpleName());
+                                TEST_APIS_REFLECTION_FILE,
+                                method.getSimpleName());
                     } else {
                         methodBuilder.addStatement(
-                                "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName), $L)",
-                                TEST_APIS_REFLECTION_FILE, method.getSimpleName(),
+                                "$L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName),"
+                                    + " $L)",
+                                TEST_APIS_REFLECTION_FILE,
+                                method.getSimpleName(),
                                 String.join(", ", paramNames));
                     }
                 } else {
                     methodBuilder.addStatement(
                             "mFrameworkClass.getParentProfileInstance(profileOwnerComponentName).$L($L)",
-                            method.getSimpleName(), String.join(", ", paramNames));
+                            method.getSimpleName(),
+                            String.join(", ", paramNames));
                 }
             } else {
                 if (api.isTestApi) {
                     if (paramNames.isEmpty()) {
                         methodBuilder.addStatement(
-                                "return $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
-                                TEST_APIS_REFLECTION_FILE, method.getSimpleName());
+                                "return"
+                                    + " $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName))",
+                                TEST_APIS_REFLECTION_FILE,
+                                method.getSimpleName());
                     } else {
                         methodBuilder.addStatement(
-                                "return $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName), $L)",
-                                TEST_APIS_REFLECTION_FILE, method.getSimpleName(),
+                                "return"
+                                    + " $L.$L(mFrameworkClass.getParentProfileInstance(profileOwnerComponentName),"
+                                    + " $L)",
+                                TEST_APIS_REFLECTION_FILE,
+                                method.getSimpleName(),
                                 String.join(", ", paramNames));
                     }
                 } else {
@@ -649,7 +663,8 @@ public final class Processor extends AbstractProcessor {
                 methodBuilder.returns(signatureReturnOverrides.get(signature));
 
                 ClassName iClassName = signatureReturnOverrides.get(signature);
-                ClassName implClassName = ClassName.get(iClassName.packageName(), iClassName.simpleName() + "Impl");
+                ClassName implClassName =
+                        ClassName.get(iClassName.packageName(), iClassName.simpleName() + "Impl");
 
                 methodBuilder.addStatement(
                         "$1T ret = new $1T($2L.$3L($4L))",
