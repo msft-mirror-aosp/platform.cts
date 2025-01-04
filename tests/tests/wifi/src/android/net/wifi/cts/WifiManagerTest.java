@@ -2201,8 +2201,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             // (ro.boot.wificountrycodeCountry) will return a null country code. Since country code
             // is mandatory for 5GHz/6GHz band, skip the softap operation on 5GHz & 6GHz only band.
             boolean skip5g6gBand = false;
-            String wifiCountryCode = ShellIdentityUtils.invokeWithShellPermissions(
-                    sWifiManager::getCountryCode);
+            String wifiCountryCode = sWifiManager.getCountryCode();
             if (wifiCountryCode == null) {
                 skip5g6gBand = true;
                 Log.e(TAG, "Country Code is not available - Skip 5GHz and 6GHz test");
@@ -2245,10 +2244,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 assertTrue(callback.onStartedCalled);
                 assertNotNull(callback.reservation);
                 SoftApConfiguration softApConfig = callback.reservation.getSoftApConfiguration();
-                assertEquals(
-                        WifiSsid.fromBytes(TEST_SSID_UNQUOTED.getBytes(StandardCharsets.UTF_8)),
-                        softApConfig.getWifiSsid());
-                assertEquals(TEST_PASSPHRASE, softApConfig.getPassphrase());
+                WifiSsid testSsid =
+                        WifiSsid.fromBytes(TEST_SSID_UNQUOTED.getBytes(StandardCharsets.UTF_8));
+                if (testSystemApi) {
+                    // Only system api call can force SSID and passphrase
+                    assertEquals(testSsid, softApConfig.getWifiSsid());
+                    assertEquals(TEST_PASSPHRASE, softApConfig.getPassphrase());
+                } else {
+                    assertNotEquals(testSsid, softApConfig.getWifiSsid());
+                }
                 // Automotive mode can force the LOHS to specific bands
                 if (!hasAutomotiveFeature()) {
                     assertEquals(testBand, softApConfig.getBand());

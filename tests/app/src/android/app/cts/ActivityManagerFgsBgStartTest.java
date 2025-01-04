@@ -82,12 +82,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.server.am.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -153,6 +155,11 @@ public class ActivityManagerFgsBgStartTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @BeforeClass
+    public static void setupClass() throws Exception {
+        AmUtils.waitForBroadcastBarrier();
+    }
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -174,6 +181,7 @@ public class ActivityManagerFgsBgStartTest {
         // Press home key to ensure stopAppSwitches is called so the grace period of
         // the background start will be ignored if there's any.
         UiDevice.getInstance(mInstrumentation).pressHome();
+        AmUtils.waitForBroadcastBarrier();
     }
 
     @After

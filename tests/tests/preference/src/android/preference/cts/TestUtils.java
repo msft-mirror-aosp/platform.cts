@@ -36,8 +36,6 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
-import com.android.compatibility.common.util.UserHelper;
-
 import java.util.List;
 
 /**
@@ -54,7 +52,6 @@ public class TestUtils {
     private int mStatusBarHeight = -1;
     private int mNavigationBarHeight = -1;
     private ActivityTestRule<?> mRule;
-    private final boolean mIsVisibleBackgroundUser;
 
     TestUtils(ActivityTestRule<?> rule) {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -63,8 +60,6 @@ public class TestUtils {
         mDevice = UiDevice.getInstance(mInstrumentation);
         mAutomation = mInstrumentation.getUiAutomation();
         mRule = rule;
-        UserHelper userHelper = new UserHelper(mContext);
-        mIsVisibleBackgroundUser = userHelper.isVisibleBackgroundUser();
     }
 
     void waitForIdle() {
@@ -183,18 +178,8 @@ public class TestUtils {
     }
 
     private boolean scrollToAndGetTextObject(String text) {
-        // Currently, UiScrollable does not support scroll actions on the secondary display.
-        // To support secondary_user_on_secondary_display, use UiObject2#scroll instead
-        // to perform tests for visible background users.
-        // TODO(b/370532941): Use UiScrollable for secondary_user_on_secondary_display as well
-        // when it supports multi-display.
-        List<UiObject2> scrollableViewList;
-        if (mIsVisibleBackgroundUser) {
-            UiObject2 appArea = mDevice.findObject(By.pkg(mPackageName).res("android:id/content"));
-            scrollableViewList = appArea.findObjects(By.scrollable(true));
-        } else {
-            scrollableViewList = mDevice.findObjects(By.scrollable(true));
-        }
+        UiObject2 appArea = mDevice.findObject(By.pkg(mPackageName).res("android:id/content"));
+        List<UiObject2> scrollableViewList = appArea.findObjects(By.scrollable(true));
         UiObject2 foundObject = null;
         for (UiObject2 scrollableView : scrollableViewList) {
             // Swipe far away from the edges to avoid triggering navigation gestures
