@@ -37,6 +37,7 @@ import android.platform.test.annotations.Presubmit;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -89,6 +90,7 @@ public class AccessibilityPaneTest {
     public void setUp() throws Exception {
         mActivityRule
                 .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
                 .onActivity(
                         activity -> {
                             mPaneView = activity.findViewById(R.id.button);

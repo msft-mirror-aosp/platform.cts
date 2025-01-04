@@ -85,6 +85,7 @@ import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
@@ -1238,7 +1239,7 @@ public class AccessibilityMagnificationTest {
             throws Exception {
         mActivityScenario = ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
         AtomicReference<Activity> activity = new AtomicReference<>();
-        mActivityScenario.onActivity(activity::set);
+        mActivityScenario.moveToState(Lifecycle.State.RESUMED).onActivity(activity::set);
 
         final MagnificationController controller = mService.getMagnificationController();
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
@@ -1291,7 +1292,7 @@ public class AccessibilityMagnificationTest {
             throws Exception {
         mActivityScenario = ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
         AtomicReference<Activity> activity = new AtomicReference<>();
-        mActivityScenario.onActivity(activity::set);
+        mActivityScenario.moveToState(Lifecycle.State.RESUMED).onActivity(activity::set);
 
         final MagnificationController controller = mService.getMagnificationController();
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
@@ -1383,7 +1384,7 @@ public class AccessibilityMagnificationTest {
             throws Exception {
         mActivityScenario = ActivityScenario.launch(AccessibilityWindowQueryActivity.class);
         AtomicReference<Activity> activity = new AtomicReference<>();
-        mActivityScenario.onActivity(activity::set);
+        mActivityScenario.moveToState(Lifecycle.State.RESUMED).onActivity(activity::set);
         final MagnificationController controller = mService.getMagnificationController();
         final Rect magnifyBounds = controller.getMagnificationRegion().getBounds();
         final float scale = 8.0f;
@@ -1419,21 +1420,23 @@ public class AccessibilityMagnificationTest {
     public void testTextLocations_changeWhenMagnified() throws Exception {
         AtomicReference<AccessibilityNodeInfo> text = new AtomicReference<>();
         mActivityScenario = ActivityScenario.launch(AccessibilityTextTraversalActivity.class);
-        mActivityScenario.onActivity(
-                activity -> {
-                    final TextView textView = activity.findViewById(R.id.text);
-                    assertThat(textView).isNotNull();
+        mActivityScenario
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            final TextView textView = activity.findViewById(R.id.text);
+                            assertThat(textView).isNotNull();
 
-                    textView.setVisibility(View.VISIBLE);
-                    textView.setText(activity.getString(R.string.a_b));
+                            textView.setVisibility(View.VISIBLE);
+                            textView.setText(activity.getString(R.string.a_b));
 
-                    text.set(
-                            sUiAutomation
-                                    .getRootInActiveWindow()
-                                    .findAccessibilityNodeInfosByText(
-                                            activity.getString(R.string.a_b))
-                                    .get(0));
-                });
+                            text.set(
+                                    sUiAutomation
+                                            .getRootInActiveWindow()
+                                            .findAccessibilityNodeInfosByText(
+                                                    activity.getString(R.string.a_b))
+                                            .get(0));
+                        });
         assertWithMessage("Can't find text on the screen").that(text).isNotNull();
 
         Bundle extras = waitForExtraTextData(text.get(), EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY);
@@ -1506,23 +1509,27 @@ public class AccessibilityMagnificationTest {
     public void testTextLocationsInWindow_noChangeWhenMagnified() throws Exception {
         AtomicReference<AccessibilityNodeInfo> text = new AtomicReference<>();
         mActivityScenario = ActivityScenario.launch(AccessibilityTextTraversalActivity.class);
-        mActivityScenario.onActivity(
-                activity -> {
-                    final TextView textView = activity.findViewById(R.id.text);
-                    assertThat(textView).isNotNull();
+        mActivityScenario
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            final TextView textView = activity.findViewById(R.id.text);
+                            assertThat(textView).isNotNull();
 
-                    textView.setVisibility(View.VISIBLE);
-                    textView.setText(activity.getString(R.string.a_b));
+                            textView.setVisibility(View.VISIBLE);
+                            textView.setText(activity.getString(R.string.a_b));
 
-                    text.set(
-                            sUiAutomation
-                                    .getRootInActiveWindow()
-                                    .findAccessibilityNodeInfosByText(
-                                            activity.getString(R.string.a_b))
-                                    .get(0));
+                            text.set(
+                                    sUiAutomation
+                                            .getRootInActiveWindow()
+                                            .findAccessibilityNodeInfosByText(
+                                                    activity.getString(R.string.a_b))
+                                            .get(0));
 
-                    assertWithMessage("Can't find text on the screen").that(text).isNotNull();
-                });
+                            assertWithMessage("Can't find text on the screen")
+                                    .that(text)
+                                    .isNotNull();
+                        });
 
         Bundle extras =
                 waitForExtraTextData(text.get(), EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY);
