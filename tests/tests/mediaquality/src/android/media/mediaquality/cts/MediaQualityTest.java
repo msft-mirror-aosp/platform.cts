@@ -55,7 +55,7 @@ public class MediaQualityTest {
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetAvailablePictureProfiles() throws Exception {
-        mManager.getAvailablePictureProfiles(true);
+        mManager.getAvailablePictureProfiles(null);
     }
 
     private boolean isSupported() {
