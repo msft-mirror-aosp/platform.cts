@@ -365,8 +365,8 @@ public class CarrierRoamingSatelliteTestBase {
         }
     }
 
-    protected static class CarrierRoamingNtnModeListenerTest extends TelephonyCallback
-            implements TelephonyCallback.CarrierRoamingNtnModeListener {
+    protected static class CarrierRoamingNtnListenerTest extends TelephonyCallback
+            implements TelephonyCallback.CarrierRoamingNtnListener {
         private final Semaphore mActiveSemaphore = new Semaphore(0);
         private final Semaphore mEligibleSemaphore = new Semaphore(0);
         private final Object mLock = new Object();

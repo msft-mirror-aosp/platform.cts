@@ -972,17 +972,19 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
-    public void testRegisterForCommunicationAllowedStateChanged() {
+    public void testRegisterForCommunicationAccessStateChanged() {
         if (!shouldTestSatellite()) return;
 
-        SatelliteCommunicationAllowedStateCallbackTest satelliteCommunicationAllowedStateCallback =
-                new SatelliteCommunicationAllowedStateCallbackTest();
+        SatelliteCommunicationAccessStateCallbackTest satelliteCommunicationAllowedStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class,
-                () -> sSatelliteManager.registerForCommunicationAllowedStateChanged(
-                        getContext().getMainExecutor(),
-                        satelliteCommunicationAllowedStateCallback));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForCommunicationAccessStateChanged(
+                                getContext().getMainExecutor(),
+                                satelliteCommunicationAllowedStateCallback));
     }
 
     @Test
@@ -1058,7 +1060,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                                         .setSubscriberId("09876543")
                                         .setCarrierId(12345)
                                         .setNiddApn("")
-                                        .setSubId(SubscriptionManager.getSubscriptionId(slotId0))
+                                        .setSubscriptionId(
+                                                SubscriptionManager.getSubscriptionId(slotId0))
                                         .setSubscriberIdType(idType)
                                         .build()));
         OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =

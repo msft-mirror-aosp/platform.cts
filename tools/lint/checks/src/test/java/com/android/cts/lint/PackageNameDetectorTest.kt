@@ -88,4 +88,22 @@ AndroidManifest.xml:2: Warning: random.android does not follow the recommendatio
             .run()
             .expectClean()
     }
+
+    @Test
+    fun testPackageNameIsMissing() {
+        lint()
+            .files(
+                xml(
+                        "AndroidManifest.xml",
+                        """
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+</manifest>
+"""
+                    )
+                    .indented()
+            )
+            .allowMissingSdk()
+            .run()
+            .expectClean()
+    }
 }

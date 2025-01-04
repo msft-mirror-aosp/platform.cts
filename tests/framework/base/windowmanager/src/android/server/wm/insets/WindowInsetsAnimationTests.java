@@ -68,11 +68,11 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
     @Before
     public void setup() throws Exception {
         super.setUp();
+        assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
         mActivity =
                 startActivity(TestActivity.class, DEFAULT_DISPLAY, true, WINDOWING_MODE_FULLSCREEN);
         mRootView = mActivity.getWindow().getDecorView();
         assumeTrue(hasWindowInsets(mRootView, systemBars()));
-        assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
     }
 
     @Test

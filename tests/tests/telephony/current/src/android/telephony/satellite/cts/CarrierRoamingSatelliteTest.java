@@ -18,8 +18,8 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -83,7 +83,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testCarrierRoamingNtnModeListener() throws Exception {
         insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
-        CarrierRoamingNtnModeListenerTest listener = new CarrierRoamingNtnModeListenerTest();
+        CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
         listener.clearModeChanges();
 
         adoptShellIdentity();
@@ -113,7 +113,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     @Ignore
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnEligible() throws Exception {
-        CarrierRoamingNtnModeListenerTest listener = new CarrierRoamingNtnModeListenerTest();
+        CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();
         listener.clearModeChanges();
 
         // Insert sim card

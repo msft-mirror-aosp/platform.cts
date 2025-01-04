@@ -920,15 +920,15 @@ public class TelephonyRegistryManagerTest {
         }
     }
 
-    private static class CarrierRoamingNtnModeListener extends TelephonyCallback
-            implements TelephonyCallback.CarrierRoamingNtnModeListener {
+    private static class CarrierRoamingNtnListener extends TelephonyCallback
+            implements TelephonyCallback.CarrierRoamingNtnListener {
 
         public LinkedBlockingQueue<Object> mModeQueue;
         public LinkedBlockingQueue<Object> mEligibilityQueue;
         public LinkedBlockingQueue<Object> mAvailableServicesQueue;
         public LinkedBlockingQueue<Object> mSignalStrengthQueue;
 
-        CarrierRoamingNtnModeListener() {
+        CarrierRoamingNtnListener() {
             mModeQueue = new LinkedBlockingQueue<>(1);
             mEligibilityQueue = new LinkedBlockingQueue<>(1);
             mAvailableServicesQueue = new LinkedBlockingQueue<>(1);
@@ -960,7 +960,7 @@ public class TelephonyRegistryManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testCarrierRoamingNtnModeChanged() throws Exception {
-        CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener();
+        CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
         Context context = InstrumentationRegistry.getContext();
         TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
@@ -997,7 +997,7 @@ public class TelephonyRegistryManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnEligible() throws Exception {
-        CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener();
+        CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
         Context context = InstrumentationRegistry.getContext();
         TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
@@ -1036,7 +1036,7 @@ public class TelephonyRegistryManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnAvailableServices() throws Exception {
-        CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener();
+        CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
         Context context = InstrumentationRegistry.getContext();
         TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);
@@ -1076,7 +1076,7 @@ public class TelephonyRegistryManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testCarrierRoamingNtnSignalStrengthChanged() throws Exception {
-        CarrierRoamingNtnModeListener listener = new CarrierRoamingNtnModeListener();
+        CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 
         Context context = InstrumentationRegistry.getContext();
         TelephonyManager telephonyManager = context.getSystemService(TelephonyManager.class);

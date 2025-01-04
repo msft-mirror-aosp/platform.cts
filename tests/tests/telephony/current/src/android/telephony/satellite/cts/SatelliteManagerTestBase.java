@@ -57,7 +57,7 @@ import android.telephony.satellite.PointingInfo;
 import android.telephony.satellite.SatelliteAccessConfiguration;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
-import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
+import android.telephony.satellite.SatelliteCommunicationAccessStateCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
@@ -872,8 +872,8 @@ public class SatelliteManagerTestBase {
         }
     }
 
-    protected static class SatelliteCommunicationAllowedStateCallbackTest implements
-            SatelliteCommunicationAllowedStateCallback {
+    protected static class SatelliteCommunicationAccessStateCallbackTest
+            implements SatelliteCommunicationAccessStateCallback {
         public boolean isAllowed = false;
         @Nullable
         private SatelliteAccessConfiguration mSatelliteAccessConfiguration;
@@ -881,28 +881,29 @@ public class SatelliteManagerTestBase {
         private final Semaphore mSatelliteAccessConfigurationChangedSemaphore = new Semaphore(0);
 
         @Override
-        public void onSatelliteCommunicationAllowedStateChanged(boolean allowed) {
-            logd("onSatelliteCommunicationAllowedStateChanged: isAllowed=" + allowed);
+        public void onAccessAllowedStateChanged(boolean allowed) {
+            logd("onAccessAllowedStateChanged: isAllowed=" + allowed);
             isAllowed = allowed;
 
             try {
                 mSemaphore.release();
             } catch (Exception e) {
-                loge("onSatelliteCommunicationAllowedStateChanged: Got exception, ex=" + e);
+                loge("onAccessAllowedStateChanged: Got exception, ex=" + e);
             }
         }
 
         @Override
-        public void onSatelliteAccessConfigurationChanged(
+        public void onAccessConfigurationChanged(
                 @Nullable SatelliteAccessConfiguration satelliteAccessConfiguration) {
-            logd("onSatelliteAccessConfigurationChanged: satelliteAccessConfiguration="
-                    + satelliteAccessConfiguration);
+            logd(
+                    "onAccessConfigurationChanged: satelliteAccessConfiguration="
+                            + satelliteAccessConfiguration);
             mSatelliteAccessConfiguration = satelliteAccessConfiguration;
 
             try {
                 mSatelliteAccessConfigurationChangedSemaphore.release();
             } catch (Exception e) {
-                loge("onSatelliteAccessConfigurationChanged: Got exception, ex=" + e);
+                loge("onAccessConfigurationChanged: Got exception, ex=" + e);
             }
         }
 
@@ -910,11 +911,11 @@ public class SatelliteManagerTestBase {
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
                     if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
-                        loge("Timeout to receive onSatelliteCommunicationAllowedStateChanged");
+                        loge("Timeout to receive onAccessAllowedStateChanged");
                         return false;
                     }
                 } catch (Exception ex) {
-                    loge("onSatelliteCommunicationAllowedStateChanged: Got exception=" + ex);
+                    loge("onAccessAllowedStateChanged: Got exception=" + ex);
                     return false;
                 }
             }

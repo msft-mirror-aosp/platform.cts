@@ -623,7 +623,7 @@ public class Persistence {
                 List<WindowManagerState.Task> trimFrom) {
 
             for (WindowManagerState.Task task : trimFrom) {
-                toTrim.removeIf(t -> t.getRootTaskId() == task.getRootTaskId());
+                toTrim.removeIf(t -> t.getTaskId() == task.getTaskId());
             }
 
             return toTrim;

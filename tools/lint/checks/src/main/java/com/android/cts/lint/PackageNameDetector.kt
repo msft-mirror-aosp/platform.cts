@@ -34,8 +34,8 @@ class PackageNameDetector : Detector(), XmlScanner {
 
     override fun visitElement(context: XmlContext, element: Element) {
         val packageNode = element.getAttributeNode("package")
-        val packageName = packageNode.value
-        if (!PACKAGE_NAME_REGEX.matches(packageName)) {
+        val packageName = packageNode?.value
+        if (packageName != null && !PACKAGE_NAME_REGEX.matches(packageName)) {
             val location = context.getValueLocation(packageNode)
             val incident =
                 Incident(context, ISSUE)

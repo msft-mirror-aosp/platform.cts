@@ -66,7 +66,7 @@ public class BasePackageInstallTest {
     protected static final String TEST_APP_LOCATION =
             "/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp.apk";
     protected static final String TEST_APP_PKG = "android.packageinstaller.emptytestapp.cts";
-    protected static final int PACKAGE_INSTALLER_TIMEOUT_MS = 60000; // 60 seconds
+    protected static final int PACKAGE_INSTALLER_TIMEOUT_MS = 30000; // 30 seconds
     private static final String ACTION_INSTALL_COMMIT =
             "com.android.cts.deviceowner.INTENT_PACKAGE_INSTALL_COMMIT";
     protected static final int PACKAGE_INSTALLER_STATUS_UNDEFINED = -1000;

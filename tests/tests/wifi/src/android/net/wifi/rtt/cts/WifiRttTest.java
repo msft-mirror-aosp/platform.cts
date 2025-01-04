@@ -16,6 +16,9 @@
 
 package android.net.wifi.rtt.cts;
 
+import static android.net.wifi.rtt.PasnConfig.AKM_PASN;
+import static android.net.wifi.rtt.PasnConfig.AKM_SAE;
+import static android.net.wifi.rtt.PasnConfig.CIPHER_GCMP_256;
 import static android.net.wifi.rtt.ResponderConfig.RESPONDER_AP;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -33,6 +36,7 @@ import static org.mockito.Mockito.mock;
 import android.net.MacAddress;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiSsid;
 import android.net.wifi.aware.PeerHandle;
 import android.net.wifi.cts.WifiBuildCompat;
 import android.net.wifi.cts.WifiFeature;
@@ -61,6 +65,7 @@ import com.android.wifi.flags.Flags;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -99,6 +104,9 @@ public class WifiRttTest extends TestBase {
 
     // Interval between two ranging request.
     private static final int INTERVAL_MS = 1000;
+    private static final String TEST_SSID = "test";
+    private static final String TEST_PASSWORD = "secret";
+    private static final byte[] TEST_PASN_COMEBACK_COOKIE = new byte[] {1, 2, 3};
 
     /**
      * Test Wi-Fi RTT ranging operation using ScanResults in request:
@@ -1241,8 +1249,19 @@ public class WifiRttTest extends TestBase {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SECURE_RANGING)
-    @ApiTest(apis = {"android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
-            "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
+                "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported",
+                "android.net.wifi.rtt.PasnConfig#Builder",
+                "android.net.wifi.rtt.PasnConfig.Builder#setWifiSsid",
+                "android.net.wifi.rtt.PasnConfig.Builder#setPassword",
+                "android.net.wifi.rtt.PasnConfig.Builder#build",
+                "android.net.wifi.rtt.SecureRangingConfig#Builder",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#setSecureHeLtfEnabled",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#setRangingFrameProtectionEnabled",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#build"
+            })
     public void testSecureRangingToTest11azApUsingScanResult() throws InterruptedException {
         // Check Device capabilities
         assumeNotNull(mCharacteristics);
@@ -1278,6 +1297,54 @@ public class WifiRttTest extends TestBase {
         assertNotNull(pasnConfig.getWifiSsid());
 
         range11azApRequest(request, testAp, true);
+    }
+
+    /**
+     * Test secure ranging config builder. This also includes PASN config builder as PASN config is
+     * a required configuration for secure ranging config.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SECURE_RANGING)
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.PasnConfig#Builder",
+                "android.net.wifi.rtt.PasnConfig.Builder#setWifiSsid",
+                "android.net.wifi.rtt.PasnConfig.Builder#setPassword",
+                "android.net.wifi.rtt.PasnConfig.Builder#build",
+                "android.net.wifi.rtt.PasnConfig#getWifiSsid",
+                "android.net.wifi.rtt.PasnConfig#getPassword",
+                "android.net.wifi.rtt.PasnConfig#getCiphers",
+                "android.net.wifi.rtt.PasnConfig#getBaseAkms",
+                "android.net.wifi.rtt.PasnConfig#getPasnComebackCookie",
+                "android.net.wifi.rtt.SecureRangingConfig#Builder",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#setSecureHeLtfEnabled",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#setRangingFrameProtectionEnabled",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#build",
+                "android.net.wifi.rtt.SecureRangingConfig#getPasnConfig",
+                "android.net.wifi.rtt.SecureRangingConfig#isSecureHeLtfEnabled",
+                "android.net.wifi.rtt.SecureRangingConfig#isRangingFrameProtectionEnabled",
+            })
+    public void testSecureRangingConfigBuilder() {
+        PasnConfig pasnConfig =
+                new PasnConfig.Builder(AKM_SAE | AKM_PASN, CIPHER_GCMP_256)
+                        .setWifiSsid(WifiSsid.fromBytes(TEST_SSID.getBytes(StandardCharsets.UTF_8)))
+                        .setPassword(TEST_PASSWORD)
+                        .setPasnComebackCookie(TEST_PASN_COMEBACK_COOKIE)
+                        .build();
+        SecureRangingConfig secureRangingConfig =
+                new SecureRangingConfig.Builder(pasnConfig)
+                        .setSecureHeLtfEnabled(true)
+                        .setRangingFrameProtectionEnabled(true)
+                        .build();
+        assertTrue(secureRangingConfig.isSecureHeLtfEnabled());
+        assertTrue(secureRangingConfig.isRangingFrameProtectionEnabled());
+        assertEquals(
+                WifiSsid.fromBytes(TEST_SSID.getBytes(StandardCharsets.UTF_8)),
+                pasnConfig.getWifiSsid());
+        assertEquals(TEST_PASSWORD, pasnConfig.getPassword());
+        assertEquals(CIPHER_GCMP_256, pasnConfig.getCiphers());
+        assertEquals(AKM_SAE | AKM_PASN, pasnConfig.getBaseAkms());
+        assertEquals(TEST_PASN_COMEBACK_COOKIE, pasnConfig.getPasnComebackCookie());
     }
 }
 

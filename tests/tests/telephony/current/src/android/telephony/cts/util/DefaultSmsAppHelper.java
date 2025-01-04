@@ -44,8 +44,10 @@ import java.util.concurrent.TimeUnit;
 
 public class DefaultSmsAppHelper {
     private static final String TAG = "DefaultSmsAppHelper";
+    private static final int ASYNC_TIMEOUT = 10000;
     public static void ensureDefaultSmsApp() {
         if (!hasTelephony() || !hasSms()) {
+            Log.d(TAG, "ensureDefaultSmsApp: does not have telephony or sms feature.");
             return;
         }
 
@@ -54,9 +56,9 @@ public class DefaultSmsAppHelper {
         RoleManager roleManager = context.getSystemService(RoleManager.class);
         Executor executor = context.getMainExecutor();
         UserHandle user = Process.myUserHandle();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        boolean[] success = new boolean[1];
+        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
+        Log.d(TAG, "ensureDefaultSmsApp: user=" + user.getIdentifier()
+                + " packageName=" + packageName);
 
         runWithShellPermissionIdentity(() -> {
             roleManager.addRoleHolderAsUser(
@@ -66,31 +68,42 @@ public class DefaultSmsAppHelper {
                     user,
                     executor,
                     successful -> {
-                        success[0] = successful;
-                        latch.countDown();
+                        Log.d(TAG, "ensureDefaultSmsApp: successful=" + successful);
+                        try {
+                            queue.put(successful);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            throw new RuntimeException(e.getMessage());
+                        }
                     });
         });
 
+        boolean result;
         try {
-            latch.await();
-            assertTrue(success[0]);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex.getMessage());
+            result = queue.poll(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e.getMessage());
         }
+
+        Log.d(TAG, "ensureDefaultSmsApp: result=" + result);
+        assertTrue(result);
     }
 
     public static void stopBeingDefaultSmsApp() {
         if (!hasSms()) {
+            Log.d(TAG, "stopBeingDefaultSmsApp: does not have sms feature.");
             return;
         }
+
         Context context = ApplicationProvider.getApplicationContext();
         String packageName = context.getPackageName();
         RoleManager roleManager = context.getSystemService(RoleManager.class);
         Executor executor = context.getMainExecutor();
         UserHandle user = Process.myUserHandle();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        boolean[] success = new boolean[1];
+        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
+        Log.d(TAG, "stopBeingDefaultSmsApp: user=" + user.getIdentifier()
+                + " packageName=" + packageName);
 
         runWithShellPermissionIdentity(() -> {
             roleManager.removeRoleHolderAsUser(
@@ -100,17 +113,26 @@ public class DefaultSmsAppHelper {
                     user,
                     executor,
                     successful -> {
-                        success[0] = successful;
-                        latch.countDown();
+                        Log.d(TAG, "stopBeingDefaultSmsApp: successful=" + successful);
+                        try {
+                            queue.put(successful);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            throw new RuntimeException(e.getMessage());
+                        }
                     });
         });
 
+        boolean result;
         try {
-            latch.await();
-            assertTrue(success[0]);
-        } catch (InterruptedException ex) {
-            throw new RuntimeException(ex.getMessage());
+            result = queue.poll(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e.getMessage());
         }
+
+        Log.d(TAG, "stopBeingDefaultSmsApp: result=" + result);
+        assertTrue(result);
     }
 
     /**
