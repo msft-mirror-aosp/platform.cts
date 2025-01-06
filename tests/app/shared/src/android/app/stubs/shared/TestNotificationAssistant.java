@@ -56,7 +56,6 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     private NotificationManager mNotificationManager;
 
     public Map<String, Integer> mRemoved = new HashMap<>();
-    private CountDownLatch mRankingUpdateLatch = null;
     private CountDownLatch mAllowedAdjustmentsLatch = null;
 
     /**
@@ -207,11 +206,6 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     }
 
     @Override
-    public void onNotificationRankingUpdate(RankingMap rankingMap) {
-        maybeUpdateLatch(mRankingUpdateLatch);
-    }
-
-    @Override
     public void onNotificationRemoved(StatusBarNotification sbn, RankingMap rankingMap,
             int reason) {
         if (sbn == null) {
@@ -223,11 +217,6 @@ public class TestNotificationAssistant extends NotificationAssistantService {
     public CountDownLatch setAllowedAdjustmentCountdown(int countDownNumber) {
         mAllowedAdjustmentsLatch = new CountDownLatch(countDownNumber);
         return mAllowedAdjustmentsLatch;
-    }
-
-    public CountDownLatch setRankingUpdateCountDown(int countDownNumber) {
-        mRankingUpdateLatch = new CountDownLatch(countDownNumber);
-        return mRankingUpdateLatch;
     }
 
     private void maybeUpdateLatch(CountDownLatch latch) {
