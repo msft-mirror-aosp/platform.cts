@@ -140,6 +140,76 @@ static std::vector<std::thread> createThreads(int threadCount, std::atomic<bool>
     return threads;
 }
 
+static std::optional<std::string> testGetMaxCpuHeadroomTidsSize() {
+    size_t size;
+    auto res = ASystemHealth_getMaxCpuHeadroomTidsSize(&size);
+    if (res == ENOTSUP) {
+        return returnUnsupported();
+    }
+    if (size <= 0) {
+        return StringPrintf("Expected positive max CPU headroom TID size but got %zu", size);
+    }
+    return std::nullopt;
+}
+
+static jstring nativeTestGetMaxCpuHeadroomTidsSize(JNIEnv* env, jclass) {
+    return returnJString(env, testGetMaxCpuHeadroomTidsSize()).value_or(nullptr);
+}
+
+static std::optional<std::string> testGetCpuHeadroomCalculationWindowRange() {
+    int32_t minMillis = 0;
+    int32_t maxMillis = 0;
+    int ret = ASystemHealth_getCpuHeadroomCalculationWindowRange(&minMillis, &maxMillis);
+    if (ret != OK) {
+        if (ret == ENOTSUP) {
+            return returnUnsupported();
+        }
+        return StringPrintf("Failed to get CPU headroom calculation window range: %d", ret);
+    }
+    if (minMillis > 50) {
+        return StringPrintf("Min CPU headroom calculation window should be less or equal to 50 but "
+                            "got %d",
+                            minMillis);
+    }
+    if (maxMillis < 10000) {
+        return StringPrintf("Max CPU headroom calculation window should be greater or equal to "
+                            "10000 but got %d",
+                            maxMillis);
+    }
+    return std::nullopt;
+}
+
+static jstring nativeTestGetCpuHeadroomCalculationWindowRange(JNIEnv* env, jclass) {
+    return returnJString(env, testGetCpuHeadroomCalculationWindowRange()).value_or(nullptr);
+}
+
+static std::optional<std::string> testGetGpuHeadroomCalculationWindowRange() {
+    int32_t minMillis = 0;
+    int32_t maxMillis = 0;
+    int ret = ASystemHealth_getGpuHeadroomCalculationWindowRange(&minMillis, &maxMillis);
+    if (ret != OK) {
+        if (ret == ENOTSUP) {
+            return returnUnsupported();
+        }
+        return StringPrintf("Failed to get GPU headroom calculation window range: %d", ret);
+    }
+    if (minMillis > 50) {
+        return StringPrintf("Min GPU headroom calculation window should be less or equal to 50 but "
+                            "got %d",
+                            minMillis);
+    }
+    if (maxMillis < 10000) {
+        return StringPrintf("Max GPU headroom calculation window should be greater or equal to "
+                            "10000 but got %d",
+                            maxMillis);
+    }
+    return std::nullopt;
+}
+
+static jstring nativeTestGetGpuHeadroomCalculationWindowRange(JNIEnv* env, jclass) {
+    return returnJString(env, testGetGpuHeadroomCalculationWindowRange()).value_or(nullptr);
+}
+
 static std::optional<std::string> testGetCpuHeadroomDefault() {
     auto res = getCpuHeadroomMinIntervalMillis();
     if (res.second < 0) {
@@ -304,6 +374,12 @@ extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
              (void*)nativeTestGetGpuHeadroomCustomWindow},
             {"nativeTestGetCpuHeadroomCustomTids", "()Ljava/lang/String;",
              (void*)nativeTestGetCpuHeadroomCustomTids},
+            {"nativeTestGetMaxCpuHeadroomTidsSize", "()Ljava/lang/String;",
+             (void*)nativeTestGetMaxCpuHeadroomTidsSize},
+            {"nativeTestGetCpuHeadroomCalculationWindowRange", "()Ljava/lang/String;",
+             (void*)nativeTestGetCpuHeadroomCalculationWindowRange},
+            {"nativeTestGetGpuHeadroomCalculationWindowRange", "()Ljava/lang/String;",
+             (void*)nativeTestGetGpuHeadroomCalculationWindowRange},
     };
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
