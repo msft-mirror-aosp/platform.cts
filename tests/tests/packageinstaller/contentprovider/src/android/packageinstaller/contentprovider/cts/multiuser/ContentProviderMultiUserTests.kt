@@ -18,9 +18,13 @@ package android.packageinstaller.contentprovider.cts.multiuser
 
 import android.Manifest
 import android.content.Context
+import android.content.pm.Flags
 import android.content.pm.PackageManager
 import android.content.pm.ProviderInfo
 import android.os.Process
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
@@ -92,6 +96,10 @@ class ContentProviderMultiUserTests {
             .get()
     }
 
+    @JvmField
+    @Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Before
     fun setup() {
         initialUser = TestApis.users().initial()
@@ -162,6 +170,7 @@ class ContentProviderMultiUserTests {
      */
     @RequireRunOnInitialUser
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UID_BASED_PROVIDER_LOOKUP)
     fun testResolvingForUid() {
         val ctx = instrumentation.context
         val pm = ctx.packageManager
@@ -195,6 +204,7 @@ class ContentProviderMultiUserTests {
     @EnsureHasPermission(Manifest.permission.RESOLVE_COMPONENT_FOR_UID)
     @RequireRunOnInitialUser
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UID_BASED_PROVIDER_LOOKUP)
     fun testResolveForUid_CrossUserPermissionHolders_All() {
         val ctx = instrumentation.context
 
@@ -218,6 +228,7 @@ class ContentProviderMultiUserTests {
     @EnsureHasPermission(Manifest.permission.RESOLVE_COMPONENT_FOR_UID)
     @RequireRunOnInitialUser
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UID_BASED_PROVIDER_LOOKUP)
     fun testResolveForUid_CrossUserPermissionHolder_TestOnly() {
         val ctx = instrumentation.context
 
@@ -241,6 +252,7 @@ class ContentProviderMultiUserTests {
     @EnsureHasPermission(Manifest.permission.RESOLVE_COMPONENT_FOR_UID)
     @RequireRunOnInitialUser
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UID_BASED_PROVIDER_LOOKUP)
     fun testResolveForUid_CrossUserPermissionHolder_TestAppOnly() {
         val ctx = instrumentation.context
 
@@ -264,6 +276,7 @@ class ContentProviderMultiUserTests {
     @EnsureHasPermission(Manifest.permission.RESOLVE_COMPONENT_FOR_UID)
     @RequireRunOnInitialUser
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UID_BASED_PROVIDER_LOOKUP)
     fun testResolveForUid_CrossUserPermissionHolder_None() {
         val ctx = instrumentation.context
 

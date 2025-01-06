@@ -93,6 +93,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "bedstead",
         "TestApp",
+        "android.content.pm.flags-aconfig-java",
     ],
     platform_apis: false,
     test_suites: [
