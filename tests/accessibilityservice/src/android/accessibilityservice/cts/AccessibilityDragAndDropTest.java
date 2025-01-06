@@ -34,6 +34,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.TextView;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -83,8 +84,14 @@ public class AccessibilityDragAndDropTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        mSourceView = mActivity.findViewById(R.id.source);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            mSourceView = activity.findViewById(R.id.source);
+                            mActivity = activity;
+                        });
     }
 
     @After

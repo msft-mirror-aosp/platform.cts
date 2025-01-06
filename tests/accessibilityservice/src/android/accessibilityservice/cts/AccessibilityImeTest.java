@@ -43,6 +43,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
@@ -115,6 +116,7 @@ public class AccessibilityImeTest {
     public void setUp() throws Exception {
         mActivityRule
                 .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
                 .onActivity(
                         activity -> {
                             // focus the edit text

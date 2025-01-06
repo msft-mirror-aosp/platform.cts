@@ -37,6 +37,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
@@ -93,7 +94,10 @@ public class AccessibilityTextTraversalTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
     }
 
     @MediumTest

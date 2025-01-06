@@ -70,6 +70,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.TextView;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -155,7 +156,10 @@ public class AccessibilityGestureDispatchTest {
             return;
         }
 
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
         // Wait for window animation completed to ensure the input window is at the final position.
         sUiAutomation.syncInputTransactions();
 

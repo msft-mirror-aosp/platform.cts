@@ -66,6 +66,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
@@ -123,7 +124,10 @@ public class AccessibilityTextActionTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
         mClickableSpanCalled.set(false);
     }
 
