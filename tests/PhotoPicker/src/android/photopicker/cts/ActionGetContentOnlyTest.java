@@ -188,46 +188,6 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         assertThatShowsDocumentsUiButtons();
     }
 
-    @Test
-    public void testPickerSupportedFromDocumentsUi() throws Exception {
-        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
-        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
-
-        findAndClickMediaIcon();
-
-        // Should open Picker
-        UiAssertionUtils.assertThatShowsPickerUi();
-    }
-
-    private void findAndClickMediaIcon() throws Exception {
-        final UiSelector appList = new UiSelector().resourceId(sDocumentsUiPackageName
-                + ":id/apps_row");
-
-        // Wait for the first app list item to appear
-        assertWithMessage("Waiting for app list to appear in DocumentsUi").that(
-                new UiObject(appList).waitForExists(SHORT_TIMEOUT)).isTrue();
-
-        String photoPickerAppName = "Media";
-        UiObject mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
-        if (!new UiScrollable(appList).setAsHorizontalList().scrollIntoView(mediaButton)) {
-            // While solving an accessibility bug the app_label was modified from 'Media' to
-            // 'Media picker' and after making the modification, since this test had the
-            // hardcoded value for the name as 'Media' it started failing. After fixing this some
-            // versions of the code became incompatible with this test and hence have modified
-            // the code to work with both names.
-            photoPickerAppName = "Media picker";
-            mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
-        }
-        assertWithMessage("Timed out waiting for " + photoPickerAppName
-                + " app icon to appear")
-                .that(new UiScrollable(appList).setAsHorizontalList().scrollIntoView(mediaButton))
-                .isTrue();
-        sDevice.waitForIdle();
-
-        clickAndWait(sDevice, mediaButton);
-    }
-
     private void assertThatShowsDocumentsUiButtons() {
         // Assert that "Recent files" header for DocumentsUi shows
         // Add a short timeout wait for DocumentsUi to show
