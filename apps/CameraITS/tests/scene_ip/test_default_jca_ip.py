@@ -21,6 +21,7 @@ import types
 import camera_properties_utils
 import ip_chart_extraction_utils as ce
 import ip_chart_pattern_detector as pd
+import ip_metrics_utils
 import its_base_test
 import its_device_utils
 import its_session_utils
@@ -146,6 +147,26 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           self.log_path,
           pd.TestChartFeature.FULL_CHART,
       )
+
+      default_qr_code, _ = ce.get_feature_from_image(
+          default_capture_path,
+          'default_qr_code',
+          self.log_path,
+          pd.TestChartFeature.CENTER_QR_CODE,
+      )
+
+      jca_qr_code, _ = ce.get_feature_from_image(
+          jca_capture_path,
+          'jca_qr_code',
+          self.log_path,
+          pd.TestChartFeature.CENTER_QR_CODE,
+      )
+
+      logging.debug('Checking if FOV match between default and jca captures')
+      size_match = ip_metrics_utils.check_if_qr_code_size_match(
+          default_qr_code, jca_qr_code
+      )
+      logging.debug('Default and JCA size matches: %s', size_match)
 
 
 if __name__ == '__main__':
