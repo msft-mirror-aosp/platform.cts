@@ -16,7 +16,9 @@
 
 package android.widget.cts.util
 
+import android.appwidget.flags.Flags
 import android.content.Context
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.SizeF
 import android.util.proto.ProtoInputStream
 import android.util.proto.ProtoOutputStream
@@ -24,6 +26,7 @@ import android.view.View
 import android.widget.RemoteViews
 import androidx.test.rule.ActivityTestRule
 import java.util.concurrent.atomic.AtomicReference
+import org.junit.Assume
 
 object RemoteViewsUtil {
 
@@ -83,6 +86,24 @@ object RemoteViewsUtil {
             } else {
                 viewsToApply.reapply( context, root, null, initialSize, null)
             }
+        }
+    }
+
+    /**
+     * Skips the proto test if the RemoteViews proto flag is not enabled.
+     */
+    @JvmStatic
+    fun checkRemoteViewsProtoFlag(
+        isProtoTest: Boolean
+    ) {
+        if (isProtoTest) {
+            Assume.assumeTrue(
+                String.format(
+                    "Flag %s must be enabled to run the proto test",
+                    Flags.FLAG_REMOTE_VIEWS_PROTO,
+                ),
+                DeviceFlagsValueProvider().getBoolean(Flags.FLAG_REMOTE_VIEWS_PROTO)
+            )
         }
     }
 }
