@@ -16,7 +16,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 
 import static org.junit.Assert.assertEquals;
@@ -35,8 +34,9 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -60,8 +60,8 @@ public class AccessibilityDragAndDropTest {
             AccessibilityEventFilterUtils.filterWindowContentChangedWithChangeTypes(
                     AccessibilityEvent.CONTENT_CHANGE_TYPE_DRAG_STARTED);
 
-    private ActivityTestRule<AccessibilityDragAndDropActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityDragAndDropActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityDragAndDropActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityDragAndDropActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -84,9 +84,14 @@ public class AccessibilityDragAndDropTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
-        mSourceView = mActivity.findViewById(R.id.source);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            mSourceView = activity.findViewById(R.id.source);
+                            mActivity = activity;
+                        });
     }
 
     @After

@@ -39,6 +39,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.UserHelper;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.compatibility.common.util.WindowUtil;
 
@@ -61,6 +62,7 @@ public class MotionEventTest {
     private static final String TAG = "MotionEventTest";
     private Activity mActivity;
     private Instrumentation mInstrumentation;
+    private UserHelper mUserHelper;
 
     @Rule
     public ActivityTestRule<MotionEventTestActivity> mActivityRule =
@@ -71,6 +73,7 @@ public class MotionEventTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
         WindowUtil.waitForFocus(mActivity);
+        mUserHelper = new UserHelper();
     }
 
     /**
@@ -197,6 +200,7 @@ public class MotionEventTest {
         final UiAutomation automation = mInstrumentation.getUiAutomation();
         final long eventTime = SystemClock.uptimeMillis();
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, action, x, y, 0);
+        event.setDisplayId(mUserHelper.getMainDisplayId());
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         automation.injectInputEvent(event, true);
         event.recycle();

@@ -18,7 +18,6 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
-import static android.telephony.satellite.SatelliteSubscriberInfo.IMSI_MSISDN;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -47,6 +46,7 @@ import android.telephony.satellite.SatelliteDisallowedReasonsCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
+import android.telephony.satellite.SelectedNbIotSatelliteSubscriptionCallback;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -686,6 +686,83 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
+    public void testRequestSelectedNbIotSatelliteSubscriptionId() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Integer> selectedSubscriptionId = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<Integer, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Integer result) {
+                        selectedSubscriptionId.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSelectedNbIotSatelliteSubscriptionId(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    public void testRegisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
+                                            selectedSubId + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), callback));
+    }
+
+    @Test
+    public void testUnregisterForSelectedNbIotSatelliteSubscriptionChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged(" +
+                                            selectedSubId + ")");
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), callback));
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.unregisterForSelectedNbIotSatelliteSubscriptionChanged(
+                        callback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_SYSTEM_APIS)
+    public void testRegisterForSelectedNbIotSatelliteSubscriptionChangedWithNull() {
+        if (!shouldTestSatellite()) return;
+
+        grantSatellitePermission();
+
+        SelectedNbIotSatelliteSubscriptionCallback callback =
+                selectedSubId -> logd("onSelectedNbIotSatelliteSubscriptionChanged("
+                        + selectedSubId + ")");
+
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        null, callback));
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSelectedNbIotSatelliteSubscriptionChanged(
+                        getContext().getMainExecutor(), null));
+
+        revokeSatellitePermission();
+    }
+
+    @Test
     public void testRequestSatelliteAttachEnabledForCarrier() throws Exception {
         if (!shouldTestSatellite()) return;
 
@@ -895,17 +972,19 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
-    public void testRegisterForCommunicationAllowedStateChanged() {
+    public void testRegisterForCommunicationAccessStateChanged() {
         if (!shouldTestSatellite()) return;
 
-        SatelliteCommunicationAllowedStateCallbackTest satelliteCommunicationAllowedStateCallback =
-                new SatelliteCommunicationAllowedStateCallbackTest();
+        SatelliteCommunicationAccessStateCallbackTest satelliteCommunicationAllowedStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
 
         // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
-        assertThrows(SecurityException.class,
-                () -> sSatelliteManager.registerForCommunicationAllowedStateChanged(
-                        getContext().getMainExecutor(),
-                        satelliteCommunicationAllowedStateCallback));
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForCommunicationAccessStateChanged(
+                                getContext().getMainExecutor(),
+                                satelliteCommunicationAllowedStateCallback));
     }
 
     @Test
@@ -941,18 +1020,50 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestSatelliteDisplayName() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<CharSequence> displayNameForSubscription = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<CharSequence, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(CharSequence result) {
+                        displayNameForSubscription.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestSatelliteDisplayName(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testProvisionSatellite() {
         if (!shouldTestSatellite()) return;
 
         final AtomicReference<Boolean> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         final int slotId0 = 0;
-        final int idType = IMSI_MSISDN;
-        final List<SatelliteSubscriberInfo> list = new ArrayList<>(
-                Collections.singleton(new SatelliteSubscriberInfo.Builder()
-                        .setSubscriberId("09876543").setCarrierId(12345).setNiddApn("")
-                        .setSubId(SubscriptionManager.getSubscriptionId(
-                                slotId0)).setSubscriberIdType(idType).build()));
+        final int idType = SatelliteSubscriberInfo.SUBSCRIBER_ID_TYPE_IMSI_MSISDN;
+        final List<SatelliteSubscriberInfo> list =
+                new ArrayList<>(
+                        Collections.singleton(
+                                new SatelliteSubscriberInfo.Builder()
+                                        .setSubscriberId("09876543")
+                                        .setCarrierId(12345)
+                                        .setNiddApn("")
+                                        .setSubscriptionId(
+                                                SubscriptionManager.getSubscriptionId(slotId0))
+                                        .setSubscriberIdType(idType)
+                                        .build()));
         OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
@@ -1026,5 +1137,30 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
             assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
             logd(ex.toString());
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_SYSTEM_APIS)
+    public void testRegisterForSatelliteDisallowedReasonsChangedWithNull() {
+        if (!shouldTestSatellite()) return;
+
+        grantSatellitePermission();
+
+        SatelliteDisallowedReasonsCallback callback = new SatelliteDisallowedReasonsCallback() {
+            @Override
+            public void onSatelliteDisallowedReasonsChanged(
+                    int[] disallowedReasons) {
+                logd("onNtnSignalStrengthChanged(" + Arrays.toString(disallowedReasons) + ")");
+            }
+        };
+
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                        null, callback));
+        assertThrows(NullPointerException.class,
+                () -> sSatelliteManager.registerForSatelliteDisallowedReasonsChanged(
+                        getContext().getMainExecutor(), null));
+
+        revokeSatellitePermission();
     }
 }

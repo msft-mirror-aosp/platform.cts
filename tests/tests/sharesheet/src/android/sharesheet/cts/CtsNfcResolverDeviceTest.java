@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNull;
 
 import android.app.ActivityManager;
 import android.app.Instrumentation;
-import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -45,6 +44,7 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -83,7 +83,6 @@ public class CtsNfcResolverDeviceTest {
 
     private Context mContext;
     private Instrumentation mInstrumentation;
-    private UiAutomation mAutomation;
     public UiDevice mDevice;
     private UiObject2 mSharesheet;
 
@@ -94,6 +93,8 @@ public class CtsNfcResolverDeviceTest {
     private String mAppLabel,
             mActivityTesterAppLabel, mActivityTesterActivityLabel,
             mIntentFilterTesterAppLabel, mIntentFilterTesterIntentFilterLabel;
+
+    private int mMyDisplayId;
 
 
     private static Intent createNfcResolverIntent(
@@ -143,6 +144,9 @@ public class CtsNfcResolverDeviceTest {
         mIntentFilterTesterIntentFilterLabel =
                 mContext.getString(R.string.test_intent_filter_label_intentfilter);
 
+        UserHelper userHelper = new UserHelper(mContext);
+        mMyDisplayId = userHelper.getMainDisplayId();
+
         // We need to know the package used by the system Sharesheet so we can properly
         // wait for the UI to load. Do this by resolving which activity consumes the share intent.
         // There must be a system Sharesheet or fail, otherwise fetch its package.
@@ -158,9 +162,6 @@ public class CtsNfcResolverDeviceTest {
 
         // Finally ensure the device is awake
         mDevice.wakeUp();
-        // a workaround for the b/360030797 (the test suit may cause the Launcher wallpaper & style
-        // window to be left visible)
-        mDevice.pressHome();
     }
 
     @Test
@@ -199,7 +200,8 @@ public class CtsNfcResolverDeviceTest {
             mContext.startActivity(resolverIntent);
 
             waitAndAssertPkgVisible(mSharesheetPkg);
-            mSharesheet = mDevice.findObject(By.pkg(mSharesheetPkg).depth(0));
+            mSharesheet =
+                    mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
             waitForIdle();
 
             waitAndAssertTextContains(title);
@@ -258,7 +260,8 @@ public class CtsNfcResolverDeviceTest {
             mContext.startActivity(resolverIntent);
 
             waitAndAssertPkgVisible(mSharesheetPkg);
-            mSharesheet = mDevice.findObject(By.pkg(mSharesheetPkg).depth(0));
+            mSharesheet =
+                    mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
             waitForIdle();
 
             waitAndAssertTextContains(title);
@@ -327,7 +330,8 @@ public class CtsNfcResolverDeviceTest {
     private boolean isSharesheetVisible() {
         // This method intentionally does not wait, looks to see if visible on method call
         try {
-            return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0)) != null;
+            return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId))
+                    != null;
         } catch (StaleObjectException e) {
             // If we get a StaleObjectException, it means that the underlying View has
             // already been destroyed, meaning the sharesheet is no longer visible.
@@ -350,11 +354,11 @@ public class CtsNfcResolverDeviceTest {
     }
 
     private void waitAndAssertPkgVisible(String pkg) {
-        waitAndAssertFoundOnDevice(By.pkg(pkg).depth(0));
+        waitAndAssertFoundOnDevice(By.pkg(pkg).depth(0).displayId(mMyDisplayId));
     }
 
     private void waitAndAssertPkgNotVisible(String pkg) {
-        waitAndAssertNotFoundOnDevice(By.pkg(pkg));
+        waitAndAssertNotFoundOnDevice(By.pkg(pkg).displayId(mMyDisplayId));
     }
 
     private void waitAndAssertTextContains(String containsText) {
@@ -362,7 +366,8 @@ public class CtsNfcResolverDeviceTest {
     }
 
     private void waitAndAssertTextContains(String text, boolean caseSensitive) {
-        waitAndAssertFound(By.text(textContainsPattern(text, caseSensitive)));
+        waitAndAssertFound(
+                By.text(textContainsPattern(text, caseSensitive)).displayId(mMyDisplayId));
     }
 
     private static Pattern textContainsPattern(String text, boolean caseSensitive) {
@@ -416,7 +421,8 @@ public class CtsNfcResolverDeviceTest {
      * @return UiObject2 that can be used, for example, to execute a click
      */
     private UiObject2 findTextContains(String containsText) {
-        return mSharesheet.wait(Until.findObject(By.textContains(containsText)),
+        return mSharesheet.wait(
+                Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
     }
 

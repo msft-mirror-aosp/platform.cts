@@ -52,7 +52,6 @@ import javax.annotation.Nullable;
  * <p>Build/Install/Run:
  * atest CtsStatsdAtomHostTestCases:AppCompatStateStatsTests
  */
-// TODO(b/197223993): test click on size-compat restart button
 public class AppCompatStateStatsTests extends DeviceTestCase implements IBuildReceiver {
 
     private static final String RESIZEABLE_ACTIVITY =

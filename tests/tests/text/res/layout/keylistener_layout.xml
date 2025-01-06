@@ -14,12 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  -->
-<android.text.method.cts.EditTextNoIme
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/keylistener_textview"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:textSize="10dp">
-    <requestFocus />
-</android.text.method.cts.EditTextNoIme>
+    android:fitsSystemWindows="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <android.text.method.cts.EditTextNoIme
+        android:id="@+id/keylistener_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="10dp">
+        <requestFocus />
+    </android.text.method.cts.EditTextNoIme>
+
+</FrameLayout>
 

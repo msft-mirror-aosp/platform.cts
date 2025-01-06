@@ -28,6 +28,7 @@ import android.compat.testing.Classpaths;
 import android.compat.testing.SharedLibraryInfo;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
 import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -81,6 +82,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static final String ANDROID_TEST_MOCK_JAR = "/system/framework/android.test.mock.jar";
     private static final String TEST_HELPER_PACKAGE = "android.compat.sjp.app";
     private static final String TEST_HELPER_APK = "StrictJavaPackagesTestApp.apk";
+    private static final String LOG_TAG = "SJP";
 
     private static final Pattern APEX_JAR_PATTERN =
             Pattern.compile("\\/apex\\/(?<apexName>[^\\/]+)\\/.*\\.(jar|apk)");
@@ -252,6 +254,47 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     // services.jar
                     "Lcom/android/server/updates/ConfigUpdateInstallReceiver;"
             );
+
+    private static final Set<String> BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST =
+            ImmutableSet.of(
+                    // b/384704535 : Remove duplication after Neural Networks has min_sdk as 36.
+                    "Landroid/service/ondeviceintelligence/IRemoteStorageService;",
+                    "Landroid/app/ondeviceintelligence/IProcessingSignal;",
+                    "Landroid/app/ondeviceintelligence/ProcessingCallback;",
+                    "Landroid/app/ondeviceintelligence/IStreamingResponseCallback;",
+                    "Landroid/app/ondeviceintelligence/StreamingProcessingCallback;",
+                    "Landroid/app/ondeviceintelligence/OnDeviceIntelligenceManager;",
+                    "Landroid/app/ondeviceintelligence/Feature;",
+                    "Landroid/app/ondeviceintelligence/OnDeviceIntelligenceException;",
+                    "Landroid/service/ondeviceintelligence/IOnDeviceIntelligenceService;",
+                    "Landroid/app/ondeviceintelligence/InferenceInfo;",
+                    "Landroid/app/ondeviceintelligence/IFeatureCallback;",
+                    "Landroid/app/ondeviceintelligence/TokenInfo;",
+                    "Landroid/service/ondeviceintelligence/OnDeviceSandboxedInferenceService;",
+                    "Landroid/app/ondeviceintelligence/IResponseCallback;",
+                    "Landroid/app/ondeviceintelligence/IDownloadCallback;",
+                    "Landroid/app/ondeviceintelligence/ProcessingSignal;",
+                    "Landroid/service/ondeviceintelligence/OnDeviceIntelligenceService;",
+                    "Landroid/app/ondeviceintelligence/DownloadCallback;",
+                    "Landroid/app/ondeviceintelligence/ITokenInfoCallback;",
+                    "Landroid/app/ondeviceintelligence/IListFeaturesCallback;",
+                    "Landroid/service/ondeviceintelligence/IProcessingUpdateStatusCallback;",
+                    "Landroid/service/ondeviceintelligence/IRemoteProcessingService;",
+                    "Landroid/app/ondeviceintelligence/IFeatureDetailsCallback;",
+                    "Landroid/service/ondeviceintelligence/IOnDeviceSandboxedInferenceService;",
+                    "Landroid/app/ondeviceintelligence/FeatureDetails;",
+                    "Landroid/app/ondeviceintelligence/IOnDeviceIntelligenceManager;");
+
+    private static final Set<String> SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST =
+            ImmutableSet.of(
+                    // b/384704535 : Remove duplication after Neural Networks has min_sdk as 36.
+                    "Lcom/android/server/ondeviceintelligence/callbacks/ListenableDownloadCallback;",
+                    "Lcom/android/server/ondeviceintelligence/RemoteOnDeviceIntelligenceService;",
+                    "Lcom/android/server/ondeviceintelligence/BundleUtil;",
+                    "Lcom/android/server/ondeviceintelligence/InferenceInfoStore;",
+                    "Lcom/android/server/ondeviceintelligence/OnDeviceIntelligenceShellCommand;",
+                    "Lcom/android/server/ondeviceintelligence/RemoteOnDeviceSandboxedInferenceService;",
+                    "Lcom/android/server/ondeviceintelligence/OnDeviceIntelligenceManagerService;");
 
     private static final String FEATURE_WEARABLE = "android.hardware.type.watch";
     private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
@@ -688,13 +731,14 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         return sb.toString();
     }
 
-    /**
-     * Ensure that there are no duplicate classes among jars listed in BOOTCLASSPATH.
-     */
+    /** Ensure that there are no duplicate classes among jars listed in BOOTCLASSPATH. */
     @Test
     public void testBootclasspath_nonDuplicateClasses() throws Exception {
         assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
-        assertThat(getDuplicateClasses(sBootclasspathJars)).isEmpty();
+        Multimap<String, String> duplicates = getDuplicateClasses(sBootclasspathJars);
+        Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
+                duplicate -> !BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST.contains(duplicate));
+        assertThat(filtered).isEmpty();
     }
 
     /**
@@ -703,17 +747,16 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     @Test
     public void testSystemServerClasspath_nonDuplicateClasses() throws Exception {
         assumeTrue(mDeviceSdkLevel.isDeviceAtLeastT());
-        ImmutableSet<String> overlapBurndownList;
+        ImmutableSet.Builder<String> overlapBurndownList = ImmutableSet.<String>builder();
+        overlapBurndownList.addAll(SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST);
         if (hasFeature(FEATURE_AUTOMOTIVE)) {
-            overlapBurndownList = ImmutableSet.copyOf(AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST);
+            overlapBurndownList.addAll(AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST);
         } else if (hasFeature(FEATURE_WEARABLE)) {
-            overlapBurndownList = ImmutableSet.copyOf(WEAR_HIDL_OVERLAP_BURNDOWN_LIST);
-        } else {
-            overlapBurndownList = ImmutableSet.of();
+            overlapBurndownList.addAll(WEAR_HIDL_OVERLAP_BURNDOWN_LIST);
         }
         Multimap<String, String> duplicates = getDuplicateClasses(sSystemserverclasspathJars);
         Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
-                duplicate -> !overlapBurndownList.contains(duplicate));
+                duplicate -> !overlapBurndownList.build().contains(duplicate));
 
         assertWithMessage(prettyPrint(filtered))
                 .that(filtered)
@@ -730,21 +773,19 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         ImmutableList.Builder<String> jars = ImmutableList.builder();
         jars.addAll(sBootclasspathJars);
         jars.addAll(sSystemserverclasspathJars);
-        ImmutableSet<String> overlapBurndownList;
+        ImmutableSet.Builder<String> overlapBurndownList = ImmutableSet.<String>builder();
+        overlapBurndownList.addAll(BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST);
+        overlapBurndownList.addAll(SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST);
+        overlapBurndownList.addAll(BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST);
+
         if (hasFeature(FEATURE_AUTOMOTIVE)) {
-            overlapBurndownList = ImmutableSet.<String>builder()
-                    .addAll(BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST)
-                    .addAll(AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST).build();
+            overlapBurndownList.addAll(AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST);
         } else if (hasFeature(FEATURE_WEARABLE)) {
-            overlapBurndownList = ImmutableSet.<String>builder()
-                    .addAll(BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST)
-                    .addAll(WEAR_HIDL_OVERLAP_BURNDOWN_LIST).build();
-        } else {
-            overlapBurndownList = ImmutableSet.copyOf(BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST);
+            overlapBurndownList.addAll(WEAR_HIDL_OVERLAP_BURNDOWN_LIST);
         }
         Multimap<String, String> duplicates = getDuplicateClasses(jars.build());
         Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
-                duplicate -> !overlapBurndownList.contains(duplicate)
+                duplicate -> !overlapBurndownList.build().contains(duplicate)
                         && !jarsInSameApex(duplicates.get(duplicate)));
 
         assertWithMessage(prettyPrint(filtered))
@@ -752,14 +793,15 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 .isEmpty();
     }
 
-    /**
-     * Ensure that there are no duplicate classes among APEX jars listed in BOOTCLASSPATH.
-     */
+    /** Ensure that there are no duplicate classes among APEX jars listed in BOOTCLASSPATH. */
     @Test
     public void testBootClasspath_nonDuplicateApexJarClasses() throws Exception {
         Multimap<String, String> duplicates = getDuplicateClasses(sBootclasspathJars);
         Multimap<String, String> filtered =
-                Multimaps.filterValues(duplicates, jar -> jar.startsWith("/apex/"));
+                Multimaps.filterKeys(
+                        duplicates,
+                        (className) -> !BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST.contains(className));
+        filtered = Multimaps.filterValues(filtered, jar -> jar.startsWith("/apex/"));
 
         assertWithMessage(prettyPrint(filtered))
                 .that(filtered)
@@ -773,11 +815,11 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     public void testSystemServerClasspath_nonDuplicateApexJarClasses() throws Exception {
         Multimap<String, String> duplicates = getDuplicateClasses(sSystemserverclasspathJars);
         Multimap<String, String> filtered =
-                Multimaps.filterValues(duplicates, jar -> jar.startsWith("/apex/"));
-
-        assertWithMessage(prettyPrint(filtered))
-                .that(filtered)
-                .isEmpty();
+                Multimaps.filterKeys(
+                        duplicates,
+                        (className) -> !SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST.contains(className));
+        filtered = Multimaps.filterValues(filtered, jar -> jar.startsWith("/apex/"));
+        assertWithMessage(prettyPrint(filtered)).that(filtered).isEmpty();
     }
 
     /**
@@ -791,9 +833,14 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
         jars.addAll(sBootclasspathJars);
         jars.addAll(sSystemserverclasspathJars);
 
+        ImmutableSet.Builder<String> overlapBurndownList = ImmutableSet.<String>builder();
+        overlapBurndownList.addAll(BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST);
+        overlapBurndownList.addAll(SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST);
+        overlapBurndownList.addAll(BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST);
+
         Multimap<String, String> duplicates = getDuplicateClasses(jars.build());
         Multimap<String, String> filtered = Multimaps.filterKeys(duplicates,
-                duplicate -> !BCP_AND_SSCP_OVERLAP_BURNDOWN_LIST.contains(duplicate));
+                duplicate -> !overlapBurndownList.build().contains(duplicate));
         filtered = Multimaps.filterValues(filtered, jar -> jar.startsWith("/apex/"));
 
         assertWithMessage(prettyPrint(filtered))
@@ -817,7 +864,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     try {
                         final Collection<String> dupeJars = duplicates.get(dupeClass);
                         // Duplicate is already known.
-                        if (BCP_AND_SHARED_LIB_BURNDOWN_LIST.contains(dupeClass)) {
+                        if (BCP_AND_SHARED_LIB_BURNDOWN_LIST.contains(dupeClass)
+                                || BOOTCLASSPATH_DUPLICATE_BURNDOWN_LIST.contains(dupeClass)) {
                             return false;
                         }
                         // Duplicate is only between different versions of the same shared library.
@@ -846,6 +894,32 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 .isEmpty();
     }
 
+    private String bytesToString(long bytes) {
+        if (bytes < 1024) {
+            return bytes + " bytes";
+        }
+        if (bytes < 1024 * 1024) {
+            return bytes / 1024 + " KB";
+        }
+        if (bytes < 1024 * 1024 * 1024) {
+            return bytes / (1024 * 1024) + " MB";
+        }
+        return bytes / (1024 * 1024 * 1024) + " GB";
+    }
+
+    private void logFileDetails(File file) {
+        if (file == null) {
+            CLog.d(LOG_TAG + ": File is null");
+            return;
+        }
+        CLog.d(LOG_TAG + ": File absolute path: " + file.getAbsolutePath());
+        CLog.d(LOG_TAG + ": File exists: " + file.exists());
+        CLog.d(LOG_TAG + ": File size: " + bytesToString(file.length()));
+        CLog.d(LOG_TAG + ": File size: " + file.length() + " bytes");
+        CLog.d(LOG_TAG + ": File can read: " + file.canRead());
+        CLog.d(LOG_TAG + ": File free space: " + bytesToString(file.getFreeSpace()));
+    }
+
     /**
      * Ensure that no apk-in-apex bundles classes that could be eclipsed by jars in
      * BOOTCLASSPATH.
@@ -861,10 +935,16 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     File apkFile = null;
                     try {
                         apkFile = pullJarFromDevice(getDevice(), apk);
-                        final ImmutableSet<String> apkClasses =
-                                Classpaths.getClassDefsFromJar(apkFile).stream()
+                        logFileDetails(apkFile);
+                        final ImmutableSet<String> apkClasses;
+                        try {
+                            apkClasses = Classpaths.getClassDefsFromJar(apkFile).stream()
                                         .map(ClassDef::getType)
                                         .collect(ImmutableSet.toImmutableSet());
+                        } catch (IOException e) {
+                            throw new IOException("Failed to get class defs from APK: "
+                                                           + apkFile.getAbsolutePath(), e);
+                        }
                         // b/226559955: The directory paths containing APKs contain the build ID,
                         // so strip out the @BUILD_ID portion.
                         // e.g. /apex/com.android.btservices/app/Bluetooth@SC-DEV/Bluetooth.apk ->

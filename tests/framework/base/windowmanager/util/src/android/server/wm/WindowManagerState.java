@@ -330,7 +330,7 @@ public class WindowManagerState {
                 SystemClock.sleep(500);
             }
 
-            if (android.tracing.Flags.perfettoWmDumpCts()) {
+            if (isTracingFlagEnabled("perfettoWmDumpCts")) {
                 dump = new WindowManagerTraceMonitor().captureDump();
             } else {
                 dump = executeShellCommand(DUMPSYS_WINDOW);
@@ -338,7 +338,7 @@ public class WindowManagerState {
 
             try {
                 reset();
-                if (android.tracing.Flags.perfettoWmDumpCts()) {
+                if (isTracingFlagEnabled("perfettoWmDumpCts")) {
                     parseDump(dump);
                 } else {
                     parseDumpLegacy(dump);
@@ -410,6 +410,20 @@ public class WindowManagerState {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private boolean isTracingFlagEnabled(String name) {
+        // TODO(b/215373273): replace with normal flag check. This is a temporary workaround
+        //  to avoid runtime errors like "No static method perfettoWmDumpCts()Z"
+        try {
+            java.lang.reflect.Method flag = android.tracing.Flags.class.getMethod(name);
+            boolean value = (boolean) flag.invoke(null);
+            log("Read flag " + name + ": " + value);
+            return value;
+        } catch (Exception e) {
+            logE("Failed to read flag " + name + ". Assuming disabled.");
+        }
+        return false;
     }
 
     /** Update WindowManagerState state for a newly added DisplayContent. */
@@ -2640,6 +2654,7 @@ public class WindowManagerState {
         private List<Rect> mUnrestrictedKeepClearRects;
         private List<InsetsSource> mMergedLocalInsetsSources;
         private int mFlags;
+        private Rect mDimBounds;
 
         WindowState(WindowStateProto proto) {
             super(proto.getWindowContainer());
@@ -2699,6 +2714,8 @@ public class WindowManagerState {
                 InsetsSourceProto insets = proto.getMergedLocalInsetsSources(i);
                 mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
+            final RectProto r = proto.getDimBounds();
+            mDimBounds = new Rect(r.getLeft(), r.getTop(), r.getRight(), r.getBottom());
         }
 
         WindowState(com.android.server.wm.nano.WindowStateProto proto) {
@@ -2756,6 +2773,7 @@ public class WindowManagerState {
             for (android.view.nano.InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
                 mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
+            mDimBounds = extract(proto.dimBounds);
         }
 
         boolean isStartingWindow() {
@@ -2840,6 +2858,11 @@ public class WindowManagerState {
 
         public int getFlags() {
             return mFlags;
+        }
+
+        @Nullable
+        public Rect getDimBounds() {
+            return mDimBounds;
         }
 
         private String getWindowTypeSuffix(int windowType) {

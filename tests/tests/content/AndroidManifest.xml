@@ -55,6 +55,9 @@
     <uses-permission android:name="android.permission.ONLY_WRITE_TEST_PROVIDER_WRITE_PERMISSION" />
     <uses-permission android:name="android.permission.READ_WRITE_TEST_PROVIDER_PERMISSION" />
 
+    <!-- Used to give permission to the dependency installer role in PackageManager tests -->
+    <uses-permission android:name="android.permission.INSTALL_DEPENDENCY_SHARED_LIBRARIES" />
+
     <!-- Used for PackageManager test, don't delete this permission-tree -->
     <permission-tree android:name="android.content.cts.permission.TEST_DYNAMIC"
          android:label="Test Tree"/>
@@ -383,6 +386,14 @@
              android:exported="true">
             <intent-filter>
                 <action android:name="android.content.pm.cts.activity.PMTEST_SERVICE"/>
+            </intent-filter>
+        </service>
+        <!--Test for PackageManager-->
+        <service
+            android:name="android.content.pm.cts.TestDependencyInstallerService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.content.pm.action.INSTALL_DEPENDENCY" />
             </intent-filter>
         </service>
         <!--Test for PackageManager-->

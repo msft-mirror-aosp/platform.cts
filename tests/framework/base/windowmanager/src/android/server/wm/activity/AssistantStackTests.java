@@ -217,7 +217,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                     getActivityName(ASSISTANT_ACTIVITY) + " finished");
         }
         waitForValidStateWithActivityType(TEST_ACTIVITY, ACTIVITY_TYPE_STANDARD);
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, mAssistantDisplayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, mAssistantDisplayId,
                 "TestActivity should be resumed");
         mWmState.assertFocusedActivity("TestActivity should be focused", TEST_ACTIVITY);
 

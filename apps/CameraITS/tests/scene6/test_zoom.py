@@ -15,15 +15,14 @@
 
 
 import logging
-import math
 import os.path
 
 import camera_properties_utils
 import capture_request_utils
-import image_processing_utils
 import its_base_test
 import its_session_utils
 import opencv_processing_utils
+import ui_interaction_utils
 import cv2
 from mobly import test_runner
 import numpy as np
@@ -36,12 +35,20 @@ _TEST_REQUIRED_MPC = 33
 _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 # Wider zoom ratio range will be tested by test_zoom_tele
-_WIDE_ZOOM_RATIO_MAX = 2.0
+_WIDE_ZOOM_RATIO_MAX = 2.2
 _ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
 
 
-class ZoomTest(its_base_test.ItsBaseTest):
-  """Test the camera zoom behavior."""
+class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
+  """Test the camera zoom behavior using JCA."""
+
+  def setup_class(self):
+    super().setup_class()
+    self.ui_app = ui_interaction_utils.JETPACK_CAMERA_APP_PACKAGE_NAME
+    ui_interaction_utils.restart_cts_verifier(self.dut, self.ui_app)
+
+  def teardown_test(self):
+    ui_interaction_utils.force_stop_app(self.dut, self.ui_app)
 
   def test_zoom(self):
     with its_session_utils.ItsSession(
@@ -100,115 +107,73 @@ class ZoomTest(its_base_test.ItsBaseTest):
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
-      # determine first API level and test_formats to test
-      test_formats = _TEST_FORMATS
-      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      if first_api_level >= its_session_utils.ANDROID14_API_LEVEL:
-        test_formats.append(zoom_capture_utils.JPEG_STR)
-
       # do captures over zoom range and find ArUco markers with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
-      req = capture_request_utils.auto_capture_request()
       test_failed = False
-      for fmt in test_formats:
-        logging.debug('testing %s format', fmt)
-        test_data = []
-        all_aruco_ids = []
-        all_aruco_corners = []
-        images = []
-        physical_ids = set()
-        for z in z_list:
-          req['android.control.zoomRatio'] = z
-          logging.debug('zoom ratio: %.3f', z)
-          cam.do_3a(
-              zoom_ratio=z,
-              out_surfaces={
-                  'format': fmt,
-                  'width': size[0],
-                  'height': size[1]
-              },
-              repeat_request=None,
-          )
-          cap = cam.do_capture(
-              req, {'format': fmt, 'width': size[0], 'height': size[1]},
-              reuse_session=True)
-          cap_physical_id = (
-              cap['metadata']['android.logicalMultiCamera.activePhysicalId']
-          )
-          cap_zoom_ratio = float(cap['metadata']['android.control.zoomRatio'])
-          if not math.isclose(cap_zoom_ratio, z,
-                              rel_tol=_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL):
-            raise AssertionError(
-                'Request and result zoom ratios too different! '
-                f'Request zoom ratio: {z}. '
-                f'Result zoom ratio: {cap_zoom_ratio}. ',
-                f'RTOL: {_ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL}'
-            )
 
-          physical_ids.add(cap_physical_id)
-          logging.debug('Physical IDs: %s', physical_ids)
-
-          img = image_processing_utils.convert_capture_to_rgb_image(
-              cap, props=props)
-          img_name = (f'{img_name_stem}_{fmt}_{round(z, 2)}.'
-                      f'{zoom_capture_utils.JPEG_STR}')
-          image_processing_utils.write_image(img, img_name)
-
-          # determine radius tolerance of capture
-          cap_fl = cap['metadata']['android.lens.focalLength']
-          radius_tol, offset_tol = test_tols.get(
-              cap_fl,
-              (zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL)
-          )
-
-          # Find ArUco markers
-          bgr_img = cv2.cvtColor(
-              image_processing_utils.convert_image_to_uint8(img),
-              cv2.COLOR_RGB2BGR
-          )
-          try:
-            corners, ids, _ = opencv_processing_utils.find_aruco_markers(
-                bgr_img,
-                (f'{img_name_stem}_{fmt}_{z:.2f}_'
-                 f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-                aruco_marker_count=1,
-                force_greyscale=True  # Maximize number of markers detected
-            )
-          except AssertionError as e:
-            logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
-                          z, e)
-            break
-          all_aruco_corners.append([corner[0] for corner in corners])
-          all_aruco_ids.append([id[0] for id in ids])
-          images.append(bgr_img)
-
-          test_data.append(
-              zoom_capture_utils.ZoomTestData(
-                  result_zoom=cap_zoom_ratio,
-                  radius_tol=radius_tol,
-                  offset_tol=offset_tol,
-                  focal_length=cap_fl,
-                  physical_id=cap_physical_id,
-              )
-          )
-
-        # Find ArUco markers in all captures and update test data
-        zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
-            test_data, all_aruco_ids, all_aruco_corners, size)
-        # Mark ArUco marker center and image center
-        opencv_processing_utils.mark_zoom_images(
-            images, test_data, f'{img_name_stem}_{fmt}')
-
-        number_of_cameras_to_test = (
-            _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
-            if ultrawide_camera_found
-            else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
+      test_data = []
+      all_aruco_ids = []
+      all_aruco_corners = []
+      images = []
+      physical_ids = set()
+      captures = cam.do_jca_captures_across_zoom_ratios(
+          self.dut,
+          self.log_path,
+          flash_mode='OFF',
+          lens_facing=props['android.lens.facing'],
+          zoom_ratios=z_list
+      )
+      for zoom_ratio, capture in zip(z_list, captures):
+        physical_ids.add(capture.physical_id)
+        logging.debug('Physical IDs: %s', physical_ids)
+        bgr_img = cv2.imread(capture.capture_path)
+        radius_tol, offset_tol = (
+            zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL
         )
-        if not zoom_capture_utils.verify_zoom_data(
-            test_data, size,
-            offset_plot_name_stem=f'{img_name_stem}_{fmt}',
-            number_of_cameras_to_test=number_of_cameras_to_test):
-          test_failed = True
+
+        # Find ArUco markers
+        try:
+          corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+              bgr_img,
+              (f'{img_name_stem}_{zoom_ratio:.2f}_'
+                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
+              aruco_marker_count=1,
+              force_greyscale=True  # Maximize number of markers detected
+          )
+        except AssertionError as e:
+          logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
+                        zoom_ratio, e)
+          break
+        all_aruco_corners.append([corner[0] for corner in corners])
+        all_aruco_ids.append([id[0] for id in ids])
+        images.append(bgr_img)
+
+        test_data.append(
+            zoom_capture_utils.ZoomTestData(
+                result_zoom=zoom_ratio,
+                radius_tol=radius_tol,
+                offset_tol=offset_tol,
+                physical_id=capture.physical_id,
+            )
+        )
+
+      # Find ArUco markers in all captures and update test data
+      zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
+          test_data, all_aruco_ids, all_aruco_corners, size)
+      # Mark ArUco marker center and image center
+      opencv_processing_utils.mark_zoom_images(
+          images, test_data, img_name_stem)
+
+      number_of_cameras_to_test = (
+          _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
+          if ultrawide_camera_found
+          else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
+      )
+      if not zoom_capture_utils.verify_zoom_data(
+          test_data, size,
+          offset_plot_name_stem=img_name_stem,
+          number_of_cameras_to_test=number_of_cameras_to_test):
+        test_failed = True
 
     if test_failed:
       raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')

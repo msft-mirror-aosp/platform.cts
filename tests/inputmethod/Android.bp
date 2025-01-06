@@ -24,6 +24,9 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        // This is an equivalent of general-tests for automotive.
+        // It helps manage the build time on automotive branches.
+        "automotive-general-tests",
     ],
     compile_multilib: "both",
     libs: ["android.test.runner.stubs.test"],
@@ -47,10 +50,11 @@ android_test {
         "cts_window-extensions",
         "statsdprotonano",
         "android.view.inputmethod.flags-aconfig-java",
+        "com.android.input.flags-aconfig-java",
         "com.android.text.flags-aconfig-java",
         "flag-junit",
         "ravenwood-junit",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",
@@ -88,4 +92,5 @@ android_ravenwood_test {
         "src/android/view/inputmethod/cts/InputBindingTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }

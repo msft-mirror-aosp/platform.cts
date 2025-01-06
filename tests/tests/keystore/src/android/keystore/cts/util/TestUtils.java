@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.content.pm.FeatureInfo;
@@ -126,6 +127,13 @@ public class TestUtils {
         if (isStrongboxKeyMint(kmType)) {
             TestUtils.assumeStrongBox();
         }
+    }
+
+    static public void checkDeviceCompatibility() {
+      PackageManager packageManager =
+                InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
+        assumeFalse("Skipping test as DUT does not support this operation",
+                packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 
     static public boolean isStrongboxKeyMint(KmType kmType) {

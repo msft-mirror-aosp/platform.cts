@@ -1821,7 +1821,8 @@ public class CameraTestUtils extends Assert {
         // Same goes for DEPTH_POINT_CLOUD, RAW_PRIVATE, DEPTH_JPEG, and HEIC
         if (format == ImageFormat.JPEG || format == ImageFormat.DEPTH_POINT_CLOUD ||
                 format == ImageFormat.RAW_PRIVATE || format == ImageFormat.DEPTH_JPEG ||
-                format == ImageFormat.HEIC || format == ImageFormat.JPEG_R) {
+                format == ImageFormat.HEIC || format == ImageFormat.JPEG_R ||
+                format == ImageFormat.HEIC_ULTRAHDR) {
             buffer = planes[0].getBuffer();
             assertNotNull("Fail to get jpeg/depth/heic ByteBuffer", buffer);
             data = new byte[buffer.remaining()];
@@ -1972,6 +1973,7 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.DEPTH_JPEG:
             case ImageFormat.Y8:
             case ImageFormat.HEIC:
+            case ImageFormat.HEIC_ULTRAHDR:
             case ImageFormat.JPEG_R:
                 assertEquals("JPEG/RAW/depth/Y8 Images should have one plane", 1, planes.length);
                 break;
@@ -2733,6 +2735,8 @@ public class CameraTestUtils extends Assert {
                 validateY8Data(data, width, height, format, image.getTimestamp(), filePath);
                 break;
             case ImageFormat.HEIC:
+            // TODO: Check for HDR gainmap presence. This needs b/364911926.
+            case ImageFormat.HEIC_ULTRAHDR:
                 validateHeicData(data, width, height, filePath);
                 break;
             default:

@@ -59,8 +59,8 @@ import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.TouchDelegateInfo;
 import android.view.accessibility.Flags;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -471,8 +471,15 @@ public class AccessibilityNodeInfoTest {
         info.setUniqueId("foo.bar:id/baz10");
         info.setContainerTitle("Container title");
         info.setDrawingOrder(5);
-        info.setAvailableExtraData(
-                Arrays.asList(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+        if (android.view.accessibility.Flags.a11yCharacterInWindowApi()) {
+            info.setAvailableExtraData(
+                      Arrays.asList(
+                      AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY,
+                      AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_IN_WINDOW_KEY));
+        } else {
+            info.setAvailableExtraData(
+                    Arrays.asList(AccessibilityNodeInfo.EXTRA_DATA_TEXT_CHARACTER_LOCATION_KEY));
+        }
         info.setPaneTitle("Pane title");
         info.setError("Error text");
         info.setMaxTextLength(42);

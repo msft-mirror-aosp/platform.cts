@@ -22,10 +22,15 @@ cc_test_library {
     name: "libctsmediamuxertest_jni",
     srcs: [
         "jni/native_muxer_jni.cpp",
+        "jni/NativeMuxerTest.cpp",
+        "jni/NativeMuxerUnitTest.cpp",
     ],
     shared_libs: [
         "liblog",
         "libmediandk",
+    ],
+    static_libs: [
+        "libctsmediav2common",
     ],
     header_libs: ["liblog_headers"],
     stl: "libc++_static",
@@ -48,6 +53,8 @@ java_defaults {
         "cts-media-common",
         "ctstestrunner-axt",
         "exoplayer-mediamuxer_tests",
+        "com.android.media.flags.editing-aconfig-java",
+        "android.media.extractor.flags-aconfig-java",
     ],
     jni_libs: [
         "libctsmediamuxertest_jni",

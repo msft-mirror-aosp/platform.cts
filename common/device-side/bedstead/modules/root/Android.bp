@@ -30,7 +30,7 @@ android_library {
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",
     static_libs: [
-        "Harrier",
+        "bedstead",
         "bedstead-adb",
         "bedstead-root-annotations",
     ],
@@ -45,7 +45,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
-        "Harrier",
+        "bedstead",
         "truth",
         "bedstead-root",
     ],

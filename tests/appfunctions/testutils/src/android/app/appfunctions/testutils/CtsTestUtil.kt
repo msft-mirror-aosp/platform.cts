@@ -25,7 +25,7 @@ object CtsTestUtil {
     /** Assumes sidecar library is available. */
     fun assumeSidecarAvailable() {
         try {
-            Class.forName("com.google.android.appfunctions.sidecar.AppFunctionManager")
+            Class.forName("com.android.extensions.appfunctions.AppFunctionManager")
         } catch (e: ClassNotFoundException) {
             throw AssumptionViolatedException("AppFunctions Sidecar library does not exist")
         }

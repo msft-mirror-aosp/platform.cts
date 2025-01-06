@@ -21,21 +21,53 @@ package {
     default_team: "trendy_team_android_media_solutions_playback",
 }
 
+cc_test_library {
+    name: "libctsmediaextractor_jni",
+    srcs: [
+        "jni/NativeExtractorUnitTest.cpp",
+        "jni/NativeExtractorTest.cpp",
+    ],
+    shared_libs: [
+        "liblog",
+        "libmediandk",
+        "libz",
+        "libctsmediacommon_jni",
+    ],
+    static_libs: [
+        "libctsmediav2common",
+    ],
+    header_libs: ["liblog_headers"],
+    stl: "libc++_static",
+    cflags: [
+        "-Werror",
+        "-Wall",
+    ],
+    gtest: false,
+    sdk_version: "29",
+}
+
 java_defaults {
     name: "MediaExtractorTestCases_defaults",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
+    libs: [
+        "org.apache.http.legacy.stubs.system",
+    ],
     static_libs: [
         "ctstestrunner-axt",
         "ctstestserver",
         "cts-media-common",
+        "android.media.extractor.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,
+    jni_libs: [
+        "libctsmediaextractor_jni",
+    ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",

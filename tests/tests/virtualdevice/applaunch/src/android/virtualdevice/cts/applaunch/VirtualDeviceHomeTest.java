@@ -30,7 +30,6 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,7 +43,6 @@ import static org.mockito.Mockito.verify;
 import android.app.WallpaperManager;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -55,9 +53,7 @@ import android.content.res.Resources;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
-import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.WindowManagerState;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -82,7 +78,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_HOME)
 public class VirtualDeviceHomeTest {
 
     private static final VirtualDisplayConfig.Builder HOME_DISPLAY_CONFIG =
@@ -253,10 +248,6 @@ public class VirtualDeviceHomeTest {
     @ApiTest(apis = {"android.companion.virtual.VirtualDeviceParams.Builder#setHomeComponent"})
     @Test
     public void virtualDeviceHome_withCustomHomeComponent() {
-        // On headless systems the user is not visible by default on a new display, so the framework
-        // cannot start the custom home activity automatically upon the display creation.
-        assumeFalse(UserManager.isHeadlessSystemUserMode());
-
         createVirtualDeviceAndHomeDisplay(CUSTOM_HOME_ACTIVITY);
         assertActivityOnVirtualDisplay(CUSTOM_HOME_ACTIVITY);
 
@@ -277,10 +268,6 @@ public class VirtualDeviceHomeTest {
     @ApiTest(apis = {"android.companion.virtual.VirtualDeviceParams.Builder#setHomeComponent"})
     @Test
     public void virtualDeviceHome_withCustomHomeComponent_sendHomeIntent() {
-        // On headless systems the user is not visible by default on a new display, so the framework
-        // cannot start the custom home activity automatically upon the display creation.
-        assumeFalse(UserManager.isHeadlessSystemUserMode());
-
         createVirtualDeviceAndHomeDisplay(CUSTOM_HOME_ACTIVITY);
         assertActivityOnVirtualDisplay(CUSTOM_HOME_ACTIVITY);
 

@@ -16,7 +16,11 @@
 
 package android.media.audio.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.media.AudioDeviceInfo;
+import android.media.AudioDevicePort;
+import android.media.AudioFormat;
 import android.media.audio.Flags;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
@@ -137,5 +141,18 @@ public class AudioDeviceInfoTest {
             // throws IllegalArgumentException on failure
             AudioDeviceInfo.enforceValidAudioDeviceTypeOut(type);
         }
+    }
+
+   /**
+   * Ensure that the speaker layout channel mask is correctly returned by the AudioDeviceInfo.
+   */
+    @Test
+    public void testGetSpeakerLayoutChannelMask() {
+        final int speakerLayoutChannelMask = AudioFormat.CHANNEL_OUT_5POINT1;
+        AudioDevicePort audioDevicePort = AudioDevicePort.createForTesting(
+                speakerLayoutChannelMask);
+        AudioDeviceInfo audioDeviceInfo = new AudioDeviceInfo(audioDevicePort);
+        assertThat(audioDeviceInfo.getSpeakerLayoutChannelMask())
+            .isEqualTo(speakerLayoutChannelMask);
     }
 }

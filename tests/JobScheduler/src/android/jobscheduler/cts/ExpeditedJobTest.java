@@ -21,6 +21,7 @@ import static android.jobscheduler.cts.JobThrottlingTest.setTestPackageStandbyBu
 import static android.jobscheduler.cts.TestAppInterface.TEST_APP_PACKAGE;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
@@ -35,6 +36,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.AppOpsUtils;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,6 +56,7 @@ public class ExpeditedJobTest {
     private int mTestJobId;
     private NetworkingHelper mNetworkingHelper;
     private TestAppInterface mTestAppInterface;
+    private UserHelper mUserHelper;
 
     @Before
     public void setUp() throws Exception {
@@ -66,6 +69,7 @@ public class ExpeditedJobTest {
                 AppOpsManager.MODE_ALLOWED);
         mNetworkingHelper = new NetworkingHelper(
                 InstrumentationRegistry.getInstrumentation(), mContext);
+        mUserHelper = new UserHelper(mContext);
     }
 
     @After
@@ -77,6 +81,13 @@ public class ExpeditedJobTest {
 
     @Test
     public void testJobUidState_noRequiredNetwork() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        assumeFalse("Skip the test on devices that support visible background users",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         setScreenState(mUiDevice, false);
@@ -87,13 +98,24 @@ public class ExpeditedJobTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                0,
-                227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(0)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
+                        | ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */)
+                .build());
     }
 
     @Test
     public void testJobUidState_withRequiredNetwork() throws Exception {
+        // Device that support visible background users might have different display groups
+        // for each display.
+        // When KEYCODE_SLEEP event is triggered, other display groups may not enter sleep mode,
+        // unlike the default display group.
+        assumeFalse("Skip the test on devices that support visible background users",
+                mUserHelper.isVisibleBackgroundUserSupported());
+
         // Turn screen off so any lingering activity close processing from previous tests
         // don't affect this one.
         setScreenState(mUiDevice, false);
@@ -111,9 +133,13 @@ public class ExpeditedJobTest {
         mTestAppInterface.forceRunJob();
         assertTrue("Job did not start after scheduling",
                 mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT_MS));
-        mTestAppInterface.assertJobUidState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND,
-                ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK,
-                227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */);
+
+        mTestAppInterface.assertJobUidState(new TestAppInterface.ExpectedJobUidState.Builder()
+                .setProcState(ActivityManager.PROCESS_STATE_TRANSIENT_BACKGROUND)
+                .setExpectedCapability(ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK)
+                .setUnexpectedCapability(ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK)
+                .setOomScoreAdj(227 /* ProcessList.PERCEPTIBLE_MEDIUM_APP_ADJ + 2 */)
+                .build());
     }
 
     /** Test that EJs for the TOP app start immediately and there is no limit on the number. */

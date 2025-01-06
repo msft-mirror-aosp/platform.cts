@@ -238,6 +238,8 @@ public class TelephonyUtils {
     private static final String COMMAND_CARRIER_RESTRICTION_STATUS =
             "cmd phone carrier_restriction_status_test --";
 
+    private static final String COMMAND_DELETE_IMSI_KEY = "cmd phone delete_imsi_key";
+
     public static void addTestEmergencyNumber(Instrumentation instr, String testNumber)
             throws Exception {
         executeShellCommand(instr, COMMAND_ADD_TEST_EMERGENCY_NUMBER + testNumber);
@@ -413,4 +415,11 @@ public class TelephonyUtils {
             throws Exception {
         executeShellCommand(instr, COMMAND_CARRIER_RESTRICTION_STATUS);
     }
+
+    public static void forceDeleteImsiEncryptionKey(Instrumentation instr)
+            throws Exception {
+        executeShellCommand(instr, COMMAND_DELETE_IMSI_KEY);
+    }
+
+
 }

@@ -177,16 +177,38 @@ public class DuplexAudioManager {
         mInputPreset = preset;
     }
 
+    // Which component of the duplex has the error
+    public static final int DUPLEX_STREAM_ID    = 0x00030000;
+    public static final int DUPLEX_RECORDER     = 0x00010000;
+    public static final int DUPLEX_PLAYER       = 0x00020000;
+
+    // Which part of the process has the error
+    public static final int DUPLEX_ERROR_CODE   = 0xFFFC0000;
+    public static final int DUPLEX_ERROR_NONE   = 0x00000000;
+    public static final int DUPLEX_ERR_BUILD    = 0x00040000;
+    public static final int DUPLEX_ERR_OPEN     = 0x00080000;
+    public static final int DUPLEX_ERR_START    = 0x00100000;
+
+    // The MegaAudio error (success) code
+    public static final int DUPLEX_MEGAAUDIO_CODE = 0x0000FFFF;
+
     /**
      * Initializes (but does not start) the player and recorder streams.
      * @param playerType    The API constant for the player
      * @param recorderType  The API constant for the recorder
-     * @return a StreamBase status code specifying the result.
+     * @return A set of the above constants indicating success/failure, for which stream,
+     *          what part of the process and the MegaAudio error code in the bottom 16-bits
      */
     public int buildStreams(int playerType, int recorderType) {
+        if (LOG) {
+            Log.d(TAG, "buildStreams()");
+        }
         // Recorder
         if ((recorderType & BuilderBase.TYPE_MASK) != BuilderBase.TYPE_NONE) {
+            int buildResult = StreamBase.ERROR_UNKNOWN;
+            int openResult = StreamBase.ERROR_UNKNOWN;
             try {
+                Log.d(TAG, "  Recorder...");
                 mNumRecorderBufferFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
                 RecorderBuilder builder = (RecorderBuilder) new RecorderBuilder()
                         .setRecorderType(recorderType)
@@ -198,16 +220,36 @@ public class DuplexAudioManager {
                         .setChannelCount(mNumRecorderChannels)
                         .setNumExchangeFrames(mNumRecorderBufferFrames)
                         .setPerformanceMode(mRecorderPerformanceMode);
-                mRecorder = builder.build();
+                mRecorder = builder.allocStream();
+                if ((buildResult = mRecorder.build(builder)) == StreamBase.OK
+                        && (openResult = mRecorder.open()) == StreamBase.OK) {
+                    Log.d(TAG, "  Recorder - Success!");
+                } else {
+                    Log.d(TAG, "  Recorder - buildResult:" + buildResult
+                            + " openResult:" + openResult);
+                    if (buildResult != StreamBase.OK) {
+                        // build() failed
+                        return DUPLEX_RECORDER | DUPLEX_ERR_BUILD | buildResult;
+                    } else {
+                        // open() failed
+                        return DUPLEX_RECORDER | DUPLEX_ERR_OPEN | buildResult;
+                    }
+                }
             } catch (RecorderBuilder.BadStateException ex) {
                 Log.e(TAG, "Recorder - BadStateException" + ex);
-                return StreamBase.ERROR_UNSUPPORTED;
+                return ex.getStatusCode();
+            } catch (Exception ex) {
+                Log.e(TAG, "Unexpected Error in Recorder Setup for DuplexAudioManager ex:" + ex);
+                return StreamBase.ERROR_UNKNOWN;
             }
         }
 
         // Player
         if ((playerType & BuilderBase.TYPE_MASK) != BuilderBase.TYPE_NONE) {
+            Log.d(TAG, "  Player...");
             try {
+                int buildResult = StreamBase.ERROR_UNKNOWN;
+                int openResult = StreamBase.ERROR_UNKNOWN;
                 mNumPlayerBurstFrames = StreamBase.getNumBurstFrames(playerType);
                 PlayerBuilder builder = (PlayerBuilder) new PlayerBuilder()
                         .setPlayerType(playerType)
@@ -223,16 +265,31 @@ public class DuplexAudioManager {
                 } else {
                     builder.setChannelCount(mNumPlayerChannels);
                 }
-                mPlayer = builder.build();
+                mPlayer = builder.allocStream();
+                if ((buildResult = mPlayer.build(builder)) == StreamBase.OK
+                        && (openResult = mPlayer.open()) == StreamBase.OK) {
+                    Log.d(TAG, "  Player - Success!");
+                } else {
+                    Log.d(TAG, "  Player - buildResult:" + buildResult
+                            + " openResult:" + openResult);
+                    if (buildResult != StreamBase.OK) {
+                        // build() failed
+                        return DUPLEX_PLAYER | DUPLEX_ERR_BUILD | buildResult;
+                    } else {
+                        // open() failed
+                        return DUPLEX_PLAYER | DUPLEX_ERR_OPEN | buildResult;
+                    }
+                }
             } catch (PlayerBuilder.BadStateException ex) {
                 Log.e(TAG, "Player - BadStateException" + ex);
-                return StreamBase.ERROR_UNSUPPORTED;
+                return ex.getStatusCode();
             } catch (Exception ex) {
-                Log.e(TAG, "Uncaught Error in Player Setup for DuplexAudioManager ex:" + ex);
+                Log.e(TAG, "Unexpected Error in Player Setup for DuplexAudioManager ex:" + ex);
+                return StreamBase.ERROR_UNKNOWN;
             }
         }
 
-        return StreamBase.OK;
+        return DUPLEX_RECORDER | DUPLEX_PLAYER | StreamBase.OK;
     }
 
     public int start() {
@@ -241,53 +298,52 @@ public class DuplexAudioManager {
         }
 
         int result = StreamBase.OK;
-        if (mPlayer != null && (result = mPlayer.startStream()) != StreamBase.OK) {
+        if (mPlayer != null && (result = mPlayer.start()) != StreamBase.OK) {
             if (LOG) {
                 Log.d(TAG, "  player fails result:" + result);
             }
-            return result;
+            return DUPLEX_PLAYER | DUPLEX_ERR_START | result;
         }
 
-        if (mRecorder != null && (result = mRecorder.startStream()) != StreamBase.OK) {
+        if (mRecorder != null && (result = mRecorder.start()) != StreamBase.OK) {
             if (LOG) {
                 Log.d(TAG, "  recorder fails result:" + result);
             }
-            // Shut down
-            stop();
 
-            return result;
+            return DUPLEX_RECORDER | DUPLEX_ERR_START | result;
         }
 
         if (LOG) {
             Log.d(TAG, "  result:" + result);
         }
-        return result;
+        return DUPLEX_PLAYER | DUPLEX_RECORDER | DUPLEX_ERROR_NONE | result;
     }
 
-    public int stop() {
+
+    /**
+     * Stops and tearsdown both streams.
+     * It's not clear we can return a useful error code, so just let StreamBase.unwind()
+     * do the work.
+     */
+    public void stop() {
         if (LOG) {
             Log.d(TAG, "stop()");
         }
-        int playerResult = StreamBase.OK;
+        unwind();
+    }
+
+    /**
+     * Unwinds both Player and Recorder (as appropriate)
+     */
+    public void unwind() {
         if (mPlayer != null) {
-            int result1 = mPlayer.stopStream();
-            int result2 = mPlayer.teardownStream();
-            playerResult = result1 != StreamBase.OK ? result1 : result2;
+            mPlayer.unwind();
+            mPlayer = null;
         }
-
-        int recorderResult = StreamBase.OK;
         if (mRecorder != null) {
-            int result1 = mRecorder.stopStream();
-            int result2 = mRecorder.teardownStream();
-            recorderResult = result1 != StreamBase.OK ? result1 : result2;
+            mRecorder.unwind();
+            mRecorder = null;
         }
-
-        int ret = playerResult != StreamBase.OK ? playerResult : recorderResult;
-
-        if (LOG) {
-            Log.d(TAG, "  returns:" + ret);
-        }
-        return ret;
     }
 
     public int getNumPlayerBufferFrames() {

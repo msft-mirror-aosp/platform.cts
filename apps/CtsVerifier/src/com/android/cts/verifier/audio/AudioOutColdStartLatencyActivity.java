@@ -27,6 +27,7 @@ import com.android.compatibility.common.util.CddTest;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.SettingsUtils;
 
+import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.player.Player;
 import org.hyphonate.megaaudio.player.PlayerBuilder;
 import org.hyphonate.megaaudio.player.sources.SilenceAudioSourceProvider;
@@ -117,26 +118,26 @@ public class AudioOutColdStartLatencyActivity
     void startOutTimer() {
         TimerTask task = new TimerTask() {
             public void run() {
-                boolean gotTimestamp = mPlayer.getTimestamp(mPullTimestamp);
-                if (gotTimestamp) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            calcColdStartLatency(mPullTimestamp);
-                            stopAudio();
-                            calcTestResult();
-                            updateTestStateButtons();
-                            showColdStartLatency();
-                            calcTestResult();
-                            reportLatency();
-                        }
-                    });
-
-                } else {
-                    Log.e(TAG, "NO TIME STAMP");
-                    mLatencyTxt.setText("NO TIME STAMP");
+                if (mIsTestRunning) {
+                    boolean gotTimestamp = mPlayer.getTimestamp(mPullTimestamp);
+                    if (gotTimestamp) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                calcColdStartLatency(mPullTimestamp);
+                                stopAudio();
+                                calcTestResult();
+                                updateTestStateButtons();
+                                showColdStartLatency();
+                                calcTestResult();
+                                reportLatency();
+                            }
+                        });
+                    } else {
+                        Log.e(TAG, "NO TIME STAMP");
+                        mLatencyTxt.setText(getString(R.string.audio_coldstart_notimestamp));
+                    }
                 }
-
                 mTimer = null;
             }
         };
@@ -167,30 +168,47 @@ public class AudioOutColdStartLatencyActivity
     //
     @Override
     boolean runAudioTest() {
+        clearResults();
+
+        int buildResult = StreamBase.ERROR_UNKNOWN;
+        int openResult = StreamBase.ERROR_UNKNOWN;
+        int startResult = StreamBase.ERROR_UNKNOWN;
         try {
-            mPreOpenTime = System.nanoTime();
             PlayerBuilder builder = new PlayerBuilder();
             builder.setSourceProvider(new SilenceAudioSourceProvider())
                 .setPlayerType(mAudioApi)
                 .setChannelCount(NUM_CHANNELS)
                 .setSampleRate(mSampleRate)
                 .setNumExchangeFrames(mNumExchangeFrames);
-            mPlayer = builder.build();
-            mPostOpenTime = System.nanoTime();
-
-            mIsTestRunning = true;
+            mPlayer = builder.allocStream();
+            mPreOpenTime = System.nanoTime();
+            if ((buildResult = mPlayer.build(builder)) == StreamBase.OK
+                    && (openResult = mPlayer.open()) == StreamBase.OK) {
+                mPostOpenTime = System.nanoTime();
+                mIsTestRunning = true;
+            }
         } catch (PlayerBuilder.BadStateException badStateException) {
             Log.e(TAG, "BadStateException: " + badStateException);
-            mLatencyTxt.setText("Can't Start Player.");
+            mLatencyTxt.setText(getString(R.string.audio_coldstart_badplayererstate));
             mIsTestRunning = false;
         }
 
-        mPreStartTime = System.nanoTime();
-        mPlayer.startStream();
-        mPostStartTime = System.nanoTime();
-
         if (mIsTestRunning) {
-            startOutTimer();
+            mPreStartTime = System.nanoTime();
+            if ((startResult = mPlayer.start()) == StreamBase.OK) {
+                mPostStartTime = System.nanoTime();
+                startOutTimer();
+            } else {
+                mIsTestRunning = false;
+            }
+        }
+
+        if (!mIsTestRunning) {
+            // Report Errors...
+            showStartupError("Player", buildResult, openResult, startResult);
+
+            // Unwind
+            mPlayer.unwind();
         }
         return mIsTestRunning;
     }
@@ -201,8 +219,8 @@ public class AudioOutColdStartLatencyActivity
             return;
         }
 
-        mPlayer.stopStream();
-        mPlayer.teardownStream();
+        // Unwind will call stop()
+        mPlayer.unwind();
 
         mIsTestRunning = false;
 

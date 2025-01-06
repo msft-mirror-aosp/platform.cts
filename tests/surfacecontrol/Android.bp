@@ -38,6 +38,7 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",
+        "android.hardware.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
@@ -57,6 +58,8 @@ android_test {
         "hwui_flags_java_lib",
         "ui-trace-collector",
         "collector-device-lib",
+        "cts_backported_fixes",
+        "surfaceflinger_flags_java_lib",
     ],
 
     jni_libs: [

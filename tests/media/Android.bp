@@ -28,6 +28,10 @@ java_defaults {
         "ctstestserver",
         "ctsmediav2common",
         "aconfig_mediacodec_flags_java_lib",
+        "android.media.codec-aconfig-java",
+        "android.media.extractor.flags-aconfig-java",
+        "com.android.media.flags.editing-aconfig-java",
+
     ],
     libs: [
         "org.apache.http.legacy.stubs.system",
@@ -35,8 +39,6 @@ java_defaults {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     jni_libs: [
-        "libctsmediav2muxer_jni",
-        "libctsmediav2extractor_jni",
         "libctsmediav2codecdec_jni",
         "libctsmediav2codecdecsurface_jni",
         "libctsmediav2codecenc_jni",

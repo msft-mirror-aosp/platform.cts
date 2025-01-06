@@ -32,6 +32,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.SystemProperties;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -127,8 +128,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private boolean mClaimsInput;
 
     // Useful info
+    int mFirstProductApiLevel = SystemProperties.getInt("ro.product.first_api_level", -1);
+    int mFirstBoardApiLevel = SystemProperties.getInt("ro.board.first_api_level", -1);
     private boolean mSupportsMMAP = AudioUtils.isMMapSupported();
     private boolean mSupportsMMAPExclusive = AudioUtils.isMMapExclusiveSupported();
+    private boolean mOverallPass = false;
 
     private boolean mIsWatch;
     private boolean mIsTV;
@@ -157,8 +161,11 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final double CONFIDENCE_THRESHOLD_AMBIENT = 0.6;
     private static final double CONFIDENCE_THRESHOLD_WIRED = 0.6;
 
+
+
     public static final double LATENCY_NOT_MEASURED = 0.0;
-    public static final double LATENCY_BASIC = 250.0; // chaned from 300 in CDD 15 for VIC
+    public static final double LATENCY_BASIC = 200.0; // Was 300 in CDD 14 for UDC
+                                                      // Was 250 in CDD 15 for VIC
     public static final double LATENCY_PRO_AUDIO_AT_LEAST_ONE = 25.0;
     public static final double LATENCY_PRO_AUDIO_ANALOG = 20.0;
     public static final double LATENCY_PRO_AUDIO_USB = 25.0;
@@ -208,9 +215,14 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         double mRequiredConfidence;
         double mMeanTimestampLatencyMS;
         int mSampleRate;
-        boolean mIsLowLatencyStream;
         boolean mHas24BitHardwareSupport;
         int mHardwareFormat;
+
+        // Stream Attributes
+        int[] mBurstFrames = new int[NativeAnalyzerThread.NUM_STREAM_TYPES];
+        int[] mCapacityFrames = new int[NativeAnalyzerThread.NUM_STREAM_TYPES];
+        boolean[] mIsLowLatencyStream = new boolean[NativeAnalyzerThread.NUM_STREAM_TYPES];
+        boolean[] mIsMMapStream = new boolean[NativeAnalyzerThread.NUM_STREAM_TYPES];
 
         boolean mRouteAvailable; // Have we seen this route/device at any time
         boolean mRouteConnected; // is the route available NOW
@@ -273,10 +285,27 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             mMeanConfidence = StatUtils.calculateMean(mConfidence);
             mMeanTimestampLatencyMS = StatUtils.calculateMean(mTimestampLatencyMS);
             if (mNativeAnalyzerThread != null) {
+                // Get Stream Attributes
                 mSampleRate = mNativeAnalyzerThread.getSampleRate();
-                mIsLowLatencyStream = mNativeAnalyzerThread.isLowLatencyStream();
                 mHas24BitHardwareSupport = mNativeAnalyzerThread.has24BitHardwareSupport();
                 mHardwareFormat = mNativeAnalyzerThread.getHardwareFormat();
+
+                // direction-dependent
+                int[] directions = new int[] {NativeAnalyzerThread.STREAM_INPUT,
+                        NativeAnalyzerThread.STREAM_OUTPUT};
+                for (int direction : directions) {
+                    mIsLowLatencyStream[direction] =
+                            mNativeAnalyzerThread.isLowLatencyStream(direction);
+
+                    mBurstFrames[direction] =
+                            mNativeAnalyzerThread.getBurstFrames(direction);
+
+                    mCapacityFrames[direction] =
+                            mNativeAnalyzerThread.getCapacityFrames(direction);
+
+                    mIsMMapStream[direction] =
+                            mNativeAnalyzerThread.isMMapStream(direction);
+                }
             }
 
             mTestStatusText.setVisibility(View.GONE);
@@ -321,14 +350,17 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                             + "%s"
                             + "Mean Absolute Deviation: %.2f\n"
                             + "Confidence: %.2f\n"
-                            + "Low Latency Path: %s\n"
+                            + "Low Latency Path: [out:%s, in:%s]\n"
                             + "24 Bit Hardware Support: %s\n"
                             + "Timestamp Latency:%.2f ms",
                         mMeanLatencyMS,
                         adjustment,
                         mMeanAbsoluteDeviation,
                         mMeanConfidence,
-                        mIsLowLatencyStream ? mYesString : mNoString,
+                        mIsLowLatencyStream[NativeAnalyzerThread.STREAM_OUTPUT]
+                                ? mYesString : mNoString,
+                        mIsLowLatencyStream[NativeAnalyzerThread.STREAM_INPUT]
+                                ? mYesString : mNoString,
                         mHas24BitHardwareSupport ? mYesString : mNoString,
                         mMeanTimestampLatencyMS);
             }
@@ -347,10 +379,18 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         private static final String KEY_TEST_PERIPHERAL_NAME = "test_peripheral_name";
         private static final String KEY_TIMESTAMP_LATENCY = "timestamp_latency";
         private static final String KEY_SAMPLE_RATE = "sample_rate";
-        private static final String KEY_IS_LOW_LATENCY = "is_low_latency";
         private static final String KEY_HAS_24_BIT_HARDWARE_SUPPORT =
                 "has_24_bit_hardware_support";
         private static final String KEY_HARDWARE_FORMAT = "hardware_format";
+        // key for output low-latency. Pre-existing key, don't change
+        private static final String KEY_OUTPUT_IS_LOW_LATENCY = "is_low_latency";
+        private static final String KEY_INPUT_IS_LOW_LATENCY = "input_is_low_latency";
+        private static final String KEY_OUTPUT_BURST_FRAMES = "output_burst_frames";
+        private static final String KEY_INPUT_BURST_FRAMES = "input_burst_frames";
+        private static final String KEY_OUTPUT_CAPACITY_FRAMES = "output_capacity_frames";
+        private static final String KEY_INPUT_CAPACITY_FRAMES = "input_capacity_frames";
+        private static final String KEY_OUTPUT_IS_MMAP_STREAM = "output_is_mmap_stream";
+        private static final String KEY_INPUT_IS_MMAP_STREAM = "input_is_mmap_stream";
 
         void recordTestResults(CtsVerifierReportLog reportLog) {
             reportLog.addValue(
@@ -396,12 +436,6 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                     ResultUnit.NONE);
 
             reportLog.addValue(
-                    KEY_IS_LOW_LATENCY,
-                    mIsLowLatencyStream,
-                    ResultType.NEUTRAL,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
                     KEY_HAS_24_BIT_HARDWARE_SUPPORT,
                     mHas24BitHardwareSupport,
                     ResultType.NEUTRAL,
@@ -410,6 +444,54 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             reportLog.addValue(
                     KEY_HARDWARE_FORMAT,
                     mHardwareFormat,
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUTPUT_IS_LOW_LATENCY,
+                    mIsLowLatencyStream[NativeAnalyzerThread.STREAM_OUTPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_INPUT_IS_LOW_LATENCY,
+                    mIsLowLatencyStream[NativeAnalyzerThread.STREAM_INPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUTPUT_BURST_FRAMES,
+                    mBurstFrames[NativeAnalyzerThread.STREAM_OUTPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_INPUT_BURST_FRAMES,
+                    mBurstFrames[NativeAnalyzerThread.STREAM_INPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUTPUT_CAPACITY_FRAMES,
+                    mCapacityFrames[NativeAnalyzerThread.STREAM_OUTPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_INPUT_CAPACITY_FRAMES,
+                    mCapacityFrames[NativeAnalyzerThread.STREAM_INPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_OUTPUT_IS_MMAP_STREAM,
+                    mIsMMapStream[NativeAnalyzerThread.STREAM_OUTPUT],
+                    ResultType.NEUTRAL,
+                    ResultUnit.NONE);
+
+            reportLog.addValue(
+                    KEY_INPUT_IS_MMAP_STREAM,
+                    mIsMMapStream[NativeAnalyzerThread.STREAM_INPUT],
                     ResultType.NEUTRAL,
                     ResultUnit.NONE);
         }
@@ -445,16 +527,45 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         mSampleRate);
 
                 jsonObject.put(
-                        KEY_IS_LOW_LATENCY,
-                        mIsLowLatencyStream);
-
-                jsonObject.put(
                         KEY_HAS_24_BIT_HARDWARE_SUPPORT,
                         mHas24BitHardwareSupport);
 
                 jsonObject.put(
                         KEY_HARDWARE_FORMAT,
                         mHardwareFormat);
+
+                jsonObject.put(
+                        KEY_OUTPUT_IS_LOW_LATENCY,
+                        mIsLowLatencyStream[NativeAnalyzerThread.STREAM_OUTPUT]);
+
+                jsonObject.put(
+                        KEY_INPUT_IS_LOW_LATENCY,
+                        mIsLowLatencyStream[NativeAnalyzerThread.STREAM_INPUT]);
+
+                jsonObject.put(
+                        KEY_OUTPUT_BURST_FRAMES,
+                        mBurstFrames[NativeAnalyzerThread.STREAM_OUTPUT]);
+
+                jsonObject.put(
+                        KEY_INPUT_BURST_FRAMES,
+                        mBurstFrames[NativeAnalyzerThread.STREAM_INPUT]);
+
+                jsonObject.put(
+                        KEY_OUTPUT_CAPACITY_FRAMES,
+                        mCapacityFrames[NativeAnalyzerThread.STREAM_OUTPUT]);
+
+                jsonObject.put(
+                        KEY_INPUT_CAPACITY_FRAMES,
+                        mCapacityFrames[NativeAnalyzerThread.STREAM_INPUT]);
+
+                jsonObject.put(
+                        KEY_OUTPUT_IS_MMAP_STREAM,
+                        mIsMMapStream[NativeAnalyzerThread.STREAM_OUTPUT]);
+
+                jsonObject.put(
+                        KEY_INPUT_IS_MMAP_STREAM,
+                        mIsMMapStream[NativeAnalyzerThread.STREAM_INPUT]);
+
             } catch (JSONException e) {
                 Log.e(TAG, LOG_ERROR_STR, e);
             }
@@ -830,6 +941,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final String KEY_TEST_MMAP = "supports_mmap";
     private static final String KEY_TEST_MMAPEXCLUSIVE = "supports_mmap_exclusive";
     private static final String KEY_LEVEL = "level";
+    private static final String KEY_PRODUCT_FIRST_API_LEVEL = "product_first_api_level";
+    private static final String KEY_BOARD_FIRST_API_LEVEL = "board_first_api_level";
+    private static final String KEY_OVERALL_PASS = "overall_pass";
 
     // Contains the results for all routes
     private static final String KEY_PATHS = "paths";
@@ -863,6 +977,24 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         reportLog.addValue(
                 Common.KEY_VERSION_CODE,
                 Common.VERSION_CODE,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+
+        reportLog.addValue(
+                KEY_PRODUCT_FIRST_API_LEVEL,
+                mFirstProductApiLevel,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+
+        reportLog.addValue(
+                KEY_BOARD_FIRST_API_LEVEL,
+                mFirstBoardApiLevel,
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+
+        reportLog.addValue(
+                KEY_OVERALL_PASS,
+                mOverallPass,
                 ResultType.NEUTRAL,
                 ResultUnit.NONE);
     }
@@ -1053,9 +1185,9 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mRouteStatus[mTestRoute].setText(testSpec.getResultString());
 
         LoopbackLatencyRequirements requirements = new LoopbackLatencyRequirements();
-        boolean pass = calcPass(requirements);
+        mOverallPass = calcPass(requirements);
 
-        getPassButton().setEnabled(pass);
+        getPassButton().setEnabled(mOverallPass);
 
         showWait(false);
         enableStartButtons(true);

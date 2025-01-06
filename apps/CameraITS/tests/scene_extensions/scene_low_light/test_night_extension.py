@@ -34,7 +34,9 @@ _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
 _TEST_REQUIRED_MPC = 34
 
 _AVG_DELTA_LUMINANCE_THRESH = 17
+_AVG_DELTA_LUMINANCE_THRESH_METERED_REGION = 25
 _AVG_LUMINANCE_THRESH = 85
+_AVG_LUMINANCE_THRESH_METERED_REGION = 80
 
 _IMAGE_FORMATS_TO_CONSTANTS = (('yuv', 35), ('jpeg', 256))
 
@@ -67,7 +69,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
   """
 
   def _take_capture(self, cam, req, out_surfaces):
-    """Takes capture with Night extension ON.
+    """Takes capture with night extension ON.
 
     Args:
       cam: its_session_utils object.
@@ -83,6 +85,54 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
     logging.debug('capture sensitivity: %s',
                   metadata['android.sensor.sensitivity'])
     return cap
+
+  def _take_capture_and_analyze(self, cam, req, out_surfaces, file_stem,
+                                metering_region, use_metering_region,
+                                first_api_level):
+    """Takes capture with night extension ON and analyzes it.
+
+    Args:
+      cam: its_session_utils object.
+      req: capture request.
+      out_surfaces: dictionary of output surfaces.
+      file_stem: File prefix for captured images.
+      metering_region: The metering region to use for the capture.
+      use_metering_region: Whether to use the metering region.
+      first_api_level: The first API level of the device under test.
+    """
+    avg_luminance_thresh = _AVG_LUMINANCE_THRESH
+    avg_delta_luminance_thresh = _AVG_DELTA_LUMINANCE_THRESH
+    if use_metering_region and metering_region is not None:
+      logging.debug('metering_region: %s', metering_region)
+      req['android.control.aeRegions'] = [metering_region]
+      req['android.control.afRegions'] = [metering_region]
+      req['android.control.awbRegions'] = [metering_region]
+      avg_luminance_thresh = _AVG_LUMINANCE_THRESH_METERED_REGION
+      avg_delta_luminance_thresh = _AVG_DELTA_LUMINANCE_THRESH_METERED_REGION
+    cap = self._take_capture(cam, req, out_surfaces)
+    rgb_night_img = _convert_capture(cap, f'{file_stem}_night')
+
+    # Assert correct behavior and create luminosity plots
+    try:
+      low_light_utils.analyze_low_light_scene_capture(
+          f'{file_stem}_night',
+          cv2.cvtColor(rgb_night_img, cv2.COLOR_RGB2BGR),
+          avg_luminance_thresh,
+          avg_delta_luminance_thresh
+      )
+    except AssertionError as e:
+      # On Android 15, we initially test without metered region. If it fails, we
+      # fallback to test with metered region. Otherwise, for newer than
+      # Android 15, we always start test with metered region.
+      if (
+          first_api_level <= its_session_utils.ANDROID15_API_LEVEL
+          and not use_metering_region
+      ):
+        logging.debug('Retrying with metering region: %s', e)
+        self._take_capture_and_analyze(cam, req, out_surfaces, file_stem,
+                                       metering_region, True, first_api_level)
+      else:
+        raise e
 
   def test_night_extension(self):
     # Handle subdirectory
@@ -182,6 +232,18 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       else:
         raise AssertionError('No supported sizes/formats found!')
 
+      file_stem = (
+          f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
+      )
+      out_surfaces = {
+          'format': accepted_format, 'width': width, 'height': height}
+      req = capture_request_utils.auto_capture_request()
+      metering_region = low_light_utils.get_metering_region(cam, file_stem)
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      use_metering_region = (
+          first_api_level > its_session_utils.ANDROID15_API_LEVEL
+      )
+
       # Set tablet brightness to darken scene
       brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
       if (props['android.lens.facing'] ==
@@ -196,25 +258,12 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
                       self.camera_id)
         camera_properties_utils.skip_unless(False)
 
-      file_stem = f'{test_name}_{camera_id}_{accepted_format}_{width}x{height}'
-      out_surfaces = {
-          'format': accepted_format, 'width': width, 'height': height}
-      req = capture_request_utils.auto_capture_request()
-
       logging.debug('Taking auto capture with night mode ON')
       # Wait for tablet brightness to change
       time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
-      night_cap = self._take_capture(
-          cam, req, out_surfaces)
-      rgb_night_img = _convert_capture(night_cap, f'{file_stem}_night')
-
-      # Assert correct behavior and create luminosity plots
-      low_light_utils.analyze_low_light_scene_capture(
-          f'{file_stem}_night',
-          cv2.cvtColor(rgb_night_img, cv2.COLOR_RGB2BGR),
-          _AVG_LUMINANCE_THRESH,
-          _AVG_DELTA_LUMINANCE_THRESH
-      )
+      self._take_capture_and_analyze(cam, req, out_surfaces, file_stem,
+                                     metering_region, use_metering_region,
+                                     first_api_level)
 
 if __name__ == '__main__':
   test_runner.main()

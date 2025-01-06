@@ -16,7 +16,6 @@
 
 package android.view.accessibility.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -29,7 +28,6 @@ import static org.junit.Assert.fail;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
-import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
@@ -51,10 +49,11 @@ import android.view.accessibility.Flags;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -86,8 +85,8 @@ public class AccessibilityEventTest {
 
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
-    private final ActivityTestRule<DummyActivity> mActivityRule =
-            new ActivityTestRule<>(DummyActivity.class, false, false);
+    private final ActivityScenarioRule<DummyActivity> mActivityRule =
+            new ActivityScenarioRule<>(DummyActivity.class);
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
     private InstrumentedAccessibilityServiceTestRule<SpeakingAccessibilityService>
@@ -109,22 +108,30 @@ public class AccessibilityEventTest {
     public void setUp() throws Throwable {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
-        final Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
-        mPackageName = activity.getApplicationContext().getPackageName();
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity ->
+                                mPackageName = activity.getApplicationContext().getPackageName());
         mInstrumentedAccessibilityServiceRule.enableService();
-        sUiAutomation.executeAndWaitForEvent(() -> {
+        sUiAutomation.executeAndWaitForEvent(
+                () -> {
                     try {
-                        mActivityRule.runOnUiThread(() -> {
-                            final LinearLayout grandparent = new LinearLayout(activity);
-                            activity.setContentView(grandparent);
-                            mParentView = new EventReportingLinearLayout(activity);
-                            mChildView = new View(activity);
-                            mTextView = new TextView(activity);
-                            grandparent.addView(mParentView);
-                            mParentView.addView(mChildView);
-                            mParentView.addView(mTextView);
-                        });
+                        mActivityRule
+                                .getScenario()
+                                .onActivity(
+                                        activity -> {
+                                            final LinearLayout grandparent =
+                                                    new LinearLayout(activity);
+                                            activity.setContentView(grandparent);
+                                            mParentView = new EventReportingLinearLayout(activity);
+                                            mChildView = new View(activity);
+                                            mTextView = new TextView(activity);
+                                            grandparent.addView(mParentView);
+                                            mParentView.addView(mChildView);
+                                            mParentView.addView(mTextView);
+                                        });
                     } catch (Throwable e) {
                         fail(e.toString());
                     }
@@ -225,11 +232,13 @@ public class AccessibilityEventTest {
                         }),
                 scrollEventFilter,
                 DEFAULT_TIMEOUT_MS);
-        mActivityRule.runOnUiThread(
-                () -> {
-                    mParentView.removeView(mChildView);
-                    mParentView.addView(mChildView);
-                });
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            mParentView.removeView(mChildView);
+                            mParentView.addView(mChildView);
+                        });
         sUiAutomation.executeAndWaitForEvent(
                 () -> sInstrumentation.runOnMainSync(
                         () -> {

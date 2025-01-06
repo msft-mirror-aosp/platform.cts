@@ -23,19 +23,26 @@ import static android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.hardware.display.DisplayManager;
 import android.os.IBinder;
+import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
+
+import com.android.compatibility.common.util.UserHelper;
 
 public class LocalAlertService extends Service {
     public static final String COMMAND_SHOW_ALERT = "show";
     public static final String COMMAND_HIDE_ALERT = "hide";
 
     private static View mAlertWindow = null;
+
+    private final UserHelper mUserHelper = new UserHelper();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -58,7 +65,9 @@ public class LocalAlertService extends Service {
 
     private View showAlertWindow(String windowName) {
         final Point size = new Point();
-        final WindowManager wm = getSystemService(WindowManager.class);
+        final WindowManager wm = mUserHelper.isVisibleBackgroundUser()
+                ? getContextForSaw(this).getSystemService(WindowManager.class)
+                : getSystemService(WindowManager.class);
         wm.getDefaultDisplay().getSize(size);
 
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
@@ -79,5 +88,12 @@ public class LocalAlertService extends Service {
     private void hideAlertWindow(View window) {
         final WindowManager wm = getSystemService(WindowManager.class);
         wm.removeViewImmediate(window);
+    }
+
+    private Context getContextForSaw(Context context) {
+        final DisplayManager displayManager = context.getSystemService(DisplayManager.class);
+        final Display display = displayManager.getDisplay(mUserHelper.getMainDisplayId());
+        final Context displayContext = context.createDisplayContext(display);
+        return displayContext.createWindowContext(TYPE_APPLICATION_OVERLAY, null);
     }
 }

@@ -48,6 +48,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -72,6 +73,8 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.backportedfixes.BackportedFixRule;
+import com.android.cts.backportedfixes.BackportedFixTest;
 import com.android.cts.input.FailOnTestThreadRule;
 import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
@@ -103,6 +106,8 @@ public class ASurfaceControlInputReceiverTest {
 
     @Rule
     public FailOnTestThreadRule mFailOnTestThreadRule = new FailOnTestThreadRule();
+
+    @Rule public BackportedFixRule mBackportedFixRule = new BackportedFixRule();
 
     @Before
     public void setUp() throws InterruptedException, RemoteException {
@@ -544,4 +549,13 @@ public class ASurfaceControlInputReceiverTest {
         }
     }
 
+    @Test
+    @BackportedFixTest(385124056)
+    public void debuggable() {
+        // Setting the test application as debuggable to enable checkjni which will identify
+        // JNI calls with incorrect signatures.
+        // See https://developer.android.com/training/articles/perf-jni#extended-checking
+        assertTrue("android:debuggable of the <application> tag",
+                (mActivity.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
+    }
 }

@@ -15,7 +15,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterForEventTypeWithAction;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED;
@@ -42,15 +41,15 @@ import android.graphics.Point;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.view.Display;
 import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
@@ -93,8 +92,8 @@ public class AccessibilityFocusAndInputFocusSyncTest {
 
     private AccessibilityFocusAndInputFocusSyncActivity mActivity;
 
-    private ActivityTestRule<AccessibilityFocusAndInputFocusSyncActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityFocusAndInputFocusSyncActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityFocusAndInputFocusSyncActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityFocusAndInputFocusSyncActivity.class);
 
     private InstrumentedAccessibilityServiceTestRule<StubFocusIndicatorService>
             mFocusIndicatorServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -115,6 +114,8 @@ public class AccessibilityFocusAndInputFocusSyncTest {
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
+        sInstrumentation.setInTouchMode(false);
+        sInstrumentation.waitForIdleSync();
         sUiAutomation = sInstrumentation.getUiAutomation(
                 UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
@@ -127,6 +128,8 @@ public class AccessibilityFocusAndInputFocusSyncTest {
 
     @AfterClass
     public static void postTestTearDown() {
+        sInstrumentation.resetInTouchMode();
+        sInstrumentation.waitForIdleSync();
         sUiAutomation.destroy();
     }
 
@@ -137,8 +140,10 @@ public class AccessibilityFocusAndInputFocusSyncTest {
         info.flags &= ~AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
         sUiAutomation.setServiceInfo(info);
 
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
     }
 
     @MediumTest
@@ -372,7 +377,7 @@ public class AccessibilityFocusAndInputFocusSyncTest {
                 DEFAULT_TIMEOUT_MS);
         Thread.sleep(SCREEN_FRAME_RENDERING_OUT_TIME_MILLIS);
 
-        final Bitmap screenshot = sUiAutomation.takeScreenshot();
+        final Bitmap screenshot = sUiAutomation.takeScreenshot(mActivity.getWindow());
 
         sUiAutomation.executeAndWaitForEvent(
                 () -> assertTrue(unAccessibilityFocusedNode.performAction(
@@ -385,19 +390,19 @@ public class AccessibilityFocusAndInputFocusSyncTest {
     }
 
     private boolean isBitmapDifferent(Bitmap bitmap1, Bitmap bitmap2) {
-        final Display display = mActivity.getWindowManager().getDefaultDisplay();
-        final Point displaySize = new Point();
-        display.getRealSize(displaySize);
+        View testActivityRootView = mActivity.getWindow().getDecorView().getRootView();
+        final Point activitySize =
+                new Point(testActivityRootView.getWidth(), testActivityRootView.getHeight());
 
-        final int[] pixelsOne = new int[displaySize.x * displaySize.y];
+        final int[] pixelsOne = new int[activitySize.x * activitySize.y];
         final Bitmap bitmapOne = bitmap1.copy(Bitmap.Config.ARGB_8888, false);
-        bitmapOne.getPixels(pixelsOne, 0, displaySize.x, 0, 0, displaySize.x,
-                displaySize.y);
+        bitmapOne.getPixels(pixelsOne, 0, activitySize.x, 0, 0, activitySize.x,
+                activitySize.y);
 
-        final int[] pixelsTwo = new int[displaySize.x * displaySize.y];
+        final int[] pixelsTwo = new int[activitySize.x * activitySize.y];
         final Bitmap bitmapTwo = bitmap2.copy(Bitmap.Config.ARGB_8888, false);
-        bitmapTwo.getPixels(pixelsTwo, 0, displaySize.x, 0, 0, displaySize.x,
-                displaySize.y);
+        bitmapTwo.getPixels(pixelsTwo, 0, activitySize.x, 0, 0, activitySize.x,
+                activitySize.y);
 
         for (int i = pixelsOne.length - 1; i > 0; i--) {
             if ((Color.red(pixelsOne[i]) != Color.red(pixelsTwo[i]))

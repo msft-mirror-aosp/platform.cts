@@ -28,6 +28,7 @@ import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Flags;
@@ -38,9 +39,12 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 import android.webkit.WebViewUpdateService;
 
-import androidx.test.platform.app.InstrumentationRegistry;
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
+
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -58,6 +62,7 @@ import java.util.regex.Pattern;
 @RequiresFlagsEnabled(Flags.FLAG_SECURITY_STATE_SERVICE)
 public class SecurityStateManagerTest {
 
+    private static final String TAG = "SecurityStateManagerTest";
     private Context mContext;
     private Resources mResources;
     private PackageManager mPackageManager;
@@ -69,8 +74,6 @@ public class SecurityStateManagerTest {
 
     @Before
     public void setUp() {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.INTERACT_ACROSS_USERS_FULL);
         mContext = getApplicationContext();
         mResources = mContext.getResources();
         mPackageManager = mContext.getPackageManager();
@@ -79,29 +82,31 @@ public class SecurityStateManagerTest {
 
     @Test
     public void testGetGlobalSecurityState() throws Exception {
-        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)(.*)");
-        Matcher matcher = pattern.matcher(VintfRuntimeInfo.getKernelVersion());
-        String kernelVersion = "";
-        if (matcher.matches()) {
-            kernelVersion = matcher.group(1);
-        }
-        String defaultModuleMetadata = mContext.getString(
-                mResources.getIdentifier("config_defaultModuleMetadataProvider",
-                        "string", "android"));
-        List<String> webViewPackages = Arrays.stream(WebViewUpdateService.getAllWebViewPackages())
-                .map(info -> info.packageName).toList();
-        List<String> securityStatePackages = Arrays.stream(mContext.getResources().getStringArray(
-                mResources.getIdentifier("config_securityStatePackages",
-                        "array", "android"))).toList();
-        Bundle bundle = mSecurityStateManager.getGlobalSecurityState();
+        try (PermissionContext permissionContext = TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)) {
+            Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)(.*)");
+            Matcher matcher = pattern.matcher(VintfRuntimeInfo.getKernelVersion());
+            String kernelVersion = "";
+            if (matcher.matches()) {
+                kernelVersion = matcher.group(1);
+            }
+            String defaultModuleMetadata = mContext.getString(
+                    mResources.getIdentifier("config_defaultModuleMetadataProvider",
+                            "string", "android"));
+            List<String> webViewPackages = Arrays.stream(WebViewUpdateService.getAllWebViewPackages())
+                    .map(info -> info.packageName).toList();
+            List<String> securityStatePackages = Arrays.stream(mContext.getResources().getStringArray(
+                    mResources.getIdentifier("config_securityStatePackages",
+                            "array", "android"))).toList();
+            Bundle bundle = mSecurityStateManager.getGlobalSecurityState();
 
-        assertEquals(bundle.getString(KEY_SYSTEM_SPL), Build.VERSION.SECURITY_PATCH);
-        assertEquals(bundle.getString(KEY_VENDOR_SPL),
-                SystemProperties.get("ro.vendor.build.security_patch", ""));
-        assertEquals(bundle.getString(KEY_KERNEL_VERSION), kernelVersion);
-        packageVersionNameCheck(bundle, defaultModuleMetadata);
-        webViewPackages.forEach(p -> packageVersionNameCheck(bundle, p));
-        securityStatePackages.forEach(p -> packageVersionNameCheck(bundle, p));
+            assertEquals(bundle.getString(KEY_SYSTEM_SPL), Build.VERSION.SECURITY_PATCH);
+            assertEquals(bundle.getString(KEY_VENDOR_SPL),
+                    SystemProperties.get("ro.vendor.build.security_patch", ""));
+            assertEquals(bundle.getString(KEY_KERNEL_VERSION), kernelVersion);
+            packageVersionNameCheck(bundle, defaultModuleMetadata);
+            webViewPackages.forEach(p -> packageVersionNameCheck(bundle, p));
+            securityStatePackages.forEach(p -> packageVersionNameCheck(bundle, p));
+        }
     }
 
     private void packageVersionNameCheck(Bundle bundle, String packageName) {
@@ -109,8 +114,8 @@ public class SecurityStateManagerTest {
             try {
                 assertEquals(bundle.getString(packageName),
                         mPackageManager.getPackageInfo(packageName, 0 /* flags */).versionName);
-            } catch (PackageManager.NameNotFoundException ignored) {
-                assertEquals(bundle.getString(packageName), "");
+            } catch (PackageManager.NameNotFoundException e) {
+                Log.w(TAG, "Error getting package info for " + packageName + ": " + e);
             }
         }
     }

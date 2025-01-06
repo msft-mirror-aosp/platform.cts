@@ -53,13 +53,25 @@ public class InfiniteRecording {
         // copy (InputIterator first, InputIterator last, OutputIterator result)
         // std::copy(&mData[offset], &mData[offset + firstReadSize], buffer);
         // arraycopy(Object src, int srcPos, Object dest, int destPos, int length)
-        System.arraycopy(mData, offset, mData, offset + firstReadSize, firstReadSize);
+        System.arraycopy(mData, offset, buffer, 0, firstReadSize);
         if (firstReadSize < numToRead) {
             // Second read needed.
             // std::copy(&mData[0], &mData[numToRead - firstReadSize], &buffer[firstReadSize]);
-            System.arraycopy(mData, 0, mData, numToRead - firstReadSize, numToRead - firstReadSize);
+            System.arraycopy(mData, 0, buffer, firstReadSize, numToRead - firstReadSize);
         }
         return numToRead;
+    }
+
+    /**
+     * Get all the available audio data recorded during the analysis.
+     * @return recorded data
+     */
+    public float[] readAll() {
+        int numWritten = getTotalWritten();
+        int numAvailable = getAvailable();
+        float[] data = new float[numAvailable];
+        readFrom(data, numWritten - numAvailable, numAvailable);
+        return data;
     }
 
     /**
@@ -75,9 +87,25 @@ public class InfiniteRecording {
 
     /**
      *
-     * @return
+     * @return total number of samples written
      */
     public int getTotalWritten() {
         return mWritten.get();
+    }
+
+    /**
+     * Get the maximum number of frames that are available to read.
+     *
+     * @return total number of samples written or maxSamples
+     */
+    public int getAvailable() {
+        return Math.min(mMaxSamples, mWritten.get());
+    }
+
+    /**
+     * Erase the previously recorded data.
+     */
+    public void clear() {
+        mWritten.set(0);
     }
 };

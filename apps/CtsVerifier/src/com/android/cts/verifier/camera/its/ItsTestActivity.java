@@ -38,6 +38,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
@@ -62,10 +63,15 @@ import org.junit.rules.TestName;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -101,11 +107,16 @@ public class ItsTestActivity extends DialogTestListActivity {
             "com.android.cts.verifier.camera.its.ACTION_ITS_RESULT";
     private static final String ACTION_ITS_DO_JCA_CAPTURE =
             "com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE";
+    private static final String ACTION_ITS_DO_JCA_VIDEO_CAPTURE =
+            "com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_VIDEO_CAPTURE";
     private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_VIDEO_CAPTURE = 2;
     private static final String JCA_PACKAGE_NAME = "com.google.jetpackcamera";
     private static final String JCA_ACTIVITY_NAME = "MainActivity";
     private static final String JCA_FILES_CHILD_PATHNAME = "Images/JCATestCaptures";
-    public static final String JCA_CAPTURE_PATH_TAG = "JCA_CAPTURE_PATH";
+    private static final String JCA_VIDEO_FILES_CHILD_PATHNAME = "Videos/JCATestCaptures";
+    private static final String JCA_DEBUG_MODE_KEY = "KEY_DEBUG_MODE";
+    public static final String JCA_CAPTURE_PATHS_TAG = "JCA_CAPTURE_PATHS";
     public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
 
     private static final String RESULT_PASS = "PASS";
@@ -156,6 +167,8 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_EXTENSION_NIGHT_MODE_PATTERN =
             Pattern.compile("test_night_extension_.*");
 
+    private static final String FEATURE_COMBINATION_QUERY_KEY = "feature_query_proto";
+
     private static final String PERF_METRICS_KEY_CHART_LUMA = "chart_luma";
     private static final String PERF_METRICS_KEY_AVG_LUMA = "avg_luma";
     private static final String PERF_METRICS_KEY_DELTA_AVG_LUMA = "delta_avg_luma";
@@ -198,6 +211,9 @@ public class ItsTestActivity extends DialogTestListActivity {
             if (ACTION_ITS_DO_JCA_CAPTURE.equals(intent.getAction())) {
                 Logt.i(TAG, "Doing JCA intent capture");
                 doJcaCapture();
+            } else if (ACTION_ITS_DO_JCA_VIDEO_CAPTURE.equals(intent.getAction())) {
+                Logt.i(TAG, "Doing JCA video intent capture");
+                doJcaVideoCapture();
             } else {
                 Logt.e(TAG, "Unknown intent action " + intent.getAction());
             }
@@ -240,6 +256,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene2_d",
             "scene2_e",
             "scene2_f",
+            "scene2_g",
             "scene3",
             "scene4",
             "scene5",
@@ -253,7 +270,8 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene_video",
             "sensor_fusion",
             "feature_combination",
-            "scene_flash");
+            "scene_flash",
+            "scene_ip");
 
     // This must match scenes of SUB_CAMERA_TESTS in tools/run_all_tests.py
     private static final List<String> mHiddenPhysicalCameraSceneIds = List.of(
@@ -480,6 +498,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                                 Log.e(TAG, "Error parsing perf result string:" + perfResult, e);
                             }
                         }
+
+                        // Update feature combination query proto for each camera
+                        if (sceneResult.isNull(FEATURE_COMBINATION_QUERY_KEY)) {
+                            continue;
+                        }
+
+                        JSONArray featureQueryProtos =
+                                sceneResult.getJSONArray(FEATURE_COMBINATION_QUERY_KEY);
+                        String featureQueryProtoStr = featureQueryProtos.getString(0);
+                        camJsonObj.put(FEATURE_COMBINATION_QUERY_KEY, featureQueryProtoStr);
                     }
                     // Add performance metrics for all scenes along with camera_id as json arr
                     // to CtsVerifierReportLog for each camera.
@@ -1182,6 +1210,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             IntentFilter filter = new IntentFilter(ACTION_ITS_RESULT);
             registerReceiver(mResultsReceiver, filter, Context.RECEIVER_EXPORTED);
             filter = new IntentFilter(ACTION_ITS_DO_JCA_CAPTURE);
+            filter.addAction(ACTION_ITS_DO_JCA_VIDEO_CAPTURE);
             registerReceiver(mCommandReceiver, filter, Context.RECEIVER_EXPORTED);
             mReceiverRegistered = true;
         }
@@ -1210,12 +1239,34 @@ public class ItsTestActivity extends DialogTestListActivity {
     @Override
     public void handleActivityResult(int requestCode, int resultCode, Intent data) {
         Logt.i(TAG, "request code: " + requestCode + ", result code: " + resultCode);
-        if (requestCode == REQUEST_IMAGE_CAPTURE) {
+        if (requestCode == REQUEST_IMAGE_CAPTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
             if (resultCode != RESULT_OK) {
                 Logt.e(TAG, "Capture failed!");
             }
+            Logt.i(TAG, "Result data: " + data.getStringArrayListExtra(
+                    MediaStore.EXTRA_OUTPUT).toString());
+            ArrayList<String> jcaCapturePaths = new ArrayList<String>();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
+                    "yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
+            String timestamp = formatter.format(Instant.now());
+            int i = 0;
+            for (String intentUri : data.getStringArrayListExtra(MediaStore.EXTRA_OUTPUT)) {
+                Uri uri = Uri.parse(intentUri);
+                try {
+                    Path imagePath = moveImageFromUri(
+                            uri, "ITS_JCA_" + i + "_" + timestamp + ".jpg");
+                    jcaCapturePaths.add(imagePath.toString());
+                } catch (FileNotFoundException e) {
+                    Logt.e(TAG, "File not found from uri: " + e);
+                    return;
+                } catch (IOException e) {
+                    Logt.e(TAG, "Error copying file from uri: " + e);
+                    return;
+                }
+                i++;
+            }
             Intent serviceIntent = new Intent(this, ItsService.class);
-            serviceIntent.putExtra(JCA_CAPTURE_PATH_TAG, mJcaCapturePath);
+            serviceIntent.putExtra(JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
             serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
             startService(serviceIntent);
         } else {
@@ -1224,32 +1275,61 @@ public class ItsTestActivity extends DialogTestListActivity {
     }
 
     private void doJcaCapture() {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent takePictureIntent = new Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA);
+        takePictureIntent.setComponent(new ComponentName(
+                JCA_PACKAGE_NAME, JCA_PACKAGE_NAME + "." + JCA_ACTIVITY_NAME));
+        takePictureIntent.putExtra(JCA_DEBUG_MODE_KEY, true);
+        try {
+            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        } catch (ActivityNotFoundException e) {
+            Logt.e(TAG, "Error starting image capture intent activity: " + e);
+        }
+    }
+
+    private Path moveImageFromUri(Uri uri, String name)
+            throws FileNotFoundException, IOException {
+        ParcelFileDescriptor parcelFileDescriptor =
+                getContentResolver().openFileDescriptor(uri, "r");
+        FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+        FileInputStream inputStream = new FileInputStream(fileDescriptor);
         File imageDir = new File(this.getExternalFilesDir(null), JCA_FILES_CHILD_PATHNAME);
         imageDir.mkdirs();
         if (!imageDir.exists()) {
-            Logt.e(TAG, "Could not create image directory");
+            throw new IOException("Could not create image directory");
+        }
+        Path imagePath = new File(imageDir, name).toPath();
+        Files.copy(inputStream, imagePath, StandardCopyOption.REPLACE_EXISTING);
+        getContentResolver().delete(uri, null, null);
+        return imagePath;
+    }
+
+    private void doJcaVideoCapture() {
+        Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        File videoDir = new File(this.getExternalFilesDir(null), JCA_VIDEO_FILES_CHILD_PATHNAME);
+        videoDir.mkdirs();
+        if (!videoDir.exists()) {
+            Logt.e(TAG, "Could not create video directory");
             return;
         }
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
                 .withZone(ZoneId.systemDefault());
         String timestamp = formatter.format(Instant.now());
-        File imageFile = new File(imageDir, "ITS_JCA_" + timestamp + ".jpg");
-        Logt.i(TAG, "file path: " + imageFile.toString());
-        mJcaCapturePath = imageFile.toString();
-        Uri photoUri = FileProvider.getUriForFile(
+        File videoFile = new File(videoDir, "ITS_JCA_" + timestamp + ".mp4");
+        Logt.i(TAG, "file path: " + videoFile.toString());
+        mJcaCapturePath = videoFile.toString();
+        Uri videoUri = FileProvider.getUriForFile(
                 this,
                 "com.android.cts.verifier.managedprovisioning.fileprovider",
-                imageFile);
-        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri);
-        takePictureIntent.setComponent(new ComponentName(
+                videoFile);
+        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri);
+        takeVideoIntent.setComponent(new ComponentName(
                 JCA_PACKAGE_NAME, JCA_PACKAGE_NAME + "." + JCA_ACTIVITY_NAME));
-        takePictureIntent.setFlags(
+        takeVideoIntent.setFlags(
                 Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
         try {
-            startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+            startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         } catch (ActivityNotFoundException e) {
-            Logt.e(TAG, "Error starting image capture intent activity: " + e);
+            Logt.e(TAG, "Error starting video capture intent activity: " + e);
         }
     }
 }

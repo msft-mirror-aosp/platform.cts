@@ -29,7 +29,7 @@
 const static std::set<aaudio_policy_t> ALL_VALID_POLICIES = {AAUDIO_POLICY_NEVER,
                                                              AAUDIO_POLICY_AUTO,
                                                              AAUDIO_POLICY_ALWAYS};
-const static std::set<aaudio_device_t> ALL_VALID_OUTPUT_DEVICES = {
+const static std::set<AAudio_DeviceType> ALL_VALID_OUTPUT_DEVICES = {
         AAUDIO_DEVICE_BUILTIN_EARPIECE,
         AAUDIO_DEVICE_BUILTIN_SPEAKER,
         AAUDIO_DEVICE_WIRED_HEADSET,
@@ -58,7 +58,7 @@ const static std::set<aaudio_device_t> ALL_VALID_OUTPUT_DEVICES = {
         AAUDIO_DEVICE_BLE_SPEAKER,
         AAUDIO_DEVICE_BLE_BROADCAST,
 };
-const static std::set<aaudio_device_t> ALL_VALID_INPUT_DEVICES = {
+const static std::set<AAudio_DeviceType> ALL_VALID_INPUT_DEVICES = {
         AAUDIO_DEVICE_BUILTIN_MIC, AAUDIO_DEVICE_BLUETOOTH_SCO, AAUDIO_DEVICE_WIRED_HEADSET,
         AAUDIO_DEVICE_HDMI,        AAUDIO_DEVICE_TELEPHONY,     AAUDIO_DEVICE_DOCK,
         AAUDIO_DEVICE_DOCK_ANALOG, AAUDIO_DEVICE_USB_ACCESSORY, AAUDIO_DEVICE_USB_DEVICE,
@@ -72,7 +72,7 @@ const static std::set<aaudio_device_t> ALL_VALID_INPUT_DEVICES = {
     case name:                 \
         return #name
 
-static std::string deviceToString(aaudio_device_t device) {
+static std::string deviceToString(AAudio_DeviceType device) {
     switch (device) {
         AAUDIO_CASE_ENUM(AAUDIO_DEVICE_BUILTIN_EARPIECE);
         AAUDIO_CASE_ENUM(AAUDIO_DEVICE_BUILTIN_SPEAKER);
@@ -109,7 +109,7 @@ static std::string deviceToString(aaudio_device_t device) {
     }
 }
 
-using PlatformPolicyTestParam = std::tuple<aaudio_device_t, aaudio_direction_t>;
+using PlatformPolicyTestParam = std::tuple<AAudio_DeviceType, aaudio_direction_t>;
 
 class PlatformPolicyTest : public AAudioCtsBase,
                            public ::testing::WithParamInterface<PlatformPolicyTestParam> {
@@ -122,7 +122,7 @@ protected:
         EXCLUSIVE,
     };
 
-    void runTest(aaudio_device_t device, aaudio_direction_t direction, policy_type_t policyType);
+    void runTest(AAudio_DeviceType device, aaudio_direction_t direction, policy_type_t policyType);
 };
 
 // static
@@ -132,7 +132,7 @@ std::string PlatformPolicyTest::getTestName(
             (std::get<1>(info.param) == AAUDIO_DIRECTION_INPUT ? "input" : "output");
 }
 
-void PlatformPolicyTest::runTest(aaudio_device_t device, aaudio_direction_t direction,
+void PlatformPolicyTest::runTest(AAudio_DeviceType device, aaudio_direction_t direction,
                                  policy_type_t policyType) {
     const bool isValidValue = direction == AAUDIO_DIRECTION_INPUT
             ? (ALL_VALID_INPUT_DEVICES.count(device) != 0)

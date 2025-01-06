@@ -64,6 +64,7 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
                 Settings.Global.getInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN);
         Settings.Global.putInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN, 0);
         mPowerManager = mContext.getSystemService(PowerManager.class);
+        acquirePartialWakeLock();
         assumeFalse("Automotive main display is always on - skipping test",
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
     }

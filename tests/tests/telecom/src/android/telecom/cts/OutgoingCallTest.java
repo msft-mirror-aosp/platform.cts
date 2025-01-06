@@ -205,6 +205,9 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom  || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
+        // TelephonyCallback requires a default cellular subscription.
+        assertTrue("No default cellular subscription",
+                TestUtils.hasDefaultSubscription(mContext));
         try {
             TestUtils.setSystemDialerOverride(getInstrumentation());
             TestUtils.setTestEmergencyPhoneAccountPackageFilter(getInstrumentation(), mContext);

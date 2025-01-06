@@ -25,8 +25,6 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.android.server.am.Flags.FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1872,8 +1870,11 @@ public class ContextTest {
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
 
-        mContext.sendBroadcast(new Intent(ResultReceiver.MOCK_ACTION)
-                .setPackage(mContext.getPackageName()), null);
+        final Intent intent = new Intent(ResultReceiver.MOCK_ACTION)
+                .setPackage(mContext.getPackageName());
+        final BroadcastOptions options = BroadcastOptions.makeBasic()
+                .setDebugLogEnabled(true);
+        mContext.sendBroadcast(intent, null, options.toBundle());
 
         new PollingCheck(BROADCAST_TIMEOUT) {
             @Override
@@ -1893,6 +1894,7 @@ public class ContextTest {
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         options.setRequireAllOfPermissions(
                 new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
@@ -1910,13 +1912,13 @@ public class ContextTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_USE_PERMISSION_MANAGER_FOR_BROADCAST_DELIVERY_CHECK)
     public void testSendBroadcast_requireAppOpPermission_receiverHasPermissionAndDefaultAppOp()
             throws Exception {
         setAppOpMode(AppOpsManager.OP_GET_USAGE_STATS, AppOpsManager.MODE_DEFAULT);
         final ResultReceiver receiver = new ResultReceiver();
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         // The test APK has this AppOp permission.
         options.setRequireAllOfPermissions(
                 new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
@@ -1941,6 +1943,7 @@ public class ContextTest {
         final ResultReceiver receiver = new ResultReceiver();
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         options.setRequireAllOfPermissions(
                 new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
 
@@ -1964,6 +1967,7 @@ public class ContextTest {
         final ResultReceiver receiver = new ResultReceiver();
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         options.setRequireAllOfPermissions(
                 new String[]{android.Manifest.permission.PACKAGE_USAGE_STATS});
 
@@ -1984,6 +1988,7 @@ public class ContextTest {
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         options.setRequireAllOfPermissions(
                 new String[]{ // this test APK only has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE,
@@ -2008,6 +2013,7 @@ public class ContextTest {
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         options.setRequireAllOfPermissions(
                 new String[]{ // this test APK has both these permissions
                         android.Manifest.permission.ACCESS_WIFI_STATE,
@@ -2038,6 +2044,7 @@ public class ContextTest {
 
         registerBroadcastReceiver(receiver, new IntentFilter(ResultReceiver.MOCK_ACTION));
         BroadcastOptions options = BroadcastOptions.makeBasic();
+        options.setDebugLogEnabled(true);
         options.setRequireAllOfPermissions(
                 new String[]{ // this test APK has ACCESS_WIFI_STATE
                         android.Manifest.permission.ACCESS_WIFI_STATE
@@ -2373,7 +2380,9 @@ public class ContextTest {
 
     private void waitForFilteredIntent(Context context, final String action)
             throws InterruptedException {
-        context.sendBroadcast(new Intent(action), null);
+        final BroadcastOptions options = BroadcastOptions.makeBasic()
+                .setDebugLogEnabled(true);
+        context.sendBroadcast(new Intent(action), null, options.toBundle());
 
         synchronized (mLockObj) {
             mLockObj.wait(BROADCAST_TIMEOUT);

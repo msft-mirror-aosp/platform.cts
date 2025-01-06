@@ -44,6 +44,7 @@ android_test {
         "src/android/net/wifi/p2p/cts/*.java",
         "src/android/net/wifi/passpoint/cts/*.java",
         "src/android/net/wifi/rtt/cts/*.java",
+        "src/android/net/wifi/usd/cts/*.java",
     ],
     jarjar_rules: "jarjar-rules.txt",
     static_libs: [
@@ -113,4 +114,28 @@ android_test {
         "general-tests",
     ],
     platform_apis: true,
+}
+
+test_module_config {
+    name: "CtsWifiTestCases_NoNonMainlineTest",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["com.android.compatibility.common.util.NonMainlineTest"],
+}
+
+test_module_config {
+    name: "CtsWifiTestCases_NoVirtualDeviceNotSupported",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["android.net.wifi.cts.VirtualDeviceNotSupported"],
+}
+
+test_module_config {
+    name: "CtsWifiTestCases-wifi-mainline-presubmit",
+    base: "CtsWifiTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: [
+        "com.android.compatibility.common.util.NonMainlineTest",
+        "android.net.wifi.cts.VirtualDeviceNotSupported",
+    ],
 }

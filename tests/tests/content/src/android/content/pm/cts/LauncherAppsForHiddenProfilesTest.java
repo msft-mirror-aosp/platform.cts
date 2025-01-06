@@ -18,6 +18,7 @@ package android.content.pm.cts;
 
 import static android.Manifest.permission.ACCESS_HIDDEN_PROFILES;
 import static android.Manifest.permission.ACCESS_HIDDEN_PROFILES_FULL;
+import static android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG;
 import static android.multiuser.Flags.FLAG_ENABLE_HIDING_PROFILES;
 import static android.multiuser.Flags.FLAG_ENABLE_LAUNCHER_APPS_HIDDEN_PROFILE_CHECKS;
 import static android.multiuser.Flags.FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES;
@@ -151,7 +152,8 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
-        FLAG_GET_PRIVATE_SPACE_SETTINGS
+        FLAG_GET_PRIVATE_SPACE_SETTINGS,
+        FLAG_ADD_LAUNCHER_USER_CONFIG
     })
     public void testGeneralApis_withSystemPerm_hiddenProfileInfoAvailable() {
         try (UserReference privateProfile = createProfileAndSetupTestState();
@@ -168,7 +170,8 @@ public class LauncherAppsForHiddenProfilesTest {
         FLAG_ENABLE_PERMISSION_TO_ACCESS_HIDDEN_PROFILES,
         FLAG_ENABLE_HIDING_PROFILES,
         FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
-        FLAG_GET_PRIVATE_SPACE_SETTINGS
+        FLAG_GET_PRIVATE_SPACE_SETTINGS,
+        FLAG_ADD_LAUNCHER_USER_CONFIG
     })
     public void testGeneralApis_defaultLauncherWithNormalPerm_hiddenProfileInfoAvailable() {
         try (UserReference privateProfile = createProfileAndSetupTestState();

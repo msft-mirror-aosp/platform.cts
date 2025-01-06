@@ -225,7 +225,8 @@ public class WindowInsetsBehaviorTests {
 
         // No bars on embedded devices.
         // No bars on TVs and watches.
-        return !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
+        return pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN) &&
+                !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
                 || pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
                 || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));

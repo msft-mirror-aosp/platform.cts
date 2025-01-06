@@ -16,7 +16,7 @@
 
 package android.media.audio.cts.CtsRecordServiceApi33
 
-class RecordService : android.media.audio.cts.audiorecordpermissiontests.common.RecordService() {
+class RecordService : android.media.audio.cts.audiopermissiontests.common.RecordService() {
     override fun getAppName() : String {
         return "CtsRecordServiceApi33"
     }

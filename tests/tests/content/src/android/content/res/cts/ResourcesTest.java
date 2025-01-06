@@ -26,6 +26,8 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import static org.junit.Assert.assertThrows;
+
 import android.content.Context;
 import android.content.cts.R;
 import android.content.cts.util.XmlUtils;
@@ -48,9 +50,9 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.util.Xml;
 import android.view.LayoutInflater;
@@ -60,7 +62,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
@@ -74,15 +75,9 @@ import java.util.stream.IntStream;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ResourcesTest {
-    @Rule
-    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
 
     private Context getContext() {
-        if (RavenwoodRule.isOnRavenwood()) {
-            return mRavenwoodRule.getContext();
-        } else {
-            return InstrumentationRegistry.getInstrumentation().getTargetContext();
-        }
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }
 
     private static final String STRING = "string";
@@ -467,6 +462,16 @@ public class ResourcesTest {
 
         // Some apps rely on the fact that this will return null (rather than throwing).
         assertNull(mResources.getDrawable(R.drawable.fake_image_will_not_decode));
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
+    public void testGetDrawable_fakeFrro() {
+        var thrown =
+                assertThrows(
+                        Resources.NotFoundException.class,
+                        () -> mResources.getDrawable(R.string.looks_like_frro, null));
+        assertThat(Log.getStackTraceString(thrown)).contains("invalid frro path");
     }
 
     @Test

@@ -16,10 +16,14 @@
 import logging
 import os.path
 
+import camera_properties_utils
+import capture_request_utils
+import image_processing_utils
 import cv2
 import image_processing_utils
 import matplotlib.pyplot as plt
 import numpy as np
+import opencv_processing_utils
 
 _LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH = 18
 _LOW_LIGHT_BOOST_AVG_LUMINANCE_THRESH = 90
@@ -27,6 +31,7 @@ _BOUNDING_BOX_COLOR = (0, 255, 0)
 _BOX_MIN_SIZE_RATIO = 0.08  # 8% of the cropped image width
 _BOX_MAX_SIZE_RATIO = 0.5  # 50% of the cropped image width
 _BOX_PADDING_RATIO = 0.2
+_BOX_PADDING = 6  # 6 pixel padding to bounding box region
 _CROP_PADDING = 10
 _EXPECTED_NUM_OF_BOXES = 20  # The captured image must result in 20 detected
                              # boxes since the test scene has 20 boxes
@@ -42,6 +47,8 @@ _K_MEANS_ITERATIONS = 10
 _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
 _FIG_SIZE = (10, 6)
+_DILATE_KERNEL_SIZE = (3, 3)
+_DILATE_NUM_ITERATIONS = 3
 
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
@@ -70,14 +77,90 @@ TABLET_BRIGHTNESS = {
 }
 
 
-def _crop(img):
-  """Crops the captured image according to the red square outline.
+def get_metering_region(cam, file_stem):
+  """Get the metering region for the given image.
+
+  Detects the chart in the preview image and returns the coordinates of the
+  chart in the active array.
+
+  Args:
+    cam: ItsSession object to send commands.
+    file_stem: File prefix for captured images.
+  Returns:
+    The metering region sensor coordinates in the active array or None if the
+    test chart was not detected.
+  """
+  req = capture_request_utils.auto_capture_request()
+  cap = cam.do_capture(req, cam.CAP_YUV)
+  img = image_processing_utils.convert_capture_to_rgb_image(cap)
+  region_detection_file = f'{file_stem}_region_detection.jpg'
+  image_processing_utils.write_image(img, region_detection_file)
+  img = cv2.imread(region_detection_file)
+
+  coords = _find_chart_bounding_region(img)
+  if coords is None:
+    return None
+
+  # Convert image coordinates to sensor coordinates for metering rectangle
+  img_w = img.shape[1]
+  img_h = img.shape[0]
+  props = cam.get_camera_properties()
+  aa = props['android.sensor.info.activeArraySize']
+  aa_width, aa_height = aa['right'] - aa['left'], aa['bottom'] - aa['top']
+  logging.debug('Active array size: %s', aa)
+  coords_tl = (coords[0], coords[1])
+  coords_br = (coords[0] + coords[2], coords[1] + coords[3])
+  s_coords_tl = image_processing_utils.convert_image_coords_to_sensor_coords(
+      aa_width, aa_height, coords_tl, img_w, img_h)
+  s_coords_br = image_processing_utils.convert_image_coords_to_sensor_coords(
+      aa_width, aa_height, coords_br, img_w, img_h)
+  sensor_coords = (s_coords_tl[0], s_coords_tl[1], s_coords_br[0],
+                   s_coords_br[1])
+
+  # If testing front camera, mirror coordinates either left/right or up/down
+  # Preview are flipped on device's natural orientation
+  # For sensor orientation 90 or 270, it is up or down
+  # For sensor orientation 0 or 180, it is left or right
+  if (props['android.lens.facing'] ==
+      camera_properties_utils.LENS_FACING['FRONT']):
+    if props['android.sensor.orientation'] in (90, 270):
+      tl_coordinates = (sensor_coords[0], aa_height - sensor_coords[3])
+      br_coordinates = (sensor_coords[2], aa_height - sensor_coords[1])
+      logging.debug('Found sensor orientation %d, flipping up down',
+                    props['android.sensor.orientation'])
+    else:
+      tl_coordinates = (aa_width - sensor_coords[2], sensor_coords[1])
+      br_coordinates = (aa_width - sensor_coords[0], sensor_coords[3])
+      logging.debug('Found sensor orientation %d, flipping left right',
+                    props['android.sensor.orientation'])
+    logging.debug('Mirrored top-left coordinates: %s', tl_coordinates)
+    logging.debug('Mirrored bottom-right coordinates: %s', br_coordinates)
+  else:
+    tl_coordinates = (sensor_coords[0], sensor_coords[1])
+    br_coordinates = (sensor_coords[2], sensor_coords[3])
+
+  tl_x = int(tl_coordinates[0])
+  tl_y = int(tl_coordinates[1])
+  br_x = int(br_coordinates[0])
+  br_y = int(br_coordinates[1])
+  rect_w = br_x - tl_x
+  rect_h = br_y - tl_y
+  return {'x': tl_x,
+          'y': tl_y,
+          'width': rect_w,
+          'height': rect_h,
+          'weight': opencv_processing_utils.AE_AWB_METER_WEIGHT}
+
+
+def _find_chart_bounding_region(img):
+  """Finds the bounding region of the chart.
 
   Args:
     img: numpy array; captured image from scene_low_light.
   Returns:
-    numpy array of the cropped image or the original image if the crop region
-    isn't found.
+    The coordinates of the bounding region relative to the input image. This
+    is returned as (left, top, width, height) or None if the test chart was
+    not detected.
   """
   # To apply k-means clustering, we need to convert the image in to an array
   # where each row represents a pixel in the image, and each column is a feature
@@ -105,6 +188,8 @@ def _crop(img):
   mask = labels.flatten() == target_label
   mask = mask.reshape((img.shape[0], img.shape[1]))
   mask = mask.astype(np.uint8)
+  dilate_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, _DILATE_KERNEL_SIZE)
+  mask = cv2.dilate(mask, dilate_kernel, iterations=_DILATE_NUM_ITERATIONS)
 
   contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
                                  cv2.CHAIN_APPROX_SIMPLE)
@@ -120,7 +205,24 @@ def _crop(img):
       area = w * h
       if area > max_area:
         max_area = area
-        max_box = (x, y, w, h)
+        max_box = (x + _BOX_PADDING,
+            y + _BOX_PADDING,
+            w - _BOX_PADDING * 2,
+            h - _BOX_PADDING * 2)
+
+  return max_box
+
+
+def _crop(img):
+  """Crops the captured image according to the red square outline.
+
+  Args:
+    img: numpy array; captured image from scene_low_light.
+  Returns:
+    numpy array of the cropped image or the original image if the crop region
+    isn't found.
+  """
+  max_box = _find_chart_bounding_region(img)
 
   # If the box is found then return the cropped image
   # otherwise the original image is returned
@@ -570,13 +672,13 @@ def analyze_low_light_scene_capture(
   logging.debug('average luminance of the 6 boxes: %.2f', avg)
   logging.debug('average difference in luminance of 5 successive boxes: %.2f',
                 delta_avg)
-  if avg < avg_luminance_threshold:
+  if avg < float(avg_luminance_threshold):
     raise AssertionError('Average luminance of the first 6 boxes did not '
                          'meet minimum requirements for low light scene '
                          'criteria. '
                          f'Actual: {avg:.2f}, '
                          f'Expected: {avg_luminance_threshold}')
-  if delta_avg < avg_delta_luminance_threshold:
+  if delta_avg < float(avg_delta_luminance_threshold):
     raise AssertionError('The average difference in luminance of the first 5 '
                          'successive boxes did not meet minimum requirements '
                          'for low light scene criteria. '

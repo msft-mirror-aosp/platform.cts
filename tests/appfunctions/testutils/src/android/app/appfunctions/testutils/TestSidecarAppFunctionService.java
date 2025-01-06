@@ -18,17 +18,18 @@ package android.app.appfunctions.testutils;
 
 import android.app.appsearch.GenericDocument;
 import android.os.CancellationSignal;
+import android.os.OutcomeReceiver;
 
 import androidx.annotation.NonNull;
 
-import com.google.android.appfunctions.sidecar.AppFunctionService;
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest;
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse;
+import com.android.extensions.appfunctions.AppFunctionException;
+import com.android.extensions.appfunctions.AppFunctionService;
+import com.android.extensions.appfunctions.ExecuteAppFunctionRequest;
+import com.android.extensions.appfunctions.ExecuteAppFunctionResponse;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 /**
  * An implementation of {@link AppFunctionService} that provides some simple functions for testing
@@ -50,49 +51,44 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
             @NonNull ExecuteAppFunctionRequest request,
             @NonNull String callingPackage,
             @NonNull CancellationSignal cancellationSignal,
-            @NonNull Consumer<ExecuteAppFunctionResponse> callback) {
+            @NonNull OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> callback) {
         cancellationSignal.setOnCancelListener(
                 () -> {
                     TestAppFunctionServiceLifecycleReceiver.notifyOnOperationCancelled(this);
                     cancelOperation();
                 });
         switch (request.getFunctionIdentifier()) {
-            case "add":
-                {
-                    ExecuteAppFunctionResponse result = add(request, callingPackage);
-                    callback.accept(result);
-                    break;
-                }
-            case "longRunningFunction":
-                {
-                    mCancellableFuture =
-                            mExecutor.submit(
-                                    () -> {
-                                        try {
-                                            Thread.sleep(2000);
-                                        } catch (InterruptedException e) {
-                                            callback.accept(
-                                                    ExecuteAppFunctionResponse.newFailure(
-                                                            ExecuteAppFunctionResponse
-                                                                    .RESULT_CANCELLED,
-                                                            /* errorMessage= */ "Operation"
-                                                                    + " Interrupted",
-                                                            /* extras= */ null));
-                                            return null;
-                                        }
-                                        callback.accept(
-                                                ExecuteAppFunctionResponse.newSuccess(
-                                                        new GenericDocument.Builder<>("", "", "")
-                                                                .build(),
+            case "add": {
+                ExecuteAppFunctionResponse result = add(request, callingPackage);
+                callback.onResult(result);
+                break;
+            }
+            case "longRunningFunction": {
+                mCancellableFuture =
+                        mExecutor.submit(
+                                () -> {
+                                    try {
+                                        Thread.sleep(2000);
+                                    } catch (InterruptedException e) {
+                                        callback.onError(
+                                                new AppFunctionException(
+                                                        AppFunctionException.ERROR_CANCELLED,
+                                                        "Operation Interrupted",
                                                         /* extras= */ null));
                                         return null;
-                                    });
-                    break;
-                }
+                                    }
+                                    callback.onResult(
+                                            new ExecuteAppFunctionResponse(
+                                                    new GenericDocument.Builder<>("", "", "")
+                                                            .build()));
+                                    return null;
+                                });
+                break;
+            }
             default:
-                callback.accept(
-                        ExecuteAppFunctionResponse.newFailure(
-                                ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR,
+                callback.onError(
+                        new AppFunctionException(
+                                AppFunctionException.ERROR_APP_UNKNOWN_ERROR,
                                 /* errorMessage= */ null,
                                 /* extras= */ null));
         }
@@ -113,7 +109,7 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
                         .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
                         .build();
-        return ExecuteAppFunctionResponse.newSuccess(result, /* extras= */ null);
+        return new ExecuteAppFunctionResponse(result);
     }
 
     @Override

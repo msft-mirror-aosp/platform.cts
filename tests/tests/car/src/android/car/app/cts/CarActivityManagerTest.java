@@ -17,7 +17,6 @@ package android.car.app.cts;
 
 import static android.car.cts.utils.DisplayUtils.VirtualDisplaySession;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -50,6 +49,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -86,6 +86,8 @@ public class CarActivityManagerTest {
     // When Maps in TaskView is unstable, the test can be flaky, launches a BlankActivity to make
     // the test robust. See details at b/270989631.
     private Activity mBlankActivity;
+    private int mTestAppDisplayId;
+    private boolean mIsVisibleBackgroundUser;
 
     @Before
     public void setUp() {
@@ -105,6 +107,10 @@ public class CarActivityManagerTest {
         mBlankActivity = mInstrumentation.startActivitySync(
                 Intent.makeMainActivity(new ComponentName(mTargetContext, BlankActivity.class))
                         .addFlags(FLAG_ACTIVITY_NEW_TASK), /* option */ null);
+
+        UserHelper userHelper = new UserHelper(mContext);
+        mTestAppDisplayId = userHelper.getMainDisplayId();
+        mIsVisibleBackgroundUser = userHelper.isVisibleBackgroundUser();
     }
 
     @After
@@ -116,6 +122,9 @@ public class CarActivityManagerTest {
 
     @Test
     public void testSetPersistentActivity() throws Exception {
+        assumeFalse("Visible background user is not allowed to set persistent activity",
+                mIsVisibleBackgroundUser);
+
         try (VirtualDisplaySession session = new VirtualDisplaySession()) {
             // create a secondary virtual display
             Display secondaryDisplay =
@@ -154,7 +163,7 @@ public class CarActivityManagerTest {
             // re-launch again and assert that it is not launched in the secondaryDisplay
             activity = (TestActivity) mInstrumentation.startActivitySync(
                     startIntent, /* option */ null);
-            assertThat(activity.getDisplay().getDisplayId()).isEqualTo(DEFAULT_DISPLAY);
+            assertThat(activity.getDisplay().getDisplayId()).isEqualTo(mTestAppDisplayId);
 
             // tear down
             activity.finishAndRemoveTask();
@@ -163,6 +172,9 @@ public class CarActivityManagerTest {
 
     @Test
     public void testSetPersistentActivity_throwsExceptionForInvalidDisplayId() {
+        assumeFalse("Visible background user is not allowed to set persistent activity",
+                mIsVisibleBackgroundUser);
+
         int invalidDisplayId = 999999990;
 
         assertThrows(IllegalArgumentException.class,
@@ -172,19 +184,24 @@ public class CarActivityManagerTest {
 
     @Test
     public void testSetPersistentActivity_throwsExceptionForInvalidFeatureId() {
+        assumeFalse("Visible background user is not allowed to set persistent activity",
+                mIsVisibleBackgroundUser);
+
         int unknownFeatureId = 999999990;
 
         assertThrows(IllegalArgumentException.class,
                 () -> mCarActivityManager.setPersistentActivity(
-                        mFakedTestActivity, Display.DEFAULT_DISPLAY, unknownFeatureId));
+                        mFakedTestActivity, mTestAppDisplayId, unknownFeatureId));
     }
 
     @Test
     public void testSetPersistentActivity_throwsExceptionForUnregsiteringUnknownActivity() {
+        assumeFalse("Visible background user is not allowed to set persistent activity",
+                mIsVisibleBackgroundUser);
         // Tries to remove the Activity without registering it.
         assertThrows(ActivityNotFoundException.class,
                 () -> mCarActivityManager.setPersistentActivity(
-                        mFakedTestActivity, Display.DEFAULT_DISPLAY, FEATURE_UNDEFINED));
+                        mFakedTestActivity, mTestAppDisplayId, FEATURE_UNDEFINED));
     }
 
     @Test
@@ -209,7 +226,7 @@ public class CarActivityManagerTest {
                     startIntent, /* option */ null);
 
             // assert the activity is launched into the default display
-            assertThat(activity.getDisplay().getDisplayId()).isEqualTo(DEFAULT_DISPLAY);
+            assertThat(activity.getDisplay().getDisplayId()).isEqualTo(mTestAppDisplayId);
 
             mCarActivityManager.moveRootTaskToDisplay(activity.getTaskId(), secondaryDisplayId);
 
@@ -240,7 +257,7 @@ public class CarActivityManagerTest {
                 .collect(Collectors.toList());
         assertThat(filteredTasks).hasSize(1);
         assertThat(filteredTasks.get(0).isVisible()).isTrue();
-        assertThat(filteredTasks.get(0).getDisplayId()).isEqualTo(0);
+        assertThat(filteredTasks.get(0).getDisplayId()).isEqualTo(mTestAppDisplayId);
     }
 
     @ApiTest(apis = {"android.car.app.CarActivityManager#getVisibleTasks(int)"})

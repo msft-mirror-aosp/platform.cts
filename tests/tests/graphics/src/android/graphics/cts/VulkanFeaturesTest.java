@@ -69,6 +69,7 @@ public class VulkanFeaturesTest {
     private static final int VULKAN_1_1 = 0x00401000; // 1.1.0
     private static final int VULKAN_1_2 = 0x00402000; // 1.2.0
     private static final int VULKAN_1_3 = 0x00403000; // 1.3.0
+    private static final int VULKAN_1_4 = 0x00404000; // 1.4.0
 
     private static final String VK_ANDROID_EXTERNAL_MEMORY_ANDROID_HARDWARE_BUFFER_EXTENSION_NAME =
             "VK_ANDROID_external_memory_android_hardware_buffer";
@@ -95,6 +96,7 @@ public class VulkanFeaturesTest {
 
     private static final int API_LEVEL_BEFORE_ANDROID_HARDWARE_BUFFER_REQ = 28;
 
+    private static final int DEQP_LEVEL_FOR_W = 0x7E80301;
     private static final int DEQP_LEVEL_FOR_V = 0x7E80301;
     private static final int DEQP_LEVEL_FOR_U = 0x7E70301;
     private static final int DEQP_LEVEL_FOR_T = 0x7E60301;
@@ -104,6 +106,9 @@ public class VulkanFeaturesTest {
 
     private static final Map<Integer, String[]> DEQP_EXTENSIONS_MAP = new ArrayMap<>();
     static {
+        DEQP_EXTENSIONS_MAP.put(
+                DEQP_LEVEL_FOR_W,
+                new String[] {});        // TODO: fill this out when we actually roll deqp
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_V,
                 new String[] {
@@ -674,6 +679,7 @@ public class VulkanFeaturesTest {
             VULKAN_1_1,
             VULKAN_1_2,
             VULKAN_1_3,
+	    VULKAN_1_4,
         };
         for (int expected : ALLOWED_HARDWARE_VERSIONS) {
             if (actual == expected) {

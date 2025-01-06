@@ -16,8 +16,6 @@
 
 package android.accessibilityservice.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -34,6 +32,7 @@ import android.accessibilityservice.cts.utils.ActivityLaunchUtils;
 import android.accessibilityservice.cts.utils.AsyncUtils;
 import android.accessibilityservice.cts.utils.DisplayUtils;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.Context;
@@ -58,11 +57,14 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.window.WindowInfosListenerForTest;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.core.app.ActivityScenario;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,6 +82,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.function.Predicate;
@@ -227,15 +231,15 @@ public class AccessibilityOverlayTest {
     public void testA11yServiceShowsWindowEmbeddedOverlayWithoutCallback_shouldAppearAndDisappear()
             throws Exception {
         final String overlayTitle = "App Overlay title";
-        Activity activity = showActivity();
-        try {
-            SurfaceControl sc = doOverlayWindowTest(overlayTitle, null, null);
-            removeOverlayAndCheck(sc, overlayTitle);
-        } finally {
-            if (activity != null) {
-                activity.finish();
-            }
-        }
+        launchActivityAndRun(
+                activity -> {
+                    try {
+                        SurfaceControl sc = doOverlayWindowTest(overlayTitle, null, null);
+                        removeOverlayAndCheck(sc, overlayTitle);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     @Test
@@ -244,16 +248,17 @@ public class AccessibilityOverlayTest {
     public void testA11yServiceShowsWindowEmbeddedOverlayWithCallback_shouldAppearAndDisappear()
             throws Exception {
         final String overlayTitle = "App Overlay title";
-        Activity activity = showActivity();
-        try {
-            SurfaceControl sc = doOverlayWindowTest(overlayTitle, mExecutor, mCallback);
-            mCallback.assertCallbackReceived(AccessibilityService.OVERLAY_RESULT_SUCCESS);
-            removeOverlayAndCheck(sc, overlayTitle);
-        } finally {
-            if (activity != null) {
-                activity.finish();
-            }
-        }
+        launchActivityAndRun(
+                activity -> {
+                    try {
+                        SurfaceControl sc = doOverlayWindowTest(overlayTitle, mExecutor, mCallback);
+                        mCallback.assertCallbackReceived(
+                                AccessibilityService.OVERLAY_RESULT_SUCCESS);
+                        removeOverlayAndCheck(sc, overlayTitle);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     @Test
@@ -262,15 +267,15 @@ public class AccessibilityOverlayTest {
     public void testEmbeddedWindowOverlayWithServiceExit_shouldAppearAndDisappear()
             throws Exception {
         final String overlayTitle = "App Overlay title";
-        Activity activity = showActivity();
-        try {
-            doOverlayWindowTest(overlayTitle, null, null);
-            disableServiceAndCheckForOverlay(overlayTitle);
-        } finally {
-            if (activity != null) {
-                activity.finish();
-            }
-        }
+        launchActivityAndRun(
+                activity -> {
+                    try {
+                        doOverlayWindowTest(overlayTitle, null, null);
+                        disableServiceAndCheckForOverlay(overlayTitle);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     private SurfaceControl doOverlayWindowTest(
@@ -459,8 +464,11 @@ public class AccessibilityOverlayTest {
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
 
-        try (DisplayUtils.VirtualDisplaySession displaySession =
-                new DisplayUtils.VirtualDisplaySession()) {
+        AtomicReference<ActivityScenario<AccessibilityWindowQueryActivity>> activityScenario =
+                new AtomicReference<>();
+        final DisplayUtils.VirtualDisplaySession displaySession =
+                new DisplayUtils.VirtualDisplaySession();
+        try {
             final Display newDisplay =
                     displaySession.createDisplayWithDefaultDisplayMetricsAndWait(
                             mService, /* isPrivate= */ false);
@@ -469,11 +477,17 @@ public class AccessibilityOverlayTest {
 
             // Create an initial activity window on the virtual display to ensure that
             // AccessibilityWindowManager is tracking windows for the display.
-            launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                    sInstrumentation,
+            final ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(displayId);
+            SystemUtil.runWithShellPermissionIdentity(
                     sUiAutomation,
-                    AccessibilityWindowQueryActivity.class,
-                    displayId);
+                    () -> {
+                        activityScenario.set(
+                                ActivityScenario.launch(
+                                                AccessibilityWindowQueryActivity.class,
+                                                options.toBundle())
+                                        .moveToState(Lifecycle.State.RESUMED));
+                    });
 
             if (expectException) {
                 assertThrows(
@@ -493,6 +507,11 @@ public class AccessibilityOverlayTest {
 
                 assertThat(findOverlayWindow(displayId).getTitle()).isEqualTo(overlayTitle);
             }
+        } finally {
+            if (activityScenario.get() != null) {
+                activityScenario.get().close();
+            }
+            displaySession.close();
         }
     }
 
@@ -588,13 +607,19 @@ public class AccessibilityOverlayTest {
                 AsyncUtils.DEFAULT_TIMEOUT_MS);
     }
 
-    private Activity showActivity() throws Exception {
-        final Activity activity =
-                launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
-                        sInstrumentation,
-                        sUiAutomation,
-                        AccessibilityWindowQueryActivity.class,
-                        Display.DEFAULT_DISPLAY);
-        return activity;
+    private void launchActivityAndRun(Consumer<Activity> consumer) throws Exception {
+        ActivityScenario<AccessibilityWindowQueryActivity> activityScenario = null;
+        try {
+            activityScenario =
+                    ActivityScenario.launch(AccessibilityWindowQueryActivity.class)
+                            .moveToState(Lifecycle.State.RESUMED);
+            AtomicReference<Activity> activity = new AtomicReference<>();
+            activityScenario.onActivity(activity::set);
+            consumer.accept(activity.get());
+        } finally {
+            if (activityScenario != null) {
+                activityScenario.close();
+            }
+        }
     }
 }

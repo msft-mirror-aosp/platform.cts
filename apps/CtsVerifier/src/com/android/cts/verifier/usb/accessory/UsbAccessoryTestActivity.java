@@ -21,6 +21,7 @@ import static com.android.cts.verifier.usb.Util.runAndAssertException;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.BroadcastReceiver;
@@ -29,6 +30,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbManager;
+import android.hardware.usb.flags.Flags;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
@@ -55,7 +57,9 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Guide the user to run test for the USB accessory interface.
@@ -76,6 +80,17 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
     private boolean mHasSendStringCount = false;
     private boolean mHasAccessoryConnectionStartTime = false;
     private CompletableFuture<Void> mAccessoryHandshakeIntent = new CompletableFuture<>();
+
+    /* Test buffers */
+    private final byte[] mOrigBuffer32 = new byte[32];
+
+    private final byte[] mOrigBufferMax = new byte[MAX_BUFFER_SIZE];
+
+    private final byte[] mBufferMax = new byte[MAX_BUFFER_SIZE];
+    private final byte[] mBuffer32 = new byte[32];
+    private final byte[] mBuffer16 = new byte[16];
+
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -118,6 +133,11 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         };
 
         registerReceiver(mUsbAccessoryHandshakeReceiver, filter, Context.RECEIVER_EXPORTED);
+
+        // initialise buffers
+        (new Random()).nextBytes(mOrigBuffer32);
+        (new Random()).nextBytes(mOrigBufferMax);
+
     }
 
     @Override
@@ -130,13 +150,11 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
         mStatus.setText(R.string.usb_accessory_test_step2);
         mProgress.setVisibility(View.VISIBLE);
 
-        final long accessroyStarTime = 3 * 1000;
-
         AccessoryAttachmentHandler.removeObserver(this);
 
         UsbManager usbManager = getSystemService(UsbManager.class);
 
-        (new AsyncTask<Void, Void, Throwable>() {
+        new AsyncTask<Void, Void, Throwable>() {
             @Override
             protected Throwable doInBackground(Void... params) {
                 try {
@@ -153,6 +171,12 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
                     runAndAssertException(() -> usbManager.openAccessory(null),
                             NullPointerException.class);
 
+                    runAndAssertException(() -> usbManager.openAccessoryInputStream(null),
+                            NullPointerException.class);
+
+                    runAndAssertException(() -> usbManager.openAccessoryOutputStream(null),
+                            NullPointerException.class);
+
                     ParcelFileDescriptor accessoryFd = usbManager.openAccessory(accessory);
                     assertNotNull(accessoryFd);
 
@@ -160,152 +184,58 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
                             accessoryFd)) {
                         try (OutputStream os = new ParcelFileDescriptor.AutoCloseOutputStream(
                                 accessoryFd)) {
-                            byte[] origBuffer32 = new byte[32];
-                            (new Random()).nextBytes(origBuffer32);
 
-                            byte[] origBufferMax = new byte[MAX_BUFFER_SIZE];
-                            (new Random()).nextBytes(origBufferMax);
+                            runTestsForAccessory(is, os);
 
-                            byte[] bufferMax = new byte[MAX_BUFFER_SIZE];
-                            byte[] buffer32 = new byte[32];
-                            byte[] buffer16 = new byte[16];
-
-                            // Echo a transfer
-                            nextTest(is, os, "echo 32 bytes");
-
-                            os.write(origBuffer32);
-
-                            int numRead = is.read(buffer32);
-                            assertEquals(32, numRead);
-                            assertArrayEquals(origBuffer32, buffer32);
-
-                            // Receive less data than available
-                            nextTest(is, os, "echo 32 bytes");
-
-                            os.write(origBuffer32);
-
-                            numRead = is.read(buffer16);
-                            assertEquals(16, numRead);
-                            assertArrayEquals(Arrays.copyOf(origBuffer32, 16), buffer16);
-
-                            // If a transfer was only partially read, the rest of the transfer is
-                            // lost. We cannot read the second part, hence proceed to the next test.
-
-                            // Send two transfers in a row
-                            nextTest(is, os, "echo two 16 byte transfers as one");
-
-                            os.write(Arrays.copyOf(origBuffer32, 16));
-                            os.write(Arrays.copyOfRange(origBuffer32, 16, 32));
-
-                            numRead = is.read(buffer32);
-                            assertEquals(32, numRead);
-                            assertArrayEquals(origBuffer32, buffer32);
-
-                            // Receive two transfers in a row into a buffer that is bigger than the
-                            // transfer
-                            nextTest(is, os, "echo 32 bytes as two 16 byte transfers");
-
-                            os.write(origBuffer32);
-
-                            // Even though the buffer would hold 32 bytes the input stream will read
-                            // the transfers individually
-                            numRead = is.read(buffer32);
-                            assertEquals(16, numRead);
-                            assertArrayEquals(Arrays.copyOf(origBuffer32, 16),
-                                    Arrays.copyOf(buffer32, 16));
-
-                            numRead = is.read(buffer32);
-                            assertEquals(16, numRead);
-                            assertArrayEquals(Arrays.copyOfRange(origBuffer32, 16, 32),
-                                    Arrays.copyOf(buffer32, 16));
-
-                            // Echo a buffer with the maximum size
-                            nextTest(is, os, "echo max bytes");
-
-                            os.write(origBufferMax);
-
-                            numRead = is.read(bufferMax);
-                            assertEquals(MAX_BUFFER_SIZE, numRead);
-                            assertArrayEquals(origBufferMax, bufferMax);
-
-                            // Echo a buffer with twice the maximum size
-                            nextTest(is, os, "echo max*2 bytes");
-
-                            byte[] oversizeBuffer = new byte[MAX_BUFFER_SIZE * 2];
-                            System.arraycopy(origBufferMax, 0, oversizeBuffer, 0, MAX_BUFFER_SIZE);
-                            System.arraycopy(origBufferMax, 0, oversizeBuffer, MAX_BUFFER_SIZE,
-                                    MAX_BUFFER_SIZE);
-                            os.write(oversizeBuffer);
-
-                            // The other side can not write more than the maximum size at once,
-                            // hence we get two transfers in return
-                            numRead = is.read(bufferMax);
-                            assertEquals(MAX_BUFFER_SIZE, numRead);
-                            assertArrayEquals(origBufferMax, bufferMax);
-
-                            numRead = is.read(bufferMax);
-                            assertEquals(MAX_BUFFER_SIZE, numRead);
-                            assertArrayEquals(origBufferMax, bufferMax);
-
-                            nextTest(is, os, "measure out transfer speed");
-
-                            byte[] result = new byte[1];
-                            long bytesSent = 0;
-                            long timeStart = SystemClock.elapsedRealtime();
-                            while (bytesSent < TEST_DATA_SIZE_THRESHOLD) {
-                                os.write(origBufferMax);
-                                bytesSent += MAX_BUFFER_SIZE;
+                            // don't end the test if stream APIs are available
+                            if (!Flags.enableAccessoryStreamApi()) {
+                                nextTest(is, os, "done");
                             }
-                            numRead = is.read(result);
-                            double speedKBPS = (bytesSent * 8 * 1000. / 1024.)
-                                    / (SystemClock.elapsedRealtime() - timeStart);
-                            assertEquals(1, numRead);
-                            assertEquals(1, result[0]);
-                            // We don't mandate min speed for now, let's collect data on what it is.
-                            getReportLog().setSummary(
-                                    "Output USB accesory transfer speed",
-                                    speedKBPS,
-                                    ResultType.HIGHER_BETTER,
-                                    ResultUnit.KBPS);
-                            Log.i(LOG_TAG, "Write data transfer speed is " + speedKBPS + "KBPS");
-
-                            nextTest(is, os, "measure in transfer speed");
-
-                            long bytesRead = 0;
-                            timeStart = SystemClock.elapsedRealtime();
-                            while (bytesRead < TEST_DATA_SIZE_THRESHOLD) {
-                                numRead = is.read(bufferMax);
-                                bytesRead += numRead;
-                            }
-                            numRead = is.read(result);
-                            speedKBPS = (bytesRead * 8 * 1000. / 1024.)
-                                    / (SystemClock.elapsedRealtime() - timeStart);
-                            assertEquals(1, numRead);
-                            assertEquals(1, result[0]);
-                            // We don't mandate min speed for now, let's collect data on what it is.
-                            getReportLog().setSummary(
-                                    "Input USB accesory transfer speed",
-                                    speedKBPS,
-                                    ResultType.HIGHER_BETTER,
-                                    ResultUnit.KBPS);
-                            Log.i(LOG_TAG, "Read data transfer speed is " + speedKBPS + "KBPS");
-
-                            nextTest(is, os, "Receive USB_ACCESSORY_HANDSHAKE intent");
-
-                            mAccessoryHandshakeIntent.get(accessroyStarTime,
-                                    TimeUnit.MILLISECONDS);
-                            assertTrue(mAccessoryStart);
-                            assertTrue(mHasSendStringCount);
-                            assertTrue(mHasAccessoryConnectionStartTime);
-
-                            unregisterReceiver(mUsbAccessoryHandshakeReceiver);
-                            mUsbAccessoryHandshakeReceiver = null;
-
-                            nextTest(is, os, "done");
                         }
                     }
 
                     accessoryFd.close();
+
+                    if (Flags.enableAccessoryStreamApi()) {
+
+                        Log.i(LOG_TAG, "Using stream APIs...");
+
+                        try (InputStream ignored = usbManager.openAccessoryInputStream(accessory)) {
+                            assertNull(usbManager.openAccessory(accessory));
+                            Log.i(LOG_TAG, "Accessory cannot be opened when input stream is open");
+                        }
+
+                        // check that accessory is autoclosed when input stream is closed
+                        accessoryFd = usbManager.openAccessory(accessory);
+                        assertNotNull(accessoryFd);
+                        Log.i(LOG_TAG, "Accessory is openable after input stream is closed");
+                        accessoryFd.close();
+
+                        try (OutputStream ignored = usbManager.openAccessoryOutputStream(
+                                accessory)) {
+                            assertNull(usbManager.openAccessory(accessory));
+                            Log.i(LOG_TAG, "Accessory cannot be opened when output stream is open");
+                        }
+
+                        // check that accessory is autoclosed when output stream is closed
+                        accessoryFd = usbManager.openAccessory(accessory);
+                        assertNotNull(accessoryFd);
+                        Log.i(LOG_TAG, "Accessory is openable after output stream is closed");
+                        accessoryFd.close();
+
+                        try (InputStream is = usbManager.openAccessoryInputStream(accessory)) {
+                            try (OutputStream os = usbManager.openAccessoryOutputStream(
+                                    accessory)) {
+
+                                runTestsForAccessory(is, os);
+
+                                nextTest(is, os, "done");
+                            }
+                        }
+                    }
+
+                    unregisterReceiver(mUsbAccessoryHandshakeReceiver);
+                    mUsbAccessoryHandshakeReceiver = null;
 
                     return null;
                 } catch (Throwable t) {
@@ -321,7 +251,7 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
                     fail(null, t);
                 }
             }
-        }).execute();
+        }.execute();
     }
 
     /**
@@ -360,6 +290,7 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
 
         if (mUsbAccessoryHandshakeReceiver != null) {
             unregisterReceiver(mUsbAccessoryHandshakeReceiver);
+            mUsbAccessoryHandshakeReceiver = null;
         }
 
         super.onDestroy();
@@ -371,5 +302,185 @@ public class UsbAccessoryTestActivity extends PassFailButtons.Activity implement
     private void fail(@Nullable String s, @Nullable Throwable e) {
         Log.e(LOG_TAG, s, e);
         setTestResultAndFinish(false);
+    }
+
+    private void testEchoTransfer(InputStream is, OutputStream os) throws IOException {
+        nextTest(is, os, "echo 32 bytes");
+
+        os.write(mOrigBuffer32);
+
+        int numRead = is.read(mBuffer32);
+        assertEquals(32, numRead);
+        assertArrayEquals(mOrigBuffer32, mBuffer32);
+
+    }
+
+    private void testReceiveLessDataThanAvailable(InputStream is, OutputStream os)
+            throws IOException {
+        nextTest(is, os, "echo 32 bytes");
+
+        os.write(mOrigBuffer32);
+
+        int numRead = is.read(mBuffer16);
+        assertEquals(16, numRead);
+        assertArrayEquals(Arrays.copyOf(mOrigBuffer32, 16), mBuffer16);
+
+        // If a transfer was only partially read, the rest of the transfer is
+        // lost. We cannot read the second part.
+
+    }
+
+    private void testSendTwoTransfersInARow(InputStream is, OutputStream os) throws IOException {
+        nextTest(is, os, "echo two 16 byte transfers as one");
+
+        os.write(Arrays.copyOf(mOrigBuffer32, 16));
+        os.write(Arrays.copyOfRange(mOrigBuffer32, 16, 32));
+
+        int numRead = is.read(mBuffer32);
+        assertEquals(32, numRead);
+        assertArrayEquals(mOrigBuffer32, mBuffer32);
+    }
+
+    private void testReceiveTwoTransfersInARowInBufferBiggerThanTransfer(InputStream is,
+            OutputStream os) throws IOException {
+        nextTest(is, os, "echo 32 bytes as two 16 byte transfers");
+
+        os.write(mOrigBuffer32);
+
+        // Even though the buffer would hold 32 bytes the input stream will read
+        // the transfers individually
+        int numRead = is.read(mBuffer32);
+        assertEquals(16, numRead);
+        assertArrayEquals(Arrays.copyOf(mOrigBuffer32, 16),
+                Arrays.copyOf(mBuffer32, 16));
+
+        numRead = is.read(mBuffer32);
+        assertEquals(16, numRead);
+        assertArrayEquals(Arrays.copyOfRange(mOrigBuffer32, 16, 32),
+                Arrays.copyOf(mBuffer32, 16));
+    }
+
+    private void testMeasureInTransferSpeed(InputStream is, OutputStream os) throws IOException {
+        byte[] result = new byte[1];
+        double speedKBPS;
+        long timeStart;
+
+        nextTest(is, os, "measure in transfer speed");
+
+        long bytesRead = 0;
+        timeStart = SystemClock.elapsedRealtime();
+        while (bytesRead < TEST_DATA_SIZE_THRESHOLD) {
+            int numRead = is.read(mBufferMax);
+            bytesRead += numRead;
+        }
+
+        int numRead = is.read(result);
+        speedKBPS = (bytesRead * 8 * 1000. / 1024.)
+                / (SystemClock.elapsedRealtime() - timeStart);
+        assertEquals(1, numRead);
+        assertEquals(1, result[0]);
+        // We don't mandate min speed for now, let's collect data on what it is.
+        getReportLog().setSummary(
+                "Input USB accessory transfer speed",
+                speedKBPS,
+                ResultType.HIGHER_BETTER,
+                ResultUnit.KBPS);
+        Log.i(LOG_TAG, "Read data transfer speed is " + speedKBPS + "KBPS");
+    }
+
+    private void testMeasureOutTransferSpeed(InputStream is, OutputStream os) throws IOException {
+        nextTest(is, os, "measure out transfer speed");
+
+        byte[] result = new byte[1];
+        long bytesSent = 0;
+        long timeStart = SystemClock.elapsedRealtime();
+        while (bytesSent < TEST_DATA_SIZE_THRESHOLD) {
+            os.write(mOrigBufferMax);
+            bytesSent += MAX_BUFFER_SIZE;
+        }
+        int numRead = is.read(result);
+        double speedKBPS = (bytesSent * 8 * 1000. / 1024.)
+                / (SystemClock.elapsedRealtime() - timeStart);
+        assertEquals(1, numRead);
+        assertEquals(1, result[0]);
+        // We don't mandate min speed for now, let's collect data on what it is.
+        getReportLog().setSummary(
+                "Output USB accessory transfer speed",
+                speedKBPS,
+                ResultType.HIGHER_BETTER,
+                ResultUnit.KBPS);
+        Log.i(LOG_TAG, "Write data transfer speed is " + speedKBPS + "KBPS");
+    }
+
+    private void testEchoBufferTwiceMaxSize(InputStream is, OutputStream os) throws IOException {
+        nextTest(is, os, "echo max*2 bytes");
+
+        byte[] oversizeBuffer = new byte[MAX_BUFFER_SIZE * 2];
+        System.arraycopy(mOrigBufferMax, 0, oversizeBuffer, 0, MAX_BUFFER_SIZE);
+        System.arraycopy(mOrigBufferMax, 0, oversizeBuffer, MAX_BUFFER_SIZE,
+                MAX_BUFFER_SIZE);
+        os.write(oversizeBuffer);
+
+        // The other side can not write more than the maximum size at once,
+        // hence we get two transfers in return
+        int numRead = is.read(mBufferMax);
+        assertEquals(MAX_BUFFER_SIZE, numRead);
+        assertArrayEquals(mOrigBufferMax, mBufferMax);
+
+        numRead = is.read(mBufferMax);
+        assertEquals(MAX_BUFFER_SIZE, numRead);
+        assertArrayEquals(mOrigBufferMax, mBufferMax);
+    }
+
+    private void testEchoBufferMaxSize(InputStream is, OutputStream os) throws IOException {
+        nextTest(is, os, "echo max bytes");
+
+        os.write(mOrigBufferMax);
+
+        int numRead = is.read(mBufferMax);
+        assertEquals(MAX_BUFFER_SIZE, numRead);
+        assertArrayEquals(mOrigBufferMax, mBufferMax);
+    }
+
+    private void testReceiveAccessoryHandshakeIntent(InputStream is, OutputStream os)
+            throws IOException, InterruptedException, ExecutionException, TimeoutException {
+        nextTest(is, os, "Receive USB_ACCESSORY_HANDSHAKE intent");
+
+        mAccessoryHandshakeIntent.get(3 * 1000, //3 s
+                TimeUnit.MILLISECONDS);
+        assertTrue(mAccessoryStart);
+        assertTrue(mHasSendStringCount);
+        assertTrue(mHasAccessoryConnectionStartTime);
+    }
+
+    private void runTestsForAccessory(InputStream is, OutputStream os)
+            throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        // Echo a transfer
+        testEchoTransfer(is, os);
+
+        // Receive less data than available
+        testReceiveLessDataThanAvailable(is, os);
+
+        // Send two transfers in a row
+        testSendTwoTransfersInARow(is, os);
+
+        // Receive two transfers in a row into a buffer that is bigger than the
+        // transfer
+        testReceiveTwoTransfersInARowInBufferBiggerThanTransfer(is, os);
+
+        // Echo a buffer with the maximum size
+        testEchoBufferMaxSize(is, os);
+
+        // Echo a buffer with twice the maximum size
+        testEchoBufferTwiceMaxSize(is, os);
+
+        // Measure out transfer speed
+        testMeasureOutTransferSpeed(is, os);
+
+        // Measure in transfer speed
+        testMeasureInTransferSpeed(is, os);
+
+        // Receive accessory handshake intent
+        testReceiveAccessoryHandshakeIntent(is, os);
     }
 }

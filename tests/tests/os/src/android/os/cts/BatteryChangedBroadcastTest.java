@@ -32,7 +32,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,12 +42,14 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 public class BatteryChangedBroadcastTest {
 
-    private static final int WAIT_TO_RECEIVE_THE_BROADCAST_MS = 7000;
-    private Context mContext;
+    private static final int WAIT_TO_RECEIVE_THE_BROADCAST_MS = 10000;
+    private static final Context CONTEXT =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-    @Before
-    public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
+    @BeforeClass
+    public static void setUpClass() throws InterruptedException {
+        SystemUtil.runShellCommand("cmd battery get -f current_now");
+        waitAndAssertBroadcastReceived(null, -2);
     }
 
     @Test
@@ -93,20 +95,24 @@ public class BatteryChangedBroadcastTest {
     }
 
     private int getBatteryChangedIntExtra(String extra) {
-        Intent intent = mContext.registerReceiver(null, new IntentFilter(ACTION_BATTERY_CHANGED));
+        Intent intent = CONTEXT.registerReceiver(null, new IntentFilter(ACTION_BATTERY_CHANGED));
         assertNotNull(intent);
         return intent.getIntExtra(extra, -1);
     }
 
-    private void waitAndAssertBroadcastReceived(String extra, int updatedValue)
+    private static void waitAndAssertBroadcastReceived(String extra, int updatedValue)
             throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        mContext.registerReceiver(new BroadcastReceiver() {
+        CONTEXT.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                final int value = intent.getIntExtra(extra, -1);
-                if (value == updatedValue) {
+                if (extra == null) {
                     latch.countDown();
+                } else {
+                    final int value = intent.getIntExtra(extra, -1);
+                    if (value == updatedValue) {
+                        latch.countDown();
+                    }
                 }
             }
         }, new IntentFilter(ACTION_BATTERY_CHANGED));

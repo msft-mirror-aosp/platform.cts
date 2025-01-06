@@ -48,6 +48,7 @@ import static org.junit.Assume.assumeFalse;
 import android.Manifest;
 import android.annotation.NonNull;
 import android.app.AppOpsManager;
+import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -122,12 +123,14 @@ public class MediaRouter2Test {
     private static final int SAMPLE_CURRENT_VOLUME = 10;
     private static final int SAMPLE_MAX_VOLUME = 12;
 
-    @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
+    @Rule
+    public final ResourceReleaser mResourceReleaser = new ResourceReleaser(/* useStack= */ true);
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     Context mContext;
+    private UiAutomation mUiAutomation;
     private MediaRouter2 mRouter2;
     private Executor mExecutor;
     private AudioManager mAudioManager;
@@ -150,16 +153,16 @@ public class MediaRouter2Test {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        mResourceReleaser.add(() -> mUiAutomation.dropShellPermissionIdentity());
         mExecutor = Executors.newSingleThreadExecutor();
         mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
-
         mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
 
         if (isAutomotive()) {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(
-                            Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+            mUiAutomation.adoptShellPermissionIdentity(
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
         }
     }
 
@@ -190,16 +193,6 @@ public class MediaRouter2Test {
 
     @After
     public void tearDown() {
-        // We enqueue dropShellPermissionIdentity in the resource releaser to ensure it runs after
-        // other enqueued runnables, in case they need a shell permission such as
-        // MANAGER_APP_OPS_MODES.
-        // TODO: b/344895905 - When changing the resource releaser to use a stack, move this line
-        // into setUp, to keep this executing last.
-        mResourceReleaser.add(
-                () ->
-                        InstrumentationRegistry.getInstrumentation()
-                                .getUiAutomation()
-                                .dropShellPermissionIdentity());
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
@@ -1747,9 +1740,7 @@ public class MediaRouter2Test {
 
         int myUid = mContext.getApplicationInfo().uid;
         String myPackageName = mContext.getPackageName();
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
         AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
         // We need MEDIA_ROUTING_CONTROL to create a proxy router, to make the transfer reason be
         // SYSTEM.

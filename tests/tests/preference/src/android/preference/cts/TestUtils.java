@@ -31,12 +31,12 @@ import android.util.DisplayMetrics;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
-import androidx.test.uiautomator.UiObjectNotFoundException;
-import androidx.test.uiautomator.UiScrollable;
-import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
+
+import java.util.List;
 
 /**
  * Collection of helper utils for testing preferences.
@@ -178,13 +178,24 @@ public class TestUtils {
     }
 
     private boolean scrollToAndGetTextObject(String text) {
-        UiScrollable scroller = new UiScrollable(new UiSelector().scrollable(true));
-        try {
+        UiObject2 appArea = mDevice.findObject(By.pkg(mPackageName).res("android:id/content"));
+        List<UiObject2> scrollableViewList = appArea.findObjects(By.scrollable(true));
+        UiObject2 foundObject = null;
+        for (UiObject2 scrollableView : scrollableViewList) {
             // Swipe far away from the edges to avoid triggering navigation gestures
-            scroller.setSwipeDeadZonePercentage(0.25);
-            return scroller.scrollTextIntoView(text);
-        } catch (UiObjectNotFoundException e) {
-            throw new AssertionError("View with text '" + text + "' was not found!", e);
+            scrollableView.setGestureMarginPercentage(0.25f);
+            // Scroll from the top to the bottom until the text object is found.
+            scrollableView.scroll(Direction.UP, 1);
+            scrollableView.scrollUntil(Direction.DOWN, Until.findObject(By.textContains(text)));
+            foundObject = mDevice.findObject(By.text(text));
+            if (foundObject != null) {
+                // No need to look at other scrollables.
+                break;
+            }
         }
+        if (foundObject == null) {
+            throw new AssertionError("View with text '" + text + "' was not found!");
+        }
+        return true;
     }
 }

@@ -46,12 +46,12 @@ import android.telephony.data.ApnSetting;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
 import com.android.bedstead.harrier.policies.DisallowCellular2g;

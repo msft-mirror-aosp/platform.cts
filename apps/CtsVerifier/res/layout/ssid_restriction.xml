@@ -21,11 +21,15 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent">
 
-    <TextView
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:text="@string/device_owner_ssid_restriction_info"/>
+        android:layout_weight="1">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/device_owner_ssid_restriction_info"/>
+    </ScrollView>
 
     <EditText
         android:id="@+id/ssid_restriction_edit_text"

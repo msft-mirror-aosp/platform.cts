@@ -18,7 +18,6 @@ package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.AccessibilityEventTypeMatcher;
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.ContentChangesMatcher;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.view.accessibility.AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_APPEARED;
 import static android.view.accessibility.AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED;
@@ -31,7 +30,6 @@ import static org.junit.Assert.assertNull;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibilityservice.cts.activities.AccessibilityEndToEndActivity;
-import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.app.UiAutomation.AccessibilityEventFilter;
@@ -39,9 +37,10 @@ import android.platform.test.annotations.Presubmit;
 import android.view.View;
 import android.view.accessibility.AccessibilityNodeInfo;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -61,12 +60,10 @@ import org.junit.runner.RunWith;
 public class AccessibilityPaneTest {
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
-
-    private Activity mActivity;
     private View mPaneView;
 
-    private ActivityTestRule<AccessibilityEndToEndActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityEndToEndActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityEndToEndActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityEndToEndActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -91,11 +88,13 @@ public class AccessibilityPaneTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
-        sInstrumentation.runOnMainSync(() ->  {
-            mPaneView = mActivity.findViewById(R.id.button);
-        });
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            mPaneView = activity.findViewById(R.id.button);
+                        });
     }
 
     @Test

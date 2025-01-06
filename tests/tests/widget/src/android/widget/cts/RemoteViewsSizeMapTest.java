@@ -28,12 +28,12 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RemoteViews;
 import android.widget.TextView;
+import android.widget.cts.util.RemoteViewsUtil;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.annotation.UiThreadTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
@@ -42,17 +42,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Test {@link RemoteViews#RemoteViews(Map<SizeF, RemoteViews>)}.
- */
+/** Test {@link RemoteViews#RemoteViews(Map<SizeF, RemoteViews>)}. */
 @MediumTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(Parameterized.class)
 public class RemoteViewsSizeMapTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
 
@@ -72,6 +71,19 @@ public class RemoteViewsSizeMapTest {
 
     @Rule
     public ExpectedException mExpectedException = ExpectedException.none();
+
+    @Parameterized.Parameters(name = "isProtoTest={0}")
+    public static Object[] parameters() {
+        return new Object[] {false, true};
+    }
+
+    /**
+     * When this parameter is true, the test serializes and deserializes the RemoteViews to/from
+     * proto before applying. This ensures that proto serialization does not cause a change in the
+     * structure or function of RemoteViews, apart from PendingIntent based APIs.
+     */
+    @Parameterized.Parameter(0)
+    public boolean isProtoTest;
 
     private Instrumentation mInstrumentation;
 
@@ -122,7 +134,13 @@ public class RemoteViewsSizeMapTest {
     }
 
     private void applyRemoteViewOnUiThread(SizeF initialSize) {
-        mResult = mRemoteViews.apply(mContext, null, null, initialSize);
+        try {
+            mResult =
+                    RemoteViewsUtil.applyRemoteViews(
+                            mActivityRule, mContext, mRemoteViews, isProtoTest, initialSize);
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
 
         // Add our host view to the activity behind this test. This is similar to how launchers
         // add widgets to the on-screen UI.
@@ -137,6 +155,23 @@ public class RemoteViewsSizeMapTest {
 
     private void applyRemoteView(SizeF initialSize) throws Throwable {
         mActivityRule.runOnUiThread(() -> applyRemoteViewOnUiThread(initialSize));
+    }
+
+    private void reapplyRemoteView(SizeF initialSize) throws Throwable {
+        mActivityRule.runOnUiThread(
+                () -> {
+                    try {
+                        RemoteViewsUtil.reapplyRemoteViews(
+                                mActivityRule,
+                                mContext,
+                                mRemoteViews,
+                                mResult,
+                                isProtoTest,
+                                initialSize);
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     @Test
@@ -179,7 +214,7 @@ public class RemoteViewsSizeMapTest {
     @Test
     public void reapply_withoutSize_shouldReturnSmallestLayout() throws Throwable {
         applyRemoteView(null);
-        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+        reapplyRemoteView(null);
 
         assertEquals("1", mResult.<TextView>findViewById(R.id.remoteView_text).getText());
     }
@@ -187,9 +222,7 @@ public class RemoteViewsSizeMapTest {
     @Test
     public void reapply_withSmallSize_shouldReturnSmallLayout() throws Throwable {
         applyRemoteView(new SizeF(50, 50));
-        mActivityRule.runOnUiThread(
-                () -> mRemoteViews.reapply(mContext, mResult, null /* handler */,
-                        new SizeF(50, 50), null /* colorResources */));
+        reapplyRemoteView(new SizeF(50, 50));
 
         assertEquals("1", mResult.<TextView>findViewById(R.id.remoteView_text).getText());
     }
@@ -197,9 +230,7 @@ public class RemoteViewsSizeMapTest {
     @Test
     public void reapply_witLargeSize_shouldReturnLargestLayout() throws Throwable {
         applyRemoteView(new SizeF(500, 500));
-        mActivityRule.runOnUiThread(
-                () -> mRemoteViews.reapply(mContext, mResult, null /* handler */,
-                        new SizeF(500, 500), null /* colorResources */));
+        reapplyRemoteView(new SizeF(500, 500));
 
         assertEquals(mResult.<TextView>findViewById(R.id.remoteView_text).getText(), "4");
     }
@@ -207,9 +238,7 @@ public class RemoteViewsSizeMapTest {
     @Test
     public void reapply_withSize_shouldReturnClosestFittingLayoutWithMargin() throws Throwable {
         applyRemoteView(new SizeF(99.7f, 150));
-        mActivityRule.runOnUiThread(
-                () -> mRemoteViews.reapply(mContext, mResult, null /* handler */,
-                        new SizeF(99.7f, 150), null /* colorResources */));
+        reapplyRemoteView(new SizeF(99.7f, 150));
 
         assertEquals("2", mResult.<TextView>findViewById(R.id.remoteView_text).getText());
     }
@@ -217,9 +246,7 @@ public class RemoteViewsSizeMapTest {
     @Test
     public void reapply_withSize_shouldReturnClosestFittingLayout() throws Throwable {
         applyRemoteView(new SizeF(160, 150));
-        mActivityRule.runOnUiThread(
-                () -> mRemoteViews.reapply(mContext, mResult, null /* handler */,
-                        new SizeF(160, 150), null /* colorResources */));
+        reapplyRemoteView(new SizeF(160, 150));
 
         assertEquals("3", mResult.<TextView>findViewById(R.id.remoteView_text).getText());
     }

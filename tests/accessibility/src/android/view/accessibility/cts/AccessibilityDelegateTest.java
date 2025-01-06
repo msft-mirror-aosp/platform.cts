@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.View.AccessibilityDelegate;
@@ -31,8 +30,9 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,8 +49,8 @@ public class AccessibilityDelegateTest {
     private LinearLayout mParentView;
     private View mChildView;
 
-    private ActivityTestRule<DummyActivity> mActivityRule =
-            new ActivityTestRule<>(DummyActivity.class, false, false);
+    private ActivityScenarioRule<DummyActivity> mActivityRule =
+            new ActivityScenarioRule<>(DummyActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -63,12 +63,17 @@ public class AccessibilityDelegateTest {
 
     @Before
     public void setUp() throws Exception {
-        Activity activity = mActivityRule.launchActivity(null);
-        LinearLayout grandparent = new LinearLayout(activity);
-        mParentView = new LinearLayout(activity);
-        mChildView = new View(activity);
-        grandparent.addView(mParentView);
-        mParentView.addView(mChildView);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(
+                        activity -> {
+                            LinearLayout grandparent = new LinearLayout(activity);
+                            mParentView = new LinearLayout(activity);
+                            mChildView = new View(activity);
+                            grandparent.addView(mParentView);
+                            mParentView.addView(mChildView);
+                        });
     }
 
     @Test
@@ -112,7 +117,7 @@ public class AccessibilityDelegateTest {
 
         final Bundle bundle = new Bundle();
         mParentView.performAccessibilityAction(
-                    AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, bundle);
+                AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, bundle);
         verify(mockDelegate).performAccessibilityAction(
                 mParentView, AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, bundle);
     }

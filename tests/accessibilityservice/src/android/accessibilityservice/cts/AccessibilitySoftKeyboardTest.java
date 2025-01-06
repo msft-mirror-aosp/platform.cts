@@ -46,8 +46,8 @@ import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
 import android.view.inputmethod.InputMethodManager;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
@@ -284,9 +284,7 @@ public class AccessibilitySoftKeyboardTest {
             } else {
                 enableImeCommand = ShellCommandUtils.disableIme(imeId, userId);
             }
-            ShellCommandBuilder.create(sInstrumentation)
-                    .addCommand(enableImeCommand)
-                    .run();
+            ShellCommandBuilder.create(sUiAutomation).addCommand(enableImeCommand).run();
 
             try {
                 PollingCheck.check(imeId + " is not " + (enabled ? " enabled" : "disabled"),
@@ -306,7 +304,7 @@ public class AccessibilitySoftKeyboardTest {
         @Override
         public void close() throws Exception {
             // Reset IMEs by shell command.
-            ShellCommandBuilder.create(sInstrumentation)
+            ShellCommandBuilder.create(sUiAutomation)
                     .addCommand(ShellCommandUtils.resetImesForAllUsers())
                     .run();
         }

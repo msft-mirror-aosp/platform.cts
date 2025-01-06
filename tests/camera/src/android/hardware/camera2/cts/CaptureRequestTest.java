@@ -46,6 +46,8 @@ import android.os.Build;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.Log;
@@ -58,6 +60,7 @@ import android.view.Surface;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.internal.camera.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -144,6 +147,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         FIRED,
         RAMPING_DOWN
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Override
     public void setUp() throws Exception {
@@ -458,7 +465,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     }
 
     /**
-     * Test AE mode and lock.
+     * Test AE and AE priority modes with AE lock.
      *
      * <p>
      * For AE lock, when it is locked, exposure parameters shouldn't be changed.
@@ -485,9 +492,27 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
 
                 // Test aeMode and lock
                 int[] aeModes = mStaticInfo.getAeAvailableModesChecked();
-                for (int mode : aeModes) {
-                    aeModeAndLockTestByMode(mode);
+                for (int aeMode : aeModes) {
+                    // Test ae mode with lock without priority mode enabled
+                    aeModeAndLockTestByMode(aeMode, CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
+
+                    if (Flags.aePriority()) {
+                        int[] aePriorityModes = mStaticInfo.getAeAvailablePriorityModesChecked();
+
+                        // LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY not supported with AE priority mode
+                        if (aeMode ==
+                                CameraMetadata
+                                .CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY ||
+                                aeMode == CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF) {
+                            continue;
+                        }
+                        for (int aePriorityMode : aePriorityModes) {
+                            // Test ae mode with lock and priority mode enabled
+                            aeModeAndLockTestByMode(aeMode, aePriorityMode);
+                        }
+                    }
                 }
+
             } finally {
                 closeDevice();
             }
@@ -893,7 +918,31 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 }
                 openDevice(id);
                 Size maxPreviewSize = mOrderedPreviewSizes.get(0);
-                zoomRatioTestByCamera(maxPreviewSize);
+                zoomRatioTestByCamera(maxPreviewSize, /*useZoomRatioMethod*/false);
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test zoom using CONTROL_ZOOM_RATIO with CONTROL_ZOOM_METHOD set explicitly to ZOOM_RATIO,
+     * validate the returned crop regions and zoom ratio.
+     *
+     * The max preview size is used for each camera.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ZOOM_METHOD)
+    public void testZoomRatioWithMethod() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                if (!mAllStaticInfo.get(id).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+                    continue;
+                }
+                openDevice(id);
+                Size maxPreviewSize = mOrderedPreviewSizes.get(0);
+                zoomRatioTestByCamera(maxPreviewSize, /*useZoomRatioMethod*/true);
             } finally {
                 closeDevice();
             }
@@ -1058,6 +1107,30 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 }
                 openDevice(id);
                 testAeModeOnLowLightBoostBrightnessPriorityTestByCamera();
+            } finally {
+                closeDevice();
+            }
+        }
+    }
+
+    /**
+     * Test AE priority modes
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_AE_PRIORITY)
+    public void testAePriorityModes() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                StaticMetadata staticInfo = mAllStaticInfo.get(id);
+                int[] aePriorityModes = staticInfo.getAeAvailablePriorityModesChecked();
+
+                openDevice(id);
+                for (int aePriorityMode : aePriorityModes) {
+                    if (aePriorityMode == CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF) {
+                        continue;
+                    }
+                    testAePriorityModesByCamera(aePriorityMode);
+                }
             } finally {
                 closeDevice();
             }
@@ -2166,9 +2239,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * For the rest of the AUTO mode, AE lock is tested.
      * </p>
      *
-     * @param mode
+     * @param mode corresponding to AE_MODE_*
+     * @param priorityMode corresponding to AE_PRIORITY_MODE_*
      */
-    private void aeModeAndLockTestByMode(int mode)
+    private void aeModeAndLockTestByMode(int mode, int priorityMode)
             throws Exception {
         switch (mode) {
             case CONTROL_AE_MODE_OFF:
@@ -2188,7 +2262,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             case CONTROL_AE_MODE_ON_ALWAYS_FLASH:
             case CONTROL_AE_MODE_ON_EXTERNAL_FLASH:
                 // Test AE lock for above AUTO modes.
-                aeAutoModeTestLock(mode);
+                aeAutoModeTestLock(mode, priorityMode);
                 break;
             default:
                 throw new UnsupportedOperationException("Unhandled AE mode " + mode);
@@ -2201,18 +2275,23 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * Use single request rather than repeating request to test AE lock per frame control.
      * </p>
      */
-    private void aeAutoModeTestLock(int mode) throws Exception {
+    private void aeAutoModeTestLock(int mode, int priorityMode) throws Exception {
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         if (mStaticInfo.isAeLockSupported()) {
             requestBuilder.set(CaptureRequest.CONTROL_AE_LOCK, false);
         }
         requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, mode);
+
+        if (Flags.aePriority()) {
+            requestBuilder.set(CaptureRequest.CONTROL_AE_PRIORITY_MODE, priorityMode);
+        }
+
         configurePreviewOutput(requestBuilder);
 
         final int MAX_NUM_CAPTURES_DURING_LOCK = 5;
         for (int i = 1; i <= MAX_NUM_CAPTURES_DURING_LOCK; i++) {
-            autoAeMultipleCapturesThenTestLock(requestBuilder, mode, i);
+            autoAeMultipleCapturesThenTestLock(requestBuilder, mode, i, priorityMode);
         }
     }
 
@@ -2223,7 +2302,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
      * request with lock ON will have the same exposure value locked.
      */
     private void autoAeMultipleCapturesThenTestLock(
-            CaptureRequest.Builder requestBuilder, int aeMode, int numCapturesDuringLock)
+            CaptureRequest.Builder requestBuilder, int aeMode, int numCapturesDuringLock,
+            int priorityMode)
             throws Exception {
         if (numCapturesDuringLock < 1) {
             throw new IllegalArgumentException("numCapturesBeforeLock must be no less than 1");
@@ -2286,10 +2366,38 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             long expTimeLocked =
                     getValueNotNull(resultsDuringLock[0], CaptureResult.SENSOR_EXPOSURE_TIME);
             for (int i = 1; i < resultsDuringLock.length; i++) {
-                mCollector.expectKeyValueEquals(
-                        resultsDuringLock[i], CaptureResult.SENSOR_EXPOSURE_TIME, expTimeLocked);
-                mCollector.expectKeyValueEquals(
-                        resultsDuringLock[i], CaptureResult.SENSOR_SENSITIVITY, sensitivityLocked);
+                if (Flags.aePriority()) {
+                    switch (priorityMode) {
+                        case CONTROL_AE_PRIORITY_MODE_OFF:
+                            mCollector.expectKeyValueEquals(
+                                    resultsDuringLock[i],
+                                    CaptureResult.SENSOR_EXPOSURE_TIME, expTimeLocked);
+                            mCollector.expectKeyValueEquals(
+                                    resultsDuringLock[i],
+                                    CaptureResult.SENSOR_SENSITIVITY, sensitivityLocked);
+                            break;
+                        case CONTROL_AE_PRIORITY_MODE_SENSOR_EXPOSURE_TIME_PRIORITY:
+                            mCollector.expectKeyValueEquals(
+                                    resultsDuringLock[i],
+                                    CaptureResult.SENSOR_EXPOSURE_TIME, expTimeLocked);
+                            break;
+                        case CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY:
+                            mCollector.expectKeyValueEquals(
+                                    resultsDuringLock[i],
+                                    CaptureResult.SENSOR_SENSITIVITY, sensitivityLocked);
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unhandled AE priority mode "
+                                    + priorityMode);
+                    }
+                } else {
+                    mCollector.expectKeyValueEquals(
+                            resultsDuringLock[i], CaptureResult.SENSOR_EXPOSURE_TIME,
+                            expTimeLocked);
+                    mCollector.expectKeyValueEquals(
+                            resultsDuringLock[i], CaptureResult.SENSOR_SENSITIVITY,
+                            sensitivityLocked);
+                }
             }
         }
     }
@@ -3095,7 +3203,8 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         }
     }
 
-    private void zoomRatioTestByCamera(Size previewSize) throws Exception {
+    private void zoomRatioTestByCamera(Size previewSize, boolean useZoomRatioMethod)
+            throws Exception {
         final Range<Float> zoomRatioRange = mStaticInfo.getZoomRatioRangeChecked();
         // The error margin is derive from a VGA size camera zoomed all the way to 10x, in which
         // case the cropping error can be as large as 480/46 - 480/48 = 0.435.
@@ -3111,6 +3220,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         CaptureRequest.Builder requestBuilder =
                 mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
         requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, defaultCropRegion);
+        if (Flags.zoomMethod() && useZoomRatioMethod) {
+            requestBuilder.set(CaptureRequest.CONTROL_ZOOM_METHOD,
+                    CameraMetadata.CONTROL_ZOOM_METHOD_ZOOM_RATIO);
+        }
         SimpleCaptureCallback listener = new SimpleCaptureCallback();
 
         updatePreviewSurface(previewSize);
@@ -3230,10 +3343,10 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
             previousRatio = resultZoomRatio;
 
             /*
-             * Set windowboxing cropRegion while zoomRatio is not 1.0x, and make sure the crop
-             * region was overwritten.
+             * Set windowboxing cropRegion while zoomRatio is not 1.0x or zoomRatio method
+             * is used, and make sure the crop region was overwritten.
              */
-            if (zoomFactor != 1.0f) {
+            if (zoomFactor != 1.0f || useZoomRatioMethod) {
                 requestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom2xCropRegion);
                 CaptureRequest requestWithCrop = requestBuilder.build();
                 for (int j = 0; j < captureSubmitRepeat; ++j) {
@@ -3611,6 +3724,72 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 || resultLowLightBoostState == CameraMetadata.CONTROL_LOW_LIGHT_BOOST_STATE_ACTIVE);
     }
 
+
+    private void testAePriorityModesByCamera(int aePriorityMode) throws Exception {
+        final int TEST_SENSITIVITY_VALUE = mStaticInfo.getSensitivityClampToRange(204);
+        final long TEST_EXPOSURE_TIME_NS = mStaticInfo.getExposureClampToRange(28000000);
+        final long EXPOSURE_TIME_ERROR_MARGIN_NS = 100000;
+
+        Size maxPreviewSize = mOrderedPreviewSizes.get(0);
+        CaptureRequest.Builder requestBuilder =
+                mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+        requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_ON);
+        requestBuilder.set(CaptureRequest.CONTROL_AE_PRIORITY_MODE, aePriorityMode);
+
+        switch (aePriorityMode) {
+            case CONTROL_AE_PRIORITY_MODE_SENSOR_EXPOSURE_TIME_PRIORITY:
+                requestBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, TEST_EXPOSURE_TIME_NS);
+                break;
+            case CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY:
+                requestBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, TEST_SENSITIVITY_VALUE);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unhandled AE priority mode "
+                        + aePriorityMode);
+        }
+
+        SimpleCaptureCallback listener = new SimpleCaptureCallback();
+        startPreview(requestBuilder, maxPreviewSize, listener);
+        waitForSettingsApplied(listener, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
+        CaptureResult result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+
+        // Expect that AE Priority mode result matches request
+        int resultAePriorityMode = getValueNotNull(result, CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        assertTrue("AE Mode should be " + aePriorityMode, resultAePriorityMode
+                == aePriorityMode);
+
+        long exposureTimeDiff = TEST_EXPOSURE_TIME_NS -
+                getValueNotNull(result, CaptureResult.SENSOR_EXPOSURE_TIME);
+        int sensitivityDiff = TEST_SENSITIVITY_VALUE -
+                getValueNotNull(result, CaptureResult.SENSOR_SENSITIVITY);
+
+        switch (aePriorityMode) {
+            case CONTROL_AE_PRIORITY_MODE_SENSOR_EXPOSURE_TIME_PRIORITY:
+                validateExposureTime(TEST_EXPOSURE_TIME_NS,
+                        getValueNotNull(result, CaptureResult.SENSOR_EXPOSURE_TIME));
+                break;
+            case CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY:
+                validateSensitivity(TEST_SENSITIVITY_VALUE,
+                        getValueNotNull(result, CaptureResult.SENSOR_SENSITIVITY));
+                break;
+            default:
+                throw new UnsupportedOperationException("Unhandled AE priority mode "
+                        + aePriorityMode);
+        }
+
+        requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
+        listener = new SimpleCaptureCallback();
+        startPreview(requestBuilder, maxPreviewSize, listener);
+        waitForSettingsApplied(listener, NUM_FRAMES_WAITED_FOR_UNKNOWN_LATENCY);
+        result = listener.getCaptureResult(WAIT_FOR_RESULT_TIMEOUT_MS);
+
+        // Expect that AE priority mode is off when AE mode if off
+        resultAePriorityMode =
+                getValueNotNull(result, CaptureResult.CONTROL_AE_PRIORITY_MODE);
+        assertTrue("AE Priority mode should be off when AE mode is turned off",
+                resultAePriorityMode == CameraMetadata.CONTROL_AE_PRIORITY_MODE_OFF);
+    }
+
     //----------------------------------------------------------------
     //---------Below are common functions for all tests.--------------
     //----------------------------------------------------------------
@@ -3726,7 +3905,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
     }
 
     /**
-     * Validate the AE manual control exposure time.
+     * Validate the AE control exposure time.
      *
      * <p>Exposure should be close enough, and only round down if they are not equal.</p>
      *
@@ -3738,13 +3917,13 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         long expTimeErrorMargin = (long)(Math.max(EXPOSURE_TIME_ERROR_MARGIN_NS, request
                 * EXPOSURE_TIME_ERROR_MARGIN_RATE));
         // First, round down not up, second, need close enough.
-        mCollector.expectTrue("Exposure time is invalid for AE manual control test, request: "
+        mCollector.expectTrue("Exposure time is invalid, request: "
                 + request + " result: " + result,
                 expTimeDelta < expTimeErrorMargin && expTimeDelta >= 0);
     }
 
     /**
-     * Validate AE manual control sensitivity.
+     * Validate AE control sensitivity.
      *
      * @param request Request sensitivity
      * @param result Result sensitivity
@@ -3753,8 +3932,7 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
         float sensitivityDelta = request - result;
         float sensitivityErrorMargin = request * SENSITIVITY_ERROR_MARGIN_RATE;
         // First, round down not up, second, need close enough.
-        mCollector.expectTrue("Sensitivity is invalid for AE manual control test, request: "
-                + request + " result: " + result,
+        mCollector.expectTrue("Sensitivity is invalid, request: " + request + " result: " + result,
                 sensitivityDelta < sensitivityErrorMargin && sensitivityDelta >= 0);
     }
 

@@ -26,13 +26,15 @@ import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUti
 import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUtils.filterForEventTypeWithResource;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWindowByTitle;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActivityTitle;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_GLOBAL_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.DEFAULT_IDLE_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
+import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 import static android.view.MotionEvent.ACTION_DOWN;
 import static android.view.MotionEvent.ACTION_UP;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
@@ -123,19 +125,21 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.CtsMouseUtil;
-import com.android.compatibility.common.util.ShellUtils;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
@@ -186,9 +190,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     private static UiAutomation sUiAutomation;
 
     private AccessibilityEndToEndActivity mActivity;
-
-    private ActivityTestRule<AccessibilityEndToEndActivity> mActivityRule =
-            new ActivityTestRule<>(AccessibilityEndToEndActivity.class, false, false);
+    private ActivityScenarioRule<AccessibilityEndToEndActivity> mActivityRule =
+            new ActivityScenarioRule<>(AccessibilityEndToEndActivity.class);
 
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
@@ -211,7 +214,12 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @BeforeClass
     public static void oneTimeSetup() throws Exception {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sUiAutomation = sInstrumentation.getUiAutomation();
+        sUiAutomation = sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+
+        AccessibilityServiceInfo serviceInfo = sUiAutomation.getServiceInfo();
+        // Make sure we could query windows.
+        serviceInfo.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
+        sUiAutomation.setServiceInfo(serviceInfo);
     }
 
     @AfterClass
@@ -222,8 +230,10 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Before
     public void setUp() throws Exception {
         sUiAutomation.adoptShellPermissionIdentity(POST_NOTIFICATIONS);
-        mActivity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
     }
 
     @After
@@ -236,44 +246,45 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#setSelected",
             "android.view.accessibility.AccessibilityManager#sendAccessibilityEvent"})
     public void testTypeViewSelectedAccessibilityEvent() throws Throwable {
-        // create and populate the expected event
-        final AccessibilityEvent expected = AccessibilityEvent.obtain();
-        expected.setEventType(AccessibilityEvent.TYPE_VIEW_SELECTED);
-        expected.setClassName(ListView.class.getName());
-        expected.setPackageName(mActivity.getPackageName());
-        expected.setDisplayId(mActivity.getDisplayId());
-        expected.getText().add(mActivity.getString(R.string.second_list_item));
-        expected.setItemCount(2);
-        expected.setCurrentItemIndex(1);
-        expected.setEnabled(true);
-        expected.setScrollable(false);
-        expected.setFromIndex(0);
-        expected.setToIndex(1);
+        try {
+            // Need to be non-touch mode so that calling setSelection will make the item selected
+            sInstrumentation.setInTouchMode(false);
+            sInstrumentation.waitForIdleSync();
+            // create and populate the expected event
+            final AccessibilityEvent expected = AccessibilityEvent.obtain();
+            expected.setEventType(AccessibilityEvent.TYPE_VIEW_SELECTED);
+            expected.setClassName(ListView.class.getName());
+            expected.setPackageName(mActivity.getPackageName());
+            expected.setDisplayId(mActivity.getDisplayId());
+            expected.getText().add(mActivity.getString(R.string.second_list_item));
+            expected.setItemCount(2);
+            expected.setCurrentItemIndex(1);
+            expected.setEnabled(true);
+            expected.setScrollable(false);
+            expected.setFromIndex(0);
+            expected.setToIndex(1);
 
-        final ListView listView = (ListView) mActivity.findViewById(R.id.listview);
-
-        AccessibilityEvent awaitedEvent =
-            sUiAutomation.executeAndWaitForEvent(
-                new Runnable() {
-            @Override
-            public void run() {
-                // trigger the event
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        listView.setSelection(1);
-                    }
-                });
-            }},
-            new UiAutomation.AccessibilityEventFilter() {
-                // check the received event
-                @Override
-                public boolean accept(AccessibilityEvent event) {
-                        return equalsAccessibilityEvent(event, expected);
-                }
-            },
-                    DEFAULT_TIMEOUT_MS);
-        assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+            // check the received event
+            AccessibilityEvent awaitedEvent =
+                    sUiAutomation.executeAndWaitForEvent(
+                            () -> {
+                                // trigger the event
+                                mActivityRule
+                                        .getScenario()
+                                        .onActivity(
+                                                activity -> {
+                                                    final ListView listView =
+                                                            activity.findViewById(R.id.listview);
+                                                    listView.setSelection(1);
+                                                });
+                            },
+                            event -> equalsAccessibilityEvent(event, expected),
+                            DEFAULT_TIMEOUT_MS);
+            assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+        } finally {
+            sInstrumentation.resetInTouchMode();
+            sInstrumentation.waitForIdleSync();
+        }
     }
 
     @MediumTest
@@ -361,6 +372,10 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#requestFocus",
             "android.view.accessibility.AccessibilityManager#sendAccessibilityEvent"})
     public void testTypeViewFocusedAccessibilityEvent() throws Throwable {
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
         // create and populate the expected event
         final AccessibilityEvent expected = AccessibilityEvent.obtain();
         expected.setEventType(AccessibilityEvent.TYPE_VIEW_FOCUSED);
@@ -372,13 +387,22 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         expected.setCurrentItemIndex(4);
         expected.setEnabled(true);
 
-        final Button button = (Button) mActivity.findViewById(R.id.buttonWithTooltip);
-
         AccessibilityEvent awaitedEvent =
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> mActivity.runOnUiThread(button::requestFocus),
-                    (event) -> equalsAccessibilityEvent(event, expected),
-                    DEFAULT_TIMEOUT_MS);
+                sUiAutomation.executeAndWaitForEvent(
+                        () ->
+                                mActivityRule
+                                        .getScenario()
+                                        .onActivity(
+                                                activity -> {
+                                                    final Button button =
+                                                            activity.findViewById(
+                                                                    R.id.buttonWithTooltip);
+                                                    button.setFocusable(true);
+                                                    button.setFocusableInTouchMode(true);
+                                                    button.requestFocus();
+                                                }),
+                        (event) -> equalsAccessibilityEvent(event, expected),
+                        DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
     }
 
@@ -387,30 +411,31 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.text.Editable#replace",
             "android.view.accessibility.AccessibilityManager#sendAccessibilityEvent"})
     public void testTypeViewTextChangedAccessibilityEvent() throws Throwable {
-        // focus the edit text
-        final EditText editText = (EditText) mActivity.findViewById(R.id.edittext);
+        final EditText editText = mActivity.findViewById(R.id.edittext);
 
         AccessibilityEvent awaitedFocusEvent =
-            sUiAutomation.executeAndWaitForEvent(
-                new Runnable() {
-            @Override
-            public void run() {
-                // trigger the event
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        editText.requestFocus();
-                    }
-                });
-            }},
-            new UiAutomation.AccessibilityEventFilter() {
-                // check the received event
-                @Override
-                public boolean accept(AccessibilityEvent event) {
-                    return event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED;
-                }
-            },
-                    DEFAULT_TIMEOUT_MS);
+                sUiAutomation.executeAndWaitForEvent(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                // trigger the event
+                                mActivity.runOnUiThread(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                editText.requestFocus();
+                                            }
+                                        });
+                            }
+                        },
+                        new UiAutomation.AccessibilityEventFilter() {
+                            // check the received event
+                            @Override
+                            public boolean accept(AccessibilityEvent event) {
+                                return event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED;
+                            }
+                        },
+                        DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected focuss event.", awaitedFocusEvent);
 
         final String beforeText = mActivity.getString(R.string.text_input_blah);
@@ -431,26 +456,28 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         expected.setEnabled(true);
 
         AccessibilityEvent awaitedTextChangeEvent =
-            sUiAutomation.executeAndWaitForEvent(
-                new Runnable() {
-            @Override
-            public void run() {
-                // trigger the event
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        editText.getEditableText().replace(3, 4, newText);
-                    }
-                });
-            }},
-            new UiAutomation.AccessibilityEventFilter() {
-                // check the received event
-                @Override
-                public boolean accept(AccessibilityEvent event) {
-                        return equalsAccessibilityEvent(event, expected);
-                }
-            },
-                    DEFAULT_TIMEOUT_MS);
+                sUiAutomation.executeAndWaitForEvent(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                // trigger the event
+                                mActivity.runOnUiThread(
+                                        new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                editText.getEditableText().replace(3, 4, newText);
+                                            }
+                                        });
+                            }
+                        },
+                        new UiAutomation.AccessibilityEventFilter() {
+                            // check the received event
+                            @Override
+                            public boolean accept(AccessibilityEvent event) {
+                                return equalsAccessibilityEvent(event, expected);
+                            }
+                        },
+                        DEFAULT_TIMEOUT_MS);
         assertNotNull("Did not receive expected event: " + expected, awaitedTextChangeEvent);
     }
 
@@ -469,29 +496,35 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         expected.getText().add(mActivity.getString(R.string.alert_message));
         expected.setEnabled(true);
 
-        AccessibilityEvent awaitedEvent =
-            sUiAutomation.executeAndWaitForEvent(
-                new Runnable() {
-            @Override
-            public void run() {
-                // trigger the event
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        (new AlertDialog.Builder(mActivity).setTitle(R.string.alert_title)
-                                .setMessage(R.string.alert_message)).create().show();
-                    }
-                });
-            }},
-            new UiAutomation.AccessibilityEventFilter() {
-                // check the received event
-                @Override
-                public boolean accept(AccessibilityEvent event) {
-                        return equalsAccessibilityEvent(event, expected);
-                }
-            },
-                    DEFAULT_TIMEOUT_MS);
-        assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+        final AtomicReference<AlertDialog> dialog = new AtomicReference<>();
+        try {
+            // check the received event
+            final AccessibilityEvent awaitedEvent =
+                    sUiAutomation.executeAndWaitForEvent(
+                            () -> {
+                                // trigger the event
+                                mActivityRule
+                                        .getScenario()
+                                        .onActivity(
+                                                activity -> {
+                                                    dialog.set(
+                                                            new AlertDialog.Builder(activity)
+                                                                    .setTitle(R.string.alert_title)
+                                                                    .setMessage(
+                                                                            R.string.alert_message)
+                                                                    .create());
+                                                    dialog.get().show();
+                                                });
+                            },
+                            event -> equalsAccessibilityEvent(event, expected),
+                            DEFAULT_TIMEOUT_MS);
+            assertNotNull("Did not receive expected event: " + expected, awaitedEvent);
+        } finally {
+            if (dialog.get() != null) {
+                // dismiss the dialog window to prevent WindowLeaked
+                dialog.get().dismiss();
+            }
+        }
     }
 
     @MediumTest
@@ -608,8 +641,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#interrupt"})
     public void testInterrupt_notifiesService() {
-        sInstrumentation
-                .getUiAutomation(UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         InstrumentedAccessibilityService service =
                 enableService(InstrumentedAccessibilityService.class);
 
@@ -642,25 +673,37 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityNodeInfo#getPackageName"})
     public void testPackageNameCannotBeFaked() {
-        mActivity.runOnUiThread(() -> {
-            // Set the activity to report fake package for events and nodes
-            mActivity.setReportedPackageName("foo.bar.baz");
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            // Set the activity to report fake package for events and nodes
+                            activity.setReportedPackageName("foo.bar.baz");
 
-            // Make sure node package cannot be faked
-            AccessibilityNodeInfo root = sUiAutomation
-                    .getRootInActiveWindow();
-            assertPackageName(root, mActivity.getPackageName());
-        });
+                            // Make sure node package cannot be faked
+                            AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
+                            assertPackageName(root, activity.getPackageName());
+                        });
 
         // Make sure event package cannot be faked
         try {
-            sUiAutomation.executeAndWaitForEvent(() ->
-                sInstrumentation.runOnMainSync(() ->
-                    mActivity.findViewById(R.id.button).requestFocus())
-                , (AccessibilityEvent event) ->
-                    event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED
-                            && event.getPackageName().equals(mActivity.getPackageName())
-                , DEFAULT_TIMEOUT_MS);
+            sUiAutomation.executeAndWaitForEvent(
+                    () ->
+                            mActivityRule
+                                    .getScenario()
+                                    .onActivity(
+                                            activity -> {
+                                                final Button button =
+                                                        activity.findViewById(R.id.button);
+                                                button.setFocusable(true);
+                                                button.setFocusableInTouchMode(true);
+                                                button.requestFocus();
+                                                mActivity = activity;
+                                            }),
+                    (AccessibilityEvent event) ->
+                            event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED
+                                    && event.getPackageName().equals(mActivity.getPackageName()),
+                    DEFAULT_TIMEOUT_MS);
         } catch (TimeoutException e) {
             fail("Events from fake package should be fixed to use the correct package");
         }
@@ -675,74 +718,94 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             return;
         }
 
-        sInstrumentation.runOnMainSync(() -> {
-            // Set the activity to report fake package for events and nodes
-            mActivity.setReportedPackageName(APP_WIDGET_PROVIDER_PACKAGE);
-
-            // Make sure we cannot report nodes as if from the widget package
-            AccessibilityNodeInfo root = sUiAutomation
-                    .getRootInActiveWindow();
-            assertPackageName(root, mActivity.getPackageName());
-        });
-
-        // Make sure we cannot send events as if from the widget package
         try {
-            sUiAutomation.executeAndWaitForEvent(() ->
-                sInstrumentation.runOnMainSync(() ->
-                    mActivity.findViewById(R.id.button).requestFocus())
-                , (AccessibilityEvent event) ->
-                    event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED
-                            && event.getPackageName().equals(mActivity.getPackageName())
-                , DEFAULT_TIMEOUT_MS);
-        } catch (TimeoutException e) {
-            fail("Should not be able to send events from a widget package if no widget hosted");
-        }
+            sInstrumentation.setInTouchMode(false);
+            sInstrumentation.waitForIdleSync();
 
-        // Create a host and start listening.
-        final AppWidgetHost host = new AppWidgetHost(sInstrumentation.getTargetContext(), 0);
-        host.deleteHost();
-        host.startListening();
+            sInstrumentation.runOnMainSync(
+                    () -> {
+                        // Set the activity to report fake package for events and nodes
+                        mActivity.setReportedPackageName(APP_WIDGET_PROVIDER_PACKAGE);
 
-        // Well, app do not have this permission unless explicitly granted
-        // by the user. Now we will pretend for the user and grant it.
-        grantBindAppWidgetPermission();
+                        // Make sure we cannot report nodes as if from the widget package
+                        AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
+                        assertPackageName(root, mActivity.getPackageName());
+                    });
 
-        // Allocate an app widget id to bind.
-        final int appWidgetId = host.allocateAppWidgetId();
-        try {
-            // Grab a provider we defined to be bound.
-            final AppWidgetProviderInfo provider = getAppWidgetProviderInfo();
-
-            // Bind the widget.
-            final boolean widgetBound = getAppWidgetManager().bindAppWidgetIdIfAllowed(
-                    appWidgetId, provider.getProfile(), provider.provider, null);
-            assertTrue(widgetBound);
-
-            // Make sure the app can use the package of a widget it hosts
-            sInstrumentation.runOnMainSync(() -> {
-                // Make sure we can report nodes as if from the widget package
-                AccessibilityNodeInfo root = sUiAutomation
-                        .getRootInActiveWindow();
-                assertPackageName(root, APP_WIDGET_PROVIDER_PACKAGE);
-            });
-
-            // Make sure we can send events as if from the widget package
+            // Make sure we cannot send events as if from the widget package
             try {
-                sUiAutomation.executeAndWaitForEvent(() ->
-                    sInstrumentation.runOnMainSync(() ->
-                        mActivity.findViewById(R.id.button).performClick())
-                    , (AccessibilityEvent event) ->
-                            event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED
-                                    && event.getPackageName().equals(APP_WIDGET_PROVIDER_PACKAGE)
-                    , DEFAULT_TIMEOUT_MS);
+                sUiAutomation.executeAndWaitForEvent(
+                        () ->
+                                sInstrumentation.runOnMainSync(
+                                        () -> mActivity.findViewById(R.id.button).requestFocus()),
+                        (AccessibilityEvent event) ->
+                                event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED
+                                        && event.getPackageName()
+                                                .equals(mActivity.getPackageName()),
+                        DEFAULT_TIMEOUT_MS);
             } catch (TimeoutException e) {
-                fail("Should be able to send events from a widget package if widget hosted");
+                fail("Should not be able to send events from a widget package if no widget hosted");
+            }
+
+            // Create a host and start listening.
+            final AppWidgetHost host = new AppWidgetHost(sInstrumentation.getTargetContext(), 0);
+            host.deleteHost();
+            host.startListening();
+
+            // Well, app do not have this permission unless explicitly granted
+            // by the user. Now we will pretend for the user and grant it.
+            grantBindAppWidgetPermission();
+
+            // Allocate an app widget id to bind.
+            final int appWidgetId = host.allocateAppWidgetId();
+            try {
+                // Grab a provider we defined to be bound.
+                final AppWidgetProviderInfo provider = getAppWidgetProviderInfo();
+
+                // Bind the widget.
+                final boolean widgetBound =
+                        getAppWidgetManager()
+                                .bindAppWidgetIdIfAllowed(
+                                        appWidgetId,
+                                        provider.getProfile(),
+                                        provider.provider,
+                                        null);
+                assertTrue(widgetBound);
+
+                // Make sure the app can use the package of a widget it hosts
+                sInstrumentation.runOnMainSync(
+                        () -> {
+                            // Make sure we can report nodes as if from the widget package
+                            AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
+                            assertPackageName(root, APP_WIDGET_PROVIDER_PACKAGE);
+                        });
+
+                // Make sure we can send events as if from the widget package
+                try {
+                    sUiAutomation.executeAndWaitForEvent(
+                            () ->
+                                    sInstrumentation.runOnMainSync(
+                                            () ->
+                                                    mActivity
+                                                            .findViewById(R.id.button)
+                                                            .performClick()),
+                            (AccessibilityEvent event) ->
+                                    event.getEventType() == AccessibilityEvent.TYPE_VIEW_CLICKED
+                                            && event.getPackageName()
+                                                    .equals(APP_WIDGET_PROVIDER_PACKAGE),
+                            DEFAULT_TIMEOUT_MS);
+                } catch (TimeoutException e) {
+                    fail("Should be able to send events from a widget package if widget hosted");
+                }
+            } finally {
+                // Clean up.
+                host.deleteAppWidgetId(appWidgetId);
+                host.deleteHost();
+                revokeBindAppWidgetPermission();
             }
         } finally {
-            // Clean up.
-            host.deleteAppWidgetId(appWidgetId);
-            host.deleteHost();
-            revokeBindAppWidgetPermission();
+            sInstrumentation.resetInTouchMode();
+            sInstrumentation.waitForIdleSync();
         }
     }
 
@@ -789,7 +852,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @MediumTest
     @Test
     public void testAccessibilityActionRetained() throws Exception {
-        final AccessibilityNodeInfo sentInfo = new AccessibilityNodeInfo(new View(getContext()));
+        final AccessibilityNodeInfo sentInfo = new AccessibilityNodeInfo(new View(mActivity));
         sentInfo.addAction(ACTION_SCROLL_IN_DIRECTION);
         final Parcel parcel = Parcel.obtain();
         sentInfo.writeToParcelNoRecycle(parcel, 0);
@@ -823,11 +886,14 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         String text = "action_argument_scroll_amount";
 
         sUiAutomation.executeAndWaitForEvent(
-                () -> sInstrumentation.runOnMainSync(() -> {
-                    final MyView myView = new MyView(getContext());
-                    myView.setText(text);
-                    ((LinearLayout) mActivity.findViewById(R.id.containerView)).addView(myView);
-                }),
+                () ->
+                        sInstrumentation.runOnMainSync(
+                                () -> {
+                                    final MyView myView = new MyView(mActivity);
+                                    myView.setText(text);
+                                    ((LinearLayout) mActivity.findViewById(R.id.containerView))
+                                            .addView(myView);
+                                }),
                 filterForEventType(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED),
                 DEFAULT_TIMEOUT_MS);
         AccessibilityNodeInfo myViewNode =
@@ -899,6 +965,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                         AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
                         ACTION_SHOW_TOOLTIP.getId()),
                 DEFAULT_TIMEOUT_MS);
+        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
 
         // The button should now be showing the tooltip, so it should have the option to hide it.
         buttonNode.refresh();
@@ -1271,7 +1338,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
     public void testTouchDelegate_ancestorHasTouchDelegate_sendsEventToDelegate()
-            throws InterruptedException {
+            throws Exception {
         mActivity.waitForEnterAnimationComplete();
 
         // Layout. buttonTargetGrandparent has a touch delegate that covers the buttonTarget and
@@ -1289,6 +1356,11 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        sUiAutomation.waitForIdle(
+                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;
@@ -1316,12 +1388,17 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
     public void testTouchDelegate_ancestorHasTouchDelegate_doesNotSendEventToDelegate()
-            throws InterruptedException {
+            throws Exception {
         mActivity.waitForEnterAnimationComplete();
 
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
+        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        sUiAutomation.waitForIdle(
+                /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
+
         final int[] buttonLocation = new int[2];
         buttonTarget.getLocationOnScreen(buttonLocation);
         final int buttonY = buttonTarget.getHeight() / 2;
@@ -1948,7 +2025,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         try {
             // Install the apk in this test method, instead of as part of the target preparer, to
             // allow repeated --iterations of the test.
-            assertThat(ShellUtils.runShellCommand("pm install " + apkPath)).startsWith("Success");
+            assertThat(SystemUtil.runShellCommand(sUiAutomation, "pm install " + apkPath))
+                    .startsWith("Success");
             TestUtils.waitUntil(
                     "Failed to install services from " + apkPath,
                     (int) TIMEOUT_SERVICE_ENABLE / 1000,
@@ -1961,9 +2039,9 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // Enable the two services and wait until AccessibilityManager reports them as enabled.
             final String servicesToEnable = service1.flattenToShortString()
                     + componentNameSeparator + service2.flattenToShortString();
-            ShellCommandBuilder.create(sInstrumentation)
-                    .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-                            servicesToEnable)
+            ShellCommandBuilder.create(sUiAutomation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, servicesToEnable)
                     .run();
             TestUtils.waitUntil("Failed to enable 2 services from package " + packageName,
                     (int) TIMEOUT_SERVICE_ENABLE / 1000,
@@ -1971,8 +2049,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                             info -> info.getId().startsWith(packageName)).count() == 2);
 
             // Uninstall the package that contains the services.
-            assertThat(ShellUtils.runShellCommand("pm uninstall " + packageName)).startsWith(
-                    "Success");
+            assertThat(SystemUtil.runShellCommand(sUiAutomation, "pm uninstall " + packageName))
+                    .startsWith("Success");
 
             // Ensure the uninstall removed the services from the secure setting.
             TestUtils.waitUntil(
@@ -1980,11 +2058,12 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                     (int) TIMEOUT_SERVICE_ENABLE / 1000,
                     () -> !getEnabledServicesSetting().contains(packageName));
         } finally {
-            ShellCommandBuilder.create(sInstrumentation)
-                    .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+            ShellCommandBuilder.create(sUiAutomation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                             originalEnabledServicesSetting)
                     .run();
-            ShellUtils.runShellCommand("pm uninstall " + packageName);
+            SystemUtil.runShellCommand(sUiAutomation, "pm uninstall " + packageName);
         }
     }
 
@@ -2003,8 +2082,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
 
         try {
-            assertThat(ShellUtils.runShellCommand(
-                    "pm install " + apkPath)).startsWith("Success");
+            assertThat(SystemUtil.runShellCommand(sUiAutomation, "pm install " + apkPath))
+                    .startsWith("Success");
             TestUtils.waitUntil(
                     "Installed services have not appeared on the list.",
                     TIMEOUT_SERVICE_ENABLE / 1000,
@@ -2021,7 +2100,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                     }
             );
         } finally {
-            ShellUtils.runShellCommand("pm uninstall " + packageName);
+            SystemUtil.runShellCommand(sUiAutomation, "pm uninstall " + packageName);
         }
     }
 
@@ -2212,7 +2291,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         try {
             // Install the apk in this test method, instead of as part of the target preparer, to
             // allow repeated --iterations of the test.
-            assertThat(ShellUtils.runShellCommand("pm install " + v1ApkPath)).startsWith("Success");
+            assertThat(SystemUtil.runShellCommand(sUiAutomation, "pm install " + v1ApkPath))
+                    .startsWith("Success");
             // Wait for the service to register as installed.
             TestUtils.waitUntil(
                     "Failed to install service:" + v1ApkPath,
@@ -2226,7 +2306,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // Enable the service and wait until AccessibilityManager reports it is
             // enabled.
             final String servicesToEnable = service.flattenToShortString();
-            ShellCommandBuilder.create(sInstrumentation)
+            ShellCommandBuilder.create(sUiAutomation)
                     .putSecureSetting(
                             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, servicesToEnable)
                     .run();
@@ -2241,7 +2321,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                                     == 1);
 
             // Update to a new version that doesn't have the intent declared.
-            assertThat(ShellUtils.runShellCommand("pm install " + v2ApkPath)).startsWith("Success");
+            assertThat(SystemUtil.runShellCommand(sUiAutomation, "pm install " + v2ApkPath))
+                    .startsWith("Success");
 
             // Wait for the install to finish and the service to be disabled.
             TestUtils.waitUntil(
@@ -2256,7 +2337,8 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
             // Update to version 3 that does have the intent declared.
             // The service should not re-enable.
-            assertThat(ShellUtils.runShellCommand("pm install " + v3ApkPath)).startsWith("Success");
+            assertThat(SystemUtil.runShellCommand(sUiAutomation, "pm install " + v3ApkPath))
+                    .startsWith("Success");
 
             // confirm the service is still not enabled.
             assertThrows(
@@ -2274,12 +2356,12 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                                                             .count() == 1));
 
         } finally {
-            ShellCommandBuilder.create(sInstrumentation)
+            ShellCommandBuilder.create(sUiAutomation)
                     .putSecureSetting(
                             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                             originalEnabledServicesSetting)
                     .run();
-            ShellUtils.runShellCommand("pm uninstall " + packageName);
+            SystemUtil.runShellCommand(sUiAutomation, "pm uninstall " + packageName);
         }
     }
 
@@ -2559,6 +2641,36 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testAddLabeledBy_viewOnInitializeAccessibilityNodeInfoInternal() {
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            final View labelOne = activity.findViewById(R.id.labelOne);
+                            final View editText = activity.findViewById(R.id.edittext);
+                            assertThat(labelOne).isNotNull();
+                            assertThat(editText).isNotNull();
+                            labelOne.setLabelFor(R.id.edittext);
+                            mActivity = activity;
+                        });
+
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+    }
+
+    @Test
     @ApiTest(apis = {
             "android.view.View#getSupplementalDescription",
     })
@@ -2576,10 +2688,18 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     })
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPLEMENTAL_DESCRIPTION)
     public void testSetGetSupplementalDescription() {
-        final Button button = mActivity.findViewById(R.id.buttonWithTooltip);
-        final String supplementalDescription = mActivity.getString(R.string.a_b);
-        button.setSupplementalDescription(supplementalDescription);
-        assertTrue(TextUtils.equals(supplementalDescription, button.getSupplementalDescription()));
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            final Button button = activity.findViewById(R.id.buttonWithTooltip);
+                            final String supplementalDescription = activity.getString(R.string.a_b);
+                            button.setSupplementalDescription(supplementalDescription);
+                            assertTrue(
+                                    TextUtils.equals(
+                                            supplementalDescription,
+                                            button.getSupplementalDescription()));
+                        });
     }
 
     @MediumTest

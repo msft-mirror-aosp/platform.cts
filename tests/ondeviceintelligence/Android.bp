@@ -41,16 +41,23 @@ android_test {
         "android.app.ondeviceintelligence-aconfig-java",
         "android-common",
         "android-support-v4",
+        "libprotobuf-java-nano",
     ],
     libs: [
         "android.test.base.stubs.system",
         "android.test.runner.stubs.system",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.proto",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
+    proto: {
+        type: "nano",
+    },
     target_sdk_version: "current",
 }

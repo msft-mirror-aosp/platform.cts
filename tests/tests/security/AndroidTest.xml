@@ -20,6 +20,7 @@
     <!-- CtsDeviceInfo target API is 23; instant app requires target API >= 26. -->
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
@@ -33,12 +34,15 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsDeviceInfo.apk" />
         <option name="test-file-name" value="CtsSecurityTestCases.apk" />
+        <option name="test-file-name" value="TestIntrusionDetectionApp.apk" />
+        <option name="install-arg" value="-t" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.CrashReporter" />
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="test-user-token" value="%TEST_USER%"/>
         <option name="run-command"
-            value="appops set android.security.cts REQUEST_INSTALL_PACKAGES allow" />
+            value="appops set --user %TEST_USER% android.security.cts REQUEST_INSTALL_PACKAGES allow" />
         <option name="teardown-command"
             value="appops reset android.security.cts" />
     </target_preparer>
@@ -74,6 +78,10 @@
         <option name="push" value="SplitBluetoothPermissionTestApp.apk->/data/local/tmp/cts/security/SplitBluetoothPermissionTestApp.apk" />
         <option name="push" value="CertBlocklistTestApp.apk->/data/local/tmp/cts/security/CertBlocklistTestApp.apk" />
         <option name="push" value="UpdatedDynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/UpdatedDynamicPermissionTestAttackerApp.apk" />
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="setprop debug.intrusiondetection_package_name com.android.coretests.apps.testapp/.TestLoggingService" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

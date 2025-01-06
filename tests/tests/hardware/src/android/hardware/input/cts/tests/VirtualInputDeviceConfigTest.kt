@@ -15,7 +15,7 @@
  */
 package android.hardware.input.cts.tests
 
-import android.companion.virtual.flags.Flags
+import android.companion.virtualdevice.flags.Flags
 import android.hardware.input.VirtualDpadConfig
 import android.hardware.input.VirtualKeyboardConfig
 import android.hardware.input.VirtualMouseConfig
@@ -239,7 +239,6 @@ class VirtualInputDeviceConfigTest {
         Truth.assertThat(configFromParcel.height).isEqualTo(config.height)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun testConstructorAndGetters_virtualStylusConfig() {
         val config: VirtualStylusConfig = createVirtualStylusConfig()
@@ -251,7 +250,6 @@ class VirtualInputDeviceConfigTest {
         Truth.assertThat(config.height).isEqualTo(HEIGHT)
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun testParcel_virtualStylusConfig() {
         val config: VirtualStylusConfig = createVirtualStylusConfig()
@@ -269,7 +267,7 @@ class VirtualInputDeviceConfigTest {
         Truth.assertThat(configFromParcel.height).isEqualTo(config.height)
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun testConstructorAndGetters_virtualRotaryConfig() {
         val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfig()
@@ -279,7 +277,7 @@ class VirtualInputDeviceConfigTest {
         Truth.assertThat(config.associatedDisplayId).isEqualTo(DISPLAY_ID)
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun testParcel_virtualRotaryConfig() {
         val config: VirtualRotaryEncoderConfig = createVirtualRotaryEncoderConfig()
@@ -559,7 +557,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylusConfig_missingName_throwsException() {
         assertThrows(NullPointerException::class.java) {
@@ -571,7 +568,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylusConfig_nameLengthExceedsLimit_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -592,7 +588,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylusConfig_missingDisplayId_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -604,7 +599,6 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylusConfig_invalidDimensions_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -618,7 +612,7 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotaryConfig_missingName_throwsException() {
         assertThrows(NullPointerException::class.java) {
@@ -630,7 +624,7 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotaryConfig_nameLengthExceedsLimit_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -651,7 +645,7 @@ class VirtualInputDeviceConfigTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotaryConfig_missingDisplayId_throwsException() {
         assertThrows(IllegalArgumentException::class.java) {

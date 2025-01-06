@@ -18,6 +18,7 @@ package android.soundtrigger.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertThrows;
 
 import android.hardware.soundtrigger.SoundTrigger;
 import android.hardware.soundtrigger.SoundTrigger.KeyphraseRecognitionExtra;
@@ -111,7 +112,7 @@ public class SoundTriggerTest {
     private static RecognitionConfig createTestRecognitionConfig() {
         return new RecognitionConfig.Builder()
                 .setCaptureRequested(true)
-                .setAllowMultipleTriggers(true)
+                .setMultipleTriggersAllowed(true)
                 .setKeyphrases(TEST_KEYPHRASE_RECOGNITION_EXTRAS)
                 .setData(TEST_RECOGNITION_CONFIG_DATA)
                 .setAudioCapabilities(1)
@@ -182,7 +183,7 @@ public class SoundTriggerTest {
     private static void verifyRecognitionConfigMatchesTestParams(
             RecognitionConfig recognitionConfig) {
         assertThat(recognitionConfig.isCaptureRequested()).isTrue();
-        assertThat(recognitionConfig.isAllowMultipleTriggers()).isTrue();
+        assertThat(recognitionConfig.isMultipleTriggersAllowed()).isTrue();
         assertThat(recognitionConfig.getKeyphrases()).isEqualTo(TEST_KEYPHRASE_RECOGNITION_EXTRAS);
         assertThat(recognitionConfig.getData())
                 .asList()
@@ -295,7 +296,7 @@ public class SoundTriggerTest {
     public void testRecognitionConfigBuilderDefaultValues() {
         RecognitionConfig recognitionConfig = new RecognitionConfig.Builder().build();
         assertThat(recognitionConfig.isCaptureRequested()).isFalse();
-        assertThat(recognitionConfig.isAllowMultipleTriggers()).isFalse();
+        assertThat(recognitionConfig.isMultipleTriggersAllowed()).isFalse();
         assertThat(recognitionConfig.getKeyphrases()).isNotNull();
         assertThat(recognitionConfig.getKeyphrases()).isEmpty();
         assertThat(recognitionConfig.getData()).isNotNull();
@@ -322,5 +323,19 @@ public class SoundTriggerTest {
                 SoundTrigger.RecognitionConfig.CREATOR.createFromParcel(parcel);
         assertThat(recognitionConfigSrc).isEqualTo(recognitionConfigResult);
         verifyRecognitionConfigMatchesTestParams(recognitionConfigResult);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
+    @Test
+    public void testRecognitionConfigBuilderInvalidKeyphrases_NullPointerExceptionThrows() {
+        RecognitionConfig.Builder builder = new RecognitionConfig.Builder();
+        assertThrows(NullPointerException.class, () -> builder.setKeyphrases(null));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
+    @Test
+    public void testRecognitionConfigBuilderInvalidData_NullPointerExceptionThrows() {
+        RecognitionConfig.Builder builder = new RecognitionConfig.Builder();
+        assertThrows(NullPointerException.class, () -> builder.setData(null));
     }
 }

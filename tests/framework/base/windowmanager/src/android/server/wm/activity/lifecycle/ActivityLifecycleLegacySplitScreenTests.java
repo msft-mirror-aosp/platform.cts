@@ -19,6 +19,7 @@ package android.server.wm.activity.lifecycle;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.EXTRA_ACTIVITY_ON_USER_LEAVE_HINT;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_ACTIVITY_RESULT;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_CREATE;
@@ -387,8 +388,10 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
 
         getTransitionLog().clear();
         launchActivityAndWait(SecondActivity.class);
-
-        waitForIdle();
+        // Wait for the transition animation complete.
+        mInstrumentation.getUiAutomation().syncInputTransactions();
+        waitAndAssertActivityState(
+                getComponentName(FirstActivity.class), STATE_STOPPED, "Activity should be stopped");
 
         TransitionVerifier.assertOrder(
                 getTransitionLog(),

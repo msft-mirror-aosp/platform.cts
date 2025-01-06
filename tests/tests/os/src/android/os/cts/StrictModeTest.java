@@ -1464,7 +1464,6 @@ public class StrictModeTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
     public void testBackgroundBalAborted_ThrowsViolation() throws Exception {
-
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder()
                         .detectBlockedBackgroundActivityLaunch()
@@ -1484,8 +1483,8 @@ public class StrictModeTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
     public void testBackgroundBalAborted_NoViolation() throws Exception {
-
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder()
                         .detectBlockedBackgroundActivityLaunch()

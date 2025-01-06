@@ -33,6 +33,7 @@ import androidx.media3.common.Player;
 import androidx.media3.common.Player.PlaybackSuppressionReason;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,7 +46,7 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
   private PhoneAccountHandle mPhoneAccountHandle;
   private final List<Integer> playbackSuppressionReasons = new ArrayList<>();
 
-  public CallNotificationTestPlayerListener(long sendMessagePosition) {
+  public CallNotificationTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -100,7 +101,7 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
           mRingVolumeUpdated = true;
         }
         // Add the duration of the incoming call
-        mExpectedTotalTime += CallNotificationService.DURATION_MS;
+        mExpectedTotalTime += CallNotificationService.CALL_DURATION.toMillis();
       }
       // Let the ExoPlayer handle audio focus internally
       mActivity.mPlayer.setAudioAttributes(mActivity.mPlayer.getAudioAttributes(), true);
@@ -116,7 +117,7 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
     mActivity.mPlayer.createMessage((messageType, payload) -> {
           // Place a sample incoming call
           mTelecomManager.addNewIncomingCall(mPhoneAccountHandle, null);
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }

@@ -16,7 +16,6 @@
 
 package android.view.accessibility.cts;
 
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.view.accessibility.AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT;
 import static android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED;
 
@@ -24,22 +23,19 @@ import static org.junit.Assert.assertEquals;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
-import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.os.Bundle;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.lifecycle.Lifecycle;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,8 +57,8 @@ public class AccessibilityEventAndCacheTest {
 
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
-    private final ActivityTestRule<TestActivity> mActivityRule =
-            new ActivityTestRule<>(TestActivity.class, false, false);
+    private final ActivityScenarioRule<TestActivity> mActivityRule =
+            new ActivityScenarioRule<>(TestActivity.class);
     private final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
     private final InstrumentedAccessibilityServiceTestRule<SpeakingAccessibilityService>
@@ -76,28 +72,26 @@ public class AccessibilityEventAndCacheTest {
                     .around(mInstrumentedAccessibilityServiceRule)
                     .around(mDumpOnFailureRule);
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Before
     public void setUp() throws Throwable {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
-        final Activity activity = launchActivityAndWaitForItToBeOnscreen(
-                sInstrumentation, sUiAutomation, mActivityRule);
+        mActivityRule.getScenario().moveToState(Lifecycle.State.RESUMED);
         mInstrumentedAccessibilityServiceRule.enableService();
 
-        mActivityRule.runOnUiThread(() -> {
-            final LinearLayout list = activity.findViewById(R.id.buttonsParent);
-            assertEquals(NUM_CHILD_VIEWS, list.getChildCount());
-            for (int i = 0; i < NUM_CHILD_VIEWS; i++) {
-                mChildViews.add((TextView) list.getChildAt(i));
-            }
-        });
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            final LinearLayout list = activity.findViewById(R.id.buttonsParent);
+                            assertEquals(NUM_CHILD_VIEWS, list.getChildCount());
+                            for (int i = 0; i < NUM_CHILD_VIEWS; i++) {
+                                mChildViews.add((TextView) list.getChildAt(i));
+                            }
+                        });
     }
 
     @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_FIX_MERGED_CONTENT_CHANGE_EVENT_V2)
     public void testSimultaneousChangesUpdatesAllChildNodes() throws Exception {
         // Makes sure that all nodes are fetched in client side.
         final List<AccessibilityNodeInfo> nodes = sUiAutomation.getRootInActiveWindow()

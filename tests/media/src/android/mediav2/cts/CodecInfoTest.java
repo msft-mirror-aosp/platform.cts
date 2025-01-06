@@ -57,11 +57,13 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecTestBase;
 import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 import android.util.Range;
 
 import androidx.test.filters.SdkSuppress;
@@ -116,6 +118,11 @@ public class CodecInfoTest {
                 continue;
             }
             String codecName = codecInfo.getName();
+            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
+                Log.v(LOG_TAG, "codec " + codecName + " skipped in mode "
+                                + TestUtils.currentTestModeName());
+                continue;
+            }
             if (codecPrefix != null && !codecName.startsWith(codecPrefix)
                     || (codecFilter != null && !codecFilter.matcher(codecName).matches())) {
                 continue;
@@ -306,7 +313,7 @@ public class CodecInfoTest {
      * For all the available encoders on the device, the test checks if their encoding
      * capabilities are in sync with the device's decoding capabilities.
      */
-    @CddTest(requirements = "5/C-0-3")
+    @CddTest(requirements = {"5/C-0-3"})
     @Test
     public void testDecoderAvailability() {
         Assume.assumeTrue("Test is applicable only for encoders", mCodecInfo.isEncoder());

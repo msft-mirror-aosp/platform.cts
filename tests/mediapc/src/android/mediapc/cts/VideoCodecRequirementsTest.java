@@ -84,8 +84,6 @@ import java.util.stream.IntStream;
 
 public class VideoCodecRequirementsTest {
     private static final String LOG_TAG = VideoCodecRequirementsTest.class.getSimpleName();
-    private static final String FILE_AV1_REQ_SUPPORT =
-            "dpov_1920x1080_60fps_av1_10bit_film_grain.mp4";
     private static final String INPUT_FILE = "bbb_3840x2160_AVIF.avif";
 
     @Rule
@@ -155,7 +153,7 @@ public class VideoCodecRequirementsTest {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-15")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-15"})
     public void test4k60Decoder() throws IOException {
         Set<String> decoderSet = get4k60HwCodecSet(false);
 
@@ -172,7 +170,7 @@ public class VideoCodecRequirementsTest {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-16")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-16"})
     public void test4k60Encoder() throws IOException {
         Set<String> encoderSet = get4k60HwCodecSet(true);
 
@@ -189,7 +187,7 @@ public class VideoCodecRequirementsTest {
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-17")
+    @CddTest(requirements = {"5.1/H-1-17"})
     public void testAVIFHwDecoderRequirements() throws Exception {
         int[] profiles = {AV1ProfileMain8, AV1ProfileMain10};
         ArrayList<MediaFormat> formats = new ArrayList<>();
@@ -220,7 +218,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-18")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-18"})
     public void testAV1EncoderRequirements() throws Exception {
         int width = 720;
         int height = 480;
@@ -279,7 +277,7 @@ public class VideoCodecRequirementsTest {
     @SmallTest
     @RequiresFlagsEnabled(Flags.FLAG_HLG_EDITING)
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-20")
+    @CddTest(requirements = {"5.1/H-1-20"})
     public void testHlgEditingSupport() throws CameraAccessException, IOException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, MIMETYPE_VIDEO_AV1};
@@ -328,7 +326,7 @@ public class VideoCodecRequirementsTest {
     @SmallTest
     @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_COLOR_ASPECTS)
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-21")
+    @CddTest(requirements = {"5.1/H-1-21"})
     public void testDynamicColorAspectFeature() {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -362,7 +360,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.1/H-1-22")
+    @CddTest(requirements = {"5.1/H-1-22"})
     public void testPortraitResolutionSupport() throws CameraAccessException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -410,7 +408,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.12/H-1-2")
+    @CddTest(requirements = {"5.12/H-1-2"})
     public void testColorFormatSupport() throws IOException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_AV1};

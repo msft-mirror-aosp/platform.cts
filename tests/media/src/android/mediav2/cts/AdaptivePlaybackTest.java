@@ -16,10 +16,13 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
-import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -133,10 +136,6 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                         "bbb_128x96_64kbps_12fps_mpeg4.mp4",
                         "bbb_176x144_192kbps_15fps_mpeg4.mp4",
                         "bbb_128x96_64kbps_12fps_mpeg4.mp4"}, CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
-                        "bbb_800x640_768kbps_30fps_av1.webm",
-                        "bbb_1280x720_1mbps_30fps_av1.webm",
-                        "bbb_640x360_512kbps_30fps_av1.webm"}, CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2, new String[]{
                         "bbb_800x640_768kbps_30fps_mpeg2_2b.mp4",
                         "bbb_800x640_768kbps_30fps_mpeg2_nob.mp4",
@@ -176,11 +175,22 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
                             "cosmat_640x360_24fps_crf22_vp9_10bit.mkv",
                             "cosmat_1280x720_24fps_crf22_vp9_10bit.mkv",
                             "cosmat_800x640_24fps_crf22_vp9_10bit.mkv"}, CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_AV1, new String[]{
-                            "cosmat_640x360_24fps_512kbps_av1_10bit.mkv",
-                            "cosmat_1280x720_24fps_1200kbps_av1_10bit.mkv",
-                            "cosmat_800x640_24fps_768kbps_av1_10bit.mkv"}, CODEC_ALL},
             }));
+        }
+
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(
+                    Arrays.asList(
+                            new Object[][] {
+                                {
+                                    MediaFormat.MIMETYPE_VIDEO_APV,
+                                    new String[] {
+                                        "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                                        "pattern_1280x720_30fps_30mbps_apv_10bit.mp4"
+                                    },
+                                    CODEC_OPTIONAL
+                                },
+                            }));
         }
         List<Object[]> argsList = prepareParamList(exhaustiveArgsList, isEncoder, needAudio,
                 needVideo, false);
@@ -297,7 +307,7 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
     /**
      * Test video decoder for seamless resolution changes.
      */
-    @CddTest(requirement = "5.3/C-1-1")
+    @CddTest(requirements = {"5.3/C-1-1"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback",
             "android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DynamicColorAspects"})
     @LargeTest

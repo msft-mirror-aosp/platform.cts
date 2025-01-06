@@ -4,6 +4,7 @@ import android.companion.AssociationRequest.DEVICE_PROFILE_APP_STREAMING
 import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
 import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
+import android.companion.AssociationRequest.DEVICE_PROFILE_SENSOR_DEVICE_STREAMING
 import android.platform.test.annotations.AppModeFull
 import com.android.compatibility.common.util.FeatureUtil
 import org.junit.Assume.assumeFalse
@@ -34,18 +35,40 @@ class AssociationEndToEndSingleDeviceTest(
         assumeFalse(profile == DEVICE_PROFILE_APP_STREAMING)
         assumeFalse(profile == DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)
         assumeFalse(profile == DEVICE_PROFILE_NEARBY_DEVICE_STREAMING)
+        assumeFalse(profile == DEVICE_PROFILE_SENSOR_DEVICE_STREAMING)
     }
 
     @Test
-    fun test_userRejected() =
-            super.test_userRejected(singleDevice = true, selfManaged = false, displayName = null)
+    fun test_userRejected() = super.test_userRejected(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = false,
+            displayName = null
+    )
 
     @Test
-    fun test_userDismissed() =
-            super.test_userDismissed(singleDevice = true, selfManaged = false, displayName = null)
+    fun test_userDismissed() = super.test_userDismissed(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = false,
+            displayName = null
+    )
 
     @Test
-    fun test_timeout() = super.test_timeout(singleDevice = true)
+    fun test_userRejectedDiscovery() = super.test_userRejected(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = true,
+            displayName = null
+    )
+
+    @Test
+    fun test_userDismissedDiscovery() = super.test_userDismissed(
+            singleDevice = true,
+            selfManaged = false,
+            timeout = true,
+            displayName = null
+    )
 
     @Test
     fun test_userConfirmed() = super.test_userConfirmed_foundDevice(singleDevice = true) {
@@ -53,6 +76,9 @@ class AssociationEndToEndSingleDeviceTest(
         // the button.
         confirmationUi.waitUntilPositiveButtonIsEnabledAndClick()
     }
+
+    @Test
+    fun test_timeout() = super.test_timeout(singleDevice = true)
 
     companion object {
         /**

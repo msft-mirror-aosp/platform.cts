@@ -42,14 +42,16 @@ public class PhotoPickerUiUtils {
 
     public static final String REGEX_PACKAGE_NAME =
             "com(.google)?.android.providers.media(.module)?";
-    private static final String MEDIA_ITEM_CONTENT_DESCRIPTION = "Media";
+    // Matches all possible content description, while avoiding to match with content description of
+    // other ui objects like the "Photos" tab
+    private static final String REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION =
+            "^(Media|Photo|Video|GIF|Motion)[^s].*";
 
     /**
      * Get the list of items from the photo grid list.
      *
      * @param itemCount if the itemCount is -1, return all matching items. Otherwise, return the
      *                  item list that its size is not greater than the itemCount.
-     * @throws Exception
      */
     public static List<UiObject> findItemList(int itemCount) throws Exception {
         final List<UiObject> itemList = new ArrayList<>();
@@ -79,10 +81,10 @@ public class PhotoPickerUiUtils {
         return itemList;
     }
 
-    /** Find a media item to perform click events*/
+    /** Find a media item to perform click events */
     public static UiObject getMediaItem(UiDevice device) throws Exception {
         UiSelector mediaItemSelector =
-                new UiSelector().descriptionMatches(MEDIA_ITEM_CONTENT_DESCRIPTION);
+                new UiSelector().descriptionMatches(REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION);
         return device.findObject(mediaItemSelector);
     }
 

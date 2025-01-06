@@ -18,12 +18,9 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAssignedNumbers.OrganizationId;
@@ -51,8 +48,7 @@ public class TransportBlockFilterTest {
     private static final byte[] TEST_TRANSPORT_DATA_MASK = {0x0, 0x1, 0xF, 0xF, 0xF, 0xF};
     private static final byte[] TEST_TRANSPORT_DATA_LONG = {0x0, 0x3, 0x2, 0x3, 0x4, 0x5, 0x6};
     private static final byte[] TEST_TRANSPORT_DATA_MASK_LONG = {0x0, 0x1, 0xF, 0xF, 0xF, 0xF, 0xF};
-    private static final byte[] TEST_VALID_WIFI_NAN_HASH =
-            {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+    private static final byte[] TEST_VALID_WIFI_NAN_HASH = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
 
     private Context mContext;
     private BluetoothAdapter mAdapter;
@@ -65,7 +61,7 @@ public class TransportBlockFilterTest {
 
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT);
         mAdapter = TestUtils.getBluetoothAdapterOrDie();
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
+        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
     }
 
     @After
@@ -77,88 +73,99 @@ public class TransportBlockFilterTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void emptyTransportBlockFilterFromBuilder() {
-        TransportBlockFilter filter = new TransportBlockFilter.Builder(
-                OrganizationId.BLUETOOTH_SIG).build();
-        assertEquals(OrganizationId.BLUETOOTH_SIG, filter.getOrgId());
-        assertEquals(0, filter.getTdsFlags());
-        assertEquals(0, filter.getTdsFlagsMask());
-        assertNull(filter.getTransportData());
-        assertNull(filter.getTransportDataMask());
-        assertNull(filter.getWifiNanHash());
+        TransportBlockFilter filter =
+                new TransportBlockFilter.Builder(OrganizationId.BLUETOOTH_SIG).build();
+        assertThat(filter.getOrgId()).isEqualTo(OrganizationId.BLUETOOTH_SIG);
+        assertThat(filter.getTdsFlags()).isEqualTo(0);
+        assertThat(filter.getTdsFlagsMask()).isEqualTo(0);
+        assertThat(filter.getTransportData()).isNull();
+        assertThat(filter.getTransportDataMask()).isNull();
+        assertThat(filter.getWifiNanHash()).isNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void createTransportBlockFilterFromBuilder() {
-        TransportBlockFilter filter = new TransportBlockFilter.Builder(
-                OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT)
-                .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK)
-                .setTransportData(TEST_TRANSPORT_DATA, TEST_TRANSPORT_DATA_MASK).build();
-        assertEquals(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT, filter.getOrgId());
-        assertEquals(TEST_TDS_FLAG, filter.getTdsFlags());
-        assertEquals(TEST_TDS_FLAG_MASK, filter.getTdsFlagsMask());
-        assertArrayEquals(TEST_TRANSPORT_DATA, filter.getTransportData());
-        assertArrayEquals(TEST_TRANSPORT_DATA_MASK, filter.getTransportDataMask());
-        assertNull(filter.getWifiNanHash());
-        assertNotNull(filter.toString());
+        TransportBlockFilter filter =
+                new TransportBlockFilter.Builder(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT)
+                        .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK)
+                        .setTransportData(TEST_TRANSPORT_DATA, TEST_TRANSPORT_DATA_MASK)
+                        .build();
+        assertThat(filter.getOrgId()).isEqualTo(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT);
+        assertThat(filter.getTdsFlags()).isEqualTo(TEST_TDS_FLAG);
+        assertThat(filter.getTdsFlagsMask()).isEqualTo(TEST_TDS_FLAG_MASK);
+        assertThat(filter.getTransportData()).isEqualTo(TEST_TRANSPORT_DATA);
+        assertThat(filter.getTransportDataMask()).isEqualTo(TEST_TRANSPORT_DATA_MASK);
+        assertThat(filter.getWifiNanHash()).isNull();
+        assertThat(filter.toString()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void createWifiNanTransportBlockFilterFromBuilder() {
-        TransportBlockFilter filter = new TransportBlockFilter.Builder(
-                OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING)
-                .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK)
-                .setWifiNanHash(TEST_VALID_WIFI_NAN_HASH).build();
-        assertEquals(OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING, filter.getOrgId());
-        assertEquals(TEST_TDS_FLAG, filter.getTdsFlags());
-        assertEquals(TEST_TDS_FLAG_MASK, filter.getTdsFlagsMask());
-        assertNull(filter.getTransportData());
-        assertNull(filter.getTransportDataMask());
-        assertArrayEquals(TEST_VALID_WIFI_NAN_HASH, filter.getWifiNanHash());
-        assertNotNull(filter.toString());
+        TransportBlockFilter filter =
+                new TransportBlockFilter.Builder(
+                                OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING)
+                        .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK)
+                        .setWifiNanHash(TEST_VALID_WIFI_NAN_HASH)
+                        .build();
+        assertThat(filter.getOrgId())
+                .isEqualTo(OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING);
+        assertThat(filter.getTdsFlags()).isEqualTo(TEST_TDS_FLAG);
+        assertThat(filter.getTdsFlagsMask()).isEqualTo(TEST_TDS_FLAG_MASK);
+        assertThat(filter.getTransportData()).isNull();
+        assertThat(filter.getTransportDataMask()).isNull();
+        assertThat(filter.getWifiNanHash()).isEqualTo(TEST_VALID_WIFI_NAN_HASH);
+        assertThat(filter.toString()).isNotNull();
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void cannotSetWifiNanHashForWrongOrgId() {
-        TransportBlockFilter.Builder builder = new TransportBlockFilter.Builder(
-                OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT)
-                .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK);
-        assertThrows(IllegalArgumentException.class,
+        TransportBlockFilter.Builder builder =
+                new TransportBlockFilter.Builder(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT)
+                        .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK);
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> builder.setWifiNanHash(TEST_VALID_WIFI_NAN_HASH));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setTransportDataNonWifiNan() {
-        TransportBlockFilter.Builder builder = new TransportBlockFilter.Builder(
-                OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT)
-                .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK);
-        assertThrows(NullPointerException.class,
+        TransportBlockFilter.Builder builder =
+                new TransportBlockFilter.Builder(OrganizationId.WIFI_ALLIANCE_SERVICE_ADVERTISEMENT)
+                        .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK);
+        assertThrows(
+                NullPointerException.class,
                 () -> builder.setTransportData(TEST_TRANSPORT_DATA, null));
-        assertThrows(NullPointerException.class,
+        assertThrows(
+                NullPointerException.class,
                 () -> builder.setTransportData(null, TEST_TRANSPORT_DATA_MASK));
-        assertThrows(NullPointerException.class,
-                () -> builder.setTransportData(null, null));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(NullPointerException.class, () -> builder.setTransportData(null, null));
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> builder.setTransportData(TEST_TRANSPORT_DATA, TEST_TRANSPORT_DATA_MASK_LONG));
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void setTransportDataWifiNan() {
-        TransportBlockFilter.Builder builder = new TransportBlockFilter.Builder(
-                OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING)
-                .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK);
-        assertThrows(IllegalArgumentException.class,
+        TransportBlockFilter.Builder builder =
+                new TransportBlockFilter.Builder(
+                                OrganizationId.WIFI_ALLIANCE_NEIGHBOR_AWARENESS_NETWORKING)
+                        .setTdsFlags(TEST_TDS_FLAG, TEST_TDS_FLAG_MASK);
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> builder.setTransportData(TEST_TRANSPORT_DATA, null));
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(
+                IllegalArgumentException.class,
                 () -> builder.setTransportData(null, TEST_TRANSPORT_DATA_MASK));
-        assertThrows(IllegalArgumentException.class,
-                () -> builder.setTransportData(null, null));
-        assertThrows(IllegalArgumentException.class,
-                () -> builder.setTransportData(TEST_TRANSPORT_DATA_LONG,
-                        TEST_TRANSPORT_DATA_MASK_LONG));
+        assertThrows(IllegalArgumentException.class, () -> builder.setTransportData(null, null));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        builder.setTransportData(
+                                TEST_TRANSPORT_DATA_LONG, TEST_TRANSPORT_DATA_MASK_LONG));
     }
 }

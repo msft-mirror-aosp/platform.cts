@@ -217,7 +217,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               is_stabilized = (
                   stabilize == camera_properties_utils.STABILIZATION_MODE_PREVIEW
               )
-              skip_test = its_session_utils.check_and_update_features_tested(
+              skip_test = its_session_utils.check_features_passed(
                   features_tested, hlg10, is_stabilized)
               if skip_test:
                 continue
@@ -268,6 +268,10 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
 
                 # determine radius tolerance of capture
                 cap_fl = cap['metadata']['android.lens.focalLength']
+                cap_physical_id = (
+                    cap['metadata'][
+                        'android.logicalMultiCamera.activePhysicalId']
+                )
                 result_zoom = float(
                     cap['metadata']['android.control.zoomRatio'])
                 radius_tol, offset_tol = test_tols.get(
@@ -303,7 +307,8 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                         result_zoom=result_zoom,
                         radius_tol=radius_tol,
                         offset_tol=offset_tol,
-                        focal_length=cap_fl
+                        focal_length=cap_fl,
+                        physical_id=cap_physical_id
                     )
                 )
 
@@ -319,6 +324,9 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: failed! '
                     'Check test_log.DEBUG for errors')
                 test_failures.append(failure_msg)
+
+              its_session_utils.mark_features_passed(
+                  features_tested, hlg10, is_stabilized)
 
       if test_failures:
         raise AssertionError(test_failures)

@@ -16,14 +16,14 @@
 
 package com.android.bedstead.accounts.annotations;
 
-import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.accounts.annotations.EnsureHasNoAccounts.ENSURE_HAS_NO_ACCOUNTS_PRIORITY;
+import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS;
 
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

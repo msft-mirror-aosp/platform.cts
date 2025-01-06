@@ -77,8 +77,8 @@ class CloudMediaProviderTest {
                 .that(capabilities?.isSearchEnabled())
                 .isFalse()
 
-            assertWithMessage("isMediaCollectionsEnabled had unexpected default value.")
-                .that(capabilities?.isMediaCollectionsEnabled())
+            assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
+                .that(capabilities?.isMediaCategoriesEnabled())
                 .isFalse()
         } catch (e: RemoteException) {
             throw AssertionError("The DefaultCloudMediaProvider threw an error.", e)
@@ -97,8 +97,8 @@ class CloudMediaProviderTest {
             .that(capabilities.isSearchEnabled())
             .isFalse()
 
-        assertWithMessage("isMediaCollectionsEnabled had unexpected default value.")
-            .that(capabilities.isMediaCollectionsEnabled())
+        assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
+            .that(capabilities.isMediaCategoriesEnabled())
             .isFalse()
     }
 
@@ -111,15 +111,15 @@ class CloudMediaProviderTest {
         val capabilities =
             CloudMediaProviderContract.Capabilities.Builder()
                 .setSearchEnabled(true)
-                .setMediaCollectionsEnabled(true)
+                .setMediaCategoriesEnabled(true)
                 .build()
 
         assertWithMessage("isSearchEnabled had unexpected default value.")
             .that(capabilities.isSearchEnabled())
             .isTrue()
 
-        assertWithMessage("isMediaCollectionsEnabled had unexpected default value.")
-            .that(capabilities.isMediaCollectionsEnabled())
+        assertWithMessage("isMediaCategoriesEnabled had unexpected default value.")
+            .that(capabilities.isMediaCategoriesEnabled())
             .isTrue()
     }
 }

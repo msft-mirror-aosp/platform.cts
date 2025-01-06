@@ -747,17 +747,6 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GenericDocumentCtsTest#testRetrieveTopLevelPropertiesIndexOutOfRange"/>
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.GlobalSearchSessionCtsTest#testGlobalQuery_propertyWeights"/>
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.app.SearchSpecCtsTest#testBuildSearchSpec_hasProperty"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_deviceOwner_fail"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_emptyPackage"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_failed_noSuchMethod"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_runInManagedProfile_fail"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_startActivity"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_success"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_success_async"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_timedOut"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.ExecuteAppFunctionRequestCtsTest#build"/>
-    <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.ExecuteAppFunctionResponseCtsTest#build"/>
     <!-- CtsAppSecurityHostTestCases -->
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#rebootWithDuplicatePermission"/>
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testAdbInstallFile_full"/>
@@ -2030,7 +2019,7 @@
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Character.CharacterName#testGetName_shard5"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Character.CharacterName#testGetName_shard6"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Character.Supplementary#main"/>
-    <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Double.ParseDoubleTest#testPowers"/>
+    <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.Double.ParseDouble#main"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.StackWalker.VerifyStackTrace#main"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.String.concat.ImplicitStringConcatBoundaries#testImplicitStringConcatBoundaries"/>
     <option name="compatibility:include-filter" value="CtsLibcoreOjTestCases test.java.lang.reflect.records.RecordReflectionTest#testRecordReflection"/>
@@ -2477,6 +2466,8 @@
     <option name="compatibility:include-filter" value="CtsMediaMiscTestCases android.media.misc.cts.ThumbnailUtilsTest#testCreateImageThumbnail_HEICSample[2]"/>
     <!-- CtsMediaMuxerTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MediaMuxerTest#testAVIFOutputInHEIF"/>
+    <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MuxerTest$TestSimpleMux#testSimpleMuxNative[6_aac]"/>
+    <option name="compatibility:include-filter" value="CtsMediaMuxerTestCases android.media.muxer.cts.MuxerUnitTest$TestApi#testIfNonSeekableFdIsRejected"/>
     <!-- CtsMediaPerformanceClassTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaPerformanceClassTestCases android.mediapc.cts.VideoCodecRequirementsTest#testAVIFHwDecoderRequirements"/>
     <!-- CtsMediaPlayerTestCases -->
@@ -2526,8 +2517,6 @@
     <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecInfoTest#testAlignmentSupport[16_video/av01_c2.android.av1.encoder]"/>
     <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecInfoTest#testAlignmentSupport[26_video/x-vnd.on2.vp8_c2.android.vp8.encoder]"/>
     <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecInfoTest#testAlignmentSupport[28_video/x-vnd.on2.vp9_c2.android.vp9.encoder]"/>
-    <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.MuxerTest$TestSimpleMux#testSimpleMuxNative[6_aac]"/>
-    <option name="compatibility:include-filter" value="CtsMediaV2TestCases android.mediav2.cts.MuxerUnitTest$TestApi#testIfNonSeekableFdIsRejected"/>
     <!-- CtsMemunreachableTestCases -->
     <option name="compatibility:include-filter" value="CtsMemunreachableTestCases android.memunreachable.cts.MemunreachableTests#testDumpsysMeminfoUnreachableDebuggableApp"/>
     <option name="compatibility:include-filter" value="CtsMemunreachableTestCases android.memunreachable.cts.MemunreachableTests#testDumpsysMeminfoUnreachableUndebuggableApp"/>

@@ -31,6 +31,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
@@ -38,6 +39,7 @@ import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.policies.SuspendPersonalApps;
 import com.android.bedstead.harrier.policies.SuspendPersonalAppsWithCloneProfileDisabled;
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
@@ -131,6 +133,7 @@ public final class PersonalAppsSuspensionTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setPersonalAppsSuspended")
     @RequireNotHeadlessSystemUserMode(
             reason = "b/319449037 - Headless bug fix needs to be fully ramped")
+    @RequireFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING)
     @PolicyAppliesTest(policy = SuspendPersonalAppsWithCloneProfileDisabled.class)
     public void setPersonalAppsSuspended_smsApp_canStartActivity() {
         try (TestAppInstance testApp = sSmsTestApp.install();

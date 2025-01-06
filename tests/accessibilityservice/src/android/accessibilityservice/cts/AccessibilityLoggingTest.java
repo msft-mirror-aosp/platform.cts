@@ -21,8 +21,8 @@ import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.content.Context;
 import android.platform.test.annotations.Presubmit;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.CddTest;

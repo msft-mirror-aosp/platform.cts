@@ -33,7 +33,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtual.sensor.VirtualSensorDirectChannelCallback;
@@ -110,6 +109,8 @@ public class VirtualDeviceParamsTest {
                 .setVirtualSensorCallback(mExecutor, mVirtualSensorCallback)
                 .setVirtualSensorDirectChannelCallback(
                         mExecutor, mVirtualSensorDirectChannelCallback)
+                .setInputMethodComponent(COMPONENT_NAME)
+                .setHomeComponent(COMPONENT_NAME_2)
                 .build();
         Parcel parcel = Parcel.obtain();
         originalParams.writeToParcel(parcel, 0);
@@ -123,10 +124,11 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_SENSORS)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_AUDIO)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_CUSTOM);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(
-                Flags.crossDeviceClipboard() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getAudioPlaybackSessionId()).isEqualTo(PLAYBACK_SESSION_ID);
         assertThat(params.getAudioRecordingSessionId()).isEqualTo(RECORDING_SESSION_ID);
+        assertThat(params.getInputMethodComponent()).isEqualTo(COMPONENT_NAME);
+        assertThat(params.getHomeComponent()).isEqualTo(COMPONENT_NAME_2);
 
         List<VirtualSensorConfig> sensorConfigs = params.getVirtualSensorConfigs();
         assertThat(sensorConfigs).hasSize(1);
@@ -134,38 +136,6 @@ public class VirtualDeviceParamsTest {
         assertThat(sensorConfig.getType()).isEqualTo(TYPE_ACCELEROMETER);
         assertThat(sensorConfig.getName()).isEqualTo(SENSOR_NAME);
         assertThat(sensorConfig.getVendor()).isEqualTo(SENSOR_VENDOR);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_HOME)
-    @Test
-    public void customHome_parcelable_shouldRecreateSuccessfully() {
-        VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
-                .setHomeComponent(COMPONENT_NAME)
-                .build();
-
-        Parcel parcel = Parcel.obtain();
-        originalParams.writeToParcel(parcel, 0);
-        parcel.setDataPosition(0);
-
-        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
-        assertThat(params).isEqualTo(originalParams);
-        assertThat(params.getHomeComponent()).isEqualTo(COMPONENT_NAME);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_IME)
-    @Test
-    public void customIme_parcelable_shouldRecreateSuccessfully() {
-        VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
-                .setInputMethodComponent(COMPONENT_NAME)
-                .build();
-
-        Parcel parcel = Parcel.obtain();
-        originalParams.writeToParcel(parcel, 0);
-        parcel.setDataPosition(0);
-
-        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
-        assertThat(params).isEqualTo(originalParams);
-        assertThat(params.getInputMethodComponent()).isEqualTo(COMPONENT_NAME);
     }
 
     @RequiresFlagsEnabled(
@@ -273,7 +243,6 @@ public class VirtualDeviceParamsTest {
                 .isEqualTo(VirtualDeviceParams.ACTIVITY_POLICY_DEFAULT_ALLOWED);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_activityPolicyCustom_throwsException() {
         assertThrows(IllegalArgumentException.class,
@@ -283,7 +252,6 @@ public class VirtualDeviceParamsTest {
                         .build());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_activityPolicyDefault_isOK() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -297,7 +265,6 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_ACTIVITY)).isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_activityPolicyDefault_throwsException() {
         assertThrows(IllegalArgumentException.class,
@@ -307,7 +274,6 @@ public class VirtualDeviceParamsTest {
                         .build());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_activityPolicyCustom_isOK() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -321,7 +287,6 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_ACTIVITY)).isEqualTo(DEVICE_POLICY_CUSTOM);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_activityPolicyUndefined_setsActivityPolicyCustom() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -330,7 +295,6 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_ACTIVITY)).isEqualTo(DEVICE_POLICY_CUSTOM);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_activityPolicyUndefined_setsActivityPolicyDefault() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -396,10 +360,8 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_SENSORS)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_AUDIO)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_CUSTOM);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(
-                Flags.crossDeviceClipboard() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(
-                Flags.virtualCamera() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_CUSTOM);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS)).isEqualTo(
                 android.companion.virtualdevice.flags.Flags.defaultDeviceCameraAccessPolicy()
                         ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);

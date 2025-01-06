@@ -16,12 +16,17 @@
 
 package android.cts.statsdatom.perf;
 
+import static android.uprobestats.mainline.flags.Flags.FLAG_ENABLE_UPROBESTATS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.util.CpuFeatures;
 import com.android.internal.os.StatsdConfigProto;
@@ -34,52 +39,65 @@ import com.android.internal.os.StatsdConfigProto.ValueMetric;
 import com.android.os.AtomsProto.AppBreadcrumbReported;
 import com.android.os.AtomsProto.Atom;
 import com.android.os.framework.FrameworkExtensionAtoms;
-import com.android.os.framework.FrameworkExtensionAtoms.DeviceIdleTempAllowlistUpdated;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
 import com.google.protobuf.ExtensionRegistry;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import uprobestats.protos.Config.UprobestatsConfig;
 
 /**
  * Statsd atom tests for ProcessState and ProcessAssociation.
  */
-public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class UprobeStatsTest extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String ACTION_SHOW_APPLICATION_OVERLAY = "action.show_application_overlay";
     private static final int APP_BREADCRUMB_REPORTED_MATCH_START_ID = 1;
     private static final int METRIC_ID = 8;
     private static final int ALERT_ID = 29754810;
     private static final int SUBSCRIPTION_ID = 29796753;
+    private static final int PROBING_DURATION_SECS = 10;
 
     private IBuildInfo mCtsBuild;
     private ExtensionRegistry mRegistry;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        getDevice().enableAdbRoot();
+        getDevice().executeShellCommand("killall uprobestats");
 
         mRegistry = ExtensionRegistry.newInstance();
         FrameworkExtensionAtoms.registerAllExtensions(mRegistry);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -87,6 +105,8 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
         mCtsBuild = buildInfo;
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_ENABLE_UPROBESTATS)
     public void testUpdateDeviceIdleTempAllowlist() throws Exception {
         if (!CpuFeatures.isArm64(getDevice())) {
             return;
@@ -104,11 +124,22 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
                                 + "ActivityManagerService$LocalService."
                                 + "updateDeviceIdleTempAllowlist"
                                 + "(int[], int, boolean, long, int, int, java.lang.String, int)")
+                            .setFullyQualifiedClassName(
+                                "com.android.server.am.ActivityManagerService$LocalService")
+                            .setMethodName("updateDeviceIdleTempAllowlist")
+                            .addFullyQualifiedParameters("int[]")
+                            .addFullyQualifiedParameters("int")
+                            .addFullyQualifiedParameters("boolean")
+                            .addFullyQualifiedParameters("long")
+                            .addFullyQualifiedParameters("int")
+                            .addFullyQualifiedParameters("int")
+                            .addFullyQualifiedParameters("java.lang.String")
+                            .addFullyQualifiedParameters("int")
                             .build()
                         )
                     .addBpfMaps("map_ProcessManagement_update_device_idle_temp_allowlist_records")
                     .setTargetProcessName("system_server")
-                    .setDurationSeconds(10)
+                    .setDurationSeconds(PROBING_DURATION_SECS)
                     .setStatsdLoggingConfig(
                             UprobestatsConfig.Task.StatsdLoggingConfig.newBuilder()
                                     .setAtomId(940)
@@ -172,14 +203,27 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
             RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
             getDevice().executeShellCommand("cmd deviceidle tempwhitelist com.google.android.tts");
             RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
-            DeviceIdleTempAllowlistUpdated reported =
-                    ReportUtils.getEventMetricDataList(getDevice(), mRegistry).stream()
+            waitForCondition(() -> {
+                try {
+                    return ReportUtils.getEventMetricDataList(getDevice(), mRegistry).stream()
                     .map(a -> a.getAtom().getExtension(
                         FrameworkExtensionAtoms.deviceIdleTempAllowlistUpdated))
                     .filter(a -> a.getChangingUid() > 0)
                     .findFirst()
-                    .orElse(null);
-            assertThat(reported).isNotNull();
+                    .orElse(null) != null;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, 20, TimeUnit.SECONDS);
+
+            // Ensure that the uprobestats process terminates.
+            waitForCondition(() -> {
+                try {
+                    return getDevice().executeShellCommand("pidof uprobestats").length() == 0;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }, PROBING_DURATION_SECS + AtomTestUtils.WAIT_TIME_LONG / 1000, TimeUnit.SECONDS);
         }
     }
 
@@ -187,6 +231,20 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
      * Waits for the uprobestats process to start
      */
     public void waitForUprobeStats(long timeout, TimeUnit unit)
+            throws TimeoutException, DeviceNotAvailableException {
+        waitForCondition(() -> {
+            try {
+                return getDevice().executeShellCommand("pidof uprobestats").length() > 0;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }, timeout, unit);
+    }
+
+    /**
+     * Waits for a certain condition to become true.
+     */
+    public void waitForCondition(Supplier<Boolean> condition, long timeout, TimeUnit unit)
             throws TimeoutException, DeviceNotAvailableException {
         long startTime = System.currentTimeMillis();
         long timeoutMillis = unit.toMillis(timeout);
@@ -197,10 +255,10 @@ public class UprobeStatsTest extends DeviceTestCase implements IBuildReceiver {
             long remainingTime = timeoutMillis - elapsedTime;
 
             if (remainingTime <= 0) {
-                throw new TimeoutException("Timeout reached while waiting for uprobestats");
+                throw new TimeoutException();
             }
 
-            if (getDevice().executeShellCommand("pidof uprobestats").length() > 0) {
+            if (condition.get().booleanValue()) {
                 break;
             }
 

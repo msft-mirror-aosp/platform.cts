@@ -20,6 +20,8 @@ import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP1;
 import static android.app.cts.ActivityManagerFgsBgStartTest.PACKAGE_NAME_APP2;
 import static android.app.cts.ActivityManagerFgsBgStartTest.WAITFOR_MSEC;
 import static android.app.cts.BroadcastOptionsTest.cloneViaBundle;
+import static android.app.cts.CtsAppTestUtils.clearBadProcess;
+import static android.app.cts.CtsAppTestUtils.unstopApp;
 import static android.app.stubs.LocalForegroundService.ACTION_START_FGS_RESULT;
 
 import static junit.framework.Assert.assertFalse;
@@ -49,10 +51,10 @@ public class BroadcastOptionsIntegrationTest {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         CtsAppTestUtils.executeShellCmd(instrumentation,
                 "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+        final int userId = instrumentation.getTargetContext().getUserId();
         for (String pkg : new String[] { PACKAGE_NAME_APP1, PACKAGE_NAME_APP2 }) {
-            final String cmd = String.format("cmd package unstop --user %d %s",
-                    instrumentation.getTargetContext().getUserId(), pkg);
-            CtsAppTestUtils.executeShellCmd(instrumentation, cmd);
+            unstopApp(pkg, userId);
+            clearBadProcess(pkg, userId);
         }
     }
 
@@ -70,7 +72,7 @@ public class BroadcastOptionsIntegrationTest {
         CommandReceiver.sendCommandWithBroadcastOptions(instrumentation.getContext(),
                 CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                 PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                options.toBundle());
+                options);
         waiter.doWait(WAITFOR_MSEC);
     }
 
@@ -81,7 +83,7 @@ public class BroadcastOptionsIntegrationTest {
         CommandReceiver.sendCommandWithBroadcastOptions(instrumentation.getContext(),
                 CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                 PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                options.toBundle());
+                options);
         assertThrows(Exception.class, () -> waiter.doWait(WAITFOR_MSEC));
     }
 

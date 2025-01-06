@@ -95,6 +95,8 @@
     <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
     <uses-permission android:name="android.permission.ADD_ALWAYS_UNLOCKED_DISPLAY" />
     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
+    <uses-permission android:name="android.permission.ADD_MIRROR_DISPLAY" />
+
     <!--
      * These permissions are used to verify permission behavior in VirtualDevicePermissionTest.
      * The test module otherwise does not use these permissions.

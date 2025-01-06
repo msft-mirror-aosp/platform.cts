@@ -24,7 +24,7 @@ python_test_host {
         "mobly",
     ],
     test_suites: [
-        "cts",
+        "cts-interactive",
         "general-tests",
     ],
     test_options: {

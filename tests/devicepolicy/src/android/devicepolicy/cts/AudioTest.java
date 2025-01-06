@@ -17,8 +17,8 @@
 package android.devicepolicy.cts;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
-import static com.android.bedstead.permissions.CommonPermissions.MODIFY_AUDIO_SETTINGS;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_UNMUTE_MICROPHONE;
+import static com.android.bedstead.permissions.CommonPermissions.MODIFY_AUDIO_SETTINGS;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -26,18 +26,18 @@ import static org.testng.Assert.assertThrows;
 
 import android.media.AudioManager;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DisallowUnmuteMicrophone;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;

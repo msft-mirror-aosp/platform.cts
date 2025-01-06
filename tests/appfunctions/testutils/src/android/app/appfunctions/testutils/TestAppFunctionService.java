@@ -16,18 +16,21 @@
 
 package android.app.appfunctions.testutils;
 
+import android.app.appfunctions.AppFunctionException;
 import android.app.appfunctions.AppFunctionService;
 import android.app.appfunctions.ExecuteAppFunctionRequest;
 import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.appsearch.GenericDocument;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.CancellationSignal;
+import android.os.OutcomeReceiver;
 
 import androidx.annotation.NonNull;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.function.Consumer;
 
 /**
  * An implementation of {@link android.app.appfunctions.AppFunctionService} that provides some
@@ -49,7 +52,7 @@ public class TestAppFunctionService extends AppFunctionService {
             @NonNull ExecuteAppFunctionRequest request,
             @NonNull String callingPackage,
             @NonNull CancellationSignal cancellationSignal,
-            @NonNull Consumer<ExecuteAppFunctionResponse> callback) {
+            @NonNull OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> callback) {
 
         cancellationSignal.setOnCancelListener(
                 () -> {
@@ -62,14 +65,14 @@ public class TestAppFunctionService extends AppFunctionService {
             case "add", "add_disabledByDefault":
                 {
                     ExecuteAppFunctionResponse result = add(request, callingPackage);
-                    callback.accept(result);
+                    callback.onResult(result);
                     break;
                 }
             case "add_invokeCallbackTwice":
                 {
                     ExecuteAppFunctionResponse result = add(request, callingPackage);
-                    callback.accept(result);
-                    callback.accept(result);
+                    callback.onResult(result);
+                    callback.onResult(result);
                     break;
                 }
             case "throwException":
@@ -90,24 +93,21 @@ public class TestAppFunctionService extends AppFunctionService {
                     mExecutor.execute(
                             () -> {
                                 ExecuteAppFunctionResponse result = add(request, callingPackage);
-                                callback.accept(result);
+                                callback.onResult(result);
                             });
                     break;
                 }
             case "noOp":
                 {
-                    callback.accept(
-                            ExecuteAppFunctionResponse.newSuccess(
-                                    buildEmptyGenericDocument(), /* extras= */ null));
+                    callback.onResult(new ExecuteAppFunctionResponse(buildEmptyGenericDocument()));
                     break;
                 }
             case "noSuchMethod":
                 {
-                    callback.accept(
-                            ExecuteAppFunctionResponse.newFailure(
-                                    ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT,
-                                    "Function does not exist",
-                                    /* extras= */ null));
+                    callback.onError(
+                            new AppFunctionException(
+                                    AppFunctionException.ERROR_INVALID_ARGUMENT,
+                                    "Function does not exist"));
                     break;
                 }
             case "longRunningFunction":
@@ -118,30 +118,38 @@ public class TestAppFunctionService extends AppFunctionService {
                                         try {
                                             Thread.sleep(2000);
                                         } catch (InterruptedException e) {
-                                            callback.accept(
-                                                    ExecuteAppFunctionResponse.newFailure(
-                                                            ExecuteAppFunctionResponse
-                                                                    .RESULT_CANCELLED,
-                                                            /* errorMessage= */ "Operation"
-                                                                    + " Interrupted",
-                                                            /* extras= */ null));
+                                            callback.onError(
+                                                    new AppFunctionException(
+                                                            AppFunctionException.ERROR_CANCELLED,
+                                                            "Operation Interrupted"));
                                             return null;
                                         }
-                                        callback.accept(
-                                                ExecuteAppFunctionResponse.newSuccess(
-                                                        buildEmptyGenericDocument(),
-                                                        /* extras= */ null));
+                                        callback.onResult(
+                                                new ExecuteAppFunctionResponse(
+                                                        buildEmptyGenericDocument()));
                                         return null;
                                     });
                     break;
                 }
             default:
-                callback.accept(
-                        ExecuteAppFunctionResponse.newFailure(
-                                ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR,
-                                /* errorMessage= */ null,
-                                /* extras= */ null));
+                callback.onError(
+                        new AppFunctionException(
+                                AppFunctionException.ERROR_APP_UNKNOWN_ERROR,
+                                /* errorMessage= */ null));
         }
+    }
+
+    private boolean canGetPackageInfo() {
+        String appFunctionExecutorPackageName = "android.app.appfunctions.cts";
+        try {
+            getPackageManager()
+                    .getPackageInfo(
+                            appFunctionExecutorPackageName,
+                            PackageManager.GET_META_DATA | PackageManager.GET_PERMISSIONS);
+        } catch (NameNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 
     private void cancelOperation() {
@@ -162,8 +170,10 @@ public class TestAppFunctionService extends AppFunctionService {
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
                         .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
+                        .setPropertyBoolean(
+                                "TEST_PROPERTY_HAS_CALLER_VISIBILITY", canGetPackageInfo())
                         .build();
-        return ExecuteAppFunctionResponse.newSuccess(result, /* extras= */ null);
+        return new ExecuteAppFunctionResponse(result);
     }
 
     @Override

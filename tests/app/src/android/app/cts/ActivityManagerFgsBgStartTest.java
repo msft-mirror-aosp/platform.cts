@@ -38,6 +38,8 @@ import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.BroadcastOptions;
@@ -80,12 +82,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.server.am.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -151,6 +155,11 @@ public class ActivityManagerFgsBgStartTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
+    @BeforeClass
+    public static void setupClass() throws Exception {
+        AmUtils.waitForBroadcastBarrier();
+    }
+
     @Before
     public void setUp() throws Exception {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -163,6 +172,7 @@ public class ActivityManagerFgsBgStartTest {
             // the app from BG-FGS-launch restriction. Remove SYSTEM_ALERT_WINDOW permission to test
             // other BG-FGS-launch exemptions.
             allowBgActivityStart(PACKAGE_NAMES[i], false);
+            CtsAppTestUtils.clearBadProcess(PACKAGE_NAMES[i], mTestRunningUserId);
         }
         mOrigFgsTypeStartPermissionEnforcement = toggleBgFgsTypeStartPermissionEnforcement(false);
         CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
@@ -171,6 +181,7 @@ public class ActivityManagerFgsBgStartTest {
         // Press home key to ensure stopAppSwitches is called so the grace period of
         // the background start will be ignored if there's any.
         UiDevice.getInstance(mInstrumentation).pressHome();
+        AmUtils.waitForBroadcastBarrier();
     }
 
     @After
@@ -1386,7 +1397,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
             if (type == TEMPORARY_ALLOW_LIST_TYPE_FOREGROUND_SERVICE_ALLOWED) {
                 uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -1886,7 +1897,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
             if (reasonCode == REASON_PUSH_MESSAGING) {
                 uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -1948,7 +1959,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null,
-                        options.toBundle());
+                        options);
             });
             // Although APP1 is background-restricted, FGS can still start because temp allowlist
             // reasonCode is REASON_ALARM_MANAGER_ALARM_CLOCK.
@@ -2021,7 +2032,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null,
-                        options.toBundle());
+                        options);
             });
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             waiter.doWait(WAITFOR_MSEC);
@@ -2331,7 +2342,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
 
             uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -2360,7 +2371,7 @@ public class ActivityManagerFgsBgStartTest {
                 CommandReceiver.sendCommandWithBroadcastOptions(mContext,
                         CommandReceiver.COMMAND_START_FOREGROUND_SERVICE,
                         PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null,
-                        options.toBundle());
+                        options);
             });
             uid2Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             waiter.doWait(WAITFOR_MSEC);
@@ -2443,6 +2454,10 @@ public class ActivityManagerFgsBgStartTest {
 
     @Test
     public void testStartMediaPlaybackFromBg() throws Exception {
+        // TODO(b/380297485): Remove this assumption check once NotificationListeners
+        // support visible background users.
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         NotificationHelper notificationHelper = new NotificationHelper(mContext);
         ApplicationInfo app1Info = mContext.getPackageManager().getApplicationInfo(
                 PACKAGE_NAME_APP1, 0);

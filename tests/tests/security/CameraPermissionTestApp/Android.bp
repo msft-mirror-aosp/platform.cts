@@ -23,16 +23,43 @@ android_library {
     name: "CameraPermissionTestLib",
     srcs: [
         "src/IntentKeys.kt",
-        "src/**/IOpenCameraActivity.aidl",
+        "src/**/ICameraOpener.aidl",
     ],
     min_sdk_version: "21",
     manifest: "AndroidManifestLibrary.xml",
 }
 
+cc_library {
+    name: "libopencameraapp_jni",
+    srcs: [
+        "jni/*.cpp",
+    ],
+    header_libs: [
+        "jni_headers",
+        "liblog_headers",
+    ],
+    static_libs: [
+        "libimage_io_ndk",
+    ],
+    shared_libs: [
+        "libandroid",
+        "libnativehelper_compat_libc++",
+        "liblog",
+        "libcamera2ndk",
+        "libmediandk",
+    ],
+    // NDK build, shared C++ runtime
+    sdk_version: "current",
+    stl: "c++_shared",
+}
+
 android_test_helper_app {
     name: "OpenCameraApp",
     srcs: [
+        "src/CameraOpener.kt",
+        "src/CameraOpenerService.kt",
         "src/OpenCameraActivity.kt",
+        "src/Utils.kt",
     ],
     static_libs: [
         "androidx.appcompat_appcompat",
@@ -40,6 +67,9 @@ android_test_helper_app {
         "CameraPermissionTestLib",
         "kotlin-stdlib",
         "kotlinx-coroutines-android",
+    ],
+    jni_libs: [
+        "libopencameraapp_jni",
     ],
 
     min_sdk_version: "30",

@@ -30,6 +30,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.RectF;
+import android.graphics.Region;
+import android.inputmethodservice.InputMethodService;
 import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
@@ -543,6 +545,12 @@ public class MockImeSession implements AutoCloseable {
                 MultiUserUtils.getHistoricalProcessExitReasons(mContext, mUiAutomation,
                         mMockImePackageName, /* pid= */ 0, /* maxNum= */ 1, mTargetUser);
         return latestExitReasons.isEmpty() ? null : latestExitReasons.get(0);
+    }
+
+    /** Checks whether the IME Switcher button should be shown when the IME is shown. */
+    public boolean shouldShowImeSwitcherButtonForTest() {
+        final var imm = mContext.getSystemService(InputMethodManager.class);
+        return runWithShellPermissionIdentity(imm::shouldShowImeSwitcherButtonForTest);
     }
 
     /**
@@ -1934,6 +1942,18 @@ public class MockImeSession implements AutoCloseable {
     @NonNull
     public ImeCommand callGetStylusHandwritingEvents() {
         return callCommandInternal("getStylusHandwritingEvents", new Bundle());
+    }
+
+    /**
+     * calls {@link InputMethodService#setStylusHandwritingRegion(Region)}.
+     * @param handwritingRegion new handwriting {@link Region}.
+     * @return {@link ImeCommand} for the method execution.
+     */
+    @NonNull
+    public ImeCommand callSetStylusHandwritingRegion(Region handwritingRegion) {
+        Bundle params = new Bundle();
+        params.putParcelable("handwritingRegion", handwritingRegion);
+        return callCommandInternal("setStylusHandwritingRegion", params);
     }
 
     @NonNull

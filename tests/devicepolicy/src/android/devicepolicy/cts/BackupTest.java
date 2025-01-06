@@ -45,7 +45,7 @@ import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.policies.Backup;
-import com.android.bedstead.harrier.policies.BackupAndSecurityLogging;
+import com.android.bedstead.harrier.policies.SecurityLoggingDelegation;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
@@ -54,7 +54,6 @@ import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -137,7 +136,6 @@ public final class BackupTest {
     @PolicyDoesNotApplyTest(policy = Backup.class)
     @Postsubmit(reason = "new test")
     @EnsureHasPermission(BACKUP)
-    @Ignore("b/221087493 weird behavior regarding if it applies to a parent of a profile owner")
     public void setBackupServiceEnabled_doesNotApply_doesNotSetBackupServiceEnabled() {
         try {
             dpc(sDeviceState).devicePolicyManager().setBackupServiceEnabled(
@@ -190,7 +188,8 @@ public final class BackupTest {
     }
 
     /** Positive test for SecurityLog#TAG_BACKUP_SERVICE_TOGGLED */
-    @CanSetPolicyTest(policy = {BackupAndSecurityLogging.class})
+    @CanSetPolicyTest(policyIntersection = {Backup.class,
+            SecurityLoggingDelegation.class})
     @ApiTest(apis = {"android.app.admin.SecurityLog#TAG_BACKUP_SERVICE_TOGGLED"})
     @Postsubmit(reason = "new test")
     public void setBackupServiceEnabled_SecurityLogEventsEmitted(

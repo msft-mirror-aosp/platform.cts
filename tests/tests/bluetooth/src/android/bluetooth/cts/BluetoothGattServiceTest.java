@@ -16,7 +16,7 @@
 
 package android.bluetooth.cts;
 
-import static org.junit.Assert.assertEquals;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothGattService;
 
@@ -40,22 +40,24 @@ public class BluetoothGattServiceTest {
 
     @Before
     public void setUp() {
-        Assume.assumeTrue(TestUtils.isBleSupported(
-                InstrumentationRegistry.getInstrumentation().getTargetContext()));
+        Assume.assumeTrue(
+                TestUtils.isBleSupported(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
 
-        mBluetoothGattService = new BluetoothGattService(TEST_UUID,
-                BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        mBluetoothGattService =
+                new BluetoothGattService(TEST_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getInstanceId() {
-        assertEquals(mBluetoothGattService.getInstanceId(), 0);
+        assertThat(mBluetoothGattService.getInstanceId()).isEqualTo(0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getType() {
-        assertEquals(mBluetoothGattService.getType(), BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        assertThat(mBluetoothGattService.getType())
+                .isEqualTo(BluetoothGattService.SERVICE_TYPE_PRIMARY);
     }
 }

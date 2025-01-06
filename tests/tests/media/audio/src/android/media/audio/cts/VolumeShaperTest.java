@@ -1609,8 +1609,22 @@ public class VolumeShaperTest {
         // CORNER CASE:
         // Now volume should have advanced since play is called.
         Thread.sleep(WARMUP_TIME_MS);
-        assertTrue(testName + " volume should be greater than 0.f",
-                volumeShaper.getVolume() > 0.f);
+        final float volumeAfterWarmup = volumeShaper.getVolume();
+        if (volumeAfterWarmup == 0) {
+            final String message = testName + " volume after " + WARMUP_TIME_MS
+                    + " ms should be greater than 0";
+            Log.e(TAG, "failure! " + message + " continuing to check volume change");
+            // wait twice as long to determine if this was actually a timing issue.
+            Thread.sleep(WARMUP_TIME_MS);
+            final String postCheck = "volume after " + (WARMUP_TIME_MS * 2)
+                    + " ms is " + volumeShaper.getVolume();
+            // log immediately.
+            Log.d(TAG, testName + " " + postCheck);
+            fail(message + " (" + postCheck + ")");
+        } else {
+            Log.d(TAG, "success! " + testName + " volume after " + WARMUP_TIME_MS
+                    + " ms is " + volumeAfterWarmup);
+        }
     } // runStartSyncTest
 
     private static Context getContext() {

@@ -16,8 +16,6 @@
 
 package android.view.accessibility.cts;
 
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -27,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.app.Instrumentation;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -34,8 +33,9 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -106,9 +106,10 @@ public class AccessibilityServiceInfoTest {
 
     @Before
     public void setUp() throws Exception {
-        mAccessibilityManager = getInstrumentation().getContext().getSystemService(
-                AccessibilityManager.class);
-        mPackageManager = getInstrumentation().getContext().getPackageManager();
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mAccessibilityManager =
+                instrumentation.getContext().getSystemService(AccessibilityManager.class);
+        mPackageManager = instrumentation.getContext().getPackageManager();
     }
 
     /**

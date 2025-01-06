@@ -30,7 +30,7 @@ android_test {
         "truth",
         "ub-uiautomator",
         "android.os.flags-aconfig-java",
-        "Harrier",
+        "bedstead",
     ],
     libs: [
         "android.test.runner.stubs.test",

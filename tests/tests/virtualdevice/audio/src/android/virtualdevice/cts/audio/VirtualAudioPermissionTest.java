@@ -33,7 +33,6 @@ import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.audio.VirtualAudioDevice;
-import android.companion.virtual.flags.Flags;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
@@ -47,6 +46,7 @@ import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -76,6 +76,7 @@ import java.util.concurrent.TimeoutException;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualAudioPermissionTest {
 
+    private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 80;
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -114,7 +115,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
@@ -127,7 +127,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
@@ -143,8 +142,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
@@ -162,8 +159,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
@@ -184,8 +179,6 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_RECORD_AUDIO_PERMISSION,
-            Flags.FLAG_VDM_PUBLIC_APIS,
             android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
             android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
@@ -200,6 +193,10 @@ public class VirtualAudioPermissionTest {
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_DEFAULT);
         PermissionActivity permissionActivity = launchPermissionActivity(Display.DEFAULT_DISPLAY);
         setupAudioPolicy(permissionActivity.getAttributionSource().getUid());
+
+        // TODO - b/383048413 - use PermissionUpdateBarrierRule
+        // Account for the intentional delay until the audio permissions are propagated
+        SystemClock.sleep(AUDIO_PERMISSIONS_PROPAGATION_TIME_MS);
 
         assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);

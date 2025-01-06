@@ -20,12 +20,10 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -36,9 +34,6 @@ import org.junit.runner.RunWith;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class PrivateAttributeTest {
-    @Rule
-    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
-
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
     }

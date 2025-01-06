@@ -38,6 +38,7 @@ YAML_FILE_DIR = os.environ['CAMERA_ITS_TOP']
 CONFIG_FILE = os.path.join(YAML_FILE_DIR, 'config.yml')
 TEST_KEY_TABLET = 'tablet'
 TEST_KEY_SENSOR_FUSION = 'sensor_fusion'
+TEST_KEY_GEN2 = 'gen2'
 ACTIVITY_START_WAIT = 1.5  # seconds
 MERGE_RESULTS_TIMEOUT = 3600  # seconds
 
@@ -48,6 +49,7 @@ RESULT_NOT_EXECUTED = 'NOT_EXECUTED'
 RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
 PERFORMANCE_KEY = 'performance_metrics'
+FEATURE_QUERY_KEY = 'feature_query_proto'
 SUMMARY_KEY = 'summary'
 RESULT_VALUES = (RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED)
 CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
@@ -74,8 +76,8 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
-    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
-    'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
+    'scene4', 'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -97,16 +99,17 @@ _MANUAL_SCENES = ('scene5',)
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
                       os.path.join('scene_extensions', 'scene_low_light'),
                       )
-
+_GEN2_RIG_SCENES = ('scene_ip',)
 # All possible scenes
-_ALL_SCENES = _TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES + _FLASH_SCENES
+_ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
+               _FLASH_SCENES + _GEN2_RIG_SCENES)
 
 # Scenes that are logically grouped and can be called as group
 # scene6_tele is not grouped with scene6 because it requires extension rig
 _GROUPED_SCENES = types.MappingProxyType({
         'scene1': ('scene1_1', 'scene1_2'),
         'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
-                   'scene2_f')
+                   'scene2_f', 'scene2_g')
 })
 
 # Scene requirements for manual testing.
@@ -122,6 +125,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene2_d': 'The picture with 3 faces in tests/scene2_d/scene2_d.png',
     'scene2_e': 'The picture with 3 faces in tests/scene2_e/scene2_e.png',
     'scene2_f': 'The picture with 3 faces in tests/scene2_f/scene2_f.png',
+    'scene2_g': 'The picture with 3 profile faces in '
+                'tests/scene2_g/scene2_g.png',
     'scene3': 'The ISO12233 chart',
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',
@@ -161,6 +166,9 @@ _SCENE_REQ = types.MappingProxyType({
     'scene_video': 'A tablet displayed scene with a series of circles moving '
                    'at different simulated frame rates. '
                    'See tests/scene_video/scene_video.mp4',
+    'scene_ip': 'A chart with features such as QR code, color checker chart, '
+                'dead leaf patch, dynamic range chart used to analyze metrics '
+                'such as brightness, sharpness, color accuracy.',
 })
 
 # Made mutable to allow for test augmentation based on first API level
@@ -571,6 +579,7 @@ def main():
   camera_id_combos = []
   testbed_index = None
   num_testbeds = None
+
   # Override camera, scenes and testbed with cmd line values if available
   for s in list(sys.argv[1:]):
     if 'scenes=' in s:
@@ -597,7 +606,8 @@ def main():
         not s.startswith(('checkerboard', 'sensor_fusion',
                           'flash', 'feature_combination', '<scene-name>'))):
       scenes[i] = f'scene{s}'
-    if s.startswith('flash') or s.startswith('extensions'):
+    if (s.startswith('flash') or s.startswith('extensions')
+        or s.startswith('ip')):
       scenes[i] = f'scene_{s}'
     # Handle scene_extensions
     if any(s.startswith(extension) for extension in _EXTENSION_NAMES):
@@ -610,6 +620,9 @@ def main():
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
     for i in config_file_contents['TestBeds']:
+      if scenes in (['scene_ip'],):
+        if TEST_KEY_GEN2 not in i['Name'].lower():
+          config_file_contents['TestBeds'].remove(i)
       if scenes in (
           ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
           ['feature_combination']
@@ -665,8 +678,12 @@ def main():
     logging.debug('Tablet name: %s', tablet_name)
     brightness = test_params_content['brightness']
     its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
+  elif TEST_KEY_GEN2 in config_file_test_key:
+    tablet_id = None
+    tablet_name = 'ip_chart'
   else:
     tablet_id = None
+    tablet_name = 'sensor_fusion'
 
   testing_sensor_fusion_with_controller = False
   if TEST_KEY_SENSOR_FUSION in config_file_test_key:
@@ -755,11 +772,13 @@ def main():
         possible_scenes = _FLASH_SCENES
       elif 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
+      elif 'scene_ip' in scenes:
+        possible_scenes = _GEN2_RIG_SCENES
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
 
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or
-        'scene_extensions' in scenes):
+        'scene_extensions' in scenes or 'scene_ip' in scenes):
       per_camera_scenes = possible_scenes
     else:
       # Validate user input scene names
@@ -812,6 +831,7 @@ def main():
       results[s]['TEST_STATUS'] = []
       results[s][METRICS_KEY] = []
       results[s][PERFORMANCE_KEY] = []
+      results[s][FEATURE_QUERY_KEY] = []
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_start_time = int(round(time.time() * 1000))
@@ -913,6 +933,7 @@ def main():
             test_mpc_req = ''
             perf_test_metrics = ''
             hdr_mpc_req = ''
+            feature_query_proto = ''
             content = file.read()
 
             # Find media performance class logging
@@ -935,6 +956,17 @@ def main():
                 hdr_mpc_req = one_line
                 break
 
+            # Find feature combination query proto
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              feature_comb_query_string_match = re.search(
+                  '^feature_query_proto:(.*)', one_line
+              )
+              if feature_comb_query_string_match:
+                feature_query_proto = feature_comb_query_string_match.group(1)
+                break
+
+            # Find performance metrics logging
             for one_line in lines:
               # regular expression pattern must match in ItsTestActivity.java.
               perf_metrics_string_match = re.search(
@@ -982,6 +1014,9 @@ def main():
           results[s][METRICS_KEY].append(test_mpc_req)
         if hdr_mpc_req:
           results[s][METRICS_KEY].append(hdr_mpc_req)
+        if feature_query_proto:
+          results[s][FEATURE_QUERY_KEY].append(feature_query_proto)
+
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
         if (test in _LIGHTING_CONTROL_TESTS and
@@ -1027,7 +1062,6 @@ def main():
       # Delete temporary yml file after scene run.
       new_yaml_file_path = os.path.join(YAML_FILE_DIR, new_yml_file_name)
       os.remove(new_yaml_file_path)
-
     # Log results per camera
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)

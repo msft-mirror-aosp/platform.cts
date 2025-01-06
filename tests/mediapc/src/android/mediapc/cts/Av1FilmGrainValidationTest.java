@@ -29,17 +29,17 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
  * The test verifies if film grain effect is applied to the output of av1 decoder.
+ * It also verifies if the av1 hw decoder on the device is able to decode a clip of
+ * profile Main10 and level 4.1
  * <p>
  * An av1 test clip with film grain enabled is decoded using av1 decoders present on the device.
  * For a select few frames, their variance is computed. This metric is compared against a
@@ -48,7 +48,8 @@ import java.util.Map;
  */
 public class Av1FilmGrainValidationTest {
     private static final String LOG_TAG = Av1FilmGrainValidationTest.class.getSimpleName();
-    private static final String INPUT_FILE = "crowd_run_854x480_1mbps_av1_40fg.mp4";
+    private static final String FILE_AV1_LVL41_FG_SUPPORT =
+                                    "dpov_1920x1080_60fps_av1_10bit_film_grain.mp4";
     private static final double TOLERANCE = 0.95;
 
     @Rule
@@ -59,10 +60,10 @@ public class Av1FilmGrainValidationTest {
      */
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
+    @CddTest(requirements = {"2.2.7.1/5.1/H-1-14"})
     public void testAv1FilmGrainRequirement() {
-        int width = 854;
-        int height = 480;
+        int width = 1920;
+        int height = 1080;
         String mediaType = MediaFormat.MIMETYPE_VIDEO_AV1;
         MediaFormat format = MediaFormat.createVideoFormat(mediaType, width, height);
         ArrayList<MediaFormat> formats = new ArrayList<>();
@@ -74,7 +75,8 @@ public class Av1FilmGrainValidationTest {
         int numFramesWithoutFilmGrain = Integer.MAX_VALUE;
         for (String av1HwDecoder : av1HwDecoders) {
             Av1FilmGrainValidationTestBase av1Dec =
-                    new Av1FilmGrainValidationTestBase(av1HwDecoder, mediaType, INPUT_FILE, null);
+                    new Av1FilmGrainValidationTestBase(av1HwDecoder, mediaType,
+                                                       FILE_AV1_LVL41_FG_SUPPORT, null);
             try {
                 av1Dec.doDecode();
                 isDecoded = true;

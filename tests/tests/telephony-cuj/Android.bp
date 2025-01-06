@@ -40,3 +40,10 @@ android_test {
     ],
     certificate: "platform",
 }
+
+test_module_config {
+    name: "CtsTelephonyCujTestCases_PlatinumTest",
+    base: "CtsTelephonyCujTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
+}

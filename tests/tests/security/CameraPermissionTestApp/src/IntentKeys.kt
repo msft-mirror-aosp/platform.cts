@@ -17,60 +17,69 @@
 package android.security.cts.camera.open.lib
 
 class IntentKeys(private val packageName: String) {
-    val shouldOpenCamera1: String
-        get() = "$packageName.SHOULD_OPEN_CAMERA1"
+  val shouldOpenCamera1: String
+    get() = "$packageName.SHOULD_OPEN_CAMERA_1"
 
-    val shouldOpenCamera2: String
-        get() = "$packageName.SHOULD_OPEN_CAMERA2"
+  val shouldOpenCamera2: String
+    get() = "$packageName.SHOULD_OPEN_CAMERA_2"
 
-    val shouldStream: String
-        get() = "$packageName.SHOULD_STREAM"
+  val shouldOpenCameraNdk: String
+    get() = "$packageName.SHOULD_OPEN_CAMERA_NDK"
 
-    val shouldRepeat: String // Should set a repeating request on the stream
-        get() = "$packageName.SHOULD_REPEAT"
+  val shouldStream: String
+    get() = "$packageName.SHOULD_STREAM"
 
-    val finish: String
-        get() = "$packageName.FINISH"
+  val shouldRepeat: String // Should set a repeating request on the stream
+    get() = "$packageName.SHOULD_REPEAT"
 
-    val onResume: String
-        get() = "$packageName.ON_RESUME"
+  val finish: String
+    get() = "$packageName.FINISH"
 
-    val cameraOpened1: String
-        get() = "$packageName.CAMERA_OPENED1"
+  val onResume: String
+    get() = "$packageName.ON_RESUME"
 
-    val cameraOpened2: String
-        get() = "$packageName.CAMERA_OPENED2"
+  val cameraOpened1: String
+    get() = "$packageName.CAMERA_OPENED_1"
 
-    val streamOpened: String
-        get() = "$packageName.STREAM_OPENED"
+  val cameraOpened2: String
+    get() = "$packageName.CAMERA_OPENED_2"
 
-    val error: String
-        get() = "$packageName.ERROR"
+  val cameraOpenedNdk: String
+    get() = "$packageName.CAMERA_OPENED_NDK"
 
-    val noCamera: String
-        get() = "$packageName.NO_CAMERA"
+  val streamOpened: String
+    get() = "$packageName.STREAM_OPENED"
 
-    val exception: String
-        get() = "$packageName.EXCEPTION"
+  val error: String
+    get() = "$packageName.ERROR"
 
-    val aidlInterface: String
-        get() = "$packageName.AIDL_INTERFACE"
+  val noCamera: String
+    get() = "$packageName.NO_CAMERA"
 
-    val attributionSource: String
-        get() = "$packageName.ATTRIBUTION_SOURCE"
+  val exception: String
+    get() = "$packageName.EXCEPTION"
 
-    val openCamera1ByProxy: String
-        get() = "$packageName.OPEN_CAMERA1_BY_PROXY"
+  val aidlInterface: String
+    get() = "$packageName.AIDL_INTERFACE"
 
-    val openCamera2ByProxy: String
-        get() = "$packageName.OPEN_CAMERA2_BY_PROXY"
+  val attributionSource: String
+    get() = "$packageName.ATTRIBUTION_SOURCE"
 
-    val stopRepeating: String
-        get() = "$packageName.STOP_REPEATING"
+  val openCamera1ByProxy: String
+    get() = "$packageName.OPEN_CAMERA_1_BY_PROXY"
 
-    val stoppedRepeating: String
-        get() = "$packageName.STOPPED_REPEATING"
+  val openCamera2ByProxy: String
+    get() = "$packageName.OPEN_CAMERA_2_BY_PROXY"
 
-    val pid: String
-        get() = "$packageName.PID"
+  val openCameraNdkByProxy: String
+    get() = "$packageName.OPEN_CAMERA_NDK_BY_PROXY"
+
+  val stopRepeating: String
+    get() = "$packageName.STOP_REPEATING"
+
+  val stoppedRepeating: String
+    get() = "$packageName.STOPPED_REPEATING"
+
+  val pid: String
+    get() = "$packageName.PID"
 }

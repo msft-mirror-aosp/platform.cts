@@ -34,6 +34,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -966,7 +967,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      */
     @Test
     public void testTelecomLocksFocus_TransactionalVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (isAutomotive() || !mShouldTestTelecom) {
             return;
         }
         performFocusLockTest(TransactionalVoipAppMain);
@@ -997,7 +998,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  and that communication focus cannot be obtained outside of Telecom.
      */
     public void testTelecomLocksFocus_ConnectionServiceVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (isAutomotive() || !mShouldTestTelecom) {
             return;
         }
         performFocusLockTest(ConnectionServiceVoipAppMain);
@@ -1028,7 +1029,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  and that communication focus cannot be obtained outside of Telecom.
      */
     public void testTelecomLocksFocus_ManagedConnectionServiceVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (isAutomotive() || !mShouldTestTelecom) {
             return;
         }
         performFocusLockTest(ManagedConnectionServiceApp);
@@ -1485,6 +1486,10 @@ public class SingleCallingTest extends BaseAppVerifier {
     /*********************************************************************************************
      *                           Helpers
      /*********************************************************************************************/
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+    }
 
     private void verifyOutgoingCallStateTransitions(AppControlWrapper appControlWrapper,
             boolean shouldWaitForMusicfocusLoss)

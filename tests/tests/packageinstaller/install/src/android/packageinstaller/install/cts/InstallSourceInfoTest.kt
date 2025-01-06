@@ -23,7 +23,7 @@ import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
 import android.net.Uri
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.rule.ScreenRecordRule.ScreenRecord
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.runner.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import org.junit.Before

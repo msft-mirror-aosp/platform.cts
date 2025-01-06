@@ -35,6 +35,7 @@
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
     <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
     <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
+    <uses-permission android:name="android.permission.ADD_MIRROR_DISPLAY" />
 
     <application android:requestLegacyExternalStorage="true">
         <uses-library android:name="android.test.runner" />

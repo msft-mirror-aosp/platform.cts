@@ -99,7 +99,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
       mUsefulSatellitesToReceiverMeasurements[i] = null;
       mUsefulSatellitesToTowNs[i] = null;
     }
-    
+
       GnssClock gnssClock = event.getClock();
     mArrivalTimeSinceGpsEpochNs = gnssClock.getTimeNanos() - gnssClock.getFullBiasNanos();
       for (GnssMeasurement measurement : event.getMeasurements()) {
@@ -170,7 +170,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         mUsefulSatellitesToTowNs[i] = null;
       }
     }
-      
+
       // calculate the number of useful satellites
       int numberOfUsefulSatellites = 0;
       for (int i = 0; i < mUsefulSatellitesToReceiverMeasurements.length; i++) {

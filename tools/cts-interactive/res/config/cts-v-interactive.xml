@@ -1,0 +1,9 @@
+<configuration description="Runs CTS-V Interactive tests from a pre-existing CTS-V installation">
+
+    <include name="everything" />
+
+    <option name="plan" value="cts-v-interactive" />
+
+    <option name="compatibility:run-suite-tag" value="cts-interactive" />
+
+</configuration>

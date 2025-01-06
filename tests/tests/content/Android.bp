@@ -94,8 +94,7 @@ java_defaults {
         "ShortcutManagerTestUtils",
         "libincfs-prebuilt",
         "HelloWorldResHardeningLib",
-        "Nene",
-        "Harrier",
+        "bedstead-enterprise",
         "platformprotosnano",
         "ravenwood-junit",
         "CtsContentUtils",
@@ -314,17 +313,11 @@ android_test {
         ":HelloInstallerAppAbsent",
         ":HelloInstallerAppAbsentUpdated",
         ":CtsDeviceAdminTestApp",
-        ":CtsTestVerifierApp",
-        ":CtsTestVerifierAppCrash",
-        ":CtsTestVerifierAppReject",
-        ":CtsTestVerifierAppRejectWithPolicyOverride",
-        ":CtsTestVerifierAppTimeout",
-        ":CtsTestVerifierAppIncompleteUnknown",
-        ":CtsTestVerifierAppIncompleteNetworkUnavailable",
         ":CtsContentDeclaringLibrary",
         ":CtsContentDeclaringSdkLibrary",
         ":CtsContentDeclaringStaticLibrary",
         ":CtsPackageChangedTestApp",
+        ":CtsPackageChangedSharedUserIdTestApp",
         ":CtsIntentResolutionApplicationOverrideTestApp",
         ":CtsIntentResolutionComponentOverrideTestApp",
     ],
@@ -339,6 +332,56 @@ android_test {
         "mdpi-v4",
         "hdpi-v4",
     ],
+}
+
+test_module_config {
+    name: "CtsWindowManagerTestCases_wm_cts",
+    base: "CtsWindowManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.wm.cts"],
+}
+
+test_module_config {
+    name: "CtsResourcesTestCases_om",
+    base: "CtsResourcesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.content.res.loader.cts",
+        "android.content.om.cts",
+    ],
+}
+
+test_module_config {
+    name: "CtsResourcesTestCases_res_cts",
+    base: "CtsResourcesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.res.cts"],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_clip",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.content.cts.ClipDataTest",
+        "android.content.cts.ClipDescriptionTest",
+        "android.content.cts.ClipboardManagerTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_cts_broadcastreceivertest_NoLarge",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.cts.BroadcastReceiverTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsContentTestCases_PlatinumTest",
+    base: "CtsContentTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.PlatinumTest"],
 }
 
 android_ravenwood_test {
@@ -379,6 +422,7 @@ android_ravenwood_test {
         "src/android/content/pm/cts/SignatureTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }
 
 android_app {
@@ -418,4 +462,5 @@ android_ravenwood_test {
     ],
     platform_apis: true,
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }

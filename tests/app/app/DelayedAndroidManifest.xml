@@ -40,6 +40,14 @@
             <meta-data android:name="android.app.stubs.reference"
                  android:resource="@xml/metadata"/>
         </service>
+
+        <activity android:name=".DelayedActivity"
+                  android:exported="true">
+            <intent-filter>
+              <action android:name="android.intent.action.MAIN"/>
+              <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

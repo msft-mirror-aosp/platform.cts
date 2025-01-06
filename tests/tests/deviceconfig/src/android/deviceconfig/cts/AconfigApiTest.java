@@ -18,13 +18,14 @@ package android.deviceconfig.cts;
 
 import static com.android.aconfig.flags.Flags.FLAG_ENABLE_ONLY_NEW_STORAGE;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.configinfrastructure.aconfig.AconfigPackage;
-import android.configinfrastructure.aconfig.AconfigStorageReadException;
 import android.os.Build;
+import android.os.flagging.AconfigPackage;
+import android.os.flagging.AconfigStorageReadException;
 import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -81,11 +82,49 @@ public final class AconfigApiTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testAconfigStorageReadException() {
-        AconfigStorageReadException ae = new AconfigStorageReadException("message");
+        AconfigStorageReadException ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_GENERIC, "message");
         assertNotNull(ae);
-        ae = new AconfigStorageReadException("message", new Exception("parent"));
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_GENERIC,
+                        "message",
+                        new Exception("parent"));
         assertNotNull(ae);
-        ae = new AconfigStorageReadException(new Exception("parent"));
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_GENERIC, new Exception("parent"));
         assertNotNull(ae);
+
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_STORAGE_SYSTEM_NOT_FOUND,
+                        new Exception("parent"));
+        assertNotNull(ae);
+
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_PACKAGE_NOT_FOUND,
+                        new Exception("parent"));
+        assertNotNull(ae);
+
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_CONTAINER_NOT_FOUND,
+                        new Exception("parent"));
+        assertNotNull(ae);
+
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_CANNOT_READ_STORAGE_FILE,
+                        new Exception("parent"));
+        assertNotNull(ae);
+
+        ae =
+                new AconfigStorageReadException(
+                        AconfigStorageReadException.ERROR_GENERIC, new Exception("parent"));
+        assertEquals(AconfigStorageReadException.ERROR_GENERIC, ae.getErrorCode());
+        assertTrue(ae.getMessage().contains("ERROR_GENERIC:"));
     }
 }

@@ -20,6 +20,7 @@ import static android.content.ContentResolver.SCHEME_CONTENT;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.BroadcastOptions;
 import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.IActivityManager;
 import android.app.Notification;
@@ -60,6 +61,7 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final int COMMAND_STOP_FOREGROUND_SERVICE = 4;
     public static final int COMMAND_START_FOREGROUND_SERVICE_LOCATION = 5;
     public static final int COMMAND_STOP_FOREGROUND_SERVICE_LOCATION = 6;
+
     public static final int COMMAND_START_ALERT_SERVICE = 7;
     public static final int COMMAND_STOP_ALERT_SERVICE = 8;
     public static final int COMMAND_SELF_INDUCED_ANR = 9;
@@ -89,6 +91,9 @@ public class CommandReceiver extends BroadcastReceiver {
     public static final int COMMAND_CREATE_MEDIA_NOTIFICATION = 33;
     public static final int COMMAND_ACQUIRE_CONTENT_PROVIDER = 34;
     public static final int COMMAND_RELEASE_CONTENT_PROVIDER = 35;
+    public static final int COMMAND_START_FOREGROUND_SERVICE_MEDIA = 36;
+    public static final int COMMAND_STOP_FOREGROUND_SERVICE_MEDIA = 37;
+    public static final int COMMAND_START_SERVICE_MEDIA = 38;
 
     public static final String KEY_PENDING_INTENT = "android.app.stubs.key.PENDING_INTENT";
     public static final String KEY_STICKY_BROADCAST_FILTER =
@@ -113,6 +118,8 @@ public class CommandReceiver extends BroadcastReceiver {
             "android.app.stubs.LocalForegroundServiceLocation";
     public static final String FG_STICKY_SERVICE_NAME =
             "android.app.stubs.LocalForegroundServiceSticky";
+    public static final String FG_MEDIA_SERVICE_NAME =
+            "android.app.stubs.LocalForegroundServiceMedia";
 
     public static final String ACTIVITY_NAME = "android.app.stubs.SimpleActivity";
 
@@ -177,6 +184,15 @@ public class CommandReceiver extends BroadcastReceiver {
                 break;
             case COMMAND_STOP_FOREGROUND_SERVICE_STICKY:
                 doStopService(context, intent, FG_STICKY_SERVICE_NAME);
+                break;
+            case COMMAND_START_SERVICE_MEDIA:
+                doStartServiceMedia(context, intent);
+                break;
+            case COMMAND_START_FOREGROUND_SERVICE_MEDIA:
+                doStartForegroundServiceMedia(context, intent);
+                break;
+            case COMMAND_STOP_FOREGROUND_SERVICE_MEDIA:
+                doStopService(context, intent, FG_MEDIA_SERVICE_NAME);
                 break;
             case COMMAND_START_ALERT_SERVICE:
                 doStartAlertService(context);
@@ -334,6 +350,29 @@ public class CommandReceiver extends BroadcastReceiver {
         fgsIntent.putExtras(commandIntent); // include the fg service type if any.
         fgsIntent.setComponent(new ComponentName(targetPackage, FG_LOCATION_SERVICE_NAME));
         int command = LocalForegroundServiceLocation.COMMAND_START_FOREGROUND_WITH_TYPE;
+        fgsIntent.putExtras(LocalForegroundService.newCommand(command));
+        try {
+            context.startForegroundService(fgsIntent);
+        } catch (ForegroundServiceStartNotAllowedException e) {
+            Log.d(TAG, "startForegroundService gets an "
+                    + "ForegroundServiceStartNotAllowedException", e);
+        }
+    }
+
+    private void doStartServiceMedia(Context context, Intent commandIntent) {
+        String targetPackage = getTargetPackage(commandIntent);
+        Intent fgsIntent = new Intent();
+        fgsIntent.putExtras(commandIntent);
+        fgsIntent.setComponent(new ComponentName(targetPackage, FG_MEDIA_SERVICE_NAME));
+        context.startService(fgsIntent);
+    }
+
+    private void doStartForegroundServiceMedia(Context context, Intent commandIntent) {
+        String targetPackage = getTargetPackage(commandIntent);
+        Intent fgsIntent = new Intent();
+        fgsIntent.putExtras(commandIntent);
+        fgsIntent.setComponent(new ComponentName(targetPackage, FG_MEDIA_SERVICE_NAME));
+        int command = LocalForegroundServiceMedia.COMMAND_START_FOREGROUND_WITH_TYPE;
         fgsIntent.putExtras(LocalForegroundService.newCommand(command));
         try {
             context.startForegroundService(fgsIntent);
@@ -718,7 +757,8 @@ public class CommandReceiver extends BroadcastReceiver {
             String targetPackage, int flags, Bundle extras) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast " + intent);
-        context.sendOrderedBroadcast(intent, null);
+        sendOrderedBroadcast(context, intent, null /* resultReceiver */,
+                null /* broadcastOptions */);
     }
 
     public static void sendCommandWithResultReceiver(Context context, int command,
@@ -726,16 +766,25 @@ public class CommandReceiver extends BroadcastReceiver {
             BroadcastReceiver resultReceiver) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast with result receiver " + intent);
-        context.sendOrderedBroadcast(intent, null, resultReceiver, null,
-                Activity.RESULT_OK, null, null);
+        sendOrderedBroadcast(context, intent, resultReceiver, null /* broadcastOptions */);
     }
 
     public static void sendCommandWithBroadcastOptions(Context context, int command,
             String sourcePackage, String targetPackage, int flags, Bundle extras,
-            Bundle broadcastOptions) {
+            BroadcastOptions broadcastOptions) {
         final Intent intent = makeIntent(command, sourcePackage, targetPackage, flags, extras);
         Log.d(TAG, "Sending broadcast with BroadcastOptions " + intent);
-        context.sendOrderedBroadcast(intent, null, broadcastOptions, null, null, 0, null, null);
+        sendOrderedBroadcast(context, intent, null /* resultReceiver */, broadcastOptions);
+    }
+
+    private static void sendOrderedBroadcast(Context context, Intent intent,
+            BroadcastReceiver resultReceiver, BroadcastOptions broadcastOptions) {
+        final BroadcastOptions effectiveOptions = broadcastOptions == null
+                ? BroadcastOptions.makeBasic() : broadcastOptions;
+        effectiveOptions.setDebugLogEnabled(true);
+        context.sendOrderedBroadcast(intent, null /* receiverPermission */,
+                effectiveOptions.toBundle(), resultReceiver, null /* scheduler */,
+                Activity.RESULT_OK, null /* initialData */, null /* initialExtras */);
     }
 
     private static Intent makeIntent(int command, String sourcePackage,

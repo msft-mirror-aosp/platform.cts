@@ -18,7 +18,7 @@ package android.provider.cts.contacts;
 
 import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
 
-import static com.android.providers.contacts.flags.Flags.FLAG_CP2_ACCOUNT_MOVE_FLAG;
+import static com.android.providers.contacts.flags.Flags.FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG;
 import static com.android.providers.contacts.flags.Flags.FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -102,6 +102,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
         mCreatedContacts = new HashSet<>();
         mNeedDefaultAccountReset = false;
+
+        // this test uses the null account which is hard to otherwise keep isolated
+        deleteLocalRawContacts();
     }
 
     @After
@@ -118,6 +121,52 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         });
 
         resetDefaultAccount();
+    }
+
+
+    private void deleteLocalRawContacts() {
+        // definitely remove all contacts from the null account
+        mResolver.delete(ContactsContract.RawContacts.CONTENT_URI,
+                ContactsContract.RawContacts.ACCOUNT_NAME + " IS NULL"
+                        + " AND " + ContactsContract.RawContacts.ACCOUNT_TYPE + " IS NULL",
+                new String[] {});
+
+        String localAccountName = ContactsContract.RawContacts.getLocalAccountName(getContext());
+        String localAccountType = ContactsContract.RawContacts.getLocalAccountType(getContext());
+
+        if (localAccountName == null && localAccountType == null) {
+            // if the LOCAL account is null, we are done
+            return;
+        }
+
+        // if both the name & type for the custom local account are non-null, just handle that
+        if (localAccountName != null && localAccountType != null) {
+            mResolver.delete(ContactsContract.RawContacts.CONTENT_URI,
+                    ContactsContract.RawContacts.ACCOUNT_NAME + " = ?"
+                            + " AND " + ContactsContract.RawContacts.ACCOUNT_TYPE + " = ?",
+                    new String[] {
+                            localAccountName,
+                            localAccountType,
+                    });
+            return;
+        }
+
+        // if only one field is null, figure out  which and purge those
+        if (localAccountName != null) {
+            mResolver.delete(ContactsContract.RawContacts.CONTENT_URI,
+                    ContactsContract.RawContacts.ACCOUNT_NAME + " = ?"
+                            + " AND " + ContactsContract.RawContacts.ACCOUNT_TYPE + " IS NULL",
+                    new String[] {
+                            localAccountName,
+                    });
+        } else {
+            mResolver.delete(ContactsContract.RawContacts.CONTENT_URI,
+                    ContactsContract.RawContacts.ACCOUNT_NAME + " IS NULL"
+                            + " AND " + ContactsContract.RawContacts.ACCOUNT_TYPE + " = ?",
+                    new String[] {
+                            localAccountType,
+                    });
+        }
     }
 
     private void resetDefaultAccount() {
@@ -192,7 +241,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithNoLocalContacts() throws Exception {
         // create a contact with a non-local account
         insertRawContact(OTHER_ACCOUNT);
@@ -202,24 +252,23 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts() throws Exception {
-        // the local null account is hard to isolate, so get a baselines
-        int initialCount = getNumberOfMovableLocalContacts();
-
         // create contact with null/local account
         insertRawContact(null);
         // set a cloud default account
         setDefaultAccountForNewContacts(
                 DefaultAccount.DefaultAccountAndState.ofCloud(CLOUD_ACCOUNT));
         int count = getNumberOfMovableLocalContacts();
-        assertEquals(initialCount + 1, count);
+        // the local null account is hard to isolate, so assume there may be extra contacts
+        assertEquals(1, count);
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts_flagsOff() throws Exception {
         // create contact with null/local account
         insertRawContact(null);
@@ -229,12 +278,10 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount() throws Exception {
-        // the local null account is hard to isolate, so get a baselines
-        int initialCount = getNumberOfMovableLocalContacts();
-
         // create contact with null/local account
         long rawContactId1 = insertRawContact(null);
 
@@ -245,7 +292,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         setDefaultAccountForNewContacts(
                 DefaultAccount.DefaultAccountAndState.ofCloud(CLOUD_ACCOUNT));
         int count = getNumberOfMovableLocalContacts();
-        assertEquals(initialCount + 2, count);
+        // the local null account is hard to isolate, so assume there maybe extra contacts
+        assertEquals(2, count);
 
         // contacts are moved from both null and OEM configurable local accounts
         moveLocalContactsToCloudDefaultAccount();
@@ -258,8 +306,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount_flagsOff() throws Exception {
         // create contact with null/local account
         long rawContactId1 = insertRawContact(null);
@@ -280,8 +328,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts() throws Exception {
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
@@ -296,8 +345,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts_flagsOff() throws Exception {
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
@@ -309,8 +358,9 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
-    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG,
+            FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount() throws Exception {
         // create contact with null/local account
         long rawContactId = insertRawContact(
@@ -331,8 +381,8 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
-    @RequiresFlagsDisabled({FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED,
+            FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount_flagsOff() throws Exception {
         // create contact with null/local account
         long rawContactId = insertRawContact(
@@ -368,21 +418,24 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToLocalDefaultAccount() throws Exception {
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofLocal());
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToNotSetDefaultAccount() throws Exception {
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofNotSet());
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED})
+    @RequiresFlagsDisabled({FLAG_DISABLE_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToSimDefaultAccount() throws Exception {
         testMoveLocalContactsToInvalidDefaultAccountInternal(
                 DefaultAccount.DefaultAccountAndState.ofSim(

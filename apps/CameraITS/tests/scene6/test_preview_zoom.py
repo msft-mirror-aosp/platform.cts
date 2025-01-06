@@ -32,9 +32,72 @@ import zoom_capture_utils
 _CRF = 23
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
 _FPS = 30
+_MINIMUM_ARUCO_MARKERS_TO_DETECT = 1
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
+
+
+# Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
+#       Use for tests not sensitive to variations of 1080p or 480p.
+# TODO: b/370841141 - Remove usage of VIDEO_PREVIEW_QUALITY_SIZE.
+#                     Create and use get_supported_video_sizes instead of
+#                     get_supported_video_qualities.
+_VIDEO_PREVIEW_QUALITY_SIZE = {
+    # 'HIGH' and 'LOW' not included as they are DUT-dependent
+    '4KDC': '4096x2160',
+    '2160P': '3840x2160',
+    'QHD': '2560x1440',
+    '2k': '2048x1080',
+    '1080P': '1920x1080',
+    '720P': '1280x720',
+    '480P': '720x480',
+    'VGA': '640x480',
+    'CIF': '352x288',
+    'QVGA': '320x240',
+    'QCIF': '176x144',
+}
+
+
+def get_largest_video_size(cam, camera_id):
+  """Returns the largest supported video size and its area.
+
+  Determine largest supported video size and its area from
+  get_supported_video_qualities.
+
+  Args:
+    cam: camera object.
+    camera_id: str; camera ID.
+
+  Returns:
+    max_size: str; largest supported video size in the format 'widthxheight'.
+    max_area: int; area of the largest supported video size.
+  """
+  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
+  logging.debug('Supported video profiles & IDs: %s',
+                supported_video_qualities)
+
+  quality_keys = [
+      quality.split(':')[0]
+      for quality in supported_video_qualities
+  ]
+  logging.debug('Quality keys: %s', quality_keys)
+
+  supported_video_sizes = [
+      _VIDEO_PREVIEW_QUALITY_SIZE[key]
+      for key in quality_keys
+      if key in _VIDEO_PREVIEW_QUALITY_SIZE
+  ]
+  logging.debug('Supported video sizes: %s', supported_video_sizes)
+
+  if not supported_video_sizes:
+    raise AssertionError('No supported video sizes found!')
+
+  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  max_size = max(supported_video_sizes, key=size_to_area)
+
+  logging.debug('Largest video size: %s', max_size)
+  return size_to_area(max_size)
 
 
 def compress_video(input_filename, output_filename, crf=_CRF):
@@ -93,9 +156,11 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                            zoom_capture_utils.OFFSET_RTOL)
       logging.debug('Threshold levels to be used for testing: %s', test_tols)
 
+      largest_area = get_largest_video_size(cam, self.camera_id)
+
       # get max preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
-          cam, self.camera_id)
+          cam, self.camera_id, aspect_ratio=None, max_tested_area=largest_area)
       size = [int(x) for x in preview_size.split('x')]
       logging.debug('preview_size = %s', preview_size)
       logging.debug('size = %s', size)
@@ -151,13 +216,13 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         )
 
         # Find ArUco markers
-        # TODO: b/370585114 - improve test time and skip saving debug images.
         try:
           corners, ids, _ = opencv_processing_utils.find_aruco_markers(
               img_bgr,
               (f'{os.path.join(log_path, img_name)}_{z:.2f}_'
                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-              aruco_marker_count=1
+              aruco_marker_count=_MINIMUM_ARUCO_MARKERS_TO_DETECT,
+              save_images=debug
           )
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
@@ -174,6 +239,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
                 focal_length=cap_fl,
+                physical_id=phy_id
             )
         )
 
@@ -203,7 +269,13 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # TODO: b/369852004 - decrease TOL for test_preview_zoom
       if not zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size, plot_name_stem):
-        raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
+        first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+        failure_msg = f'{_NAME} failed! Check test_log.DEBUG for errors'
+        if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+          raise AssertionError(failure_msg)
+        else:
+          raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               f'\n\n{failure_msg}')
 
 if __name__ == '__main__':
   test_runner.main()

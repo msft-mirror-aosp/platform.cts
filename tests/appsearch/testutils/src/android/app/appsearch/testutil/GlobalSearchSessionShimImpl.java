@@ -18,6 +18,7 @@ package android.app.appsearch.testutil;
 
 import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
+import android.app.appsearch.AppSearchBlobHandle;
 import android.app.appsearch.AppSearchManager;
 import android.app.appsearch.AppSearchResult;
 import android.app.appsearch.Features;
@@ -26,6 +27,7 @@ import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSession;
 import android.app.appsearch.GlobalSearchSessionShim;
+import android.app.appsearch.OpenBlobForReadResponse;
 import android.app.appsearch.ReportSystemUsageRequest;
 import android.app.appsearch.SearchResults;
 import android.app.appsearch.SearchResultsShim;
@@ -42,6 +44,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -96,6 +99,16 @@ public class GlobalSearchSessionShimImpl implements GlobalSearchSessionShim {
                 packageName, databaseName, request, mExecutor,
                 new BatchResultCallbackAdapter<>(future));
         return future;
+    }
+
+    @Override
+    @NonNull
+    public ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        SettableFuture<AppSearchResult<OpenBlobForReadResponse>> future =
+                SettableFuture.create();
+        mGlobalSearchSession.openBlobForRead(handles, mExecutor, future::set);
+        return Futures.transformAsync(future, this::transformResult, mExecutor);
     }
 
     @NonNull

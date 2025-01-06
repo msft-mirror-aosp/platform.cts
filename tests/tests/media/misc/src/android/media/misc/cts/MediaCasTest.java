@@ -20,8 +20,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.MediaCas;
 import android.media.MediaCas.PluginDescriptor;
 import android.media.MediaCas.Session;
@@ -400,13 +402,18 @@ public class MediaCasTest {
     }
 
     /**
-     * Test setResourceHolderRetain API when resource challenger is favoured
+     * Test setResourceOwnershipRetention API when resource challenger is favoured
      *
      * When resource challenger and resource holder have the same process and the same priority with
      * limited resources, resource challenger wins the resource.
      */
     @Test
     public void testResourceChallengerWins() throws Exception {
+        assumeTrue(
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TUNER));
+
         MediaCas mediaCasA = null;
         MediaCas mediaCasB = null;
         Session resourceHolderSession = null, resourceChallengerSession = null;
@@ -438,11 +445,11 @@ public class MediaCasTest {
                 fail("Can't open session for program");
             }
             // Set the policy such that the resource challenger will win the resource.
-            mediaCasB.setResourceHolderRetain(false);
+            mediaCasB.setResourceOwnershipRetention(false);
             resourceChallengerSession = mediaCasB.openSession();
             if (resourceChallengerSession == null) {
                 fail("resourceHolderSession did not release the resource as "
-                        + "setResourceHolderRetain API is enabled");
+                        + "setResourceOwnershipRetention API is enabled");
             }
         } finally {
             if (resourceHolderSession != null) {
@@ -461,13 +468,18 @@ public class MediaCasTest {
     }
 
     /**
-     * Test setResourceHolderRetain API when resource holder is favoured
+     * Test setResourceOwnershipRetention API when resource holder is favoured
      *
      * When resource challenger and resource holder have the same process and the same priority with
      * limited resources, resource holder retains the resource.
      */
     @Test
     public void testResourceHolderWins() throws Exception {
+        assumeTrue(
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TUNER));
+
         MediaCas mediaCasA = null;
         MediaCas mediaCasB = null;
         Session resourceHolderSession = null, resourceChallengerSession = null;
@@ -500,7 +512,7 @@ public class MediaCasTest {
             }
             // Set the policy such as resource holder will be retaining the resource
             // in resource challeger situation.
-            mediaCasA.setResourceHolderRetain(true);
+            mediaCasA.setResourceOwnershipRetention(true);
 
             try {
                 resourceChallengerSession = mediaCasA.openSession();
@@ -712,6 +724,11 @@ public class MediaCasTest {
      */
     @Test
     public void testUpdateResourcePriority() throws Exception {
+        assumeTrue(
+                InstrumentationRegistry.getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TUNER));
+
         MediaCas mediaCas = null;
         if (!MediaUtils.check(mIsAtLeastS, "test needs Android 12")) return;
 

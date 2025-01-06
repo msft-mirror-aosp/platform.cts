@@ -20,6 +20,9 @@ import android.app.Activity;
 import android.text.method.ArrowKeyMovementMethod;
 import android.text.method.LinkMovementMethod;
 import android.text.method.ScrollingMovementMethod;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 /**
  * This Activity is used for testing:
@@ -34,4 +37,38 @@ import android.text.method.ScrollingMovementMethod;
  * @see ScrollingMovementMethodTest
  */
 public class CtsActivity extends Activity {
+
+    private FrameLayout mContentView = null;
+
+    /**
+     * This method is overridden here to ensure that the given view is not obscured by system window
+     * insets.
+     */
+    @Override
+    public void setContentView(View view) {
+        final FrameLayout contentView = getContentView();
+        contentView.removeAllViews();
+        contentView.addView(view);
+        super.setContentView(contentView);
+    }
+
+    /**
+     * This method is overridden here to ensure that the given view is not obscured by system window
+     * insets.
+     */
+    @Override
+    public void setContentView(View view, ViewGroup.LayoutParams params) {
+        final FrameLayout contentView = getContentView();
+        contentView.removeAllViews();
+        contentView.addView(view, params);
+        super.setContentView(contentView);
+    }
+
+    private FrameLayout getContentView() {
+        if (mContentView == null) {
+            mContentView = new FrameLayout(this);
+            mContentView.setFitsSystemWindows(true);
+        }
+        return mContentView;
+    }
 }

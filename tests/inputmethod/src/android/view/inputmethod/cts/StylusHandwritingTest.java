@@ -20,6 +20,7 @@ import static android.provider.Settings.Secure.STYLUS_HANDWRITING_DEFAULT_VALUE;
 import static android.provider.Settings.Secure.STYLUS_HANDWRITING_ENABLED;
 import static android.view.inputmethod.ConnectionlessHandwritingCallback.CONNECTIONLESS_HANDWRITING_ERROR_NO_TEXT_RECOGNIZED;
 import static android.view.inputmethod.ConnectionlessHandwritingCallback.CONNECTIONLESS_HANDWRITING_ERROR_UNSUPPORTED;
+import static android.view.inputmethod.Flags.FLAG_ADAPTIVE_HANDWRITING_BOUNDS;
 import static android.view.inputmethod.Flags.FLAG_CONNECTIONLESS_HANDWRITING;
 import static android.view.inputmethod.Flags.FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR;
 import static android.view.inputmethod.Flags.FLAG_INITIATION_WITHOUT_INPUT_CONNECTION;
@@ -34,6 +35,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_TRACK_DISABLED;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
@@ -57,6 +59,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Region;
 import android.hardware.input.InputManager;
 import android.inputmethodservice.InputMethodService;
 import android.os.Process;
@@ -101,6 +104,7 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.UinputStylus;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
@@ -157,6 +161,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
+
+    @Rule public final DebugInputRule debugInputRule = new DebugInputRule();
 
     @Before
     public void setup() {
@@ -728,7 +734,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     public void testStylusSession_stylusWouldNotTriggerNavbarGestures() throws Exception {
         assumeTrue(sGestureNavRule.isGestureMode());
-
+        final InputMethodManager imm = mContext.getSystemService(InputMethodManager.class);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -738,6 +744,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final EditText editText = launchTestActivity(marker);
 
+            addVirtualStylusIdForTestSession();
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    imm.setStylusWindowIdleTimeoutForTest(TIMEOUT * 2));
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(
                     stream,
@@ -1232,6 +1241,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * until stylus ACTION_UP.
      */
     @Test
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testHandwriting_fingerTouchIsIgnored() throws Exception {
         int displayId = 0;
         String initialUserRotation = null;
@@ -1405,6 +1415,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withStylusTap() throws Exception {
         UinputTouchDevice stylus = null;
         int displayId = 0;
@@ -1483,6 +1494,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withFingerTap() throws Exception {
         UinputTouchDevice touch = null;
         int displayId = 0;
@@ -1536,11 +1548,13 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     }
 
     /**
-     * Inject stylus handwriting event on an editor and verify stylus source is detected with
-     * {@link InputMethodService#onUpdateEditorToolType(int)} on next startInput().
+     * Inject stylus handwriting event on an editor and verify stylus source is detected with {@link
+     * InputMethodService#onUpdateEditorToolType(int)} on next startInput().
      */
     @Test
     @FlakyTest
+    @DebugInputRule.DebugInput(bug = 380535703)
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withStylusHandwriting() throws Exception {
         int displayId;
         String initialUserRotation = null;
@@ -2032,7 +2046,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * Tap on a view with stylus to launch a new activity with Editor. The editor's
      * editor ToolType should match stylus.
      */
-    @RequiresFlagsEnabled(FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE)
+    @RequiresFlagsEnabled({FLAG_USE_HANDWRITING_LISTENER_FOR_TOOLTYPE, FLAG_DEVICE_ASSOCIATIONS})
     @Test
     public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -3206,6 +3220,102 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             }
         } finally {
             TestUtils.injectStylusUpEvent(editor, endX, endY);
+        }
+    }
+
+    @ApiTest(apis = {
+            "android.view.inputmethod.InputMethodService#setStylusHandwritingRegion",
+    })
+    @Test
+    @RequiresFlagsEnabled({FLAG_ADAPTIVE_HANDWRITING_BOUNDS, FLAG_DEVICE_ASSOCIATIONS})
+    public void testSetStylusHandwritingRegion() throws Exception {
+        final InputMethodManager imm = mContext.getSystemService(InputMethodManager.class);
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        try (MockImeSession imeSession = MockImeSession.create(
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final EditText editText = launchTestActivity(marker);
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+            // update handwriting window timeout to a larger so that it doesn't timeout
+            // in-between injections.
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    imm.setStylusWindowIdleTimeoutForTest(TIMEOUT * 2));
+
+            final int touchSlop = getTouchSlop();
+            int startX = editText.getWidth() / 2;
+            int startY = editText.getHeight() / 2;
+            int endX = startX + 2 * touchSlop;
+            int endY = startY;
+            final int number = 5;
+
+            final Display display = editText.getDisplay();
+            try (UinputTouchDevice stylus = new UinputStylus(instrumentation, display)) {
+                UinputTouchDevice.Pointer pointer =
+                        TestUtils.injectStylusDownEvent(stylus, editText, startX, startY);
+                TestUtils.injectStylusMoveEvents(pointer, editText, startX, startY,
+                        endX, endY, number);
+
+                // Handwriting should already be initiated before ACTION_UP.
+                // keyboard shouldn't show up.
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onStartInputView", marker),
+                        NOT_EXPECT_TIMEOUT);
+                // Handwriting should start
+                expectEvent(
+                        stream,
+                        editorMatcher("onStartStylusHandwriting", marker),
+                        TIMEOUT);
+                TestUtils.injectStylusUpEvent(pointer);
+
+                // Enlarge the touchable area
+                final int offset = 100;
+                endX = editText.getRight() + offset;
+                endY = editText.getBottom() + offset;
+                final int endRegionY = endY;
+                Region hwRegion = new Region(editText.getLeft(), editText.getTop(), endX, endY);
+                assertTrue(expectCommand(
+                        stream, imeSession.callSetStylusHandwritingRegion(hwRegion), TIMEOUT)
+                        .getReturnBooleanValue());
+
+                // inject motion event within the new expanded touchable region
+                startX = endX / 2;
+                endX = startX;
+                startY = endY - 10; // within handwriting region.
+                endY = startY + offset;
+                pointer = TestUtils.injectStylusDownEvent(stylus, startX, startY);
+                TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, number);
+                // verify handwriting is still ongoing
+                notExpectEvent(
+                        stream,
+                        editorMatcher("onFinishStylusHandwriting", marker),
+                        NOT_EXPECT_TIMEOUT);
+                TestUtils.injectStylusUpEvent(pointer);
+
+                // inject outside touchableRegion, slightly outside endRegionY.
+                startY = endRegionY + 10;
+                endY = startY + offset;
+                pointer = TestUtils.injectStylusDownEvent(stylus, startX, startY);
+                TestUtils.injectStylusMoveEvents(pointer, startX, startY, endX, endY, number);
+                // verify finish has been called.
+                expectEvent(
+                        stream,
+                        editorMatcher("onFinishStylusHandwriting", marker),
+                        TIMEOUT_1_S);
+                TestUtils.injectStylusUpEvent(pointer);
+                verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+            }
         }
     }
 

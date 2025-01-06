@@ -17,8 +17,6 @@
 package android.view.inputmethod.cts.util;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.WindowInsets.Type.displayCutout;
-import static android.view.WindowInsets.Type.systemBars;
 import static android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED;
@@ -36,6 +34,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
@@ -72,6 +71,7 @@ public class TestActivity extends Activity {
     private long mOnBackPressedCallCount;
 
     private boolean mPaused = false;
+    private boolean mStopped = false;
 
     private TextView mOverlayView;
     private OnBackInvokedCallback mIgnoreBackKeyCallback = () -> {
@@ -138,14 +138,11 @@ public class TestActivity extends Activity {
         // TODO(Bug 77152727): Remove the following code once we define how
         // SOFT_INPUT_STATE_UNSPECIFIED actually behaves.
         setSoftInputState(SOFT_INPUT_STATE_UNCHANGED);
-        setContentView(mInitializer.apply(this));
 
-        // Add padding for edge-to-edge but return original insets.
-        getWindow().getDecorView().setOnApplyWindowInsetsListener((v, insets) -> {
-            final var i = insets.getInsets(systemBars() | displayCutout());
-            v.setPadding(i.left, i.top, i.right, i.bottom);
-            return insets;
-        });
+        final FrameLayout contentView = new FrameLayout(this);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(mInitializer.apply(this));
+        setContentView(contentView);
     }
 
     @Override
@@ -171,11 +168,22 @@ public class TestActivity extends Activity {
     @Override
     protected void onResume() {
         mPaused = false;
+        mStopped = false;
         super.onResume();
+    }
+
+    @Override
+    protected void onStop() {
+        mStopped = true;
+        super.onStop();
     }
 
     public boolean isPaused() {
         return mPaused;
+    }
+
+    public boolean isStopped() {
+        return mStopped;
     }
 
     /**

@@ -155,5 +155,27 @@ public class TvAdViewTest {
             throw exceptions[0];
         }
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AD_SERVICE_FW)
+    @Test
+    public void testSetZOrderMediaOverlay() throws Throwable {
+        // Verifying the z-order from app is not possible. Here we just check if calling APIs does
+        // not lead to any break.
+        mTvAdView.setZOrderMediaOverlay(true);
+        mInstrumentation.waitForIdleSync();
+        mTvAdView.setZOrderMediaOverlay(false);
+        mInstrumentation.waitForIdleSync();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_AD_SERVICE_FW)
+    @Test
+    public void testSetZOrderOnTop() throws Throwable {
+        // Verifying the z-order from app is not possible. Here we just check if calling APIs does
+        // not lead to any break.
+        mTvAdView.setZOrderOnTop(true);
+        mInstrumentation.waitForIdleSync();
+        mTvAdView.setZOrderOnTop(false);
+        mInstrumentation.waitForIdleSync();
+    }
 }
 

@@ -52,8 +52,8 @@ import android.os.UserManager;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -70,7 +70,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class DistractingPackageTest {
     @ClassRule @Rule

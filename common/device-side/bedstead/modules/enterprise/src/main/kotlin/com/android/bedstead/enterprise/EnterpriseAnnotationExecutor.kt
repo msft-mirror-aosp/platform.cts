@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.enterprise
 
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
@@ -25,6 +26,7 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
@@ -34,8 +36,6 @@ import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.multiuser.UsersComponent
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction
-import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapps.TestAppsComponent
 

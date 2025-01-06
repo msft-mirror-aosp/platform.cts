@@ -20,7 +20,6 @@ import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
 
 import android.accounts.Account;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -51,97 +50,37 @@ public class ContactsContract_DefaultAccountAndStateTest {
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_cloud() {
-        DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
-                DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
-                ACCT_1);
+        DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofCloud(ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
                 defaultContactsAccount.getState());
         assertEquals(ACCT_1, defaultContactsAccount.getAccount());
-
-        defaultContactsAccount = DefaultAccountAndState.ofCloud(ACCT_1);
-        assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
-                defaultContactsAccount.getState());
-        assertEquals(ACCT_1, defaultContactsAccount.getAccount());
-
-        assertThrows(IllegalArgumentException.class, () ->
-                new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD, null));
     }
 
 
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_sim() {
-        DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
-                DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
-                ACCT_1);
+        DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofSim(ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
                 defaultContactsAccount.getState());
         assertEquals(ACCT_1, defaultContactsAccount.getAccount());
-
-        defaultContactsAccount = DefaultAccountAndState.ofSim(ACCT_1);
-        assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
-                defaultContactsAccount.getState());
-        assertEquals(ACCT_1, defaultContactsAccount.getAccount());
-
-        assertThrows(IllegalArgumentException.class, () ->
-                new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM, null));
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_local() {
-        DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
-                DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
-                null);
+        DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofLocal();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
                 defaultContactsAccount.getState());
         assertNull(defaultContactsAccount.getAccount());
-
-        defaultContactsAccount = DefaultAccountAndState.ofLocal();
-        assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
-                defaultContactsAccount.getState());
-        assertNull(defaultContactsAccount.getAccount());
-
-        assertThrows(IllegalArgumentException.class, () ->
-                new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
-                        ACCT_1));
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_notSet() {
-        DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
-                DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
-                null);
+        DefaultAccountAndState defaultContactsAccount = DefaultAccountAndState.ofNotSet();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
                 defaultContactsAccount.getState());
         assertNull(defaultContactsAccount.getAccount());
-
-        defaultContactsAccount = DefaultAccountAndState.ofNotSet();
-        assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
-                defaultContactsAccount.getState());
-        assertNull(defaultContactsAccount.getAccount());
-
-        assertThrows(IllegalArgumentException.class, () ->
-                new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
-                        ACCT_1));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
-    public void testDefaultContactsAccountClass_invalid() {
-        assertThrows(IllegalArgumentException.class, () ->
-                new DefaultAccountAndState(
-                        -1, // Invalid state.
-                        null));
-
-        assertThrows(IllegalArgumentException.class, () ->
-                new DefaultAccountAndState(
-                        -2, // Invalid state.
-                        ACCT_1));
     }
 }

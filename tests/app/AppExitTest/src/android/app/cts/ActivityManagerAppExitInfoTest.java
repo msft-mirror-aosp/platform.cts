@@ -643,8 +643,9 @@ public final class ActivityManagerAppExitInfoTest {
                 new IntentFilter(DropBoxManager.ACTION_DROPBOX_ENTRY_ADDED));
 
         final KeyValueListParser parser = new KeyValueListParser(',');
-        // 10 seconds is the default BROADCAST_FG_TIMEOUT. Using 3 times that as the test timeout.
-        final long defaultTimeout = 10 * 1000;
+        // (10 * HW_TIMEOUT_MULTIPLIER) seconds is the default BROADCAST_FG_TIMEOUT.
+        // Using 3 times that as the test timeout.
+        final long defaultTimeout = 10L * 1000L * Build.HW_TIMEOUT_MULTIPLIER;
         long timeout = defaultTimeout * 3;
         try {
             parser.setString(Settings.Global.getString(mContext.getContentResolver(),
@@ -995,10 +996,11 @@ public final class ActivityManagerAppExitInfoTest {
         PollingCheck.check("not able to get tombstone", TOMBSTONE_FETCH_TIMEOUT_MS,
                 () -> tombstoneFetcher.fetchTrace());
 
-        InputStream trace = tombstoneFetcher.getTrace();
-        assertNotNull(trace);
-        Tombstone tombstone = Tombstone.parseFrom(trace);
-        assertEquals(tombstone.getPid(), mStubPackagePid);
+        try (InputStream trace = tombstoneFetcher.getTrace()) {
+            assertNotNull(trace);
+            Tombstone tombstone = Tombstone.parseFrom(trace);
+            assertEquals(tombstone.getPid(), mStubPackagePid);
+        }
     }
 
     @Test

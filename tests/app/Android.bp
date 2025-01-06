@@ -19,7 +19,6 @@ package {
 
 android_test {
     name: "CtsAppTestCases",
-    team: "trendy_team_arc_app_compat",
     defaults: ["cts_defaults"],
     libs: [
         "android.test.runner.stubs.test",
@@ -40,11 +39,12 @@ android_test {
         "CtsAppTestStubsShared",
         "android.content.pm.flags-aconfig-java",
         "android.multiuser.flags-aconfig-java",
+        "am_flags_lib",
         "flag-junit",
         "com.android.media.flags.bettertogether-aconfig-java",
         "android.app.flags-aconfig-java",
         "ravenwood-junit",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",
@@ -100,6 +100,7 @@ android_ravenwood_test {
         "src/android/app/cts/BroadcastOptionsTest.java",
     ],
     auto_gen_config: true,
+    team: "trendy_team_ravenwood",
 }
 
 android_test {
@@ -273,6 +274,7 @@ android_test {
         "libprotobuf-java-lite",
         "flag-junit",
         "android.content.pm.flags-aconfig-java",
+        "com.android.media.flags.bettertogether-aconfig-java",
     ],
     aidl: {
         local_include_dirs: ["app/src"],

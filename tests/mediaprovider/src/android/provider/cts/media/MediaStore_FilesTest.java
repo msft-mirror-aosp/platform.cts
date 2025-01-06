@@ -208,9 +208,9 @@ public class MediaStore_FilesTest {
         mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),
                 null);
         try {
-            File fileA = createMediaInDownloads(R.raw.testmp3, mVolumeName);
-            File fileB = createMediaInDownloads(R.raw.testmp3, mVolumeName);
-            File fileC = createMediaInDownloads(R.raw.testmp3, mVolumeName);
+            File fileA = createMediaInDownloads(mResolver, mVolumeName);
+            File fileB = createMediaInDownloads(mResolver, mVolumeName);
+            File fileC = createMediaInDownloads(mResolver, mVolumeName);
 
             final Bundle extras = new Bundle();
             extras.putBoolean(MediaStore.QUERY_ARG_MEDIA_STANDARD_SORT_ORDER, true);
@@ -222,7 +222,7 @@ public class MediaStore_FilesTest {
             // Verify that querying with QUERY_ARG_MEDIA_STANDARD_SORT_ORDER
             // returns the media files based on date_modified (DESC, newest first)
             try (Cursor c = mResolver.query(
-                    MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY),
+                    MediaStore.Downloads.getContentUri(mVolumeName),
                     new String[]{MediaColumns.DATA, MediaColumns.INFERRED_DATE}, extras,
                     null)) {
                 assumeTrue(c.getCount() == 3);

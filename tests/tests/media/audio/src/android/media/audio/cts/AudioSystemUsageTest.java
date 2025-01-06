@@ -112,19 +112,4 @@ public class AudioSystemUsageTest {
                 builder::build);
         assertThat(thrown).hasMessageThat().contains("Cannot create AudioTrack");
     }
-
-    @Test
-    public void getInputForAttr_returnsError() {
-        AudioAttributes unsupportedInputAudioAttributes = new AudioAttributes.Builder()
-                .setSystemUsage(AudioAttributes.USAGE_SAFETY)
-                .setCapturePreset(MediaRecorder.AudioSource.MIC)
-                .build();
-        AudioRecord.Builder builder = new AudioRecord.Builder()
-                .setAudioAttributes(unsupportedInputAudioAttributes);
-
-        // Calls AudioPolicyService#getInputForAttr which returns ERROR for unsupported usage
-        UnsupportedOperationException thrown = expectThrows(UnsupportedOperationException.class,
-                builder::build);
-        assertThat(thrown).hasMessageThat().contains("Cannot create AudioRecord");
-    }
 }

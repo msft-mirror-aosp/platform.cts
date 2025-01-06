@@ -54,9 +54,12 @@ public abstract class StreamBase {
     // megaaudio/common/Streambase.h
     //
     public static final int OK = 0;
-    public static final int ERROR_UNKNOWN = -1;
-    public static final int ERROR_UNSUPPORTED = -2;
-    public static final int ERROR_INVALID_STATE = -3;
+    public static final int ERROR_UNKNOWN = 1;
+    public static final int ERROR_UNSUPPORTED = 2;
+    public static final int ERROR_INVALID_STATE = 3;
+    public static final int ERROR_BAD_START = 4;
+    public static final int ERROR_BAD_OPEN = 5;
+    public static final int ERROR_INVALID_ARGUMENT = 6;
     public static final int ERROR_DISCONNECTED = -899; // must match Oboe
     public static final int ERROR_INVALIDSTATE = -895;
 
@@ -135,6 +138,138 @@ public abstract class StreamBase {
     public static void setup(Context context) {
         calcNumBurstFrames(context);
         calcSystemSampleRate(context);
+    }
+
+    //
+    // Lifecycle
+    //
+    private static final int LIFECYCLE_NONE     = 0;
+    private static final int LIFECYCLE_BUILT    = 1;
+    private static final int LIFECYCLE_OPENED   = 2;
+    private static final int LIFECYCLE_STARTED  = 3;
+    private static final int LIFECYCLE_STOPPED  = 4;
+    private static final int LIFECYCLE_CLOSED   = 5;
+    private int mLifecycleStep = LIFECYCLE_NONE;
+
+    /**
+     * Builds the stream, but does not open or start it.
+     *
+     * @param builder The builder containing the attributes for the stream.
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public abstract int build(BuilderBase builder);
+
+    /**
+     * Opens a stream in preparation for starting.
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public abstract int open();
+
+    /**
+     * Starts the stream.
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public abstract int start();
+
+    /**
+     * Stops the stream.
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public abstract int stop();
+
+    /**
+     * Closes the stream.
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public abstract int close();
+
+    /**
+     * Tearsdown (deallocates) the stream.
+     * @return Either StreamBase.OK or an appropriate error code.
+     */
+    public abstract int teardown();
+
+    protected int trackBuild(int result) {
+        if (result == OK) {
+            mLifecycleStep = LIFECYCLE_BUILT;
+        }
+        return result;
+    }
+
+    //
+    // Lifecycle Monitoring
+    //
+    protected int trackOpen(int result) {
+        if (result == OK) {
+            mLifecycleStep = LIFECYCLE_OPENED;
+        }
+        return result;
+    }
+
+    protected int trackStart(int result) {
+        if (result == OK) {
+            mLifecycleStep = LIFECYCLE_STARTED;
+        }
+        return result;
+    }
+
+    protected int trackStop(int result) {
+        if (result == OK) {
+            mLifecycleStep = LIFECYCLE_STOPPED;
+        }
+        return result;
+    }
+
+    protected int trackClose(int result) {
+        if (result == OK) {
+            mLifecycleStep = LIFECYCLE_CLOSED;
+        }
+        return result;
+    }
+
+    protected int trackTeardown(int result) {
+        if (result == OK) {
+            mLifecycleStep = LIFECYCLE_NONE;
+        }
+        return result;
+    }
+
+    /**
+     * stops/closes/tearsdown a stream based on its current lifecycle step.
+     */
+    public void unwind() {
+        if (LOG) {
+            Log.d(TAG, "unwind() mLifecycleStep: " + mLifecycleStep);
+        }
+        switch (mLifecycleStep) {
+            case LIFECYCLE_NONE:
+                // NOP
+                break;
+
+            case LIFECYCLE_BUILT:
+                teardown();
+                break;
+
+            case LIFECYCLE_OPENED:
+                close();
+                teardown();
+                break;
+
+            case LIFECYCLE_STARTED:
+                stop();
+                close();
+                teardown();
+                break;
+
+            case LIFECYCLE_STOPPED:
+                close();
+                teardown();
+                break;
+
+            case LIFECYCLE_CLOSED:
+                teardown();
+                break;
+        }
     }
 
     //
@@ -228,26 +363,6 @@ public abstract class StreamBase {
     //
     // State
     //
-    /**
-     * Releases resources used by the stream.
-     * @return
-     */
-    public abstract int teardownStream();
-
-    /**
-     * Starts playback on an open stream player. (@see open() method above).
-     * @return              ERROR_NONE if successful, otherwise an error code
-     */
-    public abstract int startStream();
-
-    /**
-     * Stops playback.
-     * May not stop the stream immediately. i.e. does not stop until the next audio callback
-     * from the underlying system.
-     * @return              ERROR_NONE if successful, otherwise an error code
-     */
-    public abstract int stopStream();
-
     /**
      * @return See StreamState constants
      */

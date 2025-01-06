@@ -368,6 +368,18 @@ public class LauncherAppsTest {
     @Test
     @AppModeFull(reason = "Need special permission")
     @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
+            android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES,
+            android.multiuser.Flags.FLAG_ADD_LAUNCHER_USER_CONFIG})
+    public void testLauncherUserInfo_addLauncherUserConfig() {
+        LauncherUserInfo info =
+                mLauncherApps.getLauncherUserInfo(UserHandle.of(UserHandle.myUserId()));
+        assertThat(info).isNotNull();
+        assertThat(info.getUserConfig()).isNotNull();
+    }
+
+    @Test
+    @AppModeFull(reason = "Need special permission")
+    @RequiresFlagsEnabled({FLAG_ALLOW_PRIVATE_PROFILE,
             android.multiuser.Flags.FLAG_ENABLE_PRIVATE_SPACE_FEATURES})
     public void testGetMarketIntent() {
         IntentSender intentSender =

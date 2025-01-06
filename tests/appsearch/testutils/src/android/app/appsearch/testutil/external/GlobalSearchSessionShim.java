@@ -16,15 +16,20 @@
 
 package android.app.appsearch;
 
-import android.annotation.NonNull;
+import android.annotation.FlaggedApi;
 import android.annotation.SuppressLint;
 import android.app.appsearch.exceptions.AppSearchException;
 import android.app.appsearch.observer.ObserverCallback;
 import android.app.appsearch.observer.ObserverSpec;
 
+import com.android.appsearch.flags.Flags;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
+import org.jspecify.annotations.NonNull;
+
 import java.io.Closeable;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
@@ -49,11 +54,30 @@ public interface GlobalSearchSessionShim extends Closeable {
      * @param databaseName the name of the database to get from
      * @param request a request containing a namespace and IDs of the documents to retrieve.
      */
-    @NonNull
-    ListenableFuture<AppSearchBatchResult<String, GenericDocument>> getByDocumentIdAsync(
+    @NonNull ListenableFuture<AppSearchBatchResult<String, GenericDocument>> getByDocumentIdAsync(
             @NonNull String packageName,
             @NonNull String databaseName,
             @NonNull GetByDocumentIdRequest request);
+
+    /**
+     * Opens a batch of AppSearch Blobs for reading.
+     *
+     * <p>See {@link AppSearchSessionShim#openBlobForRead} for a general description when a blob is
+     * open for read.
+     *
+     * <p class="caution">The returned {@link OpenBlobForReadResponse} must be closed after use to
+     * avoid resource leaks. Failing to close it will result in system file descriptor exhaustion.
+     *
+     * @param handles The {@link AppSearchBlobHandle}s that identifies the blobs.
+     * @return a response containing the readable file descriptors.
+     * @see GenericDocument.Builder#setPropertyBlobHandle
+     */
+    @FlaggedApi(Flags.FLAG_ENABLE_BLOB_STORE)
+    default @NonNull ListenableFuture<OpenBlobForReadResponse> openBlobForReadAsync(
+            @NonNull Set<AppSearchBlobHandle> handles) {
+        throw new UnsupportedOperationException(
+                Features.BLOB_STORAGE + " is not available on this AppSearch implementation.");
+    }
 
     /**
      * Retrieves documents from all AppSearch databases that the querying application has access to.
@@ -77,8 +101,8 @@ public interface GlobalSearchSessionShim extends Closeable {
      *     type, etc.
      * @return a {@link SearchResultsShim} object for retrieved matched documents.
      */
-    @NonNull
-    SearchResultsShim search(@NonNull String queryExpression, @NonNull SearchSpec searchSpec);
+    @NonNull SearchResultsShim search(
+            @NonNull String queryExpression, @NonNull SearchSpec searchSpec);
 
     /**
      * Reports that a particular document has been used from a system surface.
@@ -97,8 +121,8 @@ public interface GlobalSearchSessionShim extends Closeable {
      *     AppSearchResult#RESULT_SECURITY_ERROR} if this API is invoked by an app which is not part
      *     of the system.
      */
-    @NonNull
-    ListenableFuture<Void> reportSystemUsageAsync(@NonNull ReportSystemUsageRequest request);
+    @NonNull ListenableFuture<Void> reportSystemUsageAsync(
+            @NonNull ReportSystemUsageRequest request);
 
     /**
      * Retrieves the collection of schemas most recently successfully provided to {@link
@@ -116,16 +140,14 @@ public interface GlobalSearchSessionShim extends Closeable {
      */
     // This call hits disk; async API prevents us from treating these calls as properties.
     @SuppressLint("KotlinPropertyAccess")
-    @NonNull
-    ListenableFuture<GetSchemaResponse> getSchemaAsync(
+    @NonNull ListenableFuture<GetSchemaResponse> getSchemaAsync(
             @NonNull String packageName, @NonNull String databaseName);
 
     /**
      * Returns the {@link Features} to check for the availability of certain features for this
      * session.
      */
-    @NonNull
-    Features getFeatures();
+    @NonNull Features getFeatures();
 
     /**
      * Adds an {@link ObserverCallback} to monitor changes within the databases owned by {@code

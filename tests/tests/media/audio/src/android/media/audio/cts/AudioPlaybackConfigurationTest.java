@@ -54,11 +54,13 @@ import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.media.VolumeShaper;
+import android.media.audio.Flags;
 import android.media.cts.TestUtils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Parcel;
 import android.os.Process;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -459,7 +461,8 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         }
     }
 
-    public void testGetAudioDeviceInfoMediaPlayerStart() throws Exception {
+    private void testGetAudioDeviceInfoMediaPlayerStart(boolean enableRoutedDeviceIdsFlag)
+            throws Exception {
         if (!isValidPlatform("testGetAudioDeviceInfoMediaPlayerStart")) return;
 
         final HandlerThread handlerThread = new HandlerThread(TAG);
@@ -492,7 +495,7 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
             assertTrue("MediaPlayer should have started", mMp.isPlaying());
 
             assertTrue("Active player, device not found",
-                    hasDevice(callback.getConfigs(), aa));
+                    hasDevice(callback.getConfigs(), aa, enableRoutedDeviceIdsFlag));
 
         } finally {
             am.unregisterAudioPlaybackCallback(callback);
@@ -502,6 +505,15 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
                 h.getLooper().quit();
             }
         }
+    }
+
+    public void testGetAudioDeviceInfoMediaPlayerStart() throws Exception {
+        testGetAudioDeviceInfoMediaPlayerStart(false /*enableRoutedDeviceIdsFlag*/);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ROUTED_DEVICE_IDS)
+    public void testGetAudioDeviceInfosMediaPlayerStart() throws Exception {
+        testGetAudioDeviceInfoMediaPlayerStart(true /*enableRoutedDeviceIdsFlag*/);
     }
 
     @ApiTest(apis = {"android.media.AudioManager#getActivePlaybackConfigurations",
@@ -1040,14 +1052,16 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
         return false;
     }
 
-    private static boolean hasDevice(List<AudioPlaybackConfiguration> configs, AudioAttributes aa) {
+    private static boolean hasDevice(List<AudioPlaybackConfiguration> configs, AudioAttributes aa,
+                                     boolean enableRoutedDeviceIdsFlag) {
         for (AudioPlaybackConfiguration apc : configs) {
             if (apc.getAudioAttributes().getContentType() == aa.getContentType()
                     && apc.getAudioAttributes().getUsage() == aa.getUsage()
                     && apc.getAudioAttributes().getFlags() == aa.getFlags()
                     && anonymizeCapturePolicy(apc.getAudioAttributes().getAllowedCapturePolicy())
                             == aa.getAllowedCapturePolicy()
-                    && apc.getAudioDeviceInfo() != null) {
+                    && apc.getAudioDeviceInfo() != null
+                    && (!enableRoutedDeviceIdsFlag || apc.getAudioDeviceInfos().size() > 0)) {
                 return true;
             }
         }

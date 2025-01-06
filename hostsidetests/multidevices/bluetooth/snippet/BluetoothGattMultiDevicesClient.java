@@ -16,6 +16,7 @@
 
 package com.google.snippet.bluetooth;
 
+import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -26,10 +27,13 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
+import android.bluetooth.OobData;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.os.ParcelUuid;
 import android.util.Log;
 
@@ -45,8 +49,9 @@ public final class BluetoothGattMultiDevicesClient {
 
     private CountDownLatch mConnectionBlocker = null;
     private CountDownLatch mServicesDiscovered = null;
+    private Integer mWaitForConnectionState = null;
 
-    private static final int CALLBACK_TIMEOUT_SEC = 60;
+    private static final int CALLBACK_TIMEOUT_SEC = 5;
 
     private BluetoothDevice mServer;
 
@@ -56,8 +61,7 @@ public final class BluetoothGattMultiDevicesClient {
                 public void onConnectionStateChange(
                         BluetoothGatt device, int status, int newState) {
                     Log.i(TAG, "onConnectionStateChange: newState=" + newState);
-                    if (newState == BluetoothProfile.STATE_CONNECTED
-                            && mConnectionBlocker != null) {
+                    if (newState == mWaitForConnectionState && mConnectionBlocker != null) {
                         Log.v(TAG, "Connected");
                         mConnectionBlocker.countDown();
                     }
@@ -74,7 +78,7 @@ public final class BluetoothGattMultiDevicesClient {
         mBluetoothAdapter = manager.getAdapter();
     }
 
-    public boolean connect(String uuid) {
+    public BluetoothDevice connect(String uuid) {
         // Scan for the peer
         var serverFoundBlocker = new CountDownLatch(1);
         var scanner = mBluetoothAdapter.getBluetoothLeScanner();
@@ -102,11 +106,12 @@ public final class BluetoothGattMultiDevicesClient {
         scanner.stopScan(callback);
         if (timeout) {
             Log.e(TAG, "Did not discover server");
-            return false;
+            return null;
         }
 
         // Connect to the peer
         mConnectionBlocker = new CountDownLatch(1);
+        mWaitForConnectionState = BluetoothProfile.STATE_CONNECTED;
         mBluetoothGatt = mServer.connectGatt(mContext, false, mGattCallback, TRANSPORT_LE);
         timeout = false;
         try {
@@ -117,10 +122,9 @@ public final class BluetoothGattMultiDevicesClient {
         }
         if (timeout) {
             Log.e(TAG, "Did not connect to server");
-            return false;
+            return null;
         }
-
-        return true;
+        return mServer;
     }
 
     public boolean containsService(String uuid) {
@@ -135,4 +139,70 @@ public final class BluetoothGattMultiDevicesClient {
 
         return mBluetoothGatt.getService(UUID.fromString(uuid)) != null;
     }
+
+    public boolean disconnect(String uuid) {
+        if (!containsService(uuid)) {
+            Log.e(TAG, "Connected server does not contain the service with UUID: " + uuid);
+            return false;
+        }
+        // Connect to the peer
+        mConnectionBlocker = new CountDownLatch(1);
+        mWaitForConnectionState = BluetoothProfile.STATE_DISCONNECTED;
+        mBluetoothGatt.disconnect();
+        boolean timeout = false;
+        try {
+            timeout = !mConnectionBlocker.await(CALLBACK_TIMEOUT_SEC, SECONDS);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "", e);
+            timeout = true;
+        }
+        if (timeout) {
+            Log.e(TAG, "Did not disconnect from server");
+            return false;
+        }
+        return true;
+    }
+
+    public BluetoothDevice createBondOob(String uuid, OobData oobData) {
+        if (connect(uuid) == null) {
+            Log.e(TAG, "Failed to connect with server");
+            return null;
+        }
+        if (!containsService(uuid)) {
+            Log.e(TAG, "Connected server does not contain the service with UUID: " + uuid);
+            return null;
+        }
+        if (oobData == null) {
+            Log.e(TAG, "createBondOob: No oob data received");
+            return null;
+        }
+        if (mServer == null) {
+            Log.e(TAG, "createBondOob: Device not already connected");
+            return null;
+        }
+        // Bond with the peer (this will block until the bond is complete)
+        CountDownLatch bondingBlocker = new CountDownLatch(1);
+        IntentFilter bondIntentFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        BroadcastReceiver bondBroadcastReceiver =
+                new Utils.BondStateBroadcastReceiverImpl(BOND_BONDED, mServer, bondingBlocker);
+        mContext.registerReceiver(bondBroadcastReceiver, bondIntentFilter);
+        if (!mServer.createBondOutOfBand(TRANSPORT_LE, oobData, null)) {
+            Log.e(TAG, "createBondOob: Failed to trigger bonding");
+            return null;
+        }
+        boolean timeout = false;
+        try {
+            timeout = !bondingBlocker.await(CALLBACK_TIMEOUT_SEC, SECONDS);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Failed to wait for bonding", e);
+            timeout = true;
+        }
+        mContext.unregisterReceiver(bondBroadcastReceiver);
+        if (timeout) {
+            Log.e(TAG, "Did not bond with server");
+            return null;
+        }
+        return mServer;
+    }
+
 }

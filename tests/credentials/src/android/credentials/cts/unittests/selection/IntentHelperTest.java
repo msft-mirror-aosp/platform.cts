@@ -16,7 +16,7 @@
 
 package android.credentials.cts.unittests.selection;
 
-import static android.credentials.flags.Flags.FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED;
+import static android.credentials.flags.Flags.FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -48,6 +48,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ResultReceiver;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -94,11 +95,11 @@ public class IntentHelperTest {
     private final Context mContext = getInstrumentation().getContext();
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractCancelUiRequest() {
         boolean shouldShowCancellationUi = true;
         Intent intent = IntentFactory.createCancelUiIntent(mContext, TOKEN,
-                shouldShowCancellationUi, PACKAGE_NAME);
+                shouldShowCancellationUi, PACKAGE_NAME, UserHandle.myUserId());
 
         CancelSelectionRequest cancelUiRequestExtracted = IntentHelper.extractCancelUiRequest(
                 intent);
@@ -110,7 +111,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractRequestInfo_createRequest() {
         final String type = Credential.TYPE_PASSWORD_CREDENTIAL;
         final Bundle data = new Bundle();
@@ -128,7 +129,7 @@ public class IntentHelperTest {
         );
         Intent intent = IntentFactory.createCredentialSelectorIntent(
                 mContext, requestInfo, new ArrayList<>(),
-                new ArrayList<>(), new ResultReceiver(null));
+                new ArrayList<>(), new ResultReceiver(null), UserHandle.myUserId());
 
         RequestInfo requestInfoExtracted = IntentHelper.extractRequestInfo(intent);
 
@@ -144,7 +145,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractRequestInfo_getRequest() {
         final Bundle data = new Bundle();
         final IBinder token = new Binder();
@@ -158,7 +159,7 @@ public class IntentHelperTest {
                 /*isShowAllOptionsRequested=*/ false);
         Intent intent = IntentFactory.createCredentialSelectorIntent(
                 mContext, requestInfo, new ArrayList<>(),
-                new ArrayList<>(), new ResultReceiver(null));
+                new ArrayList<>(), new ResultReceiver(null), UserHandle.myUserId());
 
         RequestInfo requestInfoExtracted = IntentHelper.extractRequestInfo(intent);
 
@@ -173,7 +174,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractGetCredentialProviderDataList_nullProviderList() {
         // no provider list is provided in intent
         Intent intent = new Intent("mock_action");
@@ -182,7 +183,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractGetCredentialProviderDataList() {
         Intent intent = new Intent("mock_action");
         GetCredentialProviderData getCredentialProviderData =
@@ -211,7 +212,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractCreateCredentialProviderDataList() {
         Intent intent = new Intent("mock_action");
         CreateCredentialProviderData createCredentialProviderData =
@@ -236,7 +237,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractDisabledProviderDataList() {
         Intent intent = new Intent("mock_action");
         DisabledProviderData disabledProviderData1 = new DisabledProviderData("com.android.pName1");
@@ -254,7 +255,7 @@ public class IntentHelperTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
+    @RequiresFlagsEnabled(FLAG_PROPAGATE_USER_CONTEXT_FOR_INTENT_CREATION)
     public void testExtractResultReceiver() {
         ResultReceiver resultReceiver = new ResultReceiver(null);
         Intent intent = new Intent("mock_action");

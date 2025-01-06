@@ -36,6 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -82,6 +83,7 @@ import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.UiccUtil;
@@ -95,6 +97,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -164,12 +167,14 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final String STATUS_BYTES_REMAINING = "61";
     private static final String STATUS_WARNING_A = "62";
     private static final String STATUS_WARNING_B = "63";
+    private static final String STATUS_CHANNEL_NOT_SUPPORTED = "6881";
     private static final String STATUS_FILE_NOT_FOUND = "6a82";
     private static final String STATUS_INCORRECT_PARAMETERS = "6a86";
     private static final String STATUS_WRONG_PARAMETERS = "6b00";
     private static final Set<String> INVALID_PARAMETERS_STATUSES =
             new HashSet<>(Arrays.asList(STATUS_INCORRECT_PARAMETERS, STATUS_WRONG_PARAMETERS));
     private static final String STATUS_WRONG_CLASS = "6e00";
+    private static final String STATUS_TECHNICAL_PROBLEM = "6f00";
     // File ID for the EF ICCID. TS 102 221
     private static final String ICCID_FILE_ID = "2FE2";
     // File ID for the EF_PL. TS 131 102 Annex A
@@ -893,7 +898,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     }
 
     @Test
-    public void testIccOpenTooManyLogicalChannels() {
+    public void testIccOpenTooManyLogicalChannels() throws IOException {
         Set<Integer> channels = new HashSet<Integer>();
         boolean failedOnce = false;
         try {
@@ -902,6 +907,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                         mTelephonyManager.iccOpenLogicalChannel("");
                 int channel = response.getChannel();
                 if (channel > 0) {
+                    // TODO(b/375102360): CF should implement handling more than one logical channel
+                    assumeFalse(channels.contains(channel) && MediaUtils.onCuttlefish());
                     assertWithMessage("Logical channel " + channel + " was returned twice")
                             .that(channels.add(channel)).isTrue();
                 }
@@ -1117,6 +1124,35 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         }
     }
 
+    @Test
+    public void testIccTransmitApduLogicalChannelWithInvalidChannel() throws IOException {
+        IccOpenLogicalChannelResponse iccOpenLogicalChannelResponse =
+                mTelephonyManager.iccOpenLogicalChannel("");
+        assertThat(iccOpenLogicalChannelResponse.getStatus()).isEqualTo(STATUS_NO_ERROR);
+        final int closedCh = iccOpenLogicalChannelResponse.getChannel();
+        mTelephonyManager.iccCloseLogicalChannel(closedCh);
+
+        int[] badChannels = {
+            closedCh,  // use after close
+            -2, -1, 50, 100,  // common wrong values
+            127,  // int8_t max
+            128,  // int8_t max + 1,
+            256,  // uint8_t max + 1,
+            32768,  // int16_t max + 1,
+            65536,  // uint16_t max + 1,
+        };
+
+        for (int channel : badChannels) {
+            String response = mTelephonyManager.iccTransmitApduLogicalChannel(
+                    channel, CLA_STATUS, COMMAND_STATUS, 0, 0, 0, "");
+            // TODO(b/383246274): CF should return correct error response
+            assumeFalse(STATUS_TECHNICAL_PROBLEM.equals(response) && MediaUtils.onCuttlefish());
+            assertWithMessage("Unexpected response when transmitting on invalid channel " + channel)
+                    .that(response)
+                    .isEqualTo(STATUS_CHANNEL_NOT_SUPPORTED);
+        }
+    }
+
     /**
      * This test ensures that files can be read off the UICC. This helps to test the SIM booting
      * process, as it process involves several file-reads. The ICCID is one of the first files read.
@@ -1198,7 +1234,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      * different channels.
      */
     @Test
-    public void testApduFileReadTwoChannels() {
+    public void testApduFileReadTwoChannels() throws IOException {
         int channel1 = INVALID_CHANNEL;
         int channel2 = INVALID_CHANNEL;
         try {
@@ -1210,6 +1246,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             verifyValidIccOpenLogicalChannelResponse(channel2rsp);
             channel2 = channel2rsp.getChannel();
 
+            // TODO(b/375102360): CF should implement handling more than one logical channel
+            assumeFalse(channel1 == channel2 && MediaUtils.onCuttlefish());
             assertWithMessage("Two concurrently opened channels should be different")
                     .that(channel2).isNotEqualTo(channel1);
 
@@ -1594,11 +1632,12 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     }
 
     private void verifyValidIccOpenLogicalChannelResponse(IccOpenLogicalChannelResponse response) {
+        assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
+        assertThat(response.getSelectResponse()).isEqualTo(STATUS_NORMAL);
+
         // The assigned channel should be between the min and max allowed channel numbers
         int channel = response.getChannel();
         assertThat(channel).isIn(Range.closed(MIN_LOGICAL_CHANNEL, MAX_LOGICAL_CHANNEL));
-        assertThat(response.getStatus()).isEqualTo(STATUS_NO_ERROR);
-        assertThat(response.getSelectResponse()).isEqualTo(STATUS_NORMAL);
     }
 
     private void removeSubscriptionsFromGroup(ParcelUuid uuid) {

@@ -65,8 +65,10 @@
 
         <ListView
             android:id="@+id/listview_stretch"
+            android:visibility="gone"
             android:layout_width="90px"
-            android:layout_height="90px"/>
+            android:layout_height="90px"
+            android:layout_gravity="center"/>
 
     </FrameLayout>
 
