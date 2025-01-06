@@ -20,15 +20,18 @@ import static android.service.watchdog.ExplicitHealthCheckService.EXTRA_HEALTH_C
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.annotation.FlaggedApi;
 import android.crashrecovery.flags.Flags;
 import android.os.Bundle;
 import android.os.RemoteCallback;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.watchdog.ExplicitHealthCheckService;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,11 +40,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
-@FlaggedApi(Flags.FLAG_ENABLE_CRASHRECOVERY)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_CRASHRECOVERY)
 public final class ExplicitHealthCheckServiceTest {
 
     private ExplicitHealthCheckService mExplicitHealthCheckService;
     private static final String PACKAGE_NAME = "com.test.package";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() throws Exception {
