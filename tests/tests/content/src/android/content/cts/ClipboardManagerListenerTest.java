@@ -45,7 +45,7 @@ public class ClipboardManagerListenerTest
         // Clear any dialogs as focus is needed to access clipboard.
         UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         uiDevice.pressHome();
-        uiDevice.pressBack();
+        //uiDevice.pressBack();
 
         mActivity = getActivity();
         mListener = new CountingClipChangedListener();

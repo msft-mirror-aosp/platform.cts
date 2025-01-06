@@ -192,7 +192,7 @@ public class OneTimePermissionTest {
 
         runWithShellPermissionIdentity(
                 () -> Thread.sleep(DeviceConfig.getLong(DeviceConfig.NAMESPACE_PERMISSIONS,
-                "one_time_permissions_killed_delay_millis", 5000L)));
+                        "one_time_permissions_killed_delay_millis", 5000L)));
         assertDenied(500);
     }
 
@@ -284,34 +284,18 @@ public class OneTimePermissionTest {
     }
 
     private void exitApp() {
-        boolean[] hasExited = {false};
-        try {
-            new Thread(() -> {
-                while (!hasExited[0]) {
-                    DreamManager mDreamManager = mContext.getSystemService(DreamManager.class);
-                    mUiDevice.pressBack();
-                    runWithShellPermissionIdentity(() -> {
-                        if (mDreamManager.isDreaming()) {
-                            mDreamManager.stopDream();
-                        }
-                    });
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                    }
+        eventually(() -> {
+            mUiDevice.pressBack();
+            runWithShellPermissionIdentity(() -> {
+                DreamManager mDreamManager = mContext.getSystemService(DreamManager.class);
+                if (mDreamManager.isDreaming()) {
+                    mDreamManager.stopDream();
                 }
-            }).start();
-            eventually(() -> {
-                runWithShellPermissionIdentity(() -> {
-                    if (mActivityManager.getPackageImportance(APP_PKG_NAME)
-                            <= IMPORTANCE_FOREGROUND) {
-                        throw new AssertionError("Unable to exit application");
-                    }
-                });
+                Assert.assertFalse("Unable to exit application",
+                        mActivityManager.getPackageImportance(APP_PKG_NAME)
+                                <= IMPORTANCE_FOREGROUND);
             });
-        } finally {
-            hasExited[0] = true;
-        }
+        });
     }
 
     private void clickOneTimeButton() throws Throwable {
@@ -340,7 +324,7 @@ public class OneTimePermissionTest {
     private void startAppForegroundService(long lifespanMillis, boolean sticky) {
         Intent intent = new Intent()
                 .setComponent(new ComponentName(
-                APP_PKG_NAME, APP_PKG_NAME + ".KeepAliveForegroundService"))
+                        APP_PKG_NAME, APP_PKG_NAME + ".KeepAliveForegroundService"))
                 .putExtra(EXTRA_FOREGROUND_SERVICE_LIFESPAN, lifespanMillis)
                 .putExtra(EXTRA_FOREGROUND_SERVICE_STICKY, sticky);
         mContext.startService(intent);

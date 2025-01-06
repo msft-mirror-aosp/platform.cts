@@ -21,6 +21,11 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import android.app.Activity;
 import android.content.ComponentName;
 
+import androidx.annotation.StringDef;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 public final class LifecycleConstants {
 
     public static final String ON_CREATE = "ON_CREATE";
@@ -37,6 +42,18 @@ public final class LifecycleConstants {
     public static final String ON_TOP_POSITION_GAINED = "ON_TOP_POSITION_GAINED";
     public static final String ON_TOP_POSITION_LOST = "ON_TOP_POSITION_LOST";
     public static final String ON_USER_LEAVE_HINT = "ON_USER_LEAVE_HINT";
+
+    @Retention(RetentionPolicy.SOURCE)
+    @StringDef(value = {
+            ON_CREATE,
+            ON_START,
+            ON_RESUME,
+            ON_PAUSE,
+            ON_STOP,
+            ON_RESTART,
+            ON_DESTROY
+    })
+    public @interface LifecycleState {}
 
     /**
      * Activity launch time is evaluated. It is expected to be less than 5 seconds. Otherwise, it's

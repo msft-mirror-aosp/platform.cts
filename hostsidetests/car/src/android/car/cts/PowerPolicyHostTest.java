@@ -126,7 +126,8 @@ public final class PowerPolicyHostTest extends CarHostJUnit4TestCase {
             PowerPolicyTestHelper testHelper = getTestHelper(testcase, i + 1, stepNames[i]);
             // power state shouldn't change
             testHelper.checkCurrentState(PowerPolicyConstants.CarPowerState.ON);
-            testHelper.checkCurrentPolicy(PowerPolicyDef.IdSet.DEFAULT_ALL_ON);
+            // Check for enabled components, since oem can have their own policy defined.
+            testHelper.checkCurrentPowerComponents(PowerPolicyDef.PolicySet.DEFAULT_ALL_ON);
         }
     }
 

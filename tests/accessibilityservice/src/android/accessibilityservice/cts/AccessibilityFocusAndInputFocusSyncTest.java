@@ -43,7 +43,6 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.test.suitebuilder.annotation.MediumTest;
-import android.view.Display;
 import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -372,7 +371,7 @@ public class AccessibilityFocusAndInputFocusSyncTest {
                 DEFAULT_TIMEOUT_MS);
         Thread.sleep(SCREEN_FRAME_RENDERING_OUT_TIME_MILLIS);
 
-        final Bitmap screenshot = sUiAutomation.takeScreenshot();
+        final Bitmap screenshot = sUiAutomation.takeScreenshot(mActivity.getWindow());
 
         sUiAutomation.executeAndWaitForEvent(
                 () -> assertTrue(unAccessibilityFocusedNode.performAction(
@@ -385,19 +384,19 @@ public class AccessibilityFocusAndInputFocusSyncTest {
     }
 
     private boolean isBitmapDifferent(Bitmap bitmap1, Bitmap bitmap2) {
-        final Display display = mActivity.getWindowManager().getDefaultDisplay();
-        final Point displaySize = new Point();
-        display.getRealSize(displaySize);
+        View testActivityRootView = mActivity.getWindow().getDecorView().getRootView();
+        final Point activitySize =
+                new Point(testActivityRootView.getWidth(), testActivityRootView.getHeight());
 
-        final int[] pixelsOne = new int[displaySize.x * displaySize.y];
+        final int[] pixelsOne = new int[activitySize.x * activitySize.y];
         final Bitmap bitmapOne = bitmap1.copy(Bitmap.Config.ARGB_8888, false);
-        bitmapOne.getPixels(pixelsOne, 0, displaySize.x, 0, 0, displaySize.x,
-                displaySize.y);
+        bitmapOne.getPixels(pixelsOne, 0, activitySize.x, 0, 0, activitySize.x,
+                activitySize.y);
 
-        final int[] pixelsTwo = new int[displaySize.x * displaySize.y];
+        final int[] pixelsTwo = new int[activitySize.x * activitySize.y];
         final Bitmap bitmapTwo = bitmap2.copy(Bitmap.Config.ARGB_8888, false);
-        bitmapTwo.getPixels(pixelsTwo, 0, displaySize.x, 0, 0, displaySize.x,
-                displaySize.y);
+        bitmapTwo.getPixels(pixelsTwo, 0, activitySize.x, 0, 0, activitySize.x,
+                activitySize.y);
 
         for (int i = pixelsOne.length - 1; i > 0; i--) {
             if ((Color.red(pixelsOne[i]) != Color.red(pixelsTwo[i]))

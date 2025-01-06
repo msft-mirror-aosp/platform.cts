@@ -25,14 +25,15 @@ import android.signature.cts.DexMethod;
 import android.signature.cts.FailureType;
 import android.signature.cts.VirtualPath;
 
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.junit.Test;
-import org.junit.Ignore;
 
 /**
  * Checks that it is not possible to access hidden APIs.

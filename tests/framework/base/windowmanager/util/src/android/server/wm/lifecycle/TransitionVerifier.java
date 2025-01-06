@@ -35,7 +35,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
+import android.server.wm.lifecycle.LifecycleConstants.LifecycleState;
 import android.util.Pair;
+
+import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -306,10 +309,50 @@ public class TransitionVerifier {
         assertOrder(eventLog, expectedTransitions, "stop and resume");
     }
 
-    static void assertRelaunchSequence(Class<? extends Activity> activityClass,
-            EventLog eventLog, String startState) {
+    static void assertRelaunchSequence(@NonNull Class<? extends Activity> activityClass,
+            @NonNull EventLog eventLog, @LifecycleState @NonNull String startState) {
+        assertRelaunchSequence(activityClass, eventLog, startState, false /* allowMultipleTimes */);
+    }
+
+    /**
+     * Asserts the relaunch sequence matches the expected transition starting from
+     * {@code startState}.
+     *
+     * @param activityClass the verified activity class
+     * @param eventLog the input event log to verify
+     * @param startState the start {@link LifecycleState} of the relaunch transition
+     * @param allowMultipleTimes {@code true} to allow multiple relaunch
+     */
+    static void assertRelaunchSequence(@NonNull Class<? extends Activity> activityClass,
+            @NonNull EventLog eventLog, @LifecycleState @NonNull String startState,
+            boolean allowMultipleTimes) {
         final List<String> expectedTransitions = getRelaunchSequence(startState);
-        assertSequence(activityClass, eventLog, expectedTransitions, "relaunch");
+        if (allowMultipleTimes) {
+            // Check if the relaunch sequence is the last sub-sequence of observed sequence.
+            assertLastSubsequenceMatches(activityClass, eventLog, expectedTransitions,
+                    "relaunch-allow-multiple-times");
+        } else {
+            assertSequence(activityClass, eventLog, expectedTransitions, "relaunch");
+        }
+    }
+
+    /**
+     * Assert that the last sub-sequence of observed transitions of {@code activityClass} matches
+     * the {@code expectedTransitions}.
+     */
+    private static void assertLastSubsequenceMatches(
+            @NonNull Class<? extends Activity> activityClass, @NonNull EventLog eventLog,
+            @NonNull List<String> expectedTransitions, @NonNull String transition) {
+        final List<String> observedTransitions = eventLog.getActivityLog(activityClass);
+        // toIndex is exclusive in subList API.
+        final int toIndex = observedTransitions.size();
+        final int fromIndex = toIndex - expectedTransitions.size();
+        final List<String> lastSubSequence = observedTransitions.subList(fromIndex, toIndex);
+
+        log("Observed sequence: " + observedTransitions);
+        final String errorMessage = errorDuringTransition(activityClass, transition);
+
+        assertEquals(errorMessage, expectedTransitions, lastSubSequence);
     }
 
     static List<String> getRelaunchSequence(String startState) {
