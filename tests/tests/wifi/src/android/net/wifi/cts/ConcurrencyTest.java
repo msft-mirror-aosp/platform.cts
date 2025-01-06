@@ -1993,7 +1993,13 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertTrue(MY_RESPONSE.success);
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#getDirInfo"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.WifiP2pManager#getDirInfo",
+                "android.net.wifi.p2p.WifiP2pDirInfo#getDirTag",
+                "android.net.wifi.p2p.WifiP2pDirInfo#getNonce",
+                "android.net.wifi.p2p.WifiP2pDirInfo#getMacAddress"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
@@ -2008,14 +2014,21 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             return;
         }
 
-        OutcomeReceiver<WifiP2pDirInfo, Exception> testDirInfoListener = new OutcomeReceiver<>() {
+        OutcomeReceiver<WifiP2pDirInfo, Exception> testDirInfoListener =
+                new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(WifiP2pDirInfo value) {
+                    public void onResult(WifiP2pDirInfo dirInfo) {
                         synchronized (MY_RESPONSE) {
+                            if (dirInfo != null) {
+                                assertNotNull(dirInfo.getDirTag());
+                                assertNotNull(dirInfo.getNonce());
+                                assertNotNull(dirInfo.getMacAddress());
+                            }
                             MY_RESPONSE.valid = true;
                             MY_RESPONSE.notify();
                         }
                     }
+
                     @Override
                     public void onError(Exception e) {
                         synchronized (MY_RESPONSE) {
@@ -2023,7 +2036,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                             MY_RESPONSE.notify();
                         }
                     }
-        };
+                };
 
         sWifiP2pManager.requestDirInfo(sWifiP2pChannel, mExecutor, testDirInfoListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
