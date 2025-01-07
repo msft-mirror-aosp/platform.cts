@@ -459,12 +459,16 @@ class DiscreteAppopsTest {
 
         makeTop()
 
+        // Wait 2 seconds to avoid the next noteOp call batched with the previous call
         Thread.sleep(2000)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         makeBackground()
 
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
+
+        // Wait 2 seconds to avoid the next noteOp call batched with the previous call
+        Thread.sleep(2000)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         var allOps = getHistoricalOps()
