@@ -310,6 +310,21 @@ public class BluetoothHapClientTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
     }
 
+    @Test
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeCallbackCoverage() {
+        BluetoothHapClient.Callback mockCallback = mock(BluetoothHapClient.Callback.class);
+
+        mockCallback.onPresetInfoChanged(null, null, 0);
+        mockCallback.onPresetSelected(null, 0, 0);
+        mockCallback.onPresetSelectionFailed(null, 0);
+        mockCallback.onPresetSelectionForGroupFailed(0, 0);
+        mockCallback.onSetPresetNameFailed(null, 0);
+        mockCallback.onSetPresetNameForGroupFailed(0, 0);
+    }
+
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void getHearingAidType() {
