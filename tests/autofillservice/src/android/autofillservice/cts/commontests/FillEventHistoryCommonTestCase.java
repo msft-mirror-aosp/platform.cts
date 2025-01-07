@@ -321,9 +321,11 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         // Set credentials...
         mActivity.onUsername((v) -> v.setText(",."));
         mActivity.onPassword((v) -> v.setText("malkovich"));
-        final String actualMessage = mActivity.tapLogin();
-        mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
-        sReplier.getNextSaveRequest();
+        mActivity.tapLogin();
+        mUiBot.waitForIdleSync();
+        mActivity.finish();
+        mUiBot.waitForIdleSync();
+        // Closes everything, makes sure that the Session is destroyed
         mUiBot.pressHome();
         mUiBot.waitForIdleSync();
 
