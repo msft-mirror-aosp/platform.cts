@@ -16,8 +16,8 @@
 
 package android.media.muxer.cts;
 
-import static android.mediav2.common.cts.MuxerUtils.isMediaTypeContainerPairValid;
 import static android.mediav2.common.cts.CodecTestBase.isExtractorFormatSimilar;
+import static android.mediav2.common.cts.MuxerUtils.isMediaTypeContainerPairValid;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -362,13 +362,10 @@ class MuxerTestHelper {
 
 @RunWith(Enclosed.class)
 public class MuxerTest {
-    // duplicate definitions of hide fields of MediaMuxer.OutputFormat.
-    private static final int MUXER_OUTPUT_FIRST = 0;
-    private static final int MUXER_OUTPUT_LAST = MediaMuxer.OutputFormat.MUXER_OUTPUT_OGG;
-
     private static final String MUX_SEL_KEY = "mux-sel";
     private static String selector;
-    private static boolean[] muxSelector = new boolean[MUXER_OUTPUT_LAST + 1];
+    private static boolean[] muxSelector =
+            new boolean[MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST + 1];
     private static HashMap<Integer, String> formatStringPair = new HashMap<>();
 
     static {
@@ -377,7 +374,9 @@ public class MuxerTest {
         selector = (null == args.getString(MUX_SEL_KEY)) ? defSel : args.getString(MUX_SEL_KEY);
 
         createFormatStringPair();
-        for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; format++) {
+        for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                format++) {
             muxSelector[format] = selector.contains(formatStringPair.get(format));
         }
     }
@@ -1155,7 +1154,9 @@ public class MuxerTest {
                     !mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_VORBIS));
             MuxerTestHelper mediaInfo = new MuxerTestHelper(mInpPath, mMediaType);
             assertEquals("error! unexpected track count", 1, mediaInfo.getTrackCount());
-            for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; format++) {
+            for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                    format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                    format++) {
                 if (!shouldRunTest(format)) continue;
                 // TODO(b/146923551)
                 if (format == MediaMuxer.OutputFormat.MUXER_OUTPUT_WEBM) continue;
@@ -1201,7 +1202,9 @@ public class MuxerTest {
         public void testNoCSDMux() throws IOException {
             Assume.assumeTrue(doesCodecRequireCSD(mMediaType));
             MuxerTestHelper mediaInfo = new MuxerTestHelper(mInpPath, true);
-            for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; format++) {
+            for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                    format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                    format++) {
                 // TODO(b/156767190)
                 if(format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
                 MediaMuxer muxer = new MediaMuxer(mOutPath, format);
@@ -1298,7 +1301,9 @@ public class MuxerTest {
         @Test
         public void testEmptyVideoTrack() {
             if (!mMediaType.startsWith("video/")) return;
-            for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; ++format) {
+            for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                    format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                    ++format) {
                 if (!isMediaTypeContainerPairValid(format)) continue;
                 if (format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
                 try {
@@ -1320,7 +1325,9 @@ public class MuxerTest {
         @Test
         public void testEmptyAudioTrack() {
             if (!mMediaType.startsWith("audio/")) return;
-            for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; ++format) {
+            for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                    format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                    ++format) {
                 if (format != MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4) continue;
                 if (!isMediaTypeContainerPairValid(format)) continue;
                 try {
@@ -1346,7 +1353,9 @@ public class MuxerTest {
         @Test
         public void testEmptyMetaDataTrack() {
             if (!mMediaType.startsWith("application/")) return;
-            for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; ++format) {
+            for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                    format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                    ++format) {
                 if (!isMediaTypeContainerPairValid(format)) continue;
                 try {
                     MediaMuxer mediaMuxer = new MediaMuxer(mOutPath, format);
@@ -1365,7 +1374,9 @@ public class MuxerTest {
         @Test
         public void testEmptyImageTrack() {
             if (!mMediaType.startsWith("image/")) return;
-            for (int format = MUXER_OUTPUT_FIRST; format <= MUXER_OUTPUT_LAST; ++format) {
+            for (int format = MediaMuxer.OutputFormat.MUXER_OUTPUT_FIRST;
+                    format <= MediaMuxer.OutputFormat.MUXER_OUTPUT_LAST;
+                    ++format) {
                 if (!isMediaTypeContainerPairValid(format)) continue;
                 try {
                     MediaMuxer mediaMuxer = new MediaMuxer(mOutPath, format);
