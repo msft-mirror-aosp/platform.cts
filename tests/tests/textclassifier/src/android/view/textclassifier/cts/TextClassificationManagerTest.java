@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import android.Manifest;
+import android.os.Build;
 import android.permission.flags.Flags;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.textclassifier.TextClassificationManager;
@@ -61,6 +62,7 @@ public class TextClassificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TEXT_CLASSIFIER_CHOICE_API_ENABLED)
     public void testGetClassifierWithoutPermission() {
+        Assume.assumeTrue(isAtLeastB());
         Assume.assumeTrue(Flags.textClassifierChoiceApiEnabled());
         assertThrows(SecurityException.class,
                 () -> mManager.getClassifier(TextClassifier.CLASSIFIER_TYPE_DEVICE_DEFAULT));
@@ -73,6 +75,7 @@ public class TextClassificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TEXT_CLASSIFIER_CHOICE_API_ENABLED)
     public void testGetClassifierWithPermission() {
+        Assume.assumeTrue(isAtLeastB());
         Assume.assumeTrue(Flags.textClassifierChoiceApiEnabled());
         runWithShellPermissionIdentity(() -> {
             assertThat(
@@ -86,5 +89,10 @@ public class TextClassificationManagerTest {
                     TextClassifier.CLASSIFIER_TYPE_SELF_PROVIDED)).isSameInstanceAs(
                     TextClassifier.NO_OP);
         }, Manifest.permission.ACCESS_TEXT_CLASSIFIER_BY_TYPE);
+    }
+
+    private boolean isAtLeastB() {
+        return Build.VERSION.CODENAME.equals("Baklava")
+                || Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 }
