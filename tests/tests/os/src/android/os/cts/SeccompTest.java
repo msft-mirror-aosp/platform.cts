@@ -394,7 +394,7 @@ public class SeccompTest extends AndroidTestCase {
             final AssetFileDescriptor[] policyFiles = {
                 assets.openFd("minijail/isolated-" + arch + ".policy"),
                 assets.openFd("minijail/isolated-common.policy"),
-                arch.equals("i386") ? null : assets.openFd("minijail/isolated-common-not-i386.policy"),
+                arch.equals("x86") ? null : assets.openFd("minijail/isolated-common-not-x86.policy"),
             };
 
             // Convert our PID to ASCII byte string.
