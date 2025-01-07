@@ -7765,6 +7765,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Register interactive modules. -->
     <!-- Also add test categories for these modules in .interactive.InteractiveTestsActivity -->
     <string-array name="interactive_modules">
+        <item>CtsCompanionDeviceManagerMultiDeviceTestCases</item>
         <item>CtsNfcHceMultiDeviceTestCases</item>
     </string-array>
 </resources>
