@@ -155,6 +155,20 @@ public class BluetoothLeBroadcastTest {
         mService.unregisterCallback(mCallback);
     }
 
+    @Test
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeCallbackCoverage() {
+        mCallback.onBroadcastMetadataChanged(0, null);
+        mCallback.onBroadcastStartFailed(0);
+        mCallback.onBroadcastStopFailed(0);
+        mCallback.onBroadcastUpdateFailed(0, 0);
+        mCallback.onBroadcastUpdated(0, 0);
+        mCallback.onPlaybackStarted(0, 0);
+        mCallback.onPlaybackStopped(0, 0);
+    }
+
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void registerCallbackNoPermission() {
