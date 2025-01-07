@@ -76,6 +76,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
 
     public void resetContext() {
         clearQueues();
+        mOutFormat = null;
         mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
         mSignalledError = false;
