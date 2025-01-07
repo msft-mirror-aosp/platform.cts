@@ -156,10 +156,23 @@ public class BluetoothVolumeControlTest {
     }
 
     @Test
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeCallbackCoverage() {
+        mCallback.onVolumeOffsetChanged(null, 0);
+        mCallback.onVolumeOffsetChanged(null, 0, 0);
+        mCallback.onVolumeOffsetAudioLocationChanged(null, 0, 0);
+        mCallback.onVolumeOffsetAudioDescriptionChanged(null, 0, "foo");
+        mCallback.onDeviceVolumeChanged(null, 0);
+    }
+
+    @Test
     public void setVolumeOffset() {
         mService.setVolumeOffset(mDevice, 0);
 
         enforceConnectAndPrivileged(() -> mService.setVolumeOffset(mDevice, 0));
+        enforceConnectAndPrivileged(() -> mService.setVolumeOffset(mDevice, 0, 0));
     }
 
     @Test
@@ -246,7 +259,13 @@ public class BluetoothVolumeControlTest {
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertThat(mService.getAudioInputControlServices(mDevice)).isNotNull();
         }
-        // Cts doesn't run with a compatible aics device connected. We
+    }
+
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @Test
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeAicsCallbackCoverage() {
         AudioInputControl aics = mock(AudioInputControl.class);
         aics.registerCallback(null, null);
         aics.unregisterCallback(null);
