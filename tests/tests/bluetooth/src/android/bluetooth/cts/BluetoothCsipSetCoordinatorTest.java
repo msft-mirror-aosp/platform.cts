@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static android.content.pm.PackageManager.FEATURE_BLUETOOTH_LE;
 
@@ -36,6 +37,7 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.BluetoothUuid;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.sysprop.BluetoothProperties;
 
@@ -54,6 +56,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
@@ -195,5 +198,20 @@ public class BluetoothCsipSetCoordinatorTest {
 
         assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mService.getAllGroupIds(null)).isEmpty();
+    }
+
+    @Test
+    public void setGetConnectionPolicy() {
+        Permissions.enforceEachPermissions(
+                () -> mService.getConnectionPolicy(mDevice),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforceEachPermissions(
+                () -> mService.setConnectionPolicy(mDevice, CONNECTION_POLICY_FORBIDDEN),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mService.getConnectionPolicy(null)).isEqualTo(CONNECTION_POLICY_FORBIDDEN);
+            assertThat(mService.setConnectionPolicy(mDevice, CONNECTION_POLICY_FORBIDDEN)).isTrue();
+        }
     }
 }
