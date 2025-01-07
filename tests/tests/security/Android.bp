@@ -101,7 +101,6 @@ android_test {
         ":CertBlocklistTestApp",
         ":UpdatedDynamicPermissionTestAttackerApp",
     ],
-    assets: [":all_apex_certs{.der}"],
 }
 
 android_test_helper_app {
