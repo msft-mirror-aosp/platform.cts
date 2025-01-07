@@ -21,6 +21,7 @@ import android.app.Instrumentation
 import android.content.AttributionSource
 import android.content.Context
 import android.content.ContextParams
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager
 import android.os.Process
 import android.os.UserHandle
@@ -112,7 +113,11 @@ class RenouncedPermissionsTest {
 
     fun createActivityWithAttributionSource(attributionSource: AttributionSource): Activity {
         val mockActivity = Mockito.mock(Activity::class.java)
+        val mockApplicationInfo = Mockito.mock(ApplicationInfo::class.java)
+        // Set targetSdkVersion to M, as pre M app shouldn't request permissions.
+        mockApplicationInfo.targetSdkVersion = 23
         `when`(mockActivity.getAttributionSource()).thenReturn(attributionSource)
+        `when`(mockActivity.applicationInfo).thenReturn(mockApplicationInfo)
         return mockActivity
     }
 
