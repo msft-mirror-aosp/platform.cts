@@ -32,6 +32,7 @@ import static android.keystore.cts.AuthorizationList.KM_PURPOSE_SIGN;
 import static android.keystore.cts.AuthorizationList.KM_PURPOSE_VERIFY;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_UNVERIFIED;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
+import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE;
@@ -606,8 +607,7 @@ public class KeyAttestationTest {
 
     private void testEcAttestation_UniqueIdWorksWithCorrectPermission(boolean isStrongBox)
             throws Exception {
-        assumeTrue("Device doesn't have secure lock screen",
-                TestUtils.hasSecureLockScreen(getContext()));
+        assumeLockScreenSupport();
         assumeTrue("Device does not support attestation", TestUtils.isAttestationSupported());
 
         String keystoreAlias = "test_key";

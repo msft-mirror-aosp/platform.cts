@@ -16,6 +16,8 @@
 
 package android.keystore.cts;
 
+import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
+
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -28,7 +30,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.app.KeyguardManager;
 import android.content.Context;
@@ -590,9 +591,7 @@ public class CipherTest {
     @Test
     public void testKeyguardLockAndUnlock()
             throws Exception {
-        if (!TestUtils.hasSecureLockScreen(getContext())) {
-            return;
-        }
+        assumeLockScreenSupport();
 
         try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyguardManager keyguardManager = (KeyguardManager)getContext()
@@ -609,12 +608,10 @@ public class CipherTest {
     @Test
     public void testEmptyPlaintextEncryptsAndDecryptsWhenUnlockedRequired()
             throws Exception {
+        assumeLockScreenSupport();
+
         final boolean isUnlockedDeviceRequired = true;
         final boolean isUserAuthRequired = false;
-
-        if (!TestUtils.hasSecureLockScreen(getContext())) {
-            return;
-        }
 
         try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             dl.performDeviceLock();
@@ -713,7 +710,7 @@ public class CipherTest {
 
     @Test
     public void testUnlockedDeviceRequiredKeysAreNotInvalidatedByLockRemoval() throws Exception {
-        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+        assumeLockScreenSupport();
 
         List<Pair<String, ImportedKey>> importedKeys = new ArrayList<>();
         try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
@@ -1216,12 +1213,10 @@ public class CipherTest {
 
     @Test
     public void testCanCreateAuthBoundKeyWhenScreenLocked() throws Exception {
+        assumeLockScreenSupport();
+
         final boolean isUnlockedDeviceRequired = false;
         final boolean isUserAuthRequired = true;
-
-        if (!TestUtils.hasSecureLockScreen(getContext())) {
-            return;
-        }
 
         try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
             KeyguardManager keyguardManager = (KeyguardManager)getContext().getSystemService(Context.KEYGUARD_SERVICE);
@@ -1268,7 +1263,7 @@ public class CipherTest {
 
     @Test
     public void testAuthBoundKeysAreInvalidatedByLockRemoval() throws Exception {
-        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+        assumeLockScreenSupport();
 
         List<ImportedKey> importedKeys = new ArrayList<>();
         try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
@@ -1293,7 +1288,7 @@ public class CipherTest {
 
     @Test
     public void testAuthBoundKeysKeyPermanentlyInvalidatedException() throws Exception {
-        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
+        assumeLockScreenSupport();
 
         ImportedKey key = null;
         try (DeviceLockSession dl = new DeviceLockSession(getInstrumentation())) {
