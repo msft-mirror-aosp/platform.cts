@@ -1064,12 +1064,12 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                                                 SubscriptionManager.getSubscriptionId(slotId0))
                                         .setSubscriberIdType(idType)
                                         .build()));
-        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<Void, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(Boolean result) {
-                        Log.d(TAG, "onResult: result=" + result);
-                        enabled.set(result);
+                    public void onResult(Void result) {
+                        Log.d(TAG, "onResult");
+                        enabled.set(true);
                     }
 
                     @Override
