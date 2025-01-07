@@ -32,6 +32,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
+import static com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
 
@@ -1117,6 +1118,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * until stylus ACTION_UP.
      */
     @Test
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testHandwriting_fingerTouchIsIgnored() throws Exception {
         int displayId = 0;
         String initialUserRotation = null;
@@ -1294,6 +1296,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withStylusTap() throws Exception {
         UinputTouchDevice stylus = null;
         int displayId = 0;
@@ -1367,6 +1370,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withFingerTap() throws Exception {
         UinputTouchDevice touch = null;
         int displayId = 0;
@@ -1431,6 +1435,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      */
     @Test
     @FlakyTest
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testOnViewClicked_withStylusHandwriting() throws Exception {
         int displayId;
         String initialUserRotation = null;
@@ -1927,6 +1932,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
      * editor ToolType should match stylus.
      */
     @Test
+    @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
     public void testHandwriting_editorToolTypeOnNewWindow() throws Exception {
         assumeTrue(Flags.useHandwritingListenerForTooltype());
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
