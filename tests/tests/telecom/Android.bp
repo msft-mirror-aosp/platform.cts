@@ -186,7 +186,6 @@ java_library {
         "src/android/telecom/cts/CtsSelfManagedConnectionService.java",
         "src/android/telecom/cts/TestUtils.java",
     ],
-    sdk_version: "test_current",
     libs: [
         "androidx.test.core",
         "androidx.test.rules",
