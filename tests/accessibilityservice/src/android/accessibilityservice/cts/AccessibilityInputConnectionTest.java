@@ -43,6 +43,7 @@ import android.view.inputmethod.InputConnection;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
@@ -117,6 +118,7 @@ public final class AccessibilityInputConnectionTest {
 
         mActivityRule
                 .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
                 .onActivity(
                         activity -> {
                             final LinearLayout layout =

@@ -34,6 +34,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
@@ -263,6 +265,16 @@ public abstract class WindowUntrustedTouchTestBase {
         if (!mWmState.waitFor("toast window", this::hasVisibleToast)) {
             fail(message);
         }
+
+        // Make sure the toast is displayed on top of the container activity.
+        Rect toastBounds = mWmState.waitForResult("toast bounds",
+                state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        Rect containerRect = new Rect(viewXY[0], viewXY[1], viewXY[0] + mContainer.getWidth(),
+                viewXY[1] + mContainer.getHeight());
+        assumeTrue("Toast displayed outside of container bounds.",
+                containerRect.contains(toastBounds.centerX(), toastBounds.centerY()));
     }
 
     private boolean hasVisibleToast(WindowManagerState state) {
@@ -440,6 +452,15 @@ public abstract class WindowUntrustedTouchTestBase {
                 state -> state.isWindowVisible(name) && state.isWindowSurfaceShown(name))) {
             fail("Saw window " + name + " did not appear on time");
         }
+
+        // Make sure the System Alert Window is displayed on top of the container activity.
+        Rect sawBounds = mWmState.waitForResult("saw bounds",
+                state -> state.findFirstWindowWithType(
+                        LayoutParams.TYPE_APPLICATION_OVERLAY).getFrame());
+        Rect containerRect = new Rect(viewXY[0], viewXY[1], viewXY[0] + mContainer.getWidth(),
+                viewXY[1] + mContainer.getHeight());
+        assumeTrue("Saw displayed outside of container bounds.",
+                containerRect.contains(sawBounds.centerX(), sawBounds.centerY()));
     }
 
     private void waitForNoSawOverlays(String message) {

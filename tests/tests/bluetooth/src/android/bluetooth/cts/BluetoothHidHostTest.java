@@ -167,7 +167,6 @@ public class BluetoothHidHostTest {
         assertThat(mService.setConnectionPolicy(mDevice, CONNECTION_POLICY_FORBIDDEN)).isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP)
     @Test
     public void getPreferredTransportTest() {
         // Verify throws NullPointerException when null BluetoothDevice is used
@@ -179,7 +178,6 @@ public class BluetoothHidHostTest {
                 .isEqualTo(BluetoothDevice.TRANSPORT_AUTO);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP)
     @Test
     public void setPreferredTransportTest() {
         // Verify that BLUETOOTH_PRIVILEGED permission is enforced

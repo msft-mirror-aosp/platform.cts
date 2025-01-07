@@ -190,8 +190,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     private static UiAutomation sUiAutomation;
 
     private AccessibilityEndToEndActivity mActivity;
-    private int mUiAutomationServiceInfoFlags;
-
     private ActivityScenarioRule<AccessibilityEndToEndActivity> mActivityRule =
             new ActivityScenarioRule<>(AccessibilityEndToEndActivity.class);
 
@@ -232,7 +230,10 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @Before
     public void setUp() throws Exception {
         sUiAutomation.adoptShellPermissionIdentity(POST_NOTIFICATIONS);
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
     }
 
     @After

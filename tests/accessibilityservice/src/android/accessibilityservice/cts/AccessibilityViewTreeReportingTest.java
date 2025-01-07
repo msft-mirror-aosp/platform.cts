@@ -35,6 +35,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -90,7 +91,10 @@ public class AccessibilityViewTreeReportingTest {
 
     @Before
     public void setUp() throws Exception {
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        mActivityRule
+                .getScenario()
+                .moveToState(Lifecycle.State.RESUMED)
+                .onActivity(activity -> mActivity = activity);
         setGetNonImportantViews(false);
     }
 

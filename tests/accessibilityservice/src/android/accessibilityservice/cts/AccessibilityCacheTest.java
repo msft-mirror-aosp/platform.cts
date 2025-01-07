@@ -36,6 +36,7 @@ import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -101,6 +102,7 @@ public class AccessibilityCacheTest {
         AccessibilityServiceInfo info = mService.getServiceInfo();
         info.flags &= ~AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
         mService.setServiceInfo(info);
+        mActivityRule.getScenario().moveToState(Lifecycle.State.RESUMED);
     }
 
     @Test

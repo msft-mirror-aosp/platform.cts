@@ -33,9 +33,14 @@ import android.net.http.SslError;
 import android.os.Build;
 import android.os.Message;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Base64;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.webkit.Flags;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebIconDatabase;
@@ -148,6 +153,10 @@ public class WebSettingsTest extends SharedWebViewTest {
     public ActivityScenarioRule mActivityScenarioRule =
             new ActivityScenarioRule(WebViewCtsActivity.class);
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private WebSettings mSettings;
     private SharedSdkWebServer mWebServer;
     private WebViewOnUiThread mOnUiThread;
@@ -205,9 +214,25 @@ public class WebSettingsTest extends SharedWebViewTest {
      * AppleWebKit/<major>.<minor> (KHTML, like Gecko) Version/<major>.<minor>
      * Chrome/<major>.<minor>.<branch>.<build>[ Mobile] Safari/<major>.<minor>
      */
+    @RequiresFlagsDisabled(Flags.FLAG_USER_AGENT_REDUCTION)
     @Test
     public void testUserAgentString_default() {
         checkUserAgentStringHelper(mSettings.getUserAgentString(), true);
+    }
+
+   /**
+     * Verifies that the reduced default user agent string follows the format
+     * defined in Android compatibility definition (tokens within the pipe are
+     * variables, tokens in square brackets are optional):
+     * <p/>
+     * Mozilla/5.0 (Linux; Android 10; K; wv)
+     * AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0
+     * Chrome/|major|.0.0.0[ Mobile] Safari/537.36
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_USER_AGENT_REDUCTION)
+    @Test
+    public void testReducedUserAgentString_default() {
+        checkReduceUserAgentStringHelper(mSettings.getUserAgentString(), true);
     }
 
     /**
@@ -283,6 +308,32 @@ public class WebSettingsTest extends SharedWebViewTest {
         } else {
             assertFalse(String.format("Known-bad user agent string incorrectly matched. \n" +
                             "Expected pattern:\n%s\nActual:\n%s", patternString, useragent),
+                    patternMatcher.find());
+        }
+    }
+
+    /**
+     * Helper function to validate that a given useragent string is valid reduced user-agent.
+     */
+    private void checkReduceUserAgentStringHelper(final String useragent, boolean shouldMatch) {
+        // Build expected regex for the reduced user-agent string.
+        final String patternString =
+                // The deviceModel token is a static string "K", and the androidVersion token
+                // to a static string "10".
+                Pattern.quote("Mozilla/5.0 (Linux; Android 10; K; wv) AppleWebKit/537.36 ")
+                + Pattern.quote("(KHTML, like Gecko) Version/4.0 ")
+                + "Chrome/\\d+\\.0\\.0\\.0 (Mobile )?Safari/537\\.36";
+
+        final Pattern userAgentExpr = Pattern.compile(patternString);
+        Matcher patternMatcher = userAgentExpr.matcher(useragent);
+        if (shouldMatch) {
+            assertTrue(String.format("CDD(3.4.1/C-1-5) User agent string "
+                            + "did not match expected pattern. \n"
+                            + "Expected pattern:\n%s\nActual:\n%s", patternString, useragent),
+                    patternMatcher.find());
+        } else {
+            assertFalse(String.format("Known-bad user agent string incorrectly matched. \n"
+                            + "Expected pattern:\n%s\nActual:\n%s", patternString, useragent),
                     patternMatcher.find());
         }
     }

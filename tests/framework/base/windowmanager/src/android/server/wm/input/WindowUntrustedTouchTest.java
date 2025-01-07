@@ -601,12 +601,6 @@ public class WindowUntrustedTouchTest extends WindowUntrustedTouchTestBase {
         addToastOverlay(getAppSelf(), /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
-        int[] viewXY = new int[2];
-        mContainer.getLocationOnScreen(viewXY);
-        Rect containerRect = new Rect(viewXY[0], viewXY[1], viewXY[0] + mContainer.getWidth(),
-                viewXY[1] + mContainer.getHeight());
-        assumeTrue("Toast displayed outside of activity bounds.",
-                containerRect.contains(toast.centerX(), toast.centerY()));
 
         mTouchHelper.tapOnCenter(toast, mActivity.getDisplayId());
 
