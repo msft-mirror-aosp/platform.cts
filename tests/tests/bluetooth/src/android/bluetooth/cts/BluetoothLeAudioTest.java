@@ -209,6 +209,20 @@ public class BluetoothLeAudioTest {
         mService.unregisterCallback(mCallback);
     }
 
+    @Test
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @SuppressWarnings("DirectInvocationOnMock")
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
+    public void fakeCallbackCoverage() {
+        mCallback.onBroadcastToUnicastFallbackGroupChanged(0);
+        mCallback.onCodecConfigChanged(0, null);
+        mCallback.onGroupNodeAdded(null, 0);
+        mCallback.onGroupNodeRemoved(null, 0);
+        mCallback.onGroupStatusChanged(0, 0);
+        mCallback.onGroupStreamStatusChanged(0, 0);
+    }
+
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void getConnectedGroupLeadDevice() {
