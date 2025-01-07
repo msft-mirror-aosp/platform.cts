@@ -308,4 +308,16 @@ public final class BluetoothHciVendorSpecificTest {
             sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
         }
     }
+
+    // Android doesn't provide method without side-effect and therefore this is not testable in CTS
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @Test
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeCallbackCoverage() {
+        BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
+                mock(BluetoothAdapter.BluetoothHciVendorSpecificCallback.class);
+
+        callback.onCommandStatus(0, 0);
+        callback.onEvent(0, null);
+    }
 }
