@@ -69,17 +69,16 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.hardware.security.keymint.TagType;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.RestrictedBuildTest;
-import android.security.KeyStore2;
 import android.security.KeyStoreException;
 import android.security.keystore.AttestationUtils;
 import android.security.keystore.DeviceIdAttestationException;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.security.keystore.KeyStoreManager;
 import android.security.keystore2.Flags;
 import android.util.ArraySet;
 import android.util.Log;
@@ -1622,8 +1621,10 @@ public class KeyAttestationTest {
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 checkModuleHash(attestation);
-                assertThat("TEE enforced OS version and system OS version must be same.",
-                        teeEnforced.getOsVersion(), is(systemOsVersion));
+                assertThat(
+                        "TEE enforced OS version and system OS version must be same.",
+                        teeEnforced.getOsVersion(),
+                        is(systemOsVersion));
                 checkSystemPatchLevel(teeEnforced.getOsPatchLevel(), systemPatchLevel);
                 break;
 
@@ -1637,8 +1638,10 @@ public class KeyAttestationTest {
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
                 checkModuleHash(attestation);
-                assertThat("StrongBox enforced OS version and system OS version must be same.",
-                        teeEnforced.getOsVersion(), is(systemOsVersion));
+                assertThat(
+                        "StrongBox enforced OS version and system OS version must be same.",
+                        teeEnforced.getOsVersion(),
+                        is(systemOsVersion));
                 checkSystemPatchLevel(teeEnforced.getOsPatchLevel(), systemPatchLevel);
                 break;
 
@@ -1771,11 +1774,8 @@ public class KeyAttestationTest {
         // hash input data.
         byte[] inputData;
         try {
-            // TODO(b/380020528): Use the following once it's available everywhere
-            // KeyStoreManager manager = KeyStoreManager.getInstance();
-            // inputData = manager.getSupplementaryAttestationInfo(KeyStoreManager.MODULE_HASH);
-            KeyStore2 ks = KeyStore2.getInstance();
-            inputData = ks.getSupplementaryAttestationInfo(TagType.BYTES | 724);
+            KeyStoreManager manager = KeyStoreManager.getInstance();
+            inputData = manager.getSupplementaryAttestationInfo(KeyStoreManager.MODULE_HASH);
         } catch (KeyStoreException e) {
             fail("Could not retrieve expected module hash value: " + e);
             return;
