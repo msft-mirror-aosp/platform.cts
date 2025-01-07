@@ -60,6 +60,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.NullWebViewUtils;
 import com.android.compatibility.common.util.PollingCheck;
 
@@ -214,6 +215,7 @@ public class WebSettingsTest extends SharedWebViewTest {
      * AppleWebKit/<major>.<minor> (KHTML, like Gecko) Version/<major>.<minor>
      * Chrome/<major>.<minor>.<branch>.<build>[ Mobile] Safari/<major>.<minor>
      */
+    @CddTest(requirements = {"3.4.1/C-1-3"})
     @RequiresFlagsDisabled(Flags.FLAG_USER_AGENT_REDUCTION)
     @Test
     public void testUserAgentString_default() {
@@ -229,6 +231,7 @@ public class WebSettingsTest extends SharedWebViewTest {
      * AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0
      * Chrome/|major|.0.0.0[ Mobile] Safari/537.36
      */
+    @CddTest(requirements = {"3.4.1/C-1-5"})
     @RequiresFlagsEnabled(Flags.FLAG_USER_AGENT_REDUCTION)
     @Test
     public void testReducedUserAgentString_default() {
