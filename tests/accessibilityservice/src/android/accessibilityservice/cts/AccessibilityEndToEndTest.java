@@ -45,6 +45,10 @@ import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityActi
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_TOOLTIP;
 
+import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
+import static androidx.test.espresso.matcher.ViewMatchers.withId;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -125,7 +129,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -1355,8 +1358,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        onView(withId(R.id.buttonTarget)).perform(scrollTo());
         sUiAutomation.waitForIdle(
                 /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
 
@@ -1393,8 +1395,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        onView(withId(R.id.buttonTarget)).perform(scrollTo());
         sUiAutomation.waitForIdle(
                 /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
 
