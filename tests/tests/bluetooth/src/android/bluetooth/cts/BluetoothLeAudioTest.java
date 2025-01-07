@@ -114,7 +114,7 @@ public class BluetoothLeAudioTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.LE_AUDIO));
     }

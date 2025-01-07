@@ -133,7 +133,7 @@ public class BluetoothLeBroadcastAssistantTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.LE_AUDIO_BROADCAST_ASSISTANT));
     }

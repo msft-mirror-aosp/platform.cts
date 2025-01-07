@@ -117,7 +117,7 @@ public class BluetoothVolumeControlTest {
 
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.VOLUME_CONTROL, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.VOLUME_CONTROL));
     }

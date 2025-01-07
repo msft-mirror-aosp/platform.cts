@@ -114,7 +114,7 @@ public class BluetoothCsipSetCoordinatorTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.CSIP_SET_COORDINATOR, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.CSIP_SET_COORDINATOR));
     }

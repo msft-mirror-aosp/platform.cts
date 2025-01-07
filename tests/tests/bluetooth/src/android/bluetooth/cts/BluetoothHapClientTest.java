@@ -103,7 +103,7 @@ public class BluetoothHapClientTest {
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.HAP_CLIENT, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.HAP_CLIENT));
     }
