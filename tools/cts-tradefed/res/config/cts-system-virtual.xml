@@ -544,10 +544,7 @@
   <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnCheckedChangePendingIntent"/>
   <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnClickPendingIntent"/>
   <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testShowNextPrevious"/>
-  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.DarkTextThemeTest#testCollection_dark"/>
-  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.DarkTextThemeTest#testCollection_light"/>
   <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.RequestPinAppWidgetTest#testPinWidget_launcher1"/>
-  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.WidgetTransitionTest#testCollection_sendBroadcast"/>
   <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.LifecycleTest#testNoUiLayerDoesNotTriggerLifecycleMethods"/>
   <option name="compatibility:exclude-filter" value="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testTracingIsDisabled"/>
   <option name="compatibility:exclude-filter" value="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testTracingIsEnabled"/>

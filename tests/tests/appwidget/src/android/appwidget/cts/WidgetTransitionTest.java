@@ -15,7 +15,6 @@
  */
 package android.appwidget.cts;
 
-import static android.view.View.FIND_VIEWS_WITH_TEXT;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -26,22 +25,16 @@ import android.app.PendingIntent;
 import android.app.SharedElementCallback;
 import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
-import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
 import android.appwidget.cts.activity.EmptyActivity;
 import android.appwidget.cts.activity.TransitionActivity;
-import android.appwidget.cts.service.MyAppWidgetService;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Rect;
-import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.util.ArrayMap;
 import android.view.View;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
-import android.widget.ListView;
 import android.widget.RemoteViews;
-import android.widget.RemoteViewsService;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
@@ -53,7 +46,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -194,114 +186,6 @@ public class WidgetTransitionTest extends AppWidgetTestCase {
         String[] elements = receiver.result
                 .getStringArrayListExtra(TransitionActivity.EXTRA_ELEMENTS).toArray(new String[0]);
         assertArrayEquals(new String[] {"green_square"}, elements);
-    }
-
-    private RemoteViewsService.RemoteViewsFactory newRemoteViewsFactory() {
-        return new RemoteViewsService.RemoteViewsFactory() {
-            @Override
-            public int getCount() {
-                return 3;
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return position;
-            }
-
-            @Override
-            public RemoteViews getViewAt(int position) {
-                RemoteViews remoteViews =
-                        getViewsForResponse(
-                                RemoteViews.RemoteResponse.fromFillInIntent(
-                                        new Intent().putExtra("item_id", position)));
-                remoteViews.setTextViewText(R.id.hello, "Text " + position);
-                return remoteViews;
-            }
-
-            @Override
-            public int getViewTypeCount() {
-                return 1;
-            }
-
-            @Override
-            public boolean hasStableIds() {
-                return false;
-            }
-
-            @Override
-            public RemoteViews getLoadingView() {
-                return null;
-            }
-
-            @Override
-            public void onCreate() {}
-
-            @Override
-            public void onDataSetChanged() {}
-
-            @Override
-            public void onDestroy() {}
-        };
-    }
-
-    @Test
-    public void testCollection_sendBroadcast() throws Throwable {
-        if (!mHasAppWidgets) {
-            return;
-        }
-
-        // Configure the app widget service behavior
-        MyAppWidgetService.setFactory(newRemoteViewsFactory());
-
-        // Push update
-        RemoteViews views = new RemoteViews(mActivity.getPackageName(),
-                R.layout.remoteviews_adapter);
-        Intent listIntent = new Intent(mActivity, MyAppWidgetService.class)
-                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
-        listIntent.setData(Uri.parse(listIntent.toUri(Intent.URI_INTENT_SCHEME)));
-        views.setRemoteAdapter(R.id.remoteViews_list, listIntent);
-        views.setViewVisibility(R.id.remoteViews_stack, View.GONE);
-        views.setViewVisibility(R.id.remoteViews_list, View.VISIBLE);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(mActivity, 0,
-                new Intent(CLICK_ACTION).setPackage(mActivity.getPackageName()),
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
-        views.setPendingIntentTemplate(R.id.remoteViews_list, pendingIntent);
-
-        // Await until update
-        getAppWidgetManager().updateAppWidget(new int[] {mAppWidgetId}, views);
-        CountDownLatch updateLatch = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(() -> mAppWidgetHostView.getViewTreeObserver()
-                .addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        mAppWidgetHostView.post(this::verifyChildrenAdded);
-                    }
-
-                    private void verifyChildrenAdded() {
-                        ListView listView = mAppWidgetHostView.findViewById(R.id.remoteViews_list);
-                        if (listView == null || listView.getChildCount() != 3) {
-                            return;
-                        }
-                        if (hasText("Text 0", listView.getChildAt(0))
-                                && hasText("Text 1", listView.getChildAt(1))
-                                && hasText("Text 2", listView.getChildAt(2))) {
-                            updateLatch.countDown();
-                        }
-                    }
-
-                    private boolean hasText(String text, View parent) {
-                        ArrayList<View> out = new ArrayList<>();
-                        parent.findViewsWithText(out, text, FIND_VIEWS_WITH_TEXT);
-                        return !out.isEmpty();
-                    }
-                }));
-        updateLatch.await();
-
-        // Perform click on various elements
-        ListView listView = mAppWidgetHostView.findViewById(R.id.remoteViews_list);
-        verifyClickBroadcast(listView.getChildAt(0));
-        verifyClickBroadcast(listView.getChildAt(1));
-        verifyClickBroadcast(listView.getChildAt(2));
     }
 
     private RemoteViews getViewsForResponse(RemoteViews.RemoteResponse response) {

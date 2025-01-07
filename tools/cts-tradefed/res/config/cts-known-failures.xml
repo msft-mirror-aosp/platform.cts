@@ -345,15 +345,6 @@
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier_usingGetMethodToCreateManager" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier" />
 
-    <!-- b/355285596 -->
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[instant] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:1:TENT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:2:HALF_FOLDED] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:3:OPEN] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:5:REAR_DUAL] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-
     <!-- b/355597917 -->
     <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testHandwriting_fingerTouchIsIgnored" />
     <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testOnViewClicked_withFingerTap" />
