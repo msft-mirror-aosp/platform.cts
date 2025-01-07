@@ -121,6 +121,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
     @Before
     public void setUp() throws Throwable {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
         mRemoteViews = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_adapters);
