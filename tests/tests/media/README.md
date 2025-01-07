@@ -1,10 +1,9 @@
 ## Media CTS Tests
-The tests are organized into following testcases
+The tests are organized into following test cases
 
 | TestCase                         | Description                                                               |
 |----------------------------------|---------------------------------------------------------------------------|
 | CtsMediaAudioTestCases           | Audio related tests                                                       |
-| CtsMediaBetterTogetherTestCases  | BetterTogether related test cases (MediaSession/MediaRouter/MediaBrowser) |
 | CtsMediaCodecTestCases           | MediaCodec related tests, for combinations decode/encode                  |
 | CtsMediaDecoderTestCases         | MediaCodec related tests, for decoding                                    |
 | CtsMediaEncoderTestCases         | MediaCodec related tests, for encoding                                    |
@@ -16,8 +15,9 @@ The tests are organized into following testcases
 | CtsMediaProjectionSDK33TestCases | MediaProjection related tests, detecting consent re-use on SDK 33         |
 | CtsMediaProjectionSDK34TestCases | MediaProjection related tests, detecting consent re-use on SDK 34         |
 | CtsMediaRecorderTestCases        | MediaRecorder related tests                                               |
+| CtsMediaRouterTestCases          | MediaRouter related tests                                                 |
+| CtsMediaSessionTestCases         | MediaSession / MediaBrowser related tests                                 |
 | CtsMediaMiscTestCases            | All other media tests                                                     |
-
 
 ## Test files used in the tests
 The test files used by the test suite are available on Google cloud
