@@ -17,6 +17,7 @@
 package com.android.cts.deviceandprofileowner;
 
 import static android.app.admin.flags.Flags.FLAG_SECONDARY_LOCKSCREEN_API_ENABLED;
+import static android.app.supervision.flags.Flags.FLAG_SUPERVISION_API;
 
 import static com.android.cts.deviceandprofileowner.BaseDeviceAdminTest.ADMIN_RECEIVER_COMPONENT;
 
@@ -120,7 +121,7 @@ public class SecondaryLockscreenTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_SECONDARY_LOCKSCREEN_API_ENABLED)
+    @RequiresFlagsEnabled({FLAG_SECONDARY_LOCKSCREEN_API_ENABLED, FLAG_SUPERVISION_API})
     public void testSetSecondaryLockscreenEnabledWithPersistableBundle() throws Exception {
         mDevicePolicyManager.setSecondaryLockscreenEnabled(true, new PersistableBundle());
         assertTrue(mDevicePolicyManager.isSecondaryLockscreenEnabled(Process.myUserHandle()));
@@ -173,7 +174,7 @@ public class SecondaryLockscreenTest {
     }
 
     @Test(expected = SecurityException.class)
-    @RequiresFlagsEnabled(FLAG_SECONDARY_LOCKSCREEN_API_ENABLED)
+    @RequiresFlagsEnabled({FLAG_SECONDARY_LOCKSCREEN_API_ENABLED, FLAG_SUPERVISION_API})
     public void testSetSecondaryLockscreen_invalidCaller() throws Exception {
         try {
             disableSupervisionTestAdmin();
