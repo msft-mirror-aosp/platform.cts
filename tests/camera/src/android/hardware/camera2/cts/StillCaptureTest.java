@@ -41,6 +41,7 @@ import android.location.LocationManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.ConditionVariable;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Range;
@@ -50,6 +51,7 @@ import android.view.Surface;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+import com.android.internal.camera.flags.Flags;
 
 import junit.framework.Assert;
 
@@ -189,6 +191,42 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
     }
 
     /**
+     * Test HEIC_ULTRAHDR capture along with preview for each camera.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HEIF_GAINMAP)
+    public void testHeicUltraHdrCapture() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            try {
+                Log.i(TAG, "Testing HEIC_ULTRAHDR for Camera " + cameraIdsUnderTest[i]);
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isColorOutputSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
+                            " does not support color outputs, skipping");
+                    continue;
+                }
+                if (!mAllStaticInfo.get(cameraIdsUnderTest[i]).isHeicUltraHdrSupported()) {
+                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
+                            " does not support HEIC_ULTRAHDR, skipping");
+                    continue;
+                }
+
+                openDevice(cameraIdsUnderTest[i]);
+
+                // Check the maximum supported size.
+                List<Size> orderedHEIC_ULTRAHDRSizes = CameraTestUtils.getSortedSizesForFormat(
+                        cameraIdsUnderTest[i], mCameraManager, ImageFormat.HEIC_ULTRAHDR,
+                        null/*bound*/);
+                Size maxHEIC_ULTRAHDRSize = orderedHEIC_ULTRAHDRSizes.get(0);
+                stillUltraHDRTestByCamera(ImageFormat.HEIC_ULTRAHDR, maxHEIC_ULTRAHDRSize);
+            } finally {
+                closeDevice();
+                closeImageReader();
+            }
+        }
+    }
+
+    /**
      * Test Jpeg/R capture along with preview for each camera.
      */
     @Test
@@ -214,7 +252,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
                 List<Size> orderedJpegRSizes = CameraTestUtils.getSortedSizesForFormat(
                         cameraIdsUnderTest[i], mCameraManager, ImageFormat.JPEG_R, null/*bound*/);
                 Size maxJpegRSize = orderedJpegRSizes.get(0);
-                stillJpegRTestByCamera(ImageFormat.JPEG_R, maxJpegRSize);
+                stillUltraHDRTestByCamera(ImageFormat.JPEG_R, maxJpegRSize);
             } finally {
                 closeDevice();
                 closeImageReader();
@@ -223,15 +261,15 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
     }
 
     /**
-     * Issue a still capture and validate the Jpeg/R output.
+     * Issue a still capture and validate the UltraHDR output.
      */
-    private void stillJpegRTestByCamera(int format, Size stillSize) throws Exception {
-        assertTrue(format == ImageFormat.JPEG_R);
+    private void stillUltraHDRTestByCamera(int format, Size stillSize) throws Exception {
+        assertTrue(format == ImageFormat.JPEG_R || format == ImageFormat.HEIC_ULTRAHDR);
 
         Size maxPreviewSz = mOrderedPreviewSizes.get(0);
         if (VERBOSE) {
-            Log.v(TAG, "Testing Jpeg/R with size " + stillSize.toString()
-                    + ", preview size " + maxPreviewSz);
+            Log.v(TAG, "Testing UltraHDR format: " + format + " with size " +
+                    stillSize.toString() + ", preview size " + maxPreviewSz);
         }
 
         // prepare capture and start preview.
@@ -263,7 +301,7 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
         // Start preview.
         mSession.setRepeatingRequest(previewBuilder.build(), resultListener, mHandler);
 
-        // Capture a few Jpeg/R images and check whether they are valid jpegs.
+        // Capture a few UltraHDR images and check whether they are valid jpegs.
         for (int i = 0; i < MAX_READER_IMAGES; i++) {
             CaptureRequest request = stillBuilder.build();
             mSession.capture(request, resultListener, mHandler);

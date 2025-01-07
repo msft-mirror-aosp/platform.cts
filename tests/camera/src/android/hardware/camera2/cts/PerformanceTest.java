@@ -337,6 +337,11 @@ public class PerformanceTest {
             int[] JPEG_R_FORMAT = {ImageFormat.JPEG_R};
             testSingleCaptureForFormat(JPEG_R_FORMAT, "jpeg_r", /*addPreviewDelay*/ true,
                     /*enablePostview*/ false);
+            if (Flags.cameraHeifGainmap()) {
+                int[] HEIC_ULTRAHDR_FORMAT = {ImageFormat.HEIC_ULTRAHDR};
+                testSingleCaptureForFormat(HEIC_ULTRAHDR_FORMAT, "heic_ultrahdr",
+                        /*addPreviewDelay*/ true, /*enablePostview*/ false);
+            }
             int[] YUV_FORMAT = {ImageFormat.YUV_420_888};
             testSingleCaptureForFormat(YUV_FORMAT, null, /*addPreviewDelay*/ true);
             int[] PRIVATE_FORMAT = {ImageFormat.PRIVATE};
