@@ -101,7 +101,7 @@ public class BluetoothHeadsetClientTest {
 
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.HEADSET_CLIENT, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.HEADSET_CLIENT));
     }

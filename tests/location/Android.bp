@@ -27,7 +27,6 @@ android_robolectric_test {
         "location_privileged/src/**/*.java",
         "common/src/**/*.java",
     ],
-    upstream: true,
     strict_mode: false,
     platform_apis: true,
     java_resource_dirs: ["config"],

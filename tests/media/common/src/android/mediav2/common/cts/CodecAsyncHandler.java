@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.os.PersistableBundle;
 import android.util.Log;
 import android.util.Pair;
 
@@ -46,16 +47,21 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     protected final LinkedList<Pair<Integer, MediaCodec.BufferInfo>> mCbInputQueue;
     private final LinkedList<Pair<Integer, MediaCodec.BufferInfo>> mCbOutputQueue;
     private MediaFormat mOutFormat;
-    private boolean mSignalledOutFormatChanged;
+    private boolean mSignalledOutFormatChangedSubSession;
     protected volatile boolean mSignalledError;
     private String mErrorMsg;
+    private int mExpectedMetricsFlushCount;
+    private int mActualMetricsFlushCount;
 
     public CodecAsyncHandler() {
         mCbInputQueue = new LinkedList<>();
         mCbOutputQueue = new LinkedList<>();
+        mOutFormat = null;
         mSignalledError = false;
-        mSignalledOutFormatChanged = false;
+        mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
+        mExpectedMetricsFlushCount = 0;
+        mActualMetricsFlushCount = 0;
     }
 
     public void clearQueues() {
@@ -71,9 +77,11 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     public void resetContext() {
         clearQueues();
         mOutFormat = null;
-        mSignalledOutFormatChanged = false;
+        mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
         mSignalledError = false;
+        mExpectedMetricsFlushCount = 0;
+        mActualMetricsFlushCount = 0;
     }
 
     @Override
@@ -130,11 +138,32 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     }
 
     @Override
+    public void onMetricsFlushed(@NonNull MediaCodec codec, @NonNull PersistableBundle metrics) {
+        mLock.lock();
+        try {
+            mActualMetricsFlushCount++;
+            mCondition.signalAll();
+        } finally {
+            mLock.unlock();
+        }
+        Log.i(LOG_TAG, "final metrics for the previous subsession: " + metrics);
+    }
+
+    @Override
     public void onOutputFormatChanged(@NonNull MediaCodec codec, @NonNull MediaFormat format) {
         mLock.lock();
         try {
+            if (mOutFormat != null
+                    && mOutFormat.getString(MediaFormat.KEY_MIME).startsWith("video/")) {
+                if (mOutFormat.getInteger(MediaFormat.KEY_WIDTH)
+                                != format.getInteger(MediaFormat.KEY_WIDTH)
+                        || mOutFormat.getInteger(MediaFormat.KEY_HEIGHT)
+                                != format.getInteger(MediaFormat.KEY_HEIGHT)) {
+                    mExpectedMetricsFlushCount++;
+                }
+            }
             mOutFormat = format;
-            mSignalledOutFormatChanged = true;
+            mSignalledOutFormatChangedSubSession = true;
             mCondition.signalAll();
         } finally {
             mLock.unlock();
@@ -155,7 +184,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mLock.lock();
         try {
             while (!mSignalledError) {
-                if (mSignalledOutFormatChanged || retry == 0) break;
+                if (mSignalledOutFormatChangedSubSession || retry == 0) break;
                 if (!mCondition.await(CodecTestBase.Q_DEQ_TIMEOUT_US, TimeUnit.MICROSECONDS)) {
                     retry--;
                 }
@@ -164,8 +193,9 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
             mLock.unlock();
         }
         if (!mSignalledError) {
-            assertTrue("taking too long to receive onOutputFormatChanged callback",
-                    mSignalledOutFormatChanged);
+            assertTrue(
+                    "taking too long to receive onOutputFormatChanged callback",
+                    mSignalledOutFormatChangedSubSession);
         }
     }
 
@@ -247,7 +277,15 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     }
 
     public boolean hasOutputFormatChanged() {
-        return mSignalledOutFormatChanged;
+        return mSignalledOutFormatChangedSubSession;
+    }
+
+    public int getExpectedMetricsFlushCount() {
+        return mExpectedMetricsFlushCount;
+    }
+
+    public int getActualMetricsFlushCount() {
+        return mActualMetricsFlushCount;
     }
 
     public MediaFormat getOutputFormat() {
