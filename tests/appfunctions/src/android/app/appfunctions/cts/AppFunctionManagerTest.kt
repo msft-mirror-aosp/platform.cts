@@ -197,13 +197,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_verifyCallingPackageFromRequest() = doBlocking {
-        val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build()
-        val request =
-            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
+        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
         val response = executeAppFunctionAndWait(mManager, request)
 
@@ -226,42 +220,24 @@ class AppFunctionManagerTest {
     @Throws(Exception::class)
     fun executeAppFunction_verifyPackageVisibilityFromRequest() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(
-                    TEST_HELPER_PKG,
-                    "add",
-                )
-                    .setParameters(parameters)
-                    .build()
+            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
 
             val response = executeAppFunctionAndWait(mManager, request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-            )
-                .isEqualTo(3)
-            assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-            )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                )
                 .isEqualTo(CURRENT_PKG)
             assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
-            )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
+                )
                 .isEqualTo(true)
         }
     }
@@ -310,13 +286,6 @@ class AppFunctionManagerTest {
             val response = executeAppFunctionAndWait(mManager, request)
 
             assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-                )
-                .isEqualTo(CURRENT_PKG)
         }
     }
 
@@ -543,7 +512,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_runInManagedProfileRestricted_fail() = doBlocking {
         runWithShellPermission(
             // Permission required to create context as user.
-            INTERACT_ACROSS_USERS_FULL_PERMISSION,
+            INTERACT_ACROSS_USERS_FULL_PERMISSION
         ) {
             val workProfileUser = sDeviceState.workProfile()
             val remoteDpm = sDeviceState.dpc().devicePolicyManager()
