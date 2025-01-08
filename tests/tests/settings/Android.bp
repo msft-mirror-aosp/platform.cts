@@ -17,8 +17,10 @@ android_test {
     static_libs: [
         "androidx.slice_slice-core",
         "androidx.slice_slice-view",
+        "androidx.test.rules",
         "androidx.window_window",
         "aconfig_settings_flags_lib",
+        "aconfig_settingslib_flags_java_lib",
         "android.provider.flags-aconfig-java",
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",
@@ -31,7 +33,10 @@ android_test {
         "com_android_car_settings_flags_lib",
     ],
 
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
 
     sdk_version: "test_current",
 }
