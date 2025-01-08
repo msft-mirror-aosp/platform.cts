@@ -30,6 +30,7 @@ import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.DynamicRangeProfiles;
+import android.hardware.camera2.params.SharedSessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.ArraySet;
 import android.util.Log;
@@ -3031,6 +3032,15 @@ public class StaticMetadata {
                     (poseReference == CameraMetadata.LENS_POSE_REFERENCE_UNDEFINED);
         }
         return isPoseReferenceUndefined;
+    }
+
+    /**
+     * Check if camera characteristic for shared session configuration is present.
+     */
+    public boolean sharedSessionConfigurationPresent() {
+        SharedSessionConfiguration sharedSessionConfiguration = mCharacteristics.get(
+                CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
+        return (sharedSessionConfiguration != null);
     }
 
     /**
