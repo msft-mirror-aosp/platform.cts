@@ -17,8 +17,6 @@
 package android.app.appfunctions.testutils;
 
 import android.app.appsearch.GenericDocument;
-import android.content.pm.PackageManager;
-import android.content.pm.SigningInfo;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 
@@ -29,7 +27,6 @@ import com.android.extensions.appfunctions.AppFunctionService;
 import com.android.extensions.appfunctions.ExecuteAppFunctionRequest;
 import com.android.extensions.appfunctions.ExecuteAppFunctionResponse;
 
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -53,7 +50,6 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
     public void onExecuteFunction(
             @NonNull ExecuteAppFunctionRequest request,
             @NonNull String callingPackage,
-            @NonNull SigningInfo callingPackageSigningInfo,
             @NonNull CancellationSignal cancellationSignal,
             @NonNull OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> callback) {
         cancellationSignal.setOnCancelListener(
@@ -69,8 +65,7 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
                 }
             case "noOp":
                 {
-                    ExecuteAppFunctionResponse result =
-                            noop(callingPackage, callingPackageSigningInfo);
+                    ExecuteAppFunctionResponse result = noop(callingPackage);
                 callback.onResult(result);
                 break;
             }
@@ -105,35 +100,6 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
         }
     }
 
-    @Override
-    public void onExecuteFunction(
-            @NonNull ExecuteAppFunctionRequest request,
-            @NonNull String callingPackage,
-            @NonNull CancellationSignal cancellationSignal,
-            @NonNull OutcomeReceiver<ExecuteAppFunctionResponse, AppFunctionException> callback) {
-        throw new UnsupportedOperationException("Method now deprecated");
-    }
-
-    private boolean verifyPackageInfo(SigningInfo callingPackageSigningInfo) {
-        String appFunctionExecutorPackageName = "android.app.appfunctions.cts";
-        SigningInfo actualSigningInfo;
-        try {
-            actualSigningInfo =
-                    getPackageManager()
-                            .getPackageInfo(
-                                    appFunctionExecutorPackageName,
-                                    PackageManager.GET_SIGNING_CERTIFICATES)
-                            .signingInfo;
-        } catch (PackageManager.NameNotFoundException e) {
-            return false;
-        }
-        // TODO(oadesina): getSigningDetails is not public api.
-        // return Objects.requireNonNull(actualSigningInfo)
-        //        .getSigningDetails()
-        //        .equals(callingPackageSigningInfo.getSigningDetails());
-        return true;
-    }
-
     private void cancelOperation() {
         if (mCancellableFuture != null) {
             mCancellableFuture.cancel(true);
@@ -150,14 +116,10 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
         return new ExecuteAppFunctionResponse(result);
     }
 
-    private ExecuteAppFunctionResponse noop(
-            String callingPackage, SigningInfo callingPackageSigningInfo) {
+    private ExecuteAppFunctionResponse noop(String callingPackage) {
         GenericDocument result =
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
-                        .setPropertyBoolean(
-                                "TEST_PROPERTY_HAS_CALLER_VISIBILITY",
-                                verifyPackageInfo(callingPackageSigningInfo))
                         .build();
         return new ExecuteAppFunctionResponse(result);
     }

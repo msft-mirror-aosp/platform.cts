@@ -29,6 +29,7 @@ import android.os.OutcomeReceiver;
 
 import androidx.annotation.NonNull;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -157,11 +158,9 @@ public class TestAppFunctionService extends AppFunctionService {
         } catch (NameNotFoundException e) {
             return false;
         }
-        // TODO(oadesina): getSigningDetails is not public api.
-        // return Objects.requireNonNull(actualSigningInfo)
-        //        .getSigningDetails()
-        //        .equals(callingPackageSigningInfo.getSigningDetails());
-        return true;
+        return Arrays.equals(
+                Objects.requireNonNull(actualSigningInfo).getApkContentsSigners(),
+                callingPackageSigningInfo.getApkContentsSigners());
     }
 
     private void cancelOperation() {
