@@ -50,6 +50,10 @@
         <activity android:name=".DisplayEventPropertyChangeActivity" />
         <activity android:name=".SimpleActivity" android:exported="true" />
         <activity android:name=".SimpleActivity2" android:exported="true" />
+
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 
     <!--  self-instrumenting test package. -->
