@@ -17,11 +17,13 @@
 package android.devicepolicy.cts;
 
 import static android.Manifest.permission.ACCESS_NETWORK_STATE;
+import static android.Manifest.permission.MANAGE_TEST_NETWORKS;
 import static android.Manifest.permission.NETWORK_SETTINGS;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_ENTERPRISE;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_VCN_MANAGED;
+import static android.net.NetworkCapabilities.TRANSPORT_TEST;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -68,6 +70,7 @@ public final class PreferentialNetworkServiceTest {
             sContext.getSystemService(ConnectivityManager.class);
     private final HandlerThread mHandlerThread = new HandlerThread(TAG + " handler thread");
     private final NetworkCapabilities mEnterpriseNcFilter = new NetworkCapabilities.Builder()
+            .addTransportType(TRANSPORT_TEST)
             .addCapability(NET_CAPABILITY_INTERNET)
             .addCapability(NET_CAPABILITY_NOT_VCN_MANAGED)
             .addCapability(NET_CAPABILITY_ENTERPRISE)
@@ -92,7 +95,7 @@ public final class PreferentialNetworkServiceTest {
      * see the enterprise slice requests.
      */
     @Test
-    @EnsureHasPermission({ACCESS_NETWORK_STATE, NETWORK_SETTINGS})
+    @EnsureHasPermission({ACCESS_NETWORK_STATE, NETWORK_SETTINGS, MANAGE_TEST_NETWORKS})
     @PositivePolicyTest(policy = PreferentialNetworkService.class)
     public void setPreferentialNetworkServiceEnabled_enableService_issueRequest() {
         // Expect a regular default network.
@@ -130,7 +133,7 @@ public final class PreferentialNetworkServiceTest {
      * see the enterprise slice requests.
      */
     @Test
-    @EnsureHasPermission({ACCESS_NETWORK_STATE, NETWORK_SETTINGS})
+    @EnsureHasPermission({ACCESS_NETWORK_STATE, NETWORK_SETTINGS, MANAGE_TEST_NETWORKS})
     @PositivePolicyTest(policy = PreferentialNetworkService.class)
     public void setPreferentialNetworkServiceEnabled_disableService_noIssueRequest() {
         // Expect a regular default network.
