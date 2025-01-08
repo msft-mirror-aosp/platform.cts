@@ -21,6 +21,7 @@ import static com.android.aconfig.flags.Flags.FLAG_ENABLE_ONLY_NEW_STORAGE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.os.Build;
@@ -47,7 +48,7 @@ public final class AconfigApiTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testStorageReaderEnableInstance() {
-        if (Build.VERSION.SDK_INT <= 35) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             return;
         }
         AconfigPackage reader = AconfigPackage.load("android.provider.flags");
@@ -58,7 +59,7 @@ public final class AconfigApiTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testStorageReaderDisableInstance() {
-        if (Build.VERSION.SDK_INT <= 35) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             return;
         }
         AconfigPackage reader = AconfigPackage.load("android.provider.flags");
@@ -69,14 +70,16 @@ public final class AconfigApiTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_NEW_STORAGE_PUBLIC_API, FLAG_ENABLE_ONLY_NEW_STORAGE})
     public void testAconfigPackageLoadWithError() {
-        // load fake package
-        if (Build.VERSION.SDK_INT <= 35) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             return;
         }
-        AconfigPackage p = AconfigPackage.load("fake_package");
-        assertNotNull(p);
-        assertFalse(p.getBooleanFlagValue("fake_flag", false));
-        assertTrue(p.getBooleanFlagValue("fake_flag", true));
+
+        // load fake package
+        AconfigStorageReadException e =
+                assertThrows(
+                        AconfigStorageReadException.class,
+                        () -> AconfigPackage.load("fake_package"));
+        assertEquals(AconfigStorageReadException.ERROR_PACKAGE_NOT_FOUND, e.getErrorCode());
     }
 
     @Test
