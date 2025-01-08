@@ -278,7 +278,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
-        assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mWindowAreaComponent.endRearDisplayPresentationSession();
@@ -400,7 +400,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
-        assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         pressSleepButton();
@@ -567,7 +567,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
         mActivity.runOnUiThread(() -> presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(presentationView.getDisplay().getDisplayId(), DEFAULT_DISPLAY);
-        assertTrue(presentationView.getDisplay().getState() != Display.STATE_OFF);
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mActivity.enterPictureInPictureMode(new PictureInPictureParams.Builder().build());

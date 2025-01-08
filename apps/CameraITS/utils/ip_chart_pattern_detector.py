@@ -53,6 +53,10 @@ class _TestChartConstants:
   FULL_CHART_WIDTH = 9600
   FULL_CHART_HEIGHT = 12000
 
+  class CenterQrCode:
+    SIDE_LENGTH = 2308
+    TOP_LEFT_CORNER = (3645, 4824)
+
 
 @enum.unique
 class TestChartFeature(enum.Enum):
@@ -61,6 +65,71 @@ class TestChartFeature(enum.Enum):
   COLOR_CHECKER_CELLS = 'color_checker_cells'
   DYNAMIC_RANGE_PATCHES = 'dynamic_range_patches'
   DEAD_LEAF_PATCH = 'dead_leaf_patch'
+
+
+class _TestChartFeatureUnit(object):
+  """Base class for information regarding a single unit of some test chart feature (e.g. a single patch of the dynamic range feature).
+
+  Attributes:
+    feature_type: The type of the feature.
+    image: Optional BGRA color space image in numpy matrix format.
+  """
+
+  def __init__(self, feature_type: TestChartFeature, image: np.ndarray = None):
+    self.feature_type = feature_type
+    self.image = image
+
+
+class _PolygonalFeatureUnit(_TestChartFeatureUnit):
+  """Base class for information regarding a `_TestChartFeatureUnit` which can be enclosed in a polygon.
+
+  For ex: A single square cell of the color checker cells.
+
+  Attributes:
+    feature_type: The type of the feature.
+    corner_points: Co-ordinates of a polygon that encloses the feature.
+    image: Optional BGRA color space image in numpy matrix format.
+  """
+
+  def __init__(
+      self,
+      feature_type: TestChartFeature,
+      corner_points: list[list[int, int]],
+      image: np.ndarray = None,
+  ):
+    super().__init__(feature_type=feature_type, image=image)
+    self.corner_points = corner_points
+
+  def __repr__(self):
+    return 'corner_points: %s' % (str(self.corner_points),)
+
+
+class CenterQrCode(_PolygonalFeatureUnit):
+  """A `_PolygonalFeatureUnit` containing information regarding center QR code test chart feature.
+
+  Attributes:
+    corner_points: Co-ordinates of the four corner points.
+    image: Optional BGRA color space image in numpy matrix format.
+  """
+
+  def __init__(
+      self,
+      corner_points: list[
+          list[int, int], list[int, int], list[int, int], list[int, int]
+      ],
+      image: np.ndarray = None,
+  ):
+    super().__init__(
+        feature_type=TestChartFeature.CENTER_QR_CODE,
+        corner_points=corner_points,
+        image=image
+    )
+
+  def __repr__(self):
+    return 'feature_type: %s, corner_points: %s' % (
+        str(self.feature_type),
+        str(self.corner_points),
+    )
 
 
 def _process_input_image(
@@ -363,6 +432,30 @@ def find_test_chart_transformation(
   return test_chart_to_dst_transform_matrix
 
 
+def _get_test_chart_center_qr_code() -> CenterQrCode:
+  return CenterQrCode(
+      corner_points=[
+          _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER,
+          (
+              _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER[0]
+              + _TestChartConstants.CenterQrCode.SIDE_LENGTH,
+              _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER[1],
+          ),
+          (
+              _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER[0]
+              + _TestChartConstants.CenterQrCode.SIDE_LENGTH,
+              _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER[1]
+              + _TestChartConstants.CenterQrCode.SIDE_LENGTH,
+          ),
+          (
+              _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER[0],
+              _TestChartConstants.CenterQrCode.TOP_LEFT_CORNER[1]
+              + _TestChartConstants.CenterQrCode.SIDE_LENGTH,
+          ),
+      ]
+  )
+
+
 def get_test_chart_features_aligned_to_image(
     image: str | np.ndarray,
     transform_matrix: np.ndarray = None,
@@ -409,6 +502,17 @@ def get_test_chart_features_aligned_to_image(
     match feature:
       case TestChartFeature.FULL_CHART:
         test_chart_mask.fill(_MAX_INTENSITY)
+
+      case TestChartFeature.CENTER_QR_CODE:
+        cv2.fillPoly(
+            img=test_chart_mask,
+            pts=[
+                np.array(_get_test_chart_center_qr_code().corner_points).astype(
+                    np.int32
+                )
+            ],
+            color=(_MAX_INTENSITY),
+        )
 
   test_chart_mask = (test_chart_mask != 0).astype(bool)
 

@@ -19,6 +19,7 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
 import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
@@ -331,5 +332,15 @@ public class HearingAidProfileTest {
             assertThat((BluetoothDevice) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE))
                     .isIn(bondedDeviceList);
         }
+    }
+
+    @Test
+    public void setGetConnectionPolicy() {
+        Permissions.enforceEachPermissions(
+                () -> mService.getConnectionPolicy(mDevice),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        Permissions.enforceEachPermissions(
+                () -> mService.setConnectionPolicy(mDevice, CONNECTION_POLICY_FORBIDDEN),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
     }
 }

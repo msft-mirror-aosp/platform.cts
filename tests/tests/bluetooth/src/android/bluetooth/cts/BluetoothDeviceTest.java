@@ -452,6 +452,8 @@ public class BluetoothDeviceTest {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
+        assertThat(mFakeDevice.fetchUuidsWithSdp()).isTrue();
+
         // TRANSPORT_AUTO doesn't need BLUETOOTH_PRIVILEGED permission
         assertThat(mFakeDevice.fetchUuidsWithSdp(TRANSPORT_AUTO)).isTrue();
 

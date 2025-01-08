@@ -16,17 +16,26 @@
 
 package android.server.wm.window;
 
+import static android.app.StatusBarManager.NAV_BAR_MODE_DEFAULT;
+import static android.app.StatusBarManager.NAV_BAR_MODE_KIDS;
+import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
+import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeNotNull;
+import static org.junit.Assume.assumeTrue;
 
+import android.app.StatusBarManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.wm.NestedShellPermission;
 import android.server.wm.cts.R;
 import android.view.View;
 import android.view.Window;
@@ -174,4 +183,52 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
                     Color.TRANSPARENT, window.getNavigationBarDividerColor());
         });
     }
+
+    @Test
+    public void testOrientationInKidsMode_portrait() {
+        assumeTrue(hasDeviceFeature(FEATURE_SCREEN_PORTRAIT));
+        final StatusBarManager statusBarManager = mContext.getSystemService(StatusBarManager.class);
+        assumeNotNull(statusBarManager);
+
+        try {
+            NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_KIDS));
+
+            final TestActivity activity = startActivitySync(PortraitTestActivity.class);
+
+            runOnMainSync(
+                    () ->
+                            assertEquals(
+                                    "Activity must be launched in portrait mode.",
+                                    activity.getResources().getConfiguration().orientation,
+                                    Configuration.ORIENTATION_PORTRAIT));
+        } finally {
+            NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_DEFAULT));
+        }
+    }
+
+    @Test
+    public void testOrientationInKidsMode_landscape() {
+        assumeTrue(hasDeviceFeature(FEATURE_SCREEN_LANDSCAPE));
+        final StatusBarManager statusBarManager = mContext.getSystemService(StatusBarManager.class);
+        assumeNotNull(statusBarManager);
+
+        try {
+            NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_KIDS));
+
+            final TestActivity activity = startActivitySync(LandscapeTestActivity.class);
+
+            runOnMainSync(
+                    () ->
+                            assertEquals(
+                                    "Activity must be launched in landscape mode.",
+                                    activity.getResources().getConfiguration().orientation,
+                                    Configuration.ORIENTATION_LANDSCAPE));
+        } finally {
+            NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_DEFAULT));
+        }
+    }
+
+    public static class PortraitTestActivity extends TestActivity {}
+
+    public static class LandscapeTestActivity extends TestActivity {}
 }

@@ -62,6 +62,7 @@ public class RemoteViewsActivityTest {
 
     @Before
     public void setup() {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mActivity = mActivityRule.getActivity();
     }
 

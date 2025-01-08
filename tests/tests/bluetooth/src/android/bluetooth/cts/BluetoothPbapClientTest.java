@@ -96,7 +96,7 @@ public class BluetoothPbapClientTest {
 
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.PBAP_CLIENT, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.PBAP_CLIENT));
     }

@@ -18,29 +18,25 @@ package android.compat.sjp.cts;
 
 import static android.compat.testing.Classpaths.ClasspathType.BOOTCLASSPATH;
 import static android.compat.testing.Classpaths.ClasspathType.SYSTEMSERVERCLASSPATH;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
-
 import static org.junit.Assume.assumeTrue;
 
 import android.compat.testing.Classpaths;
 import android.compat.testing.SharedLibraryInfo;
-
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.tradefed.log.LogUtil.CLog;
 import com.android.modules.utils.build.testing.DeviceSdkLevel;
 import com.android.tools.smali.dexlib2.iface.ClassDef;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.INativeDevice;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.invoker.TestInformation;
+import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.FileUtil;
-
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -50,24 +46,24 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
+import java.io.FileInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Tests for detecting no duplicate class files are present on BOOTCLASSPATH and
@@ -579,7 +575,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     /**
      * Lists of known failures when running testApkInApex_nonClasspathClasses against pre-T devices.
      *
-     * <p> Add the new item into this list only if the failure is caused by base device image (not the mainline train).
+     * <p>Add the new item into this list only if the failure is caused by base device image (not
+     * the mainline train).
      */
     private static final ImmutableMap<String, ImmutableSet<String>> PRE_T_APK_IN_APEX_BURNDOWN_LIST =
         new ImmutableMap.Builder<String, ImmutableSet<String>>()
@@ -1084,11 +1081,57 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
 
     private static File pullJarFromDevice(INativeDevice device,
             String remoteJarPath) throws DeviceNotAvailableException {
+        String sha1OnDevice = device.executeAdbCommand("sha1sum " + remoteJarPath);
+        CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
         File jar = device.pullFile(remoteJarPath);
         if (jar == null) {
             throw new IllegalStateException("could not pull remote file " + remoteJarPath);
         }
+        String sha1OnHost = calculateSHA1(jar);
+        CLog.d(LOG_TAG + ": [on host] sha1sum of " + jar.getPath() + ": " + sha1OnHost);
         return jar;
+    }
+
+    private static String calculateSHA1(File file) {
+        long totalBytes = 0;
+        int bytesRead = -2;
+        try {
+            MessageDigest sha1Digest = MessageDigest.getInstance("SHA-1");
+            FileInputStream fis = new FileInputStream(file);
+
+            byte[] data = new byte[1024];
+
+                while ((bytesRead = fis.read(data)) != -1) {
+                    sha1Digest.update(data, 0, bytesRead);
+                    totalBytes += bytesRead;
+                }
+
+            fis.close();
+            CLog.d(LOG_TAG + ": total bytes read for sha1: " + totalBytes);
+
+            byte[] hashBytes = sha1Digest.digest();
+
+            // Convert the byte array to a hex string
+            StringBuilder hexString = new StringBuilder();
+            for (byte hashByte : hashBytes) {
+                String hex = Integer.toHexString(0xff & hashByte);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    "Failed to read "
+                            + file.getAbsolutePath()
+                            + ": Total bytes read: "
+                            + totalBytes
+                            + " last read "
+                            + bytesRead,
+                    e);
+        }
     }
 
     private static ImmutableSet<String> getJarFileContents(File jar) throws IOException {

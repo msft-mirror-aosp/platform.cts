@@ -57,6 +57,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 @MediumTest
@@ -67,8 +68,8 @@ public class ContactsContract_DefaultAccountTest {
             StaticAccountAuthenticator.TYPE);
     private static final Account ACCT_2 = new Account("DAT test for default account2",
             StaticAccountAuthenticator.TYPE);
-    private static final Account ACCT_NOT_PRESENT = new Account("DAT test for account not signed in",
-            StaticAccountAuthenticator.TYPE);
+    private static final Account ACCT_NOT_PRESENT =
+            new Account("DAT test for account not signed in", StaticAccountAuthenticator.TYPE);
     private static final String SIM_ACCT_NAME = "sim account name for DAT test";
     private static final String SIM_ACCT_TYPE = "sim account type for DAT test";
     private static final Account SIM_ACCT = new Account(SIM_ACCT_NAME, SIM_ACCT_TYPE);
@@ -180,8 +181,20 @@ public class ContactsContract_DefaultAccountTest {
         HashSet<String> eligibleCloudAccountTypes = new HashSet<>(
                 Arrays.asList(configuredEligibleCloudAccountTypes()));
 
-        Set<Account> accountsOtherThanEligibleCloudAccounts = new HashSet<>(
-                Arrays.asList(mAccountManager.getAccounts()));
+        Set<Account> accountsOtherThanEligibleCloudAccounts =
+                new HashSet<>(Arrays.asList(mAccountManager.getAccounts()))
+                        .stream()
+                                .filter(
+                                        account -> {
+                                            try {
+                                                return ContentResolver.getIsSyncable(
+                                                                account, ContactsContract.AUTHORITY)
+                                                        > 0;
+                                            } catch (Exception e) {
+                                                return false;
+                                            }
+                                        })
+                                .collect(Collectors.toSet());
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
             List<Account> eligibleCloudAccounts = getEligibleCloudAccounts();

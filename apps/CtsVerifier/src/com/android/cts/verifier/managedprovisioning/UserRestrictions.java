@@ -287,7 +287,8 @@ public class UserRestrictions {
                 return pm.hasSystemFeature(PackageManager.FEATURE_AUDIO_OUTPUT);
             case UserManager.DISALLOW_AIRPLANE_MODE:
                 return (!pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                    && hasSettingsActivity(context, Settings.ACTION_AIRPLANE_MODE_SETTINGS));
+                        && !pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                        && hasSettingsActivity(context, Settings.ACTION_AIRPLANE_MODE_SETTINGS));
             case UserManager.DISALLOW_CONFIG_BRIGHTNESS:
                 return (hasSettingsActivity(context, Settings.ACTION_DISPLAY_SETTINGS)
                     && !pm.hasSystemFeature(PackageManager.FEATURE_WATCH));

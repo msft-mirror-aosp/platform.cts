@@ -92,7 +92,8 @@ public class AppCompatOverridesServiceTest extends CompatChangeGatingTestCase {
 
         // Now install the app and the override should be applied
         installPackage(OVERRIDE_PKG_VERSION_1_FILENAME, false);
-        RunUtil.getDefault().sleep(WAIT_TIME_MS);
+
+        waitForBroadcastIdle();
 
         ctsChange = getChange(CTS_CHANGE_ID);
         assertThat(ctsChange.hasRawOverrides).isTrue();
@@ -103,7 +104,7 @@ public class AppCompatOverridesServiceTest extends CompatChangeGatingTestCase {
                 String.format(OVERRIDE_FORMAT, OVERRIDE_PKG, true));
 
         // Now uninstall the app and the override should be removed
-        uninstallPackage(OVERRIDE_PKG, false);
+        uninstallPackage(OVERRIDE_PKG, true);
         RunUtil.getDefault().sleep(WAIT_TIME_MS);
 
         ctsChange = getChange(CTS_CHANGE_ID);
@@ -343,5 +344,9 @@ public class AppCompatOverridesServiceTest extends CompatChangeGatingTestCase {
 
     private void putFlagValue(String flagName, String value) throws Exception {
         runCommand(String.format(DEVICE_CONFIG_ADB_COMMAND_FORMAT, "put", flagName + " " + value));
+    }
+
+    private void waitForBroadcastIdle() throws Exception {
+         runCommand("am wait-for-broadcast-idle");
     }
 }

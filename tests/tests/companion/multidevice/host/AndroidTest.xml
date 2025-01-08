@@ -11,32 +11,28 @@
      limitations under the License.
 -->
 <configuration description="Config for CTS CDM multi-device test cases">
-    <option name="test-suite-tag" value="cts" />
+    <option name="test-suite-tag" value="cts-interactive" />
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
 
-    <object class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController"
-        type="module_controller">
-        <option name="required-feature" value="android.software.companion_device_setup" />
-    </object>
-
-    <device name="device1">
-        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="test-file-name" value="cdm_snippet.apk" />
+    <device name="AndroidDevice">
+        <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
+            <option name="required_feature" value="android.software.companion_device_setup" />
         </target_preparer>
+        <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
-    <device name="device2">
-        <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-            <option name="test-file-name" value="cdm_snippet.apk" />
+    <device name="AndroidDevice">
+        <target_preparer class="AndroidDeviceFeaturesCheckDecorator">
+            <option name="required_feature" value="android.software.companion_device_setup" />
         </target_preparer>
+        <target_preparer class="AndroidInstallAppsDecorator" />
     </device>
 
-    <test class="com.android.tradefed.testtype.mobly.MoblyBinaryHostTest">
-      <!-- The mobly-par-file-name should match the module name -->
-      <option name="mobly-par-file-name" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />
-      <!-- Timeout limit in milliseconds for all test cases of the python binary -->
-      <option name="mobly-test-timeout" value="600000" />
-    </test>
+    <test class="MoblyAospPackageTest" />
+
+    <option name="mobly_pkg" key="file" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />
+    <option name="build_apk" key="file" value="cdm_snippet.apk" />
+
 </configuration>

@@ -190,6 +190,7 @@ public class RemoteViewsTest {
 
     @Before
     public void setUp() throws Throwable {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         // Ensure the UI is currently NOT in night mode.
         mInitialNightMode = changeNightMode(false);
 

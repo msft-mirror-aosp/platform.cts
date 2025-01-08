@@ -31,7 +31,7 @@ python_test_host {
     ],
     test_options: {
         unit_test: false,
-        tags: ["mobly"],
+        runner: "mobly",
     },
     device_common_data: [
         ":cdm_snippet",

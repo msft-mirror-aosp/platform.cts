@@ -112,7 +112,7 @@ public class BluetoothMapClientTest {
 
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.MAP_CLIENT, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.MAP_CLIENT));
     }

@@ -499,7 +499,7 @@ public class BluetoothAdapterTest {
 
         Executor executor = mock(Executor.class);
         BluetoothAdapter.BluetoothConnectionCallback callback =
-                mock(BluetoothAdapter.BluetoothConnectionCallback.class);
+                new BluetoothAdapter.BluetoothConnectionCallback() {};
 
         // placeholder call for coverage
         callback.onDeviceConnected(null);
@@ -525,6 +525,18 @@ public class BluetoothAdapterTest {
         assertThrows(
                 NullPointerException.class,
                 () -> mAdapter.requestControllerActivityEnergyInfo(executor, null));
+    }
+
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @Test
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeActivityEnergyInfoCallbackCoverage() {
+        BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback callback =
+                mock(BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback.class);
+
+        callback.onBluetoothActivityEnergyInfoAvailable(null);
+        callback.onBluetoothActivityEnergyInfoError(0);
     }
 
     @Test
@@ -734,6 +746,16 @@ public class BluetoothAdapterTest {
         }
     }
 
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @Test
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakePreferredAudioProfilesCallbackCoverage() {
+        BluetoothAdapter.PreferredAudioProfilesChangedCallback callback =
+                mock(BluetoothAdapter.PreferredAudioProfilesChangedCallback.class);
+        callback.onPreferredAudioProfilesChanged(null, null, 0);
+    }
+
     @Test
     public void bluetoothQualityReportReadyCallbacks() {
         assumeTrue(mHasBluetooth);
@@ -771,6 +793,16 @@ public class BluetoothAdapterTest {
             assertThat(mAdapter.unregisterBluetoothQualityReportReadyCallback(callback))
                     .isEqualTo(BluetoothStatusCodes.SUCCESS);
         }
+    }
+
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @Test
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeQualityReportCallbackCoverage() {
+        BluetoothAdapter.BluetoothQualityReportReadyCallback callback =
+                mock(BluetoothAdapter.BluetoothQualityReportReadyCallback.class);
+        callback.onBluetoothQualityReportReady(null, null, 0);
     }
 
     @Test

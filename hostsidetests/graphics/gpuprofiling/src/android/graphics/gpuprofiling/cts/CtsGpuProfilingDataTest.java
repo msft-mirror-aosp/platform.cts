@@ -35,6 +35,8 @@ import perfetto.protos.PerfettoConfig.DataSourceDescriptor;
 import perfetto.protos.PerfettoConfig.TraceConfig;
 import perfetto.protos.PerfettoConfig.TracingServiceState;
 import perfetto.protos.PerfettoConfig.TracingServiceState.DataSource;
+import perfetto.protos.PerfettoTrace.FtraceEvent;
+import perfetto.protos.PerfettoTrace.FtraceEventBundle;
 import perfetto.protos.PerfettoTrace.GpuCounterEvent;
 import perfetto.protos.PerfettoTrace.Trace;
 import perfetto.protos.PerfettoTrace.TracePacket;
@@ -46,6 +48,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -72,6 +75,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String ACTIVITY = "GpuRenderStagesDeviceActivity";
     private static final String COUNTERS_SOURCE_NAME = "gpu.counters";
     private static final String STAGES_SOURCE_NAME = "gpu.renderstages";
+    private static final String FTRACE_SOURCE_NAME = "linux.ftrace";
+    private static final String GPU_FREQ_FTRACE = "power/gpu_frequency";
     private static final String PROFILING_PROPERTY = "graphics.gpu.profiler.support";
     private static final String LAYER_PACKAGE_PROPERTY = "graphics.gpu.profiler.vulkan_layer_apk";
     private static final String LAYER_NAME = "VkRenderStagesProducer";
@@ -149,8 +154,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
 
         // Spin up a new thread to avoid blocking the main thread while the native process waits to
-        // be
-        // killed.
+        // be killed.
         ShellThread shellThread = new ShellThread(DEVICE_BIN_PATH);
         shellThread.start();
         CommandResult activityStatus =
@@ -211,15 +215,19 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 .getGpuCounterConfigBuilder()
                 .setCounterPeriodNs((int) TRACE_COUNTER_PERIOD.toNanos())
                 .addAllCounterIds(counterIds);
+        config.addDataSourcesBuilder()
+                .getConfigBuilder()
+                .setName(FTRACE_SOURCE_NAME)
+                .getFtraceConfigBuilder()
+                .addFtraceEvents(GPU_FREQ_FTRACE);
         File configFile = File.createTempFile("perfetto", ".cfg");
         try (OutputStream out = new FileOutputStream(configFile)) {
             config.build().writeTo(out);
         }
 
         boolean foundValidGpuCounterEvent = false;
+        boolean foundGpuFrequencyEvent = false;
         for (int i = 0; i < MAX_TRACE_RETRIES; i++) {
-            if (foundValidGpuCounterEvent) break;
-
             CommandResult queryStatus =
                     getDevice()
                             .executeShellV2Command(
@@ -232,32 +240,59 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 trace = Trace.parseFrom(CodedInputStream.newInstance(in));
             }
 
-            for (TracePacket packet : trace.getPacketList()) {
-                if (foundValidGpuCounterEvent) break;
-                if (!packet.hasGpuCounterEvent()) continue;
-
-                GpuCounterEvent gpuCounterEvent = packet.getGpuCounterEvent();
-                if (gpuCounterEvent.getCountersCount() == 0) continue;
-
-                for (GpuCounterEvent.GpuCounter counter : gpuCounterEvent.getCountersList()) {
-                    // Currently, "valid counters" are defined by having at least one, non-zero
-                    // value.
-                    if ((counter.hasIntValue() && counter.getIntValue() > 0)
-                            || (counter.hasDoubleValue() && counter.getDoubleValue() > 0.0)) {
-                        foundValidGpuCounterEvent = true;
-                        break;
-                    }
-                }
-            }
+            List<TracePacket> packetList = trace.getPacketList();
+            foundValidGpuCounterEvent = containsValidGpuCounterEvent(packetList);
+            foundGpuFrequencyEvent = containsGpuFrequencyEvent(packetList);
 
             traceResult.delete();
-            CommandResult deleteTraceStatus = getDevice()
-                    .executeShellV2Command("rm -f " + TRACE_FILE_PATH);
+            CommandResult deleteTraceStatus =
+                    getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
             Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
+
+            if (foundValidGpuCounterEvent || foundGpuFrequencyEvent) {
+                break;
+            }
         }
 
         configFile.delete();
         Assert.assertTrue(
                 "Trace does not contain valid GPU counter values.", foundValidGpuCounterEvent);
+        Assert.assertTrue("Trace does not contain valid GPU frequency.", foundGpuFrequencyEvent);
+    }
+
+    private static boolean containsValidGpuCounterEvent(List<TracePacket> packetList) {
+        for (TracePacket packet : packetList) {
+            if (!packet.hasGpuCounterEvent()) continue;
+
+            GpuCounterEvent gpuCounterEvent = packet.getGpuCounterEvent();
+            if (gpuCounterEvent.getCountersCount() == 0) continue;
+
+            for (GpuCounterEvent.GpuCounter counter : gpuCounterEvent.getCountersList()) {
+                // Currently, "valid counters" are defined by having at least one, non-zero value.
+                if ((counter.hasIntValue() && counter.getIntValue() > 0)
+                        || (counter.hasDoubleValue() && counter.getDoubleValue() > 0.0)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsGpuFrequencyEvent(List<TracePacket> packetList) {
+        for (TracePacket packet : packetList) {
+            if (!packet.hasFtraceEvents()) continue;
+
+            FtraceEventBundle eventBundle = packet.getFtraceEvents();
+            for (FtraceEvent event : eventBundle.getEventList()) {
+                if (!event.hasGpuFrequency()) continue;
+
+                if (event.getGpuFrequency().hasGpuId()
+                        && event.getGpuFrequency().hasState()
+                        && event.getGpuFrequency().getState() > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

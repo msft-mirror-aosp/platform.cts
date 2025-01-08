@@ -262,9 +262,11 @@ open class UinputTouchDevice(
         const val ABS_MT_TOOL_TYPE = 0x37
         const val ABS_MT_TRACKING_ID = 0x39
         const val ABS_MT_PRESSURE = 0x3a
+        const val BTN_MOUSE = 0x110 // aka BTN_LEFT
         const val BTN_TOUCH = 0x14a
         const val BTN_TOOL_PEN = 0x140
         const val BTN_TOOL_FINGER = 0x145
+        const val BTN_TOOL_MOUSE = 0x146
         const val BTN_TOOL_DOUBLETAP = 0x14d
         const val BTN_TOOL_TRIPLETAP = 0x14e
         const val BTN_TOOL_QUADTAP = 0x14f

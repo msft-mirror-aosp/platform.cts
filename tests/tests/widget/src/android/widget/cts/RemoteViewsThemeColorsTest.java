@@ -87,6 +87,7 @@ public class RemoteViewsThemeColorsTest {
 
     @Before
     public void setUp() {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
         mRemoteViews = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_good);

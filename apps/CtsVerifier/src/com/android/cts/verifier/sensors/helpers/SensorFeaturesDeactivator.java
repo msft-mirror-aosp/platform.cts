@@ -116,8 +116,9 @@ public class SensorFeaturesDeactivator {
         @Override
         protected boolean isSettingAvailable() {
             // call base first, lean back UI device does not have airplane mode
-            return super.isSettingAvailable() &&
-                    !(mStateContainer.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
+            return super.isSettingAvailable()
+                    && !mStateContainer.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                    && !mStateContainer.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         }
     }
 

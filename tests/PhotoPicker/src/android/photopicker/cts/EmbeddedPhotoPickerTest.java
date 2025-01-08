@@ -260,8 +260,9 @@ public class EmbeddedPhotoPickerTest {
 
         // 3. Notify resize
         final SurfaceView surfaceView = mActivity.getSurfaceView();
-        mActivity.getSession().notifyResized(surfaceView.getWidth() / 2,
-                surfaceView.getHeight() / 2);
+        int expectedWidth = (int) (surfaceView.getWidth() * 0.9);
+        int expectedHeight = (int) (surfaceView.getHeight() * 0.9);
+        mActivity.getSession().notifyResized(expectedWidth, expectedHeight);
 
         // 4. Get the new surface package and its dimensions
         assertPhotosTabExists();
@@ -271,9 +272,9 @@ public class EmbeddedPhotoPickerTest {
         int newWidth = newSurfacePackage.getVisibleBounds().width();
         int newHeight = newSurfacePackage.getVisibleBounds().height();
         assertThat(newWidth).isNotEqualTo(oldWidth);
-        assertThat(newWidth).isEqualTo(surfaceView.getWidth() / 2);
+        assertThat(newWidth).isEqualTo(expectedWidth);
         assertThat(newHeight).isNotEqualTo(oldHeight);
-        assertThat(newHeight).isEqualTo(surfaceView.getHeight() / 2);
+        assertThat(newHeight).isEqualTo(expectedHeight);
     }
 
     @Test

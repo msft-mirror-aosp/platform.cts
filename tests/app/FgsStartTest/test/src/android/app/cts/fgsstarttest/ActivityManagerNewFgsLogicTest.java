@@ -30,21 +30,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.IBinder;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.server.am.Flags;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,9 +55,6 @@ public class ActivityManagerNewFgsLogicTest {
     private static final String HELPER_34 = "android.app.fgsstarttesthelper34";
     private static final String HELPER_CURRENT = "android.app.fgsstarttesthelpercurrent";
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     private Context mContext;
 
     @Before
@@ -77,13 +69,11 @@ public class ActivityManagerNewFgsLogicTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NEW_FGS_RESTRICTION_LOGIC)
     public void testForApi34() throws Exception {
         test(mContext, HELPER_34 , true);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NEW_FGS_RESTRICTION_LOGIC)
     public void testForCurrent() throws Exception {
         test(mContext, HELPER_CURRENT, false);
     }

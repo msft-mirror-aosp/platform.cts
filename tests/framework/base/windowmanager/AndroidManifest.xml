@@ -403,6 +403,12 @@
         <activity android:name="android.server.wm.window.WindowPolicyTestBase$TestActivity"
                   android:theme="@android:style/Theme.Material.NoActionBar"/>
 
+        <activity android:name="android.server.wm.window.WindowPolicyTests$PortraitTestActivity"
+                  android:screenOrientation="portrait"/>
+
+        <activity android:name="android.server.wm.window.WindowPolicyTests$LandscapeTestActivity"
+                  android:screenOrientation="landscape"/>
+
         <activity android:name="android.server.wm.window.WindowCtsActivity"
              android:theme="@android:style/Theme.Material.NoActionBar"
              android:screenOrientation="locked"

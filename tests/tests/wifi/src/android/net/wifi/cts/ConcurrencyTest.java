@@ -1905,12 +1905,29 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertTrue(MY_RESPONSE.success);
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.nsd"
-            + ".WifiP2pServiceRequest#getWifiP2pUsdBasedServiceConfig",
-            "android.net.wifi.p2p.WifiP2pManager#addServiceRequest",
-            "android.net.wifi.p2p.WifiP2pManager#discoverUsdBasedServices",
-            "android.net.wifi.p2p.WifiP2pManager#clearServiceRequests",
-            "android.net.wifi.p2p.WifiP2pManager#removeServiceRequest"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.nsd"
+                        + ".WifiP2pServiceRequest#getWifiP2pUsdBasedServiceConfig",
+                "android.net.wifi.p2p.WifiP2pManager#addServiceRequest",
+                "android.net.wifi.p2p.WifiP2pManager#discoverUsdBasedServices",
+                "android.net.wifi.p2p.WifiP2pManager#clearServiceRequests",
+                "android.net.wifi.p2p.WifiP2pManager#removeServiceRequest",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceDiscoveryConfig"
+                        + ".Builder#setFrequenciesMhz",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceDiscoveryConfig.Builder#setBand",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceDiscoveryConfig#getFrequenciesMhz",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceDiscoveryConfig#getBand",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceConfig.Builder#setServiceProtocolType",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceConfig.Builder#setServiceSpecificInfo",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceConfig"
+                        + "#getMaxAllowedServiceSpecificInfoLength",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceConfig#getServiceName",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceConfig#getServiceProtocolType",
+                "android.net.wifi.p2p.WifiP2pUsdBasedServiceConfig#getServiceSpecificInfo",
+                "android.net.wifi.p2p.nsd.WifiP2pUsdBasedServiceResponse#getServiceProtocolType",
+                "android.net.wifi.p2p.nsd.WifiP2pUsdBasedServiceResponse#getServiceSpecificInfo"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
@@ -1926,16 +1943,19 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         }
 
         // This only store the listener to the WifiP2pManager internal variable, nothing to fail.
-        sWifiP2pManager.setServiceResponseListener(sWifiP2pChannel,
+        sWifiP2pManager.setServiceResponseListener(
+                sWifiP2pChannel,
                 new WifiP2pManager.ServiceResponseListener() {
                     @Override
                     public void onServiceAvailable(
-                            int protocolType, byte[] responseData, WifiP2pDevice srcDevice) {
-                    }
+                            int protocolType, byte[] responseData, WifiP2pDevice srcDevice) {}
 
                     @Override
-                    public void onUsdBasedServiceAvailable(@NonNull WifiP2pDevice srcDevice,
+                    public void onUsdBasedServiceAvailable(
+                            @NonNull WifiP2pDevice srcDevice,
                             @NonNull WifiP2pUsdBasedServiceResponse usdResponseData) {
+                        usdResponseData.getServiceProtocolType();
+                        usdResponseData.getServiceSpecificInfo();
                     }
                 });
 
@@ -1972,20 +1992,36 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                 serviceDiscoveryConfig.getFrequenciesMhz());
         assertEquals(ScanResult.UNSPECIFIED, serviceDiscoveryConfig.getBand());
 
-        sWifiP2pManager.discoverUsdBasedServices(sWifiP2pChannel,
-                serviceDiscoveryConfig,
-                sActionListener);
+        sWifiP2pManager.discoverUsdBasedServices(
+                sWifiP2pChannel, serviceDiscoveryConfig, sActionListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
         assertTrue(MY_RESPONSE.success);
 
-        /* 4. Remove/Clear the service discovery request */
+        /* 4. Remove the service discovery request */
         resetResponse(MY_RESPONSE);
-        sWifiP2pManager.removeServiceRequest(sWifiP2pChannel,
-                serviceRequest,
-                sActionListener);
+        sWifiP2pManager.removeServiceRequest(sWifiP2pChannel, serviceRequest, sActionListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
         assertTrue(MY_RESPONSE.success);
 
+        /* 5. Add the service discovery request back into the Wi-Fi Framework */
+        sWifiP2pManager.addServiceRequest(sWifiP2pChannel, serviceRequest, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        /* 6. Create a service discovery config with band and discover the service */
+        serviceDiscoveryConfig =
+                new WifiP2pUsdBasedServiceDiscoveryConfig.Builder()
+                        .setBand(ScanResult.WIFI_BAND_24_GHZ)
+                        .build();
+        assertNotNull(serviceDiscoveryConfig);
+        assertEquals(ScanResult.WIFI_BAND_24_GHZ, serviceDiscoveryConfig.getBand());
+
+        sWifiP2pManager.discoverUsdBasedServices(
+                sWifiP2pChannel, serviceDiscoveryConfig, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+
+        /* 7. Clear the service discovery request */
         resetResponse(MY_RESPONSE);
         sWifiP2pManager.clearServiceRequests(sWifiP2pChannel,
                 sActionListener);
@@ -1993,7 +2029,13 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertTrue(MY_RESPONSE.success);
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#getDirInfo"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.p2p.WifiP2pManager#getDirInfo",
+                "android.net.wifi.p2p.WifiP2pDirInfo#getDirTag",
+                "android.net.wifi.p2p.WifiP2pDirInfo#getNonce",
+                "android.net.wifi.p2p.WifiP2pDirInfo#getMacAddress"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @Test
@@ -2008,14 +2050,21 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             return;
         }
 
-        OutcomeReceiver<WifiP2pDirInfo, Exception> testDirInfoListener = new OutcomeReceiver<>() {
+        OutcomeReceiver<WifiP2pDirInfo, Exception> testDirInfoListener =
+                new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(WifiP2pDirInfo value) {
+                    public void onResult(WifiP2pDirInfo dirInfo) {
                         synchronized (MY_RESPONSE) {
+                            if (dirInfo != null) {
+                                assertNotNull(dirInfo.getDirTag());
+                                assertNotNull(dirInfo.getNonce());
+                                assertNotNull(dirInfo.getMacAddress());
+                            }
                             MY_RESPONSE.valid = true;
                             MY_RESPONSE.notify();
                         }
                     }
+
                     @Override
                     public void onError(Exception e) {
                         synchronized (MY_RESPONSE) {
@@ -2023,7 +2072,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                             MY_RESPONSE.notify();
                         }
                     }
-        };
+                };
 
         sWifiP2pManager.requestDirInfo(sWifiP2pChannel, mExecutor, testDirInfoListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));

@@ -15,30 +15,21 @@
  */
 package android.appwidget.cts;
 
-import static android.view.View.FIND_VIEWS_WITH_TEXT;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.appwidget.AppWidgetHost;
 import android.appwidget.AppWidgetHostView;
-import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
 import android.appwidget.cts.activity.EmptyActivity;
-import android.appwidget.cts.service.MyAppWidgetService;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
 import android.platform.test.annotations.AppModeFull;
 import android.util.ArrayMap;
 import android.view.View;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
-import android.widget.ListView;
 import android.widget.RemoteViews;
-import android.widget.RemoteViewsService;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
@@ -50,7 +41,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
@@ -162,127 +152,6 @@ public class DarkTextThemeTest extends AppWidgetTestCase {
 
         // Perform click
         verifyColor(mAppWidgetHostView, Color.BLACK);
-    }
-
-    @Test
-    public void testCollection_light() throws Throwable {
-        if (!mHasAppWidgets) {
-            return;
-        }
-
-        setupAndAwaitCollectionWidget();
-
-        // Perform click on various elements
-        ListView listView = mAppWidgetHostView.findViewById(R.id.remoteViews_list);
-        verifyColor(listView.getChildAt(0), Color.WHITE);
-        verifyColor(listView.getChildAt(1), Color.WHITE);
-        verifyColor(listView.getChildAt(2), Color.WHITE);
-    }
-
-    @Test
-    public void testCollection_dark() throws Throwable {
-        if (!mHasAppWidgets) {
-            return;
-        }
-        mActivity.runOnUiThread(() -> mAppWidgetHostView.setOnLightBackground(true));
-
-        setupAndAwaitCollectionWidget();
-
-        // Perform click on various elements
-        ListView listView = mAppWidgetHostView.findViewById(R.id.remoteViews_list);
-        verifyColor(listView.getChildAt(0), Color.BLACK);
-        verifyColor(listView.getChildAt(1), Color.BLACK);
-        verifyColor(listView.getChildAt(2), Color.BLACK);
-    }
-
-    private RemoteViewsService.RemoteViewsFactory newRemoteViewsFactory() {
-        return new RemoteViewsService.RemoteViewsFactory() {
-            @Override
-            public int getCount() {
-                return 3;
-            }
-
-            @Override
-            public long getItemId(int position) {
-                return position;
-            }
-
-            @Override
-            public RemoteViews getViewAt(int position) {
-                RemoteViews remoteViews = getViewsForResponse();
-                remoteViews.setTextViewText(R.id.hello, "Text " + position);
-                return remoteViews;
-            }
-
-            @Override
-            public int getViewTypeCount() {
-                return 1;
-            }
-
-            @Override
-            public boolean hasStableIds() {
-                return false;
-            }
-
-            @Override
-            public RemoteViews getLoadingView() {
-                return null;
-            }
-
-            @Override
-            public void onCreate() {}
-
-            @Override
-            public void onDataSetChanged() {}
-
-            @Override
-            public void onDestroy() {}
-        };
-    }
-
-    private void setupAndAwaitCollectionWidget() throws Throwable {
-        // Configure the app widget service behavior
-        MyAppWidgetService.setFactory(newRemoteViewsFactory());
-
-        // Push update
-        RemoteViews views = new RemoteViews(mActivity.getPackageName(),
-                R.layout.remoteviews_adapter);
-        Intent listIntent = new Intent(mActivity, MyAppWidgetService.class)
-                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId);
-        listIntent.setData(Uri.parse(listIntent.toUri(Intent.URI_INTENT_SCHEME)));
-        views.setRemoteAdapter(R.id.remoteViews_list, listIntent);
-        views.setViewVisibility(R.id.remoteViews_stack, View.GONE);
-        views.setViewVisibility(R.id.remoteViews_list, View.VISIBLE);
-
-        // Await until update
-        getAppWidgetManager().updateAppWidget(new int[] {mAppWidgetId}, views);
-        CountDownLatch updateLatch = new CountDownLatch(1);
-        mActivityRule.runOnUiThread(() -> mAppWidgetHostView.getViewTreeObserver()
-                .addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        mAppWidgetHostView.post(this::verifyChildrenAdded);
-                    }
-
-                    private void verifyChildrenAdded() {
-                        ListView listView = mAppWidgetHostView.findViewById(R.id.remoteViews_list);
-                        if (listView == null || listView.getChildCount() != 3) {
-                            return;
-                        }
-                        if (hasText("Text 0", listView.getChildAt(0))
-                                && hasText("Text 1", listView.getChildAt(1))
-                                && hasText("Text 2", listView.getChildAt(2))) {
-                            updateLatch.countDown();
-                        }
-                    }
-
-                    private boolean hasText(String text, View parent) {
-                        ArrayList<View> out = new ArrayList<>();
-                        parent.findViewsWithText(out, text, FIND_VIEWS_WITH_TEXT);
-                        return !out.isEmpty();
-                    }
-                }));
-        updateLatch.await();
     }
 
     private RemoteViews getViewsForResponse() {

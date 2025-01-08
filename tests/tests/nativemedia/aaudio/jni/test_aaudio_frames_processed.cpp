@@ -97,19 +97,19 @@ protected:
         AAudioStreamBuilder_setDataCallback(aaudioBuilder, SampleRateDataCallbackProc, this);
 
         // Create an AAudioStream using the Builder.
-        ASSERT_EQ(AAUDIO_OK, AAudioStreamBuilder_openStream(aaudioBuilder, &aaudioStream));
+        EXPECT_EQ(AAUDIO_OK, AAudioStreamBuilder_openStream(aaudioBuilder, &aaudioStream));
         AAudioStreamBuilder_delete(aaudioBuilder);
 
         EXPECT_EQ(AAUDIO_OK, AAudioStream_requestStart(aaudioStream));
 
         sleep(kProcessTimeSeconds);
 
-        ASSERT_GT(mCallbackCount, kInitialSkippedCallbackCount);
-        ASSERT_GT((mTimestamps.front() - mInitialCallbackTime) / (double)NANOS_PER_SECOND,
+        EXPECT_GT(mCallbackCount, kInitialSkippedCallbackCount);
+        EXPECT_GT((mTimestamps.front() - mInitialCallbackTime) / (double)NANOS_PER_SECOND,
                   kMinimumElapsedTimeSeconds);
-        ASSERT_NEAR(sampleRate, mMeasuredWrittenSampleRates.front(),
+        EXPECT_NEAR(sampleRate, mMeasuredWrittenSampleRates.front(),
                     sampleRate * kSampleRateToleranceRatio);
-        ASSERT_NEAR(sampleRate, mMeasuredReadSampleRates.front(),
+        EXPECT_NEAR(sampleRate, mMeasuredReadSampleRates.front(),
                     sampleRate * kSampleRateToleranceRatio);
 
         EXPECT_EQ(AAUDIO_OK, AAudioStream_requestStop(aaudioStream));

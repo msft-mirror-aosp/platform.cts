@@ -40,6 +40,7 @@ import android.security.intrusiondetection.IntrusionDetectionManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import android.util.Slog;
 
 import org.junit.After;
 import org.junit.Before;
@@ -47,6 +48,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.Process;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -57,6 +62,9 @@ public class IntrusionDetectionManagerTest {
     private Context mContext;
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private IntrusionDetectionManager mIntrusionDetectionManager;
+    private static final String PRODUCTION_BUILD = "user";
+    private static final String PROPERTY_BUILD_TYPE = "ro.build.type";
+    private static final String TAG = "IntrusionDetectionManagerTest";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -124,6 +132,29 @@ public class IntrusionDetectionManagerTest {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
+    private static String getSystemPropertyValue(String propertyName) {
+        String commandString = "getprop " + propertyName;
+        try {
+            Process process = Runtime.getRuntime().exec(commandString);
+            BufferedReader reader =
+                    new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String propertyValue = reader.readLine();
+            reader.close();
+            return propertyValue;
+        } catch (IOException e) {
+            Slog.e(TAG, "Failed to get system property value:", e);
+            return null;
+        }
+    }
+
+    private static String getBuildType() {
+        return getSystemPropertyValue(PROPERTY_BUILD_TYPE);
+    }
+
+    private static boolean shouldTestIntrusionDetectionEventTransportConfig() {
+        return !getBuildType().equals(PRODUCTION_BUILD);
+    }
+
     @Test
     public void testAddStateCallback_NoPermission() {
         var executor = newSingleThreadExecutor();
@@ -184,6 +215,7 @@ public class IntrusionDetectionManagerTest {
 
     @Test
     public void testRemoveStateCallback() throws InterruptedException {
+        assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.READ_INTRUSION_DETECTION_STATE,
                 Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
@@ -318,6 +350,7 @@ public class IntrusionDetectionManagerTest {
 
     @Test
     public void testEnable_FromEnable() throws InterruptedException {
+        assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.READ_INTRUSION_DETECTION_STATE,
                 Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);

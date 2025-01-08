@@ -32,6 +32,10 @@ public class InteractiveTestsActivity extends HostTestsActivity {
                 R.string.interactive_tests_dialog_title,
                 R.string.interactive_tests_dialog_content,
                 // Add module categories
+                new HostTestCategory("CompanionDeviceManager Tests")
+                        .addTest(
+                            "CtsCompanionDeviceManagerMultiDeviceTestCases",
+                            "CtsCompanionDeviceManagerMultiDeviceTestCases"),
                 new HostTestCategory("NFC Tests")
                         .addTest("CtsNfcHceMultiDeviceTestCases", "CtsNfcHceMultiDeviceTestCases"));
     }
