@@ -1047,8 +1047,8 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     }
 
     @Override
-    public void setSatellitePlmn(int serial, int simSlot, String[] carrierPlmnArray,
-            String[] allSatellitePlmnArray) {
+    public void setSatellitePlmn(
+            int serial, String[] carrierPlmnArray, String[] allSatellitePlmnArray) {
         Log.d(TAG, "setSatellitePlmn");
 
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
@@ -1060,7 +1060,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     }
 
     @Override
-    public void setSatelliteEnabledForCarrier(int serial, int simSlot, boolean satelliteEnabled) {
+    public void setSatelliteEnabledForCarrier(int serial, boolean satelliteEnabled) {
         Log.d(TAG, "setSatelliteEnabledForCarrier");
 
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
@@ -1072,7 +1072,7 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     }
 
     @Override
-    public void isSatelliteEnabledForCarrier(int serial, int simSlot) {
+    public void isSatelliteEnabledForCarrier(int serial) {
         Log.d(TAG, "isSatelliteEnabledForCarrier");
 
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
