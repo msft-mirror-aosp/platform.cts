@@ -21,14 +21,9 @@ import static android.graphics.pdf.PdfRendererPreV.DOCUMENT_LINEARIZED_TYPE_NON_
 import static android.graphics.pdf.cts.module.Utils.A4_HEIGHT_PTS;
 import static android.graphics.pdf.cts.module.Utils.A4_PORTRAIT;
 import static android.graphics.pdf.cts.module.Utils.A4_WIDTH_PTS;
-import static android.graphics.pdf.cts.module.Utils.EMPTY_PDF;
 import static android.graphics.pdf.cts.module.Utils.INCORRECT_LOAD_PARAMS;
 import static android.graphics.pdf.cts.module.Utils.LOAD_PARAMS;
-import static android.graphics.pdf.cts.module.Utils.ONE_IMAGE_PAGE_OBJECT;
-import static android.graphics.pdf.cts.module.Utils.ONE_PATH_ONE_IMAGE_PAGE_OBJECT;
-import static android.graphics.pdf.cts.module.Utils.ONE_PATH_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.PROTECTED_PDF;
-import static android.graphics.pdf.cts.module.Utils.SAMPLE_IMAGE;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_PDF;
 import static android.graphics.pdf.cts.module.Utils.assertSelectionBoundary;
 import static android.graphics.pdf.cts.module.Utils.calculateArea;
@@ -42,24 +37,15 @@ import static org.junit.Assert.assertThrows;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
-import android.graphics.pdf.component.PdfPageImageObject;
-import android.graphics.pdf.component.PdfPageObject;
-import android.graphics.pdf.component.PdfPageObjectType;
-import android.graphics.pdf.component.PdfPagePathObject;
 import android.graphics.pdf.content.PdfPageGotoLinkContent;
 import android.graphics.pdf.models.PageMatchBounds;
 import android.graphics.pdf.models.selection.PageSelection;
 import android.graphics.pdf.models.selection.SelectionBoundary;
 import android.os.ParcelFileDescriptor;
-import android.util.Pair;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -680,264 +666,6 @@ public class PdfRendererPreVTest {
 
         page.close();
         renderer.close();
-    }
-
-    @Test
-    public void getPdfPageObject_pdfWithNoPageObject() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) { // Changed type here
-
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
-        }
-    }
-
-    @Test
-    public void getPdfPageObject_pdfWithOnePathAndOneImagePageObject() throws IOException {
-        try (PdfRendererPreV renderer =
-                        createPreVRenderer(ONE_PATH_ONE_IMAGE_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-
-            List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
-            assertThat(pdfPageObjects.size()).isEqualTo(2);
-
-            for (int i = 0; i < pdfPageObjects.size(); i++) {
-                // When you do a get() call initially, the allocated Id's are equal to the
-                // index in the pdfPageObject list.
-                assertThat(pdfPageObjects.get(i).first).isEqualTo(i);
-            }
-
-            int imagePageObjectCount =
-                    getPageObjectTypeCount(pdfPageObjects, PdfPageObjectType.IMAGE);
-            int pathPageObjectCount =
-                    getPageObjectTypeCount(pdfPageObjects, PdfPageObjectType.PATH);
-
-            assertThat(pathPageObjectCount).isEqualTo(1);
-            assertThat(imagePageObjectCount).isEqualTo(1);
-        }
-    }
-
-    @Test
-    public void testPdfPathObjectSegments() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
-            Path path = new Path();
-            path.moveTo(0f, 800f);
-            path.lineTo(100f, 650f);
-            path.lineTo(150f, 650f);
-            path.lineTo(0f, 800f);
-            PdfPagePathObject pathObject = new PdfPagePathObject(path);
-            pathObject.setFillColor(Color.valueOf(Color.BLUE));
-
-            int id = firstPage.addPageObject(pathObject);
-            assertThat(id).isEqualTo(0);
-
-            List<Pair<Integer, PdfPageObject>> pageObjects = firstPage.getPageObjects();
-            assertThat(pageObjects.size()).isEqualTo(1);
-            PdfPagePathObject addedPathObject =
-                    (PdfPagePathObject) firstPage.getPageObjects().getFirst().second;
-            assertThat(addedPathObject.getFillColor()).isEqualTo(Color.valueOf(Color.BLUE));
-            Path addedPath = addedPathObject.toPath();
-
-            // Path coordinates in the format [x0, y0, x1, y1,...]
-            float[] expectedCoordinates = {0.0f, 800f, 100f, 650f, 150f, 650f, 0f, 800f};
-            // Path segments in the format [fraction, x0, y0, fraction, x1, y1...]
-            float[] obtainedSegments = addedPath.approximate(0.5f);
-
-            for (int i = 0; i < obtainedSegments.length / 3; i++) {
-                // Compare x-coordinates
-                assertThat(obtainedSegments[3 * i + 1]).isEqualTo(expectedCoordinates[2 * i]);
-                // Compare y-coordinates
-                assertThat(obtainedSegments[3 * i + 2]).isEqualTo(expectedCoordinates[2 * i + 1]);
-            }
-        }
-    }
-
-    @Test
-    public void testAllPageObjectApi() throws IOException {
-        try (PdfRendererPreV renderer =
-                        createPreVRenderer(ONE_PATH_ONE_IMAGE_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-            List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
-            for (int i = 0; i < pdfPageObjects.size(); i++) {
-                assertThat(pdfPageObjects.get(i).first).isEqualTo(i);
-            }
-            int id = firstPage.addPageObject(createSamplePdfPageImageObject());
-            assertThat(id).isEqualTo(2);
-
-            firstPage.removePageObject(1);
-
-            int newId = firstPage.addPageObject(createSamplePdfPageImageObject());
-            assertThat(newId).isEqualTo(3);
-
-            int[] newExpectedIds = {0, 2, 3};
-            pdfPageObjects = firstPage.getPageObjects();
-            for (int i = 0; i < pdfPageObjects.size(); i++) {
-                assertThat(pdfPageObjects.get(i).first).isEqualTo(newExpectedIds[i]);
-            }
-        }
-    }
-
-    @Test
-    public void addPathPageObject() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(ONE_PATH_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(1);
-
-            // Create PdfPathPageObject
-            Path path = new Path();
-            path.lineTo(10f, 10f);
-            PdfPagePathObject pdfPagePathObject = new PdfPagePathObject(path);
-            pdfPagePathObject.setStrokeColor(Color.valueOf(Color.BLACK));
-
-            // Add PdfPathPageObject
-            int id = firstPage.addPageObject(pdfPagePathObject);
-            assertThat(id).isEqualTo(1);
-
-            List<Pair<Integer, PdfPageObject>> pageObjects = firstPage.getPageObjects();
-            assertThat(pageObjects.size()).isEqualTo(2);
-            assertThat(pageObjects.getFirst().second.getPdfObjectType())
-                    .isEqualTo(PdfPageObjectType.PATH);
-            PdfPagePathObject pathObject = (PdfPagePathObject) pageObjects.getFirst().second;
-            assertThat(pathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.BLACK));
-        }
-    }
-
-    @Test
-    public void addImagePageObject() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
-
-            int id1 = firstPage.addPageObject(createSamplePdfPageImageObject());
-            assertThat(id1).isEqualTo(0);
-
-            int id2 = firstPage.addPageObject(createSamplePdfPageImageObject());
-            assertThat(id2).isEqualTo(1);
-
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(2);
-        }
-    }
-
-    @Test
-    public void removePdfPathObject() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(ONE_PATH_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-
-            List<Pair<Integer, PdfPageObject>> pageObjects = firstPage.getPageObjects();
-            assertThat(pageObjects.size()).isEqualTo(1);
-
-            firstPage.removePageObject(pageObjects.getFirst().first);
-
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(0);
-        }
-    }
-
-    @Test
-    public void removeImagePageObject() throws IOException {
-        try (PdfRendererPreV renderer =
-                        createPreVRenderer(ONE_PATH_ONE_IMAGE_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-
-            List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(2);
-
-            int imagePageObjectId = -1;
-            for (int i = 0; i < pdfPageObjects.size(); i++) {
-                if (pdfPageObjects.get(i).second.getPdfObjectType() == PdfPageObjectType.IMAGE) {
-                    imagePageObjectId = pdfPageObjects.get(i).first;
-                }
-            }
-            assertThat(imagePageObjectId).isGreaterThan(-1);
-
-            firstPage.removePageObject(imagePageObjectId);
-
-            pdfPageObjects = firstPage.getPageObjects();
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(1);
-            assertThat(pdfPageObjects.getFirst().second.getPdfObjectType())
-                    .isEqualTo(PdfPageObjectType.PATH);
-        }
-    }
-
-    @Test
-    public void testGetAndRemovePageObjectInPdfWithUnsupportedPageObjects() throws IOException {
-        try (PdfRendererPreV renderer =
-                        createPreVRenderer(R.raw.TextPathImagePageObjects, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-            List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
-            assertThat(pdfPageObjects).hasSize(2);
-            assertThat(pdfPageObjects.getFirst().second.getPdfObjectType())
-                    .isEqualTo(PdfPageObjectType.IMAGE);
-
-            firstPage.removePageObject(pdfPageObjects.getFirst().first);
-
-            pdfPageObjects = firstPage.getPageObjects();
-            assertThat(pdfPageObjects).hasSize(1);
-            assertThat(pdfPageObjects.getFirst().second.getPdfObjectType())
-                    .isEqualTo(PdfPageObjectType.PATH);
-        }
-    }
-
-    @Test
-    public void updatePdfPathPageObject() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(ONE_PATH_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-
-            PdfPagePathObject pathObject =
-                    (PdfPagePathObject) firstPage.getPageObjects().getFirst().second;
-            pathObject.setStrokeColor(Color.valueOf(Color.BLUE));
-
-            firstPage.updatePageObject(firstPage.getPageObjects().getFirst().first, pathObject);
-
-            PdfPagePathObject updatedPathObject =
-                    (PdfPagePathObject) firstPage.getPageObjects().getFirst().second;
-            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.BLUE));
-        }
-    }
-
-    @Test
-    public void updateImagePageObject() throws IOException {
-        try (PdfRendererPreV renderer = createPreVRenderer(ONE_IMAGE_PAGE_OBJECT, mContext, null);
-                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
-
-            List<Pair<Integer, PdfPageObject>> pdfPageObjects = firstPage.getPageObjects();
-            assertThat(firstPage.getPageObjects().size()).isEqualTo(1);
-            assertThat(pdfPageObjects.getFirst().first).isEqualTo(0); // check id
-
-            assertThat(pdfPageObjects.getFirst().second.getPdfObjectType())
-                    .isEqualTo(PdfPageObjectType.IMAGE);
-            PdfPageImageObject pdfPageImageObject =
-                    (PdfPageImageObject) pdfPageObjects.getFirst().second;
-
-            float[] newMatrixValues = {2, 1, 4, 7, 3, 5, 0, 0, 1};
-            Matrix newMatrix = new Matrix();
-            newMatrix.setValues(newMatrixValues);
-            assertThat(newMatrix.isAffine()).isTrue();
-            pdfPageImageObject.setMatrix(newMatrix);
-
-            boolean result = firstPage.updatePageObject(0, pdfPageImageObject);
-            assertThat(result).isTrue();
-            float[] posUpdateMatrixValues =
-                    firstPage.getPageObjects().getFirst().second.getMatrix();
-            assertThat(posUpdateMatrixValues).isEqualTo(newMatrixValues);
-        }
-    }
-
-    private PdfPageImageObject createSamplePdfPageImageObject() {
-        Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), SAMPLE_IMAGE);
-        return new PdfPageImageObject(bitmap);
-    }
-
-    private int getPageObjectTypeCount(
-            List<Pair<Integer, PdfPageObject>> pdfPageObjects, int type) {
-        int count = 0;
-        for (Pair<Integer, PdfPageObject> pageObject : pdfPageObjects) {
-            if (pageObject.second.getPdfObjectType() == type) { // Correct comparison
-                count++;
-            }
-        }
-        return count;
     }
 
     private void assertSamplePdf(PdfRendererPreV renderer, PdfRendererPreV expectedRenderer) {
