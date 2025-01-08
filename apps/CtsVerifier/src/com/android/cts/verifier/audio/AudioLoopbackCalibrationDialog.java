@@ -42,7 +42,6 @@ import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 
 // MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
-import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSourceProvider;
@@ -206,24 +205,35 @@ class AudioLoopbackCalibrationDialog extends Dialog
         if (mSelectedInputDevice != null && AudioDeviceUtils.isMicDevice(mSelectedInputDevice)) {
             mNumDisplayChannels = 1;
         }
-        Log.i(TAG, "mNumDisplayChannels:" + mNumDisplayChannels);
+        Log.d(TAG, "mNumDisplayChannels:" + mNumDisplayChannels);
         mWaveView.setNumChannels(mNumDisplayChannels);
         mDuplexAudioManager.setNumRecorderChannels(mNumDisplayChannels);
 
         // Open the streams.
         // Note AudioSources and AudioSinks get allocated at this point
-        if (mDuplexAudioManager.buildStreams(BuilderBase.TYPE_OBOE, BuilderBase.TYPE_OBOE)
-                ==  StreamBase.OK
-                && mDuplexAudioManager.start() == StreamBase.OK) {
-            mPlaying = true;
-        } else {
+        // check for success for both input and output.
+        int buildStatus =
+                mDuplexAudioManager.buildStreams(BuilderBase.TYPE_OBOE, BuilderBase.TYPE_OBOE);
+        if (buildStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
+            Log.e(TAG, "Bad Duplex Build. buildStatus:0x" + Integer.toHexString(buildStatus));
+            // TODO - Provide more failure information for this
             mPlaying = false;
+        } else {
+            int startStatus = mDuplexAudioManager.start();
+
+            if (startStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
+                Log.e(TAG, "Bad Duplex Start. startStatus:0x" + Integer.toHexString(startStatus));
+                // TODO - Provide more failure information for this
+                mPlaying = false;
+            } else {
+                mPlaying = true;
+            }
         }
     }
 
     void stopAudio() {
         if (mPlaying) {
-            mDuplexAudioManager.stop();
+            mDuplexAudioManager.unwind();
             mPlaying = false;
         }
     }
