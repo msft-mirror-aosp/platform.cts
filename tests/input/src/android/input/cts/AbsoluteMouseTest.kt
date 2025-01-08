@@ -24,6 +24,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputAbsoluteMouse
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchDevice.Companion.BTN_MOUSE
@@ -53,6 +54,8 @@ class AbsoluteMouseTest {
     val testName = TestName()
     @get:Rule
     val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
+    @get:Rule
+    val debugInputRule = DebugInputRule()
 
     @Before
     fun setUp() {
@@ -68,6 +71,7 @@ class AbsoluteMouseTest {
         }
     }
 
+    @DebugInputRule.DebugInput(bug = 388364364)
     @Test
     fun testHoverAndClick() {
         val pointerId = 0
