@@ -19,6 +19,7 @@ package android.app.usage.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_FREQUENT;
@@ -634,7 +635,18 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
                 startTime, endTime);
         stats = events.get(mTargetPackage);
 
-        assertEquals(startingCount + 2, stats.getAppLaunchCount());
+        final ComponentName activityThree = new ComponentName(mTargetPackage,
+                Activities.ActivityThree.class.getName());
+        mWMStateHelper.waitAndAssertActivityState(activityThree, WindowManagerState.STATE_RESUMED);
+
+        // If the app is launching in freeform instead of the requested FULLSCREEN, then the
+        // target package was never stopped.
+        if (mWMStateHelper.getTaskByActivity(activityThree).getWindowingMode()
+                == WINDOWING_MODE_FREEFORM) {
+            assertEquals(startingCount + 1, stats.getAppLaunchCount());
+        } else {
+            assertEquals(startingCount + 2, stats.getAppLaunchCount());
+        }
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
