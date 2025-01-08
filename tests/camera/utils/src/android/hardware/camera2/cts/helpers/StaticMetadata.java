@@ -2866,6 +2866,14 @@ public class StaticMetadata {
     }
 
     /**
+     * Check if HEIC_ULTRAHDR format is supported
+     */
+    public boolean isHeicUltraHdrSupported() {
+        int[] formats = getAvailableFormats(StaticMetadata.StreamDirection.Output);
+        return CameraTestUtils.contains(formats, ImageFormat.HEIC_ULTRAHDR);
+    }
+
+    /**
      * Check if the dynamic black level is supported.
      *
      * <p>
