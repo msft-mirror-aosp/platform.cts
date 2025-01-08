@@ -95,6 +95,15 @@ class AbsoluteMouseTest {
                 commonMatcher
             )
         )
+        // TODO(b/387529073): A HOVER_MOVE event is always generated after the HOVER_ENTER.
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(PointF(0f, 0f)),
+                withPressure(0f),
+                commonMatcher
+            )
+        )
 
         // Inject and verify HOVER_MOVE
         absoluteMouse.sendMove(pointerId, Point(10, 10))
