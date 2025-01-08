@@ -23,6 +23,7 @@ java_test_host {
     srcs: [
         "src/**/alarm/*.java",
         "src/**/appcompatstate/*.java",
+        "src/**/appfunctions/*.java",
         "src/**/apphibernation/*.java",
         "src/**/appops/*.java",
         "src/**/appexit/*.java",
@@ -84,6 +85,7 @@ java_test_host {
     ],
 
     static_libs: [
+        "android.app.appfunctions.flags-aconfig-java-host",
         "android.hardware.usb.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
         "backstage_power_flags_lib-host",
@@ -114,6 +116,9 @@ java_test_host {
         ":CtsVoiceInteractionTestCases",
         ":CtsCredentialManagerTestCases",
         ":CtsStatsdExpressLogHelper",
+        ":CtsAppFunctionTestCases",
+        ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionsSidecarTestHelper",
     ],
     per_testcase_directory: true,
 }

@@ -141,7 +141,15 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod() = doBlocking {
+    fun executeAppFunction_failed_noSuchMethod() = executeAppFunction_failed_noSuchMethod_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @Throws(Exception::class)
+    fun executeAppFunction_failed_noSuchMethod_nonParam() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noSuchMethod").build()
 
         val response = executeAppFunctionAndWait(mManager, request)
@@ -248,7 +256,17 @@ class AppFunctionManagerTest {
     @EnsureHasSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_crossUser_success() = doBlocking {
+    fun executeAppFunction_crossUser_success() = executeAppFunction_crossUser_success_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @EnsureHasNoDeviceOwner
+    @EnsureHasSecondaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_crossUser_success_nonParam() = doBlocking {
         runWithShellPermission(
             INTERACT_ACROSS_USERS_FULL_PERMISSION,
             EXECUTE_APP_FUNCTIONS_PERMISSION,
@@ -328,7 +346,18 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_platformManager_platformAppFunctionService_success() = doBlocking {
+    fun executeAppFunction_platformManager_platformAppFunctionService_success() =
+        executeAppFunction_platformManager_platformAppFunctionService_success_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_platformManager_platformAppFunctionService_success_nonParam() =
+        doBlocking {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyLong("a", 1)
@@ -398,7 +427,16 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_throwsException() = doBlocking {
+    fun executeAppFunction_throwsException() = executeAppFunction_throwsException_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_throwsException_nonParam() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "throwException").build()
 
         val response = executeAppFunctionAndWait(mManager, request)
