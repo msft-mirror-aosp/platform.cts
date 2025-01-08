@@ -16,6 +16,8 @@
 
 package android.cts.statsdatom.sizecompatrestartbutton;
 
+import static android.cts.statsdatom.lib.DeviceUtils.FEATURE_WATCH;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -104,8 +106,9 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
     }
 
     public void testSizeCompatRestartButtonAppearedAndClicked() throws Exception {
-        DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".appcompat.AppCompatTests",
-                "testClickSizeCompatRestartButton");
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
+        DeviceUtils.runDeviceTestsOnStatsdApp(
+                getDevice(), ".appcompat.AppCompatTests", "testClickSizeCompatRestartButton");
 
         // Wait to make sure metric event is reported.
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
