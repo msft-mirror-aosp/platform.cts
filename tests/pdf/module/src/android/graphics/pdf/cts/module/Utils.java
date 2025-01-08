@@ -65,6 +65,16 @@ class Utils {
 
     static final int PROTECTED_PDF = android.graphics.pdf.cts.module.R.raw.sample_test_protected;
     static final int SAMPLE_PDF = android.graphics.pdf.cts.module.R.raw.sample_test;
+    static final int SAMPLE_IMAGE =
+            android.graphics.pdf.cts.module.R.drawable.TextAnnotFlagSetOnly_golden;
+    static final int ONE_IMAGE_PAGE_OBJECT =
+            android.graphics.pdf.cts.module.R.raw.one_image_page_object;
+    static final int ONE_PATH_PAGE_OBJECT =
+            android.graphics.pdf.cts.module.R.raw.one_path_page_object;
+    static final int ONE_PATH_ONE_IMAGE_PAGE_OBJECT =
+            android.graphics.pdf.cts.module.R.raw.one_path_one_image_pageObject;
+
+    static final int EMPTY_PDF = android.graphics.pdf.cts.module.R.raw.empty;
 
     static final LoadParams LOAD_PARAMS = new LoadParams.Builder().setPassword("qwerty").build();
 
