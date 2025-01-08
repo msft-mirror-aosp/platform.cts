@@ -49,6 +49,7 @@ android_test {
         "backstage_power_flags_lib",
         "sdk_sandbox_flags_lib",
         "cts_backported_fixes",
+        "cts_backported_fixes_support",
     ],
     jni_uses_platform_apis: true,
     jni_libs: [
