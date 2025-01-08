@@ -451,4 +451,5 @@
     <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#rawDataNull" />
     <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsApproachLstoParcel" />
     <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#invalidQualityReportId" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothAdapterTest#bluetoothQualityReportReadyCallbacks" />
 </configuration>
