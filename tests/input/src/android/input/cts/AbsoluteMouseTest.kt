@@ -95,15 +95,16 @@ class AbsoluteMouseTest {
                 commonMatcher
             )
         )
-        // TODO(b/387529073): A HOVER_MOVE event is always generated after the HOVER_ENTER.
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
-                withCoords(PointF(0f, 0f)),
-                withPressure(0f),
-                commonMatcher
+        if (!com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                    withCoords(PointF(0f, 0f)),
+                    withPressure(0f),
+                    commonMatcher
+                )
             )
-        )
+        }
 
         // Inject and verify HOVER_MOVE
         absoluteMouse.sendMove(pointerId, Point(10, 10))
@@ -119,7 +120,6 @@ class AbsoluteMouseTest {
         )
 
         // Inject and verify mouse button click
-        // TODO(b/387529073): No ACTION_BUTTON_PRESS is generated in this case.
         absoluteMouse.sendBtn(BTN_MOUSE, true)
         absoluteMouse.sync()
 
@@ -138,30 +138,58 @@ class AbsoluteMouseTest {
                 commonMatcher
             )
         )
-        // TODO(b/387529073): ACTION_MOVE is always generated after the down event.
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_MOVE),
-                withCoords(PointF(10f, 10f)),
-                withButtonState(MotionEvent.BUTTON_PRIMARY),
-                commonMatcher
+        if (com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_BUTTON_PRESS),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(MotionEvent.BUTTON_PRIMARY),
+                    commonMatcher
+                )
             )
-        )
+        } else {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_MOVE),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(MotionEvent.BUTTON_PRIMARY),
+                    commonMatcher
+                )
+            )
+        }
 
         // Inject and verify mouse button release
-        // TODO(b/387529073): No ACTION_BUTTON_RELEASE is generated in this case.
         absoluteMouse.sendUp(pointerId)
         absoluteMouse.sendBtnTouch(false)
         absoluteMouse.sendBtn(BTN_MOUSE, false)
         absoluteMouse.sync()
 
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_UP),
-                withCoords(PointF(10f, 10f)),
-                withButtonState(MotionEvent.BUTTON_PRIMARY),
-                commonMatcher
+        if (com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_BUTTON_RELEASE),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(0),
+                    commonMatcher
+                )
             )
-        )
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_UP),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(0),
+                    commonMatcher
+                )
+            )
+        } else {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_UP),
+                    withCoords(PointF(10f, 10f)),
+                    withButtonState(MotionEvent.BUTTON_PRIMARY),
+                    commonMatcher
+                )
+            )
+        }
     }
 }
