@@ -38,14 +38,6 @@ realpath() {
 
 checkPath aapt
 checkPath adb
-checkPath java
-
-# check java version
-JAVA_VERSION=$(java -version 2>&1 | grep -m 1 'version [ "]\(1\.8\|9\|11\).*[ "]')
-if [ "${JAVA_VERSION}" == "" ]; then
-    echo "Wrong java version. 1.8, 9, or 11 is required."
-    exit
-fi
 
 # check debug flag and set up remote debugging
 if [ -n "${TF_DEBUG}" ]; then
@@ -92,6 +84,15 @@ fi;
 
 if [ ! -f "${JAVA_BINARY}" ]; then
     JAVA_BINARY=java
+fi
+
+checkPath ${JAVA_BINARY}
+
+# check java version
+JAVA_VERSION=$(${JAVA_BINARY} -version 2>&1 | grep -m 1 'version [ "]\(1\.8\|9\|11\).*[ "]')
+if [ "${JAVA_VERSION}" == "" ]; then
+    echo "Wrong java version. 1.8, 9, or 11 is required."
+    exit
 fi
 
 JAR_DIR=${CTS_ROOT}/android-cts/tools
