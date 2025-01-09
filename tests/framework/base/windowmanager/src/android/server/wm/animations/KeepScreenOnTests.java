@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.DreamManager;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -40,6 +41,7 @@ import android.server.wm.WindowManagerState;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -52,6 +54,8 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     private PowerManager mPowerManager;
     private ContentResolver mContentResolver;
     private boolean mIsTv;
+    private DreamManager mDreamManager;
+    private Boolean mDefaultScreensaverEnabled;
 
     @Before
     public void setUp() throws Exception {
@@ -67,11 +71,25 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
         acquirePartialWakeLock();
         assumeFalse("Automotive main display is always on - skipping test",
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        mDreamManager = mContext.getSystemService(DreamManager.class);
+        if (mDreamManager != null && mDreamManager.areDreamsSupported()) {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mDefaultScreensaverEnabled = mDreamManager.isScreensaverEnabled();
+                if (mDefaultScreensaverEnabled) {
+                    mDreamManager.setScreensaverEnabled(false);
+                }
+            });
+        }
     }
 
     @After
     public void tearDown() {
         setScreenOffTimeoutMs(mInitialDisplayTimeout);
+        if (Boolean.TRUE.equals(mDefaultScreensaverEnabled)) {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mDreamManager.setScreensaverEnabled(true);
+            });
+        }
         Settings.Global.putInt(mContentResolver, STAY_ON_WHILE_PLUGGED_IN,
                 mInitialStayOnWhilePluggedInSetting);
         UiDeviceUtils.wakeUpAndUnlock(mContext);
