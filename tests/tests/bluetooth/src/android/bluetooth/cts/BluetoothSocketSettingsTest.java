@@ -132,26 +132,6 @@ public class BluetoothSocketSettingsTest {
         socket.close();
     }
 
-    private void createClientSocketUsingSettings(
-            BluetoothSocketSettings settings, List<String> requiredPermissions) throws IOException {
-        Permissions.enforceEachPermissions(
-                () -> {
-                    try {
-                        mFakeDevice.createUsingSocketSettings(settings);
-                        return true;
-                    } catch (IOException e) {
-                        return false;
-                    }
-                },
-                requiredPermissions);
-        final BluetoothSocket socket;
-        try (var p = Permissions.withPermissions(requiredPermissions.toArray(new String[0]))) {
-            socket = mFakeDevice.createUsingSocketSettings(settings);
-        }
-        assertThat(socket).isNotNull();
-        socket.close();
-    }
-
     private boolean isLeCocSocketOffloadSupported() {
         boolean result;
         try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
@@ -503,7 +483,7 @@ public class BluetoothSocketSettingsTest {
                         .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
 
         BluetoothSocketSettings settings = builder.build();
-        createClientSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        createClientSocketUsingSettings(settings);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
@@ -523,6 +503,6 @@ public class BluetoothSocketSettingsTest {
                         .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
 
         BluetoothSocketSettings settings = builder.build();
-        createClientSocketUsingSettings(settings, List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
+        createClientSocketUsingSettings(settings);
     }
 }
