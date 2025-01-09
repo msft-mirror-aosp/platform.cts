@@ -21,7 +21,7 @@
     <application>
         <uses-library android:name="android.test.runner" />
 
-        <activity android:name="android.input.cts.hostside.app.CaptureEventActivity"
+        <activity android:name="com.android.cts.input.CaptureEventActivity"
                   android:label="Activity that captures input events"
             android:turnScreenOn="true"
             android:exported="true">
