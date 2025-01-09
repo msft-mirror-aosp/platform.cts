@@ -72,6 +72,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.security.KeyStoreException;
 import android.security.keystore.AttestationUtils;
@@ -176,6 +177,29 @@ public class KeyAttestationTest {
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_ATTEST_MODULES)
+    public void testSupplementaryAttestationInfoAbsence() throws Exception {
+        // Valid tag IDs that have no supplementary info.
+        checkAbsentSupplementaryInfo(805307074); // OS_PATCHLEVEL = TagType.UINT | 706
+        checkAbsentSupplementaryInfo(-1879047488); // ROOT_OF_TRUST = TagType.BYTES | 704
+
+        // Invalid tag value
+        checkAbsentSupplementaryInfo(9999);
+    }
+
+    private void checkAbsentSupplementaryInfo(int tag) throws Exception {
+        KeyStoreManager manager = KeyStoreManager.getInstance();
+        byte[] data = manager.getSupplementaryAttestationInfo(tag);
+        assertEquals(
+                "Call to getSupplementaryAttestationInfo() for tag "
+                        + tag
+                        + " should be empty, got: "
+                        + HexEncoding.encode(data),
+                0,
+                data.length);
     }
 
     @Test
