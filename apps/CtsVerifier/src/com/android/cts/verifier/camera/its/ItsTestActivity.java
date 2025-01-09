@@ -116,8 +116,10 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String JCA_FILES_CHILD_PATHNAME = "Images/JCATestCaptures";
     private static final String JCA_VIDEO_FILES_CHILD_PATHNAME = "Videos/JCATestCaptures";
     private static final String JCA_DEBUG_MODE_KEY = "KEY_DEBUG_MODE";
+    public static final String JCA_VIDEO_PATH_TAG = "JCA_VIDEO_CAPTURE_PATH";
     public static final String JCA_CAPTURE_PATHS_TAG = "JCA_CAPTURE_PATHS";
     public static final String JCA_CAPTURE_STATUS_TAG = "JCA_CAPTURE_STATUS";
+    public static final String JCA_DATE_TIME_TAG = "yyyyMMdd_HHmmss";
 
     private static final String RESULT_PASS = "PASS";
     private static final String RESULT_FAIL = "FAIL";
@@ -1243,32 +1245,41 @@ public class ItsTestActivity extends DialogTestListActivity {
             if (resultCode != RESULT_OK) {
                 Logt.e(TAG, "Capture failed!");
             }
-            Logt.i(TAG, "Result data: " + data.getStringArrayListExtra(
-                    MediaStore.EXTRA_OUTPUT).toString());
-            ArrayList<String> jcaCapturePaths = new ArrayList<String>();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
-                    "yyyyMMdd_HHmmss").withZone(ZoneId.systemDefault());
-            String timestamp = formatter.format(Instant.now());
-            int i = 0;
-            for (String intentUri : data.getStringArrayListExtra(MediaStore.EXTRA_OUTPUT)) {
-                Uri uri = Uri.parse(intentUri);
-                try {
-                    Path imagePath = moveImageFromUri(
-                            uri, "ITS_JCA_" + i + "_" + timestamp + ".jpg");
-                    jcaCapturePaths.add(imagePath.toString());
-                } catch (FileNotFoundException e) {
-                    Logt.e(TAG, "File not found from uri: " + e);
-                    return;
-                } catch (IOException e) {
-                    Logt.e(TAG, "Error copying file from uri: " + e);
-                    return;
+            if (requestCode == REQUEST_IMAGE_CAPTURE) {
+                Logt.i(TAG, "Result data: " + data.getStringArrayListExtra(
+                        MediaStore.EXTRA_OUTPUT).toString());
+                ArrayList<String> jcaCapturePaths = new ArrayList<String>();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
+                        JCA_DATE_TIME_TAG).withZone(ZoneId.systemDefault());
+                String timestamp = formatter.format(Instant.now());
+                int i = 0;
+                for (String intentUri : data.getStringArrayListExtra(MediaStore.EXTRA_OUTPUT)) {
+                    Uri uri = Uri.parse(intentUri);
+                    try {
+                        Path imagePath = moveImageFromUri(
+                                uri, "ITS_JCA_" + i + "_" + timestamp + ".jpg");
+                        jcaCapturePaths.add(imagePath.toString());
+                    } catch (FileNotFoundException e) {
+                        Logt.e(TAG, "File not found from uri: " + e);
+                        return;
+                    } catch (IOException e) {
+                        Logt.e(TAG, "Error copying file from uri: " + e);
+                        return;
+                    }
+                    i++;
                 }
-                i++;
+                Intent serviceIntent = new Intent(this, ItsService.class);
+                serviceIntent.putExtra(JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
+                serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
+                startService(serviceIntent);
             }
-            Intent serviceIntent = new Intent(this, ItsService.class);
-            serviceIntent.putExtra(JCA_CAPTURE_PATHS_TAG, jcaCapturePaths);
-            serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
-            startService(serviceIntent);
+            if (requestCode == REQUEST_VIDEO_CAPTURE) {
+                Intent serviceIntent = new Intent(this, ItsService.class);
+                serviceIntent.putExtra(JCA_VIDEO_PATH_TAG, mJcaCapturePath);
+                serviceIntent.putExtra(JCA_CAPTURE_STATUS_TAG, resultCode);
+                startService(serviceIntent);
+            }
+
         } else {
             super.handleActivityResult(requestCode, resultCode, data);
         }
@@ -1311,7 +1322,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             Logt.e(TAG, "Could not create video directory");
             return;
         }
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(JCA_DATE_TIME_TAG)
                 .withZone(ZoneId.systemDefault());
         String timestamp = formatter.format(Instant.now());
         File videoFile = new File(videoDir, "ITS_JCA_" + timestamp + ".mp4");

@@ -532,6 +532,22 @@ public class ItsService extends Service implements SensorEventListener {
                 Thread.sleep(1);
             }
 
+            if (intent != null && intent.hasExtra(ItsTestActivity.JCA_VIDEO_PATH_TAG)) {
+                try {
+                    mSocketRunnableObj.sendResponse(ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
+                            Integer.toString(intent.getIntExtra(
+                                    ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
+                                    Activity.RESULT_CANCELED)
+                            )
+                    );
+                    mSocketRunnableObj.sendResponse(
+                            ItsTestActivity.JCA_VIDEO_PATH_TAG,
+                            intent.getStringExtra(ItsTestActivity.JCA_VIDEO_PATH_TAG));
+                } catch (ItsException e) {
+                    Logt.e(TAG, "Error sending JCA capture path and status", e);
+                }
+                return START_STICKY;
+            }
             if (intent != null && intent.hasExtra(ItsTestActivity.JCA_CAPTURE_PATHS_TAG)) {
                 try {
                     mSocketRunnableObj.sendResponse(ItsTestActivity.JCA_CAPTURE_STATUS_TAG,
