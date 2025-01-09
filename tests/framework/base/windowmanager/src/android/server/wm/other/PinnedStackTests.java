@@ -1727,7 +1727,9 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertEquals(rootActivityTaskId, mWmState.getTaskByActivity(TEST_ACTIVITY).getTaskId());
     }
 
+    // TODO (b/388317826): address this for PiP2.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testLaunchTaskByAffinityMatchSingleTask() {
         // Launch an activity into the pinned stack with a fixed affinity
         launchActivityNoWait(TEST_ACTIVITY_WITH_SAME_AFFINITY,

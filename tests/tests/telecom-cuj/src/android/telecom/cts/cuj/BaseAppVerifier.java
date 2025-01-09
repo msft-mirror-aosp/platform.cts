@@ -45,7 +45,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -372,12 +371,32 @@ public class BaseAppVerifier {
     }
 
     /**
-     * Modifies the existing managed PhoneAccount to include a new PhoneAccount restriction.
-     * Must be called after the PhoneAccount was registered as part of
-     * {@link #bindToApp(TelecomTestApp)}.
+     * Checks if foreground service delegation is active for a specific phone account a call was
+     * created on.
+     *
+     * <p>This method determines whether the given phone account is currently delegating its
+     * foreground service capabilities to another application. Foreground service delegation allows
+     * an app to manage calls and perform call-related operations even when it's not in the
+     * foreground.
+     *
+     * @param appControl The {@link AppControlWrapper} instance representing the application whose
+     *     foreground service delegation status is being checked.
+     * @param handle The {@link PhoneAccountHandle} identifying the phone account to check.
+     * @return {@code true} if foreground service delegation is active for the specified phone
+     *     account that is owned by the application, {@code false} otherwise.
+     * @throws RemoteException if there is an error communicating with the remote application.
      */
-    public void updateManagedPhoneAccountWithRestriction(PhoneAccountHandle handle,
-            Set<PhoneAccountHandle> restrictions) throws Exception {
+    public boolean isForegroundServiceDelegationActive(
+            AppControlWrapper appControl, PhoneAccountHandle handle) throws RemoteException {
+        return appControl.isForegroundServiceDelegationActive(handle);
+    }
+
+    /**
+     * Modifies the existing managed PhoneAccount to include a new PhoneAccount restriction. Must be
+     * called after the PhoneAccount was registered as part of {@link #bindToApp(TelecomTestApp)}.
+     */
+    public void updateManagedPhoneAccountWithRestriction(
+            PhoneAccountHandle handle, Set<PhoneAccountHandle> restrictions) throws Exception {
         PhoneAccount acctToUpdate = MANAGED_PHONE_ACCOUNTS.get(handle);
         assertNotNull("setManagedPhoneAccountRestriction: test error, couldn't find PA "
                 + "from PAH: " + handle, acctToUpdate);

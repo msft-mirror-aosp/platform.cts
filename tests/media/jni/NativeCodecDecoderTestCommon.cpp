@@ -129,7 +129,7 @@ bool CodecDecoderTest::setUpExtractor(const char* srcFile, int colorFormat) {
                 AMediaFormat_getString(currFormat, AMEDIAFORMAT_KEY_MIME, &mediaType);
                 if (mediaType && strcmp(mMediaType, mediaType) == 0) {
                     AMediaExtractor_selectTrack(mExtractor, trackID);
-                    if (!mIsAudio) {
+                    if (!mIsAudio && colorFormat != -1) {
                         AMediaFormat_setInt32(currFormat, AMEDIAFORMAT_KEY_COLOR_FORMAT,
                                               colorFormat);
                     }
@@ -356,7 +356,7 @@ bool CodecDecoderTest::decodeToMemory(const char* decoder, AMediaFormat* format,
 bool CodecDecoderTest::testSimpleDecode(const char* decoder, const char* testFile,
                                         const char* refFile, int colorFormat, float rmsError,
                                         uLong checksum) {
-    if (!setUpExtractor(testFile, colorFormat)) return false;
+    if (!setUpExtractor(testFile, (mWindow == nullptr) ? colorFormat : -1)) return false;
     mSaveToMem = (mWindow == nullptr);
     auto ref = mRefBuff;
     auto test = mTestBuff;
@@ -390,6 +390,16 @@ bool CodecDecoderTest::testSimpleDecode(const char* decoder, const char* testFil
             if (!doWork(INT32_MAX)) return false;
             if (!queueEOS()) return false;
             if (!waitForAllOutputs()) return false;
+            if (mWindow != nullptr) {
+                AMediaFormat* outFormat = AMediaCodec_getOutputFormat(mCodec);
+                int outputColorFormat = -1;
+                AMediaFormat_getInt32(outFormat, AMEDIAFORMAT_KEY_COLOR_FORMAT, &outputColorFormat);
+                AMediaFormat_delete(outFormat);
+                RETURN_IF_TRUE(outputColorFormat != COLOR_FormatSurface,
+                               std::string{"In surface mode, components MUST default to the color "
+                                           "format optimized for hardware display \n"}
+                                       .append(test->getErrorMsg()))
+            }
             RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
             RETURN_IF_FAIL(AMediaCodec_delete(mCodec), "AMediaCodec_delete failed")
             mCodec = nullptr;

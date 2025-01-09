@@ -42,6 +42,7 @@ import static org.mockito.Mockito.verify;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
@@ -65,6 +66,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bluetooth.flags.Flags;
+import com.android.compatibility.common.util.CddTest;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.core.AllOf;
@@ -216,6 +218,17 @@ public class BluetoothDeviceTest {
                 "No BLUETOOTH_PRIVILEGED permission",
                 SecurityException.class,
                 () -> mFakeDevice.getIdentityAddressWithType());
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_ADDRESS_TYPE_API)
+    public void testBluetoothAddress() {
+        int addressType = BluetoothDevice.ADDRESS_TYPE_PUBLIC;
+        BluetoothAddress bluetoothAddress = new BluetoothAddress(mFakeDeviceAddress, addressType);
+
+        assertThat(bluetoothAddress.getAddress()).isEqualTo(mFakeDeviceAddress);
+        assertThat(bluetoothAddress.getAddressType()).isEqualTo(addressType);
     }
 
     @Test

@@ -83,346 +83,419 @@ public class TransactionalVoipAppControlMain extends Service {
     private final String NOTIFICATION_CHANNEL_NAME = mPackageName + " Notification Channel";
     private final HashMap<String, TransactionalCall> mIdToControl = new HashMap<>();
 
-    private final IBinder mBinder = new IAppControl.Stub() {
+    private final IBinder mBinder =
+            new IAppControl.Stub() {
 
-        @Override
-        public boolean isBound() throws RemoteException {
-            Log.i(mTag, String.format("isBound: [%b]", mIsBound));
-            return mIsBound;
-        }
+                @Override
+                public boolean isBound() throws RemoteException {
+                    Log.i(mTag, String.format("isBound: [%b]", mIsBound));
+                    return mIsBound;
+                }
 
-        @Override
-        public UserHandle getProcessUserHandle(){
-            return Process.myUserHandle();
-        }
+                @Override
+                public UserHandle getProcessUserHandle() {
+                    return Process.myUserHandle();
+                }
 
-        @Override
-        public int getProcessUid(){
-            return Process.myUid();
-        }
+                @Override
+                public int getProcessUid() {
+                    return Process.myUid();
+                }
 
-        @Override
-        public NoDataTransaction addCall(CallAttributes callAttributes) throws RemoteException {
-            Log.i(mTag, String.format("addCall: w/ attributes=[%s]", callAttributes));
-            try {
-                List<String> stackTrace = createStackTraceList(mClassName
-                        + ".addCall(" + callAttributes + ")");
-                maybeInitTelecomManager();
-                final CountDownLatch latch = new CountDownLatch(1);
-                final TransactionalCall call = new TransactionalCall(getApplicationContext(),
-                        new CallResources(
-                                getApplicationContext(),
+                @Override
+                public NoDataTransaction addCall(CallAttributes callAttributes)
+                        throws RemoteException {
+                    Log.i(mTag, String.format("addCall: w/ attributes=[%s]", callAttributes));
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        mClassName + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        final CountDownLatch latch = new CountDownLatch(1);
+                        final TransactionalCall call =
+                                new TransactionalCall(
+                                        getApplicationContext(),
+                                        new CallResources(
+                                                getApplicationContext(),
+                                                callAttributes,
+                                                NOTIFICATION_CHANNEL_ID,
+                                                sNextNotificationId++));
+
+                        mTelecomManager.addCall(
                                 callAttributes,
-                                NOTIFICATION_CHANNEL_ID,
-                                sNextNotificationId++));
+                                Runnable::run,
+                                new OutcomeReceiver<>() {
+                                    @Override
+                                    public void onResult(CallControl callControl) {
+                                        Log.i(mTag, "onResult: adding callControl to callObject");
+                                        verifyCallControlIsNonNull(callControl, stackTrace);
+                                        call.setCallControlAndId(callControl);
+                                        mIdToControl.put(call.getId(), call);
+                                        latch.countDown();
+                                    }
 
-                mTelecomManager.addCall(callAttributes, Runnable::run, new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(CallControl callControl) {
-                        Log.i(mTag, "onResult: adding callControl to callObject");
-                        verifyCallControlIsNonNull(callControl, stackTrace);
-                        call.setCallControlAndId(callControl);
-                        mIdToControl.put(call.getId(), call);
-                        latch.countDown();
+                                    @Override
+                                    public void onError(@NonNull CallException exception) {
+                                        Log.i(mTag, "onError: exception: " + exception);
+                                        throw new TestAppException(
+                                                mPackageName,
+                                                stackTrace,
+                                                "expected:<CallControl transaction to complete with"
+                                                        + " onResult()>actual:<Failed with"
+                                                        + " CallException=["
+                                                        + exception.getMessage()
+                                                        + "]>");
+                                    }
+                                },
+                                call.mHandshakes,
+                                call.mEvents);
+
+                        assertCountDownLatchWasCalled(
+                                mPackageName,
+                                stackTrace,
+                                "expected: TelecomManager#addCall to return the CallControl"
+                                        + " object within <time> window  actual: timeout",
+                                latch);
+
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
                     }
+                }
 
-                    @Override
-                    public void onError(@NonNull CallException exception) {
-                        Log.i(mTag, "onError: exception: " + exception);
-                        throw new TestAppException(mPackageName, stackTrace,
+                private void verifyCallControlIsNonNull(
+                        CallControl callControl, List<String> stackTrace) throws TestAppException {
+                    if (callControl == null) {
+                        throw new TestAppException(
+                                mPackageName,
+                                stackTrace,
+                                "expected:<CallControl to be non-null>"
+                                        + "actual:<The CallControl object is Null>");
+                    }
+                }
+
+                @Override
+                public CallExceptionTransaction transitionCallStateTo(
+                        String id, int state, boolean expectSuccess, Bundle extras)
+                        throws RemoteException {
+                    Log.i(mTag, "transitionCallStateTo: attempting to transition callId=" + id);
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName + ".transitionCallStateTo(" + (id) + ")");
+                    try {
+                        final CountDownLatch latch = new CountDownLatch(1);
+                        final LatchedOutcomeReceiver outcome = new LatchedOutcomeReceiver(latch);
+
+                        TransactionalCall call = getCallOrThrowError(id, stackTrace);
+                        CallControl callControl = call.getCallControl();
+
+                        if (callControl == null) {
+                            throw new TestAppException(
+                                    mPackageName,
+                                    stackTrace,
+                                    String.format("CalControl is NULL for callId=[%s]", id));
+                        }
+
+                        switch (state) {
+                            case STATE_ACTIVE -> {
+                                call.setActive(outcome, extras);
+                            }
+                            case STATE_HOLDING -> {
+                                call.setInactive(outcome);
+                            }
+                            case STATE_DISCONNECTED -> {
+                                call.disconnect(outcome, extras);
+                                mIdToControl.remove(id);
+                            }
+                        }
+                        Log.i(mTag, "transitionCallStateTo: done");
+
+                        // execution should be paused until the OutcomeReceiver#onResult or
+                        // OutcomeReceiver#onError is called for the given transaction. If a timeout
+                        // occurs,
+                        // bubble up the timeout exception
+                        assertCountDownLatchWasCalled(
+                                mPackageName,
+                                stackTrace,
+                                "expected:<CountDownLatch to count down within the time window> "
+                                        + " actual:<Timeout; Inspect the Transactions to determine"
+                                        + " cause>",
+                                latch);
+
+                        // if the call control transaction should have resulted in
+                        // OutcomeReceiver#onResult
+                        // being called instead of the OutcomeReceiver#onError, fail the test and
+                        // bubble up the exception
+                        verifyCallControlTransactionWasSuccessful(
+                                expectSuccess, stackTrace, outcome);
+
+                        // There may be times when it is EXPECTED (from the Test) that the
+                        // CallControl
+                        // transaction fails via OutcomeReceiver#onError. In these cases, return the
+                        // CallException to the test.
+                        if (testExpectsOnErrorAndShouldReturnCallException(
+                                expectSuccess, outcome)) {
+                            return new CallExceptionTransaction(
+                                    TestAppTransaction.Success, outcome.getmCallException());
+                        }
+
+                        // otherwise, the CallControl transaction completed successfully!
+                        return new CallExceptionTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new CallExceptionTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
+
+                private void verifyCallControlTransactionWasSuccessful(
+                        boolean expectSuccess,
+                        List<String> stackTrace,
+                        LatchedOutcomeReceiver outcome)
+                        throws TestAppException {
+                    if (expectSuccess && !outcome.wasSuccessful()) {
+                        throw new TestAppException(
+                                mPackageName,
+                                stackTrace,
                                 "expected:<CallControl transaction to complete with onResult()>"
                                         + "actual:<Failed with CallException=["
-                                        + exception.getMessage() + "]>");
-                    }
-                }, call.mHandshakes, call.mEvents);
-
-                assertCountDownLatchWasCalled(
-                        mPackageName,
-                        stackTrace,
-                        "expected: TelecomManager#addCall to return the CallControl"
-                                + " object within <time> window  actual: timeout",
-                        latch);
-
-                return new NoDataTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new NoDataTransaction(TestAppTransaction.Failure, e);
-            }
-        }
-
-        private void verifyCallControlIsNonNull(CallControl callControl, List<String> stackTrace)
-                throws TestAppException {
-            if (callControl == null) {
-                throw new TestAppException(mPackageName, stackTrace,
-                        "expected:<CallControl to be non-null>"
-                                + "actual:<The CallControl object is Null>");
-            }
-        }
-
-        @Override
-        public CallExceptionTransaction transitionCallStateTo(String id,
-                int state,
-                boolean expectSuccess,
-                Bundle extras) throws RemoteException {
-            Log.i(mTag, "transitionCallStateTo: attempting to transition callId=" + id);
-            List<String> stackTrace = createStackTraceList(mClassName
-                    + ".transitionCallStateTo(" + (id) + ")");
-            try {
-                final CountDownLatch latch = new CountDownLatch(1);
-                final LatchedOutcomeReceiver outcome =
-                        new LatchedOutcomeReceiver(latch);
-
-                TransactionalCall call = getCallOrThrowError(id, stackTrace);
-                CallControl callControl = call.getCallControl();
-
-                if (callControl == null) {
-                    throw new TestAppException(mPackageName, stackTrace,
-                            String.format("CalControl is NULL for callId=[%s]", id));
-                }
-
-                switch (state) {
-                    case STATE_ACTIVE -> {
-                        call.setActive(outcome, extras);
-                    }
-                    case STATE_HOLDING -> {
-                        call.setInactive(outcome);
-                    }
-                    case STATE_DISCONNECTED -> {
-                        call.disconnect(outcome, extras);
-                        mIdToControl.remove(id);
+                                        + outcome.getmCallException().getMessage()
+                                        + "]>");
                     }
                 }
-                Log.i(mTag, "transitionCallStateTo: done");
 
-                // execution should be paused until the OutcomeReceiver#onResult or
-                // OutcomeReceiver#onError is called for the given transaction. If a timeout occurs,
-                // bubble up the timeout exception
-                assertCountDownLatchWasCalled(mPackageName, stackTrace,
-                        "expected:<CountDownLatch to count down within the time window>"
-                                + "  actual:<Timeout; Inspect the Transactions to determine cause>",
-                        latch);
-
-                // if the call control transaction should have resulted in OutcomeReceiver#onResult
-                // being called instead of the OutcomeReceiver#onError, fail the test and
-                // bubble up the exception
-                verifyCallControlTransactionWasSuccessful(expectSuccess, stackTrace, outcome);
-
-                // There may be times when it is EXPECTED (from the Test) that the CallControl
-                // transaction fails via OutcomeReceiver#onError. In these cases, return the
-                // CallException to the test.
-                if (testExpectsOnErrorAndShouldReturnCallException(expectSuccess, outcome)) {
-                    return new CallExceptionTransaction(TestAppTransaction.Success,
-                            outcome.getmCallException());
+                private boolean testExpectsOnErrorAndShouldReturnCallException(
+                        boolean expectSuccess, LatchedOutcomeReceiver outcome) {
+                    return !expectSuccess && !outcome.wasSuccessful();
                 }
 
-                // otherwise, the CallControl transaction completed successfully!
-                return new CallExceptionTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new CallExceptionTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                @Override
+                public BooleanTransaction isMuted(String id) throws RemoteException {
+                    Log.i(mTag, String.format("isMuted: id=[%s]", id));
+                    try {
+                        TransactionalCall call =
+                                getCallOrThrowError(
+                                        id,
+                                        createStackTraceList(
+                                                mClassName + ".isMuted(" + (id) + ")"));
 
-        private void verifyCallControlTransactionWasSuccessful(boolean expectSuccess,
-                List<String> stackTrace,
-                LatchedOutcomeReceiver outcome)
-                throws TestAppException {
-            if (expectSuccess && !outcome.wasSuccessful()) {
-                throw new TestAppException(mPackageName, stackTrace,
-                        "expected:<CallControl transaction to complete with onResult()>"
-                                + "actual:<Failed with CallException=["
-                                + outcome.getmCallException().getMessage() + "]>");
-            }
-        }
+                        return new BooleanTransaction(
+                                TestAppTransaction.Success, call.mEvents.getIsMuted());
+                    } catch (TestAppException e) {
+                        return new BooleanTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        private boolean testExpectsOnErrorAndShouldReturnCallException(boolean expectSuccess,
-                LatchedOutcomeReceiver outcome) {
-            return !expectSuccess && !outcome.wasSuccessful();
-        }
+                @Override
+                public NoDataTransaction setMuteState(String id, boolean isMuted) {
+                    Log.i(mTag, String.format("setMuteState: id=[%s], isMuted=[%b]", id, isMuted));
+                    // TODO:: b/310669304
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    mPackageName,
+                                    createStackTraceList(mClassName + "setMuteState"),
+                                    "TransactionalVoipApp* does not implement setMuteState b/c"
+                                            + " there is no existing API in"
+                                            + " android.telecom.CallControl!"));
+                }
 
-        @Override
-        public BooleanTransaction isMuted(String id) throws RemoteException {
-            Log.i(mTag, String.format("isMuted: id=[%s]", id));
-            try {
-                TransactionalCall call = getCallOrThrowError(id,
-                        createStackTraceList(mClassName + ".isMuted(" + (id) + ")"));
+                @Override
+                public CallEndpointTransaction getCurrentCallEndpoint(String id)
+                        throws RemoteException {
+                    Log.i(mTag, String.format("getCurrentCallEndpoint: id=[%s]", id));
+                    try {
+                        TransactionalCall call =
+                                getCallOrThrowError(
+                                        id,
+                                        createStackTraceList(
+                                                mClassName
+                                                        + ".getCurrentCallEndpoint("
+                                                        + (id)
+                                                        + ")"));
 
-                return new BooleanTransaction(TestAppTransaction.Success,
-                        call.mEvents.getIsMuted());
-            } catch (TestAppException e) {
-                return new BooleanTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                        waitUntilCurrentCallEndpointIsSet(
+                                mPackageName,
+                                createStackTraceList(
+                                        mClassName + ".getCurrentCallEndpoint(id=" + id + ")"),
+                                call.mEvents);
 
-        @Override
-        public NoDataTransaction setMuteState(String id, boolean isMuted) {
-            Log.i(mTag, String.format("setMuteState: id=[%s], isMuted=[%b]", id, isMuted));
-            // TODO:: b/310669304
-            return new NoDataTransaction(TestAppTransaction.Failure,
-                    new TestAppException(
-                            mPackageName,
-                            createStackTraceList(mClassName + "setMuteState"),
-                            "TransactionalVoipApp* does not implement setMuteState b/c there is"
-                                    + " no existing API in android.telecom.CallControl!")
-            );
-        }
+                        return new CallEndpointTransaction(
+                                TestAppTransaction.Success, call.mEvents.getCurrentCallEndpoint());
+                    } catch (TestAppException e) {
+                        return new CallEndpointTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public CallEndpointTransaction getCurrentCallEndpoint(String id) throws RemoteException {
-            Log.i(mTag, String.format("getCurrentCallEndpoint: id=[%s]", id));
-            try {
-                TransactionalCall call = getCallOrThrowError(id,
-                        createStackTraceList(mClassName + ".getCurrentCallEndpoint(" + (id) + ")"));
+                @Override
+                public AvailableEndpointsTransaction getAvailableCallEndpoints(String id)
+                        throws RemoteException {
+                    Log.i(mTag, String.format("getAvailableCallEndpoints: id=[%s]", id));
+                    try {
+                        TransactionalCall call =
+                                getCallOrThrowError(
+                                        id,
+                                        createStackTraceList(
+                                                mClassName
+                                                        + ".getAvailableCallEndpoints("
+                                                        + (id)
+                                                        + ")"));
 
-                waitUntilCurrentCallEndpointIsSet(
-                        mPackageName,
-                        createStackTraceList(mClassName
-                                + ".getCurrentCallEndpoint(id=" + id + ")"),
-                        call.mEvents);
+                        waitUntilAvailableEndpointAreSet(
+                                mPackageName,
+                                createStackTraceList(
+                                        mClassName + ".getAvailableCallEndpoints(id=" + id + ")"),
+                                call.mEvents);
 
-                return new CallEndpointTransaction(
-                        TestAppTransaction.Success,
-                        call.mEvents.getCurrentCallEndpoint());
-            } catch (TestAppException e) {
-                return new CallEndpointTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                        return new AvailableEndpointsTransaction(
+                                TestAppTransaction.Success, call.mEvents.getCallEndpoints());
+                    } catch (TestAppException e) {
+                        return new AvailableEndpointsTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public AvailableEndpointsTransaction getAvailableCallEndpoints(String id)
-                throws RemoteException {
-            Log.i(mTag, String.format("getAvailableCallEndpoints: id=[%s]", id));
-            try {
-                TransactionalCall call = getCallOrThrowError(id,
-                        createStackTraceList(mClassName
-                                + ".getAvailableCallEndpoints(" + (id) + ")"));
+                @Override
+                public NoDataTransaction requestCallEndpointChange(
+                        String id, CallEndpoint callEndpoint) throws RemoteException {
+                    Log.i(
+                            mTag,
+                            String.format(
+                                    "requestCallEndpointChange:" + " id=[%s], callEndpoint=[%s]",
+                                    id, callEndpoint));
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        mClassName + ".requestCallEndpointChange(" + (id) + ")");
 
-                waitUntilAvailableEndpointAreSet(
-                        mPackageName,
-                        createStackTraceList(mClassName
-                                + ".getAvailableCallEndpoints(id=" + id + ")"),
-                        call.mEvents);
+                        TransactionalCall call = getCallOrThrowError(id, stackTrace);
 
-                return new AvailableEndpointsTransaction(
-                        TestAppTransaction.Success,
-                        call.mEvents.getCallEndpoints());
-            } catch (TestAppException e) {
-                return new AvailableEndpointsTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                        final CountDownLatch latch = new CountDownLatch(1);
+                        final LatchedOutcomeReceiver outcome = new LatchedOutcomeReceiver(latch);
 
-        @Override
-        public NoDataTransaction requestCallEndpointChange(String id, CallEndpoint callEndpoint)
-                throws RemoteException {
-            Log.i(mTag, String.format("requestCallEndpointChange:"
-                    + " id=[%s], callEndpoint=[%s]", id, callEndpoint));
-            try {
-                List<String> stackTrace = createStackTraceList(mClassName
-                        + ".requestCallEndpointChange(" + (id) + ")");
+                        // send the call control request
+                        call.getCallControl()
+                                .requestCallEndpointChange(callEndpoint, Runnable::run, outcome);
+                        // await a count down in the CountDownLatch to signify success
+                        assertCountDownLatchWasCalled(
+                                mPackageName,
+                                stackTrace,
+                                "expected:<CallControl#requestCallEndpointChange to complete via"
+                                        + " onResult or onError>  actual<Timeout waiting for the"
+                                        + " CountDownLatch to complete.>",
+                                latch);
 
-                TransactionalCall call = getCallOrThrowError(id, stackTrace);
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-                final CountDownLatch latch = new CountDownLatch(1);
-                final LatchedOutcomeReceiver outcome = new LatchedOutcomeReceiver(latch);
+                @Override
+                public NoDataTransaction registerDefaultPhoneAccount() {
+                    Log.i(
+                            mTag,
+                            String.format("registerDefaultPhoneAccount: pa=[%s]", mPhoneAccount));
+                    mTelecomManager.registerPhoneAccount(mPhoneAccount);
+                    return new NoDataTransaction(TestAppTransaction.Success);
+                }
 
-                // send the call control request
-                call.getCallControl().requestCallEndpointChange(callEndpoint, Runnable::run,
-                        outcome);
-                // await a count down in the CountDownLatch to signify success
-                assertCountDownLatchWasCalled(
-                        mPackageName,
-                        stackTrace,
-                        "expected:<CallControl#requestCallEndpointChange to complete via"
-                                + " onResult or onError>  "
-                                + "actual<Timeout waiting for the CountDownLatch to complete.>",
-                        latch);
+                @Override
+                public PhoneAccountTransaction getDefaultPhoneAccount() {
+                    Log.i(mTag, String.format("getDefaultPhoneAccount: pa=[%s]", mPhoneAccount));
+                    return new PhoneAccountTransaction(TestAppTransaction.Success, mPhoneAccount);
+                }
 
-                return new NoDataTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new NoDataTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                @Override
+                public void registerCustomPhoneAccount(PhoneAccount account) {
+                    Log.i(mTag, String.format("registerCustomPhoneAccount: account=[%s]", account));
+                    mTelecomManager.registerPhoneAccount(account);
+                }
 
-        @Override
-        public NoDataTransaction registerDefaultPhoneAccount() {
-            Log.i(mTag, String.format("registerDefaultPhoneAccount: pa=[%s]", mPhoneAccount));
-            mTelecomManager.registerPhoneAccount(mPhoneAccount);
-            return new NoDataTransaction(TestAppTransaction.Success);
-        }
+                @Override
+                public void unregisterPhoneAccountWithHandle(PhoneAccountHandle handle) {
+                    Log.i(
+                            mTag,
+                            String.format("unregisterPhoneAccountWithHandle: handle=[%s]", handle));
+                    mTelecomManager.unregisterPhoneAccount(handle);
+                }
 
-        @Override
-        public PhoneAccountTransaction getDefaultPhoneAccount() {
-            Log.i(mTag, String.format("getDefaultPhoneAccount: pa=[%s]", mPhoneAccount));
-            return new PhoneAccountTransaction(TestAppTransaction.Success, mPhoneAccount);
-        }
+                @Override
+                public List<PhoneAccountHandle> getOwnAccountHandlesForApp() {
+                    Log.i(mTag, "getOwnAccountHandlesForApp");
+                    return mTelecomManager.getOwnSelfManagedPhoneAccounts();
+                }
 
-        @Override
-        public void registerCustomPhoneAccount(PhoneAccount account) {
-            Log.i(mTag, String.format("registerCustomPhoneAccount: account=[%s]", account));
-            mTelecomManager.registerPhoneAccount(account);
-        }
+                @Override
+                public List<PhoneAccount> getRegisteredPhoneAccounts() {
+                    Log.i(mTag, "getRegisteredPhoneAccounts");
+                    return mTelecomManager.getRegisteredPhoneAccounts();
+                }
 
-        @Override
-        public void unregisterPhoneAccountWithHandle(PhoneAccountHandle handle) {
-            Log.i(mTag, String.format("unregisterPhoneAccountWithHandle: handle=[%s]", handle));
-            mTelecomManager.unregisterPhoneAccount(handle);
-        }
+                public BooleanTransaction isNotificationPostedForCall(String callId) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName + ".isNotificationPostedForCall(" + (callId) + ")");
+                    try {
+                        int targetNotificationId =
+                                getCallOrThrowError(callId, stackTrace)
+                                        .getCallResources()
+                                        .getNotificationId();
 
-        @Override
-        public List<PhoneAccountHandle> getOwnAccountHandlesForApp() {
-            Log.i(mTag, "getOwnAccountHandlesForApp");
-            return mTelecomManager.getOwnSelfManagedPhoneAccounts();
-        }
+                        return new BooleanTransaction(
+                                TestAppTransaction.Success,
+                                isTargetNotificationPosted(
+                                        getApplicationContext(), targetNotificationId));
+                    } catch (TestAppException e) {
+                        return new BooleanTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public List<PhoneAccount> getRegisteredPhoneAccounts() {
-            Log.i(mTag, "getRegisteredPhoneAccounts");
-            return mTelecomManager.getRegisteredPhoneAccounts();
-        }
+                @Override
+                public NoDataTransaction removeNotificationForCall(String callId) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName + ".removeNotificationForCall(" + (callId) + ")");
+                    try {
+                        TransactionalCall call = getCallOrThrowError(callId, stackTrace);
+                        CallResources callResources = call.getCallResources();
+                        callResources.clearCallNotification(getApplicationContext());
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        public BooleanTransaction isNotificationPostedForCall(String callId) {
-            List<String> stackTrace = createStackTraceList(mClassName
-                    + ".isNotificationPostedForCall(" + (callId) + ")");
-            try {
-                int targetNotificationId = getCallOrThrowError(callId,
-                        stackTrace).getCallResources()
-                        .getNotificationId();
+                @Override
+                public BooleanTransaction isForegroundServiceDelegationActive(
+                        PhoneAccountHandle handle) {
+                    Log.i(
+                            mClassName,
+                            String.format(
+                                    "isForegroundServiceDelegationActive: handle=[%s]", handle));
+                    try {
+                        boolean isActive = mTelecomManager.hasForegroundServiceDelegation(handle);
+                        return new BooleanTransaction(TestAppTransaction.Success, isActive);
+                    } catch (TestAppException e) {
+                        return new BooleanTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-                return new BooleanTransaction(TestAppTransaction.Success,
-                        isTargetNotificationPosted(getApplicationContext(),
-                                targetNotificationId));
-            } catch (TestAppException e) {
-                return new BooleanTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                private TransactionalCall getCallOrThrowError(String id, List<String> stackTrace) {
+                    if (!mIdToControl.containsKey(id)) {
+                        throw new TestAppException(
+                                mPackageName,
+                                appendStackTraceList(
+                                        stackTrace, mClassName + ".getCallOrThrowError"),
+                                "expect:<A TransactionalCall object in the mIdToControl map>"
+                                        + "actual: missing TransactionalCall object for key="
+                                        + id);
+                    }
+                    return mIdToControl.get(id);
+                }
 
-        @Override
-        public NoDataTransaction removeNotificationForCall(String callId) {
-            List<String> stackTrace = createStackTraceList(mClassName
-                    + ".removeNotificationForCall(" + (callId) + ")");
-            try {
-                TransactionalCall call = getCallOrThrowError(callId, stackTrace);
-                CallResources callResources = call.getCallResources();
-                callResources.clearCallNotification(getApplicationContext());
-                return new NoDataTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new NoDataTransaction(TestAppTransaction.Failure, e);
-            }
-        }
-
-        private TransactionalCall getCallOrThrowError(String id, List<String> stackTrace) {
-            if (!mIdToControl.containsKey(id)) {
-                throw new TestAppException(mPackageName,
-                        appendStackTraceList(stackTrace, mClassName + ".getCallOrThrowError"),
-                        "expect:<A TransactionalCall object in the mIdToControl map>"
-                                + "actual: missing TransactionalCall object for key=" + id);
-            }
-            return mIdToControl.get(id);
-        }
-
-        @Override
-        public void cleanup() {
-            cleanupImplementation();
-        }
-    };
+                @Override
+                public void cleanup() {
+                    cleanupImplementation();
+                }
+            };
 
     @Nullable
     @Override

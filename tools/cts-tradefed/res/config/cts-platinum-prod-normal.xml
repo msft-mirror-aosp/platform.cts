@@ -1884,19 +1884,6 @@
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.RingtoneTest#testPlaybackProperties"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.RingtoneTest#testRingtone"/>
     <option name="compatibility:include-filter" value="CtsMediaAudioTestCases android.media.audio.cts.VolumeShaperTest#testPlayerFreezeDuringPauseStop"/>
-    <!-- CtsMediaBetterTogetherTestCases -->
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaActivityTest#testVolumeKey_whileSessionAlive"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testGetRoutes[PRIMARY_USER]"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testRoutingControllerSelectAndDeselectRoute"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testShowSystemOutputSwitcherReturnsTrue"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testVolumeHandlingWhenVolumeFixed"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionManagerTest#testSetOnVolumeKeyLongPressListener"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testCallbackOnMediaButtonEvent"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonBroadcastReceiver_broadcastReceiver"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonReceiver_broadcastReceiver"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonReceiver_service"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.SystemMediaRouter2Test#testRoutingControllerRelease"/>
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.SystemMediaRouter2Test#testRoutingControllerSelectAndDeselectRoute"/>
     <!-- CtsMediaDecoderTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecodeOnlyTest#testNonTunneledTrickPlayAvc"/>
     <option name="compatibility:include-filter" value="CtsMediaDecoderTestCases android.media.decoder.cts.DecodeOnlyTest#testNonTunneledTrickPlayHevc"/>
@@ -2167,6 +2154,20 @@
     <!-- CtsMediaRecorderTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testGetActiveMicrophones"/>
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testRecorderMPEG2TS"/>
+    <!-- CtsMediaRouterTestCases -->
+    <option name="compatibility:include-filter" value="CtsMediaRouterTestCases android.media.router.cts.MediaRouter2Test#testGetRoutes[PRIMARY_USER]"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterTestCases android.media.router.cts.MediaRouter2Test#testRoutingControllerSelectAndDeselectRoute"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterTestCases android.media.router.cts.MediaRouter2Test#testShowSystemOutputSwitcherReturnsTrue"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterTestCases android.media.router.cts.MediaRouter2Test#testVolumeHandlingWhenVolumeFixed"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterTestCases android.media.router.cts.SystemMediaRouter2Test#testRoutingControllerRelease"/>
+    <option name="compatibility:include-filter" value="CtsMediaRouterTestCases android.media.router.cts.SystemMediaRouter2Test#testRoutingControllerSelectAndDeselectRoute"/>
+    <!-- CtsMediaSessionTestCases -->
+    <option name="compatibility:include-filter" value="CtsMediaSessionTestCases android.media.session.cts.MediaActivityTest#testVolumeKey_whileSessionAlive"/>
+    <option name="compatibility:include-filter" value="CtsMediaSessionTestCases android.media.session.cts.MediaSessionManagerTest#testSetOnVolumeKeyLongPressListener"/>
+    <option name="compatibility:include-filter" value="CtsMediaSessionTestCases android.media.session.cts.MediaSessionTest#testCallbackOnMediaButtonEvent"/>
+    <option name="compatibility:include-filter" value="CtsMediaSessionTestCases android.media.session.cts.MediaSessionTest#testSetMediaButtonBroadcastReceiver_broadcastReceiver"/>
+    <option name="compatibility:include-filter" value="CtsMediaSessionTestCases android.media.session.cts.MediaSessionTest#testSetMediaButtonReceiver_broadcastReceiver"/>
+    <option name="compatibility:include-filter" value="CtsMediaSessionTestCases android.media.session.cts.MediaSessionTest#testSetMediaButtonReceiver_service"/>
     <!-- CtsMediaStressTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaStressTestCases android.mediastress.cts.MediaRecorderStressTest#testStressCamera"/>
     <!-- CtsMediaV2TestCases -->

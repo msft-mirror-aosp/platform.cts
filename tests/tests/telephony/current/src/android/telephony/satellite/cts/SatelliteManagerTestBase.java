@@ -1935,12 +1935,12 @@ public class SatelliteManagerTestBase {
         final AtomicReference<Boolean> requestResult = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<Void, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(Boolean result) {
-                        logd("provisionSatellite: onResult: result=" + result);
-                        requestResult.set(result);
+                    public void onResult(Void result) {
+                        logd("provisionSatellite: onResult");
+                        requestResult.set(true);
                         latch.countDown();
                     }
 
@@ -1966,12 +1966,12 @@ public class SatelliteManagerTestBase {
         final AtomicReference<Boolean> requestResult = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<Void, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(Boolean result) {
-                        logd("deprovisionSatellite: onResult: result=" + result);
-                        requestResult.set(result);
+                    public void onResult(Void result) {
+                        logd("deprovisionSatellite: onResult");
+                        requestResult.set(true);
                         latch.countDown();
                     }
 

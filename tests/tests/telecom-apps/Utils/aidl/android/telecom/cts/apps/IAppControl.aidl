@@ -61,4 +61,5 @@ interface IAppControl {
     NoDataTransaction requestCallEndpointChange(String id, in CallEndpoint callEndpoint);
     NoDataTransaction removeNotificationForCall(String callId);
     BooleanTransaction isNotificationPostedForCall(String callId);
+    BooleanTransaction isForegroundServiceDelegationActive( in PhoneAccountHandle handle);
 }

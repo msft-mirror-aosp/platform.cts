@@ -67,7 +67,8 @@
   <option name="compatibility:include-filter" value="CtsHardwareTestCases"/>
   <option name="compatibility:include-filter" value="CtsGpuToolsHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsNativeMediaAAudioTestCases"/>
-  <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMediaRouterTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMediaSessionTestCases"/>
   <option name="compatibility:include-filter" value="CtsSignedConfigHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsEdiHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsRenderscriptTestCases"/>

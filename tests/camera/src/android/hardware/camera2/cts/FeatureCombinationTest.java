@@ -30,6 +30,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithPa
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -167,10 +168,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             long minFrameDuration = setupConfigurationTargets(combination, maxStreamSizes,
                     privTargets, jpegTargets, yuvTargets, outputConfigs, outputConfigs2Steps,
                     NUM_BUFFERS_BURST, dynamicProfile, /*hasUseCase*/ false, jpegListeners);
-            if (minFrameDuration == -1) {
-                // Stream combination isn't valid.
-                continue;
-            }
+            assertTrue(
+                    MaxStreamSizes.combinationToString(combination) + " is not supported!",
+                    minFrameDuration > 0);
 
             for (int stabilizationMode : videoStabilizationModes) {
                 if (stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON) {

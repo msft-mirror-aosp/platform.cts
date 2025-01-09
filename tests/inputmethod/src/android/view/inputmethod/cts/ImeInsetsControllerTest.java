@@ -16,7 +16,6 @@
 
 package android.view.inputmethod.cts;
 
-import static android.view.WindowInsets.CONSUMED;
 import static android.view.WindowInsets.Type.ime;
 import static android.view.WindowInsets.Type.navigationBars;
 
@@ -113,13 +112,15 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
 
             WindowInsets[] lastInsets = new WindowInsets[1];
 
-            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-                launchResult.second.setDecorFitsSystemWindows(false);
-                editText.setOnApplyWindowInsetsListener((v, insets) -> {
-                    lastInsets[0] = insets;
-                    return CONSUMED;
-                });
-            });
+            InstrumentationRegistry.getInstrumentation()
+                    .runOnMainSync(
+                            () -> {
+                                decorView.setOnApplyWindowInsetsListener(
+                                        (v, insets) -> {
+                                            lastInsets[0] = insets;
+                                            return v.onApplyWindowInsets(insets);
+                                        });
+                            });
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -168,14 +169,17 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
 
             // Wait until new insets dispatch
             CountDownLatch insetsLatch = new CountDownLatch(1);
-            InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
-                editText.setOnApplyWindowInsetsListener((v, insets) -> {
-                    lastInsets[0] = insets;
-                    insetsLatch.countDown();
-                    return CONSUMED;
-                });
-                animController[0].finish(true);
-            });
+            InstrumentationRegistry.getInstrumentation()
+                    .runOnMainSync(
+                            () -> {
+                                decorView.setOnApplyWindowInsetsListener(
+                                        (v, insets) -> {
+                                            lastInsets[0] = insets;
+                                            insetsLatch.countDown();
+                                            return v.onApplyWindowInsets(insets);
+                                        });
+                                animController[0].finish(true);
+                            });
             insetsLatch.await(5, TimeUnit.SECONDS);
             assertEquals(0, insetsLatch.getCount());
 

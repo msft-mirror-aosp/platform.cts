@@ -507,12 +507,9 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 List<OutputConfiguration> outputConfigs = new ArrayList<>();
                 long minFrameDuration = setupConfigurations(staticInfo, c, maxStreamSizes,
                         outputConfigs, dynamicProfile);
-                if (minFrameDuration  == -1) {
-                    // Stream combination is not valid. For example, if the stream sizes are not
-                    // supported, or if the device doesn't support JPEG_R, minFrameDuration will
-                    // be -1.
-                    continue;
-                }
+                assertTrue(
+                        MaxStreamSizes.combinationToString(c) + " should be supported!",
+                        minFrameDuration > 0);
 
                 for (Range<Integer> fpsRange : fpsRanges) {
                     if ((fpsRange.getUpper() != 60) && (fpsRange.getUpper() != 30)) {

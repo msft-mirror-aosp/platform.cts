@@ -5004,24 +5004,46 @@ public class CameraTestUtils extends Assert {
                         mMaxJpegRSizes[UHD] = uhdSize;
                     }
                     mQueryableCombinations = QUERY_COMBINATIONS;
-                } else {
-                    // JPEG_R is not supported. Remove all combinations containing JPEG_R
-                    List<int[]> combinationsMinusJpegR = new ArrayList<int[]>();
-                    for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
-                        boolean hasJpegR = false;
-                        for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
-                            if (QUERY_COMBINATIONS[i][j] == JPEG_R) {
-                                hasJpegR = true;
-                                break;
-                            }
-                        }
+                }
 
-                        if (!hasJpegR) {
-                            combinationsMinusJpegR.add(QUERY_COMBINATIONS[i]);
+                // Remove all combinations that are not supported by the camera device
+                List<int[]> combinationsToQuery = new ArrayList<int[]>();
+                for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
+                    boolean hasUnsupportedStream = false;
+                    for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
+                        int format = QUERY_COMBINATIONS[i][j];
+                        int sizeIndex = QUERY_COMBINATIONS[i][j + 1];
+                        Size[] supportedSizes = configs.getOutputSizes(format);
+                        Size[] sizeArray;
+                        switch (format) {
+                            case ImageFormat.PRIVATE:
+                                sizeArray = mMaxPrivSizes;
+                                break;
+                            case ImageFormat.JPEG:
+                                sizeArray = mMaxJpegSizes;
+                                break;
+                            case ImageFormat.JPEG_R:
+                                sizeArray = mMaxJpegRSizes;
+                                break;
+                            default:
+                                sizeArray = new Size[0];
+                                fail("Unsupported format "
+                                        + format + " for queryable combinations!");
+                                break;
+                        }
+                        if (supportedSizes == null
+                                || !Arrays.asList(supportedSizes).contains(sizeArray[sizeIndex])) {
+                            hasUnsupportedStream = true;
+                            break;
                         }
                     }
-                    mQueryableCombinations = combinationsMinusJpegR.toArray(int[][]::new);
+
+                    // Skip combinations containing with unsupported stream sizes
+                    if (!hasUnsupportedStream) {
+                        combinationsToQuery.add(QUERY_COMBINATIONS[i]);
+                    }
                 }
+                mQueryableCombinations = combinationsToQuery.toArray(int[][]::new);
 
                 if (sm.isMonochromeWithY8()) {
                     mMaxY8Sizes[PREVIEW]  = CameraTestUtils.getMaxSizeWithBound(

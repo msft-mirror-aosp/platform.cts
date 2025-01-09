@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (C) 2019 The Android Open Source Project
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +20,8 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
-    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
+    <option name="config-descriptor:metadata" key="parameter"
+        value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_work_profile" />
 
@@ -30,17 +30,24 @@
         <option name="test-file-name" value="CtsAppSearchTestCases.apk" />
         <option name="test-file-name" value="CtsAppSearchTestHelperA.apk" />
         <option name="test-file-name" value="CtsAppSearchTestHelperB.apk" />
+        <option name="test-file-name" value="CtsAppSearchIndexerTestAppADynamicSchema.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
-        <option name="push" value="CtsAppSearchIndexerTestAppAV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV1.apk" />
-        <option name="push" value="CtsAppSearchIndexerTestAppAV2.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV2.apk" />
-        <option name="push" value="CtsAppSearchIndexerTestAppAV3.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV3.apk" />
-        <option name="push" value="CtsAppSearchIndexerTestAppBV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBV1.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV1.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV2.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV2.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV3.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppAV3.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppBV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBV1.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppADynamicSchema.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppADynamicSchema.apk" />
     </target_preparer>
 
-    <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
+    <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="com.android.cts.appsearch" />
 
         <!-- Tests with these annotations should only be ran with their corresponding
@@ -49,15 +56,17 @@
              with the normal configuration.
              See go/bedstead-devicestate#androidtestxml
         -->
-        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation"
+            value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation"
+            value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
     </test>
 
     <object type="module_controller"
-            class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
+        class="com.android.tradefed.testtype.suite.module.MainlineTestModuleController">
         <option name="mainline-module-package-name" value="com.google.android.appsearch" />
     </object>
 
     <object type="module_controller"
-            class="com.android.tradefed.testtype.suite.module.Sdk33ModuleController" />
+        class="com.android.tradefed.testtype.suite.module.Sdk33ModuleController" />
 </configuration>

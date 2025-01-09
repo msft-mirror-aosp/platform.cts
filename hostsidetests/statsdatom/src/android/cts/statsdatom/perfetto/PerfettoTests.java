@@ -184,6 +184,10 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
         if (DeviceUtils.hasFeature(getDevice(), DeviceUtils.FEATURE_WATCH)) return;
 
         StatsdConfig.Builder config = ConfigUtils.createConfigBuilder("AID_NOBODY");
+
+        // TODO(lalitm): remove this once CTS is no longer being released for 24Q3.
+        config.addAllowedLogSource("AID_SHELL");
+
         ConfigUtils.addEventMetric(config, AtomsProto.Atom.PERFETTO_TRIGGER_FIELD_NUMBER);
         ConfigUtils.uploadConfig(getDevice(), config);
 
@@ -192,9 +196,14 @@ public class PerfettoTests extends DeviceTestCase implements IBuildReceiver {
 
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data).hasSize(1);
-        assertThat(extractPerfettoTriggerEvents(data))
-                .containsExactly(
-                        PerfettoTrigger.Event.PERFETTO_TRACED_TRIGGER);
+
+        List<PerfettoTrigger.Event> triggerEvents = extractPerfettoTriggerEvents(data);
+        assertThat(triggerEvents).hasSize(1);
+
+        // TODO(lalitm): remove this once CTS is no longer being released for 24Q3.
+        assertThat(triggerEvents).containsAnyOf(
+            PerfettoTrigger.Event.PERFETTO_TRACED_TRIGGER,
+            PerfettoTrigger.Event.PERFETTO_TRIGGER_PERFETTO_TRIGGER);
     }
 
     private ByteString getPerfettoIncidentConfig() {
