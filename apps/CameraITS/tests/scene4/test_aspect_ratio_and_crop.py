@@ -90,6 +90,8 @@ def _create_format_list():
     format_list
   """
   format_list = []
+  format_list.append({'iter': 'heic_ultrahdr', 'iter_max': None,
+                      'cmpr': 'priv', 'cmpr_size': _SIZE_PREVIEW})
   format_list.append({'iter': 'jpeg_r', 'iter_max': None,
                       'cmpr': 'priv', 'cmpr_size': _SIZE_PREVIEW})
   format_list.append({'iter': 'yuv', 'iter_max': None,

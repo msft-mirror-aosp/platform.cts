@@ -18,6 +18,8 @@ package com.android.cts.verifier.camera.its;
 
 import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
@@ -51,6 +53,7 @@ import com.android.ex.camera2.blocking.BlockingStateCallback;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -142,6 +145,11 @@ public class ItsUtils {
     public static Size[] getJpegOutputSizes(CameraCharacteristics ccs)
             throws ItsException {
         return getOutputSizes(ccs, ImageFormat.JPEG, false);
+    }
+
+    public static Size[] getHeicUltraHdrOutputSizes(CameraCharacteristics ccs)
+            throws ItsException {
+        return getOutputSizes(ccs, ImageFormat.HEIC_ULTRAHDR, false);
     }
 
     public static Size[] getYuvOutputSizes(CameraCharacteristics ccs)
@@ -251,6 +259,34 @@ public class ItsUtils {
             buffer.get(data);
             Logt.i(TAG, "Done reading jpeg image");
             return data;
+        } else if (format == ImageFormat.HEIC_ULTRAHDR) {
+            // HEIC doesn't have pixelstride and rowstride, treat it as 1D buffer.
+            ByteBuffer buffer = planes[0].getBuffer();
+            // The ITS host scripts are not typically able to support HEIC/HEIF images.
+            // We are also only interested in checking the actual captured pixels and not
+            // the format itself so transcode to the more common JPEG.
+            byte[] heicData = new byte[buffer.capacity()];
+            buffer.get(heicData);
+            Bitmap bmp = BitmapFactory.decodeByteArray(heicData, 0, heicData.length);
+            if (bmp == null) {
+                throw new ItsException("Invalid HEIC image passed to getDataFromImage");
+            }
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            if (!bmp.compress(Bitmap.CompressFormat.JPEG, 100 /*quality*/, byteStream)) {
+                throw new ItsException("Failed transcoding HEIC");
+            }
+            if (quota != null) {
+                try {
+                    Logt.i(TAG, "Start waiting for quota Semaphore");
+                    quota.acquire(byteStream.size());
+                    Logt.i(TAG, "Acquired quota Semaphore. Start reading image");
+                } catch (java.lang.InterruptedException e) {
+                    Logt.e(TAG, "getDataFromImage error acquiring memory quota. Interrupted", e);
+                }
+            }
+            data = byteStream.toByteArray();
+            Logt.i(TAG, "Done reading heic image");
+            return data;
         } else if (format == ImageFormat.YUV_420_888 || format == ImageFormat.RAW_SENSOR
                 || format == ImageFormat.RAW10 || format == ImageFormat.RAW12
                 || format == ImageFormat.Y8) {
@@ -341,6 +377,7 @@ public class ItsUtils {
             case ImageFormat.RAW12:
             case ImageFormat.JPEG:
             case ImageFormat.JPEG_R:
+            case ImageFormat.HEIC_ULTRAHDR:
             case ImageFormat.Y8:
                 return 1 == planes.length;
             default:

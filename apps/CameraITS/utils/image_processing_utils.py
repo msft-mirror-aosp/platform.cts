@@ -323,7 +323,8 @@ def convert_capture_to_rgb_image(cap,
     u = cap['data'][w * h: w * h * 5//4]
     v = cap['data'][w * h * 5//4: w * h * 6//4]
     return convert_yuv420_planar_to_rgb_image(y, u, v, w, h)
-  elif cap['format'] == 'jpeg' or cap['format'] == 'jpeg_r':
+  elif (cap['format'] == 'jpeg' or cap['format'] == 'jpeg_r' or
+        cap['format'] == 'heic_ultrahdr'):
     return decompress_jpeg_to_rgb_image(cap['data'])
   elif (cap['format'] in ('raw', 'rawQuadBayer') or
         cap['format'] in noise_model_constants.VALID_RAW_STATS_FORMATS):

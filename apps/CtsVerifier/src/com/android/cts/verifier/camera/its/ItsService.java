@@ -244,6 +244,7 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private static final String JPEG_R_FMT = "jpeg_r";
+    private static final String HEIC_ULTRAHDR_FMT = "heic_ultrahdr";
     private static HashMap<Integer, String> sFormatMap = new HashMap<>();
     static {
         sFormatMap.put(ImageFormat.PRIVATE, "priv");
@@ -1339,6 +1340,8 @@ public class ItsService extends Service implements SensorEventListener {
                         jsonSurface.put("format", "jpeg");
                     } else if (format == ImageFormat.JPEG_R) {
                         jsonSurface.put("format", JPEG_R_FMT);
+                    } else if (format == ImageFormat.HEIC_ULTRAHDR) {
+                        jsonSurface.put("format", HEIC_ULTRAHDR_FMT);
                     } else if (format == ImageFormat.PRIVATE) {
                         jsonSurface.put("format", "priv");
                     } else if (format == ImageFormat.YUV_420_888) {
@@ -2499,6 +2502,13 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if ("jpg".equals(sformat) || "jpeg".equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
+                    } else if (HEIC_ULTRAHDR_FMT.equals(sformat)) {
+                        outputFormats[i] = ImageFormat.HEIC_ULTRAHDR;
+                        sizes = ItsUtils.getHeicUltraHdrOutputSizes(cameraCharacteristics);
+                        int[] actualCapabilities = cameraCharacteristics.get(
+                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                        is10bitOutputPresent = Arrays.asList(CameraTestUtils.toObject(
+                                    actualCapabilities)).contains(TEN_BIT_CAPABILITY);
                     } else if (JPEG_R_FMT.equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG_R;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
@@ -4481,6 +4491,13 @@ public class ItsService extends Service implements SensorEventListener {
                     mCountJpg.getAndIncrement();
                     mSocketRunnableObj.sendResponseCaptureBuffer("jpegImage" + physicalCameraId,
                         buf);
+                } else if (format == ImageFormat.HEIC_ULTRAHDR) {
+                    Logt.i(TAG, "Received HEIC_ULTRAHDR capture");
+                    byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
+                    ByteBuffer buf = ByteBuffer.wrap(img);
+                    mCountJpg.getAndIncrement();
+                    mSocketRunnableObj.sendResponseCaptureBuffer("heic_ultrahdrImage" +
+                        physicalCameraId, buf);
                 } else if (format == ImageFormat.JPEG_R) {
                     Logt.i(TAG, "Received JPEG/R capture");
                     byte[] img = ItsUtils.getDataFromImage(capture, mSocketQueueQuota);
@@ -5258,6 +5275,7 @@ public class ItsService extends Service implements SensorEventListener {
     private boolean isHlg10Compatible(int format) {
         return (format == ImageFormat.PRIVATE
                 || format == ImageFormat.JPEG_R
+                || format == ImageFormat.HEIC_ULTRAHDR
                 || format == ImageFormat.YCBCR_P010);
     }
 }
