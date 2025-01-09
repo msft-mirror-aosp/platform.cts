@@ -434,7 +434,10 @@ public class MediaCodecListTest extends AndroidTestCase {
                 list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_HEVC, false));  // hevc decoder
             }
             list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_MPEG4, false)); // m4v decoder
-            list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_H263, false));  // h263 decoder
+            // According to CDD, H263 decoding is not mandatory for automotive.
+            if (!isAutomotive()) {
+                list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_H263, false));  // h263 decoder
+            }
             if (hasCamera()) {
                 list.add(new VideoCodec(MediaFormat.MIMETYPE_VIDEO_H263, true)); // h263 encoder
             }
