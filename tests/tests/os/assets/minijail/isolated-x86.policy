@@ -31,7 +31,6 @@ getresuid32: 1
 getuid32: 1
 ioperm: return EPERM
 iopl: return EPERM
-ipc: return EPERM
 lchown32: return EPERM
 lchown: return EPERM
 link: return EPERM
