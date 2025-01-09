@@ -27,6 +27,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputGamepad
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.junit.After

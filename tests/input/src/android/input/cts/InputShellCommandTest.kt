@@ -25,6 +25,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
 import com.android.compatibility.common.util.UserHelper
+import com.android.cts.input.CaptureEventActivity
 import com.google.common.truth.Truth.assertThat
 import org.junit.Before
 import org.junit.Rule

@@ -26,6 +26,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputKeyboard
 import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG
 import com.android.input.flags.Flags.FLAG_ENABLE_INPUT_FILTER_RUST_IMPL
