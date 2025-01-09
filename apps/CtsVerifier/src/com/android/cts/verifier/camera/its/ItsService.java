@@ -3050,7 +3050,8 @@ public class ItsService extends Service implements SensorEventListener {
             aeTargetFpsMax = 30;
         }
         return new PreviewRecorder(cameraDeviceId, videoSize, aeTargetFpsMax,
-                sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled, this);
+                sensorOrientation, outputFilePath, mCameraHandler, hlg10Enabled,
+                getEncoderTimestampOffset(), this);
     }
 
     private void doStaticPreviewRecording(JSONObject cmdObj) throws JSONException, ItsException {
@@ -3277,7 +3278,8 @@ public class ItsService extends Service implements SensorEventListener {
 
         int aeTargetFpsMax = 30;
         try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, previewSize, aeTargetFpsMax,
-                sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false, this)) {
+                sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false,
+                getEncoderTimestampOffset(), this)) {
             CaptureRequest.Builder reqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
             JSONObject captureReqJSON = params.getJSONObject("captureRequest");
@@ -5168,5 +5170,16 @@ public class ItsService extends Service implements SensorEventListener {
         return (format == ImageFormat.PRIVATE
                 || format == ImageFormat.JPEG_R
                 || format == ImageFormat.YCBCR_P010);
+    }
+
+    private long getEncoderTimestampOffset() {
+        int timestampSource = mCameraCharacteristics.get(
+                CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE);
+        long encoderTimestampOffset = 0;
+        if (timestampSource == CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME) {
+            long uptimeNanos = TimeUnit.MILLISECONDS.toNanos(SystemClock.uptimeMillis());
+            encoderTimestampOffset = uptimeNanos - SystemClock.elapsedRealtimeNanos();
+        }
+        return encoderTimestampOffset;
     }
 }
