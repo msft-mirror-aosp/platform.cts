@@ -1470,14 +1470,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             } else {
                 expectEvent(stream, onStartInputMatcher(toolType, unfocusedMarker), TIMEOUT);
             }
-            if (!mFlagsValueProvider.getBoolean(FLAG_REFACTOR_INSETS_CONTROLLER)) {
-                // With the flag enabled, we won't call showSoftInput when the
-                // requestedVisibleTypes are not changed.
-                expectEvent(
-                        stream,
-                        onUpdateEditorToolTypeMatcher(toolType),
-                        TIMEOUT);
-            }
+            expectEvent(stream, onUpdateEditorToolTypeMatcher(toolType), TIMEOUT);
         } finally {
             if (stylus != null) {
                 stylus.close();
