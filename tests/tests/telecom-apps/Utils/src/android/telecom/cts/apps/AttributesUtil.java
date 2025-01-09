@@ -137,6 +137,10 @@ public class AttributesUtil {
                 throw new Exception("The PhoneAccount for ManagedConnectionServiceApp is not"
                         + " is kept in BaseAppVerifier");
             }
+            case ManagedConnectionServiceAppClone -> {
+                throw new Exception("The PhoneAccount for ManagedConnectionServiceAppClone is not"
+                        + " is kept in BaseAppVerifier");
+            }
         }
         throw new Exception(String.format("%s does not have a PhoneAccount mapping", name));
     }

@@ -17,23 +17,15 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-filegroup {
-    name: "managed-app-main-srcs",
-    srcs: [
-        "src/android/telecom/cts/apps/managedapp/ManagedAppControl.java",
-        "src/android/telecom/cts/apps/managedapp/ManagedConnectionService.java",
-    ],
-    path: "src/",
-}
-
 android_test_helper_app {
-    name: "ManagedConnectionServiceApp",
+    name: "ManagedConnectionServiceAppClone",
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
     min_sdk_version: "21",
     dxflags: ["--multi-dex"],
     srcs: [
         "src/**/*.java",
+        ":managed-app-main-srcs",
     ],
     static_libs: [
         "compatibility-device-util-axt",

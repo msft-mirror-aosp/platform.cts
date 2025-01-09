@@ -35,6 +35,7 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class AppControlWrapper {
     private static final String TAG = AppControlWrapper.class.getSimpleName();
@@ -42,6 +43,7 @@ public class AppControlWrapper {
     private final IAppControl mBinder;
     private final TelecomTestApp mTelecomApps;
     private final boolean mIsManagedAppControl;
+    private final boolean mIsManagedAppControlClone;
 
     public TelecomTestApp getTelecomApps() {
         return mTelecomApps;
@@ -49,6 +51,10 @@ public class AppControlWrapper {
 
     public boolean isManagedAppControl() {
         return mIsManagedAppControl;
+    }
+
+    public boolean isManagedAppControlClone() {
+        return mIsManagedAppControlClone;
     }
 
     public boolean isTransactionalControl() {
@@ -61,8 +67,13 @@ public class AppControlWrapper {
         mTelecomApps = name;
         if (mTelecomApps.equals(TelecomTestApp.ManagedConnectionServiceApp)) {
             mIsManagedAppControl = true;
+            mIsManagedAppControlClone = false;
+        } else if (mTelecomApps.equals(TelecomTestApp.ManagedConnectionServiceAppClone)) {
+            mIsManagedAppControlClone = true;
+            mIsManagedAppControl = false;
         } else {
             mIsManagedAppControl = false;
+            mIsManagedAppControlClone = false;
         }
     }
 
@@ -113,6 +124,28 @@ public class AppControlWrapper {
         Log.i(TAG, "addCall");
         try {
             NoDataTransaction transactionResult = mBinder.addCall(callAttributes);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
+     * This method requests the app that is bound to add a new call with the given callAttributes.
+     * Note: This method does not verify the call is added for ConnectionService implementations
+     * and that job should be left for the InCallService to verify.
+     */
+    public void addCall(CallAttributes callAttributes,
+            Consumer<CallStateTransitionOperation> consumer) throws Exception {
+        Log.i(TAG, "addCall");
+        try {
+            NoDataTransaction transactionResult = mBinder.addCallWithConsumer(callAttributes,
+                    new IRemoteOperationConsumer.Stub() {
+                        @Override
+                        public void complete(CallStateTransitionOperation op) {
+                            consumer.accept(op);
+                        }
+                    });
             maybeFailTest(transactionResult);
         } catch (RemoteException re) {
             handleRemoteException(re, "addCall");

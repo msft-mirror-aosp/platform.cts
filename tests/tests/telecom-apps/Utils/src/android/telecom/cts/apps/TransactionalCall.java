@@ -38,6 +38,10 @@ public class TransactionalCall {
     private final PhoneAccountHandle mPhoneAccountHandle;
     private CallControl mCallControl;
 
+    // Delegates the completion of call state transition operations to potentially another entity
+    // to control the completion.
+    private Consumer<CallStateTransitionOperation> mOperationConsumer;
+
     public CallResources getCallResources() {
         return mCallResources;
     }
@@ -72,6 +76,14 @@ public class TransactionalCall {
 
     public void setCallControl(CallControl callControl) {
         mCallControl = callControl;
+    }
+
+    /**
+     * Delegate operation completion to the test process so that it can control completion of the
+     * request.
+     */
+    public void setOperationConsumer(Consumer<CallStateTransitionOperation> consumer) {
+        mOperationConsumer = consumer;
     }
 
     public void setCallControlAndId(CallControl callControl) {
@@ -118,25 +130,42 @@ public class TransactionalCall {
     public CallControlCallback mHandshakes = new CallControlCallback() {
         @Override
         public void onSetActive(@NonNull Consumer<Boolean> wasCompleted) {
+            if (mOperationConsumer != null) {
+                mOperationConsumer.accept(new CallStateTransitionOperation(
+                        CallStateTransitionOperation.OPERATION_UNHOLD, System.currentTimeMillis()));
+            }
             wasCompleted.accept(true);
         }
 
         @Override
         public void onSetInactive(@NonNull Consumer<Boolean> wasCompleted) {
-            wasCompleted.accept(true);
             Log.i(TAG, "onSetInactive: stopped recording ; callId"+ mId);
+            if (mOperationConsumer != null) {
+                mOperationConsumer.accept(new CallStateTransitionOperation(
+                        CallStateTransitionOperation.OPERATION_HOLD, System.currentTimeMillis()));
+            }
+            wasCompleted.accept(true);
         }
 
         @Override
         public void onAnswer(int videoState, @NonNull Consumer<Boolean> wasCompleted) {
+            Log.i(TAG, "onAnswer: started recording; callId" + mId);
+            if (mOperationConsumer != null) {
+                mOperationConsumer.accept(new CallStateTransitionOperation(
+                        CallStateTransitionOperation.OPERATION_ANSWER, System.currentTimeMillis()));
+            }
             mCallResources.updateNotificationToOngoing(mContext);
             wasCompleted.accept(true);
-            Log.i(TAG, "onAnswer: started recording; callId" + mId);
         }
 
         @Override
         public void onDisconnect(@NonNull DisconnectCause cause,
                 @NonNull Consumer<Boolean> wasCompleted) {
+            if (mOperationConsumer != null) {
+                mOperationConsumer.accept(new CallStateTransitionOperation(
+                        CallStateTransitionOperation.OPERATION_DISCONNECT,
+                        System.currentTimeMillis()));
+            }
             mCallResources.destroyResources(mContext);
             wasCompleted.accept(true);
         }
