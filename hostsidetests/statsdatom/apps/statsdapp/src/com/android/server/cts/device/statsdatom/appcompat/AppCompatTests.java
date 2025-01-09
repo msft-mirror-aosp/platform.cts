@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class AppCompatTests {
     private static final String TAG = "AppCompatTests";
     private static final long FIND_TIMEOUT = 5000L;
-    private static final int BOUNDS_OFFSET = 175;
+    private static final int BOUNDS_OFFSET = 155;
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     private static final String SETTINGS_PACKAGE = "com.android.settings";
     private static final String TEST_PKG = "android.server.wm.allowuseraspectratiooverrideoptin";
