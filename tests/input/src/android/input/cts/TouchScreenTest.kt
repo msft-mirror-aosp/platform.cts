@@ -19,6 +19,7 @@ package android.input.cts
 import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.hardware.input.InputManager
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_MOVE
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -38,6 +39,7 @@ import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withPointerCount
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Description
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.TypeSafeMatcher
@@ -51,6 +53,7 @@ import org.junit.runner.RunWith
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class TouchScreenTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchDevice

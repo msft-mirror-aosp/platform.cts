@@ -42,6 +42,7 @@ import com.android.cts.input.inputeventmatchers.withRawCoords
 import com.android.cts.input.inputeventmatchers.withSource
 import com.android.cts.input.inputeventmatchers.withToolType
 import com.android.input.flags.Flags
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Before
@@ -62,6 +63,7 @@ import org.junit.runner.RunWith
  */
 @LargeTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class SimultaneousTouchAndStylusTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var touchScreen: UinputTouchDevice
