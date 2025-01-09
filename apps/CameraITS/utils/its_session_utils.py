@@ -47,6 +47,7 @@ ANDROID16_API_LEVEL = 36
 CHART_DISTANCE_NO_SCALING = 0
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
+JCA_VIDEO_PATH_TAG = 'JCA_VIDEO_CAPTURE_PATH'
 JCA_CAPTURE_PATHS_TAG = 'JCA_CAPTURE_PATHS'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
@@ -1650,7 +1651,7 @@ class ItsSession(object):
       dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
       dut.ui(
           text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.exists(
-          ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+              ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
       dut.ui(text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.gone(
           ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
     dut.ui.press.back()
@@ -1690,7 +1691,37 @@ class ItsSession(object):
                            'open_jca_viewfinder() or do_jca_video_setup()'
                            'in ui_interaction_utils.py to start JCA.')
     dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click(duration)
-    return self.get_and_pull_jca_capture(dut, log_path)
+    return self.get_and_pull_jca_video_capture(dut, log_path)
+
+  def _get_jca_capture_paths(self):
+    """Handle JCA capture result paths from the socket.
+
+    Returns:
+      A capture result path or a list of capture results paths.
+    """
+    capture_paths, capture_status = None, None
+    while not capture_paths or not capture_status:
+      data, _ = self.__read_response_from_socket()
+      if data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
+        capture_status = data[_STR_VALUE_STR]
+      elif data[_TAG_STR] == JCA_CAPTURE_PATHS_TAG:
+        if capture_paths is not None:
+          raise error_util.CameraItsError(
+              f'Invalid response {data[_TAG_STR]} for JCA capture')
+        capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
+      elif data[_TAG_STR] == JCA_VIDEO_PATH_TAG:
+        if capture_paths is not None:
+          raise error_util.CameraItsError(
+              f'Invalid response {data[_TAG_STR]} for JCA capture')
+        capture_paths = data[_STR_VALUE_STR]
+      else:
+        raise error_util.CameraItsError(
+            f'Invalid response {data[_TAG_STR]} for JCA capture')
+    if capture_status != RESULT_OK_STATUS:
+      logging.error('Capture failed! Expected status %d, received %d',
+                    RESULT_OK_STATUS, capture_status)
+    logging.debug('capture paths: %s', capture_paths)
+    return capture_paths
 
   def get_and_pull_jca_capture(self, dut, log_path):
     """Retrieve a capture path from the socket and pulls capture to host.
@@ -1703,25 +1734,28 @@ class ItsSession(object):
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_paths, capture_status = None, None
-    while not capture_paths or not capture_status:
-      data, _ = self.__read_response_from_socket()
-      if data[_TAG_STR] == JCA_CAPTURE_PATHS_TAG:
-        capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
-      elif data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
-        capture_status = data[_STR_VALUE_STR]
-      else:
-        raise error_util.CameraItsError(
-            f'Invalid response {data[_TAG_STR]} for JCA capture')
-    if capture_status != RESULT_OK_STATUS:
-      logging.error('Capture failed! Expected status %d, received %d',
-                    RESULT_OK_STATUS, capture_status)
-    logging.debug('capture paths: %s', capture_paths)
+    capture_paths = self._get_jca_capture_paths()
     for capture_path in capture_paths:
       _, capture_name = os.path.split(capture_path)
       its_device_utils.run(
           f'adb -s {dut.serial} pull {capture_path} {log_path}')
       yield os.path.join(log_path, capture_name)
+
+  def get_and_pull_jca_video_capture(self, dut, log_path):
+    """Retrieve a capture path from the socket and pulls capture to host.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+    Returns:
+      The host-side path of the capture.
+    Raises:
+      CameraItsError: If unexpected data is retrieved from the socket.
+    """
+    capture_path = self._get_jca_capture_paths()
+    _, capture_name = os.path.split(capture_path)
+    its_device_utils.run(f'adb -s {dut.serial} pull {capture_path} {log_path}')
+    return os.path.join(log_path, capture_name)
 
   def do_capture_with_flash(self,
                             preview_request_start,
