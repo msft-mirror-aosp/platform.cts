@@ -29,6 +29,7 @@ android_test {
     static_libs: [
         "ctstestrunner-axt",
         "mimemap-testing",
+        "mimemap-testing-alt",
     ],
     test_suites: [
         "cts",

@@ -16,7 +16,14 @@
 
 package android.content.type.cts;
 
-import android.content.type.cts.StockAndroidMimeMapFactory;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import libcore.content.type.MimeMap;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -43,6 +50,9 @@ public class MimeMapTest {
     /** Stock Android's default MimeMap. */
     private MimeMap stockAndroidMimeMap;
 
+    /** Stock Android's default MimeMap. */
+    private MimeMap stockAndroidAltMimeMap;
+
     /** The platform's actual default MimeMap. */
     private MimeMap mimeMap;
 
@@ -53,6 +63,9 @@ public class MimeMapTest {
         // The resources are placed into the testres/ path by the "mimemap-testing-res.jar" genrule.
         stockAndroidMimeMap = StockAndroidMimeMapFactory.create(
                 s -> MimeMapTest.class.getResourceAsStream("/testres/" + s));
+        stockAndroidAltMimeMap =
+                StockAndroidAltMimeMapFactory.create(
+                        s -> MimeMapTest.class.getResourceAsStream("/testres-alt/" + s));
     }
 
     @Test
@@ -247,27 +260,39 @@ public class MimeMapTest {
     }
 
     @Test public void containsAllStockAndroidMappings_mimeToExt() {
+        assertTrue(
+                mimeToExtAsExpected(stockAndroidMimeMap, mimeMap)
+                        || mimeToExtAsExpected(stockAndroidAltMimeMap, mimeMap));
+    }
+
+    private static boolean mimeToExtAsExpected(MimeMap stockMimeMap, MimeMap actualMimeMap) {
         // The minimum expected mimeType -> extension mappings that should be present.
         TreeMap<String, String> expected = new TreeMap<>();
         // The extensions that these mimeTypes are actually mapped to.
         TreeMap<String, String> actual = new TreeMap<>();
-        for (String mimeType : stockAndroidMimeMap.mimeTypes()) {
-            expected.put(mimeType, stockAndroidMimeMap.guessExtensionFromMimeType(mimeType));
-            actual.put(mimeType, mimeMap.guessExtensionFromMimeType(mimeType));
+        for (String mimeType : stockMimeMap.mimeTypes()) {
+            expected.put(mimeType, stockMimeMap.guessExtensionFromMimeType(mimeType));
+            actual.put(mimeType, actualMimeMap.guessExtensionFromMimeType(mimeType));
         }
-        assertEquals(expected, actual);
+        return expected.equals(actual);
     }
 
     @Test public void containsAllExpectedMappings_extToMime() {
+        assertTrue(
+                extToMimeAsExpected(stockAndroidMimeMap, mimeMap)
+                        || extToMimeAsExpected(stockAndroidAltMimeMap, mimeMap));
+    }
+
+    private static boolean extToMimeAsExpected(MimeMap stockMimeMap, MimeMap actualMimeMap) {
         // The minimum expected extension -> mimeType mappings that should be present.
         TreeMap<String, String> expected = new TreeMap<>();
         // The mimeTypes that these extensions are actually mapped to.
         TreeMap<String, String> actual = new TreeMap<>();
-        for (String extension : stockAndroidMimeMap.extensions()) {
-            expected.put(extension, stockAndroidMimeMap.guessMimeTypeFromExtension(extension));
-            actual.put(extension, mimeMap.guessMimeTypeFromExtension(extension));
+        for (String extension : stockMimeMap.extensions()) {
+            expected.put(extension, stockMimeMap.guessMimeTypeFromExtension(extension));
+            actual.put(extension, actualMimeMap.guessMimeTypeFromExtension(extension));
         }
-        assertEquals(expected, actual);
+        return expected.equals(actual);
     }
 
     /**
