@@ -32,6 +32,8 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.server.power.optimization.Flags;
 
 import org.junit.Rule;
@@ -55,7 +57,41 @@ public class PowerMonitorsTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_POWER_MONITOR_API)
     @Test
-    public void testGetPowerMonitorsAsync() {
+    public void getPowerMonitorsAsync() {
+        readPowerMonitors();
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_POWER_MONITOR_API,
+        android.permission.flags.Flags.FLAG_FINE_POWER_MONITOR_PERMISSION,
+    })
+    @Test
+    public void getPowerMonitorsAsync_defaultGranularity() {
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withoutPermission(
+                                android.Manifest.permission.ACCESS_FINE_POWER_MONITORS)) {
+            readPowerMonitors();
+            assertThat(mReadings.getGranularity())
+                    .isEqualTo(PowerMonitorReadings.GRANULARITY_UNSPECIFIED);
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_POWER_MONITOR_API,
+        android.permission.flags.Flags.FLAG_FINE_POWER_MONITOR_PERMISSION,
+    })
+    @Test
+    public void getPowerMonitorsAsync_fineGranularity() {
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission(android.Manifest.permission.ACCESS_FINE_POWER_MONITORS)) {
+            readPowerMonitors();
+            assertThat(mReadings.getGranularity()).isEqualTo(PowerMonitorReadings.GRANULARITY_FINE);
+        }
+    }
+
+    private void readPowerMonitors() {
         SystemHealthManager shm = getContext().getSystemService(SystemHealthManager.class);
         ConditionVariable done = new ConditionVariable();
         shm.getSupportedPowerMonitors(null, pms -> {
