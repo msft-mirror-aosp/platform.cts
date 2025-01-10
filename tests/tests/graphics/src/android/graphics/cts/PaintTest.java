@@ -52,7 +52,6 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.os.LocaleList;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1062,8 +1061,7 @@ public class PaintTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(com.android.text.flags.Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
-    public void testSetGetFontVariationSettings_Api35() {
+    public void testSetGetFontVariationSettings() {
         final Paint defaultPaint = new Paint();
 
         Paint p = new Paint();
@@ -1123,7 +1121,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testSetGetFontVariationSettings() {
+    public void testSetGetFontVariationOverride() {
         Paint p = new Paint();
         Context context = InstrumentationRegistry.getTargetContext();
         Typeface typeface = Typeface.createFromAsset(context.getAssets(),
@@ -1142,13 +1140,12 @@ public class PaintTest {
         };
 
         for (String varSettings : varSettingsList) {
-            assertTrue("Must return true for " + varSettings,
-                    p.setFontVariationSettings(varSettings));
-            assertEquals(varSettings, p.getFontVariationSettings());
+            p.setFontVariationOverride(varSettings);
+            assertEquals(varSettings, p.getFontVariationOverride());
         }
 
-        p.setFontVariationSettings("");
-        assertNull(p.getFontVariationSettings());
+        p.setFontVariationOverride("");
+        assertTrue(p.getFontVariationOverride().isEmpty());
     }
 
     @Test

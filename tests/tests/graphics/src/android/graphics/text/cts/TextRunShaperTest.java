@@ -29,6 +29,7 @@ import android.graphics.fonts.FontFamily;
 import android.graphics.fonts.FontVariationAxis;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.text.Layout;
 import android.text.TextDirectionHeuristic;
 import android.text.TextDirectionHeuristics;
@@ -37,6 +38,8 @@ import android.text.TextPaint;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.text.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -193,6 +196,35 @@ public class TextRunShaperTest {
         paint.setTypeface(typeface);
         // setFontVariationSettings creates Typeface internally and it is not from Java Font object.
         paint.setFontVariationSettings("'wght' 250");
+
+        // Act
+        PositionedGlyphs res = TextRunShaper.shapeTextRun("a", 0, 1, 0, 1, 0f, 0f, false, paint);
+
+        // Assert
+        Font font = res.getFont(0);
+        assertThat(font.getBuffer()).isEqualTo(originalFont.getBuffer());
+        assertThat(font.getTtcIndex()).isEqualTo(originalFont.getTtcIndex());
+        FontVariationAxis[] axes = font.getAxes();
+        assertThat(axes.length).isEqualTo(1);
+        assertThat(axes[0].getTag()).isEqualTo("wght");
+        assertThat(axes[0].getStyleValue()).isEqualTo(250f);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
+    @Test
+    public void shapeText_FontCreateFromNative_Override() throws IOException {
+        // Setup
+        Context ctx = InstrumentationRegistry.getTargetContext();
+        Paint paint = new Paint();
+        Font originalFont =
+                new Font.Builder(ctx.getAssets(), "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
+                        .build();
+        Typeface typeface =
+                new Typeface.CustomFallbackBuilder(new FontFamily.Builder(originalFont).build())
+                        .build();
+        paint.setTypeface(typeface);
+        // setFontVariationSettings creates Typeface internally and it is not from Java Font object.
+        paint.setFontVariationOverride("'wght' 250");
 
         // Act
         PositionedGlyphs res = TextRunShaper.shapeTextRun("a", 0, 1, 0, 1, 0f, 0f, false, paint);
