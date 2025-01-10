@@ -385,4 +385,37 @@
 
     <!-- b/382231688 -->
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
+<<<<<<< HEAD   (83481a Run Text Classifier tests only on B+ where required API chan)
+=======
+
+    <!-- b/381409777-->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
+
+    <!-- b/378989105 -->
+    <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
+
+    <!-- b/383123499 -->
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrParcelV6Flag" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsA2dpChoppyParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrRfStats" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrMonitor" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrConnectFailParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrConnectFail" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsA2dpChoppyParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrCommonParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsScoChoppyParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#defaultNameAddress" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrApproachLsto" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrScoChoppy" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrEnergyMonitor" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#invalidRawData" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrA2dpChoppy" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#rawDataNull" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsApproachLstoParcel" />
+    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#invalidQualityReportId" />
+
+     <!-- b/382999248 -->
+    <option name="compatibility:exclude-filter" value="CtsPackageWatchdogTestCases android.packagewatchdog.cts.ExplicitHealthCheckServiceTest#testNotifyHealthCheckPassed" />
+>>>>>>> CHANGE (eeaa9f Add testNotifyHealthCheckPassed known failure)
 </configuration>
