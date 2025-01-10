@@ -274,7 +274,8 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                         .build());
         mUiBot.focusByRelativeId(ID_CC_NUMBER);
         sReplier.getNextFillRequest();
-        mUiBot.selectByText("Buy it");
+        // Trigger "buy" button
+        mUiBot.selectByRelativeId("buy");
 
         // Now switch back to A...
         final AtomicBoolean focusOnA = new AtomicBoolean();
