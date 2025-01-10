@@ -57,6 +57,12 @@ class _TestChartConstants:
     SIDE_LENGTH = 2308
     TOP_LEFT_CORNER = (3645, 4824)
 
+  class DynamicRangePatches:
+    PATCH_SIDE_LENGTH = 600  # length of each side of a single patch
+    TOP_LEFT_CORNER = (3292, 3878)
+    # Each group refers to a row or column of adjacent patches in test chart.
+    PATCHES_PER_GROUP = 5
+
 
 @enum.unique
 class TestChartFeature(enum.Enum):
@@ -104,6 +110,30 @@ class _PolygonalFeatureUnit(_TestChartFeatureUnit):
     return 'corner_points: %s' % (str(self.corner_points),)
 
 
+class _MonoColorPolygonalFeatureUnit(_PolygonalFeatureUnit):
+  """A `_PolygonalFeatureUnit` that consists of a single color on test chart.
+
+  Attributes:
+    feature_type: The type of the feature.
+    corner_points: Co-ordinates of a polygon that encloses the feature.
+    test_chart_color_bgr: BGR space color value of the feature unit in
+      reference test chart image.
+    image: Optional BGRA color space image in numpy matrix format.
+  """
+
+  def __init__(
+      self,
+      feature_type: TestChartFeature,
+      corner_points: list[list[int, int]],
+      test_chart_color_bgr: np.ndarray,
+      image: np.ndarray = None,
+  ):
+    super().__init__(
+        feature_type=feature_type, corner_points=corner_points, image=image
+    )
+    self.test_chart_color_bgr = test_chart_color_bgr
+
+
 class CenterQrCode(_PolygonalFeatureUnit):
   """A `_PolygonalFeatureUnit` containing information regarding center QR code test chart feature.
 
@@ -129,6 +159,39 @@ class CenterQrCode(_PolygonalFeatureUnit):
     return 'feature_type: %s, corner_points: %s' % (
         str(self.feature_type),
         str(self.corner_points),
+    )
+
+
+class DynamicRangePatch(_MonoColorPolygonalFeatureUnit):
+  """A `_MonoColorPolygonalFeatureUnit` containing information regarding a single cell of the dynamic range patch.
+
+  Attributes:
+    corner_points: Co-ordinates of the four corner points in a patch.
+    test_chart_color_bgr: BGR space color value of the equivalent patch in
+      reference test chart image.
+    image: Optional BGRA color space image in numpy matrix format.
+  """
+
+  def __init__(
+      self,
+      corner_points: list[
+          list[int, int], list[int, int], list[int, int], list[int, int]
+      ],
+      test_chart_color_bgr: np.ndarray,
+      image: np.ndarray = None,
+  ):
+    super().__init__(
+        feature_type=TestChartFeature.DYNAMIC_RANGE_PATCHES,
+        corner_points=corner_points,
+        test_chart_color_bgr=test_chart_color_bgr,
+        image=image,
+    )
+
+  def __repr__(self):
+    return 'feature_type: %s, corner_points: %s, test_chart_color_bgr: %s' % (
+        str(self.feature_type),
+        str(self.corner_points),
+        str(self.test_chart_color_bgr),
     )
 
 
@@ -161,6 +224,173 @@ def _assert_image_type(image, colorspace):
   elif colorspace == cv2.IMREAD_GRAYSCALE:
     if image.ndim != 2:
       raise AssertionError('Grayscale image must have 2 dimensions.')
+
+
+def get_transformed_point(
+    image: str | np.ndarray,
+    point: tuple[int, int],
+    transform_matrix: np.ndarray = None,
+) -> tuple[int, int]:
+  """Gets the transformed position of a test chart point in the provided image.
+
+  This method transforms test_chart_gen2.jpg to the provided image and finds the
+  transformed position of the provided point.
+
+  Args:
+    image: The image which test chart is transformed to. Must be a file path
+      string or 3 channel BGR color image data in numpy matrix format.
+    point: Pixel position of a point in test chart
+    transform_matrix: Optional transformation matrix which is used instead of
+      the image to transform the provided point. Otherwise,
+      `find_test_chart_transformation(image)` is used.
+
+  Returns:
+    Pixel position of same point in query image as a tuple of two integers,
+    or None if a transformation matrix could not be found.
+  """
+  image, _ = _process_input_image(image)
+
+  if transform_matrix is None:
+    transform_matrix = find_test_chart_transformation(image)
+    if transform_matrix is None:
+      logging.debug('Center QR code pattern not detected in the image')
+      return None
+
+  transformed_homogenous_point = np.dot(
+      transform_matrix, [point[0], point[1], 1]
+  )
+  transformed_cartesian_points = (
+      transformed_homogenous_point[:2] / transformed_homogenous_point[2]
+  )
+
+  return (
+      int(np.round(transformed_cartesian_points[0])),
+      int(np.round(transformed_cartesian_points[1])),
+  )
+
+
+def _get_dynamic_range_patch_top_right_corner(
+    top_left_corner: tuple[int, int],
+) -> tuple[int, int]:
+  return (
+      top_left_corner[0]
+      + _TestChartConstants.DynamicRangePatches.PATCH_SIDE_LENGTH,
+      top_left_corner[1],
+  )
+
+
+def _get_dynamic_range_patch_bottom_left_corner(
+    top_left_corner: tuple[int, int],
+) -> tuple[int, int]:
+  return (
+      top_left_corner[0],
+      top_left_corner[1]
+      + _TestChartConstants.DynamicRangePatches.PATCH_SIDE_LENGTH,
+  )
+
+
+def _get_dynamic_range_patch_bottom_right_corner(
+    top_left_corner: tuple[int, int]
+) -> tuple[int, int]:
+  return (
+      top_left_corner[0]
+      + _TestChartConstants.DynamicRangePatches.PATCH_SIDE_LENGTH,
+      top_left_corner[1]
+      + _TestChartConstants.DynamicRangePatches.PATCH_SIDE_LENGTH,
+  )
+
+
+def _create_dynamic_range_patch(
+    top_left_corner: tuple[int, int], test_chart_image: np.ndarray
+) -> DynamicRangePatch:
+  bottom_right_corner = _get_dynamic_range_patch_bottom_right_corner(
+      top_left_corner
+  )
+  return DynamicRangePatch(
+      corner_points=[
+          top_left_corner,
+          _get_dynamic_range_patch_top_right_corner(top_left_corner),
+          bottom_right_corner,
+          _get_dynamic_range_patch_bottom_left_corner(top_left_corner),
+      ],
+      test_chart_color_bgr=test_chart_image[
+          int((top_left_corner[1] + bottom_right_corner[1]) / 2),
+          int((top_left_corner[0] + bottom_right_corner[0]) / 2),
+      ],
+  )
+
+
+def _get_test_chart_dynamic_range_patches() -> list[DynamicRangePatch]:
+  """Gets the dynamic range patch positions in test chart.
+
+  The patches are listed in clockwise order starting from the top-left
+  one in the test chart.
+
+  Returns:
+    A list of the four corners (in serial) of each patch, or None in case of any
+      error.
+  """
+  patches = []
+  side_length = _TestChartConstants.DynamicRangePatches.PATCH_SIDE_LENGTH
+
+  # Error if the provided file does not exist.
+  test_chart_file_path = _TEST_CHART_FILE_PATH
+  if not os.path.exists(test_chart_file_path):
+    logging.debug('Missing file %s', test_chart_file_path)
+    return None
+
+  test_chart_image = cv2.imread(test_chart_file_path)
+
+  # top row of patches
+  top_left_corner = _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER
+  for _ in range(_TestChartConstants.DynamicRangePatches.PATCHES_PER_GROUP):
+    patches.append(
+        _create_dynamic_range_patch(top_left_corner, test_chart_image)
+    )
+    top_left_corner = (top_left_corner[0] + side_length, top_left_corner[1])
+
+  # right column of patches
+  top_left_corner = (
+      _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER[0]
+      + _TestChartConstants.DynamicRangePatches.PATCHES_PER_GROUP * side_length,
+      _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER[1] + side_length,
+  )
+  for _ in range(_TestChartConstants.DynamicRangePatches.PATCHES_PER_GROUP):
+    patches.append(
+        _create_dynamic_range_patch(top_left_corner, test_chart_image)
+    )
+    top_left_corner = (top_left_corner[0], top_left_corner[1] + side_length)
+
+  # bottom row of patches
+  top_left_corner = (
+      _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER[0],
+      _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER[1]
+      + (_TestChartConstants.DynamicRangePatches.PATCHES_PER_GROUP + 1)
+      * side_length,
+  )
+  rev_patches = []
+  for _ in range(_TestChartConstants.DynamicRangePatches.PATCHES_PER_GROUP):
+    rev_patches.insert(
+        0, _create_dynamic_range_patch(top_left_corner, test_chart_image)
+    )
+    top_left_corner = (top_left_corner[0] + side_length, top_left_corner[1])
+  patches.extend(rev_patches)
+
+  # left column of patches
+  top_left_corner = (
+      _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER[0] - side_length,
+      _TestChartConstants.DynamicRangePatches.TOP_LEFT_CORNER[1] + side_length,
+  )
+  rev_patches = []
+  for _ in range(_TestChartConstants.DynamicRangePatches.PATCHES_PER_GROUP):
+    rev_patches.insert(
+        0,
+        _create_dynamic_range_patch(top_left_corner, test_chart_image)
+    )
+    top_left_corner = (top_left_corner[0], top_left_corner[1] + side_length)
+  patches.extend(rev_patches)
+
+  return patches
 
 
 def _filter_by_ratio_and_distance_test(keypoints_1, keypoints_2, matches):
@@ -456,6 +686,43 @@ def _get_test_chart_center_qr_code() -> CenterQrCode:
   )
 
 
+def _extract_polygon_from_image(
+    image: str | np.ndarray,
+    corner_points: list[list[int, int]]
+):
+  """Extract out the polygon area from an image.
+
+  Args:
+    image: Must be a file path string or 3 channel BGR color image data in numpy
+      matrix format.
+    corner_points: Co-ordinates of a polygon corner points. The polygon
+      requirements should be the same as that of `cv2.fillPoly`.
+
+  Returns:
+    BGRA color space image of the same size as input image where the polygon
+      area in input image is kept intact while any pixel not within the polygon
+      will be fully transparent.
+  """
+  image, _ = _process_input_image(image)
+
+  image_mask = np.zeros(image.shape[0:2]).astype(np.uint8)
+
+  cv2.fillPoly(
+      img=image_mask,
+      pts=[np.array(corner_points).astype(np.int32)],
+      color=(_MAX_INTENSITY),
+  )
+
+  image_mask = (image_mask != 0).astype(bool)
+
+  image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
+  image[:, :, 3] = np.where(
+      image_mask, image[:, :, 3], 0
+  )
+
+  return image
+
+
 def get_test_chart_features_aligned_to_image(
     image: str | np.ndarray,
     transform_matrix: np.ndarray = None,
@@ -572,3 +839,50 @@ def get_test_chart_features_from_image(
   image[:, :, 3] = np.where(feature_area_mask, image[:, :, 3], 0)
 
   return image
+
+
+def find_dynamic_range_patches(
+    image: str | np.ndarray,
+    transform_matrix: np.ndarray = None,
+) -> list[DynamicRangePatch]:
+  """Finds the dynamic range patch positions of given image.
+
+  The patches are listed in clockwise order starting from the top-left
+  one in the test chart.
+
+  Args:
+    image: Must be a file path string or 3 channel BGR color image data in numpy
+      matrix format.
+    transform_matrix: Used to transform the points in test chart to query image,
+      `find_transform_matrix_mapping_from_test_chart` method will be used to
+      calculate it if None provided.
+
+  Returns:
+    A list of `DynamicRangePatch` where every patch is a list containing the
+    four corner positions in query image and the original color in test chart.
+  """
+  image, image_path = _process_input_image(image)
+
+  if transform_matrix is None:
+    transform_matrix = find_test_chart_transformation(image)
+    if transform_matrix is None:
+      if image_path is not None:
+        logging.debug('No pattern detected for %s', image_path)
+      else:
+        logging.debug('No pattern detected')
+      return None
+
+  transformed_dynamic_range_patches = []
+  for patch in _get_test_chart_dynamic_range_patches():
+    transformed_points = [
+        get_transformed_point(image, point, transform_matrix)
+        for point in patch.corner_points
+    ]
+    transformed_patch = DynamicRangePatch(
+        corner_points=transformed_points,
+        test_chart_color_bgr=patch.test_chart_color_bgr,
+        image=_extract_polygon_from_image(image, transformed_points)
+    )
+    transformed_dynamic_range_patches.append(transformed_patch)
+
+  return transformed_dynamic_range_patches

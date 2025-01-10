@@ -168,6 +168,14 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       )
       logging.debug('Default and JCA size matches: %s', size_match)
 
+      # Get cropped dynamic range patch cells
+      _ = ce.get_cropped_dynamic_range_patch_cells(
+          default_capture_path, self.log_path, 'default'
+      )
+      _ = ce.get_cropped_dynamic_range_patch_cells(
+          jca_capture_path, self.log_path, 'jca'
+      )
+
 
 if __name__ == '__main__':
   test_runner.main()
