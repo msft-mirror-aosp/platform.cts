@@ -25,16 +25,24 @@ import static android.bluetooth.BluetoothDevice.TRANSPORT_AUTO;
 import static android.bluetooth.BluetoothDevice.TRANSPORT_BREDR;
 import static android.bluetooth.BluetoothDevice.TRANSPORT_LE;
 
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra;
+
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothDevice.BluetoothAddress;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
@@ -44,7 +52,10 @@ import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.OobData;
 import android.bluetooth.test_utils.Permissions;
 import android.content.AttributionSource;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -55,15 +66,20 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bluetooth.flags.Flags;
+import com.android.compatibility.common.util.CddTest;
 
+import org.hamcrest.Matcher;
+import org.hamcrest.core.AllOf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.hamcrest.MockitoHamcrest;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
@@ -202,6 +218,17 @@ public class BluetoothDeviceTest {
                 "No BLUETOOTH_PRIVILEGED permission",
                 SecurityException.class,
                 () -> mFakeDevice.getIdentityAddressWithType());
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IDENTITY_ADDRESS_TYPE_API)
+    public void testBluetoothAddress() {
+        int addressType = BluetoothDevice.ADDRESS_TYPE_PUBLIC;
+        BluetoothAddress bluetoothAddress = new BluetoothAddress(mFakeDeviceAddress, addressType);
+
+        assertThat(bluetoothAddress.getAddress()).isEqualTo(mFakeDeviceAddress);
+        assertThat(bluetoothAddress.getAddressType()).isEqualTo(addressType);
     }
 
     @Test
@@ -438,6 +465,8 @@ public class BluetoothDeviceTest {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
+        assertThat(mFakeDevice.fetchUuidsWithSdp()).isTrue();
+
         // TRANSPORT_AUTO doesn't need BLUETOOTH_PRIVILEGED permission
         assertThat(mFakeDevice.fetchUuidsWithSdp(TRANSPORT_AUTO)).isTrue();
 
@@ -607,6 +636,12 @@ public class BluetoothDeviceTest {
 
     @Test
     public void getPackageNameOfBondingApplication() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+        BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
+        mContext.registerReceiver(mockReceiver, filter);
+
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
@@ -624,11 +659,23 @@ public class BluetoothDeviceTest {
         mFakeDevice.createBond();
         assertThat(mFakeDevice.getPackageNameOfBondingApplication())
                 .isEqualTo(mContext.getPackageName());
+        verifyIntentReceived(
+                mockReceiver,
+                Duration.ofSeconds(5),
+                hasAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED),
+                hasExtra(BluetoothDevice.EXTRA_DEVICE, mFakeDevice),
+                hasExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_BONDING));
 
         // Clean up create bond
         // Either cancel the bonding process or remove bond
         mFakeDevice.cancelBondProcess();
         mFakeDevice.removeBond();
+        verifyIntentReceived(
+                mockReceiver,
+                Duration.ofSeconds(5),
+                hasAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED),
+                hasExtra(BluetoothDevice.EXTRA_DEVICE, mFakeDevice),
+                hasExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE));
     }
 
     @Test
@@ -723,5 +770,11 @@ public class BluetoothDeviceTest {
             assertThat(mFakeDevice.setMicrophonePreferredForCalls(true))
                     .isEqualTo(BluetoothStatusCodes.ERROR_DEVICE_NOT_BONDED);
         }
+    }
+
+    private void verifyIntentReceived(
+            BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
+        verify(receiver, timeout(timeout.toMillis()))
+                .onReceive(any(), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
     }
 }

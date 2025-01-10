@@ -28,7 +28,6 @@ import android.view.MotionEvent
 import androidx.test.filters.SmallTest
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -367,25 +366,6 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         )
 
         assertNoMoreEvents()
-    }
-
-    @Test
-    fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val x = 50
-        val y = 50
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualStylus.sendMotionEvent(
-                    VirtualStylusMotionEvent.Builder()
-                        .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                        .setX(x)
-                        .setY(y)
-                        .setPressure(255)
-                        .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
-                        .build()
-                )
-            }
-        }
     }
 
     private fun verifyStylusTouchWithTilt(

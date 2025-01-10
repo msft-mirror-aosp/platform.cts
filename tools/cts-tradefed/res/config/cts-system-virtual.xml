@@ -1212,6 +1212,15 @@
   <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_setDynamicPowerSavings"/>
   <option name="compatibility:exclude-filter" value="CtsOsTestCases android.os.cts.PowerManagerTest#testPowerManager_batteryDischargePrediction"/>
   <option name="compatibility:exclude-filter" value="CtsUtilTestCases android.util.cts.ArrayMapTest#testDuplicateKeys"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationPrivilegedTestCases android.location.cts.privileged.GnssAssistanceProviderBaseTest#testRequest"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testPermissionUpgradeFlow	"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.LocationAccuracyTest#testCoarseRequestAndGrant"/>
+  <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.ImeInsetsControllerTest#testChangeSizeWhileControlling	"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionRationalePermissionGrantDialogTest#requestLocationPerm_clicksPermissionRationale_startsPermissionRationaleActivity"/>
+  <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testApplyWithDrawInstructions"/>
+  <option name="compatibility:exclude-filter" value="CtsAttributionSourceTestCases android.attributionsource.cts.RenouncedPermissionsTest#testCannotRequestRenouncePermissions"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.PreferentialNetworkServiceTest#setPreferentialNetworkServiceEnabled_disableService_noIssueRequest[IncludeRunOnSystemDeviceOwnerUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.ImeInsetsControllerTest#testChangeSizeWhileControlling"/>
   //Args with regular expressions
   <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules.*"/>
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />

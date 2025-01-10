@@ -727,10 +727,10 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         TestActivitySession<ConfigChangeHandlingActivity> activitySession
                 = createManagedTestActivitySession();
-        int baseDisplayId = Display.DEFAULT_DISPLAY;
+        int baseDisplayId = getMainDisplayId();
         activitySession.launchTestActivityOnDisplaySync(
                 ConfigChangeHandlingActivity.class,
-                Display.DEFAULT_DISPLAY,
+                baseDisplayId,
                 WINDOWING_MODE_FULLSCREEN);
         final ConfigChangeHandlingActivity activity = activitySession.getActivity();
 
