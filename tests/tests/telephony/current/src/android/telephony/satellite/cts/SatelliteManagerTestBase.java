@@ -189,8 +189,19 @@ public class SatelliteManagerTestBase {
             protected int state;
             protected int pendingCount;
             protected int errorCode;
+            // Sending datagram type, should not be used as a comparison for the equals().
+            // Because receiving case there is no datagram type.
+            protected int datagramType;
 
             DatagramStateChangeArgument(int state, int pendingCount, int errorCode) {
+                this.state = state;
+                this.pendingCount = pendingCount;
+                this.errorCode = errorCode;
+                this.datagramType = DATAGRAM_TYPE_UNKNOWN;
+            }
+
+            DatagramStateChangeArgument(int datagramType, int state, int pendingCount, int errorCode) {
+                this.datagramType = datagramType;
                 this.state = state;
                 this.pendingCount = pendingCount;
                 this.errorCode = errorCode;
@@ -242,16 +253,10 @@ public class SatelliteManagerTestBase {
         public void onSendDatagramStateChanged(int state, int sendPendingCount, int errorCode) {
             logd("onSendDatagramStateChanged: state=" + state + ", sendPendingCount="
                     + sendPendingCount + ", errorCode=" + errorCode);
-            synchronized (mSendDatagramStateChangesLock) {
-                mSendDatagramStateChanges.add(new DatagramStateChangeArgument(state,
-                        sendPendingCount, errorCode));
-            }
-
-            try {
-                mSendSemaphore.release();
-            } catch (Exception e) {
-                loge("onSendDatagramStateChanged: Got exception, ex=" + e);
-            }
+            // Implementation moved to onSendDatagramStateChanged(int, int, int, int)
+            // This callback is called only for backward compatibility after calling
+            // onSendDatagramStateChanged(int, int, int, int). This call flows is guaranteed by
+            // SatelliteManager#startTransmissionUpdates().
         }
 
         @Override
@@ -259,6 +264,16 @@ public class SatelliteManagerTestBase {
                 int datagramType, int state, int sendPendingCount, int errorCode) {
             logd("onSendDatagramStateChanged:datagramType=" + datagramType + ", state=" + state
                     + ", sendPendingCount=" + sendPendingCount + ", errorCode=" + errorCode);
+            synchronized (mSendDatagramStateChangesLock) {
+                mSendDatagramStateChanges.add(new DatagramStateChangeArgument(datagramType,
+                        state, sendPendingCount, errorCode));
+            }
+
+            try {
+                mSendSemaphore.release();
+            } catch (Exception e) {
+                loge("onSendDatagramStateChanged: Got exception, ex=" + e);
+            }
         }
 
         @Override
