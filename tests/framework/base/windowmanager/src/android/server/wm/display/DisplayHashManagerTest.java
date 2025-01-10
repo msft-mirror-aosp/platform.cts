@@ -35,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -49,6 +50,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerStateHelper;
 import android.service.displayhash.DisplayHashParams;
@@ -85,7 +87,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
 @Presubmit
-public class DisplayHashManagerTest {
+public class DisplayHashManagerTest extends ActivityManagerTestBase {
     private static final int WAIT_TIME_S = 5;
     private static final int TIMEOUT_MS = 1000;
     private static final int SLEEP_TIMEOUT_MS = 200;
@@ -176,7 +178,14 @@ public class DisplayHashManagerTest {
 
         assertEquals(mTestViewSize.x, verifiedDisplayHash.getBoundsInWindow().width());
         assertEquals(mTestViewSize.y, verifiedDisplayHash.getBoundsInWindow().height());
-        assertArrayEquals(expectedImageHash, verifiedDisplayHash.getImageHash());
+        assertNotNull(verifiedDisplayHash.getImageHash());
+        // TODO(b/349391086): For form factors that launch activities in non-overlapping
+        // multi-window mode mode, the image hash may not be what is expected as other parts of the
+        // display may be included in the image screenshot used. Skip this check in that case. This
+        // should be replaced with a check of the image hash that can also account for the display.
+        if (!isNonOverlappingMultiWindowMode(mActivity)) {
+            assertArrayEquals(expectedImageHash, verifiedDisplayHash.getImageHash());
+        }
     }
 
     @Test
@@ -264,6 +273,11 @@ public class DisplayHashManagerTest {
 
     @Test
     public void testGenerateDisplayHash_WindowOffscreen() throws InterruptedException {
+        // TODO(b/349391086): For form factors that launch activities in non-overlapping
+        // multi-window mode, a valid display hash may be produced since windows may not be
+        // completely "offscreen". Skip this test case for now and consider adding a branch that
+        // that has a better heuristic for if windows can be "offscreen" before proceeding.
+        assumeFalse(isNonOverlappingMultiWindowMode(mActivity));
         final WindowManager wm = mActivity.getWindowManager();
         final WindowManager.LayoutParams windowParams = new WindowManager.LayoutParams();
 
@@ -446,20 +460,13 @@ public class DisplayHashManagerTest {
 
         assertEquals(mTestViewSize.x, verifiedDisplayHash.getBoundsInWindow().width());
         assertEquals(mTestViewSize.y, verifiedDisplayHash.getBoundsInWindow().height());
-        assertArrayEquals(expectedImageHash, verifiedDisplayHash.getImageHash());
-    }
-
-    private void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
-        long endTime = System.currentTimeMillis() + timeoutMs;
-        while (endTime > System.currentTimeMillis()) {
-            mWmState.computeState();
-            if (mWmState.hasActivityState(componentName, STATE_RESUMED)) {
-                SystemClock.sleep(SLEEP_TIMEOUT_MS);
-                mWmState.computeState();
-                break;
-            }
-            SystemClock.sleep(SLEEP_TIMEOUT_MS);
-            mWmState.computeState();
+        assertNotNull(verifiedDisplayHash.getImageHash());
+        // TODO(b/349391086): For form factors that launch activities in non-overlapping
+        // multi-window mode mode, the image hash may not be what is expected as other parts of the
+        // display may be included in the image screenshot used. Skip this check in that case. This
+        // should be replaced with a check of the image hash that can also account for the display.
+        if (!isNonOverlappingMultiWindowMode(mActivity)) {
+            assertArrayEquals(expectedImageHash, verifiedDisplayHash.getImageHash());
         }
     }
 
