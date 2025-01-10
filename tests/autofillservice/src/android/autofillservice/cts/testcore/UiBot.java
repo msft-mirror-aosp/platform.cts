@@ -458,8 +458,9 @@ public class UiBot {
     /**
      * Selects a view by text.
      *
-     * <p><b>NOTE:</b> when selecting an option in dataset picker is shown, prefer
-     * {@link #selectDataset(String)}.
+     * <p><b>NOTE:</b> Not recommended - prefer other options such as {@link
+     * #selectDataset(String)} when selecting an option in dataset picker is shown, or {@link
+     * #selectByRelativeId(String)} when selecting things inside of the activities.
      */
     public void selectByText(String name) throws Exception {
         Log.v(TAG, "selectByText(): " + name);
