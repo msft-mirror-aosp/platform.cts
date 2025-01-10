@@ -78,6 +78,11 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       ]
       logging.debug('Camera hardware level: %s', camera_hardware_level)
 
+      is_tablet = its_device_utils.is_dut_tablet(self.dut.serial)
+      # Skip the test if camera is not primary or if it is a tablet
+      is_primary_camera = self.hidden_physical_id is None
+      camera_properties_utils.skip_unless(not is_tablet and
+                                          is_primary_camera)
       # close camera after props have been retrieved
       cam.close_camera()
       device_id = self.dut.serial
