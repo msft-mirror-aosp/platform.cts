@@ -48,6 +48,7 @@ import android.autofillservice.cts.testcore.CannedFillResponse.CannedDataset;
 import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.IdMode;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.FillRequest;
+import android.autofillservice.cts.testcore.Repeat;
 import android.content.Intent;
 import android.graphics.drawable.Icon;
 import android.platform.test.annotations.AsbSecurityTest;
@@ -61,6 +62,7 @@ import android.widget.RemoteViews;
 import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.CtsDownstreamingTest;
 import com.android.compatibility.common.util.RetryableException;
 
 import org.junit.After;
@@ -1201,6 +1203,8 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
     }
 
     @RequiresFlagsDisabled("android.service.autofill.improve_fill_dialog_aconfig")
+    @CtsDownstreamingTest
+    @Repeat(times = 5)
     @Test
     public void test_triggerFillDialogThenCloseActivity() throws Exception {
         // Enable feature and test service
