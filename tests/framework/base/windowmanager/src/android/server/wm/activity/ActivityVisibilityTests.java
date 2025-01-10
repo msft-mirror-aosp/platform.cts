@@ -83,6 +83,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Rule
     public final DisableScreenDozeRule mDisableScreenDozeRule = new DisableScreenDozeRule();
 
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        acquirePartialWakeLock();
+    }
+
     /**
      * Asserts that the home activity is visible when a translucent activity is launched in the
      * fullscreen stack over the home activity.

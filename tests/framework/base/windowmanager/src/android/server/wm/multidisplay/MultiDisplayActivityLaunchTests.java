@@ -100,6 +100,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeTrue(supportsMultiDisplay());
+        acquirePartialWakeLock();
     }
 
     /**

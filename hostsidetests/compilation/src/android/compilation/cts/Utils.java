@@ -27,9 +27,11 @@ import com.android.tradefed.util.RunUtil;
 
 import com.google.common.io.ByteStreams;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -263,17 +266,10 @@ public class Utils {
     public File createDm(String profileResource, File vdexFile) throws Exception {
         File dmFile = File.createTempFile("test", ".dm");
         dmFile.deleteOnExit();
-        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(dmFile))) {
-            zip.setLevel(0);
-            zip.putNextEntry(new ZipEntry("primary.prof"));
-            try (InputStream inputStream = getClass().getResourceAsStream(profileResource)) {
-                assertThat(ByteStreams.copy(inputStream, zip)).isGreaterThan(0);
-            }
-            zip.putNextEntry(new ZipEntry("primary.vdex"));
-            try (InputStream inputStream = new FileInputStream(vdexFile)) {
-                assertThat(ByteStreams.copy(inputStream, zip)).isGreaterThan(0);
-            }
-            zip.closeEntry();
+        try (ZipWriter zipWriter = new ZipWriter(dmFile)) {
+            zipWriter.addUncompressedAlignedEntry(
+                    "primary.prof", getClass().getResourceAsStream(profileResource));
+            zipWriter.addUncompressedAlignedEntry("primary.vdex", new FileInputStream(vdexFile));
         }
         return dmFile;
     }
@@ -283,18 +279,9 @@ public class Utils {
     public File createSdm(File odexFile, File artFile) throws Exception {
         File sdmFile = File.createTempFile("test", ".sdm");
         sdmFile.deleteOnExit();
-        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(sdmFile))) {
-            zip.setLevel(0);
-            zip.putNextEntry(new ZipEntry("primary.odex"));
-            try (InputStream inputStream = new FileInputStream(odexFile)) {
-                assertThat(ByteStreams.copy(inputStream, zip)).isGreaterThan(0);
-            }
-            zip.closeEntry();
-            zip.putNextEntry(new ZipEntry("primary.art"));
-            try (InputStream inputStream = new FileInputStream(artFile)) {
-                assertThat(ByteStreams.copy(inputStream, zip)).isGreaterThan(0);
-            }
-            zip.closeEntry();
+        try (ZipWriter zipWriter = new ZipWriter(sdmFile)) {
+            zipWriter.addUncompressedAlignedEntry("primary.odex", new FileInputStream(odexFile));
+            zipWriter.addUncompressedAlignedEntry("primary.art", new FileInputStream(artFile));
         }
         signApk(sdmFile);
         return sdmFile;
@@ -306,7 +293,7 @@ public class Utils {
         File cert = mTestInfo.getDependencyFile("testkey.x509.pem", false /* targetFirst */);
         assertHostCommandSucceeds("java", "-jar", apksigner.getAbsolutePath(), "sign", "--key",
                 key.getAbsolutePath(), "--cert", cert.getAbsolutePath(), "--min-sdk-version=35",
-                file.getAbsolutePath());
+                "--alignment-preserved", file.getAbsolutePath());
     }
 
     private String getDmPath(String apkPath) throws Exception {
@@ -319,6 +306,80 @@ public class Utils {
 
     private static Pattern dexFileToPattern(String dexFile) {
         return Pattern.compile(String.format("[\\s/](%s)\\s?", Pattern.quote(dexFile)));
+    }
+
+    /** A {@link ZipOutputStream} wrapper that helps create uncompressed aligned entries. */
+    public static class ZipWriter implements AutoCloseable {
+        /** The length of the local file header, in bytes, excluding variable length fields. */
+        private static final int LOCAL_FILE_HEADER_EXCL_VER_FIELDS_LEN = 30;
+        /**
+         * The zip entry alignment, in bytes.
+         *
+         * Actually, we don't need to align this much. Only odex needs to align to page size, as
+         * required by the Bionic's dlopen, while other files only need to align to 4 bytes, as
+         * required by ART. We align all to 16KB just for simplicity.
+         */
+        private static final int ALIGNMENT = 16384;
+
+        private final ZipOutputStream mZip;
+        private long mOffset = 0;
+
+        public ZipWriter(File zipFile) throws IOException {
+            mZip = new ZipOutputStream(new FileOutputStream(zipFile));
+        }
+
+        @Override
+        public void close() throws IOException {
+            mZip.close();
+        }
+
+        /** Add an uncompressed aligned entry. */
+        public void addUncompressedAlignedEntry(String name, InputStream stream)
+                throws IOException {
+            mZip.setMethod(ZipOutputStream.STORED);
+            try (InputStream inputStream = new BufferedInputStream(stream)) {
+                inputStream.mark(Integer.MAX_VALUE);
+
+                // We have to calculate CRC32 and the size ourselves because `ZipOutputStream`
+                // doesn't do it for STORED entries.
+                CRC32 crc = new CRC32();
+                long size = 0;
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = inputStream.read(buf)) != -1) {
+                    crc.update(buf, 0, n);
+                    size += n;
+                }
+
+                inputStream.reset();
+
+                // The zip file structure looks like:
+                // +------------------------------------+---------+---------+
+                // | Entry 1                            | Entry 2 |   ...   |
+                // +-----------------------------+------+---------+---------+
+                // | Local file header           |      |         |         |
+                // +----------+----------+-------+ Data |   ...   |   ...   |
+                // | 30 bytes | Filename | Extra |      |         |         |
+                // +----------+----------+-------+------+---------+---------+
+                // We put null padding as extra, to achieve alignment.
+                mOffset += LOCAL_FILE_HEADER_EXCL_VER_FIELDS_LEN + name.length();
+                int padding =
+                        (mOffset % ALIGNMENT > 0) ? (ALIGNMENT - (int) (mOffset % ALIGNMENT)) : 0;
+                mOffset += padding;
+
+                ZipEntry zipEntry = new ZipEntry(name);
+                zipEntry.setSize(size);
+                zipEntry.setCompressedSize(size);
+                zipEntry.setCrc(crc.getValue());
+                zipEntry.setExtra(new byte[padding]);
+                mZip.putNextEntry(zipEntry);
+
+                assertThat(ByteStreams.copy(inputStream, mZip)).isGreaterThan(0);
+                mOffset += size;
+
+                mZip.closeEntry();
+            }
+        }
     }
 
     /** Represents the compilation artifacts of an APK. All the files are on host. */

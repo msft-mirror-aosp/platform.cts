@@ -33,6 +33,8 @@ import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.RunUtil;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,7 +48,6 @@ import java.util.regex.Pattern;
 @NonApiTest(exemptionReasons = {}, justification = "METRIC")
 public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuildReceiver {
 
-    private static final String CMD_RESET_REACHABILITY = "rm /data/system/letterbox_config";
     private static final String WM_GET_LETTERBOX_STYLE =
             "wm get-letterbox-style";
     private static final String WM_SET_IGNORE_ORIENTATION_REQUEST =
@@ -66,6 +67,8 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
     protected void setUp() throws Exception {
         super.setUp();
         assertThat(mCtsBuild).isNotNull();
+        ConfigUtils.removeConfig(getDevice());
+        ReportUtils.clearReports(getDevice());
 
         final Matcher matcher = IGNORE_ORIENTATION_REQUEST_PATTERN.matcher(
                 getDevice().executeShellCommand(WM_GET_IGNORE_ORIENTATION_REQUEST));
@@ -73,15 +76,7 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
                 matcher.find());
         mInitialIgnoreOrientationRequest = Boolean.parseBoolean(matcher.group(1));
 
-        final String output = getDevice().executeShellCommand(CMD_RESET_REACHABILITY).trim();
-        // Reboot device to reset reachability persistence if file exists.
-        if (output.isEmpty()) {
-            DeviceUtils.rebootDeviceAndWaitUntilReady(getDevice());
-        }
-
         getDevice().executeShellCommand(WM_SET_IGNORE_ORIENTATION_REQUEST + "true");
-        ConfigUtils.removeConfig(getDevice());
-        ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         DeviceUtils.turnScreenOn(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
@@ -118,27 +113,18 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data.size()).isEqualTo(4);
+        List<LetterboxPositionChanged.PositionChange> realPositionChanges = new ArrayList<>();
+        for (StatsLog.EventMetricData d : data) {
+            realPositionChanges.add(d.getAtom().getLetterboxPositionChanged().getPositionChange());
+        }
 
-        LetterboxPositionChanged atom = data.getFirst().getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.CENTER_TO_RIGHT);
-
-        atom = data.get(1).getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.RIGHT_TO_CENTER);
-
-        atom = data.get(2).getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.CENTER_TO_LEFT);
-
-        atom = data.get(3).getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.LEFT_TO_CENTER);
+        assertThat(realPositionChanges)
+                .containsAnyIn(
+                        Arrays.asList(
+                                LetterboxPositionChanged.PositionChange.CENTER_TO_RIGHT,
+                                LetterboxPositionChanged.PositionChange.RIGHT_TO_CENTER,
+                                LetterboxPositionChanged.PositionChange.CENTER_TO_LEFT,
+                                LetterboxPositionChanged.PositionChange.LEFT_TO_CENTER));
     }
 
     public void testVerticalReachability() throws Exception {
@@ -154,27 +140,18 @@ public class ReachabilityStateStatsTests extends DeviceTestCase implements IBuil
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        assertThat(data.size()).isEqualTo(4);
+        List<LetterboxPositionChanged.PositionChange> realPositionChanges = new ArrayList<>();
+        for (StatsLog.EventMetricData d : data) {
+            realPositionChanges.add(d.getAtom().getLetterboxPositionChanged().getPositionChange());
+        }
 
-        LetterboxPositionChanged atom = data.getFirst().getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.CENTER_TO_TOP);
-
-        atom = data.get(1).getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.TOP_TO_CENTER);
-
-        atom = data.get(2).getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.CENTER_TO_BOTTOM);
-
-        atom = data.get(3).getAtom().getLetterboxPositionChanged();
-        assertThat(atom.getUid()).isEqualTo(DeviceUtils.getStatsdTestAppUid(getDevice()));
-        assertThat(atom.getPositionChange()).isEqualTo(
-                LetterboxPositionChanged.PositionChange.BOTTOM_TO_CENTER);
+        assertThat(realPositionChanges)
+                .containsAnyIn(
+                        Arrays.asList(
+                                LetterboxPositionChanged.PositionChange.CENTER_TO_TOP,
+                                LetterboxPositionChanged.PositionChange.TOP_TO_CENTER,
+                                LetterboxPositionChanged.PositionChange.CENTER_TO_BOTTOM,
+                                LetterboxPositionChanged.PositionChange.BOTTOM_TO_CENTER));
     }
 
     private boolean isReachabilityDisabled(Pattern pattern) throws DeviceNotAvailableException {

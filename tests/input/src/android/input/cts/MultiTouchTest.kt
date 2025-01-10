@@ -29,6 +29,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.UserHelper
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withCoordsForPointerIndex
 import com.android.cts.input.inputeventmatchers.withMotionAction

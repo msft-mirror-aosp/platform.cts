@@ -153,6 +153,12 @@ public class MediaExtractorTest {
 
         MediaFormat trackFormat = mExtractor.getTrackFormat(0);
 
+        int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);
+        assertEquals(MediaCodecInfo.CodecProfileLevel.APVProfile422_10, profile);
+
+        int level = trackFormat.getInteger(MediaFormat.KEY_LEVEL);
+        assertEquals(MediaCodecInfo.CodecProfileLevel.APVLevel2Band0, level);
+
         final String mimeType = trackFormat.getString(MediaFormat.KEY_MIME);
         assertEquals("video/apv", mimeType);
     }

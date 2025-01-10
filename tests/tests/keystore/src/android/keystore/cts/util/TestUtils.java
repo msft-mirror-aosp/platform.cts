@@ -129,11 +129,11 @@ public class TestUtils {
         }
     }
 
-    static public void checkDeviceCompatibility() {
-      PackageManager packageManager =
+    static public void assumeLockScreenSupport() {
+        PackageManager packageManager =
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
-        assumeFalse("Skipping test as DUT does not support this operation",
-                packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
+        assumeTrue("Only test when DUT supports lock screen",
+                packageManager.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
     }
 
     static public boolean isStrongboxKeyMint(KmType kmType) {

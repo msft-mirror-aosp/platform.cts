@@ -25,6 +25,7 @@ import android.view.MotionEvent.ACTION_MOVE
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen

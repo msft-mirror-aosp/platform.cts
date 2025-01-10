@@ -25,6 +25,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.VirtualDisplayActivityScenario
@@ -123,13 +124,15 @@ class DrawingTabletTest {
                 commonMatcher
             )
         )
-        verifier.assertReceivedMotion(
-            allOf(
-                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
-                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
-                commonMatcher
+        if (!com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+            verifier.assertReceivedMotion(
+                allOf(
+                    withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                    withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                    commonMatcher
+                )
             )
-        )
+        }
 
         // Inject and verify HOVER_MOVE
         drawingTablet.sendMove(pointerId, INJECTION_POINTS[1])
@@ -187,9 +190,11 @@ class DrawingTabletTest {
                     withCoords(expected)
                 ))
 
-                verifier.assertReceivedMotion(
-                    allOf(withMotionAction(MotionEvent.ACTION_MOVE), withCoords(expected))
-                )
+                if (!com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
+                    verifier.assertReceivedMotion(
+                        allOf(withMotionAction(MotionEvent.ACTION_MOVE), withCoords(expected))
+                    )
+                }
                 verifier.assertReceivedMotion(
                     allOf(withMotionAction(MotionEvent.ACTION_UP), withCoords(expected))
                 )

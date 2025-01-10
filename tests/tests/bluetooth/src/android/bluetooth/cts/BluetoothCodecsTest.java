@@ -16,10 +16,17 @@
 
 package android.bluetooth.cts;
 
+import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_AAC;
+import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_INVALID;
+import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_LC3;
+import static android.bluetooth.BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC;
+import static android.bluetooth.BluetoothCodecType.CODEC_ID_AAC;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
+import android.bluetooth.BluetoothCodecType;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -346,6 +353,35 @@ public class BluetoothCodecsTest {
         assertThat(bcs_A.isCodecConfigSelectable(selectable_capability1_B)).isFalse();
         assertThat(bcs_A.isCodecConfigSelectable(selectable_capability2_A)).isFalse();
         assertThat(bcs_A.isCodecConfigSelectable(selectable_capability2_B)).isFalse();
+    }
+
+    @Test
+    public void codecType_createFromType() {
+        BluetoothCodecType c = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_AAC);
+        assertThat(c).isNotNull();
+
+        assertThat(BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_LC3)).isNull();
+        assertThat(BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_INVALID)).isNull();
+    }
+
+    @Test
+    public void codecType_getCodecId() {
+        BluetoothCodecType c = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_AAC);
+        assertThat(c.getCodecId()).isEqualTo(CODEC_ID_AAC);
+    }
+
+    @Test
+    public void codecType_getCodecName() {
+        BluetoothCodecType c = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_AAC);
+        assertThat(c.getCodecName()).isEqualTo("AAC");
+    }
+
+    @Test
+    public void codecType_isMandatoryCodec() {
+        BluetoothCodecType cA = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_AAC);
+        BluetoothCodecType cB = BluetoothCodecType.createFromType(SOURCE_CODEC_TYPE_SBC);
+        assertThat(cA.isMandatoryCodec()).isFalse();
+        assertThat(cB.isMandatoryCodec()).isTrue();
     }
 
     private static BluetoothCodecConfig buildBluetoothCodecConfig(

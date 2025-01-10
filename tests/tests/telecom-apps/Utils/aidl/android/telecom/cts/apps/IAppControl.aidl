@@ -30,6 +30,7 @@ import android.telecom.cts.apps.AvailableEndpointsTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.PhoneAccountTransaction;
 import android.telecom.cts.apps.BooleanTransaction;
+import android.telecom.cts.apps.IRemoteOperationConsumer;
 
 // Note: This interface is overridden by the following applications:
 //  - TransactionalVoipApp_Main,
@@ -55,6 +56,7 @@ interface IAppControl {
     CallEndpointTransaction getCurrentCallEndpoint(String id);
     AvailableEndpointsTransaction getAvailableCallEndpoints(String id);
     NoDataTransaction addCall(in CallAttributes callAttributes);
+    NoDataTransaction addCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction setMuteState(String id, boolean isMuted);
     BooleanTransaction isMuted(String id);
     CallExceptionTransaction transitionCallStateTo(String id, int state, boolean expectSuccess, in Bundle extras);

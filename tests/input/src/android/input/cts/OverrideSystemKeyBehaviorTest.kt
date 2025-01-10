@@ -29,6 +29,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.WindowUtil
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.inputeventmatchers.withKeyCode
 import com.android.input.flags.Flags
 import org.junit.Assert.assertFalse

@@ -59,6 +59,7 @@ import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.CallResources;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.NoDataTransaction;
 import android.telecom.cts.apps.NotificationUtils;
@@ -114,6 +115,13 @@ public class VoipConnectionServiceControlMain extends Service {
                 @Override
                 public NoDataTransaction addCall(CallAttributes callAttributes) {
                     Log.i(mTag, "addCall: enter");
+                    return addCallWithConsumer(callAttributes, null);
+                }
+
+                @Override
+                public NoDataTransaction addCallWithConsumer(CallAttributes callAttributes,
+                        IRemoteOperationConsumer consumer) {
+                    Log.i(mTag, "addCallWithConsumer: enter");
                     try {
                         List<String> stackTrace =
                                 createStackTraceList(
@@ -141,7 +149,7 @@ public class VoipConnectionServiceControlMain extends Service {
                                         waitUntilConnectionIsNonNull(
                                                 mPackageName, stackTrace, mConnectionServiceImpl);
                         // track the connection so it can be manipulated later in the test stage
-                        trackConnection(c, callAttributes, stackTrace);
+                        trackConnection(c, callAttributes, stackTrace, consumer);
                         // finally, return signal to the test process a call was successfully added
                         return new NoDataTransaction(TestAppTransaction.Success);
                     } catch (TestAppException e) {
@@ -152,7 +160,8 @@ public class VoipConnectionServiceControlMain extends Service {
                 private void trackConnection(
                         VoipConnection connection,
                         CallAttributes callAttributes,
-                        List<String> stackTrace) {
+                        List<String> stackTrace,
+                        IRemoteOperationConsumer consumer) {
                     String id =
                             waitUntilIdIsSet(
                                     mPackageName,
@@ -164,6 +173,15 @@ public class VoipConnectionServiceControlMain extends Service {
                             mTag,
                             String.format(
                                     "trackConnection: id=[%s], connection=[%s]", id, connection));
+                    if (consumer != null) {
+                        connection.setOperationConsumer(c -> {
+                            try {
+                                consumer.complete(c);
+                            } catch (RemoteException e) {
+                                Log.e(mTag, "trackConnection: Failed to set consumer.", e);
+                            }
+                        });
+                    }
                     mIdToConnection.put(id, connection);
                     connection.setIdAndResources(
                             id,

@@ -24,6 +24,7 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputDevice
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice

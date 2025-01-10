@@ -619,8 +619,13 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HEIF_GAINMAP)
     public void testHeicUltraHdr() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
+            if (!mAllStaticInfo.get(id).isHeicUltraHdrSupported()) {
+                Log.i(TAG, "Camera " + id + " does not support HEIC_ULTRAHDR, skipping");
+                continue;
+            }
+
             try {
-                Log.v(TAG, "Testing Heic UltraHDR capture for Camera " + id);
+                Log.v(TAG, "Testing HEIC_ULTRAHDR capture for Camera " + id);
                 openDevice(id);
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.HEIC_ULTRAHDR, /*repeating*/false);
@@ -872,6 +877,33 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
             assertEquals(DataSpace.DATASPACE_HEIF, writer.getDataSpace());
             // HEIC is the combination of HardwareBuffer.BLOB and Dataspace.DATASPACE_HEIF
             assertEquals(ImageFormat.HEIC, writer.getFormat());
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HEIF_GAINMAP)
+    public void testImageReaderBuilderWithBLOBAndHeicUltraHdr() throws Exception {
+        long usage = HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE | HardwareBuffer.USAGE_GPU_COLOR_OUTPUT;
+        try (
+                ImageReader reader = new ImageReader
+                        .Builder(20, 45)
+                        .setMaxImages(2)
+                        .setDefaultHardwareBufferFormat(HardwareBuffer.BLOB)
+                        .setDefaultDataSpace(DataSpace.DATASPACE_HEIF_ULTRAHDR)
+                        .setUsage(usage)
+                        .build();
+                ImageWriter writer = new ImageWriter.Builder(reader.getSurface()).build();
+        ) {
+            assertEquals(2, reader.getMaxImages());
+            assertEquals(usage, reader.getUsage());
+            assertEquals(HardwareBuffer.BLOB, reader.getHardwareBufferFormat());
+            assertEquals(DataSpace.DATASPACE_HEIF_ULTRAHDR, reader.getDataSpace());
+            // writer should have same dataspace/hardwarebuffer format as reader.
+            assertEquals(HardwareBuffer.BLOB, writer.getHardwareBufferFormat());
+            assertEquals(DataSpace.DATASPACE_HEIF_ULTRAHDR, writer.getDataSpace());
+            // HEIC_ULTRAHDR is the combination of HardwareBuffer.BLOB and
+            // Dataspace.DATASPACE_HEIF_ULTRAHDR
+            assertEquals(ImageFormat.HEIC_ULTRAHDR, writer.getFormat());
         }
     }
 

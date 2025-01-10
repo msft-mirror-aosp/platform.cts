@@ -119,7 +119,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       captures = cam.do_jca_captures_across_zoom_ratios(
           self.dut,
           self.log_path,
-          flash_mode='OFF',
+          flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
           lens_facing=props['android.lens.facing'],
           zoom_ratios=z_list
       )

@@ -29,9 +29,11 @@ import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_RESET_CAR;
 import static android.telecom.cts.apps.ShellCommandExecutor.dumpTelecom;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
+import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
 import static android.telecom.cts.apps.WaitForInCallService.verifyCallState;
 import static android.telecom.cts.apps.WaitForInCallService.waitForInCallServiceBinding;
 import static android.telecom.cts.apps.WaitForInCallService.waitUntilExpectCallCount;
+import static android.telecom.cts.apps.WaitForInCallService.waitUntilNewCallId;
 import static android.telecom.cts.apps.WaitUntil.DEFAULT_TIMEOUT_MS;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConditionIsTrueOrTimeout;
 
@@ -64,11 +66,14 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * This class implements all the methods test classes call into to perform some action on an
@@ -99,12 +104,14 @@ public class BaseAppVerifierImpl {
     public TelecomManager mTelecomManager;
     private final BindUtils mBindUtils = new BindUtils();
     private final List<PhoneAccount> mManagedAccounts;
+    private final List<PhoneAccount> mManagedCloneAccounts;
     private final Instrumentation mInstrumentation;
     private final InCallServiceMethods mVerifierMethods;
     private final String mCallingPackageName;
     private final AudioManager mAudioManager;
     public String mPreviousDefaultDialer = "";
     public PhoneAccountHandle mPreviousDefaultPhoneAccount = null;
+    public boolean mEnableCallOperationCapture = false;
 
     // Stores the current audio focus
     private final LinkedBlockingQueue<Integer> mMusicAudioFocusQueue =
@@ -134,11 +141,13 @@ public class BaseAppVerifierImpl {
             .setOnAudioFocusChangeListener(mMusicAudioFocusChangeListener)
             .build();
 
-    public BaseAppVerifierImpl(Instrumentation i, List<PhoneAccount> pAs, InCallServiceMethods vm) {
+    public BaseAppVerifierImpl(Instrumentation i, List<PhoneAccount> pAs,
+            List<PhoneAccount> pAClones, InCallServiceMethods vm) {
         mInstrumentation = i;
         mContext = i.getContext();
         mTelecomManager = mContext.getSystemService(TelecomManager.class);
         mManagedAccounts = pAs;
+        mManagedCloneAccounts = pAClones;
         mVerifierMethods = vm;
         mCallingPackageName = mContext.getPackageName();
         mAudioManager = mContext.getSystemService(AudioManager.class);
@@ -194,8 +203,14 @@ public class BaseAppVerifierImpl {
 
     public AppControlWrapper bindToApp(TelecomTestApp applicationName) throws Exception {
         AppControlWrapper control = mBindUtils.bindToApp(mContext, applicationName);
+        Log.i("BaseAppVerifierImpl", "bindToApp: applicationName = " + applicationName);
         if (isManagedConnectionService(applicationName)) {
             for (PhoneAccount pA : mManagedAccounts) {
+                registerManagedPhoneAccount(pA);
+            }
+        } else if (isManagedConnectionServiceClone(applicationName)) {
+            Log.i("BaseAppVerifierImpl", "bindToApp: clone app managed - phone account: " +mManagedCloneAccounts.get(0));
+            for (PhoneAccount pA : mManagedCloneAccounts) {
                 registerManagedPhoneAccount(pA);
             }
         }
@@ -204,6 +219,10 @@ public class BaseAppVerifierImpl {
 
     private boolean isManagedConnectionService(TelecomTestApp applicationName) {
         return applicationName.equals(ManagedConnectionServiceApp);
+    }
+
+    private boolean isManagedConnectionServiceClone(TelecomTestApp applicationName) {
+        return applicationName.equals(ManagedConnectionServiceAppClone);
     }
 
     public List<AppControlWrapper> bindToApps(List<TelecomTestApp> applicationNames)
@@ -239,6 +258,9 @@ public class BaseAppVerifierImpl {
             // Treat the first element in mManagedAccounts as the "default"
             return getDefaultAttributesForManaged(mManagedAccounts.get(0).getAccountHandle(),
                     isOutgoing);
+        } else if (name.equals(ManagedConnectionServiceAppClone)) {
+            return getDefaultAttributesForManaged(mManagedCloneAccounts.get(0).getAccountHandle(),
+                    isOutgoing);
         }
         return getDefaultAttributesForApp(name, isOutgoing);
     }
@@ -246,7 +268,8 @@ public class BaseAppVerifierImpl {
     public CallAttributes getDefaultAttributes(TelecomTestApp name, PhoneAccountHandle pAH,
             boolean isOutgoing)
             throws Exception {
-        if (name.equals(ManagedConnectionServiceApp)) {
+        if (name.equals(ManagedConnectionServiceApp)
+                || name.equals(ManagedConnectionServiceAppClone)) {
             return getDefaultAttributesForManaged(pAH, isOutgoing);
         }
         return getDefaultAttributesForApp(name, isOutgoing);
@@ -260,16 +283,48 @@ public class BaseAppVerifierImpl {
             // Treat the first element in mManagedAccounts as the "default"
             return getRandomAttributesForManaged(mManagedAccounts.get(0).getAccountHandle(),
                     isOutgoing, isHoldable);
+        } else if (name.equals(ManagedConnectionServiceAppClone)) {
+            return getRandomAttributesForManaged(mManagedCloneAccounts.get(0).getAccountHandle(),
+                    isOutgoing, isHoldable);
         }
         return getRandomAttributesForApp(name, isOutgoing, isHoldable);
     }
 
-    public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes)
+    public int addCall(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
         int currentCallCount = mVerifierMethods.getCurrentCallCount();
         appControl.addCall(attributes);
         waitForInCallServiceBinding(mVerifierMethods);
+        return currentCallCount;
+    }
+
+    public int addCall(AppControlWrapper appControl, CallAttributes attributes,
+            Consumer<CallStateTransitionOperation> consumer) throws Exception {
+        int currentCallCount = mVerifierMethods.getCurrentCallCount();
+        appControl.addCall(attributes, consumer);
+        waitForInCallServiceBinding(mVerifierMethods);
+        return currentCallCount;
+    }
+
+    public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes,
+            Consumer<CallStateTransitionOperation> consumer) throws Exception {
+        int currentCallCount = addCall(appControl, attributes, consumer);
         waitUntilExpectCallCount(mVerifierMethods, currentCallCount + 1);
+        return mVerifierMethods.getLastAddedCall().getDetails().getId();
+    }
+
+    public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes)
+            throws Exception {
+        int currentCallCount = addCall(appControl, attributes);
+        waitUntilExpectCallCount(mVerifierMethods, currentCallCount + 1);
+        return mVerifierMethods.getLastAddedCall().getDetails().getId();
+    }
+
+    public String addAndGetNewCall(AppControlWrapper appControl, CallAttributes attr,
+            String idToExclude, Consumer<CallStateTransitionOperation> consumer
+    ) throws Exception {
+        addCall(appControl, attr, consumer);
+        waitUntilNewCallId(mVerifierMethods, idToExclude);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
@@ -334,21 +389,29 @@ public class BaseAppVerifierImpl {
         verifyCallState(mVerifierMethods, id, state);
     }
 
-    public void answerViaInCallServiceAndVerify(String id, int videoState) throws Exception {
-        waitForInCallServiceBinding(mVerifierMethods);
-        List<Call> calls = mVerifierMethods.getOngoingCalls();
-        Call targetCall = null;
-        for (Call call : calls) {
-            if (call.getDetails().getId().equals(id)) {
-                targetCall = call;
-                break;
-            }
-        }
-        if (targetCall == null) {
-            fail("answerViaInCallServiceAndVerify: failed to find target call id=" + id);
-        }
+    public void answerViaInCallService(String id, int videoState) throws Exception {
+        Call targetCall = findTargetCall(id);
         targetCall.answer(videoState);
+    }
+
+    public void answerViaInCallServiceAndVerify(String id, int videoState) throws Exception {
+        answerViaInCallService(id, videoState);
         verifyCallIsInState(id, STATE_ACTIVE);
+    }
+
+    public void holdCallViaInCallService(String id) {
+        Call call = findTargetCall(id);
+        call.hold();
+    }
+
+    public void unholdCallViaInCallService(String id) {
+        Call call = findTargetCall(id);
+        call.unhold();
+    }
+
+    public void disconnectCallViaInCallService(String id) {
+        Call call = findTargetCall(id);
+        call.disconnect();
     }
 
     // -- audio state
@@ -407,6 +470,11 @@ public class BaseAppVerifierImpl {
                 assertTrue("Managed PhoneAccount [ +" + pa.getAccountHandle() + " ] is not"
                         + "registered.", isPhoneAccountRegistered(pa.getAccountHandle()));
             }
+        } if (appControl.isManagedAppControlClone()) {
+            for (PhoneAccount pa : mManagedCloneAccounts) {
+                assertTrue("Managed Clone PhoneAccount [ +" + pa.getAccountHandle() + " ] is not"
+                        + "registered.", isPhoneAccountRegistered(pa.getAccountHandle()));
+            }
         } else {
             PhoneAccount account = appControl.getDefaultPhoneAccount();
             assertTrue(isPhoneAccountRegistered(account.getAccountHandle()));
@@ -452,18 +520,7 @@ public class BaseAppVerifierImpl {
     }
 
     public void verifyCallPhoneAccount(String id, PhoneAccountHandle handle) {
-        waitForInCallServiceBinding(mVerifierMethods);
-        List<Call> calls = mVerifierMethods.getOngoingCalls();
-        Call targetCall = null;
-        for (Call call : calls) {
-            if (call.getDetails().getId().equals(id)) {
-                targetCall = call;
-                break;
-            }
-        }
-        if (targetCall == null) {
-            fail("verifyCallPhoneAccount: failed to find target call id=" + id);
-        }
+        Call targetCall = findTargetCall(id);
         if (targetCall.getDetails() == null) {
             fail("verifyCallPhoneAccount: failed to find target call details, id=" + id);
         }
@@ -573,5 +630,21 @@ public class BaseAppVerifierImpl {
     public void releaseAudioFocusForMusic() {
         int result = mAudioManager.abandonAudioFocusRequest(mMusicFocusRequest);
         assertEquals(AudioManager.AUDIOFOCUS_REQUEST_GRANTED, result);
+    }
+
+    private Call findTargetCall(String id) {
+        waitForInCallServiceBinding(mVerifierMethods);
+        List<Call> calls = mVerifierMethods.getOngoingCalls();
+        Call targetCall = null;
+        for (Call call : calls) {
+            if (call.getDetails().getId().equals(id)) {
+                targetCall = call;
+                break;
+            }
+        }
+        if (targetCall == null) {
+            fail("answerViaInCallServiceAndVerify: failed to find target call id=" + id);
+        }
+        return targetCall;
     }
 }

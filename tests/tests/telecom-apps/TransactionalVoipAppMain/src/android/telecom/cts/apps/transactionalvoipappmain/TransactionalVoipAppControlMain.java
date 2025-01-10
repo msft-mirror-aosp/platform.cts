@@ -54,6 +54,7 @@ import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.CallResources;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedOutcomeReceiver;
 import android.telecom.cts.apps.NoDataTransaction;
 import android.telecom.cts.apps.NotificationUtils;
@@ -106,6 +107,14 @@ public class TransactionalVoipAppControlMain extends Service {
                 public NoDataTransaction addCall(CallAttributes callAttributes)
                         throws RemoteException {
                     Log.i(mTag, String.format("addCall: w/ attributes=[%s]", callAttributes));
+                    return addCallWithConsumer(callAttributes, null);
+                }
+
+                @Override
+                public NoDataTransaction addCallWithConsumer(CallAttributes callAttributes,
+                        IRemoteOperationConsumer consumer) throws RemoteException {
+                    Log.i(mTag, String.format("addCallWithConsumer: w/ attributes=[%s]",
+                            callAttributes));
                     try {
                         List<String> stackTrace =
                                 createStackTraceList(
@@ -120,6 +129,15 @@ public class TransactionalVoipAppControlMain extends Service {
                                                 callAttributes,
                                                 NOTIFICATION_CHANNEL_ID,
                                                 sNextNotificationId++));
+                        if (consumer != null) {
+                            call.setOperationConsumer(c -> {
+                                try {
+                                    consumer.complete(c);
+                                } catch (RemoteException e) {
+                                    Log.e(mTag, "addCallWithConsumer: Failed to set consumer.", e);
+                                }
+                            });
+                        }
 
                         mTelecomManager.addCall(
                                 callAttributes,

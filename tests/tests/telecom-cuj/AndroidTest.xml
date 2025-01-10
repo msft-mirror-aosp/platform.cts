@@ -26,6 +26,7 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsTelecomCujTestCases.apk" />
         <option name="test-file-name" value="./telecom-apps/ManagedConnectionServiceApp.apk" />
+        <option name="test-file-name" value="./telecom-apps/ManagedConnectionServiceAppClone.apk" />
         <option name="test-file-name" value="./telecom-apps/TransactionalVoipAppMain.apk" />
         <option name="test-file-name" value="./telecom-apps/TransactionalVoipAppClone.apk" />
         <option name="test-file-name" value="./telecom-apps/ConnectionServiceVoipAppMain.apk" />

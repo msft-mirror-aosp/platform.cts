@@ -20,6 +20,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.Signature;
+import android.content.res.AssetManager;
 import android.content.res.Resources.NotFoundException;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.test.AndroidTestCase;
@@ -27,6 +28,7 @@ import android.util.Log;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -185,6 +187,17 @@ public class PackageSignatureTest extends AndroidTestCase {
         wellKnownSignatures.add(getSignature(R.raw.sig_test_cert_4));
         wellKnownSignatures.add(getSignature(R.raw.sig_testcert));
         wellKnownSignatures.add(getSignature(R.raw.sig_unit_test));
+
+        // Get additional certs from assets directory.
+        // This contains certs of all the apexes in the tree in which this CTS apk was built.
+        AssetManager assetManager = getContext().getAssets();
+        for (String file : assetManager.list("")) {
+            Signature sig = getSignatureFromAssetFile(assetManager, file);
+            if (sig != null) {
+                wellKnownSignatures.add(sig);
+            }
+        }
+
         return wellKnownSignatures;
     }
 
@@ -267,6 +280,15 @@ public class PackageSignatureTest extends AndroidTestCase {
         } finally {
             input.close();
             output.close();
+        }
+    }
+
+    private Signature getSignatureFromAssetFile(AssetManager assetManager, String fileName)
+            throws NotFoundException, IOException {
+        try (InputStream input = assetManager.open(fileName); ) {
+            return new Signature(input.readAllBytes());
+        } catch (FileNotFoundException e) {
+            return null;
         }
     }
 

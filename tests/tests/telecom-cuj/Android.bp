@@ -48,6 +48,7 @@ android_test {
     ],
     data: [
         ":ManagedConnectionServiceApp",
+        ":ManagedConnectionServiceAppClone",
         ":TransactionalVoipAppMain",
         ":TransactionalVoipAppClone",
         ":ConnectionServiceVoipAppMain",

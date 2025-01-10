@@ -17,9 +17,13 @@
 package android.telecom.cts.cuj;
 
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_ADDRESS;
+import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_CLONE_LABEL;
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_CN;
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_ID;
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_LABEL;
+import static android.telecom.cts.apps.TelecomTestApp.MANAGED_CLONE_ADDRESS;
+import static android.telecom.cts.apps.TelecomTestApp.MANAGED_CLONE_APP_CN;
+import static android.telecom.cts.apps.TelecomTestApp.MANAGED_CLONE_APP_ID;
 
 import static junit.framework.Assert.assertNotNull;
 
@@ -37,6 +41,7 @@ import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.BaseAppVerifierImpl;
+import android.telecom.cts.apps.CallStateTransitionOperation;
 import android.telecom.cts.apps.InCallServiceMethods;
 import android.telecom.cts.apps.TelecomTestApp;
 
@@ -51,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * BaseAppVerifier should be extended by any test class that wants to bind to the test apps in the
@@ -65,8 +71,8 @@ public class BaseAppVerifier {
     private BaseAppVerifierImpl mBaseAppVerifierImpl;
     protected Context mContext = null;
     /***********************************************************
-     /  ManagedConnectionServiceApp - The PhoneAccountHandle and PhoneAccount must reside in the
-     /  CTS test process.
+     /  ManagedConnectionServiceApp/ ManagedConnectionServiceAppClone - The PhoneAccountHandle and
+     /  PhoneAccount must reside in the CTS test process.
      /***********************************************************/
     public static final PhoneAccountHandle MANAGED_HANDLE_1 =
             new PhoneAccountHandle(MANAGED_APP_CN, MANAGED_APP_ID);
@@ -94,6 +100,20 @@ public class BaseAppVerifier {
             .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
             .build();
 
+    public static final PhoneAccountHandle MANAGED_CLONE_HANDLE_1 =
+            new PhoneAccountHandle(MANAGED_CLONE_APP_CN, MANAGED_CLONE_APP_ID);
+    private static final PhoneAccount MANAGED_CLONE_DEFAULT_ACCOUNT_1 =
+            PhoneAccount.builder(MANAGED_CLONE_HANDLE_1, MANAGED_APP_CLONE_LABEL)
+                    .setAddress(Uri.parse(MANAGED_CLONE_ADDRESS))
+                    .setSubscriptionAddress(Uri.parse(MANAGED_CLONE_ADDRESS))
+                    .setCapabilities(PhoneAccount.CAPABILITY_VIDEO_CALLING
+                            | PhoneAccount.CAPABILITY_CALL_PROVIDER /* needed in order to be default sub */)
+                    .setHighlightColor(Color.RED)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_VOICEMAIL)
+                    .build();
+
     private static final Map<PhoneAccountHandle, PhoneAccount> MANAGED_PHONE_ACCOUNTS =
             new HashMap<>();
     static {
@@ -116,6 +136,7 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl = new BaseAppVerifierImpl(
                 InstrumentationRegistry.getInstrumentation(),
                 Arrays.asList(MANAGED_DEFAULT_ACCOUNT_1, MANAGED_DEFAULT_ACCOUNT_2),
+                Arrays.asList(MANAGED_CLONE_DEFAULT_ACCOUNT_1),
                 new InCallServiceMethods() {
 
                     @Override
@@ -237,6 +258,18 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.addCallAndVerify(appControl, attributes);
     }
 
+    public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes,
+            Consumer<CallStateTransitionOperation> consumer)
+            throws Exception {
+        return mBaseAppVerifierImpl.addCallAndVerify(appControl, attributes, consumer);
+    }
+
+    public String addCallAndVerifyNewCall(AppControlWrapper appControl, CallAttributes attributes,
+            String idToExclude, Consumer<CallStateTransitionOperation> consumer
+    ) throws Exception {
+        return mBaseAppVerifierImpl.addAndGetNewCall(appControl, attributes, idToExclude, consumer);
+    }
+
     public void setCallState(AppControlWrapper appControl, String id, int callState)
             throws Exception {
         mBaseAppVerifierImpl.setCallState(appControl, id, callState);
@@ -251,8 +284,24 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.setCallStateAndVerify(appControl, id, targetCallState, arg);
     }
 
+    public void answerViaInCallService(String id, int videoState) throws Exception {
+        mBaseAppVerifierImpl.answerViaInCallService(id, videoState);
+    }
+
     public void answerViaInCallServiceAndVerify(String id, int videoState) throws Exception {
         mBaseAppVerifierImpl.answerViaInCallServiceAndVerify(id, videoState);
+    }
+
+    public void holdCallViaInCallService(String id) {
+        mBaseAppVerifierImpl.holdCallViaInCallService(id);
+    }
+
+    public void unholdCallViaInCallService(String id) {
+        mBaseAppVerifierImpl.unholdCallViaInCallService(id);
+    }
+
+    public void disconnectCallViaInCallService(String id) {
+        mBaseAppVerifierImpl.disconnectCallViaInCallService(id);
     }
 
     public CallException setCallStateButExpectOnError(AppControlWrapper appControl,
