@@ -2967,9 +2967,10 @@ You should be prompted to select credentials; choose the ones you just installed
         1. Press "Set up" to open Security settings. (If this device has a separate app for work
         settings, ignore this button and open that app manually from the launcher.) Create a
         lockscreen password and if available, enroll a fingerprint under "Work profile security".\n
-        2. Go through the list of tests.\n
-        3. Mark the overall test pass or fail.\n
-        4. Once the set of tests are completed, remove the lockscreen challenge.
+        2. Ensure that work profile and device entry password and fingerprint are separate by disabling "One Lock".\n
+        3. Go through the list of tests.\n
+        4. Mark the overall test pass or fail.\n
+        5. Once the set of tests are completed, remove the lockscreen challenge.
     </string>
     <string name="provisioning_byod_auth_bound_key_set_up">Set up</string>
     <string name="provisioning_byod_lockscreen_bound_key">Lockscreen-bound key test</string>
