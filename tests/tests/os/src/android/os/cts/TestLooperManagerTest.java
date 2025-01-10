@@ -28,6 +28,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.MessageQueue;
+import android.os.SystemClock;
 import android.os.TestLooperManager;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -80,6 +81,31 @@ public class TestLooperManagerTest {
                         });
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.os.Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
+    public void peekWhen_future() {
+        final HandlerThread thread = new HandlerThread(TAG);
+        thread.start();
+        final Looper looper = thread.getLooper();
+        final TestLooperManager tlm =
+                InstrumentationRegistry.getInstrumentation()
+                        .acquireLooperManager(looper);
+        try {
+            final Handler handler = new Handler(looper);
+            handler.postDelayed(() -> {}, 10000);
+
+            long now = SystemClock.uptimeMillis();
+            final Long when = tlm.peekWhen();
+            assertNotNull(when);
+
+            assertTrue(when > now);
+            assertTrue(when <= (now + 10000));
+        } finally {
+            tlm.release();
+            thread.quit();
+        }
+    }
+
     private void doTest(Looper looper) throws Exception {
         final TestLooperManager tlm =
                 InstrumentationRegistry.getInstrumentation().acquireLooperManager(looper);
@@ -118,7 +144,6 @@ public class TestLooperManagerTest {
         assertTrue(latch.await(100, TimeUnit.MILLISECONDS));
         tlm.recycle(second);
 
-        assertNull(tlm.peekWhen());
         assertNull(tlm.poll());
 
         MessageQueue mQueue = looper.getQueue();
