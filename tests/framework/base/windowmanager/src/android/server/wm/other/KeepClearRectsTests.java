@@ -107,7 +107,9 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         // To be kept in sync with res/layout/keep_clear_attr_activity
-        final Rect keepClearRect = new Rect(0, 0, 25, 25);
+        final Rect keepClearRect = new Rect();
+        getViewBoundsOnScreen(activity.findViewById(R.id.keepClearView), keepClearRect);
+
         assertSameElementsEventually(Arrays.asList(keepClearRect),
                 () -> getKeepClearRectsForActivity(activity));
     }
@@ -119,11 +121,12 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect keepClearRect = new Rect(0, 0, 25, 25);
-        final View v = createTestViewInActivity(activity, keepClearRect);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, keepClearRect, outViewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(true));
 
-        assertSameElementsEventually(Arrays.asList(keepClearRect),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
     }
 
     @Test
@@ -133,17 +136,19 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect keepClearRect = new Rect(0, 0, 25, 25);
-        final View v = createTestViewInActivity(activity, keepClearRect);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, keepClearRect, outViewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(true));
 
-        final List<Rect> expected = new ArrayList(Arrays.asList(keepClearRect));
+        final List<Rect> expected = new ArrayList<>(Arrays.asList(outViewBounds));
         assertSameElementsEventually(expected, () -> getKeepClearRectsForActivity(activity));
 
         final Rect keepClearRect2 = new Rect(25, 25, 50, 50);
-        final View v2 = createTestViewInActivity(activity, keepClearRect2);
+        final Rect outViewBounds2 = new Rect();
+        final View v2 = createTestViewInActivity(activity, keepClearRect2, outViewBounds2);
         mTestSession.runOnMainSyncAndWait(() -> v2.setPreferKeepClear(true));
 
-        expected.addAll(Arrays.asList(keepClearRect2));
+        expected.addAll(Arrays.asList(outViewBounds2));
         assertSameElementsEventually(expected, () -> getKeepClearRectsForActivity(activity));
     }
 
@@ -156,7 +161,8 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final View v = createTestViewInActivity(activity);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS));
 
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
+        assertSameElementsEventually(
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v),
                 () -> getKeepClearRectsForActivity(activity));
     }
 
@@ -173,8 +179,9 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
             v2.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS_2);
         });
 
-        final List<Rect> expected = new ArrayList(TEST_KEEP_CLEAR_RECTS);
-        expected.addAll(TEST_KEEP_CLEAR_RECTS_2);
+        final List<Rect> expected =
+                new ArrayList<>(offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v1));
+        expected.addAll(offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS_2, v2));
         assertSameElementsEventually(expected, () -> getKeepClearRectsForActivity(activity));
     }
 
@@ -256,19 +263,22 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
-        final View v = createTestViewInActivity(activity, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, viewBounds, outViewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS));
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v);
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(true));
-        final List<Rect> combinedRects = new ArrayList<>(TEST_KEEP_CLEAR_RECTS);
-        combinedRects.add(viewBounds);
+        final List<Rect> combinedRects = new ArrayList<>(offsetTestKeepClearRect);
+        combinedRects.add(outViewBounds);
         assertSameElementsEventually(combinedRects, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(false));
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
     }
 
     @Test
@@ -279,50 +289,56 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
-        final View v = createTestViewInActivity(activity, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, viewBounds, outViewBounds);
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v);
+
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(true));
-        assertSameElementsEventually(Arrays.asList(viewBounds),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setVisibility(View.GONE));
         assertSameElementsEventually(EMPTY_LIST, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setVisibility(View.VISIBLE));
-        assertSameElementsEventually(Arrays.asList(viewBounds),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> {
             v.setPreferKeepClear(false);
             v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS);
         });
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setVisibility(View.GONE));
         assertSameElementsEventually(EMPTY_LIST, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setVisibility(View.VISIBLE));
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
 
         final Rect viewBounds2 = new Rect(60, 60, 90, 90);
-        final View v2 = createTestViewInActivity(activity, viewBounds2);
+        final Rect outViewBounds2 = new Rect();
+        final View v2 = createTestViewInActivity(activity, viewBounds2, outViewBounds2);
+
         mTestSession.runOnMainSyncAndWait(() -> v2.setPreferKeepClear(true));
 
-        final List<Rect> expected = new ArrayList(TEST_KEEP_CLEAR_RECTS);
-        expected.add(viewBounds2);
+        final List<Rect> expected = new ArrayList<>(offsetTestKeepClearRect);
+        expected.add(outViewBounds2);
         assertSameElementsEventually(expected, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> v.setVisibility(View.GONE));
-        assertSameElementsEventually(Arrays.asList(viewBounds2),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds2), () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> {
             v.setVisibility(View.VISIBLE);
             v2.setVisibility(View.GONE);
         });
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> {
             v.setVisibility(View.VISIBLE);
@@ -338,10 +354,11 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
-        final View v = createTestViewInActivity(activity, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, viewBounds, outViewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(true));
-        assertSameElementsEventually(Arrays.asList(viewBounds),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> ((ViewGroup) v.getParent()).removeView(v));
         assertSameElementsEventually(EMPTY_LIST, () -> getKeepClearRectsForActivity(activity));
@@ -378,12 +395,13 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(30, 30, 60, 60);
-        final View v = createTestViewInActivity(activity, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, viewBounds, outViewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS));
-        final List<Rect> expected = new ArrayList();
+        final List<Rect> expected = new ArrayList<>();
         for (Rect r : TEST_KEEP_CLEAR_RECTS) {
             Rect newRect = new Rect(r);
-            newRect.offset(viewBounds.left, viewBounds.top);
+            newRect.offset(outViewBounds.left, outViewBounds.top);
             expected.add(newRect);
         }
 
@@ -398,23 +416,26 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect keepClearRect = new Rect(0, 0, 25, 25);
-        final View v = createTestViewInActivity(activity, keepClearRect);
+        final Rect outViewBounds = new Rect();
+        final View v = createTestViewInActivity(activity, keepClearRect, outViewBounds);
         final List<Rect> prevKeepClearRectsOnDisplay = getKeepClearRectsOnDefaultDisplay();
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClear(true));
-        assertSameElementsEventually(Arrays.asList(keepClearRect),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
 
         mTestSession.runOnMainSyncAndWait(() -> {
             v.setPreferKeepClear(false);
             v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS);
         });
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v);
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
 
         final List<Rect> expectedRectsOnDisplay = new ArrayList<Rect>();
         expectedRectsOnDisplay.addAll(prevKeepClearRectsOnDisplay);
         expectedRectsOnDisplay.addAll(
-                getRectsInScreenSpace(TEST_KEEP_CLEAR_RECTS, activity.getComponentName()));
+                getRectsInScreenSpace(offsetTestKeepClearRect, activity.getComponentName()));
         assertSameElementsEventually(expectedRectsOnDisplay,
                 () -> getKeepClearRectsOnDefaultDisplay());
     }
@@ -430,8 +451,10 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final Rect viewBounds = new Rect(0, 0, 60, 60);
         final View v = createTestViewInActivity(activity, viewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS));
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v);
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
 
         activity.finishAndRemoveTask();
         assertSameElementsEventually(prevKeepClearRectsOnDisplay,
@@ -445,10 +468,11 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 25, 25);
-        final View v1 = createTestViewInActivity(activity, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v1 = createTestViewInActivity(activity, viewBounds, outViewBounds);
         mTestSession.runOnMainSyncAndWait(() -> v1.setPreferKeepClear(true));
-        assertSameElementsEventually(Arrays.asList(viewBounds),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
 
         final String title = "KeepClearRectsTestWindow";
         mTestSession.runOnMainSyncAndWait(() -> {
@@ -464,8 +488,8 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         });
         mWmState.waitAndAssertWindowSurfaceShown(title, true);
 
-        assertSameElementsEventually(Arrays.asList(viewBounds),
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity));
     }
 
     @Test
@@ -476,11 +500,12 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivity activity1 = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 25, 25);
-        final View v1 = createTestViewInActivity(activity1, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v1 = createTestViewInActivity(activity1, viewBounds, outViewBounds);
         final List<Rect> prevKeepClearRectsOnDisplay = getKeepClearRectsOnDefaultDisplay();
         mTestSession.runOnMainSyncAndWait(() -> v1.setPreferKeepClear(true));
-        assertSameElementsEventually(Arrays.asList(viewBounds),
-                () -> getKeepClearRectsForActivity(activity1));
+        assertSameElementsEventually(
+                Arrays.asList(outViewBounds), () -> getKeepClearRectsForActivity(activity1));
 
         final TestActivitySession<TranslucentTestActivity> translucentTestSession =
                 createManagedTestActivitySession();
@@ -490,8 +515,10 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
 
         final View v2 = createTestViewInActivity(activity2);
         mTestSession.runOnMainSyncAndWait(() -> v2.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS));
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity2));
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v2);
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity2));
 
         mWmState.assertVisibility(activity1.getComponentName(), true);
         mWmState.assertVisibility(activity2.getComponentName(), true);
@@ -499,8 +526,8 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         // Since both activities are fullscreen, WM only takes the keep clear areas from the top one
         final List<Rect> expectedRectsOnDisplay = new ArrayList<Rect>();
         expectedRectsOnDisplay.addAll(prevKeepClearRectsOnDisplay);
-        expectedRectsOnDisplay.addAll(getRectsInScreenSpace(TEST_KEEP_CLEAR_RECTS,
-                activity2.getComponentName()));
+        expectedRectsOnDisplay.addAll(
+                getRectsInScreenSpace(offsetTestKeepClearRect, activity2.getComponentName()));
         assertSameElementsEventually(expectedRectsOnDisplay,
                 () -> getKeepClearRectsOnDefaultDisplay());
     }
@@ -515,15 +542,16 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
                 TranslucentTestActivity.class, mLaunchDisplayId);
         final TestActivity activity1 = translucentTestSession.getActivity();
         final Rect viewBounds = new Rect(0, 0, 25, 25);
-        final View v1 = createTestViewInActivity(activity1, viewBounds);
+        final Rect outViewBounds = new Rect();
+        final View v1 = createTestViewInActivity(activity1, viewBounds, outViewBounds);
         final List<Rect> prevKeepClearRectsOnDisplay = getKeepClearRectsOnDefaultDisplay();
         translucentTestSession.runOnMainSyncAndWait(() -> v1.setPreferKeepClear(true));
 
         // Add keep-clear rects in the activity
         final List<Rect> expectedRectsOnDisplay = new ArrayList<Rect>();
         expectedRectsOnDisplay.addAll(prevKeepClearRectsOnDisplay);
-        expectedRectsOnDisplay.addAll(getRectsInScreenSpace(Arrays.asList(viewBounds),
-                activity1.getComponentName()));
+        expectedRectsOnDisplay.addAll(
+                getRectsInScreenSpace(Arrays.asList(outViewBounds), activity1.getComponentName()));
         assertSameElementsEventually(expectedRectsOnDisplay,
                 () -> getKeepClearRectsOnDefaultDisplay());
 
@@ -534,8 +562,10 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         // Add keep-clear rects in the opaque activity
         final View v2 = createTestViewInActivity(activity2);
         mTestSession.runOnMainSyncAndWait(() -> v2.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS));
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity2));
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v2);
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity2));
 
         mWmState.waitAndAssertVisibilityGone(activity1.getComponentName());
         mWmState.assertVisibility(activity2.getComponentName(), true);
@@ -543,8 +573,8 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         // Only the opaque activity's keep-clear areas should be reported on the display
         expectedRectsOnDisplay.clear();
         expectedRectsOnDisplay.addAll(prevKeepClearRectsOnDisplay);
-        expectedRectsOnDisplay.addAll(getRectsInScreenSpace(
-                    TEST_KEEP_CLEAR_RECTS, activity2.getComponentName()));
+        expectedRectsOnDisplay.addAll(
+                getRectsInScreenSpace(offsetTestKeepClearRect, activity2.getComponentName()));
         assertSameElementsEventually(expectedRectsOnDisplay,
                 () -> getKeepClearRectsOnDefaultDisplay());
     }
@@ -570,7 +600,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS_2,
                 () -> getKeepClearRectsForActivity(KEEP_CLEAR_RECTS_ACTIVITY2));
 
-        final List<Rect> expected = new ArrayList();
+        final List<Rect> expected = new ArrayList<>();
         expected.addAll(prevKeepClearRectsOnDisplay);
         expected.addAll(getRectsInScreenSpace(TEST_KEEP_CLEAR_RECTS, KEEP_CLEAR_RECTS_ACTIVITY));
         expected.addAll(getRectsInScreenSpace(TEST_KEEP_CLEAR_RECTS_2, KEEP_CLEAR_RECTS_ACTIVITY2));
@@ -579,21 +609,27 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
 
     private void startKeepClearActivitiesInSplitscreen(ComponentName activity1,
             ComponentName activity2, List<Rect> keepClearRects1, List<Rect> keepClearRects2) {
-        final LaunchActivityBuilder activityBuilder1 = getLaunchActivityBuilder()
-                .setUseInstrumentation()
-                .setTargetActivity(activity1)
-                .setIntentExtra(extra -> {
-                    extra.putParcelableArrayList(EXTRA_KEEP_CLEAR_RECTS,
-                            new ArrayList(keepClearRects1));
-                });
+        final LaunchActivityBuilder activityBuilder1 =
+                getLaunchActivityBuilder()
+                        .setUseInstrumentation()
+                        .setTargetActivity(activity1)
+                        .setIntentExtra(
+                                extra -> {
+                                    extra.putParcelableArrayList(
+                                            EXTRA_KEEP_CLEAR_RECTS,
+                                            new ArrayList<>(keepClearRects1));
+                                });
 
-        final LaunchActivityBuilder activityBuilder2 = getLaunchActivityBuilder()
-                .setUseInstrumentation()
-                .setTargetActivity(activity2)
-                .setIntentExtra(extra -> {
-                    extra.putParcelableArrayList(EXTRA_KEEP_CLEAR_RECTS,
-                            new ArrayList(keepClearRects2));
-                });
+        final LaunchActivityBuilder activityBuilder2 =
+                getLaunchActivityBuilder()
+                        .setUseInstrumentation()
+                        .setTargetActivity(activity2)
+                        .setIntentExtra(
+                                extra -> {
+                                    extra.putParcelableArrayList(
+                                            EXTRA_KEEP_CLEAR_RECTS,
+                                            new ArrayList<>(keepClearRects2));
+                                });
 
         launchActivitiesInSplitScreen(activityBuilder1, activityBuilder2);
 
@@ -622,9 +658,11 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         mTestSession.runOnMainSyncAndWait(() -> {
             v.setPreferKeepClearRects(TEST_KEEP_CLEAR_RECTS);
         });
+        List<Rect> offsetTestKeepClearRect =
+                offsetRectsToLocationOnScreen(TEST_KEEP_CLEAR_RECTS, v);
 
-        assertSameElementsEventually(TEST_KEEP_CLEAR_RECTS,
-                () -> getKeepClearRectsForActivity(activity));
+        assertSameElementsEventually(
+                offsetTestKeepClearRect, () -> getKeepClearRectsForActivity(activity));
         assertSameElementsEventually(EMPTY_LIST,
                 () -> getUnrestrictedKeepClearRectsForActivity(activity));
     }
@@ -679,6 +717,13 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
                 () -> getKeepClearRectsForActivity(activity));
     }
 
+    private View createTestViewInActivity(
+            TestActivity activity, Rect viewBounds, Rect outViewBounds) {
+        final View newView = createTestViewInActivity(activity, viewBounds);
+        getViewBoundsOnScreen(newView, outViewBounds);
+        return newView;
+    }
+
     private View createTestViewInActivity(TestActivity activity) {
         return createTestViewInActivity(activity, TEST_VIEW_BOUNDS);
     }
@@ -693,6 +738,17 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         });
         waitForIdle();
         return newView;
+    }
+
+    private static List<Rect> offsetListOfRect(List<Rect> rects, int dx, int dy) {
+        return rects.stream()
+                .map(
+                        r -> {
+                            Rect offsetKeepClearRect = new Rect(r);
+                            offsetKeepClearRect.offset(dx, dy);
+                            return offsetKeepClearRect;
+                        })
+                .toList();
     }
 
     private List<Rect> getKeepClearRectsForActivity(Activity activity) {
@@ -736,6 +792,21 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     }
 
     public static class TranslucentTestActivity extends TestActivity {}
+
+    private static void getViewBoundsOnScreen(View view, Rect outRect) {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        outRect.left = location[0];
+        outRect.top = location[1];
+        outRect.right = location[0] + view.getWidth();
+        outRect.bottom = location[1] + view.getHeight();
+    }
+
+    private static List<Rect> offsetRectsToLocationOnScreen(List<Rect> rects, View view) {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        return offsetListOfRect(rects, location[0], location[1]);
+    }
 
     private List<Rect> getRectsInScreenSpace(List<Rect> rects, ComponentName componentName) {
         mWmState.computeState();
