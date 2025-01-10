@@ -208,15 +208,12 @@ public class SplashscreenTests extends ActivityManagerTestBase {
         // Activity may not be launched yet even if app transition is in idle state.
         mWmState.waitForActivityState(name, STATE_RESUMED);
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-
-        final Bitmap image = takeScreenshot();
-        final WindowMetrics windowMetrics = mWm.getMaximumWindowMetrics();
-        final Rect stableBounds = new Rect(windowMetrics.getBounds());
-        stableBounds.inset(windowMetrics.getWindowInsets().getInsetsIgnoringVisibility(
-                systemBars() & ~captionBar()));
+        final WindowManagerState.Task task = mWmState.getRootTaskByActivity(name);
+        final Rect taskBounds = task.getBounds();
+        final Bitmap[] image = new Bitmap[1];
+        runWithShellPermission(() -> image[0] = mWm.snapshotTaskForRecents(task.getTaskId()));
         WindowManagerState.WindowState startingWindow = mWmState.findFirstWindowWithType(
                 WindowManager.LayoutParams.TYPE_APPLICATION_STARTING);
-
         Rect startingWindowBounds = startingWindow.getBounds();
         final Rect appBounds;
         if (startingWindowBounds != null) {
@@ -224,24 +221,22 @@ public class SplashscreenTests extends ActivityManagerTestBase {
         } else {
             appBounds = new Rect(startingWindow.getFrame());
         }
-
         insetGivenFrame(startingWindow,
-                insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())), appBounds);
-
+            insetsSource -> (insetsSource.is(WindowInsets.Type.captionBar())), appBounds);
         assertFalse("Couldn't find splash screen bounds. Impossible to assert the colors",
                 appBounds.isEmpty());
-
-        // Use ratios to flexibly accommodate circular or not quite rectangular displays
-        // Note: Color.BLACK is the pixel color outside of the display region
-
+        // Scale up because task snapshot may be captured with different scale ratio.
+        final Bitmap scaleImage = Bitmap.createScaledBitmap(image[0],
+                taskBounds.width(), taskBounds.height(), false /* filter */);
+        // Offset appBounds to align the image coordinate.
+        appBounds.offset(-taskBounds.left, -taskBounds.top);
         int px = WindowManagerState.dpToPx(CENTER_ICON_SIZE,
                 mContext.getResources().getConfiguration().densityDpi);
         Rect ignoreRect = new Rect(0, 0, px, px);
         ignoreRect.offsetTo(appBounds.centerX() - ignoreRect.width() / 2,
                 appBounds.centerY() - ignoreRect.height() / 2);
-
-        appBounds.intersect(stableBounds);
-        assertColors(image, appBounds, primaryColor, 0.99f, secondaryColor, 0.02f, ignoreRect);
+        assertColors(scaleImage, appBounds, primaryColor, 0.99f, secondaryColor,
+                0.02f, ignoreRect);
     }
 
     // For real devices, gamma correction might be applied on hardware driver, so the colors may

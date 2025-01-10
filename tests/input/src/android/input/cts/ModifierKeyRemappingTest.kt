@@ -17,6 +17,7 @@
 package android.input.cts
 
 import android.Manifest
+import android.cts.input.EventVerifier
 import android.hardware.input.InputManager
 import android.provider.Settings
 import android.view.KeyEvent
@@ -28,8 +29,11 @@ import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
 import com.android.cts.input.UinputKeyboard
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
+import com.android.cts.input.inputeventmatchers.withKeyAction
+import com.android.cts.input.inputeventmatchers.withKeyCode
+import com.android.cts.input.inputeventmatchers.withModifierState
+import org.hamcrest.Matchers.allOf
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -44,17 +48,8 @@ import org.junit.runner.RunWith
 class ModifierKeyRemappingTest {
 
     companion object {
-        val REMAPPABLE_MODIFIER_KEYCODES = intArrayOf(
-            KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_CTRL_RIGHT, KeyEvent.KEYCODE_META_LEFT,
-            KeyEvent.KEYCODE_META_RIGHT, KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_ALT_RIGHT,
-            KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT, KeyEvent.KEYCODE_CAPS_LOCK
-        )
-
         // Linux keycode defined in the "linux/input-event-codes.h" header.
         val KEY_LEFTALT = 56
-
-        // Wait time for existing remapping to happen after device added
-        val MODIFIER_REMAPPING_WAIT_TIME_MILLIS = 500L
     }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -63,163 +58,128 @@ class ModifierKeyRemappingTest {
     val rule = ActivityScenarioRule<CaptureEventActivity>(CaptureEventActivity::class.java)
 
     private lateinit var activity: CaptureEventActivity
+    private lateinit var verifier: EventVerifier
     private lateinit var inputManager: InputManager
+    private lateinit var existingRemappings: Map<Int, Int>
 
     @Before
     fun setUp() {
         rule.getScenario().onActivity {
             inputManager = it.getSystemService(InputManager::class.java)
             activity = it
+            verifier = EventVerifier(activity::getInputEvent)
         }
         PollingCheck.waitFor { activity.hasWindowFocus() }
 
-        // Clear any existing remappings
+        // Save existing remappings
+        existingRemappings = getModifierKeyRemapping()
         clearAllModifierKeyRemappings()
-        // Wait for handler to execute and clear all remappings
-        PollingCheck.waitFor { getModifierKeyRemapping().isEmpty() }
     }
 
-    private fun assertReceivedEventsCorrectlyMapped(numEvents: Int, expectedKeyCode: Int) {
-        for (i in 1..numEvents) {
-            val lastInputEvent: KeyEvent = activity.getInputEvent() as KeyEvent
-            assertNotNull("Event number $i is null!", lastInputEvent)
-            assertEquals(
-                "Key code should be " + KeyEvent.keyCodeToString(expectedKeyCode),
-                expectedKeyCode,
-                lastInputEvent.keyCode
-            )
-        }
-        activity.assertNoEvents()
-    }
-
-    /**
-     * Test modifier key remapping APIs
-     */
-    @Test
-    fun testModifierKeyRemapping() {
-        ModifierRemappingFlag(true).use {
-            val keyboardDevice = UinputKeyboard(instrumentation)
-
-            // Wait for device to be added
-            PollingCheck.waitFor { inputManager.getInputDevice(keyboardDevice.deviceId) != null }
-            val inputDevice = inputManager.getInputDevice(keyboardDevice.deviceId)
-
-            val numKeys = REMAPPABLE_MODIFIER_KEYCODES.size
-
-            // Remap modifier keys in cyclic manner
-            for (i in 0 until numKeys) {
-                remapModifierKey(
-                    REMAPPABLE_MODIFIER_KEYCODES[i],
-                    REMAPPABLE_MODIFIER_KEYCODES[(i + 1) % numKeys]
-                )
-            }
-
-            // Wait for handler to execute and add remappings
-            PollingCheck.waitFor { getModifierKeyRemapping().size == numKeys }
-            val remapping: Map<Int, Int> = getModifierKeyRemapping()
-            for (i in 0 until numKeys) {
-                val fromKeyCode = REMAPPABLE_MODIFIER_KEYCODES[i]
-                val toKeyCode = REMAPPABLE_MODIFIER_KEYCODES[(i + 1) % numKeys]
-                val actualToKeyCode = remapping[fromKeyCode]!!
-                assertEquals(
-                    "Modifier key remapping should map " + KeyEvent.keyCodeToString(fromKeyCode) +
-                            " to " + KeyEvent.keyCodeToString(toKeyCode) + " but was " +
-                            KeyEvent.keyCodeToString(actualToKeyCode),
-                    toKeyCode,
-                    actualToKeyCode
-                )
-                assertEquals(
-                    "Key location" + KeyEvent.keyCodeToString(fromKeyCode) + " should map to " +
-                            KeyEvent.keyCodeToString(toKeyCode) + " after remapping.",
-                    toKeyCode,
-                    inputDevice?.getKeyCodeForKeyLocation(fromKeyCode)
-                )
-            }
-
+    @After
+    fun tearDown() {
+        if (this::existingRemappings.isInitialized) {
             clearAllModifierKeyRemappings()
-
-            // Wait for handler to execute and clear all remappings
-            PollingCheck.waitFor { getModifierKeyRemapping().isEmpty() }
-
-            for (i in 0 until numKeys) {
-                val keyCode = REMAPPABLE_MODIFIER_KEYCODES[i]
-                assertEquals(
-                    "Key location" + KeyEvent.keyCodeToString(keyCode) + " should map to " +
-                            KeyEvent.keyCodeToString(keyCode) + " after remapping.",
-                    keyCode,
-                    inputDevice?.getKeyCodeForKeyLocation(keyCode)
-                )
+            existingRemappings.forEach { entry ->
+                remapModifierKey(entry.key, entry.value)
             }
-
-            // Remove the device
-            keyboardDevice.close()
         }
     }
 
     @Test
-    fun testHardwareKeyEventsWithRemapping_AfterKeyboardAdded() {
+    fun testHardwareKeyEventsWithRemapping_afterKeyboardAdded() {
         ModifierRemappingFlag(true).use {
-            val keyboardDevice = UinputKeyboard(instrumentation)
+            UinputKeyboard(instrumentation).use { keyboardDevice ->
+                val inputDevice = inputManager.getInputDevice(keyboardDevice.deviceId)
 
-            // Wait for device to be added
-            PollingCheck.waitFor { inputManager.getInputDevice(keyboardDevice.deviceId) != null }
+                // Add remapping after device is already added
+                remapModifierKey(KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_SHIFT_LEFT)
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_SHIFT_LEFT ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
 
-            remapModifierKey(KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_SHIFT_LEFT)
-            // Wait for handler to execute and add remappings
-            PollingCheck.waitFor { getModifierKeyRemapping().size == 1 }
-            activity.assertNoEvents()
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT),
+                        withKeyAction(KeyEvent.ACTION_DOWN),
+                        withModifierState(KeyEvent.META_SHIFT_LEFT_ON or KeyEvent.META_SHIFT_ON)
+                    )
+                )
 
-            injectKeyDown(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT))
 
-            assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_SHIFT_LEFT)
+                clearAllModifierKeyRemappings()
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_ALT_LEFT ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
 
-            clearAllModifierKeyRemappings()
-            // Wait for handler to execute and clear all remappings
-            PollingCheck.waitFor { getModifierKeyRemapping().isEmpty() }
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
+                        withKeyAction(KeyEvent.ACTION_DOWN),
+                        withModifierState(KeyEvent.META_ALT_LEFT_ON or KeyEvent.META_ALT_ON)
+                    )
+                )
 
-            injectKeyDown(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
 
-            assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_ALT_LEFT)
-
-            // Remove the device
-            keyboardDevice.close()
+                activity.assertNoEvents()
+            }
         }
     }
 
     @Test
-    fun testHardwareKeyEventsWithRemapping_BeforeKeyboardAdded() {
+    fun testHardwareKeyEventsWithRemapping_beforeKeyboardAdded() {
         ModifierRemappingFlag(true).use {
+            // Add remapping before device is added
             remapModifierKey(KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_SHIFT_LEFT)
-            // Wait for handler to execute and add remappings
             PollingCheck.waitFor { getModifierKeyRemapping().size == 1 }
 
-            val keyboardDevice = UinputKeyboard(instrumentation)
+            UinputKeyboard(instrumentation).use { keyboardDevice ->
+                val inputDevice = inputManager.getInputDevice(keyboardDevice.deviceId)
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_SHIFT_LEFT ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
 
-            // Wait for device to be added
-            PollingCheck.waitFor { inputManager.getInputDevice(keyboardDevice.deviceId) != null }
-            activity.assertNoEvents()
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT),
+                        withKeyAction(KeyEvent.ACTION_DOWN),
+                        withModifierState(KeyEvent.META_SHIFT_LEFT_ON or KeyEvent.META_SHIFT_ON)
+                    )
+                )
 
-            // TODO(b/344517984): Refactor so that we don't need to wait for remapping to occur
-            Thread.sleep(MODIFIER_REMAPPING_WAIT_TIME_MILLIS)
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT))
 
-            injectKeyDown(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                clearAllModifierKeyRemappings()
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_ALT_LEFT ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
 
-            assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_SHIFT_LEFT)
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
+                        withKeyAction(KeyEvent.ACTION_DOWN),
+                        withModifierState(KeyEvent.META_ALT_LEFT_ON or KeyEvent.META_ALT_ON)
+                    )
+                )
 
-            clearAllModifierKeyRemappings()
-            // Wait for handler to execute and clear all remappings
-            PollingCheck.waitFor { getModifierKeyRemapping().isEmpty() }
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
 
-            injectKeyDown(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTALT)
-
-            assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_ALT_LEFT)
-
-            // Remove the device
-            keyboardDevice.close()
+                activity.assertNoEvents()
+            }
         }
     }
 
@@ -244,6 +204,7 @@ class ModifierKeyRemappingTest {
             { inputManager.clearAllModifierKeyRemappings() },
             Manifest.permission.REMAP_MODIFIER_KEYS
         )
+        PollingCheck.waitFor { getModifierKeyRemapping().isEmpty() }
     }
 
     private fun getModifierKeyRemapping(): Map<Int, Int> {
