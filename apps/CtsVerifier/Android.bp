@@ -282,3 +282,22 @@ filegroup {
     srcs: [":android-cts-verifier"],
     export_to_make_var: "SOONG_ANDROID_CTS_VERIFIER_ZIP",
 }
+
+genrule {
+    name: "android-cts-verifier-app-list",
+    srcs: [
+        ":cts_apps_to_include",
+        ":multidevice-test-app-list",
+    ],
+    device_common_srcs: [
+        ":CtsVerifier",
+    ],
+    out: ["android-cts-verifier-app-list.txt"],
+    cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) $(location :multidevice-test-app-list) > $(out)",
+}
+
+filegroup {
+    name: "android-cts-verifier-app-list-for-make",
+    srcs: [":android-cts-verifier-app-list"],
+    export_to_make_var: "SOONG_ANDROID_CTS_VERIFIER_APP_LIST",
+}

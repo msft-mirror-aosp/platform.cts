@@ -16,11 +16,13 @@
 
 package android.security.cts
 
+import android.app.Activity
 import android.app.ActivityOptions
 import android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN
 import android.graphics.Rect
 import android.os.SystemClock
 import android.platform.test.annotations.AsbSecurityTest
+import android.view.Display
 import android.view.Gravity
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -78,6 +80,14 @@ private class SurfaceCreatedCallback(created: CountDownLatch) : SurfaceHolder.Ca
     override fun surfaceDestroyed(holder: SurfaceHolder) {}
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+}
+
+private fun <T : Activity> getDisplay(scenario: ActivityScenario<T>): Display {
+    var display: Display? = null
+    scenario.onActivity {
+        display = it.display
+    }
+    return display!!
 }
 
 @MediumTest
@@ -139,8 +149,8 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
     @Before
     fun setup() {
         scenario = rule.getScenario()
-        windowManager = getInstrumentation().getTargetContext().getSystemService<WindowManager>(
-                WindowManager::class.java)!!
+        val display = getDisplay(scenario)
+        val displayContext = getInstrumentation().getTargetContext().createDisplayContext(display)
         setDimensionsToQuarterScreen()
 
         waitForWindowFocusOnBottomActivity()

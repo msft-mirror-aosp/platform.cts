@@ -19,6 +19,7 @@ package android.mediav2.common.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.codec.Flags.subsessionMetrics;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -381,6 +382,15 @@ public class CodecDecoderTestBase extends CodecTestBase {
             if (!mIsInterlaced && !mOutputBuff.isOutPtsListIdenticalToInpPtsList(false)) {
                 fail("Input pts list and Output pts list are not identical ]\n" + mTestConfig
                         + mTestEnv + mOutputBuff.getErrMsg());
+            }
+            if (IS_AT_LEAST_B && subsessionMetrics()) {
+                assertEquals(
+                        "expected and received metrics flush counts are not same.\n"
+                                + mTestConfig
+                                + mTestEnv
+                                + mOutputBuff.getErrMsg(),
+                        mAsyncHandle.getExpectedMetricsFlushCount(),
+                        mAsyncHandle.getActualMetricsFlushCount());
             }
         }
     }

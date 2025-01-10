@@ -167,6 +167,8 @@ public abstract class CodecTestBase {
     public static final ArrayList<String> HDR_INFO_IN_BITSTREAM_CODECS = new ArrayList<>();
     public static final String HDR_STATIC_INFO =
             "00 d0 84 80 3e c2 33 c4 86 4c 1d b8 0b 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
+    public static final String HDR_STATIC_ALTERNATE_INFO =
+            "00 d0 84 80 3e c2 33 c4 86 4c 1d b8 0b 13 3d 42 40 e8 03 32 00 00 00 00 00";
     public static final String HDR_STATIC_INCORRECT_INFO =
             "00 d0 84 80 3e c2 33 c4 86 10 27 d0 07 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
     public static final String CODEC_PREFIX_KEY = "codec-prefix";
@@ -231,9 +233,13 @@ public abstract class CodecTestBase {
     static final int[] AV1_HLG_PROFILES = new int[]{AV1ProfileMain10};
     static final int[] APV_HLG_PROFILES = new int[]{APVProfile422_10};
     static final int[] AV1_HDR10_PROFILES = new int[]{AV1ProfileMain10HDR10};
+    static final int[] APV_HDR10_PROFILES = new int[]{APVProfile422_10HDR10};
     static final int[] AV1_HDR10_PLUS_PROFILES = new int[]{AV1ProfileMain10HDR10Plus};
+    static final int[] APV_HDR10_PLUS_PROFILES = new int[]{APVProfile422_10HDR10Plus};
     static final int[] AV1_HDR_PROFILES =
             combine(AV1_HLG_PROFILES, combine(AV1_HDR10_PROFILES, AV1_HDR10_PLUS_PROFILES));
+    static final int[] APV_HDR_PROFILES =
+            combine(APV_HLG_PROFILES, combine(APV_HDR10_PROFILES, APV_HDR10_PLUS_PROFILES));
     static final int[] AV1_PROFILES = combine(AV1_SDR_PROFILES, AV1_HDR_PROFILES);
     static final int[] DOLBY_VISION_HDR_PROFILES = new int[]{DolbyVisionProfileDvavPer,
             DolbyVisionProfileDvavPen, DolbyVisionProfileDvheDer, DolbyVisionProfileDvheDen,
@@ -270,16 +276,34 @@ public abstract class CodecTestBase {
                     + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
                     + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
                     + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_ALTERNATE_INFO_SCENE_A =
+            "b5 00 3c 00 01 04 01 40  00 0c 80 00 00 03 00 00"
+                    + "03 00 00 03 00 00 24 08  00 00 28 00 00 50 03 fc"
+                    + "c8 00 01 90 00 02 58 00  02 d0 00 02 f8 00 03 18"
+                    + "00 00 03 00 40 00 00 24  66 33 53 36 6a 00 99 ac"
+                    + "dc cf 9a 00";
     public static final String HDR10_INFO_SCENE_B =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
                     + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
                     + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
                     + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_ALTERNATE_INFO_SCENE_B =
+            "b5 00 3c 00 01 04 01 40  00 0c 80 00 00 03 00 00"
+                    + "03 00 00 03 00 00 24 08  00 00 28 00 00 50 90 00"
+                    + "02 58 00 03 fc c8 00 01  02 d0 00 02 f8 00 03 18"
+                    + "00 00 03 00 40 00 00 24  66 33 53 36 6a 00 99 ac"
+                    + "dc cf 9a 00";
     public static final String HDR10_INFO_SCENE_C =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
                     + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
                     + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
                     + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_ALTERNATE_INFO_SCENE_C =
+            "b5 00 3c 00 01 04 01 40  00 0c 80 00 00 03 00 00"
+                    + "00 24 08 00 00 03 00 00  03 00 28 00 00 50 90 00"
+                    + "02 58 00 03 fc c8 00 01  02 d0 00 02 f8 00 03 18"
+                    + "00 00 03 00 40 00 00 24  66 33 53 36 6a 00 99 ac"
+                    + "dc cf 9a 00";
     public static final String HDR10_INFO_SCENE_D =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
                     + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
@@ -461,15 +485,18 @@ public abstract class CodecTestBase {
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PROFILES);
+        PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PROFILES);
 
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PLUS_PROFILES);
+        PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PLUS_PROFILES);
 
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
@@ -480,6 +507,7 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP8, VP8_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
 
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AV1);

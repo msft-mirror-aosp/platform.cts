@@ -16,8 +16,12 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -182,6 +186,12 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                             CODEC_ALL},
             }));
         }
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][] {
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                                    CODEC_OPTIONAL},
+            }));
+        }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
     }
 
@@ -191,7 +201,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
      * timestamp list in all runs and this list to be identical to the reference list. The
      * reference list is obtained from the same decoder running in byte buffer mode
      */
-    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2"})
+    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2", "5.1.7/C-4-1"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
@@ -204,6 +214,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                     Integer.MAX_VALUE);
             OutputManager test = new OutputManager(ref.getSharedErrorLogs());
             MediaFormat format = setUpSource(mTestFile);
+            format.removeKey(MediaFormat.KEY_COLOR_FORMAT);
             mCodec = MediaCodec.createByCodecName(mCodecName);
             mOutputBuff = test;
             mActivity.setScreenParams(getWidth(format), getHeight(format), true);
@@ -220,6 +231,9 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                     fail("Decoder output in surface mode does not match with output in bytebuffer "
                             + "mode \n" + mTestConfig + mTestEnv + test.getErrMsg());
                 }
+                int colorFormat = getOutputFormat().getInteger(MediaFormat.KEY_COLOR_FORMAT);
+                assertTrue("In surface mode, components MUST default to the color format"
+                        + " optimized for hardware display", colorFormat == COLOR_FormatSurface);
             }
             mCodec.release();
             mExtractor.release();
@@ -434,7 +448,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     /**
      * Tests is similar to {@link #testSimpleDecodeToSurface()} but uses ndk api
      */
-    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2"})
+    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2", "5.1.7/C-4-1"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatSurface"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)

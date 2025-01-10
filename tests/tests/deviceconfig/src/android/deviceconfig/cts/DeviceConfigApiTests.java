@@ -160,10 +160,6 @@ public final class DeviceConfigApiTests {
                     + sContext.getUserId();
             return;
         }
-
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                WRITE_DEVICE_CONFIG_PERMISSION, READ_DEVICE_CONFIG_PERMISSION,
-                MONITOR_DEVICE_CONFIG_ACCESS);
     }
 
     @Before
@@ -173,6 +169,14 @@ public final class DeviceConfigApiTests {
 
     @Before
     public void setUpSyncDisabledMode() {
+        // Adoption of the shell permission identity is required before each test since the
+        // CheckFlagRule will drop the shell permission identity.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        WRITE_DEVICE_CONFIG_PERMISSION,
+                        READ_DEVICE_CONFIG_PERMISSION,
+                        MONITOR_DEVICE_CONFIG_ACCESS);
         mInitialSyncDisabledMode = DeviceConfig.getSyncDisabledMode();
         DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE);
     }

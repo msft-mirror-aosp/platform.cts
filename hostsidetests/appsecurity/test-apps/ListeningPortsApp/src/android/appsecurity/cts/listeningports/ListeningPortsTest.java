@@ -107,6 +107,7 @@ public class ListeningPortsTest extends AndroidTestCase {
     private static final List<String> USERDEBUG_EXCEPTION_PATTERNS = new ArrayList<>(2);
 
     static {
+        USERDEBUG_EXCEPTION_PATTERNS.add("0.0.0.0:8872");     // Bluetooth snoop logger socket
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:50002");  // Diagnostic Monitor Daemon port
         USERDEBUG_EXCEPTION_PATTERNS.add("127.0.0.1:60002");  // vcd port
     }
