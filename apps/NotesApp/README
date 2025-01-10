@@ -17,3 +17,5 @@ To install the apk file, run the following commands from your android checkout:
 cd $ANDROID_BUILD_TOP && \
 make -j32 CtsDefaultNotesApp && \
 adb install -r -t $OUT/testcases/CtsDefaultNotesApp/arm64/CtsDefaultNotesApp.apk
+
+Min SDK is set 30 (to use the app in tests), but the app will throw an error on Android below 34.

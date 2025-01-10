@@ -17,7 +17,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      package="com.android.cts.notesapp">
 
-    <uses-sdk android:minSdkVersion="33"/>
+    <uses-sdk android:minSdkVersion="30"/>
 
     <uses-permission android:name="android.permission.LAUNCH_CAPTURE_CONTENT_ACTIVITY_FOR_NOTE" />
 
