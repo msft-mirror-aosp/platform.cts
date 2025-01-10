@@ -44,6 +44,7 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
 import android.server.wm.settings.SettingsSession;
+import android.util.TypedValue;
 import android.view.RoundedCorner;
 import android.view.View;
 import android.view.WindowInsets;
@@ -480,9 +481,13 @@ public class BlurTests extends WindowManagerTestBase {
             return mInsetsToBeIgnored;
         }
 
-        private static int getCornerRadius(WindowInsets insets, int position) {
+        private int getCornerRadius(WindowInsets insets, int position) {
             final RoundedCorner corner = insets.getRoundedCorner(position);
-            return corner != null ? corner.getRadius() : 0;
+
+            // TODO (b/389045836): Make sure that Taskbar's "soft" rounded corners are reported
+            // in insets.getRoundedCorner so that this adjustment won't be necessary any more.
+            return Math.max((corner != null ? corner.getRadius() : 0),
+                getResources().getDimensionPixelSize(R.dimen.taskbar_corner_radius));
         }
     }
 
