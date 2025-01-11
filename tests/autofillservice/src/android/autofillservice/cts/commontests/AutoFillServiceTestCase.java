@@ -44,6 +44,7 @@ import android.autofillservice.cts.testcore.Helper;
 import android.autofillservice.cts.testcore.InlineUiBot;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService;
 import android.autofillservice.cts.testcore.InstrumentedAutoFillService.Replier;
+import android.autofillservice.cts.testcore.RepeatRule;
 import android.autofillservice.cts.testcore.UiBot;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -290,6 +291,16 @@ public final class AutoFillServiceTestCase {
                     cleanAllActivities();
                 });
 
+        private final RepeatRule mRepeatRule =
+                new RepeatRule(
+                        () -> {
+                            // Between testing and retries, clean all launched activities to avoid
+                            // exception:
+                            //     Could not launch intent Intent { ... } within 45 seconds.
+                            mTestWatcher.cleanAllActivities();
+                            cleanAllActivities();
+                        });
+
         @Rule
         public final CheckFlagsRule mCheckFlagsRule =
                 DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -337,6 +348,9 @@ public final class AutoFillServiceTestCase {
                 .around(mRetryRule)
                 // mCheckFlagsRule checks for required flags for a test
                 .around(mCheckFlagsRule)
+
+                // mRepeatRule re-runs the test a set number of times
+                .around(mRepeatRule)
                 //
                 // Augmented Autofill should be disabled by default
                 .around(new DeviceConfigStateChangerRule(sContext, DeviceConfig.NAMESPACE_AUTOFILL,

@@ -192,6 +192,9 @@ public class DuplexAudioManager {
     // The MegaAudio error (success) code
     public static final int DUPLEX_MEGAAUDIO_CODE = 0x0000FFFF;
 
+    // Handy status code for success building/opening both paths
+    public static final int DUPLEX_SUCCESS = DUPLEX_RECORDER | DUPLEX_PLAYER | StreamBase.OK;
+
     /**
      * Initializes (but does not start) the player and recorder streams.
      * @param playerType    The API constant for the player

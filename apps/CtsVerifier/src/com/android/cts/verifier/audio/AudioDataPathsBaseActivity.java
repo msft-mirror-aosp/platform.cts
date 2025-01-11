@@ -754,6 +754,8 @@ public abstract class AudioDataPathsBaseActivity
                                 (status & DuplexAudioManager.DUPLEX_STREAM_ID
                                         & DuplexAudioManager.DUPLEX_PLAYER) != 0;
 
+                        mDuplexAudioManager.unwind();
+
                         return setTestState(api,
                                 (processStep & DuplexAudioManager.DUPLEX_ERR_BUILD)
                                         != DuplexAudioManager.DUPLEX_ERROR_NONE
@@ -817,6 +819,8 @@ public abstract class AudioDataPathsBaseActivity
                 if ((status & DuplexAudioManager.DUPLEX_ERROR_CODE)
                         !=  DuplexAudioManager.DUPLEX_ERROR_NONE)  {
                     Log.e(TAG, "  Couldn't start duplex streams - " + getDescription());
+                    mDuplexAudioManager.unwind();
+
                     return setTestState(api, TESTSTATUS_BAD_START,
                             new TestStateData(this, playerFailed, recorderFailed));
                 }
@@ -1476,7 +1480,7 @@ public abstract class AudioDataPathsBaseActivity
                     mTimer.cancel();
                     mTimer = null;
                 }
-                mDuplexAudioManager.stop();
+                mDuplexAudioManager.unwind();
             }
         }
 
@@ -1576,7 +1580,7 @@ public abstract class AudioDataPathsBaseActivity
 
         public void completeTestStep() {
             if (mTestStep != TESTSTEP_NONE) {
-                mDuplexAudioManager.stop();
+                mDuplexAudioManager.unwind();
                 // Give the audio system a chance to settle from the previous state
                 // It is often the case that the Java API will not route to the specified
                 // device if we teardown/startup too quickly. This sleep cirmumvents that.

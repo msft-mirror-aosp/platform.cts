@@ -28,6 +28,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothSocketSettings;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
@@ -45,7 +46,6 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 
 import com.google.common.truth.Expect;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -129,7 +129,19 @@ public class BluetoothSocketSettingsTest {
             socket = mFakeDevice.createUsingSocketSettings(settings);
         }
         assertThat(socket).isNotNull();
+        // should be in disconnected state
+        assertThat(socket.isConnected()).isFalse();
         socket.close();
+    }
+
+    private BluetoothSocket getClientSocketUsingSettings(BluetoothSocketSettings settings)
+            throws IOException {
+        final BluetoothSocket socket;
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            socket = mFakeDevice.createUsingSocketSettings(settings);
+        }
+        assertThat(socket).isNotNull();
+        return socket;
     }
 
     private boolean isLeCocSocketOffloadSupported() {
@@ -162,6 +174,19 @@ public class BluetoothSocketSettingsTest {
         expect.that(settings.getSocketType()).isEqualTo(TEST_SOCKET_TYPE);
         expect.that(settings.getRfcommServiceName()).isEqualTo(TEST_SERVICE_NAME);
         expect.that(settings.getRfcommUuid()).isEqualTo(TEST_UUID);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void createBluetoothLeCoCSocketSettingsFromBuilder() {
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_LE)
+                        .setL2capPsm(FAKE_PSM);
+
+        BluetoothSocketSettings settings = builder.build();
+        expect.that(settings.getSocketType()).isEqualTo(BluetoothSocket.TYPE_LE);
+        expect.that(settings.getL2capPsm()).isEqualTo(FAKE_PSM);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
@@ -344,7 +369,7 @@ public class BluetoothSocketSettingsTest {
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningInsecureRfcommOffloadSocket() throws IOException {
-        Assume.assumeTrue(isRfcommSocketOffloadSupported());
+        assumeTrue(isRfcommSocketOffloadSupported());
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_RFCOMM)
@@ -364,7 +389,7 @@ public class BluetoothSocketSettingsTest {
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createListeningInsecureLeCocOffloadSocket() throws IOException {
-        Assume.assumeTrue(isLeCocSocketOffloadSupported());
+        assumeTrue(isLeCocSocketOffloadSupported());
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -468,7 +493,7 @@ public class BluetoothSocketSettingsTest {
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientInsecureRfcommOffloadSocket() throws IOException {
-        Assume.assumeTrue(isRfcommSocketOffloadSupported());
+        assumeTrue(isRfcommSocketOffloadSupported());
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_RFCOMM)
@@ -489,7 +514,7 @@ public class BluetoothSocketSettingsTest {
     @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
     @Test
     public void createClientInsecureLeCocOffloadSocket() throws IOException {
-        Assume.assumeTrue(isLeCocSocketOffloadSupported());
+        assumeTrue(isLeCocSocketOffloadSupported());
         BluetoothSocketSettings.Builder builder =
                 new BluetoothSocketSettings.Builder()
                         .setSocketType(BluetoothSocket.TYPE_LE)
@@ -504,5 +529,27 @@ public class BluetoothSocketSettingsTest {
 
         BluetoothSocketSettings settings = builder.build();
         createClientSocketUsingSettings(settings);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SOCKET_SETTINGS_API)
+    @Test
+    public void testRetrievingSocketIdOnDisconnectedSocket() throws IOException {
+        assumeTrue(isLeCocSocketOffloadSupported());
+        BluetoothSocketSettings.Builder builder =
+                new BluetoothSocketSettings.Builder()
+                        .setSocketType(BluetoothSocket.TYPE_LE)
+                        .setEncryptionRequired(false)
+                        .setL2capPsm(FAKE_PSM)
+                        .setAuthenticationRequired(false)
+                        .setDataPath(BluetoothSocketSettings.DATA_PATH_HARDWARE_OFFLOAD)
+                        .setSocketName(TEST_SOCKET_NAME)
+                        .setHubId(TEST_HUB_ID)
+                        .setEndpointId(TEST_ENDPOINT_ID)
+                        .setRequestedMaximumPacketSize(TEST_MAX_RX_PACKET_SIZE);
+
+        BluetoothSocketSettings settings = builder.build();
+        BluetoothSocket sock = getClientSocketUsingSettings(settings);
+        assertThrows(BluetoothSocketException.class, () -> sock.getSocketId());
+        sock.close();
     }
 }

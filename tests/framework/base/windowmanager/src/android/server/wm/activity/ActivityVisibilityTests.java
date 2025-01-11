@@ -69,8 +69,12 @@ import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.function.Consumer;
 
 /**
  * Build/Install/Run:
@@ -756,15 +760,47 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
     }
 
+    /**
+     * Verifies whether a turn-screen-on Activity can turn on the display in a single launch. It
+     * also examines the behavior when the Activity disables the turn-screen-on ability.
+     */
     @Test
+    @ApiTest(
+            apis = {
+                "android.R.attr#turnScreenOn",
+                "android.R.attr#showWhenLocked",
+                "android.app.Activity#setTurnScreenOn"
+            })
     public void testTurnScreenOnAttrRemove() {
+        testTurnScreenOnAttrRemoveInternal(lockScreenSession -> lockScreenSession.sleepDevice());
+    }
+
+    /**
+     * Verifies whether a turn-screen-on Activity can turn on the display in a single launch. It
+     * also examines the behavior when the Activity disables the turn-screen-on ability. This test
+     * runs in the case where the device has no lockscreen.
+     */
+    @Test
+    @ApiTest(
+            apis = {
+                "android.R.attr#turnScreenOn",
+                "android.R.attr#showWhenLocked",
+                "android.app.Activity#setTurnScreenOn"
+            })
+    public void testTurnScreenOnAttrRemove_NoLockScreen() {
+        testTurnScreenOnAttrRemoveInternal(
+                lockScreenSession -> lockScreenSession.disableLockScreen().sleepDevice());
+    }
+
+    private void testTurnScreenOnAttrRemoveInternal(Consumer<LockScreenSession> lockScreenOp) {
         assumeTrue(supportsLockScreen());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
-        lockScreenSession.sleepDevice();
+        lockScreenOp.accept(lockScreenSession);
         mWmState.waitForAllStoppedActivities();
+
         separateTestJournal();
         launchActivity(TURN_SCREEN_ON_ATTR_REMOVE_ATTR_ACTIVITY);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));

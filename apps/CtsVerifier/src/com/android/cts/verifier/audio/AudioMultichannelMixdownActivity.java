@@ -940,7 +940,7 @@ public class AudioMultichannelMixdownActivity
         }
 
         if (mIsDuplexRunning) {
-            mDuplexAudioManager.stop();
+            mDuplexAudioManager.unwind();
         }
 
         mSourceProvider = new SparseChannelAudioSourceProvider(1 << testPhase.mOutputChannel);
@@ -959,33 +959,48 @@ public class AudioMultichannelMixdownActivity
 
         // Open the streams.
         // Note AudioSources and AudioSinks get allocated at this point
-        mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+        int buildStatus = mDuplexAudioManager.buildStreams(mAudioApi, mAudioApi);
+        if (buildStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
+            Log.e(TAG, "Couldn't Build Duplex Stream. buildStatus:0x"
+                    + Integer.toHexString(buildStatus));
+            // TODO - Provide more failure information here.
+            mDuplexAudioManager.unwind();
 
-        // (potentially) Adjust AudioSource parameters
-        mAudioSource = (SparseChannelAudioSource) mSourceProvider.getActiveSource();
-
-        // Set the sample rate for the source (the sample rate for the player gets
-        // set in the DuplexAudioManager.Builder.
-        mAudioSource.setSampleRate(OUT_SAMPLE_RATE);
-        mAudioSource.setMask(1 << testPhase.mOutputChannel);
-
-        // Adjust the player frequency to match with the quantized frequency
-        // of the analyzer.
-        mAudioSource.setFreq((float) mAnalyzers[IN_CHANNEL_LEFT].getAdjustedFrequency());
-
-        if (mDuplexAudioManager.start() != StreamBase.OK) {
-            Log.e(TAG, "Couldn't Start Duplex Stream.");
             mTestManager.mState = TestManager.TESTSTATUS_BADSTART;
             mTestCanceled = true;
-            mIsDuplexRunning = true;
+            mIsDuplexRunning = false;
         } else {
-            mIsDuplexRunning = true;
+            // (potentially) Adjust AudioSource parameters
+            mAudioSource = (SparseChannelAudioSource) mSourceProvider.getActiveSource();
+
+            // Set the sample rate for the source (the sample rate for the player gets
+            // set in the DuplexAudioManager.Builder.
+            mAudioSource.setSampleRate(OUT_SAMPLE_RATE);
+            mAudioSource.setMask(1 << testPhase.mOutputChannel);
+
+            // Adjust the player frequency to match with the quantized frequency
+            // of the analyzer.
+            mAudioSource.setFreq((float) mAnalyzers[IN_CHANNEL_LEFT].getAdjustedFrequency());
+
+            int startStatus = mDuplexAudioManager.start();
+            if (startStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
+                Log.e(TAG, "Couldn't Start Duplex Stream. startStatus:0x"
+                        + Integer.toHexString(startStatus));
+                // TODO - Provide more failure information here.
+                mDuplexAudioManager.unwind();
+
+                mTestManager.mState = TestManager.TESTSTATUS_BADSTART;
+                mTestCanceled = true;
+                mIsDuplexRunning = false;
+            } else {
+                mIsDuplexRunning = true;
+            }
         }
     }
 
     private void stopDuplex() {
         if (mIsDuplexRunning) {
-            mDuplexAudioManager.stop();
+            mDuplexAudioManager.unwind();
             mIsDuplexRunning = false;
         }
     }

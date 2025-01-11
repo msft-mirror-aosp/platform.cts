@@ -14,6 +14,8 @@
 """Utility functions for multi camera switch tests."""
 
 import logging
+import math
+import numpy
 
 import camera_properties_utils
 import image_processing_utils
@@ -46,6 +48,107 @@ def check_orientation_and_flip(props, img, img_name_stem, suffix):
   image_processing_utils.write_image(img / _CH_FULL_SCALE,
                                      f'{img_name_stem}_{suffix}.png')
   return img
+
+
+def do_ae_check(
+    img1, img2, file_stem, patch_color, suffix1, suffix2, rel_tol, abs_tol):
+  """Check two images' luma change is within specified tolerance.
+
+  Args:
+    img1: first image.
+    img2: second image.
+    file_stem: str; path to file.
+    patch_color: str; color of the patch to be tested.
+    suffix1: str; suffix for the first image file name.
+    suffix2: str; suffix for the second image file name.
+    rel_tol: float; relative threshold for delta between brightness.
+    abs_tol: float; absolute threshold for delta between brightness.
+  Returns:
+    failed_ae_msg: str; failed AE check messages if any. None otherwise.
+    y1_avg: float; y_avg value for the first image.
+    y2_avg: float; y_avg value for the second image.
+  """
+  failed_ae_msg = []
+  y1 = opencv_processing_utils.extract_y(
+      img1, f'{file_stem}_{suffix1}_y.png')
+  y1_avg = numpy.average(y1)
+  logging.debug('%s y avg: %.4f', suffix1, y1_avg)
+
+  y2 = opencv_processing_utils.extract_y(
+      img2, f'{file_stem}_{suffix2}_y.png')
+  y2_avg = numpy.average(y2)
+  logging.debug('%s y avg: %.4f', suffix2, y2_avg)
+  y_avg_change_percent = (abs(y2_avg - y1_avg) / y1_avg) * 100
+  logging.debug('Y avg change percentage: %.4f', y_avg_change_percent)
+
+  if not math.isclose(y1_avg, y2_avg, rel_tol=rel_tol, abs_tol=abs_tol):
+    failed_ae_msg.append('Y avg change is greater than threshold value for '
+                         f'patches: {patch_color} '
+                         f'diff: {abs(y2_avg - y1_avg):.4f} '
+                         f'ATOL: {abs_tol} '
+                         f'RTOL: {rel_tol} '
+                         f'{suffix1} y avg: {y1_avg:.4f} '
+                         f'{suffix2} y avg: {y2_avg:.4f} ')
+  return failed_ae_msg, y1_avg, y2_avg
+
+
+def do_af_check(img1, img2, suffix1, suffix2):
+  """Checks the AF behavior between two images.
+
+  Args:
+    img1: image captured from first camera.
+    img2: image captured from second camera.
+    suffix1: str; suffix used to save the first image.
+    suffix2: str; suffix used to save the second image.
+  Returns:
+    failed_af_msg: Failed AF check messages if any. None otherwise.
+    sharpness1: sharpness value for first image.
+    sharpness2: sharpness value for second image.
+  """
+  failed_af_msg = []
+  sharpness1 = image_processing_utils.compute_image_sharpness(img1)
+  logging.debug('Sharpness for %s image: %.2f', suffix1, sharpness1)
+  sharpness2 = image_processing_utils.compute_image_sharpness(img2)
+  logging.debug('Sharpness for %s image: %.2f', suffix2, sharpness2)
+
+  if sharpness2 < sharpness1:
+    failed_af_msg.append(f'Sharpness should be higher for {suffix2} lens. '
+                         f'{suffix2} sharpness: {sharpness2:.4f} '
+                         f'{suffix1} sharpness: {sharpness1:.4f}')
+  return failed_af_msg, sharpness1, sharpness2
+
+
+def do_awb_check(img1, img2, c_atol, patch_color, suffix1, suffix2):
+  """Checks total chroma (saturation) difference between two images.
+
+  Args:
+    img1: first image.
+    img2: second image.
+    c_atol: float; threshold for delta C.
+    patch_color: str; color of the patch to be tested.
+    suffix1: str; suffix for the first image.
+    suffix2: str; suffix for the second image.
+  Returns:
+    failed_awb_msg: failed AWB check messages or None.
+  """
+  failed_awb_msg = []
+  l1, a1, b1 = image_processing_utils.get_lab_means(img1, suffix1)
+  l2, a2, b2 = image_processing_utils.get_lab_means(img2, suffix2)
+
+  # Calculate Delta C
+  delta_c = numpy.sqrt(abs(a1 - a2)**2 + abs(b1 - b2)**2)
+  logging.debug('Delta C: %.4f', delta_c)
+
+  if delta_c > c_atol:
+    failed_awb_msg.append('Delta C is greater than the threshold value for '
+                          f'patch: {patch_color} '
+                          f'Delta C ATOL: {c_atol} '
+                          f'Delta C: {delta_c:.4f} '
+                          f'{suffix1} L, a, b means: {l1:.4f}, '
+                          f'{a1:.4f}, {b1:.4f}'
+                          f'{suffix2} L, a, b means: {l2:.4f}, '
+                          f'{a2:.4f}, {b2:.4f}')
+  return failed_awb_msg
 
 
 def extract_main_patch(corners, ids, img_rgb, img_path, suffix):

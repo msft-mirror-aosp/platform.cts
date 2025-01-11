@@ -72,14 +72,14 @@ public final class DeviceApiMapperHelperRule implements TestRule {
 
     /** Log the test information before test starts. */
     public void onBeforeTest(String className, String methodName) {
-        log("Device Test started: %s.%s", className, methodName);
+        log("Device Test started: %s#%s", className, methodName);
         startCollectingApis();
     }
 
     /** Log the test information after test ends. */
     public void onAfterTest(String className, String methodName) {
         finishCollectingApis(className, methodName);
-        log("Device Test finished: %s.%s", className, methodName);
+        log("Device Test finished: %s#%s", className, methodName);
     }
 
     /** Print out the method call information to the logcat. */
