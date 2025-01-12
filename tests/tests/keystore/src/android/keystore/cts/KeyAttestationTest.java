@@ -69,15 +69,18 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.hardware.security.keymint.TagType;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
 import android.platform.test.annotations.RestrictedBuildTest;
+import android.security.KeyStore2;
 import android.security.KeyStoreException;
 import android.security.keystore.AttestationUtils;
 import android.security.keystore.DeviceIdAttestationException;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.security.keystore2.Flags;
 import android.util.ArraySet;
 import android.util.Log;
 
@@ -102,6 +105,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.ProviderException;
@@ -1617,6 +1621,7 @@ public class KeyAttestationTest {
                                 .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
+                checkModuleHash(attestation);
                 assertThat("TEE enforced OS version and system OS version must be same.",
                         teeEnforced.getOsVersion(), is(systemOsVersion));
                 checkSystemPatchLevel(teeEnforced.getOsPatchLevel(), systemPatchLevel);
@@ -1631,6 +1636,7 @@ public class KeyAttestationTest {
                                 .or(is(100)).or(is(200)).or(is(300)).or(is(400)));
 
                 checkRootOfTrust(attestation, false /* requireLocked */);
+                checkModuleHash(attestation);
                 assertThat("StrongBox enforced OS version and system OS version must be same.",
                         teeEnforced.getOsVersion(), is(systemOsVersion));
                 checkSystemPatchLevel(teeEnforced.getOsPatchLevel(), systemPatchLevel);
@@ -1694,29 +1700,58 @@ public class KeyAttestationTest {
         assertEquals(32, verifiedBootHash.length);
         checkEntropy(verifiedBootHash, "rootOfTrust.verifiedBootHash" /* dataName */);
 
-        StringBuilder hexVerifiedBootHash = new StringBuilder(verifiedBootHash.length * 2);
-        for (byte b : verifiedBootHash) {
-            hexVerifiedBootHash.append(String.format("%02x", b));
-        }
         String bootVbMetaDigest = SystemProperties.get("ro.boot.vbmeta.digest", "");
         assertEquals(
                 "VerifiedBootHash field of RootOfTrust section does not match with"
                         + "system property ro.boot.vbmeta.digest",
-                bootVbMetaDigest, hexVerifiedBootHash.toString());
+                bootVbMetaDigest,
+                HexEncoding.encode(verifiedBootHash));
+    }
+
+    private void checkVerifiedBootKey(byte[] verifiedBootKey, boolean isLocked) {
+        assertNotNull(verifiedBootKey);
+        if (isLocked) {
+            checkEntropy(verifiedBootKey, "rootOfTrust.verifiedBootKey" /* dataName */);
+        }
+
+        String unexpectedLengthMessagePrefix =
+                "rootOfTrust.verifiedBootKey has an unexpected length: " + verifiedBootKey.length;
+
+        if (TestUtils.getVendorApiLevel() >= 36) {
+            assertEquals(
+                    unexpectedLengthMessagePrefix + " (expected 32)", 32, verifiedBootKey.length);
+            if (isLocked) {
+                String systemProperty =
+                        SystemProperties.get("ro.boot.vbmeta.public_key_digest", "");
+                assertEquals(
+                        "rootOfTrust.verifiedBootKey does not match the"
+                                + "ro.boot.vbmeta.public_key_digest system property",
+                        systemProperty,
+                        HexEncoding.encode(verifiedBootKey));
+            } else {
+                byte[] emptyVerifiedBootKey = new byte[32];
+                assertArrayEquals(
+                        "Bootloader is unlocked, so rootOfTrust.verifiedBootKey should contain 32 "
+                                + " bytes of zeroes",
+                        emptyVerifiedBootKey,
+                        verifiedBootKey);
+            }
+        } else {
+            assertTrue(
+                    unexpectedLengthMessagePrefix + " (expected >= 32)",
+                    verifiedBootKey.length >= 32);
+        }
     }
 
     private void checkRootOfTrust(Attestation attestation, boolean requireLocked) {
         RootOfTrust rootOfTrust = attestation.getRootOfTrust();
         assertNotNull(rootOfTrust);
-        assertNotNull(rootOfTrust.getVerifiedBootKey());
-        assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length +
-                " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
+
         if (requireLocked) {
             final String unlockedDeviceMessage = "The device's bootloader must be locked. This may "
                     + "not be the default for pre-production devices.";
             assertTrue(unlockedDeviceMessage, rootOfTrust.isDeviceLocked());
-            checkEntropy(rootOfTrust.getVerifiedBootKey(),
-                    "rootOfTrust.verifiedBootKey" /* dataName */);
+            checkVerifiedBootKey(rootOfTrust.getVerifiedBootKey(), true /* isLocked */);
             assertEquals(KM_VERIFIED_BOOT_VERIFIED, rootOfTrust.getVerifiedBootState());
 
             if (PropertyUtil.getFirstApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -1742,6 +1777,55 @@ public class KeyAttestationTest {
                     && !rootOfTrust.isDeviceLocked();
             assertTrue("Unexpected combination of device locked state and Verified Boot "
                     + "state.", isLocked || isUnlocked);
+            checkVerifiedBootKey(rootOfTrust.getVerifiedBootKey(), isLocked);
+        }
+    }
+
+    private void checkModuleHash(Attestation attestation) {
+        if (attestation.getKeymasterVersion() < Attestation.KM_VERSION_KEYMINT_4) {
+            // Module hash will only be populated if the underlying device is KeyMint v4 or later.
+            return;
+        }
+        if (!Flags.attestModules()) {
+            // Module hash will only be populated if the flag is on.
+            return;
+        }
+
+        // The KeyMint device should have populated a module hash value in the software-enforced
+        // list.
+        byte[] moduleHash = attestation.softwareEnforced.getModuleHash();
+        assertTrue(moduleHash != null);
+        assertTrue(moduleHash.length > 0);
+
+        // The value in the attestation should match the hash of what Keystore reports as the module
+        // hash input data.
+        byte[] inputData;
+        try {
+            // TODO(b/380020528): Use the following once it's available everywhere
+            // KeyStoreManager manager = KeyStoreManager.getInstance();
+            // inputData = manager.getSupplementaryAttestationInfo(KeyStoreManager.MODULE_HASH);
+            KeyStore2 ks = KeyStore2.getInstance();
+            inputData = ks.getSupplementaryAttestationInfo(TagType.BYTES | 724);
+        } catch (KeyStoreException e) {
+            fail("Could not retrieve expected module hash value: " + e);
+            return;
+        }
+        byte[] expectedHash;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            expectedHash = digest.digest(inputData);
+        } catch (NoSuchAlgorithmException e) {
+            fail("No SHA-256 available: " + e);
+            return;
+        }
+        assertEquals(HexEncoding.encode(expectedHash), HexEncoding.encode(moduleHash));
+
+        // The `inputData` should also parse as a DER encoding of the schema described in
+        // KeyCreationResult.aidl in the KeyMint HAL definition.
+        try {
+            Modules unusedModules = new Modules(inputData);
+        } catch (CertificateParsingException e) {
+            fail("failed to parse module data: " + e);
         }
     }
 

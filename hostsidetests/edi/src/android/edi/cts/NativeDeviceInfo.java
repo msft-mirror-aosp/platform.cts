@@ -112,5 +112,28 @@ public class NativeDeviceInfo extends DeviceInfo {
 
         collectMemCG(device, store);
         collectMGLRU(device, store);
+        collectSuspendMechanism(device, store);
+    }
+
+    private void collectSuspendMechanism(ITestDevice device, HostInfoStore store) throws Exception {
+        CommandResult commandResult = device.executeShellV2Command("cat /sys/power/mem_sleep");
+
+        if (commandResult.getExitCode() == 0) {
+            String memSleepOutput = commandResult.getStdout().trim();
+            // Assuming the output format is like "[s2idle] deep".
+            Pattern pattern = Pattern.compile("\\[(.*?)\\]");
+            Matcher matcher = pattern.matcher(memSleepOutput);
+            if (matcher.find()) {
+                String suspendMechanism = matcher.group(1);
+                store.addResult("suspend_mechanism", suspendMechanism);
+            } else {
+                // Handle cases where the output format is unexpected
+                store.addResult("suspend_mechanism", "unknown");
+            }
+        } else if (commandResult.getStderr().contains("No such file")) {
+            store.addResult("suspend_mechanism", "error: No such file");
+        } else if (commandResult.getStderr().contains("Permission denied")) {
+            store.addResult("suspend_mechanism", "error: Permission denied");
+        }
     }
 }

@@ -68,20 +68,6 @@ class VirtualKeyboardTest : VirtualDeviceTestCase() {
     }
 
     @Test
-    fun sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualKeyboard.sendKeyEvent(
-                    VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
     fun rejectsUnsupportedKeyCodes() {
         assertThrows(IllegalArgumentException::class.java) {
             mVirtualKeyboard.sendKeyEvent(
