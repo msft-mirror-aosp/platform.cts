@@ -169,10 +169,10 @@ public class RequestPinAppWidgetTest extends AppWidgetTestCase {
     private void setLauncher(String component) throws Exception {
         Log.i("BalActivity", "cmd package set-home-activity --user "
                 + getInstrumentation().getContext().getUserId() + " " + component);
-        /*runShellCommand("cmd package set-home-activity --user "
-                + getInstrumentation().getContext().getUserId() + " " + component);*/
-        runShellCommand("cmd package set-home-activity "
-                 + component);
+        runShellCommand("cmd package set-home-activity --user "
+                + getInstrumentation().getContext().getUserId() + " " + component);
+        /*runShellCommand("cmd package set-home-activity "
+                 + component);*/
     }
 
     @Test
