@@ -35,6 +35,8 @@ import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
+import androidx.media3.transformer.EditedMediaItem;
+import androidx.media3.transformer.EditedMediaItemSequence;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.TransformationRequest;
 import androidx.media3.transformer.Composition;
@@ -123,15 +125,11 @@ public final class TransformHdrToSdrToneMapTest {
 
   private static Transformer createTransformer(Context context) {
     return new Transformer.Builder(context)
-        .setTransformationRequest(
-            new TransformationRequest.Builder()
-                .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC)
-                .build())
         .addListener(
             new Transformer.Listener() {
               @Override
               public void onFallbackApplied(
-                  @NonNull MediaItem inputMediaItem,
+                  @NonNull Composition composition,
                   @NonNull TransformationRequest originalTransformationRequest,
                   @NonNull TransformationRequest fallbackTransformationRequest) {
                 // Tone mapping flag shouldn't change in fallback when tone mapping is requested.
@@ -161,11 +159,19 @@ public final class TransformHdrToSdrToneMapTest {
             .build()));
 
     Transformer transformer = createTransformer(context);
+    Composition composition =
+        new Composition.Builder(
+                new EditedMediaItemSequence.Builder(
+                        new EditedMediaItem.Builder(
+                                MediaItem.fromUri(Uri.parse(MEDIA_DIR + testFile))).build())
+                            .build())
+            .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC)
+            .build();
     ExportTestResult transformationTestResult;
     try {
       transformationTestResult = new TransformerAndroidTestRunner.Builder(context, transformer)
           .build()
-          .run(testId, MediaItem.fromUri(Uri.parse(MEDIA_DIR + testFile)));
+          .run(testId, composition);
     } catch (ExportException exception) {
       if (exception.getCause() != null
           && (Objects.equals(

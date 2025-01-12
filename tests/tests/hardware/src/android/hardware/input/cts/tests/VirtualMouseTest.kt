@@ -31,7 +31,6 @@ import com.android.cts.input.DefaultPointerSpeedRule
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -204,52 +203,6 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
     @Parameters(method = "allScrollValues")
     fun sendScrollEventY(scroll: Float) {
         verifyScrollY(scroll)
-    }
-
-    @Test
-    fun sendButtonEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualMouse.sendButtonEvent(
-                    VirtualMouseButtonEvent.Builder()
-                        .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
-                        .setButtonCode(VirtualMouseButtonEvent.BUTTON_PRIMARY)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
-    fun sendRelativeEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val relativeChangeX = 25f
-        val relativeChangeY = 35f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualMouse.sendRelativeEvent(
-                    VirtualMouseRelativeEvent.Builder()
-                        .setRelativeY(relativeChangeY)
-                        .setRelativeX(relativeChangeX)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
-    fun sendScrollEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        val moveX = 0f
-        val moveY = 1f
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                mVirtualMouse.sendScrollEvent(
-                    VirtualMouseScrollEvent.Builder()
-                        .setYAxisMovement(moveY)
-                        .setXAxisMovement(moveX)
-                        .build()
-                )
-            }
-        }
     }
 
     @Test

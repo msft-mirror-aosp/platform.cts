@@ -22,6 +22,7 @@ import static org.junit.Assert.fail;
 import android.media.MediaPlayer;
 import android.media.cts.MediaPlayerTestBase;
 import android.media.cts.TestUtils.Monitor;
+import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.webkit.cts.CtsTestServer;
 
@@ -66,6 +67,10 @@ public class MediaPlayerFlakyNetworkTest extends MediaPlayerTestBase {
         "video_480x360_mp4_h264_1350kbps_30fps_aac_stereo_192kbps_44100hz.mp4",
         "video_176x144_3gp_h263_300kbps_25fps_aac_stereo_128kbps_22050hz.3gp"
     };
+
+    // limiting the ro.hw_timeout_multiplier to 6 to accommodate slower devices
+    private static final int HW_TIMEOUT_MULTIPLIER =
+            Math.min(6, SystemProperties.getInt("ro.hw_timeout_multiplier", 1));
 
     // Allow operations to block for 3500ms before assuming they will ANR.
     // We don't allow the full 5s because cpu load, etc, reduces the budget.
@@ -222,8 +227,10 @@ public class MediaPlayerFlakyNetworkTest extends MediaPlayerTestBase {
         };
         releaseThread.start();
         releaseThreadRunning.waitForSignal();
-        releaseThread.join(ANR_TIMEOUT_MILLIS);
-        assertFalse("release took longer than " + ANR_TIMEOUT_MILLIS, releaseThread.isAlive());
+        releaseThread.join(ANR_TIMEOUT_MILLIS * HW_TIMEOUT_MULTIPLIER);
+        assertFalse(
+                "release took longer than " + ANR_TIMEOUT_MILLIS + " " + HW_TIMEOUT_MULTIPLIER,
+                releaseThread.isAlive());
     }
 
     private void createMediaPlayer() throws Throwable {

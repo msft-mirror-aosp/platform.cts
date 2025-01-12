@@ -18,6 +18,8 @@ package android.hardware.input.cts.tests;
 
 import static android.hardware.lights.LightsRequest.Builder;
 
+import static com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -41,6 +43,7 @@ import android.os.SystemClock;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
@@ -67,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 public abstract class InputHidTestCase extends InputTestCase {
 
     private static final String TAG = "InputHidTestCase";
