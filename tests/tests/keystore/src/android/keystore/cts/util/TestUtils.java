@@ -28,7 +28,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.content.pm.FeatureInfo;
@@ -130,10 +129,10 @@ public class TestUtils {
     }
 
     static public void assumeLockScreenSupport() {
-        PackageManager packageManager =
-                InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();
-        assumeTrue("Only test when DUT supports lock screen",
-                packageManager.hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
+        assumeTrue(
+                "Only test when DUT supports lock screen",
+                hasSecureLockScreen(
+                        InstrumentationRegistry.getInstrumentation().getTargetContext()));
     }
 
     static public boolean isStrongboxKeyMint(KmType kmType) {
@@ -919,7 +918,8 @@ public class TestUtils {
         } else if (transformationUpperCase.startsWith("RSA/")) {
             return false;
         } else {
-            throw new IllegalArgumentException("YYZ: Unsupported transformation: " + transformation);
+            throw new IllegalArgumentException(
+                    "YYZ: Unsupported transformation: " + transformation);
         }
     }
 
