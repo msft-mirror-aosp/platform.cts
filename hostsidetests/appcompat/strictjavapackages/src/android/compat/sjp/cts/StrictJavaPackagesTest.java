@@ -939,6 +939,8 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                                         .map(ClassDef::getType)
                                         .collect(ImmutableSet.toImmutableSet());
                         } catch (IOException e) {
+                            CLog.e(LOG_TAG + ": Failed to get class defs from APK: "
+                                    + apkFile.getAbsolutePath());
                             throw new IOException("Failed to get class defs from APK: "
                                                            + apkFile.getAbsolutePath(), e);
                         }
@@ -1081,10 +1083,11 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
 
     private static File pullJarFromDevice(INativeDevice device,
             String remoteJarPath) throws DeviceNotAvailableException {
-        String sha1OnDevice = device.executeAdbCommand("sha1sum " + remoteJarPath);
+        String sha1OnDevice = device.executeAdbCommand("sha1sum", remoteJarPath);
         CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
         File jar = device.pullFile(remoteJarPath);
         if (jar == null) {
+            CLog.d(LOG_TAG + ": could not pull remote file " + remoteJarPath);
             throw new IllegalStateException("could not pull remote file " + remoteJarPath);
         }
         String sha1OnHost = calculateSHA1(jar);
