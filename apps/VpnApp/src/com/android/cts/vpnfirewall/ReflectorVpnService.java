@@ -67,6 +67,7 @@ public class ReflectorVpnService extends VpnService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "onStartCommand(%s, %d, %d)".formatted(intent.getAction(), flags, startId));
         if (ACTION_STOP_SERVICE.equals(intent.getAction())) {
             stop();
             stopSelf();
@@ -88,11 +89,13 @@ public class ReflectorVpnService extends VpnService {
 
     @Override
     public void onCreate() {
+        Log.d(TAG, "onCreate()");
         mConnectivityManager = getSystemService(ConnectivityManager.class);
     }
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "onDestroy()");
         stop();
         NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID);
@@ -115,6 +118,7 @@ public class ReflectorVpnService extends VpnService {
         sendBroadcast(intent);
 
         if (restrictions.getBoolean(RESTRICTION_DONT_ESTABLISH)) {
+            Log.d(TAG, "Not establishing due to restriction");
             stopSelf();
             return;
         }
@@ -223,6 +227,7 @@ public class ReflectorVpnService extends VpnService {
         builder.setBlocking(true);
         builder.setSession(TAG);
 
+        Log.d(TAG, "Calling establish()...");
         mFd = builder.establish();
         if (mFd == null) {
             Log.e(TAG, "Unable to establish file descriptor for VPN connection");
