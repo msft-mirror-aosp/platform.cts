@@ -75,6 +75,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     private static final int CALLBACK_STATUS_SUCCESS = 1;
     private static final int CALLBACK_STATUS_FAILURE = 2;
     private final AtomicInteger mCallbackStatus = new AtomicInteger();
+    private static final int TEST_PEER_ID = 200;
 
     private Consumer<Boolean> getCallbackHandler() {
         return mCallback;
@@ -823,5 +824,33 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertEquals(SubscribeSessionCallback.TERMINATION_REASON_USER_INITIATED,
                     subscribeSessionCallbackTest.getReasonCode());
         }
+    }
+
+    /** Test set and get of DiscoveryResult */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd.DiscoveryResult#Builder",
+                "android.net.wifi.usd.DiscoveryResult.Builder#setFsdEnabled",
+                "android.net.wifi.usd.DiscoveryResult.Builder#setServiceProtoType",
+                "android.net.wifi.usd.DiscoveryResult.Builder#setServiceSpecificInfo",
+                "android.net.wifi.usd.DiscoveryResult.Builder#build",
+                "android.net.wifi.usd.DiscoveryResult#getPeerId",
+                "android.net.wifi.usd.DiscoveryResult#isFsdEnabled",
+                "android.net.wifi.usd.DiscoveryResult#getServiceProtoType",
+                "android.net.wifi.usd.DiscoveryResult#getServiceSpecificInfo",
+            })
+    public void testDiscoveryResult() {
+        DiscoveryResult discoveryResult =
+                new DiscoveryResult.Builder(TEST_PEER_ID)
+                        .setFsdEnabled(true)
+                        .setServiceProtoType(SubscribeConfig.SERVICE_PROTO_TYPE_CSA_MATTER)
+                        .setServiceSpecificInfo(TEST_SSI)
+                        .build();
+        assertEquals(TEST_PEER_ID, discoveryResult.getPeerId());
+        assertTrue(discoveryResult.isFsdEnabled());
+        assertEquals(
+                SubscribeConfig.SERVICE_PROTO_TYPE_CSA_MATTER,
+                discoveryResult.getServiceProtoType());
+        assertArrayEquals(TEST_SSI, discoveryResult.getServiceSpecificInfo());
     }
 }
