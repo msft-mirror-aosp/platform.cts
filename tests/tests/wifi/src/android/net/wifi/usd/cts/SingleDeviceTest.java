@@ -16,6 +16,8 @@
 
 package android.net.wifi.usd.cts;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.net.wifi.cts.WifiJUnit3TestBase;
@@ -413,6 +415,62 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
+    /** Test set and get for SubscribeConfig */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd.SubscriberConfig#Builder",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setQueryPeriodMillis",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setSubscribeType",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setServiceProtoType",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setTtlSeconds",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setRecommendedOperatingFrequenciesMhz",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setServiceSpecificInfo",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setTxMatchFilter",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setRxMatchFilter",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setOperatingFrequenciesMhz",
+                "android.net.wifi.usd.SubscriberConfig.Builder#build",
+                "android.net.wifi.usd.SubscriberConfig#getServiceName",
+                "android.net.wifi.usd.SubscriberConfig#getQueryPeriodMillis",
+                "android.net.wifi.usd.SubscriberConfig#getSubscribeType",
+                "android.net.wifi.usd.SubscriberConfig#getServiceProtoType",
+                "android.net.wifi.usd.SubscriberConfig#getTtlSeconds",
+                "android.net.wifi.usd.SubscriberConfig#getRecommendedOperatingFrequenciesMhz",
+                "android.net.wifi.usd.SubscriberConfig#getServiceSpecificInfo",
+                "android.net.wifi.usd.SubscriberConfig#getRxMatchFilter",
+                "android.net.wifi.usd.SubscriberConfig#getTxMatchFilter",
+                "android.net.wifi.usd.SubscriberConfig#getOperatingFrequenciesMhz"
+            })
+    public void testSubscribeConfig() {
+        SubscribeConfig subscribeConfig =
+                new SubscribeConfig.Builder(USD_SERVICE_NAME)
+                        .setQueryPeriodMillis(200)
+                        .setSubscribeType(SubscribeConfig.SUBSCRIBE_TYPE_ACTIVE)
+                        .setServiceProtoType(SubscribeConfig.SERVICE_PROTO_TYPE_GENERIC)
+                        .setTtlSeconds(TEST_TTL_SECONDS)
+                        .setRecommendedOperatingFrequenciesMhz(TEST_FREQUENCIES)
+                        .setServiceSpecificInfo(TEST_SSI)
+                        .setTxMatchFilter(mFilter)
+                        .setRxMatchFilter(mFilter)
+                        .setOperatingFrequenciesMhz(TEST_FREQUENCIES)
+                        .build();
+        assertArrayEquals(USD_SERVICE_NAME.getBytes(), subscribeConfig.getServiceName());
+        assertEquals(200, subscribeConfig.getQueryPeriodMillis());
+        assertEquals(SubscribeConfig.SUBSCRIBE_TYPE_ACTIVE, subscribeConfig.getSubscribeType());
+        assertEquals(
+                SubscribeConfig.SERVICE_PROTO_TYPE_GENERIC, subscribeConfig.getServiceProtoType());
+        assertEquals(TEST_TTL_SECONDS, subscribeConfig.getTtlSeconds());
+        assertArrayEquals(
+                TEST_FREQUENCIES, subscribeConfig.getRecommendedOperatingFrequenciesMhz());
+        assertArrayEquals(TEST_SSI, subscribeConfig.getServiceSpecificInfo());
+        assertEquals(mFilter.size(), subscribeConfig.getRxMatchFilter().size());
+        assertEquals(mFilter.size(), subscribeConfig.getTxMatchFilter().size());
+        for (int i = 0; i < mFilter.size(); i++) {
+            assertArrayEquals(mFilter.get(i), subscribeConfig.getRxMatchFilter().get(i));
+            assertArrayEquals(mFilter.get(i), subscribeConfig.getTxMatchFilter().get(i));
+        }
+        assertArrayEquals(TEST_FREQUENCIES, subscribeConfig.getOperatingFrequenciesMhz());
+    }
+
     private static class SubscribeSessionCallbackTest extends SubscribeSessionCallback {
         static final int ERROR = 0;
         static final int ON_SUBSCRIBE_FAILED = 1;
@@ -533,6 +591,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.UsdManager#registerSubscriberStatusListener",
                 "android.net.wifi.usd.UsdManager#unregisterSubscriberStatusListener",
                 "android.net.wifi.usd.SubscriberConfig#Builder",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setQueryPeriodMillis",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setSubscribeType",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setServiceProtoType",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setTtlSeconds",
+                "android.net.wifi.usd.SubscriberConfig.Builder#setRecommendedOperatingFrequenciesMhz",
                 "android.net.wifi.usd.UsdManager#subscribe",
                 "android.net.wifi.usd.SubscribeSession#cancel",
                 "android.net.wifi.usd.SubscribeSessionCallback#onSubscribeStarted",
@@ -553,8 +616,26 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             // Make sure USD subscriber is available
             assertTrue("Subscriber is not available", isCallbackResultSuccess());
             mUsdManager.unregisterSubscriberStatusListener(getCallbackHandler());
+            Characteristics characteristics = mUsdManager.getCharacteristics();
+            assertNotNull(characteristics);
+            assertTrue(USD_SERVICE_NAME.length() <= characteristics.getMaxServiceNameLength());
+            // Set subscribe configuration
+            SubscribeConfig.Builder builder =
+                    new SubscribeConfig.Builder(USD_SERVICE_NAME)
+                            .setQueryPeriodMillis(200)
+                            .setSubscribeType(SubscribeConfig.SUBSCRIBE_TYPE_ACTIVE)
+                            .setServiceProtoType(SubscribeConfig.SERVICE_PROTO_TYPE_GENERIC)
+                            .setTtlSeconds(TEST_TTL_SECONDS)
+                            .setRecommendedOperatingFrequenciesMhz(TEST_FREQUENCIES);
+            if (TEST_SSI.length <= characteristics.getMaxServiceSpecificInfoLength()) {
+                builder.setServiceSpecificInfo(TEST_SSI);
+            }
+            if (mFilter.size() <= characteristics.getMaxMatchFilterLength()) {
+                builder.setTxMatchFilter(mFilter);
+                builder.setRxMatchFilter(mFilter);
+            }
             // Subscribe
-            SubscribeConfig subscribeConfig = new SubscribeConfig.Builder(USD_SERVICE_NAME).build();
+            SubscribeConfig subscribeConfig = builder.build();
             SubscribeSessionCallbackTest subscribeSessionCallbackTest =
                     new SubscribeSessionCallbackTest();
             mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
@@ -582,8 +663,15 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     "Subscribe terminated",
                     subscribeSessionCallbackTest.hasCallbackAlreadyHappened(
                             SubscribeSessionCallbackTest.ON_SESSION_TERMINATED));
+            SubscribeSession session = subscribeSessionCallbackTest.getSubscribeSession();
+            assertNotNull("Session is null", session);
+            // Send a message; this is expected to fail in case of single device test
+            resetCallback();
+            session.sendMessage(1, "some message".getBytes(), executor, getCallbackHandler());
+            assertFalse("SendMessage cannot succeed", isCallbackResultSuccess());
+            assertTrue("Callback was never called", isCallbackCalled());
             // Cancel Subscribe
-            subscribeSessionCallbackTest.getSubscribeSession().cancel();
+            session.cancel();
             // Make sure terminate notification is generated
             assertTrue(
                     "Subscribe session terminated",
