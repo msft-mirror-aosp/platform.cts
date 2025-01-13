@@ -29,9 +29,14 @@ android_test {
         "cts-install-lib",
         "android.content.pm.flags-aconfig-java",
         "ShortcutManagerTestUtils",
+        "Nene",
+        "Harrier",
     ],
     resource_dirs: ["res"],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     sdk_version: "test_current",
     // Tag this module as a cts test artifact
     test_suites: [
