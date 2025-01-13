@@ -18,32 +18,38 @@
             }
         ]
     },
-    "initialState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskActivity",
-                        "state": "RESUMED"
-                    }
-                ]
-            }
-        ]
-    },
-    "endState": {
-        "tasks": [
-            {
-                "activities": [
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
-                        "state": "RESUMED"
-                    },
-                    {
-                        "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskActivity",
-                        "state": "STOPPED"
-                    }
-                ]
-            }
-        ]
-    }
+    "initialStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskActivity",
+                            "state": "RESUMED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ],
+    "endStates": [
+        {
+            "tasks": [
+                {
+                    "activities": [
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$RegularActivity",
+                            "state": "RESUMED"
+                        },
+                        {
+                            "name": "android.server.wm.cts/android.server.wm.intent.Activities$SingleInstancePerTaskActivity",
+                            "state": "STOPPED"
+                        }
+                    ]
+                }
+            ],
+            "launchedWindowingMode": "WINDOWING_MODE_UNDEFINED"
+        }
+    ]
 }
