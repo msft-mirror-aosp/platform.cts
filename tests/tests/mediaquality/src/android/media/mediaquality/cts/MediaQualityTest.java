@@ -59,18 +59,20 @@ public class MediaQualityTest {
 
     @After
     public void tearDown() {
-        // Remove all picture profiles.
-        List<PictureProfile> pictureProfiles =
-                mManager.getPictureProfilesByPackage(PACKAGE_NAME, includeParams(false));
-        for (PictureProfile profile : pictureProfiles) {
-            mManager.removePictureProfile(profile.getProfileId());
-        }
+        if (mManager != null) {
+            // Remove all picture profiles.
+            List<PictureProfile> pictureProfiles =
+                    mManager.getPictureProfilesByPackage(PACKAGE_NAME, includeParams(false));
+            for (PictureProfile profile : pictureProfiles) {
+                mManager.removePictureProfile(profile.getProfileId());
+            }
 
-        // Remove all sound profiles.
-        List<SoundProfile> soundProfiles =
-                mManager.getSoundProfilesByPackage(PACKAGE_NAME, includeParams(false));
-        for (SoundProfile profile : soundProfiles) {
-            mManager.removeSoundProfile(profile.getProfileId());
+            // Remove all sound profiles.
+            List<SoundProfile> soundProfiles =
+                    mManager.getSoundProfilesByPackage(PACKAGE_NAME, includeParams(false));
+            for (SoundProfile profile : soundProfiles) {
+                mManager.removeSoundProfile(profile.getProfileId());
+            }
         }
     }
 
