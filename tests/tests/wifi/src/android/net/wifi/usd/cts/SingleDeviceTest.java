@@ -184,6 +184,62 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         }
     }
 
+    /** Test set and get for PublishConfig */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.usd.PublishConfig#Builder",
+                "android.net.wifi.usd.PublishConfig.Builder#setAnnouncementPeriodMillis",
+                "android.net.wifi.usd.PublishConfig.Builder#setServiceProtoType",
+                "android.net.wifi.usd.PublishConfig.Builder#setSolicitedTransmissionType",
+                "android.net.wifi.usd.PublishConfig.Builder#setEventsEnabled",
+                "android.net.wifi.usd.PublishConfig.Builder#setTtlSeconds",
+                "android.net.wifi.usd.PublishConfig.Builder#setServiceSpecificInfo",
+                "android.net.wifi.usd.PublishConfig.Builder#setTxMatchFilter",
+                "android.net.wifi.usd.PublishConfig.Builder#setRxMatchFilter",
+                "android.net.wifi.usd.PublishConfig.Builder#setOperatingFrequenciesMhz",
+                "android.net.wifi.usd.PublishConfig.Builder#build",
+                "android.net.wifi.usd.Config#getServiceName",
+                "android.net.wifi.usd.PublishConfig#getAnnouncementPeriodMillis",
+                "android.net.wifi.usd.Config#getServiceProtoType",
+                "android.net.wifi.usd.PublishConfig#getSolicitedTransmissionType",
+                "android.net.wifi.usd.PublishConfig#isEventsEnabled",
+                "android.net.wifi.usd.Config#getTtlSeconds",
+                "android.net.wifi.usd.Config#getServiceSpecificInfo",
+                "android.net.wifi.usd.Config#getRxMatchFilter",
+                "android.net.wifi.usd.Config#getTxMatchFilter",
+                "android.net.wifi.usd.Config#getOperatingFrequenciesMhz"
+            })
+    public void testPublishConfig() {
+        PublishConfig publishConfig =
+                new PublishConfig.Builder(USD_SERVICE_NAME)
+                        .setAnnouncementPeriodMillis(200)
+                        .setServiceProtoType(PublishConfig.SERVICE_PROTO_TYPE_GENERIC)
+                        .setSolicitedTransmissionType(PublishConfig.TRANSMISSION_TYPE_UNICAST)
+                        .setEventsEnabled(true)
+                        .setTtlSeconds(TEST_TTL_SECONDS)
+                        .setServiceSpecificInfo(TEST_SSI)
+                        .setTxMatchFilter(mFilter)
+                        .setRxMatchFilter(mFilter)
+                        .setOperatingFrequenciesMhz(TEST_FREQUENCIES)
+                        .build();
+        assertArrayEquals(USD_SERVICE_NAME.getBytes(), publishConfig.getServiceName());
+        assertEquals(200, publishConfig.getAnnouncementPeriodMillis());
+        assertEquals(PublishConfig.SERVICE_PROTO_TYPE_GENERIC, publishConfig.getServiceProtoType());
+        assertEquals(
+                PublishConfig.TRANSMISSION_TYPE_UNICAST,
+                publishConfig.getSolicitedTransmissionType());
+        assertTrue(publishConfig.isEventsEnabled());
+        assertEquals(TEST_TTL_SECONDS, publishConfig.getTtlSeconds());
+        assertArrayEquals(TEST_SSI, publishConfig.getServiceSpecificInfo());
+        assertEquals(mFilter.size(), publishConfig.getRxMatchFilter().size());
+        assertEquals(mFilter.size(), publishConfig.getTxMatchFilter().size());
+        for (int i = 0; i < mFilter.size(); i++) {
+            assertArrayEquals(mFilter.get(i), publishConfig.getRxMatchFilter().get(i));
+            assertArrayEquals(mFilter.get(i), publishConfig.getTxMatchFilter().get(i));
+        }
+        assertArrayEquals(TEST_FREQUENCIES, publishConfig.getOperatingFrequenciesMhz());
+    }
+
     private static class PublishSessionCallbackTest extends PublishSessionCallback {
         static final int ERROR = 0;
         static final int ON_PUBLISH_FAILED = 1;
@@ -300,7 +356,6 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         public int getReasonCode() {
             return mReasonCode;
         }
-
     }
 
     /** Test USD publish */
@@ -309,16 +364,29 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.WifiManager#isUsdPublisherSupported",
                 "android.net.wifi.usd.UsdManager#registerPublisherStatusListener",
                 "android.net.wifi.usd.UsdManager#unregisterPublisherStatusListener",
+                "android.net.wifi.usd.PublisherConfig#Builder",
+                "android.net.wifi.usd.PublisherConfig.Builder#setAnnouncementPeriodMillis",
+                "android.net.wifi.usd.PublisherConfig.Builder#setEventsEnabled",
+                "android.net.wifi.usd.PublisherConfig.Builder#setTtlSeconds",
+                "android.net.wifi.usd.PublisherConfig.Builder#setServiceProtoType",
+                "android.net.wifi.usd.PublisherConfig.Builder#setSolicitedTransmissionType",
+                "android.net.wifi.usd.PublisherConfig.Builder#setServiceSpecificInfo",
+                "android.net.wifi.usd.PublisherConfig.Builder#setTxMatchFilter",
+                "android.net.wifi.usd.PublisherConfig.Builder#setRxMatchFilter",
                 "android.net.wifi.usd.UsdManager#publish",
                 "android.net.wifi.usd.PublishSession#cancel",
                 "android.net.wifi.usd.PublishSessionCallback#onPublishStarted",
                 "android.net.wifi.usd.PublishSessionCallback#onPublishReplied",
                 "android.net.wifi.usd.SessionCallback#onSessionTerminated",
-                "android.net.wifi.usd.SessionCallback#onMessageReceived"
+                "android.net.wifi.usd.SessionCallback#onMessageReceived",
+                "android.net.wifi.usd.PublishSession#sendMessage",
+                "android.net.wifi.usd.PublishSession#updatePublish",
             })
     public void testPublish() throws Exception {
-        try (PermissionContext p = TestApis.permissions().withPermission(
-                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission(
+                                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdPublisherSupported()) {
                 return;
             }
@@ -328,11 +396,28 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             // Make sure USD publisher is available
             assertTrue("Publisher is not available", isCallbackResultSuccess());
             mUsdManager.unregisterPublisherStatusListener(getCallbackHandler());
-            // Publish
-            PublishConfig publishConfig = new PublishConfig.Builder(USD_SERVICE_NAME)
-                    .build();
+            Characteristics characteristics = mUsdManager.getCharacteristics();
+            assertNotNull(characteristics);
+            assertTrue(USD_SERVICE_NAME.length() <= characteristics.getMaxServiceNameLength());
+            // Set publish configuration
+            PublishConfig.Builder builder =
+                    new PublishConfig.Builder(USD_SERVICE_NAME)
+                            .setAnnouncementPeriodMillis(200)
+                            .setEventsEnabled(true)
+                            .setTtlSeconds(TEST_TTL_SECONDS)
+                            .setServiceProtoType(PublishConfig.SERVICE_PROTO_TYPE_GENERIC)
+                            .setSolicitedTransmissionType(PublishConfig.TRANSMISSION_TYPE_UNICAST);
+            if (TEST_SSI.length <= characteristics.getMaxServiceSpecificInfoLength()) {
+                builder.setServiceSpecificInfo(TEST_SSI);
+            }
+            if (mFilter.size() <= characteristics.getMaxMatchFilterLength()) {
+                builder.setTxMatchFilter(mFilter);
+                builder.setRxMatchFilter(mFilter);
+            }
+            PublishConfig publishConfig = builder.build();
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
+            // Publish
             mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
             // Check whether publish is started or not
             assertTrue(
@@ -359,13 +444,24 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     publishSessionCallbackTest.hasCallbackAlreadyHappened(
                             SubscribeSessionCallbackTest.ON_SESSION_TERMINATED));
             // Cancel
+            PublishSession session = publishSessionCallbackTest.getPublishSession();
+            assertNotNull(session);
+            // Send a message; this is expected to fail.
+            resetCallback();
+            session.sendMessage(1, "some message".getBytes(), executor, getCallbackHandler());
+            assertFalse("SendMessage cannot succeed", isCallbackResultSuccess());
+            assertTrue("Callback was never called", isCallbackCalled());
+            // Update publish
+            session.updatePublish(new byte[] {1, 2, 3});
+            // Cancel Publish
             publishSessionCallbackTest.getPublishSession().cancel();
             // Check whether publish is terminated or not
             assertTrue(
                     "Publish terminated",
                     publishSessionCallbackTest.waitForCallback(
                             PublishSessionCallbackTest.ON_PUBLISH_TERMINATED));
-            assertEquals(PublishSessionCallback.TERMINATION_REASON_USER_INITIATED,
+            assertEquals(
+                    PublishSessionCallback.TERMINATION_REASON_USER_INITIATED,
                     publishSessionCallbackTest.getReasonCode());
         }
     }
@@ -377,8 +473,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 "android.net.wifi.usd.UsdManager.PublishConfig.Builder#getOperatingFrequenciesMhz",
             })
     public void testPublishWithOperatingFrequencies() throws Exception {
-        try (PermissionContext p = TestApis.permissions().withPermission(
-                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
+        try (PermissionContext p =
+                TestApis.permissions()
+                        .withPermission(
+                                android.Manifest.permission.MANAGE_WIFI_NETWORK_SELECTION)) {
             if (!mWifiManager.isUsdPublisherSupported()) {
                 return;
             }
@@ -389,9 +487,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             mUsdManager.unregisterPublisherStatusListener(getCallbackHandler());
             // Publish only on channels 1, 6 and 11
             int[] operatingFrequencies = new int[] {2412, 2437, 2462};
-            PublishConfig publishConfig = new PublishConfig.Builder(USD_SERVICE_NAME)
-                    .setOperatingFrequenciesMhz(operatingFrequencies)
-                    .build();
+            PublishConfig publishConfig =
+                    new PublishConfig.Builder(USD_SERVICE_NAME)
+                            .setOperatingFrequenciesMhz(operatingFrequencies)
+                            .build();
             assertEquals(operatingFrequencies, publishConfig.getOperatingFrequenciesMhz());
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
