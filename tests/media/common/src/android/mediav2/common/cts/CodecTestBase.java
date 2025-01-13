@@ -1045,7 +1045,7 @@ public abstract class CodecTestBase {
                 mustTestAllCodecs, selectSwitch, features, false);
     }
 
-    private static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+    public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch, String[] features, boolean ignoreModeDuringSelection) {
         ArrayList<String> mediaTypes = compileCompleteTestMediaTypesList(isEncoder,
