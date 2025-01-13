@@ -132,9 +132,14 @@ public class SoundTriggerTest {
         assertThat(keyphraseSoundModel.getType()).isEqualTo(SoundTrigger.SoundModel.TYPE_KEYPHRASE);
     }
 
-    private static SoundTrigger.GenericSoundModel createTestGenericSoundModel() {
+    private static SoundTrigger.GenericSoundModel createTestGenericSoundModelWithVersion() {
         return new SoundTrigger.GenericSoundModel(TEST_MODEL_UUID, TEST_VENDOR_UUID,
                 SoundTriggerTest.TEST_MODEL_DATA, TEST_MODEL_VERSION);
+    }
+
+    private static SoundTrigger.GenericSoundModel createTestGenericSoundModelWithoutVersion() {
+        return new SoundTrigger.GenericSoundModel(TEST_MODEL_UUID, TEST_VENDOR_UUID,
+                SoundTriggerTest.TEST_MODEL_DATA);
     }
 
     private static void verifyGenericSoundModelMatchesTestParams(
@@ -142,9 +147,20 @@ public class SoundTriggerTest {
         assertThat(genericSoundModel.getUuid()).isEqualTo(TEST_MODEL_UUID);
         assertThat(genericSoundModel.getVendorUuid()).isEqualTo(TEST_VENDOR_UUID);
         assertArrayEquals(genericSoundModel.getData(), SoundTriggerTest.TEST_MODEL_DATA);
-        assertThat(genericSoundModel.getVersion()).isEqualTo(TEST_MODEL_VERSION);
         assertThat(genericSoundModel.getType())
                 .isEqualTo(SoundTrigger.SoundModel.TYPE_GENERIC_SOUND);
+    }
+
+    private static void verifyGenericSoundModelWithVersionMatchesTestParams(
+            SoundTrigger.GenericSoundModel genericSoundModel) {
+        verifyGenericSoundModelMatchesTestParams(genericSoundModel);
+        assertThat(genericSoundModel.getVersion()).isEqualTo(TEST_MODEL_VERSION);
+    }
+
+    private static void verifyGenericSoundModelWithoutVersionMatchesTestParams(
+            SoundTrigger.GenericSoundModel genericSoundModel) {
+        verifyGenericSoundModelMatchesTestParams(genericSoundModel);
+        assertThat(genericSoundModel.getVersion()).isEqualTo(-1);
     }
 
     private SoundTrigger.ModuleProperties createTestModuleProperties() {
@@ -232,8 +248,9 @@ public class SoundTriggerTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_GENERIC_MODEL_API)
     @Test
-    public void testGenericSoundModelParcelUnparcel() {
-        SoundTrigger.GenericSoundModel genericSoundModelSrc = createTestGenericSoundModel();
+    public void testGenericSoundModelWithVersionParcelUnparcel() {
+        SoundTrigger.GenericSoundModel genericSoundModelSrc =
+                createTestGenericSoundModelWithVersion();
         Parcel parcel = Parcel.obtain();
         genericSoundModelSrc.writeToParcel(parcel, 0);
 
@@ -241,7 +258,22 @@ public class SoundTriggerTest {
         SoundTrigger.GenericSoundModel genericSoundModelResult =
                 SoundTrigger.GenericSoundModel.CREATOR.createFromParcel(parcel);
         assertThat(genericSoundModelSrc).isEqualTo(genericSoundModelResult);
-        verifyGenericSoundModelMatchesTestParams(genericSoundModelResult);
+        verifyGenericSoundModelWithVersionMatchesTestParams(genericSoundModelResult);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_GENERIC_MODEL_API)
+    @Test
+    public void testGenericSoundModelWithoutVersionParcelUnparcel() {
+        SoundTrigger.GenericSoundModel genericSoundModelSrc =
+                createTestGenericSoundModelWithoutVersion();
+        Parcel parcel = Parcel.obtain();
+        genericSoundModelSrc.writeToParcel(parcel, 0);
+
+        parcel.setDataPosition(0);
+        SoundTrigger.GenericSoundModel genericSoundModelResult =
+                SoundTrigger.GenericSoundModel.CREATOR.createFromParcel(parcel);
+        assertThat(genericSoundModelSrc).isEqualTo(genericSoundModelResult);
+        verifyGenericSoundModelWithoutVersionMatchesTestParams(genericSoundModelResult);
     }
 
     @Test
