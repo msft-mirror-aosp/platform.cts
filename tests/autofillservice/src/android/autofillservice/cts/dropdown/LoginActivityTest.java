@@ -2697,7 +2697,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 mActivity.assertAutoFilled();
 
                 // Change focus to prepare for next step - must do it before session is gone
-                requestFocusOnPassword();
+                mActivity.onPassword(View::requestFocus);
 
                 // Rinse and repeat...
                 mActivity.tapClear();
