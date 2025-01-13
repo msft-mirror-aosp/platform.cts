@@ -231,9 +231,13 @@ public abstract class CodecTestBase {
     static final int[] AV1_HLG_PROFILES = new int[]{AV1ProfileMain10};
     static final int[] APV_HLG_PROFILES = new int[]{APVProfile422_10};
     static final int[] AV1_HDR10_PROFILES = new int[]{AV1ProfileMain10HDR10};
+    static final int[] APV_HDR10_PROFILES = new int[]{APVProfile422_10HDR10};
     static final int[] AV1_HDR10_PLUS_PROFILES = new int[]{AV1ProfileMain10HDR10Plus};
+    static final int[] APV_HDR10_PLUS_PROFILES = new int[]{APVProfile422_10HDR10Plus};
     static final int[] AV1_HDR_PROFILES =
             combine(AV1_HLG_PROFILES, combine(AV1_HDR10_PROFILES, AV1_HDR10_PLUS_PROFILES));
+    static final int[] APV_HDR_PROFILES =
+            combine(APV_HLG_PROFILES, combine(APV_HDR10_PROFILES, APV_HDR10_PLUS_PROFILES));
     static final int[] AV1_PROFILES = combine(AV1_SDR_PROFILES, AV1_HDR_PROFILES);
     static final int[] DOLBY_VISION_HDR_PROFILES = new int[]{DolbyVisionProfileDvavPer,
             DolbyVisionProfileDvavPen, DolbyVisionProfileDvheDer, DolbyVisionProfileDvheDen,
@@ -415,6 +419,7 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("av1", MediaFormat.MIMETYPE_VIDEO_AV1);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("apv", MediaFormat.MIMETYPE_VIDEO_APV);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("avc", MediaFormat.MIMETYPE_VIDEO_AVC);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("hevc", MediaFormat.MIMETYPE_VIDEO_HEVC);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg4", MediaFormat.MIMETYPE_VIDEO_MPEG4);
@@ -461,15 +466,18 @@ public abstract class CodecTestBase {
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PROFILES);
+        PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PROFILES);
 
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PLUS_PROFILES);
+        PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PLUS_PROFILES);
 
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
@@ -480,6 +488,7 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP8, VP8_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
 
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AV1);
