@@ -95,7 +95,6 @@ java_test_host {
         ":SharingApp2",
         ":SharedUidApp1",
         ":SharedUidApp2",
-        ":SimpleSmsApp",
         ":TestApp1",
         ":TestApp2",
         ":TestApp3",
