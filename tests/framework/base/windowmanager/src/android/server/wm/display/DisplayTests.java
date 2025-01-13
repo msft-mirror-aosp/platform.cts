@@ -24,19 +24,25 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.res.Configuration;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.DisplayMetricsSession;
+import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.LockScreenSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.util.Size;
 import android.view.Display;
+
+import com.android.compatibility.common.util.CddTest;
+import com.android.window.flags.Flags;
 
 import org.junit.Test;
 
@@ -156,6 +162,15 @@ public class DisplayTests extends MultiDisplayTestBase {
             getDisplayStateAfterChange(originalDs.size() + 3);
         }
         getDisplayStateAfterChange(originalDs.size());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_UNIVERSAL_RESIZABLE_BY_DEFAULT)
+    @CddTest(requirement = "7.1.3/C-1-2")
+    @Test
+    public void testLargeScreenEnableIgnoreOrientationRequest() {
+        assumeTrue("Skipping test: not large screen", isTablet());
+
+        assertTrue(IgnoreOrientationRequestSession.getIgnoreOrientationRequest());
     }
 
     /**
