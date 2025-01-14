@@ -34,7 +34,7 @@ java_library_host {
 tradefed_binary_host {
     name: "cts-interactive-tradefed",
     wrapper: "etc/cts-interactive-tradefed",
-    short_name: "CTS_INTERACTIVE",
+    short_name: "CTS-INTERACTIVE",
     full_name: "Compatibility Test Suite Interactive",
     version: "15_r1",
     static_libs: ["cts-interactive-tradefed-harness"],
