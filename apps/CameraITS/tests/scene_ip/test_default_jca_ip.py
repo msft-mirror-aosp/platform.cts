@@ -77,12 +77,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           props.get('android.info.supportedHardwareLevel')
       ]
       logging.debug('Camera hardware level: %s', camera_hardware_level)
-
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       is_tablet = its_device_utils.is_dut_tablet(self.dut.serial)
       # Skip the test if camera is not primary or if it is a tablet
       is_primary_camera = self.hidden_physical_id is None
-      camera_properties_utils.skip_unless(not is_tablet and
-                                          is_primary_camera)
+      camera_properties_utils.skip_unless(
+          not is_tablet and
+          is_primary_camera and
+          first_api_level >= its_session_utils.ANDROID16_API_LEVEL
+      )
       # close camera after props have been retrieved
       cam.close_camera()
       device_id = self.dut.serial
