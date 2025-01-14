@@ -19,6 +19,8 @@ package android.mediapc.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_SecurePlayback;
 import static android.media.MediaDrm.SECURITY_LEVEL_HW_SECURE_ALL;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertTrue;
 
 import android.content.pm.PackageManager;
@@ -27,6 +29,7 @@ import android.media.MediaCodecList;
 import android.media.MediaDrm;
 import android.media.MediaFormat;
 import android.media.UnsupportedSchemeException;
+import android.media.performanceclass.MediaPerformanceClass;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
@@ -39,6 +42,7 @@ import android.mediapc.cts.common.Requirements.ScreenResolutionRRequirement;
 import android.mediapc.cts.common.Requirements.ScreenResolutionRequirement;
 import android.mediapc.cts.common.Requirements.SecureHardwareDecodersRequirement;
 import android.mediapc.cts.common.Utils;
+import android.os.Build;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -53,6 +57,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -227,5 +232,18 @@ public class PerformanceClassTest {
         req.setDisplayLuminanceNits(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);
 
         pce.submitAndCheck();
+    }
+
+    @Test
+    @CddTest(requirements = {"7.11/C-1-3"})
+    public void validBuildConstant() {
+        var validValues =
+                Arrays.stream(MediaPerformanceClass.values())
+                        .map(MediaPerformanceClass::getNumber)
+                        .filter(x -> x >= 0)
+                        .toList();
+        assertWithMessage("android.os.Build.VERSION.MEDIA_PERFORMANCE_CLASS)")
+                .that(Build.VERSION.MEDIA_PERFORMANCE_CLASS)
+                .isIn(validValues);
     }
 }
