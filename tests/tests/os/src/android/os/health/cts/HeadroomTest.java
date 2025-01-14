@@ -22,6 +22,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
@@ -153,7 +154,25 @@ public class HeadroomTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CPU_GPU_HEADROOMS)
-    public void testGetCpuHeadroomParams_invalidCalculationType() {
+    public void testCpuHeadroomParams_toBuilder() {
+        CpuHeadroomParams params =
+                new CpuHeadroomParams.Builder()
+                        .setTids(1, 2, 3)
+                        .setCalculationType(CpuHeadroomParams.CPU_HEADROOM_CALCULATION_TYPE_AVERAGE)
+                        .setCalculationWindowMillis(1000)
+                        .build();
+
+        params = params.toBuilder().build();
+        assertArrayEquals(new int[] {1, 2, 3}, params.getTids());
+        assertEquals(
+                CpuHeadroomParams.CPU_HEADROOM_CALCULATION_TYPE_AVERAGE,
+                params.getCalculationType());
+        assertEquals(1000, params.getCalculationWindowMillis());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CPU_GPU_HEADROOMS)
+    public void testCpuHeadroomParams_invalidCalculationType() {
         CpuHeadroomParams.Builder builder = new CpuHeadroomParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationType(-1));
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationType(100));
@@ -161,23 +180,23 @@ public class HeadroomTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CPU_GPU_HEADROOMS)
-    public void testGetCpuHeadroomParams_invalidWindow() {
-        GpuHeadroomParams.Builder builder = new GpuHeadroomParams.Builder();
+    public void testCpuHeadroomParams_invalidWindow() {
+        CpuHeadroomParams.Builder builder = new CpuHeadroomParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationWindowMillis(0));
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationWindowMillis(-1));
         checkCpuHeadroomSupport();
-        final Pair<Integer, Integer> validRange = mManager.getGpuHeadroomCalculationWindowRange();
+        final Pair<Integer, Integer> validRange = mManager.getCpuHeadroomCalculationWindowRange();
         builder.setCalculationWindowMillis(validRange.first - 1);
         assertThrows(
-                IllegalArgumentException.class, () -> mManager.getGpuHeadroom(builder.build()));
+                IllegalArgumentException.class, () -> mManager.getCpuHeadroom(builder.build()));
         builder.setCalculationWindowMillis(validRange.second + 1);
         assertThrows(
-                IllegalArgumentException.class, () -> mManager.getGpuHeadroom(builder.build()));
+                IllegalArgumentException.class, () -> mManager.getCpuHeadroom(builder.build()));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CPU_GPU_HEADROOMS)
-    public void testGetCpuHeadroomParams_invalidTids() {
+    public void testCpuHeadroomParams_invalidTids() {
         CpuHeadroomParams.Builder builder = new CpuHeadroomParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setTids(0));
         assertThrows(IllegalArgumentException.class, () -> builder.setTids(-1));
@@ -189,7 +208,7 @@ public class HeadroomTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CPU_GPU_HEADROOMS)
-    public void testGetGpuHeadroomParams_invalidCalculationType() {
+    public void testGpuHeadroomParams_invalidCalculationType() {
         GpuHeadroomParams.Builder builder = new GpuHeadroomParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationType(-1));
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationType(100));
@@ -197,7 +216,7 @@ public class HeadroomTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CPU_GPU_HEADROOMS)
-    public void testGetGpuHeadroomParams_invalidWindow() {
+    public void testGpuHeadroomParams_invalidWindow() {
         GpuHeadroomParams.Builder builder = new GpuHeadroomParams.Builder();
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationWindowMillis(0));
         assertThrows(IllegalArgumentException.class, () -> builder.setCalculationWindowMillis(-1));
@@ -248,12 +267,16 @@ public class HeadroomTest {
     public void testGetCpuHeadroom_customWindow() throws Exception {
         checkCpuHeadroomSupport();
         final Pair<Integer, Integer> range = mManager.getGpuHeadroomCalculationWindowRange();
+        final int expectedMinMillis = 1000;
         assertTrue(
-                "Min CPU headroom calculation window should be less or equal to 50",
-                range.first <= 50);
+                "Min CPU headroom calculation window should be less or equal to "
+                        + expectedMinMillis,
+                range.first <= expectedMinMillis);
+        final int expectedMaxMillis = 10000;
         assertTrue(
-                "Max CPU headroom calculation window should be greater or equal to 10000",
-                range.second >= 10000);
+                "Max CPU headroom calculation window should be greater or equal to "
+                        + expectedMaxMillis,
+                range.second >= expectedMaxMillis);
         CpuHeadroomParams params;
         params = new CpuHeadroomParams.Builder().setCalculationWindowMillis(range.first).build();
         assertEquals((int) range.first, params.getCalculationWindowMillis());
@@ -359,12 +382,16 @@ public class HeadroomTest {
     public void testGetGpuHeadroom_customWindow() throws Exception {
         checkGpuHeadroomSupport();
         final Pair<Integer, Integer> range = mManager.getGpuHeadroomCalculationWindowRange();
+        final int expectedMinMillis = 1000;
         assertTrue(
-                "Min GPU headroom calculation window should be less or equal to 50",
-                range.first <= 50);
+                "Min GPU headroom calculation window should be less or equal to "
+                        + expectedMinMillis,
+                range.first <= expectedMinMillis);
+        final int expectedMaxMillis = 1000;
         assertTrue(
-                "Max GPU headroom calculation window should be greater or equal to 10000",
-                range.second >= 10000);
+                "Max GPU headroom calculation window should be greater or equal to "
+                        + expectedMaxMillis,
+                range.second >= expectedMaxMillis);
         GpuHeadroomParams params;
         params = new GpuHeadroomParams.Builder().setCalculationWindowMillis(range.first).build();
         assertEquals((int) range.first, params.getCalculationWindowMillis());
