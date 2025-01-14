@@ -736,6 +736,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
                     assertTrue(names.contains(name));
                 }
                 assertFalse(names.contains(EXTENSION_INTERFACE_NAME_MOCK));
+                assertTrue(names.contains(EXTENSION_INTERFACE_NAME_IN_STANDARDIZATION_LIST));
             }
             StubHardwareTvInputService.injectAvailableExtensionInterface(
                     EXTENSION_INTERFACE_NAME_WITHOUT_PERMISSION, null);
@@ -794,26 +795,20 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         try {
             prepareStubHardwareTvInputService();
             Handler handler = new Handler(handlerThread.getLooper());
-            handler.post(() -> {
-                IBinder mockTifExtension = new IMockTifExtension.Stub() {
-                    @Override
-                    public void test() {
-                    }
-                };
-                StubHardwareTvInputService mStubHardwareTvInputService =
-                        new StubHardwareTvInputService();
-                // fail to register IBinder because mock IBinder does not implement AIDL in the
-                // standardized interface
-                assertEquals(mStubHardwareTvInputService.registerExtensionIBinder(
-                                EXTENSION_INTERFACE_NAME_IN_STANDARDIZATION_LIST, mockTifExtension),
-                        TvInputServiceExtensionManager
-                                .REGISTER_FAIL_IMPLEMENTATION_NOT_STANDARDIZED);
-                // fail to register IBinder because attempt to register extension with
-                // non-standardized name
-                assertEquals(mStubHardwareTvInputService.registerExtensionIBinder(
-                                EXTENSION_INTERFACE_NAME_MOCK, mockTifExtension),
-                        TvInputServiceExtensionManager.REGISTER_FAIL_NAME_NOT_STANDARDIZED);
-            });
+            handler.post(
+                    () -> {
+                        IBinder mockTifExtension =
+                                new IMockTifExtension.Stub() {
+                                    @Override
+                                    public void test() {}
+                                };
+                        // fail to get IBinder because mock IBinder does not implement AIDL in the
+                        // standardized interface
+                        assertFalse(
+                                TvInputServiceExtensionManager.checkIsStandardizedIBinder(
+                                        EXTENSION_INTERFACE_NAME_IN_STANDARDIZATION_LIST,
+                                        mockTifExtension));
+                    });
         } finally {
             cleanupStubHardwareTvInputService();
             handlerThread.quitSafely();
@@ -1002,23 +997,12 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         private ResolveInfo mResolveInfo = null;
         private TvInputInfo mTvInputInfo = null;
 
-        public StubHardwareTvInputService() {
-        }
-
         public static void clearAvailableExtensionInterfaces() {
             sAvailableExtensionInterfaceMap.clear();
         }
 
         public static void injectAvailableExtensionInterface(String name, String permission) {
             sAvailableExtensionInterfaceMap.put(name, permission);
-        }
-
-        /**
-         * Helper method that utilizes TvInputServiceExtensionManager to register extension IBinder.
-         */
-        @RequiresFlagsEnabled(Flags.FLAG_TIF_EXTENSION_STANDARDIZATION)
-        public int registerExtensionIBinder(String name, IBinder binder) {
-            return mTvInputServiceExtensionManager.registerExtensionIBinder(name, binder);
         }
 
         @Override
