@@ -45,13 +45,14 @@ public final class LogHelper {
 
     private static String getLog(ITestDevice device, String tag) throws Exception {
         TimeUnit.SECONDS.sleep(WAIT_TIME);
-        String logs = device.executeAdbCommand("logcat", "-v", "brief", "-d", tag + ":I", "*:S");
+        String logs = device.executeAdbCommand("logcat", "-v", "brief", "-d", tag + ":I", tag + ":V", "*:S");
         // Search for string.
         StringBuilder testString = new StringBuilder();
         Scanner in = new Scanner(logs);
         while (in.hasNextLine()) {
             String line = in.nextLine();
-            if (line.startsWith("I/" + tag)) {
+            if (line.startsWith("I/" + tag)
+                    || line.startsWith("V/" + tag)) {
                 testString.append(line.split(":")[1].trim());
             }
         }
