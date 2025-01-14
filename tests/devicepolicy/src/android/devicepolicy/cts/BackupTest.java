@@ -45,6 +45,7 @@ import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.policies.Backup;
+import com.android.bedstead.harrier.policies.BackupAppliesToParent;
 import com.android.bedstead.harrier.policies.SecurityLoggingDelegation;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
@@ -133,7 +134,7 @@ public final class BackupTest {
         }
     }
 
-    @PolicyDoesNotApplyTest(policy = Backup.class)
+    @PolicyDoesNotApplyTest(policy = BackupAppliesToParent.class)
     @Postsubmit(reason = "new test")
     @EnsureHasPermission(BACKUP)
     public void setBackupServiceEnabled_doesNotApply_doesNotSetBackupServiceEnabled() {

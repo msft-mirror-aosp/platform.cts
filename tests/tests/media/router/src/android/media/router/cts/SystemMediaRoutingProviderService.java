@@ -198,9 +198,9 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
 
     private void releaseSessionOnHandler(String sessionId) {
         mHandler.removeCallbacksAndMessages(/* token= */ null);
-        notifySessionReleased(sessionId);
         mSelectedRouteOriginalId = null;
         mNoisyByteCount.set(0);
+        notifySessionReleased(sessionId);
     }
 
     @Override

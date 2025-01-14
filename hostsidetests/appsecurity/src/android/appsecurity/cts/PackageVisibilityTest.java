@@ -87,7 +87,7 @@ public class PackageVisibilityTest extends BaseAppSecurityTest {
 
         int userId = mUsers[1];
         assertTrue(userId > 0);
-        getDevice().startUser(userId);
+        getDevice().startUser(userId, /* waitFlag= */ true);
         installTestAppForUser(TEST_APK, userId);
         installTestAppForUser(TEST_APK, mPrimaryUserId);
 
@@ -132,23 +132,27 @@ public class PackageVisibilityTest extends BaseAppSecurityTest {
         // Uninstall with keep data and reboot
         uninstallWithKeepDataForUser(TINY_PKG, userId);
         getDevice().rebootUntilOnline();
+        getDevice().waitForDeviceAvailable();
         waitForBootCompleted();
-        getDevice().startUser(userId, true);
+        getDevice().startUser(userId, /* waitFlag= */ true);
 
         // It is visible for the installed user, but only if match uninstalled
         assertFalse(isAppVisibleForUser(TINY_PKG, userId, MATCH_NORMAL));
         assertTrue(isAppVisibleForUser(TINY_PKG, userId, MATCH_UNINSTALLED));
 
-        Utils.runDeviceTests(getDevice(), TEST_PKG,
-                ".PackageAccessTest", "testPackageAccess_notInOtherUser", userId);
-        Utils.runDeviceTests(getDevice(), TEST_PKG,
-                ".PackageAccessTest", "testPackageAccess_getPackagesCanSeeTiny", userId);
+        // Make sure the test app is still available on the other user
+        assertTrue(isAppVisibleForUser(TEST_PKG, userId, MATCH_NORMAL));
 
         Utils.runDeviceTests(getDevice(), TEST_PKG,
                 ".PackageAccessTest", "testPackageAccess_notInOtherUserUninstalled",
                 mPrimaryUserId);
         Utils.runDeviceTests(getDevice(), TEST_PKG,
                 ".PackageAccessTest", "testPackageAccess_getPackagesCantSeeTiny", mPrimaryUserId);
+
+        Utils.runDeviceTests(getDevice(), TEST_PKG,
+                ".PackageAccessTest", "testPackageAccess_notInOtherUser", userId);
+        Utils.runDeviceTests(getDevice(), TEST_PKG,
+                ".PackageAccessTest", "testPackageAccess_getPackagesCanSeeTiny", userId);
 
         getDevice().uninstallPackage(TINY_PKG);
         getDevice().uninstallPackage(TEST_PKG);

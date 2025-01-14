@@ -98,7 +98,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.server.wm.HelperActivities;
-import android.server.wm.IgnoreOrientationRequestSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.app.AbstractLifecycleLogActivity;
@@ -824,7 +823,6 @@ public final class CompatChangeTests extends MultiDisplayTestBase {
     @Test
     public void testUnrestrictedResizability() {
         assumeTrue("Skipping test: not large screen", isTablet());
-        mObjectTracker.manage(new IgnoreOrientationRequestSession(/* enable */ true));
 
         final TestActivitySession<HelperActivities.NonResizeablePortraitActivity> session =
                 createManagedTestActivitySession();

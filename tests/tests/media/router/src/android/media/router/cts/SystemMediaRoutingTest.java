@@ -41,16 +41,16 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.PollingCheck;
 
+import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,7 +59,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@RunWith(BedsteadJUnit4.class)
+@RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "The system must be able to bind to the route provider service.")
 @LargeTest
 @FrameworkSpecificTest
@@ -71,6 +71,7 @@ public class SystemMediaRoutingTest {
     /* The volume for the tone to generate in order to test audio capturing. */
     private static final int VOLUME_TONE = 100;
     private static final int EXPECTED_NOISY_BYTE_COUNT = 20_000;
+    private static ComponentName sServiceComponentName;
 
     @Rule
     public final ResourceReleaser mResourceReleaser = new ResourceReleaser(/* useStack= */ true);
@@ -78,44 +79,41 @@ public class SystemMediaRoutingTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    // Required by Bedstead.
-    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
-
-    Context mContext;
     private MediaRouter2 mSelfProxyRoute;
     private SystemMediaRoutingProviderService mService;
 
-    @Before
-    public void setUp() throws Exception {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        // TODO:  b/362507305 - Consider moving the enabling and disabling of the provider service
-        // to a before class, so that it's done only once per test class run. That should marginally
-        // speed up tests.
+    @BeforeClass
+    public static void setUpBeforeClass() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_ROUTING_CONTROL,
                 Manifest.permission.MODIFY_AUDIO_ROUTING);
-        mResourceReleaser.add(uiAutomation::dropShellPermissionIdentity);
-        mSelfProxyRoute = MediaRouter2.getInstance(mContext, mContext.getPackageName());
-        PackageManager pm = mContext.getPackageManager();
-        ComponentName serviceComponent =
-                new ComponentName(mContext, SystemMediaRoutingProviderService.class);
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        PackageManager pm = context.getPackageManager();
+        sServiceComponentName = new ComponentName(context, SystemMediaRoutingProviderService.class);
 
         // MODIFY_AUDIO_ROUTING is a signature permission, so the service will not be deemed
         // authorized for system media routing at runtime by adopting the shell permission identity.
         // By enabling the service after getting MODIFY_AUDIO_ROUTING we ensure the proxy is
-        // initialized with the right permissions in place.
+        // initialized with the right permissions in place. We also do it once for the entire class
+        // to accelerate test execution, as this is a slow operation.
         pm.setComponentEnabledSetting(
-                serviceComponent,
+                sServiceComponentName,
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 /* flags= */ PackageManager.DONT_KILL_APP);
-        mResourceReleaser.add(
-                () ->
-                        pm.setComponentEnabledSetting(
-                                serviceComponent,
-                                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                                /* flags= */ PackageManager.DONT_KILL_APP));
+    }
 
+    @Before
+    public void setUp() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        // We need to request the permissions again because the check flags rule drops the shell
+        // permissions identity before setup, clearing the permissions from before class.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.MEDIA_ROUTING_CONTROL,
+                        Manifest.permission.MODIFY_AUDIO_ROUTING);
+        mSelfProxyRoute = MediaRouter2.getInstance(context, context.getPackageName());
         triggerScan();
         mService =
                 PollingCheck.waitFor(
@@ -125,6 +123,17 @@ public class SystemMediaRoutingTest {
         assertWithMessage("Service failed to launch after " + TIMEOUT_MS + " milliseconds.")
                 .that(mService)
                 .isNotNull();
+    }
+
+    @AfterClass
+    public static void tearDownAfterClass() {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        uiAutomation.dropShellPermissionIdentity();
+        var pm = InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        pm.setComponentEnabledSetting(
+                sServiceComponentName,
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                /* flags= */ PackageManager.DONT_KILL_APP);
     }
 
     // Tests.

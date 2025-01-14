@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions to manage and interact with devices for ITS."""
 
-
+import logging
 import os
 import subprocess
 
@@ -45,6 +45,25 @@ def run_adb_shell_command(device_id, command):
                           check=False)
   if 'Exception occurred' in str(output):
     raise RuntimeError(output)
+
+
+def is_dut_tablet(device_id):
+  """Checks if the dut is tablet or not.
+
+  Args:
+    device_id: serial id of device under test
+  Returns:
+    True, if the device under test is a tablet.
+    False otherwise.
+  """
+  adb_command = 'getprop ro.build.characteristics'
+  output = run_adb_shell_command(device_id, adb_command)
+  logging.debug('adb command output: %s', output)
+  if output is not None and 'tablet' in output.lower():
+    logging.debug('Device under test is a tablet.')
+    return True
+  logging.debug('Device under test is a phone')
+  return False
 
 
 def start_its_test_activity(device_id):

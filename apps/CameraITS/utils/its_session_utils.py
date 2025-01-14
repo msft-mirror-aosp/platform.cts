@@ -266,14 +266,14 @@ class ItsSession(object):
 
   IMAGE_FORMAT_LIST_1 = [
       'jpegImage', 'rawImage', 'raw10Image', 'raw12Image', 'rawStatsImage',
-      'dngImage', 'y8Image', 'jpeg_rImage',
+      'dngImage', 'y8Image', 'jpeg_rImage', 'heic_ultrahdrImage',
       'rawQuadBayerImage', 'rawQuadBayerStatsImage',
       'raw10StatsImage', 'raw10QuadBayerStatsImage', 'raw10QuadBayerImage'
   ]
 
   IMAGE_FORMAT_LIST_2 = [
       'jpegImage', 'rawImage', 'raw10Image', 'raw12Image', 'rawStatsImage',
-      'yuvImage', 'jpeg_rImage',
+      'yuvImage', 'jpeg_rImage', 'heic_ultrahdrImage',
       'rawQuadBayerImage', 'rawQuadBayerStatsImage',
       'raw10StatsImage', 'raw10QuadBayerStatsImage', 'raw10QuadBayerImage'
   ]
@@ -2088,6 +2088,7 @@ class ItsSession(object):
             'dng': [],
             'jpeg': [],
             'jpeg_r': [],
+            'heic_ultrahdr': [],
             'y8': [],
             'rawQuadBayer': [],
             'rawQuadBayerStats': [],

@@ -473,7 +473,10 @@ public abstract class WindowUntrustedTouchTestBase {
 
     private void removeOverlays() throws Throwable {
         for (FutureConnection<IUntrustedTouchTestService> connection : mConnections.values()) {
-            connection.getCurrent().removeOverlays();
+            IUntrustedTouchTestService service = connection.getCurrent();
+            if (service != null) {
+                service.removeOverlays();
+            }
         }
         // We need to stop the app because not every overlay is created via the service (eg.
         // activity overlays and custom toasts)

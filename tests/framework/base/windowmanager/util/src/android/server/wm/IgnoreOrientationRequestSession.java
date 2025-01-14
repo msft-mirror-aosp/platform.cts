@@ -41,11 +41,7 @@ public class IgnoreOrientationRequestSession implements AutoCloseable {
     final boolean mInitialIgnoreOrientationRequest;
 
     public IgnoreOrientationRequestSession(boolean enable) {
-        Matcher matcher = IGNORE_ORIENTATION_REQUEST_PATTERN.matcher(
-                executeShellCommand(WM_GET_IGNORE_ORIENTATION_REQUEST));
-        assertTrue("get-ignore-orientation-request should match pattern",
-                matcher.find());
-        mInitialIgnoreOrientationRequest = Boolean.parseBoolean(matcher.group(1));
+        mInitialIgnoreOrientationRequest = getIgnoreOrientationRequest();
 
         executeShellCommand(WM_SET_IGNORE_ORIENTATION_REQUEST + (enable ? "true" : "false"));
     }
@@ -53,6 +49,14 @@ public class IgnoreOrientationRequestSession implements AutoCloseable {
     @Override
     public void close() {
         executeShellCommand(WM_SET_IGNORE_ORIENTATION_REQUEST + mInitialIgnoreOrientationRequest);
+    }
+
+    /** Gets whether ignore-orientation-request is enabled on default display. */
+    public static boolean getIgnoreOrientationRequest() {
+        final Matcher matcher = IGNORE_ORIENTATION_REQUEST_PATTERN.matcher(
+                executeShellCommand(WM_GET_IGNORE_ORIENTATION_REQUEST));
+        assertTrue("get-ignore-orientation-request should match pattern", matcher.find());
+        return Boolean.parseBoolean(matcher.group(1));
     }
 
     private static String executeShellCommand(String command) {
