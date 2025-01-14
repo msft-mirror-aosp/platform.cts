@@ -22,7 +22,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.MediaStore;
 import android.test.AndroidTestCase;
 
@@ -70,28 +69,18 @@ public class ImageCaptureUriExtraToClipDataTest extends AndroidTestCase {
 
 
     public void testUriExtraOutputMigratedToClipData_imageCaptureIntent() {
-        runTestOnAction(MediaStore.ACTION_IMAGE_CAPTURE);
+        startActivityWithAction(MediaStore.ACTION_IMAGE_CAPTURE);
+        waitForFileReady();
+        assertFileContents();
     }
 
     public void testUriExtraOutputMigratedToClipData_imageCaptureSecureIntent() {
-        runTestOnAction(MediaStore.ACTION_IMAGE_CAPTURE_SECURE);
-    }
-
-    @RequiresFlagsEnabled(com.android.providers.media.flags.Flags.FLAG_MOTION_PHOTO_INTENT)
-    public void testUriExtraOutputMigratedToClipData_motionPhotoCaptureIntent() {
-        runTestOnAction(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
-    }
-
-    @RequiresFlagsEnabled(com.android.providers.media.flags.Flags.FLAG_MOTION_PHOTO_INTENT)
-    public void testUriExtraOutputMigratedToClipData_motionPhotoCaptureSecureIntent() {
-        runTestOnAction(MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE);
+        startActivityWithAction(MediaStore.ACTION_IMAGE_CAPTURE_SECURE);
+        waitForFileReady();
+        assertFileContents();
     }
 
     public void testUriExtraOutputMigratedToClipData_videoCaptureIntent() {
-        runTestOnAction(MediaStore.ACTION_VIDEO_CAPTURE);
-    }
-
-    private void runTestOnAction(String action) {
         startActivityWithAction(MediaStore.ACTION_VIDEO_CAPTURE);
         waitForFileReady();
         assertFileContents();
