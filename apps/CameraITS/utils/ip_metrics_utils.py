@@ -16,11 +16,17 @@
 import logging
 import math
 
+import cv2
 import numpy as np
 
+_DYNAMIC_PATCH_MID_TONE_START_IDX = 5
+_DYNAMIC_PATCH_MID_TONE_END_IDX = 15
 AR_REL_TOL = 0.1
 # 20% tolerance as per CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
 FOV_REL_TOL = 0.2
+EXPECTED_BRIGHTNESS_50 = 50.0
+MAX_BRIGHTNESS_DIFF_ABSOLUTE_ERROR = 10.0
+MAX_BRIGHTNESS_DIFF_RELATIVE_ERROR = 8.0
 
 
 def check_if_qr_code_size_match(img1, img2):
@@ -72,3 +78,115 @@ def check_if_qr_code_size_match(img1, img2):
         'Aspect ratio of the non-transparent region of the image 2 is not 1:1.'
     )
   return math.isclose(height1, height2, rel_tol=FOV_REL_TOL)
+
+
+def get_lab_mean_values(img):
+  """Computes the mean values of the 'L', 'A', and 'B' channels.
+
+  Converts the img from RGB to CIELAB color space and calculates the mean values
+  of L, A and B channels only for the non-transparent regions of the image
+
+  Args:
+    img: img array in RGB colorspace.
+  Returns:
+    mean_l, mean_a, mean_b: mean value of l, a, b channels
+  """
+  img_lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+  img_lab = img_lab.astype(np.uint32)
+  mean_l = np.mean(img_lab[:, :, 0]) * 100 / 255
+  mean_a = np.mean(img_lab[:, :, 1]) - 128
+  mean_b = np.mean(img_lab[:, :, 2]) - 128
+  logging.debug('L, A, B values: %.2f %.2f %.2f', mean_l, mean_a, mean_b)
+  return mean_l, mean_a, mean_b
+
+
+def get_brightness_variation(
+    default_brightness_values, jca_brightness_values
+):
+  """Gets the brightness variation between default and jca color cells.
+
+  Args:
+    default_brightness_values: The default brightness values of the greyscale
+      cells
+    jca_brightness_values: The jca brightness values of the greyscale cells
+
+  Returns:
+    mean_delta_ab_diff: mean delta ab diff between default and jca rounded
+      upto 2 places
+  """
+  default_brightness = np.mean(default_brightness_values)
+  jca_brightness = np.mean(jca_brightness_values)
+
+  default_ref_brightness_diff = default_brightness - EXPECTED_BRIGHTNESS_50
+  jca_ref_brightness_diff = jca_brightness - EXPECTED_BRIGHTNESS_50
+  default_jca_brightness_diff = jca_brightness - default_brightness
+  logging.debug('default_ref_brightness_diff: %.2f',
+                default_ref_brightness_diff)
+  logging.debug('jca_ref_brightness_diff: %.2f',
+                jca_ref_brightness_diff)
+  logging.debug('default_jca_brightness_diff: %.2f',
+                default_jca_brightness_diff)
+
+  # Check that the brightness difference default and jca to the reference do not
+  # exceed the max absolute error
+  if (default_ref_brightness_diff > MAX_BRIGHTNESS_DIFF_ABSOLUTE_ERROR) or (
+      jca_ref_brightness_diff > MAX_BRIGHTNESS_DIFF_ABSOLUTE_ERROR
+  ):
+    e_msg = (
+        f'The brightness of default and jca for greyscale cells exceeds the'
+        f' threshold. Actual default: {default_ref_brightness_diff:.2f}, Actual'
+        f' jca: {default_jca_brightness_diff:.2f}, Expected:'
+        f' {MAX_BRIGHTNESS_DIFF_ABSOLUTE_ERROR:.1f}'
+    )
+    logging.debug(e_msg)
+  # Check that the brightness between default and jca does not exceed the
+  # max relative error
+  if (default_jca_brightness_diff > MAX_BRIGHTNESS_DIFF_RELATIVE_ERROR):
+    e_msg = (
+        f'The brightness difference between default and jca for greyscale cells'
+        f' exceeds the threshold. Actual: {default_jca_brightness_diff:.2f}, '
+        f'Expected: {MAX_BRIGHTNESS_DIFF_RELATIVE_ERROR:.1f}'
+    )
+    logging.debug(e_msg)
+  return default_jca_brightness_diff
+
+
+def do_brightness_check(default_patch_list, jca_patch_list):
+  """Computes brightness diff between default and jca capture images.
+
+  Args:
+    default_patch_list: default camera dynamic range patch cells
+    jca_patch_list: jca camera dynamic range patch cells
+
+  Returns:
+    mean_brightness_diff: mean brightness diff between default and jca
+  """
+  default_brightness_values = []
+  for patch in default_patch_list:
+    mean_l, _, _ = get_lab_mean_values(patch)
+    default_brightness_values.append(mean_l)
+  jca_brightness_values = []
+  for patch in jca_patch_list:
+    mean_l, _, _ = get_lab_mean_values(patch)
+    jca_brightness_values.append(mean_l)
+
+  default_rounded_values = [round(float(x), 2)
+                            for x in default_brightness_values]
+  jca_rounded_values = [round(float(x), 2) for x in jca_brightness_values]
+
+  logging.debug('default_brightness_values: %s', default_rounded_values)
+  logging.debug('jca_brightness_values: %s', jca_rounded_values)
+
+  mean_brightness_diff = get_brightness_variation(
+      default_brightness_values[
+          _DYNAMIC_PATCH_MID_TONE_START_IDX:_DYNAMIC_PATCH_MID_TONE_END_IDX
+      ],
+      jca_brightness_values[
+          _DYNAMIC_PATCH_MID_TONE_START_IDX:_DYNAMIC_PATCH_MID_TONE_END_IDX
+      ],
+  )
+  logging.debug(
+      'Brightness difference between default and jca: %.2f',
+      mean_brightness_diff,
+  )
+  return round(float(mean_brightness_diff), 2)

@@ -174,12 +174,19 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       logging.debug('Default and JCA size matches: %s', size_match)
 
       # Get cropped dynamic range patch cells
-      _ = ce.get_cropped_dynamic_range_patch_cells(
-          default_capture_path, self.log_path, 'default'
+      default_dynamic_range_patch_cells = (
+          ce.get_cropped_dynamic_range_patch_cells(
+              default_capture_path, self.log_path, 'default')
       )
-      _ = ce.get_cropped_dynamic_range_patch_cells(
+      jca_dynamic_range_patch_cells = ce.get_cropped_dynamic_range_patch_cells(
           jca_capture_path, self.log_path, 'jca'
       )
+
+      # Get brightness diff between default and jca captures
+      mean_brightness_diff = ip_metrics_utils.do_brightness_check(
+          default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
+      )
+      logging.debug('mean_brightness_diff: %f', mean_brightness_diff)
 
 
 if __name__ == '__main__':
