@@ -797,7 +797,7 @@ public class DecodeOnlyTest extends MediaTestBase {
             while (audioData.remaining() > 0 && !mDone.get()) {
                 int written = mAudioTrack.write(audioData, audioData.remaining(),
                         AudioTrack.WRITE_BLOCKING, presentationTimeUs * 1000);
-                if (written >= 0) {
+                if (written == 0) {
                     // When audio track is not in playing state, the write operation does not
                     // block in WRITE_BLOCKING mode. And when audio track is full, the audio
                     // data can not be fully written. Must sleep here to wait for free spaces.
@@ -805,7 +805,7 @@ public class DecodeOnlyTest extends MediaTestBase {
                         Thread.sleep(50);
                     } catch (InterruptedException ignored) {
                     }
-                } else {
+                } else if (written < 0) {
                     Assert.fail("AudioTrack write failure.");
                 }
             }
