@@ -632,7 +632,7 @@ class HistoricalAppopsTest {
 
     companion object {
         const val INTERVAL_COMPRESSION_MULTIPLIER = 10
-        const val SNAPSHOT_INTERVAL_MILLIS = 1000L
+        const val SNAPSHOT_INTERVAL_MILLIS = 2000L
 
         val instrumentation get() = InstrumentationRegistry.getInstrumentation()
         val context get() = instrumentation.context
