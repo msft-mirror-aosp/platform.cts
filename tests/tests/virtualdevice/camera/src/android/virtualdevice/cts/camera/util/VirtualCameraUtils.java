@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 The Android Open Source Project
+ * Copyright 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.virtualdevice.cts.camera;
+package android.virtualdevice.cts.camera.util;
 
 import static android.Manifest.permission.CAMERA;
 import static android.graphics.ImageFormat.JPEG;
@@ -89,15 +89,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 public final class VirtualCameraUtils {
-    static final String BACK_CAMERA_ID = "0";
-    static final String FRONT_CAMERA_ID = "1";
-    static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
+    public static final String BACK_CAMERA_ID = "0";
+    public static final String FRONT_CAMERA_ID = "1";
+    public static final CameraCharacteristics.Key<Integer> INFO_DEVICE_ID =
             new CameraCharacteristics.Key<>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final int TEST_VIDEO_SEEK_TIME_MS = 2000;
     private static final String TAG = "VirtualCameraUtils";
 
-    static VirtualCameraConfig createVirtualCameraConfig(
+    public static VirtualCameraConfig createVirtualCameraConfig(
             int width, int height, int format, int maximumFramesPerSecond, int sensorOrientation,
             int lensFacing, String name, Executor executor, VirtualCameraCallback callback) {
         return new VirtualCameraConfig.Builder(name)
@@ -108,7 +108,7 @@ public final class VirtualCameraUtils {
                 .build();
     }
 
-    static void assertVirtualCameraConfig(VirtualCameraConfig config, int width, int height,
+    public static void assertVirtualCameraConfig(VirtualCameraConfig config, int width, int height,
             int format, int maximumFramesPerSecond, int sensorOrientation, int lensFacing,
             String name) {
         assertThat(config.getName()).isEqualTo(name);
@@ -123,17 +123,17 @@ public final class VirtualCameraUtils {
         assertThat(config.getLensFacing()).isEqualTo(lensFacing);
     }
 
-    static void paintSurface(Surface surface, @ColorInt int color) {
+    public static void paintSurface(Surface surface, @ColorInt int color) {
         Canvas canvas = surface.lockCanvas(null);
         canvas.drawColor(color);
         surface.unlockCanvasAndPost(canvas);
     }
 
-    static void paintSurfaceRed(Surface surface) {
+    public static void paintSurfaceRed(Surface surface) {
         paintSurface(surface, Color.RED);
     }
 
-    static int toFormat(String str) {
+    public static int toFormat(String str) {
         if (str.equals("YUV_420_888")) {
             return YUV_420_888;
         }
@@ -170,7 +170,7 @@ public final class VirtualCameraUtils {
      * @param golden    Golden bitmap to compare to.
      * @param prefix    Prefix for the image file generated in case of error.
      */
-    static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix,
+    public static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix,
             double maxDiff) {
         boolean assertionPassed = false;
         try {
@@ -186,12 +186,12 @@ public final class VirtualCameraUtils {
         }
     }
 
-    static class VideoRenderer implements Consumer<Surface> {
+    public static class VideoRenderer implements Consumer<Surface> {
         private final MediaPlayer mPlayer;
         private final CountDownLatch mLatch;
         private final Uri mUri;
 
-        VideoRenderer(int resId) {
+        public VideoRenderer(int resId) {
             String path =
                     "android.resource://" + getApplicationContext().getPackageName() + "/" + resId;
             mUri = Uri.parse(path);
@@ -222,7 +222,7 @@ public final class VirtualCameraUtils {
             }
         }
 
-        Bitmap getGoldenBitmap() {
+        public Bitmap getGoldenBitmap() {
             // Get the frame at a specific time (in microseconds) or the first frame 🐶
             try (MediaMetadataRetriever goldenRetriever = new MediaMetadataRetriever()) {
                 goldenRetriever.setDataSource(getApplicationContext(), mUri);
@@ -237,28 +237,28 @@ public final class VirtualCameraUtils {
         }
     }
 
-    static Bitmap loadBitmapFromRaw(int rawResId) {
+    public static Bitmap loadBitmapFromRaw(int rawResId) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inScaled = false;
         return BitmapFactory.decodeResource(getApplicationContext().getResources(),
                 rawResId, options);
     }
 
-    static Bitmap jpegImageToBitmap(Image image) throws IOException {
+    public static Bitmap jpegImageToBitmap(Image image) throws IOException {
         assertThat(image.getFormat()).isEqualTo(JPEG);
         return ImageDecoder.decodeBitmap(
                 ImageDecoder.createSource(image.getPlanes()[0].getBuffer())).copy(
                 Bitmap.Config.ARGB_8888, false);
     }
 
-    static void grantCameraPermission(int deviceId) {
+    public static void grantCameraPermission(int deviceId) {
         Context deviceContext = getInstrumentation().getTargetContext()
                 .createDeviceContext(deviceId);
         deviceContext.getPackageManager().grantRuntimePermission("android.virtualdevice.cts.camera",
                 CAMERA, UserHandle.of(deviceContext.getUserId()));
     }
 
-    static int getMaximumTextureSize() {
+    public static int getMaximumTextureSize() {
         EGLDisplay eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
         assumeFalse(eglDisplay.equals(EGL_NO_DISPLAY));
         int[] version = new int[2];
@@ -303,5 +303,6 @@ public final class VirtualCameraUtils {
         return new Handler(handlerThread.getLooper());
     }
 
-    private VirtualCameraUtils() {}
+    private VirtualCameraUtils() {
+    }
 }

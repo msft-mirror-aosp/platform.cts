@@ -29,10 +29,11 @@ import android.graphics.ImageFormat
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.view.Surface
-import android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
-import android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID
-import android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar
-import android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.BACK_CAMERA_ID
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.INFO_DEVICE_ID
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.assertImagesSimilar
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.loadBitmapFromRaw
 import android.virtualdevice.cts.common.VirtualCameraSupportRule
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.appcompat.app.AppCompatActivity
