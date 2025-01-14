@@ -30,6 +30,15 @@ public class TestConstants {
     public static final int EVENT_CAMERA_ACCESS_PRIORITIES_CHANGED = 7;
     public static final int EVENT_ACTIVITY_TOP_RESUMED_TRUE = 8;
     public static final int EVENT_ACTIVITY_TOP_RESUMED_FALSE = 9;
+    public static final int EVENT_CAMERA_CONNECT_SHARED_PRIMARY = 10;
+    public static final int EVENT_CAMERA_CONNECT_SHARED_SECONDARY = 11;
+    public static final int EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_PRIMARY = 12;
+    public static final int EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_SECONDARY = 13;
+    public static final int EVENT_CAMERA_CLOSED = 14;
+    public static final int EVENT_CAMERA_DISCONNECTED = 15;
+
+    public static final int OP_OPEN_CAMERA_SHARED = 100;
+    public static final int OP_CLOSE_CAMERA = 101;
 
     public static final String EVENT_CAMERA_ERROR_STR = "error";
     public static final String EVENT_CAMERA_CONNECT_STR = "connect";
@@ -48,6 +57,9 @@ public class TestConstants {
     public static final String EXTRA_IGNORE_CAMERA_ACCESS = "ignoreCameraAccess";
     public static final String EXTRA_IGNORE_TOP_ACTIVITY_RESUMED = "ignoreTopActivityResumed";
     public static final String EXTRA_IGNORE_ACTIVITY_PAUSED = "ignoreActivityPaused";
+    public static final String EXTRA_CAMERA_ID = "cameraId";
+    public static final String EXTRA_RESULT_RECEIVER = "resultReceiver";
+    public static final String EXTRA_REMOTE_MESSENGER = "remoteMessenger";
 
     /**
      * Convert the given error code to a string.
