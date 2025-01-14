@@ -43,6 +43,8 @@
             <intent-filter>
                 <action android:name="android.media.action.IMAGE_CAPTURE" />
                 <action android:name="android.media.action.IMAGE_CAPTURE_SECURE" />
+                <action android:name="android.provider.action.MOTION_PHOTO_CAPTURE" />
+                <action android:name="android.provider.action.MOTION_PHOTO_CAPTURE_SECURE" />
                 <action android:name="android.media.action.VIDEO_CAPTURE" />
                 <action android:name="android.media.action.STILL_IMAGE_CAMERA" />
                 <action android:name="android.media.action.STILL_IMAGE_CAMERA_SECURE" />
