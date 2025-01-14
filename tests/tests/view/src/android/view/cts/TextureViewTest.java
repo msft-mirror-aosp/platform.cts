@@ -47,6 +47,7 @@ import android.hardware.DataSpace;
 import android.media.Image;
 import android.media.ImageWriter;
 import android.util.Half;
+import android.view.DisplayCutout;
 import android.view.PixelCopy;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -387,10 +388,19 @@ public class TextureViewTest {
 
         WindowInsets rootWindowInsets = activity.getWindow().getDecorView().getRootWindowInsets();
 
-        int extraSurfaceTopOffset = rootWindowInsets.getInsets(systemBars()).top;
-        int extraSurfaceRightOffset = rootWindowInsets.getInsets(systemBars()).right;
-        int extraSurfaceBottomOffset = rootWindowInsets.getInsets(systemBars()).bottom;
-        int extraSurfaceLeftOffset = rootWindowInsets.getInsets(systemBars()).left;
+        DisplayCutout cutout = activity.getWindow().getDecorView().getDisplay().getCutout();
+        Rect safeBounds = new Rect(0, 0, 0, 0);
+        if(cutout != null) {
+            safeBounds.bottom = cutout.getSafeInsetBottom();
+            safeBounds.top = cutout.getSafeInsetTop();
+            safeBounds.left = cutout.getSafeInsetLeft();
+            safeBounds.right = cutout.getSafeInsetRight();
+        }
+
+        int extraSurfaceTopOffset = Math.max(rootWindowInsets.getInsets(systemBars()).top, safeBounds.top);
+        int extraSurfaceRightOffset = Math.max(rootWindowInsets.getInsets(systemBars()).right, safeBounds.right);
+        int extraSurfaceBottomOffset = Math.max(rootWindowInsets.getInsets(systemBars()).bottom, safeBounds.bottom);
+        int extraSurfaceLeftOffset = Math.max(rootWindowInsets.getInsets(systemBars()).left, safeBounds.left);
 
         // sample 5 pixels on the edge for bitmap comparison.
         // TextureView and SurfaceView use different shaders, so compare these two with tolerance.
