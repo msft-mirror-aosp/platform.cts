@@ -96,16 +96,14 @@ class AbsoluteMouseTest {
                 commonMatcher
             )
         )
-        if (!com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
-            verifier.assertReceivedMotion(
-                allOf(
-                    withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
-                    withCoords(PointF(0f, 0f)),
-                    withPressure(0f),
-                    commonMatcher
-                )
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(PointF(0f, 0f)),
+                withPressure(0f),
+                commonMatcher
             )
-        }
+        )
 
         // Inject and verify HOVER_MOVE
         absoluteMouse.sendMove(pointerId, Point(10, 10))
