@@ -76,7 +76,9 @@ public class WindowMetricsActivityTests extends WindowManagerTestBase {
                 activity.getOnCreateCurrentMetrics(),
                 activity.getOnCreateMaximumMetrics(),
                 listener.getLayoutBounds(),
-                listener.getLayoutInsets());
+                listener.getLayoutInsets(),
+                activity.isInMultiWindowMode()
+        );
     }
 
     @Test
