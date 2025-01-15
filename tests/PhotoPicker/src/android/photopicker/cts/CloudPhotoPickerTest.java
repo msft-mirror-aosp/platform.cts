@@ -544,6 +544,10 @@ public class CloudPhotoPickerTest extends PhotoPickerBaseTest {
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
+        if (isVisibleBackgroundUser()) {
+            return PhotoPickerCloudUtils.fetchPickerMedia(mActivity, sDevice, maxCount,
+                    getMainDisplayId());
+        }
         return PhotoPickerCloudUtils.fetchPickerMedia(mActivity, sDevice, maxCount);
     }
 
