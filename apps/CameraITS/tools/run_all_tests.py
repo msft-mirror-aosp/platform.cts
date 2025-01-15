@@ -634,19 +634,21 @@ def main():
   # Read config file and extract relevant TestBed
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
+    testbed_to_remove = []
     for i in config_file_contents['TestBeds']:
-      if scenes in (['scene_ip'],):
-        if TEST_KEY_GEN2 not in i['Name'].lower():
-          config_file_contents['TestBeds'].remove(i)
-      if scenes in (
-          ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
-          ['feature_combination']
-      ):
-        if TEST_KEY_SENSOR_FUSION not in i['Name'].lower():
-          config_file_contents['TestBeds'].remove(i)
+      name = i['Name'].lower()
+      if scenes == ['scene_ip']:
+        if TEST_KEY_GEN2 not in name:
+          testbed_to_remove.append(i)
+      elif scenes in (['sensor_fusion'], ['checkerboard'], ['scene_flash'],
+                      ['feature_combination']):
+        if TEST_KEY_SENSOR_FUSION not in name:
+          testbed_to_remove.append(i)
       else:
-        if TEST_KEY_SENSOR_FUSION in i['Name'].lower():
-          config_file_contents['TestBeds'].remove(i)
+        if TEST_KEY_SENSOR_FUSION in name or TEST_KEY_GEN2 in name:
+          testbed_to_remove.append(i)
+    for i in testbed_to_remove:
+      config_file_contents['TestBeds'].remove(i)
   else:
     config_file_contents = {
         'TestBeds': [config_file_contents['TestBeds'][testbed_index]]
