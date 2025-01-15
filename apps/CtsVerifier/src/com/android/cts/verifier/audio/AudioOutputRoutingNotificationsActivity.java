@@ -76,13 +76,13 @@ public class AudioOutputRoutingNotificationsActivity extends AudioNotificationsB
                 R.string.audio_output_routingnotification_instructions, -1);
 
         mRoutingChangeListener = new AudioTrackRoutingChangeListener();
-
-        startAudio();
     }
 
     @Override
     void startAudio() {
-        mNumRoutingNotifications = 0;
+        if (mIsPlaying) {
+            return;
+        }
 
         int buildResult = StreamBase.ERROR_UNKNOWN;
         int openResult = StreamBase.ERROR_UNKNOWN;
@@ -98,9 +98,12 @@ public class AudioOutputRoutingNotificationsActivity extends AudioNotificationsB
                     .setSampleRate(SAMPLE_RATE)
                     .setNumExchangeFrames(numExchangeFrames);
             mAudioPlayer = (JavaPlayer) builder.allocStream();
-            if ((buildResult = mAudioPlayer.build(builder)) == StreamBase.OK
+
+            if (mAudioPlayer != null
+                    && (buildResult = mAudioPlayer.build(builder)) == StreamBase.OK
                     && (openResult = mAudioPlayer.open()) == StreamBase.OK
                     && (startResult = mAudioPlayer.start()) == StreamBase.OK) {
+                mNumRoutingNotifications = 0;
 
                 AudioTrack audioTrack = mAudioPlayer.getAudioTrack();
                 audioTrack.addOnRoutingChangedListener(mRoutingChangeListener,
@@ -117,21 +120,22 @@ public class AudioOutputRoutingNotificationsActivity extends AudioNotificationsB
             showStartupError("Player", buildResult, openResult, startResult);
 
             // Unwind
-            mAudioPlayer.unwind();
+            if (mAudioPlayer != null) {
+                mAudioPlayer.unwind();
+                mAudioPlayer = null;
+            }
         }
     }
 
     @Override
     void stopAudio() {
-        if (mAudioPlayer == null) {
-            return; // failed to create the player
-        }
         if (mIsPlaying) {
-            // unwind will call stop()
-            mAudioPlayer.unwind();
-
             AudioTrack audioTrack = mAudioPlayer.getAudioTrack();
             audioTrack.removeOnRoutingChangedListener(mRoutingChangeListener);
+
+            // unwind will call stop()
+            mAudioPlayer.unwind();
+            mAudioPlayer = null;
 
             mIsPlaying = false;
         }
