@@ -485,19 +485,15 @@ public class AppIndexerCtsTest {
             // Retry till the indexer has completed a run.
             retryAssert(
                     () -> {
-                        // A MobileApplication for it should be inserted.
-                        GenericDocument mobileApplication =
-                                searchMobileApplicationWithId(TEST_APP_A_PKG);
-                        assertThat(mobileApplication).isNotNull();
+                        // Its app functions should be indexed.
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(1);
+                        assertThat(
+                                        clearTimestampsAndParentTypesInDocument(
+                                                appFnMap.get("com.example.utils#print1")))
+                                .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
                     });
-            // Its app functions should be indexed.
-            Map<String, GenericDocument> appFnMap =
-                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
-            assertThat(appFnMap).hasSize(1);
-            assertThat(
-                            clearTimestampsAndParentTypesInDocument(
-                                    appFnMap.get("com.example.utils#print1")))
-                    .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
         }
 
         {
@@ -506,19 +502,15 @@ public class AppIndexerCtsTest {
             // Retry till the indexer has completed a run.
             retryAssert(
                     () -> {
-                        // A MobileApplication for it should be inserted.
-                        GenericDocument mobileApplication =
-                                searchMobileApplicationWithId(TEST_APP_A_PKG);
-                        assertThat(mobileApplication).isNotNull();
+                        // Its app functions should be indexed.
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(1);
+                        assertThat(
+                                        clearTimestampsAndParentTypesInDocument(
+                                                appFnMap.get("com.example.utils#print1")))
+                                .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                     });
-            // Its app functions should be indexed.
-            Map<String, GenericDocument> appFnMap =
-                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
-            assertThat(appFnMap).hasSize(1);
-            assertThat(
-                            clearTimestampsAndParentTypesInDocument(
-                                    appFnMap.get("com.example.utils#print1")))
-                    .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         }
     }
 
