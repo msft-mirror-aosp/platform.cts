@@ -29,10 +29,11 @@ import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.hardware.camera2.params.SessionConfiguration.SESSION_REGULAR;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.BACK_CAMERA_ID;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.FRONT_CAMERA_ID;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.assertVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.grantCameraPermission;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -158,7 +159,7 @@ public class VirtualCameraTest {
                 new VirtualDeviceParams.Builder()
                         .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
                         .build());
-        VirtualCameraUtils.grantCameraPermission(mVirtualDevice.getDeviceId());
+        grantCameraPermission(mVirtualDevice.getDeviceId());
     }
 
     @After

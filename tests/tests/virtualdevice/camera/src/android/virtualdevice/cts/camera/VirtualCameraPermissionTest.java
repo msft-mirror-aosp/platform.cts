@@ -22,9 +22,9 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.grantCameraPermission;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.FRONT_CAMERA_ID;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.grantCameraPermission;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -130,7 +130,7 @@ public class VirtualCameraPermissionTest {
 
     @Test
     public void openCamera_withPermission_succeeds() throws Exception {
-        VirtualCameraUtils.grantCameraPermission(mVirtualDevice.getDeviceId());
+        grantCameraPermission(mVirtualDevice.getDeviceId());
 
         mCameraManager.openCamera(FRONT_CAMERA_ID, directExecutor(),
                 mCameraStateCallback);
