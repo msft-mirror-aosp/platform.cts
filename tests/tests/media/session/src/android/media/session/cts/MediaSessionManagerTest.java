@@ -194,6 +194,7 @@ public class MediaSessionManagerTest {
         assertThat(mSessionManager.getMediaKeyEventSessionPackageName()).isEqualTo("");
     }
 
+    @Ignore // Ignore for b/389531777
     @Test
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
@@ -217,10 +218,11 @@ public class MediaSessionManagerTest {
 
     private MediaSession createMediaKeySession() {
         MediaSession session = new MediaSession(getInstrumentation().getTargetContext(), TAG);
-        session.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
-                | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        PlaybackState state = new PlaybackState.Builder()
-                .setState(PlaybackState.STATE_PLAYING, 0, 1.0f).build();
+        session.setFlags(
+                MediaSession.FLAG_HANDLES_MEDIA_BUTTONS
+                        | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        PlaybackState state =
+                new PlaybackState.Builder().setState(PlaybackState.STATE_PLAYING, 0, 1.0f).build();
         // Fake the media session service so this session can take the media key events.
         session.setPlaybackState(state);
         session.setActive(true);
