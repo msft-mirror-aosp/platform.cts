@@ -162,6 +162,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         lockScreenSession.enterAndConfirmLockCredential();
 
         mWmState.waitAndAssertKeyguardGone();
+        mWmState.computeState(DISMISS_KEYGUARD_ACTIVITY);
         mWmState.assertVisibility(DISMISS_KEYGUARD_ACTIVITY, true);
     }
 
