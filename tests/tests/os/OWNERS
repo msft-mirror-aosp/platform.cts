@@ -12,6 +12,8 @@ per-file *PowerManager_ThermalTest* = file:/platform/frameworks/base:/ADPF_OWNER
 per-file *WorkDurationTest* = file:/platform/frameworks/base:/ADPF_OWNERS
 per-file *HeadroomTest* = file:/platform/frameworks/base:/ADPF_OWNERS
 
+per-file *minijail* = file:/platform/external/minijail:/OWNERS
+
 # Bug component: 25692
 include platform/frameworks/base:/OWNERS
 include platform/frameworks/base:/core/java/android/os/OWNERS

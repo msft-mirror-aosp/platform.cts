@@ -44,6 +44,7 @@ public class ProcStatsTests extends DeviceTestCase implements IBuildReceiver {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        getDevice().executeShellCommand("dumpsys procstats --clear");
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
