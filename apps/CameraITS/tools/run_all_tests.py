@@ -214,6 +214,7 @@ SUB_CAMERA_TESTS = {
     ),
     'scene6_tele': (
         'test_zoom_tele',
+        'test_preview_zoom_tele',
     ),
     'scene7_tele': (
         'test_multi_camera_switch_tele',
