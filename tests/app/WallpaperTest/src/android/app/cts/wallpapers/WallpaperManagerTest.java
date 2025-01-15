@@ -18,15 +18,10 @@ package android.app.cts.wallpapers;
 
 import static android.Manifest.permission.ALWAYS_UPDATE_WALLPAPER;
 import static android.Manifest.permission.READ_WALLPAPER_INTERNAL;
-import static android.app.Flags.FLAG_CUSTOMIZATION_PACKS_APIS;
 import static android.app.Flags.FLAG_LIVE_WALLPAPER_CONTENT_HANDLING;
 import static android.app.Flags.liveWallpaperContentHandling;
 import static android.app.WallpaperManager.FLAG_LOCK;
 import static android.app.WallpaperManager.FLAG_SYSTEM;
-import static android.app.WallpaperManager.ORIENTATION_LANDSCAPE;
-import static android.app.WallpaperManager.ORIENTATION_PORTRAIT;
-import static android.app.WallpaperManager.ORIENTATION_SQUARE_LANDSCAPE;
-import static android.app.WallpaperManager.ORIENTATION_SQUARE_PORTRAIT;
 import static android.app.cts.wallpapers.WallpaperManagerTestUtils.WallpaperChange;
 import static android.app.cts.wallpapers.WallpaperManagerTestUtils.WallpaperState;
 import static android.app.cts.wallpapers.WallpaperManagerTestUtils.runAndAwaitChanges;
@@ -62,7 +57,6 @@ import android.app.Instrumentation;
 import android.app.WallpaperColors;
 import android.app.WallpaperInfo;
 import android.app.WallpaperManager;
-import android.app.cts.wallpapers.util.WallpaperTestUtils;
 import android.app.wallpaper.WallpaperDescription;
 import android.app.wallpaper.WallpaperInstance;
 import android.content.BroadcastReceiver;
@@ -71,7 +65,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorSpace;
@@ -83,7 +76,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -249,18 +241,6 @@ public class WallpaperManagerTest {
             sWallpaperManager.clear(FLAG_SYSTEM | FLAG_LOCK);
         }
         sWallpaperManager = null;
-    }
-
-    @Test
-    public void getOrientation_returnsCorrectResult() {
-        assertThat(WallpaperManager.getOrientation(new Point(50, 100)))
-                .isEqualTo(ORIENTATION_PORTRAIT);
-        assertThat(WallpaperManager.getOrientation(new Point(100, 50)))
-                .isEqualTo(ORIENTATION_LANDSCAPE);
-        assertThat(WallpaperManager.getOrientation(new Point(99, 100)))
-                .isEqualTo(ORIENTATION_SQUARE_PORTRAIT);
-        assertThat(WallpaperManager.getOrientation(new Point(100, 99)))
-                .isEqualTo(ORIENTATION_SQUARE_LANDSCAPE);
     }
 
     @Test
@@ -972,64 +952,6 @@ public class WallpaperManagerTest {
             assertBitmapDimensions(mWallpaperManager.getBitmap());
         } finally {
             highResolutionWallpaper.recycle();
-        }
-    }
-
-    @Test
-    public void getWallpaperFile_original() throws Exception {
-        Bitmap bitmap = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas.drawColor(Color.BLUE);
-
-        // put some crop hints of small sug-regions of the bitmap to make sure it gets cropped
-        SparseArray<Rect> crops = new SparseArray<>();
-        crops.put(ORIENTATION_PORTRAIT, new Rect(0, 0, 50, 100));
-        crops.put(ORIENTATION_LANDSCAPE, new Rect(0, 0, 100, 50));
-        crops.put(ORIENTATION_SQUARE_PORTRAIT, new Rect(0, 0, 100, 100));
-        crops.put(ORIENTATION_SQUARE_LANDSCAPE, new Rect(0, 0, 100, 100));
-
-        try {
-            mWallpaperManager.setBitmap(bitmap);
-            try (ParcelFileDescriptor descriptor =
-                         mWallpaperManager.getWallpaperFile(FLAG_SYSTEM, false)) {
-                assertThat(descriptor).isNotNull();
-                Bitmap actualBitmap = BitmapFactory.decodeFileDescriptor(
-                        descriptor.getFileDescriptor());
-                assertThat(WallpaperTestUtils.isSimilar(actualBitmap, bitmap, true)).isTrue();
-            }
-        } finally {
-            bitmap.recycle();
-        }
-    }
-
-    @Test
-    public void getWallpaperFile_cropped_sameAsGetBitmap() throws Exception {
-        Bitmap bitmap = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        canvas.drawColor(Color.BLUE);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, bos);
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(bos.toByteArray());
-
-        // put some crop hints of small sug-regions of the bitmap to make sure it gets cropped
-        SparseArray<Rect> crops = new SparseArray<>();
-        crops.put(ORIENTATION_PORTRAIT, new Rect(0, 0, 50, 100));
-        crops.put(ORIENTATION_LANDSCAPE, new Rect(0, 0, 100, 50));
-        crops.put(ORIENTATION_SQUARE_PORTRAIT, new Rect(0, 0, 100, 100));
-        crops.put(ORIENTATION_SQUARE_LANDSCAPE, new Rect(0, 0, 100, 100));
-
-        try {
-            mWallpaperManager.setStreamWithCrops(inputStream, crops, true, FLAG_LOCK | FLAG_SYSTEM);
-            try (ParcelFileDescriptor descriptor =
-                         mWallpaperManager.getWallpaperFile(FLAG_SYSTEM, true)) {
-                assertThat(descriptor).isNotNull();
-                Bitmap actual = BitmapFactory.decodeFileDescriptor(descriptor.getFileDescriptor());
-                Bitmap expected = mWallpaperManager.getBitmapAsUser(
-                        mContext.getUserId(), false, FLAG_SYSTEM);
-                assertThat(WallpaperTestUtils.isSimilar(actual, expected, true)).isTrue();
-            }
-        } finally {
-            bitmap.recycle();
         }
     }
 
@@ -1757,7 +1679,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_CUSTOMIZATION_PACKS_APIS})
+    @RequiresFlagsEnabled({FLAG_MULTI_CROP})
     public void testSetWallpaperWithCrops_noCrop() {
         Point screenSize = getScreenSize();
         int bitmapHeight = 3 * screenSize.y;
@@ -1785,7 +1707,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_CUSTOMIZATION_PACKS_APIS})
+    @RequiresFlagsEnabled({FLAG_MULTI_CROP})
     @RequiresFlagsDisabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void testSetWallpaperWithCrops_singleCrop() {
         Point displaySize = getScreenSize();
@@ -1802,8 +1724,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_CUSTOMIZATION_PACKS_APIS,
-            FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
     public void testSetWallpaperWithCrops_description_singleCrop() {
         Point displaySize = getScreenSize();
 
@@ -1819,7 +1740,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_CUSTOMIZATION_PACKS_APIS})
+    @RequiresFlagsEnabled({FLAG_MULTI_CROP})
     @RequiresFlagsDisabled(FLAG_LIVE_WALLPAPER_CONTENT_HANDLING)
     public void testSetWallpaperWithCrops_twoCrops() {
         Point displaySize = getScreenSize();
@@ -1846,8 +1767,7 @@ public class WallpaperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_CUSTOMIZATION_PACKS_APIS,
-            FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
+    @RequiresFlagsEnabled({FLAG_MULTI_CROP, FLAG_LIVE_WALLPAPER_CONTENT_HANDLING})
     public void testSetWallpaperWithCrops_description_twoCrops() {
         Point displaySize = getScreenSize();
         assumeFalse(displaySize.x == displaySize.y);
@@ -1876,7 +1796,6 @@ public class WallpaperManagerTest {
      * Helper to check the consistency between
      * {@link WallpaperManager#setBitmapWithCrops(Bitmap, Map, boolean, int)},
      * {@link WallpaperManager#getBitmapCrops(List, int, boolean)},
-     * {@link WallpaperManager#getBitmapCrops(int)}, and
      * {@link WallpaperManager#getBitmapCrops(Point, List, Map)} when correct cropsHints are
      * provided.
      * <p>
@@ -1909,11 +1828,6 @@ public class WallpaperManagerTest {
 
         Point bitmapSize = new Point(bitmap.getWidth(), bitmap.getHeight());
         List<Point> displaySizes = cropHints.keySet().stream().toList();
-        SparseArray<Rect> cropHintsSparseArray = new SparseArray<>(cropHints.size());
-        for (Map.Entry<Point, Rect> entry : cropHints.entrySet()) {
-            int orientation = WallpaperManager.getOrientation(entry.getKey());
-            cropHintsSparseArray.put(orientation, entry.getValue());
-        }
 
         // check that getBitmapCrops doesn't modify the crops when correct crops hints are provided
         List<Rect> expectedBitmapCrops = mWallpaperManager.getBitmapCrops(
@@ -1972,20 +1886,7 @@ public class WallpaperManagerTest {
                             SparseArray<Rect> descCropHints =
                                     instance.getDescription().getCropHints();
                             assertThat(descCropHints).isNotNull();
-                            assertThat(descCropHints.size()).isEqualTo(cropHintsSparseArray.size());
-                            for (int i = 0; i < descCropHints.size(); i++) {
-                                int key = descCropHints.keyAt(i);
-                                assertAlmostEqual(cropHintsSparseArray.get(key),
-                                        descCropHints.get(key));
-                            }
                         }
-                    }
-
-                    SparseArray<Rect> outCropHints = mWallpaperManager.getBitmapCrops(sourceFlag);
-                    assertThat(outCropHints.size()).isEqualTo(cropHintsSparseArray.size());
-                    for (int i = 0; i < outCropHints.size(); i++) {
-                        int key = outCropHints.keyAt(i);
-                        assertAlmostEqual(cropHintsSparseArray.get(key), outCropHints.get(key));
                     }
 
                     List<Rect> actualBitmapCrops = mWallpaperManager.getBitmapCrops(
