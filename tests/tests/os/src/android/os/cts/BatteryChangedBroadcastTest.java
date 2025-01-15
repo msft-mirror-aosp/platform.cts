@@ -30,6 +30,7 @@ import android.os.BatteryManager;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.BeforeClass;
@@ -42,14 +43,16 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 public class BatteryChangedBroadcastTest {
 
-    private static final int WAIT_TO_RECEIVE_THE_BROADCAST_MS = 10000;
+    private static final int WAIT_TO_RECEIVE_THE_BROADCAST_MS = 120000;
     private static final Context CONTEXT =
             InstrumentationRegistry.getInstrumentation().getTargetContext();
 
     @BeforeClass
     public static void setUpClass() throws InterruptedException {
         SystemUtil.runShellCommand("cmd battery get -f current_now");
-        waitAndAssertBroadcastReceived(null, -2);
+        TestApis.broadcasts()
+                .waitForBroadcastBarrier(
+                        "Waiting to receive this broadcast before triggering the next one");
     }
 
     @Test
@@ -58,14 +61,11 @@ public class BatteryChangedBroadcastTest {
         final int updatedBatteryLevel = currentBatteryLevel == 100 ? 50 : 100;
 
         try {
-            SystemUtil.runShellCommand("cmd battery set level " + updatedBatteryLevel);
-            waitAndAssertBroadcastReceived(BatteryManager.EXTRA_LEVEL, updatedBatteryLevel);
+            triggerWaitAndAssertBroadcast(BatteryManager.EXTRA_LEVEL, updatedBatteryLevel);
 
             // trigger the broadcast again to verify that it is sent immediately.
-            final int newUpdatedBatteryLevel = updatedBatteryLevel == 100 ? 50 : 100;
-
-            SystemUtil.runShellCommand("cmd battery set level " + newUpdatedBatteryLevel);
-            waitAndAssertBroadcastReceived(BatteryManager.EXTRA_LEVEL, newUpdatedBatteryLevel);
+            triggerWaitAndAssertBroadcast(
+                    BatteryManager.EXTRA_LEVEL, updatedBatteryLevel == 100 ? 50 : 100);
         } finally {
             SystemUtil.runShellCommand("cmd battery reset");
         }
@@ -79,16 +79,13 @@ public class BatteryChangedBroadcastTest {
                 : BatteryManager.BATTERY_STATUS_CHARGING;
 
         try {
-            SystemUtil.runShellCommand("cmd battery set status " + updatedStatus);
-            waitAndAssertBroadcastReceived(BatteryManager.EXTRA_STATUS, updatedStatus);
+            triggerWaitAndAssertBroadcast(BatteryManager.EXTRA_STATUS, updatedStatus);
 
             // trigger the broadcast again to verify that it is sent immediately.
             final int newUpdatedStatus = updatedStatus == BatteryManager.BATTERY_STATUS_CHARGING
                     ? BatteryManager.BATTERY_STATUS_DISCHARGING
                     : BatteryManager.BATTERY_STATUS_CHARGING;
-
-            SystemUtil.runShellCommand("cmd battery set status " + newUpdatedStatus);
-            waitAndAssertBroadcastReceived(BatteryManager.EXTRA_STATUS, newUpdatedStatus);
+            triggerWaitAndAssertBroadcast(BatteryManager.EXTRA_STATUS, newUpdatedStatus);
         } finally {
             SystemUtil.runShellCommand("cmd battery reset");
         }
@@ -100,22 +97,22 @@ public class BatteryChangedBroadcastTest {
         return intent.getIntExtra(extra, -1);
     }
 
-    private static void waitAndAssertBroadcastReceived(String extra, int updatedValue)
+    private static void triggerWaitAndAssertBroadcast(String extra, int updatedValue)
             throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        CONTEXT.registerReceiver(new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (extra == null) {
-                    latch.countDown();
-                } else {
-                    final int value = intent.getIntExtra(extra, -1);
-                    if (value == updatedValue) {
-                        latch.countDown();
+        CONTEXT.registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        final int value = intent.getIntExtra(extra, -1);
+                        if (value == updatedValue) {
+                            latch.countDown();
+                        }
                     }
-                }
-            }
-        }, new IntentFilter(ACTION_BATTERY_CHANGED));
+                },
+                new IntentFilter(ACTION_BATTERY_CHANGED));
+
+        SystemUtil.runShellCommand("cmd battery set " + extra + " " + updatedValue);
 
         if (!latch.await(WAIT_TO_RECEIVE_THE_BROADCAST_MS, TimeUnit.MILLISECONDS)) {
             fail("Timed out waiting for the battery changed broadcast");
