@@ -1652,10 +1652,14 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
                 textFormatter.appendText(getString(R.string.audio_loopback_mpclatency) + " "
                                 + mediaPerformanceClass + ": ")
-                        .openBold()
-                        .appendText(getString(mpcAtLeastOnePass
-                                ? R.string.ctsv_general_pass : R.string.ctsv_general_fail))
-                        .closeBold()
+                        .openBold();
+                if (mClaimsMediaPerformance) {
+                    textFormatter.appendText(getString(mpcAtLeastOnePass
+                                    ? R.string.ctsv_general_pass : R.string.ctsv_general_fail));
+                } else {
+                    textFormatter.appendText(getString(R.string.audio_loopback_nopmpcsupport));
+                }
+                textFormatter.closeBold()
                         .appendBreak();
 
                 // Pro Audio
@@ -1667,12 +1671,19 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         || (usbRequired
                                 && checkLatency(usbLatency, LATENCY_PRO_AUDIO_AT_LEAST_ONE));
 
-                textFormatter.appendText(getString(R.string.audio_loopback_proaudiolatency) + ": ")
-                        .openBold()
-                        .appendText(getString(proAudioAtLeastOnePass
-                                ? R.string.ctsv_general_pass : R.string.ctsv_general_fail))
-                        .closeBold()
-                        .appendBreak();
+                textFormatter
+                        .appendText(getString(R.string.audio_loopback_proaudiolatency) + ": ")
+                        .openBold();
+                if (mClaimsProAudio) {
+                    textFormatter.appendText(
+                            getString(
+                                    proAudioAtLeastOnePass
+                                            ? R.string.ctsv_general_pass
+                                            : R.string.ctsv_general_fail));
+                } else {
+                    textFormatter.appendText(getString(R.string.audio_loopback_noproaudiosupport));
+                }
+                textFormatter.closeBold().appendBreak();
             }
 
             textFormatter.closeParagraph()
