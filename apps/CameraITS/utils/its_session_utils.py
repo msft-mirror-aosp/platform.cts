@@ -2766,6 +2766,30 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR] == 'true'
 
+  def is_night_mode_indicator_supported(self, camera_id):
+    """Checks if night mode indicator is supported for camera id.
+
+    If night mode camera extension is supported by the device and the device
+    supports the night mode indicator for both Camera2 and CameraExtension, then
+    this function returns True.
+
+    Args:
+      camera_id: int; device ID
+    Returns:
+      True if night mode indicator is supported and false otherwise.
+    """
+    cmd = {
+        'cmdName': 'isNightModeIndicatorSupported',
+        'cameraId': camera_id,
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'isNightModeIndicatorSupported':
+      raise error_util.CameraItsError('Invalid command response')
+    return data[_STR_VALUE_STR] == 'true'
+
   def do_capture_preview_frame(self,
                                camera_id,
                                preview_size,
@@ -2785,7 +2809,8 @@ class ItsSession(object):
       cap_request: dict; python dict specifying the key/value pair of capture
         request keys, which will be converted to JSON and sent to the device.
     Returns:
-      Single JPEG frame capture as numpy array of bytes
+      Tuple of capture result camera metadata and single JPEG frame capture as
+      numpy array of bytes
     """
     cmd = {
         'cmdName': 'doCapturePreviewFrame',
@@ -2798,10 +2823,16 @@ class ItsSession(object):
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
+    capture_result_metadata = None
+    jpeg_image = None
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] == 'captureResults':
+      capture_result_metadata = data[_OBJ_VALUE_STR]['captureResult']
+
     data, buf = self.__read_response_from_socket()
-    if data[_TAG_STR] != 'jpegImage':
-      raise error_util.CameraItsError('Invalid command response')
-    return buf
+    if data[_TAG_STR] == 'jpegImage':
+      jpeg_image = buf
+    return capture_result_metadata, jpeg_image
 
   def preview_surface(self, size, hlg10_enabled=False):
     """Create a surface dictionary based on size and hdr-ness.
