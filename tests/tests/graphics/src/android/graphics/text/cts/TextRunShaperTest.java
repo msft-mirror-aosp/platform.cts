@@ -30,6 +30,8 @@ import android.graphics.fonts.FontVariationAxis;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.Layout;
 import android.text.TextDirectionHeuristic;
 import android.text.TextDirectionHeuristics;
@@ -50,6 +52,8 @@ import java.util.HashSet;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class TextRunShaperTest {
+
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void shapeText() {
