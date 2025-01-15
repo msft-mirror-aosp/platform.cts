@@ -2499,31 +2499,8 @@ class ItsSession(object):
     """
     chart_scaling = opencv_processing_utils.calc_chart_scaling(
         chart_distance, camera_fov)
-    if math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_WIDE_IN_22CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_WIDE_IN_22CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE_IN_22CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE_IN_22CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE25_IN_31CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE25_IN_31CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE40_IN_31CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE40_IN_31CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE_IN_31CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE_IN_31CM_RIG}x_scaled.png'
+    if chart_scaling:
+      file_name = f'{scene}_{chart_scaling}x_scaled.png'
     else:
       file_name = f'{scene}.png'
     logging.debug('Scene to load: %s', file_name)

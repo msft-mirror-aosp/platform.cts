@@ -72,6 +72,16 @@ class Cv2ImageProcessingUtilsTests(unittest.TestCase):
 
     self.assertEqual(len(test_fails), 0, test_fails)
 
+  def test_calc_chart_scaling(self):
+    """Unit test to check chart scaling rules."""
+    # Wide (61-90deg FoV) in 22cm rig
+    self.assertEqual(opencv_processing_utils.calc_chart_scaling(22, 80), 0.67)
+    # TELE (41-60deg FoV) in 55cm rig
+    self.assertEqual(opencv_processing_utils.calc_chart_scaling(55, 45), 0.5)
+    # No scaling rule is found for input FoV, default is used
+    self.assertIsNone(opencv_processing_utils.calc_chart_scaling(50, 115))
+    # No scaling rule is found for input distance, default is used
+    self.assertIsNone(opencv_processing_utils.calc_chart_scaling(200, 65))
 
 if __name__ == '__main__':
   unittest.main()
