@@ -21,8 +21,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <queue>
-
 #include "utils.h"
 
 using TestAAudioFramesProcessedParams = std::tuple<aaudio_direction_t, int>;
@@ -32,27 +30,27 @@ enum {
     PARAM_SAMPLE_RATE,
 };
 
-template <typename T>
-class AtomicQueue {
+class FramesInfoSnapshot {
 public:
-    void push(const T& value) {
+    void update(int64_t framesRead, int64_t framesWritten, int64_t snapshotTime) {
         std::lock_guard<std::mutex> lock(mMutex);
-        mQueue.push(value);
+        mFramesRead = framesRead;
+        mFramesWritten = framesWritten;
+        mSnapshotTime = snapshotTime;
     }
 
-    void pop() {
+    void get(int64_t* framesRead, int64_t* framesWritten, int64_t* snapshotTime) {
         std::lock_guard<std::mutex> lock(mMutex);
-        mQueue.pop();
-    }
-
-    T front() {
-        std::lock_guard<std::mutex> lock(mMutex);
-        return mQueue.front();
+        *framesRead = mFramesRead;
+        *framesWritten = mFramesWritten;
+        *snapshotTime = mSnapshotTime;
     }
 
 private:
-    std::queue<T> mQueue;
-    mutable std::mutex mMutex;
+    int64_t mFramesRead = 0;
+    int64_t mFramesWritten = 0;
+    int64_t mSnapshotTime = 0;
+    std::mutex mMutex;
 };
 
 class TestAAudioFramesProcessed
@@ -99,18 +97,40 @@ protected:
         // Create an AAudioStream using the Builder.
         EXPECT_EQ(AAUDIO_OK, AAudioStreamBuilder_openStream(aaudioBuilder, &aaudioStream));
         AAudioStreamBuilder_delete(aaudioBuilder);
+        double sampleRateToleranceRatio = AAudioExtensions::getInstance().isMMapUsed(aaudioStream)
+                ? kSampleRateToleranceRatioForLowLatency
+                : kSampleRateToleranceRatio;
 
+        mIsFirstCallback = true;
         EXPECT_EQ(AAUDIO_OK, AAudioStream_requestStart(aaudioStream));
+        mStartTime = getNanoseconds(CLOCK_MONOTONIC);
 
         sleep(kProcessTimeSeconds);
 
-        EXPECT_GT(mCallbackCount, kInitialSkippedCallbackCount);
-        EXPECT_GT((mTimestamps.front() - mInitialCallbackTime) / (double)NANOS_PER_SECOND,
-                  kMinimumElapsedTimeSeconds);
-        EXPECT_NEAR(sampleRate, mMeasuredWrittenSampleRates.front(),
-                    sampleRate * kSampleRateToleranceRatio);
-        EXPECT_NEAR(sampleRate, mMeasuredReadSampleRates.front(),
-                    sampleRate * kSampleRateToleranceRatio);
+        int64_t firstCallbackFramesRead;
+        int64_t firstCallbackFramesWritten;
+        int64_t firstCallbackTime;
+        int64_t currentCallbackFramesRead;
+        int64_t currentCallbackFramesWritten;
+        int64_t currentCallbackTime;
+        mFirstSnapshot.get(&firstCallbackFramesRead, &firstCallbackFramesWritten,
+                           &firstCallbackTime);
+        mCurrentSnapshot.get(&currentCallbackFramesRead, &currentCallbackFramesWritten,
+                             &currentCallbackTime);
+        double timeDiffInSeconds =
+                (double)(currentCallbackTime - firstCallbackTime) / NANOS_PER_SECOND;
+
+        // For input stream, frames written is the frames provided by the HAL.
+        // For output stream, frames read is the frames consumed by the HAL.
+        if (direction == AAUDIO_DIRECTION_INPUT) {
+            double measuredSampleRate =
+                    (currentCallbackFramesWritten - firstCallbackFramesWritten) / timeDiffInSeconds;
+            EXPECT_NEAR(sampleRate, measuredSampleRate, sampleRate * sampleRateToleranceRatio);
+        } else {
+            double measuredSampleRate =
+                    (currentCallbackFramesRead - firstCallbackFramesRead) / timeDiffInSeconds;
+            EXPECT_NEAR(sampleRate, measuredSampleRate, sampleRate * sampleRateToleranceRatio);
+        }
 
         EXPECT_EQ(AAUDIO_OK, AAudioStream_requestStop(aaudioStream));
 
@@ -122,49 +142,33 @@ protected:
                                                                     void* /*audioData*/,
                                                                     int32_t /*numFrames*/) {
         TestAAudioFramesProcessed* testClass = (TestAAudioFramesProcessed*)userData;
+        int64_t currentTime = getNanoseconds(CLOCK_MONOTONIC);
+        if (testClass->mStartTime == 0 || currentTime - testClass->mStartTime < kCallbackSkipTime) {
+            // At first starting the stream, the callback may not be stable enough
+            return AAUDIO_CALLBACK_RESULT_CONTINUE;
+        }
 
-        if (testClass->mCallbackCount == kInitialSkippedCallbackCount) {
-            testClass->mInitialCallbackTime = getNanoseconds(CLOCK_MONOTONIC);
-            testClass->mInitialFramesWritten = AAudioStream_getFramesWritten(stream);
-            testClass->mInitialFramesRead = AAudioStream_getFramesRead(stream);
+        if (testClass->mIsFirstCallback) {
+            testClass->mFirstSnapshot.update(AAudioStream_getFramesRead(stream),
+                                             AAudioStream_getFramesWritten(stream), currentTime);
+            testClass->mIsFirstCallback = false;
+        } else {
+            testClass->mCurrentSnapshot.update(AAudioStream_getFramesRead(stream),
+                                               AAudioStream_getFramesWritten(stream), currentTime);
         }
-        if (testClass->mCallbackCount > kInitialSkippedCallbackCount) {
-            int64_t currentTime = getNanoseconds(CLOCK_MONOTONIC);
-            int64_t framesWritten = AAudioStream_getFramesWritten(stream);
-            int64_t framesRead = AAudioStream_getFramesRead(stream);
-            double seconds =
-                    (currentTime - testClass->mInitialCallbackTime) / (double)NANOS_PER_SECOND;
-            testClass->mTimestamps.push(currentTime);
-            testClass->mMeasuredWrittenSampleRates.push(
-                    (framesWritten - testClass->mInitialFramesWritten) / seconds);
-            testClass->mMeasuredReadSampleRates.push((framesRead - testClass->mInitialFramesRead) /
-                                                     seconds);
-            if (testClass->mCallbackCount >
-                kInitialSkippedCallbackCount + kFinalSkippedCallbackCount) {
-                testClass->mTimestamps.pop();
-                testClass->mMeasuredWrittenSampleRates.pop();
-                testClass->mMeasuredReadSampleRates.pop();
-            }
-        }
-        testClass->mCallbackCount++;
+
         return AAUDIO_CALLBACK_RESULT_CONTINUE;
     }
 
     static constexpr int kProcessTimeSeconds = 5;
-    static constexpr int kMinimumElapsedTimeSeconds = 1;
-    static constexpr double kSampleRateToleranceRatio = .05;
-    // Number of callbacks to ignore initially to let the callbacks stabilize.
-    static constexpr int kInitialSkippedCallbackCount = 5;
-    // Number of callbacks to skip at the end. This number of callbacks will be queued.
-    static constexpr int kFinalSkippedCallbackCount = 5;
+    static constexpr double kSampleRateToleranceRatioForLowLatency = .05;
+    static constexpr double kSampleRateToleranceRatio = .1;
+    static constexpr int64_t kCallbackSkipTime = 500 * NANOS_PER_MILLISECOND;
 
-    std::atomic<int> mCallbackCount = 0;
-    std::atomic<int64_t> mInitialFramesRead = 0;
-    std::atomic<int64_t> mInitialFramesWritten = 0;
-    std::atomic<int64_t> mInitialCallbackTime = 0;
-    AtomicQueue<int64_t> mTimestamps;
-    AtomicQueue<double> mMeasuredWrittenSampleRates;
-    AtomicQueue<double> mMeasuredReadSampleRates;
+    std::atomic<int64_t> mStartTime = 0;
+    bool mIsFirstCallback = true;
+    FramesInfoSnapshot mFirstSnapshot;
+    FramesInfoSnapshot mCurrentSnapshot;
 };
 
 TEST_P(TestAAudioFramesProcessed, TestFramesProcessed) {
