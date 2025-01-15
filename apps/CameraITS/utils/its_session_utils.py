@@ -3279,13 +3279,24 @@ def mark_features_passed(
     features_passed.setdefault(streams_name, {}).setdefault(fps_range_tuple, [feature_mask])
 
 
-def define_raw_stats_fmt_exposure(props, img_stats_grid):
-  """Define format with active array width and height."""
+def define_raw_stats_fmt_sensor_sensitivity(props, img_stats_grid):
+  """Define format with active array width and height for sensor sensitivity testing."""
   aa_width = (props['android.sensor.info.preCorrectionActiveArraySize']['right'] -
          props['android.sensor.info.preCorrectionActiveArraySize']['left'])
   aa_height = (props['android.sensor.info.preCorrectionActiveArraySize']['bottom'] -
          props['android.sensor.info.preCorrectionActiveArraySize']['top'])
   logging.debug('Active array W,H: %d,%d', aa_width, aa_height)
+  return {'format': 'rawStats',
+          'gridWidth': aa_width // img_stats_grid,
+          'gridHeight': aa_height // img_stats_grid}
+
+
+def define_raw_stats_fmt_exposure(props, img_stats_grid):
+  """Define format with active array width and height for exposure testing."""
+  aax = props['android.sensor.info.preCorrectionActiveArraySize']['left']
+  aay = props['android.sensor.info.preCorrectionActiveArraySize']['top']
+  aa_width = props['android.sensor.info.preCorrectionActiveArraySize']['right']-aax
+  aa_height = props['android.sensor.info.preCorrectionActiveArraySize']['bottom']-aay
   return {'format': 'rawStats',
           'gridWidth': aa_width // img_stats_grid,
           'gridHeight': aa_height // img_stats_grid}
