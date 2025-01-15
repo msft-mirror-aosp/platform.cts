@@ -16,6 +16,8 @@
 
 package android.graphics.gpuprofiling.cts;
 
+import static org.hamcrest.Matchers.is;
+
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -28,7 +30,9 @@ import com.google.protobuf.CodedInputStream;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
 
 import perfetto.protos.PerfettoConfig.DataSourceDescriptor;
@@ -90,6 +94,8 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final int MAX_TRACE_RETRIES = 3;
 
     private String initialDebugPropertyValue = null;
+
+    @Rule public ErrorCollector errorCollector = new ErrorCollector();
 
     private class ShellThread extends Thread {
 
@@ -255,9 +261,12 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
         }
 
         configFile.delete();
-        Assert.assertTrue(
-                "Trace does not contain valid GPU counter values.", foundValidGpuCounterEvent);
-        Assert.assertTrue("Trace does not contain valid GPU frequency.", foundGpuFrequencyEvent);
+        errorCollector.checkThat(
+                "Trace does not contain valid GPU counter values.",
+                foundValidGpuCounterEvent,
+                is(true));
+        errorCollector.checkThat(
+                "Trace does not contain valid GPU frequency.", foundGpuFrequencyEvent, is(true));
     }
 
     private static boolean containsValidGpuCounterEvent(List<TracePacket> packetList) {
