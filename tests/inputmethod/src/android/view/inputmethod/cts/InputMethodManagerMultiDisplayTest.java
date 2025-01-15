@@ -33,6 +33,7 @@ import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -43,6 +44,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import org.junit.After;
@@ -55,9 +59,10 @@ import java.util.concurrent.TimeUnit;
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
-public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
+public final class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
+    private static final String TAG = "InputMethodManagerMultiDisplayTest";
     private static final String MOCK_IME_PACKAGE_NAME = "com.android.cts.mockimewithsubtypes";
-    private static final String MOCK_IME_ID = MOCK_IME_PACKAGE_NAME + "/.MockImeWithSubtypes";
+    private static final String MOCK_IME_ID = MOCK_IME_PACKAGE_NAME + "/MockImeWithSubtypes";
     private static final String MOCK_IME_SUBTYPE_LABEL = "CTS Subtype 1 Test String";
     private static final String SETTINGS_ACTIVITY_PACKAGE = "com.android.settings";
 
@@ -91,6 +96,14 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
         uiDevice.setOrientationNatural();
 
         mImManager.showInputMethodAndSubtypeEnabler(MOCK_IME_ID);
+        UiScrollable scroller = new UiScrollable(new UiSelector().scrollable(true));
+        try {
+            // Swipe far away from the edges to avoid triggering navigation gestures
+            scroller.setSwipeDeadZonePercentage(0.25);
+            scroller.scrollTextIntoView(MOCK_IME_SUBTYPE_LABEL);
+        } catch (UiObjectNotFoundException e) {
+            Log.e(TAG, "Exception when scroll to this view object", e);
+        }
         // Check if new activity was started with subtype settings
         assertThat(uiDevice.wait(Until.hasObject(By.text(MOCK_IME_SUBTYPE_LABEL)),
                 TIMEOUT)).isTrue();
