@@ -191,6 +191,12 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       )
       logging.debug('mean_brightness_diff: %f', mean_brightness_diff)
 
+      # Get white balance diff between default and jca captures
+      mean_white_balance_diff = ip_metrics_utils.do_white_balance_check(
+          default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
+      )
+      logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
+
 
 if __name__ == '__main__':
   test_runner.main()
