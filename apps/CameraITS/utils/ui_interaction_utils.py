@@ -17,12 +17,16 @@ import dataclasses
 import datetime
 import logging
 import math
+import os
 import re
+import subprocess
 import time
 import xml.etree.ElementTree as et
 
 import camera_properties_utils
+import error_util
 import its_device_utils
+
 
 _DIR_EXISTS_TXT = 'Directory exists'
 _PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
@@ -103,6 +107,9 @@ UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
 VIEWFINDER_NOT_VISIBLE_PREFIX = 'viewfinder_not_visible'
 VIEWFINDER_VISIBLE_PREFIX = 'viewfinder_visible'
 WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
+JCA_WATCH_DUMP_FILE = 'jca_watch_dump.txt'
+DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
+WATCH_WAIT_TIME_SECONDS = 2
 
 
 @dataclasses.dataclass(frozen=True)
@@ -493,6 +500,10 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     img_path_on_dut: Path of the captured image on the device
   """
   device_id = dut.serial
+  # start cameraservice watch command to monitor default camera pkg
+  watch_dump_path = os.path.join(log_path, DEFAULT_CAMERA_WATCH_DUMP_FILE)
+  watch_process = start_cameraservice_watch(device_id, watch_dump_path,
+                                            pkg_name)
   try:
     logging.debug('Launching app: %s', pkg_name)
     launch_cmd = f'monkey -p {pkg_name} 1'
@@ -523,9 +534,12 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
+
     # pull the dumpsys output
     dut.adb.pull([dumpsys_path, log_path])
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    # stop cameraservice watch immediately after capturing image
+    stop_cameraservice_watch(watch_process)
     img_path_on_dut = ''
     photo_storage_path = ''
     for path in CAMERA_FILES_PATHS:
@@ -599,6 +613,9 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
   device_id = dut.serial
   remove_command = f'rm -rf {EMULATED_STORAGE_PATH}/*'
   its_device_utils.run_adb_shell_command(device_id, remove_command)
+  watch_dump_path = os.path.join(log_path, JCA_WATCH_DUMP_FILE)
+  watch_process = start_cameraservice_watch(device_id, watch_dump_path,
+                                            JETPACK_CAMERA_APP_PACKAGE_NAME)
   try:
     logging.debug('Launching JCA app')
     launch_cmd = (f'monkey -p {JETPACK_CAMERA_APP_PACKAGE_NAME} '
@@ -614,6 +631,7 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
     ):
       dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    stop_cameraservice_watch(watch_process)
     # pull the dumpsys output
     dut.adb.pull([DEFAULT_JCA_UI_DUMPSYS_PATH, log_path])
     img_path_on_dut = (
@@ -641,3 +659,102 @@ def take_dumpsys_report(dut, file_path):
     file_path: Path of the file on device to store the report.
   """
   dut.adb.shell(['dumpsys', 'media.camera', '>', file_path])
+
+
+def _watch_clear(device_id):
+  """Clears cameraservice watch cache.
+
+  Args:
+    device_id: serial id of device.
+  """
+  cmd = f'adb -s {device_id} shell cmd media.camera watch clear'.split(' ')
+  subprocess.run(cmd, check=True)
+  logging.debug('Cleared watch cache')
+
+
+def _watch_start(device_id, pkg_name):
+  """Starts cameraservice watch command.
+
+  Args:
+    device_id: serial id of device.
+    pkg_name: pkg_name of the app.
+  """
+  cmd = [
+      'adb',
+      '-s',
+      device_id,
+      'shell',
+      'cmd',
+      'media.camera',
+      'watch',
+      'start',
+      '-m',
+      (
+          '3a,android.control.captureIntent,android.jpeg.quality,'
+          'android.control.zoomRatio,'
+          'android.control.videoStabilizationMode'
+      ),
+      '-c',
+      pkg_name,
+  ]
+  subprocess.run(cmd, check=True)
+  logging.debug('Started watching 3a for %s', pkg_name)
+
+
+def _watch_live(device_id, file_path):
+  """Starts cameraservice watch live command.
+
+  Args:
+    device_id: serial id of device.
+    file_path: Path of the file to store the report.
+
+  Returns:
+    watch_process: subprocess.Popen object for the watch live command.
+  """
+  cmd = f'adb -s {device_id} shell cmd media.camera watch live'.split(' ')
+  with open(file_path, 'w') as f:
+    logging.debug('Starting watch live')
+    watch_process = subprocess.Popen(
+        cmd, stdout=f, stdin=subprocess.PIPE
+    )
+  logging.debug('watch live output written to the file_path: %s', file_path)
+  return watch_process
+
+
+def start_cameraservice_watch(device_id, file_path, pkg_name):
+  """Starts cameraservice watch command.
+
+  Args:
+    device_id: serial id of device.
+    file_path: Path of the file to store the report.
+    pkg_name: pkg_name of the app.
+
+  Returns:
+    watch_process: subprocess.Popen object for the watch live command.
+  """
+  _watch_start(device_id, pkg_name)
+  watch_process = _watch_live(device_id, file_path)
+  watch_process.its_watch_process_device_id = device_id
+  return watch_process
+
+
+def stop_cameraservice_watch(watch_process):
+  """Stops cameraservice watch command.
+
+  Args:
+    watch_process: subprocess.Popen object returned by start_cameraservice_watch
+  Raises:
+    CameraItsError: If watch_process not created by start_cameraservice_watch
+  """
+  if not hasattr(watch_process, 'its_watch_process_device_id'):
+    raise error_util.CameraItsError(
+        'watch_process was not created by start_cameraservice_watch'
+    )
+  device_id = watch_process.its_watch_process_device_id
+  watch_process.stdin.write(b'\n')
+  watch_process.stdin.flush()
+  watch_process.wait()
+  logging.debug('Stopping watch live')
+  cmd = f'adb -s {device_id} shell cmd media.camera watch stop'.split(' ')
+  subprocess.run(cmd, check=True)
+  logging.debug('Stopped watching 3a')
