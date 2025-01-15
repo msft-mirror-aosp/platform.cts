@@ -16,9 +16,13 @@
 
 package android.media.mediaquality.cts;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
+import android.graphics.PixelFormat;
+import android.media.quality.AmbientBacklightEvent;
+import android.media.quality.AmbientBacklightSettings;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
 import android.media.quality.MediaQualityManager;
@@ -39,18 +43,24 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.concurrent.Executors;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class MediaQualityTest {
     private MediaQualityManager mManager;
     private static final String PACKAGE_NAME = "android.media.mediaquality.cts";
+    private AmbientBacklightSettings mAmbientBacklightSettings;
 
     @Before
     public void setUp() throws Exception {
         Context context = InstrumentationRegistry.getTargetContext();
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity();
 
         mManager = context.getSystemService(MediaQualityManager.class);
+        mAmbientBacklightSettings = createAmbientBacklightSettings();
         assumeTrue(mManager != null);
         if (mManager == null || !isSupported()) {
             return;
@@ -72,6 +82,23 @@ public class MediaQualityTest {
                     mManager.getSoundProfilesByPackage(PACKAGE_NAME, includeParams(false));
             for (SoundProfile profile : soundProfiles) {
                 mManager.removeSoundProfile(profile.getProfileId());
+            }
+        }
+    }
+
+    public static class MockCallback implements MediaQualityManager.AmbientBacklightCallback {
+        public MockCallback() {
+            super();
+        }
+
+        @Override
+        public void onAmbientBacklightEvent(AmbientBacklightEvent event) {
+            assertNotNull("Ambient backlight event is null", event);
+            if (event.getEventType() == MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA) {
+                assertNotNull("Ambient Backlight Metadata is null", event.getMetadata());
+                assertNotNull(
+                        "Ambient Backlight Metadata zone color is null",
+                        event.getMetadata().getZoneColors());
             }
         }
     }
@@ -199,6 +226,25 @@ public class MediaQualityTest {
         for (PictureProfile profile : profiles) {
             Assert.assertEquals(profile.getPackageName(), toCreate.getPackageName());
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAmbientBacklightEnabled() throws Exception {
+        mManager.setAmbientBacklightEnabled(true);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testRegisterAmbientBacklightCallback() throws Exception {
+        mManager.registerAmbientBacklightCallback(
+                Executors.newSingleThreadExecutor(), new MockCallback());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAmbientBacklightSettings() throws Exception {
+        mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
     }
 
     @Test
@@ -343,5 +389,19 @@ public class MediaQualityTest {
 
     private MediaQualityManager.ProfileQueryParams includeParams(boolean include) {
         return new MediaQualityManager.ProfileQueryParams(include);
+    }
+
+    private AmbientBacklightSettings createAmbientBacklightSettings() {
+        AmbientBacklightSettings settings =
+                new AmbientBacklightSettings(
+                        AmbientBacklightSettings.SOURCE_VIDEO, // Example source
+                        30, // Example max FPS
+                        PixelFormat.RGBA_8888, // Example color format
+                        10, // Example horizontal zones
+                        8, // Example vertical zones
+                        true, // Example letterbox omitted
+                        5 // Example threshold
+                        );
+        return settings;
     }
 }
