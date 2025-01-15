@@ -43,12 +43,14 @@ import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
+import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.modules.utils.build.SdkLevel
 import org.junit.After
 import org.junit.Assert
 import org.junit.Assume
+import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Rule
@@ -57,8 +59,9 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(
-    reason = "Cannot set system settings as instant app. Also we never show an accessibility " +
-        "notification for instant apps."
+    reason =
+        "Cannot set system settings as instant app. Also we never show an accessibility " +
+            "notification for instant apps."
 )
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
 class AccessibilityPrivacySourceTest {
@@ -73,12 +76,16 @@ class AccessibilityPrivacySourceTest {
 
     @get:Rule
     val mAccessibilityServiceRule =
-            InstrumentedAccessibilityServiceTestRule(AccessibilityTestService::class.java, false)
+        InstrumentedAccessibilityServiceTestRule(AccessibilityTestService::class.java, false)
 
     @get:Rule
     val deviceConfigSafetyCenterEnabled =
         DeviceConfigStateChangerRule(
-            context, DeviceConfig.NAMESPACE_PRIVACY, SAFETY_CENTER_ENABLED, true.toString())
+            context,
+            DeviceConfig.NAMESPACE_PRIVACY,
+            SAFETY_CENTER_ENABLED,
+            true.toString()
+        )
 
     @get:Rule
     val deviceConfigA11yListenerDisabled =
@@ -86,7 +93,8 @@ class AccessibilityPrivacySourceTest {
             context,
             DeviceConfig.NAMESPACE_PRIVACY,
             ACCESSIBILITY_LISTENER_ENABLED,
-            false.toString())
+            false.toString()
+        )
 
     @Before
     fun setup() {
@@ -143,7 +151,10 @@ class AccessibilityPrivacySourceTest {
         mAccessibilityServiceRule.enableService()
         runJobAndWaitUntilCompleted()
         assertSafetyCenterIssueExist(
-            SC_ACCESSIBILITY_SOURCE_ID, safetyCenterIssueId, SC_ACCESSIBILITY_ISSUE_TYPE_ID)
+            SC_ACCESSIBILITY_SOURCE_ID,
+            safetyCenterIssueId,
+            SC_ACCESSIBILITY_ISSUE_TYPE_ID
+        )
     }
 
     @Test
@@ -170,9 +181,11 @@ class AccessibilityPrivacySourceTest {
                         SC_ACCESSIBILITY_SOURCE_ID,
                         safetyCenterIssueId,
                         SC_ACCESSIBILITY_ISSUE_TYPE_ID,
-                        automation)
+                        automation
+                    )
                 },
-                TIMEOUT_MILLIS)
+                TIMEOUT_MILLIS
+            )
             automation.destroy()
         } finally {
             setDeviceConfigPrivacyProperty(ACCESSIBILITY_LISTENER_ENABLED, false.toString())
@@ -189,12 +202,22 @@ class AccessibilityPrivacySourceTest {
     fun testJobWithDisabledServiceDoesNotSendIssueToSafetyCenter() {
         runJobAndWaitUntilCompleted()
         assertSafetyCenterIssueDoesNotExist(
-            SC_ACCESSIBILITY_SOURCE_ID, safetyCenterIssueId, SC_ACCESSIBILITY_ISSUE_TYPE_ID)
+            SC_ACCESSIBILITY_SOURCE_ID,
+            safetyCenterIssueId,
+            SC_ACCESSIBILITY_ISSUE_TYPE_ID
+        )
     }
 
     @Test
     fun testJobWithSafetyCenterDisabledDoesNotSendNotification() {
         setDeviceConfigPrivacyProperty(SAFETY_CENTER_ENABLED, false.toString())
+        // Safety Center cannot be disabled at runtime on UDC+.
+        assumeFalse(
+            "Safety Center cannot be disabled",
+            callWithShellPermissionIdentity {
+                safetyCenterManager?.isSafetyCenterEnabled() ?: false
+            }
+        )
         mAccessibilityServiceRule.enableService()
         runJobAndWaitUntilCompleted()
         assertEmptyNotification(permissionControllerPackage, ACCESSIBILITY_NOTIFICATION_ID)
@@ -203,10 +226,20 @@ class AccessibilityPrivacySourceTest {
     @Test
     fun testJobWithSafetyCenterDisabledDoesNotSendIssueToSafetyCenter() {
         setDeviceConfigPrivacyProperty(SAFETY_CENTER_ENABLED, false.toString())
+        // Safety Center cannot be disabled at runtime on UDC+.
+        assumeFalse(
+            "Safety Center cannot be disabled",
+            callWithShellPermissionIdentity {
+                safetyCenterManager?.isSafetyCenterEnabled() ?: false
+            }
+        )
         mAccessibilityServiceRule.enableService()
         runJobAndWaitUntilCompleted()
         assertSafetyCenterIssueDoesNotExist(
-            SC_ACCESSIBILITY_SOURCE_ID, safetyCenterIssueId, SC_ACCESSIBILITY_ISSUE_TYPE_ID)
+            SC_ACCESSIBILITY_SOURCE_ID,
+            safetyCenterIssueId,
+            SC_ACCESSIBILITY_ISSUE_TYPE_ID
+        )
     }
 
     @Test
@@ -219,11 +252,18 @@ class AccessibilityPrivacySourceTest {
         Assert.assertNotNull(statusBarNotification)
         val contentIntent = statusBarNotification!!.notification.contentIntent
         if (SdkLevel.isAtLeastU()) {
-            val options = ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
-                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-            )
-            contentIntent.send(/* context = */ null, /* code = */ 0, /* intent = */ null,
-                /* onFinished = */ null, /* handler = */ null, /* requiredPermission = */ null,
+            val options =
+                ActivityOptions.makeBasic()
+                    .setPendingIntentBackgroundActivityStartMode(
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                    )
+            contentIntent.send(
+                /* context = */ null,
+                /* code = */ 0,
+                /* intent = */ null,
+                /* onFinished = */ null,
+                /* handler = */ null,
+                /* requiredPermission = */ null,
                 /* options = */ options.toBundle()
             )
         } else {
@@ -234,20 +274,30 @@ class AccessibilityPrivacySourceTest {
 
     private fun getAutomation(): UiAutomation {
         return instrumentation.getUiAutomation(
-            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES
+        )
     }
 
     private fun runJobAndWaitUntilCompleted() {
         TestUtils.runJobAndWaitUntilCompleted(
-            permissionControllerPackage, ACCESSIBILITY_JOB_ID, TIMEOUT_MILLIS, getAutomation())
+            permissionControllerPackage,
+            ACCESSIBILITY_JOB_ID,
+            TIMEOUT_MILLIS,
+            getAutomation()
+        )
     }
 
     /** Reset the permission controllers state. */
     @Throws(Throwable::class)
     private fun resetPermissionController() {
-        PermissionUtils.resetPermissionControllerJob(getAutomation(), permissionControllerPackage,
-            ACCESSIBILITY_JOB_ID, 45000, ACTION_SET_UP_ACCESSIBILITY_CHECK,
-            AccessibilityOnBootReceiver)
+        PermissionUtils.resetPermissionControllerJob(
+            getAutomation(),
+            permissionControllerPackage,
+            ACCESSIBILITY_JOB_ID,
+            45000,
+            ACTION_SET_UP_ACCESSIBILITY_CHECK,
+            AccessibilityOnBootReceiver
+        )
     }
 
     companion object {
@@ -271,6 +321,7 @@ class AccessibilityPrivacySourceTest {
         @JvmStatic
         val ctsNotificationListenerHelper =
             CtsNotificationListenerHelperRule(
-                InstrumentationRegistry.getInstrumentation().targetContext)
+                InstrumentationRegistry.getInstrumentation().targetContext
+            )
     }
 }
