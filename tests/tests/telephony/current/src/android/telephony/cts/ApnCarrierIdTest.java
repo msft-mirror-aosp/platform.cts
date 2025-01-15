@@ -28,6 +28,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -53,9 +54,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Ensures that APNs that use carrier ID instead of legacy identifiers such as MCCMNC, MVNO type and
@@ -98,7 +102,7 @@ public class ApnCarrierIdTest {
     // The wait time is padded to account for varying modem performance. Note that this is a
     // timeout, not an enforced wait time, so in most cases, a callback will be received prior to
     // the wait time elapsing.
-    private static final long WAIT_TIME_MILLIS = 10000L;
+    private static final long WAIT_TIME_MILLIS = 15000L;
 
     private Context mContext;
     private ContentResolver mContentResolver;
@@ -109,10 +113,10 @@ public class ApnCarrierIdTest {
     private PreciseDataConnectionState mPreciseDataConnectionState;
 
     /**
-     * The original APN that belongs to the existing data connection. Required to re-insert it
+     * The original APNs that belongs to the existing data connection. Required to re-insert it
      * during teardown.
      */
-    private ApnSetting mExistingApn;
+    private List<ApnSetting> mExistingApns;
 
     /** Selection args for the carrier ID APN. Required to delete the test APN during teardown. */
     private String[] mInsertedApnSelectionArgs;
@@ -175,32 +179,36 @@ public class ApnCarrierIdTest {
                             APN_SELECTION_STRING_WITH_CARRIER_ID,
                             mInsertedApnSelectionArgs);
         }
-        if (mExistingApn != null) {
+        if (mExistingApns != null) {
             PreciseDataConnectionStateListener pdcsCallback =
                     new PreciseDataConnectionStateListener(
                             mTelephonyManager,
                             /* desiredDataState= */ TelephonyManager.DATA_CONNECTED);
-            // We want to restore the original APN. Before attempting to re-insert it, we should
+            // We want to restore the original APNs. Before attempting to re-insert it, we should
             // first try updating it in case it's still present with an `EDITED_STATUS` of
             // `USER_DELETED`. If the update does not succeed because the APN doesn't exist, we can
-            // opt to insert it instead.
-            ContentValues edited = new ContentValues();
-            // We'll just reset the `EDITED` status of the APN.
-            edited.put(Carriers.EDITED_STATUS, mExistingApn.getEditedStatus());
-            int updatedRows =
-                    mContentResolver.update(
-                            CARRIER_TABLE_URI,
-                            edited,
-                            APN_SELECTION_STRING_WITH_NUMERIC,
-                            generateSelectionArgs(mExistingApn, mExistingApn.getOperatorNumeric()));
-            // If no row was updated, re-insert the APN instead.
-            if (updatedRows == 0) {
-                mContentResolver.insert(CARRIER_TABLE_URI, mExistingApn.toContentValues());
-            }
-            try {
+            // opt to insert it instead. Note that we use stricter selection arguments for update
+            // to ensure we don't accidentally update a different APN.
+            for (ApnSetting existingApn : mExistingApns) {
+              String selectionString = generateSelectionStringForUpdate(existingApn);
+              ContentValues edited = new ContentValues();
+              // We'll just reset the `EDITED` status of the APN.
+              edited.put(Carriers.EDITED_STATUS, existingApn.getEditedStatus());
+              int updatedRows =
+                        mContentResolver.update(
+                                CARRIER_TABLE_URI,
+                                edited,
+                                selectionString,
+                                /*selectionArgs=*/ null);
+              // If no row was updated, re-insert the APN instead.
+              if (updatedRows == 0) {
+                mContentResolver.insert(CARRIER_TABLE_URI, existingApn.toContentValues());
+              }
+              try {
                 pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
-            } catch (InterruptedException e) {
+              } catch (InterruptedException e) {
                 // do nothing - we just want to ensure the teardown is complete.
+              }
             }
         }
 
@@ -214,7 +222,7 @@ public class ApnCarrierIdTest {
      * as MCCMNC/numeric can establish a data connection.
      */
     @Test
-    @AppModeNonSdkSandbox(reason = "SDK sanboxes do not have access to telephony provider")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void validateDataConnectionWithCarrierIdApn() throws Exception {
         ApnSetting currentApn = mPreciseDataConnectionState.getApnSetting();
         validateAndSetupInitialState(currentApn);
@@ -261,14 +269,36 @@ public class ApnCarrierIdTest {
                 new PreciseDataConnectionStateListener(
                         mTelephonyManager,
                         /* desiredDataState= */ TelephonyManager.DATA_DISCONNECTED);
+        String[] selectionArgs = generateSelectionArgs(currentApn, currentApn.getOperatorNumeric());
+        Cursor cursor = mContentResolver.query(
+            CARRIER_TABLE_URI,
+            /*projection=*/ null,
+            APN_SELECTION_STRING_WITH_NUMERIC,
+            selectionArgs,
+            /*sortOrder=*/ null);
+        // Store the APNs so we can re-insert them once the test is complete.
+        // Note that multiple APNs can match the selection args, so we'll end up
+        // deleting them too.
+        int count = 0;
+        mExistingApns = new ArrayList<>();
+        if (cursor != null && cursor.moveToFirst()) {
+          do {
+            ApnSetting apn = ApnSetting.makeApnSetting(cursor);
+            mExistingApns.add(apn);
+            count++;
+          } while (cursor.moveToNext());
+        }
+
         int deletedRowCount =
                 mContentResolver.delete(
                         CARRIER_TABLE_URI,
                         APN_SELECTION_STRING_WITH_NUMERIC,
-                        generateSelectionArgs(currentApn, currentApn.getOperatorNumeric()));
-        assertThat(deletedRowCount).isEqualTo(1);
-        // Store the APN so we can re-insert it once the test is complete.
-        mExistingApn = currentApn;
+                        selectionArgs);
+        // Ensure we deleted all APNs that match the identifying fields. There might be
+        // multiple APNs with the same identifying fields (but with MVNO match data
+        // and MVNO type).
+        assertThat(deletedRowCount).isEqualTo(count);
+
         if (!pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
             fail("Timed out waiting for data disconnected");
         }
@@ -279,7 +309,7 @@ public class ApnCarrierIdTest {
     }
 
     private boolean apnAlreadyUsesCarrierId(ApnSetting apnSetting) {
-        return apnSetting.getCarrierId() != TelephonyManager.UNKNOWN_CARRIER_ID
+      return apnSetting.getCarrierId() != TelephonyManager.UNKNOWN_CARRIER_ID
                 && TextUtils.isEmpty(apnSetting.getOperatorNumeric());
     }
 
@@ -307,6 +337,28 @@ public class ApnCarrierIdTest {
     /** Generates a selection string for matching the given coluns in a database. */
     private static String generateSelectionString(List<String> columns) {
         return String.join("=? AND ", columns) + "=?";
+    }
+
+    private static String generateSelectionStringForUpdate(ApnSetting apnSetting) {
+      ContentValues apnContentValues = apnSetting.toContentValues();
+      String selectionString = "true";
+      for (Map.Entry<String, Object> entry : apnContentValues.valueSet()) {
+        // Skip the TYPE column and empty values. This is because ApnSetting rebuilds
+        // the TYPE list based on a bitmask which won't necessarily match the
+        // ordering of the string in the APN database.
+        if (entry.getKey().equals(Carriers.TYPE)
+                || entry.getValue().toString().isEmpty()) {
+            continue;
+        }
+        String value = entry.getValue().toString();
+        // If the value is a boolean, we should not wrap it in quotes because
+        // SQLite will process the value as TEXT rather than convert it into an INT.
+        if (!entry.getValue().getClass().equals(Boolean.class)) {
+          value = "\"" + value + "\"";
+        }
+        selectionString += " AND " + entry.getKey() + "=" + value;
+      }
+      return selectionString;
     }
 
     /**
