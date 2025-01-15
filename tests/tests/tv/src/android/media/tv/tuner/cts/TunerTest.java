@@ -2165,37 +2165,32 @@ public class TunerTest {
 
     @Test
     public void testRequestFrontendNoFrontendAvailableAndResourceOwnerRetention() throws Exception {
-        prepTRMCustomFeResourceMapTest();
+        List<Integer> ids = mTuner.getFrontendIds();
+        assumeNotNull(ids);
+        assertFalse(ids.isEmpty());
+        int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
+        FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
 
-        // Use try block to ensure restoring the TunerResourceManager
-        // Note: the handles will be changed from the original value, but should be OK
-        try {
-            TunerFrontendInfo[] infos = new TunerFrontendInfo[1];
-            // tunerFrontendInfo(handle, FrontendSettings.TYPE_*, exclusiveGroupId
-            infos[0] = tunerFrontendInfo(1, FrontendSettings.TYPE_DVBT, 1);
-            mTunerResourceManager.setFrontendInfoList(infos);
-
+        try (
             Tuner tunerA = new Tuner(mContext, null, 100);
-            Tuner tunerB = new Tuner(mContext, null, 100);
-
+            Tuner tunerB = new Tuner(mContext, null, 100)
+        ) {
             // let B hold resource
-            assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
-                    true /* expectedResult */, 1 /* expectedHandle */);
+            int res = tunerB.applyFrontend(info);
+            assertEquals(Tuner.RESULT_SUCCESS, res);
+            assertNotNull(tunerB.getFrontendInfo());
+
             // Requester says holder should not hold resource
             tunerA.setResourceOwnershipRetention(false);
             // Resource Challenger Situation
-            assignFeResource(tunerA.getClientId(), FrontendSettings.TYPE_DVBT,
-                    true /* expectedResult */, 1 /* expectedHandle */);
+            res = tunerA.applyFrontend(info);
+            assertEquals(Tuner.RESULT_SUCCESS, res);
+            assertNotNull(tunerA.getFrontendInfo());
             // Requester says holder should hold resource
             tunerB.setResourceOwnershipRetention(true);
-            assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
-                    false /* expectedResult */, -1 /* expectedHandle */);
-            tunerB.close();
-            tunerA.close();
-        } catch (Exception e) {
-            throw(e);
-        } finally {
-            cleanupTRMCustomFeResourceMapTest();
+            res = tunerB.applyFrontend(info);
+            assertEquals(Tuner.RESULT_UNAVAILABLE, res);
+            assertNull(tunerB.getFrontendInfo());
         }
     }
 

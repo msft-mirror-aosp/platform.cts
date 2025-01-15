@@ -45,6 +45,8 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
   """Test the camera zoom behavior for the TELE camera, if available."""
 
   def test_zoom_tele(self):
+    # Handle subdirectory
+    self.scene = 'scene6_tele'
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,

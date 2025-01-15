@@ -124,15 +124,13 @@ class DrawingTabletTest {
                 commonMatcher
             )
         )
-        if (!com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {
-            verifier.assertReceivedMotion(
-                allOf(
-                    withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
-                    withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
-                    commonMatcher
-                )
+        verifier.assertReceivedMotion(
+            allOf(
+                withMotionAction(MotionEvent.ACTION_HOVER_MOVE),
+                withCoords(transformForUnrotatedDrawingTablet(INJECTION_POINTS[0])!!),
+                commonMatcher
             )
-        }
+        )
 
         // Inject and verify HOVER_MOVE
         drawingTablet.sendMove(pointerId, INJECTION_POINTS[1])

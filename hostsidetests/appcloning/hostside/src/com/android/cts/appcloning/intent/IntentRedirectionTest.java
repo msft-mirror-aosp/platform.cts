@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.cts.appcloning.AppCloningBaseHostTest;
@@ -214,6 +215,37 @@ public class IntentRedirectionTest extends AppCloningBaseHostTest {
     public void testActionImageCaptureRedirectionOnlyInOwnerProfile() throws Exception {
 
         String intentAction = "android.media.action.IMAGE_CAPTURE";
+        installPackage(CLONE_PROFILE_APP, "--user " + Integer.valueOf(sCloneUserId));
+        installPackage(OWNER_PROFILE_APP, "--user " + Integer.valueOf(OWNER_USER_ID));
+
+        // Intent in owner profile should be resolved in owner profile
+        queryIntentForUser(
+                intentAction,
+                OWNER_USER_ID,
+                /* shouldCloneAppBePresent */ false, /* shouldOwnerAppBePresent */
+                true,
+                /* isMatchCloneProfileFlagSet */ true,
+                /* shouldGrantQueryClonedAppsPermission */ true);
+        // Intent in clone profile should be resolved in owner profile
+        queryIntentForUser(
+                intentAction,
+                sCloneUserId,
+                /* shouldCloneAppBePresent */ false, /* shouldOwnerAppBePresent */
+                true,
+                /* isMatchCloneProfileFlagSet */ true,
+                /* shouldGrantQueryClonedAppsPermission */ true);
+    }
+
+    /**
+     * Intent for MediaStore.ACTION_MOTION_PHOTO_CAPTURE should be resolved in owner profiles
+     *
+     * @throws Exception
+     */
+    @Test
+    @RequiresFlagsEnabled("com.android.providers.media.flags.motion_photo_intent")
+    public void testActionMotionPhotoCaptureRedirectionOnlyInOwnerProfile() throws Exception {
+
+        String intentAction = "android.provider.action.MOTION_PHOTO_CAPTURE";
         installPackage(CLONE_PROFILE_APP, "--user " + Integer.valueOf(sCloneUserId));
         installPackage(OWNER_PROFILE_APP, "--user " + Integer.valueOf(OWNER_USER_ID));
 

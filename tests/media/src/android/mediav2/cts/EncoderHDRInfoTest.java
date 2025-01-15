@@ -17,6 +17,10 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.codec.Flags.apvSupport;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -36,6 +40,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -97,11 +102,14 @@ public class EncoderHDRInfoTest extends HDREncoderTestBase {
         final boolean isEncoder = true;
         final boolean needAudio = false;
         final boolean needVideo = true;
-        final String[] HDRMediaTypes = new String[]{
+        final List<String> HDRMediaTypes = new ArrayList<>(Arrays.asList(
                 MediaFormat.MIMETYPE_VIDEO_AV1,
                 MediaFormat.MIMETYPE_VIDEO_HEVC,
                 MediaFormat.MIMETYPE_VIDEO_VP9
-        };
+        ));
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            HDRMediaTypes.add(MediaFormat.MIMETYPE_VIDEO_APV);
+        }
         final int[] maxBFrames = {0, 2};
 
         final List<Object[]> exhaustiveArgsList = new ArrayList<>();

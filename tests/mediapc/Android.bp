@@ -27,6 +27,7 @@ android_test {
         "ctstestrunner-axt",
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
+        "mpc_proto",
     ],
     jni_libs: [
         "libctsmediapc_vulkan_jni",

@@ -18,7 +18,8 @@ package android.media.router.cts;
 
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_BOTH_SYSTEM_AND_REMOTE;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_REMOTE;
-import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO;
+import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1;
+import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2;
 
 import static com.android.media.flags.Flags.FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2;
 
@@ -39,6 +40,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.text.TextUtils;
 import android.util.ArraySet;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -55,8 +57,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
@@ -143,7 +148,7 @@ public class SystemMediaRoutingTest {
     public void getRoutes_withNoDiscoveryPreference_returnsSystemMediaRoutesOnly() {
         var routes =
                 getSystemRoutesWithNames(
-                        ROUTE_ID_ONLY_SYSTEM_AUDIO,
+                        ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1,
                         ROUTE_ID_ONLY_REMOTE,
                         ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
         var foundRouteNames =
@@ -151,26 +156,23 @@ public class SystemMediaRoutingTest {
         // We expect system media routes to show up, and we expect the remote-only route not to show
         // up because we haven't set any route discovery preference.
         assertThat(foundRouteNames)
-                .containsAtLeast(ROUTE_ID_ONLY_SYSTEM_AUDIO, ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
+                .containsAtLeast(
+                        ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1, ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
         assertThat(foundRouteNames).doesNotContain(ROUTE_ID_ONLY_REMOTE);
     }
 
     @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
     @Test
     public void transferTo_systemMediaProviderServiceRoute_readsAudioAsExpected() {
-        var route =
-                getSystemRoutesWithNames(ROUTE_ID_ONLY_SYSTEM_AUDIO).stream()
-                        .filter(it -> it.getName().toString().equals(ROUTE_ID_ONLY_SYSTEM_AUDIO))
-                        .findAny()
-                        .get();
+        var route = waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
         var previouslySelectedRoute =
                 mSelfProxyRoute.getSystemController().getSelectedRoutes().getFirst();
-        mSelfProxyRoute.transferTo(route);
+
         // Even though this test transfers to previouslySelectedRoute later, we still schedule a
         // transfer back to the original route so that the routing gets reset, even if the test
         // fails later.
-        mResourceReleaser.add(() -> mSelfProxyRoute.transferTo(previouslySelectedRoute));
-        waitForSelectedRouteWithName(/* name= */ ROUTE_ID_ONLY_SYSTEM_AUDIO);
+        mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
+        transferAndWaitForSessionUpdate(route);
 
         var toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, VOLUME_TONE);
         mResourceReleaser.add(toneGenerator::release);
@@ -182,11 +184,51 @@ public class SystemMediaRoutingTest {
             }
         }.run();
 
-        mSelfProxyRoute.transferTo(previouslySelectedRoute);
-        waitForSelectedRouteWithName(previouslySelectedRoute.getName().toString());
+        transferAndWaitForSessionUpdate(previouslySelectedRoute);
 
         assertThat(mService.getSelectedRouteOriginalId()).isNull();
         assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void transferTo_withinRoutingSession_updatesRoutingSession() {
+        var firstTargetRoute =
+                waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+        var previouslySelectedRoute =
+                mSelfProxyRoute.getSystemController().getSelectedRoutes().getFirst();
+        mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
+        transferAndWaitForSessionUpdate(firstTargetRoute);
+
+        assertThat(mService.getSelectedRouteOriginalId())
+                .isEqualTo(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+
+        // We choose a second route to transfer within the mirroring routing session, in which case
+        // no session is created or released. The transfer happens within the same session.
+        var secondTargetRoute =
+                waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2);
+
+        // We don't need to wait for the non-transferable route, because we know at this point the
+        // routing session has updated.
+        assertThat(
+                        getSystemControllerRouteWithName(
+                                ROUTE_ID_BOTH_SYSTEM_AND_REMOTE,
+                                MediaRouter2.RoutingController::getTransferableRoutes))
+                .isEmpty();
+
+        transferAndWaitForSessionUpdate(secondTargetRoute);
+
+        assertThat(mService.getSelectedRouteOriginalId())
+                .isEqualTo(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2);
+    }
+
+    /**
+     * Transfers to the given route and waits for the routing session to be updated with the new
+     * selected route.
+     */
+    private void transferAndWaitForSessionUpdate(MediaRoute2Info previouslySelectedRoute) {
+        mSelfProxyRoute.transferTo(previouslySelectedRoute);
+        waitForSelectedRouteWithName(previouslySelectedRoute.getName().toString());
     }
 
     // Internal methods.
@@ -201,13 +243,40 @@ public class SystemMediaRoutingTest {
 
     /** Waits for the selected system route to have the given {@code name}. */
     private void waitForSelectedRouteWithName(String name) {
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                var controller = mSelfProxyRoute.getSystemController();
-                return controller.getSelectedRoutes().getFirst().getName().toString().equals(name);
-            }
-        }.run();
+        var result =
+                waitForRouteInController(name, MediaRouter2.RoutingController::getSelectedRoutes);
+        assertWithMessage("Did not find selected route: " + name).that(result).isPresent();
+    }
+
+    /** Waits for the selected system route to have the given {@code name}. */
+    private MediaRoute2Info waitForTransferableRouteWithName(String name) {
+        var result =
+                waitForRouteInController(
+                        name, MediaRouter2.RoutingController::getTransferableRoutes);
+        assertWithMessage("Did not find transferable route: " + name).that(result).isPresent();
+        return result.get();
+    }
+
+    /**
+     * Waits for {@link #TIMEOUT_MS} until {@link #getSystemControllerRouteWithName} returns a route
+     * with the given name, and returns is. Otherwise, returns an empty optional.
+     */
+    private Optional<MediaRoute2Info> waitForRouteInController(
+            String name, RouteRetriever routeRetriever) {
+        Supplier<Optional<MediaRoute2Info>> supplier =
+                () -> getSystemControllerRouteWithName(name, routeRetriever);
+        return PollingCheck.waitFor(TIMEOUT_MS, supplier, /* condition= */ Optional::isPresent);
+    }
+
+    /**
+     * Returns a route (using the given {@link RouteRetriever}) from the system controller that
+     * matches the given name.
+     */
+    private Optional<MediaRoute2Info> getSystemControllerRouteWithName(
+            String name, RouteRetriever routeRetriever) {
+        return routeRetriever.getRoutesFrom(mSelfProxyRoute.getSystemController()).stream()
+                .filter(route -> TextUtils.equals(route.getName(), name))
+                .findFirst();
     }
 
     /**
@@ -236,5 +305,10 @@ public class SystemMediaRoutingTest {
                                 .map(MediaRoute2Info::getName)
                                 .collect(Collectors.toSet())
                                 .containsAll(nameSet));
+    }
+
+    /** Convenience interface for retrieving routes from a routing controller. */
+    private interface RouteRetriever {
+        List<MediaRoute2Info> getRoutesFrom(MediaRouter2.RoutingController controller);
     }
 }

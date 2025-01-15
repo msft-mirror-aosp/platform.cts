@@ -28,15 +28,19 @@ import android.media.RoutingSessionInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.android.media.flags.Flags;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -57,10 +61,23 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
                     .build();
 
     public static final String FEATURE_SAMPLE = "android.media.router.cts.FEATURE_SAMPLE";
-    public static final String ROUTE_ID_ONLY_SYSTEM_AUDIO = "ROUTE_ID_ONLY_SYSTEM_AUDIO";
+    public static final String ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1 =
+            "ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1";
+    public static final String ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2 =
+            "ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2";
     public static final String ROUTE_ID_ONLY_REMOTE = "ROUTE_ID_ONLY_REMOTE";
     public static final String ROUTE_ID_BOTH_SYSTEM_AND_REMOTE = "ROUTE_ID_BOTH_SYSTEM_AND_REMOTE";
     private static final String ROUTING_SESSION_ID = "ROUTING_SESSION_ID";
+
+    /**
+     * Holds the ids of the routes from this provider that support transferring to each other.
+     *
+     * @see RoutingSessionInfo#getTransferableRoutes()
+     */
+    private static final Set<String> TRANSFERABLE_ROUTES =
+            Set.of(
+                    ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1,
+                    ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2);
 
     private static final Object sLock = new Object();
 
@@ -71,8 +88,8 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private final byte[] mBuffer = new byte[1024 * 100];
-
-    @Nullable private volatile String mSelectedRouteOriginalId;
+    private final AtomicReference<RoutingSessionInfo> mCurrentRoutingSession =
+            new AtomicReference<>();
 
     private final AtomicInteger mNoisyByteCount = new AtomicInteger(0);
 
@@ -92,7 +109,10 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
      */
     @Nullable
     public String getSelectedRouteOriginalId() {
-        return mSelectedRouteOriginalId;
+        var currentRoutingSession = mCurrentRoutingSession.get();
+        return currentRoutingSession != null
+                ? currentRoutingSession.getSelectedRoutes().getFirst()
+                : null;
     }
 
     /**
@@ -165,7 +185,23 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
     @Override
     public void onTransferToRoute(
             long requestId, @NonNull String sessionId, @NonNull String routeId) {
-        // TODO: b/362507305 - Implement this when testing system media routing sessions.
+        var currentSession = mCurrentRoutingSession.get();
+        if (currentSession == null
+                || !TextUtils.equals(currentSession.getOriginalId(), sessionId)) {
+            // Unexpected call to transfer or invalid id received.
+            notifyRequestFailed(requestId, REASON_INVALID_COMMAND);
+            return;
+        }
+        boolean routeIsValid;
+        synchronized (sLock) {
+            routeIsValid = mRoutes.containsKey(routeId);
+        }
+        if (!routeIsValid) {
+            notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
+            return;
+        }
+        mHandler.post(
+                () -> transferToRouteOnHandler(currentSession.getClientPackageName(), routeId));
     }
 
     @Override
@@ -174,10 +210,7 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
             @NonNull String packageName,
             @NonNull String routeId,
             @Nullable Bundle sessionHints) {
-        var routingSession =
-                new RoutingSessionInfo.Builder(ROUTING_SESSION_ID, packageName)
-                        .addSelectedRoute(routeId)
-                        .build();
+        var routingSession = createRoutingSession(packageName, /* selectedRouteId= */ routeId);
         var streams =
                 notifySystemMediaSessionCreated(
                         requestId,
@@ -189,18 +222,23 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         if (audioRecord != null) {
             audioRecord.startRecording();
             mNoisyByteCount.set(0);
-            synchronized (sLock) {
-                mSelectedRouteOriginalId = mRoutes.get(routeId).getOriginalId();
-            }
-            mHandler.post(() -> readFromAudioRecord(audioRecord));
+            mCurrentRoutingSession.set(routingSession);
+            mHandler.post(() -> readFromAudioRecordOnHandler(audioRecord));
         }
     }
 
-    private void releaseSessionOnHandler(String sessionId) {
-        mHandler.removeCallbacksAndMessages(/* token= */ null);
-        mSelectedRouteOriginalId = null;
-        mNoisyByteCount.set(0);
-        notifySessionReleased(sessionId);
+    private static RoutingSessionInfo createRoutingSession(
+            String clientPackageName, String selectedRouteId) {
+        boolean isInTransferableRoutes = TRANSFERABLE_ROUTES.contains(selectedRouteId);
+        var transferableRoutes =
+                new ArrayList<>(isInTransferableRoutes ? TRANSFERABLE_ROUTES : Set.of());
+        // A route should not be transferable and also selected.
+        transferableRoutes.remove(selectedRouteId);
+        var sessionBuilder =
+                new RoutingSessionInfo.Builder(ROUTING_SESSION_ID, clientPackageName)
+                        .addSelectedRoute(selectedRouteId);
+        transferableRoutes.forEach(sessionBuilder::addTransferableRoute);
+        return sessionBuilder.build();
     }
 
     @Override
@@ -220,34 +258,44 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         if (!Flags.enableMirroringInMediaRouter2()) {
             return;
         }
-        mRoutes.clear();
-        // For convenience we use the id as the name of the route as well. We don't need a human
-        // readable string for the test route names.
-        MediaRoute2Info onlySystemAudioRoute =
-                new MediaRoute2Info.Builder(
-                                ROUTE_ID_ONLY_SYSTEM_AUDIO, /* name= */ ROUTE_ID_ONLY_SYSTEM_AUDIO)
-                        .addFeature(FEATURE_SAMPLE)
-                        .setSupportedRoutingTypes(FLAG_ROUTING_TYPE_SYSTEM_AUDIO)
-                        .build();
-        MediaRoute2Info onlyRemoteRoute =
-                new MediaRoute2Info.Builder(ROUTE_ID_ONLY_REMOTE, /* name= */ ROUTE_ID_ONLY_REMOTE)
-                        .addFeature(FEATURE_SAMPLE)
-                        .build();
-        MediaRoute2Info bothSystemAudioAndRemoteRoute =
-                new MediaRoute2Info.Builder(
-                                ROUTE_ID_BOTH_SYSTEM_AND_REMOTE,
-                                /* name= */ ROUTE_ID_BOTH_SYSTEM_AND_REMOTE)
-                        .setSupportedRoutingTypes(
-                                FLAG_ROUTING_TYPE_SYSTEM_AUDIO | FLAG_ROUTING_TYPE_REMOTE)
-                        .addFeature(FEATURE_SAMPLE)
-                        .build();
-
-        mRoutes.put(onlySystemAudioRoute.getId(), onlySystemAudioRoute);
-        mRoutes.put(onlyRemoteRoute.getId(), onlyRemoteRoute);
-        mRoutes.put(bothSystemAudioAndRemoteRoute.getId(), bothSystemAudioAndRemoteRoute);
+        synchronized (sLock) {
+            mRoutes.clear();
+            registerRoute(
+                    ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1, FLAG_ROUTING_TYPE_SYSTEM_AUDIO);
+            registerRoute(
+                    ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2, FLAG_ROUTING_TYPE_SYSTEM_AUDIO);
+            registerRoute(
+                    ROUTE_ID_BOTH_SYSTEM_AND_REMOTE,
+                    FLAG_ROUTING_TYPE_SYSTEM_AUDIO | FLAG_ROUTING_TYPE_REMOTE);
+            registerRoute(ROUTE_ID_ONLY_REMOTE, FLAG_ROUTING_TYPE_REMOTE);
+        }
     }
 
-    private void readFromAudioRecord(AudioRecord audioRecord) {
+    /**
+     * Creates and registers a route with the given properties.
+     *
+     * <p>For convenience we use the id as the name of the route as well. We don't need a human
+     * readable string for the test route names.
+     */
+    @GuardedBy("sLock")
+    private void registerRoute(
+            String idAndName, @MediaRoute2Info.RoutingType int supportedRoutingTypes) {
+        var route =
+                new MediaRoute2Info.Builder(/* id= */ idAndName, /* name= */ idAndName)
+                        .addFeature(FEATURE_SAMPLE)
+                        .setSupportedRoutingTypes(supportedRoutingTypes)
+                        .build();
+        mRoutes.put(route.getOriginalId(), route);
+    }
+
+    private void transferToRouteOnHandler(String packageName, String routeId) {
+        var updatedSession = createRoutingSession(packageName, routeId);
+        mCurrentRoutingSession.set(updatedSession);
+        mNoisyByteCount.set(0);
+        notifySessionUpdated(updatedSession);
+    }
+
+    private void readFromAudioRecordOnHandler(AudioRecord audioRecord) {
         int bytesRead =
                 audioRecord.read(
                         mBuffer,
@@ -259,6 +307,13 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
                 mNoisyByteCount.incrementAndGet();
             }
         }
-        mHandler.post(() -> readFromAudioRecord(audioRecord));
+        mHandler.post(() -> readFromAudioRecordOnHandler(audioRecord));
+    }
+
+    private void releaseSessionOnHandler(String sessionId) {
+        mHandler.removeCallbacksAndMessages(/* token= */ null);
+        mCurrentRoutingSession.set(null);
+        mNoisyByteCount.set(0);
+        notifySessionReleased(sessionId);
     }
 }

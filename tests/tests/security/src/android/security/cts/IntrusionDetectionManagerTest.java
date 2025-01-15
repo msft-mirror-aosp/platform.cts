@@ -93,7 +93,8 @@ public class IntrusionDetectionManagerTest {
     }
 
     @After
-    public void teardown() {
+    public void teardown() throws InterruptedException {
+        reset();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 

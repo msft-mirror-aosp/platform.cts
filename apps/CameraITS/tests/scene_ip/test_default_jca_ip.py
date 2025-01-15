@@ -77,12 +77,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           props.get('android.info.supportedHardwareLevel')
       ]
       logging.debug('Camera hardware level: %s', camera_hardware_level)
-
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       is_tablet = its_device_utils.is_dut_tablet(self.dut.serial)
       # Skip the test if camera is not primary or if it is a tablet
       is_primary_camera = self.hidden_physical_id is None
-      camera_properties_utils.skip_unless(not is_tablet and
-                                          is_primary_camera)
+      camera_properties_utils.skip_unless(
+          not is_tablet and
+          is_primary_camera and
+          first_api_level >= its_session_utils.ANDROID16_API_LEVEL
+      )
       # close camera after props have been retrieved
       cam.close_camera()
       device_id = self.dut.serial
@@ -174,12 +177,19 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       logging.debug('Default and JCA size matches: %s', size_match)
 
       # Get cropped dynamic range patch cells
-      _ = ce.get_cropped_dynamic_range_patch_cells(
-          default_capture_path, self.log_path, 'default'
+      default_dynamic_range_patch_cells = (
+          ce.get_cropped_dynamic_range_patch_cells(
+              default_capture_path, self.log_path, 'default')
       )
-      _ = ce.get_cropped_dynamic_range_patch_cells(
+      jca_dynamic_range_patch_cells = ce.get_cropped_dynamic_range_patch_cells(
           jca_capture_path, self.log_path, 'jca'
       )
+
+      # Get brightness diff between default and jca captures
+      mean_brightness_diff = ip_metrics_utils.do_brightness_check(
+          default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
+      )
+      logging.debug('mean_brightness_diff: %f', mean_brightness_diff)
 
 
 if __name__ == '__main__':

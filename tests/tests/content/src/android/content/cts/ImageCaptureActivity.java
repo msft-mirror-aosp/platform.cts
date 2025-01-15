@@ -17,7 +17,6 @@ package android.content.cts;
 
 import android.app.Activity;
 import android.content.ClipData;
-import android.content.ClipData.Item;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,7 +26,6 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 
 public class ImageCaptureActivity extends Activity {
     public static final String ACTION_FILE_READY = "android.content.cts.action.file_ready";
@@ -40,8 +38,10 @@ public class ImageCaptureActivity extends Activity {
         // Check action.
         String action = intent.getAction();
         if ((MediaStore.ACTION_IMAGE_CAPTURE.equals(action)
-                        || MediaStore.ACTION_IMAGE_CAPTURE_SECURE.equals(action)
-                        || MediaStore.ACTION_VIDEO_CAPTURE.equals(action))) {
+                || MediaStore.ACTION_IMAGE_CAPTURE_SECURE.equals(action)
+                || MediaStore.ACTION_MOTION_PHOTO_CAPTURE.equals(action)
+                || MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE.equals(action)
+                || MediaStore.ACTION_VIDEO_CAPTURE.equals(action))) {
             writeToClipDataUri(intent);
         }
 

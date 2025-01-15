@@ -25,7 +25,6 @@ import android.platform.test.annotations.AppModeFull;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
-import androidx.media3.effect.DefaultVideoFrameProcessor;
 import androidx.media3.transformer.EditedMediaItem;
 import androidx.media3.transformer.Transformer;
 import androidx.test.core.app.ApplicationProvider;
@@ -140,15 +139,9 @@ public final class TranscodeQualityTest {
   }
 
   public static Transformer createTransformerForForceEncode(Context context, String toMediaType) {
-    /* TODO(b/357766120) To be removed once media3 1.5.0 is merged */
-    DefaultVideoFrameProcessor.Factory videoFrameProcessorFactory =
-        new DefaultVideoFrameProcessor.Factory.Builder()
-            .setExperimentalAdjustSurfaceTextureTransformationMatrix(true)
-            .build();
     return new Transformer.Builder(context)
         .setVideoMimeType(toMediaType)
         .setEncoderFactory(new AndroidTestUtil.ForceEncodeEncoderFactory(context))
-        .setVideoFrameProcessorFactory(videoFrameProcessorFactory)
         .build();
   }
 

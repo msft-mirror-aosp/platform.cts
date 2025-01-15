@@ -18,8 +18,13 @@ package android.videocodec.cts;
 
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
+import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.ComponentClass.ALL;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -42,6 +47,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This test is to validate the encoder's support for standard resolutions
@@ -62,12 +69,14 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
     private static final float MIN_ACCEPTABLE_QUALITY = 20.0f;  // psnr in dB
     private static final int FRAME_LIMIT = 30;
     private static final int BIT_RATE = 5000000;
-    private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
+    private static final List<Object[]> defaultArgsList = new ArrayList<>();
+    private static final List<Object[]> apvArgsList = new ArrayList<>();
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int width,
-            int height, int frameRate, int bitRateMode, int maxBFrames, int intraFrameInterval) {
+            int height, int frameRate, int bitRateMode, int maxBFrames, int intraFrameInterval,
+            int bitrate) {
         return new EncoderConfigParams.Builder(mediaType)
-                .setBitRate(BIT_RATE)
+                .setBitRate(bitrate)
                 .setKeyFrameInterval(intraFrameInterval)
                 .setFrameRate(frameRate)
                 .setWidth(width)
@@ -99,12 +108,22 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
                         String label = String.format("%dx%d_%dfps_maxb-%d_%s_i-dist-%d", width,
                                 height, frameRate, maxBFrames, bitRateModeToString(bitRateMode),
                                 intraInterval);
-                        exhaustiveArgsList.add(new Object[]{mediaType,
+                        defaultArgsList.add(new Object[]{mediaType,
                                 getVideoEncoderCfgParams(mediaType, width, height, frameRate,
-                                        bitRateMode, maxBFrames, intraInterval), label});
+                                        bitRateMode, maxBFrames, intraInterval, BIT_RATE), label});
                     }
                 }
             }
+        }
+        // apv args list
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            final int APV_BIT_RATE = 30000000;
+            // mediaType, cfg, label
+            String label = String.format("%dx%d_%dfps_%s", width,
+                    height, frameRate, bitRateModeToString(BITRATE_MODE_VBR));
+            apvArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_APV, getVideoEncoderCfgParams(
+                    MediaFormat.MIMETYPE_VIDEO_APV, width, height, frameRate, BITRATE_MODE_VBR, 0,
+                    1, APV_BIT_RATE), label});
         }
     }
 
@@ -142,7 +161,16 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         addParams(360, 360, 30);
         addParams(1920, 1920, 30);
 
-        return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> defaultParams =
+                prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> finalParams = defaultParams;
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            List<Object[]> apvParams =
+                    prepareParamList(apvArgsList, true, false, true, false, ALL, null, true);
+            finalParams = Stream.concat(apvParams.stream(), defaultParams.stream())
+                    .collect(Collectors.toList());
+        }
+        return finalParams;
     }
 
     public VideoEncoderMultiResTest(String encoder, String mediaType, EncoderConfigParams cfgParams,

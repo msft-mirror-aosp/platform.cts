@@ -12,6 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+java_library {
+    name: "mpc_proto",
+    srcs: ["mpc.proto"],
+    host_supported: true,
+    sdk_version: "current",
+}
+
 genrule {
     name: "mpc_requirements_binarypb",
     tools: ["aprotoc"],

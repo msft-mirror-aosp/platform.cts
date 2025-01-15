@@ -25,7 +25,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.stats.devicepolicy.EventId;
 
@@ -60,15 +59,9 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     private static final String ACTION_WIPE_DATA =
             "com.android.cts.deviceandprofileowner.WIPE_DATA";
 
-    private static final String TEST_APP_APK = "CtsSimpleApp.apk";
-    private static final String TEST_APP_PKG = "com.android.cts.launcherapps.simpleapp";
     private static final String TEST_IME_APK = "TestIme.apk";
     private static final String TEST_IME_PKG = "com.android.cts.testime";
     private static final String TEST_IME_COMPONENT = TEST_IME_PKG + "/.TestIme";
-    private static final String SIMPLE_SMS_APP_PKG = "android.telephony.cts.sms.simplesmsapp";
-    private static final String SIMPLE_SMS_APP_APK = "SimpleSmsApp.apk";
-    public static final String SUSPENSION_CHECKER_CLASS =
-            "com.android.cts.suspensionchecker.ActivityLaunchTest";
 
     private static final String USER_IS_NOT_STARTED = "User is not started";
     private static final long USER_STOP_TIMEOUT_SEC = 60;
@@ -349,16 +342,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 suspended ? "testSuspendPersonalApps" : "testUnsuspendPersonalApps", mUserId);
     }
 
-    private void addSmsRole(String app, int userId) throws Exception {
-        executeShellCommand(String.format(
-                "cmd role add-role-holder --user %d android.app.role.SMS %s", userId, app));
-    }
-
-    private void removeSmsRole(String app, int userId) throws Exception {
-        executeShellCommand(String.format(
-                "cmd role remove-role-holder --user %d android.app.role.SMS %s", userId, app));
-    }
-
     @Test
     public void testPersonalAppsSuspensionIme() throws Exception {
         installAppAsUser(TEST_IME_APK, mPrimaryUserId);
@@ -414,13 +397,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
         }
 
         assertThat(listUsers()).doesNotContain(userId);
-    }
-
-    private void setPoAsUser(int userId) throws Exception {
-        installAppAsUser(DEVICE_ADMIN_APK, true, true, userId);
-        assertTrue("Failed to set profile owner",
-                setProfileOwner(DEVICE_ADMIN_PKG + "/" + ADMIN_RECEIVER_TEST_CLASS,
-                        userId, /* expectFailure */ false));
     }
 
     @Test
@@ -617,13 +593,6 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
                 waitForUserUnlock(mUserId);
             }
         }
-    }
-
-    private void setAndStartLauncher(String component) throws Exception {
-        String output = getDevice().executeShellCommand(String.format(
-                "cmd package set-home-activity --user %d %s", mPrimaryUserId, component));
-        assertTrue("failed to set home activity", output.contains("Success"));
-        executeShellCommand("am start -W -n " + component);
     }
 
     private void waitForUserStopped(int userId) throws Exception {

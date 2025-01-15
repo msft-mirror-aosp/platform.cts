@@ -59,6 +59,7 @@ import java.util.concurrent.TimeoutException;
 public class RemoteCallbackListTest {
     private static final String SERVICE_ACTION = "android.app.REMOTESERVICE";
     private static final int CALLBACK_WAIT_TIMEOUT_SECS = 1;
+    private static final int MAX_QUEUE_SIZE = 32;
 
     // Lock object
     private final Sync mSync = new Sync();
@@ -225,6 +226,29 @@ public class RemoteCallbackListTest {
                         .setExecutor(executor)
                         .build();
         assertEquals(executor, rc.getExecutor());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testGetMaxQueueSize() throws Exception {
+        RemoteCallbackList<IInterface> rc =
+                new RemoteCallbackList.Builder<IInterface>(
+                                RemoteCallbackList.FROZEN_CALLEE_POLICY_ENQUEUE_ALL)
+                        .setMaxQueueSize(MAX_QUEUE_SIZE)
+                        .setExecutor(Runnable::run)
+                        .build();
+        assertEquals(MAX_QUEUE_SIZE, rc.getMaxQueueSize());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BINDER_FROZEN_STATE_CHANGE_CALLBACK)
+    public void testGetFrozenCalleePolicy() throws Exception {
+        RemoteCallbackList<IInterface> rc =
+                new RemoteCallbackList.Builder<IInterface>(
+                                RemoteCallbackList.FROZEN_CALLEE_POLICY_DROP)
+                        .setExecutor(Runnable::run)
+                        .build();
+        assertEquals(RemoteCallbackList.FROZEN_CALLEE_POLICY_DROP, rc.getFrozenCalleePolicy());
     }
 
     @Test
