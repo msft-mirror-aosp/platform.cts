@@ -27,6 +27,7 @@ import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
 import android.hdmicec.cts.HdmiCecConstants;
 import android.hdmicec.cts.HdmiControlManagerUtility;
+import android.hdmicec.cts.LogHelper;
 import android.hdmicec.cts.LogicalAddress;
 import android.hdmicec.cts.RemoteControlPassthrough;
 
@@ -46,6 +47,9 @@ import org.junit.runner.RunWith;
 public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTest {
 
     private static int DUT_DEVICE_TYPE = HdmiCecConstants.CEC_DEVICE_TYPE_PLAYBACK_DEVICE;
+    private static String DEVICE_DISCOVERY_ACTION_TAG = "DeviceDiscoveryAction";
+    private static String DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG = "Wrap up Device Discovery";
+    private static int DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS = 40;
 
     public HdmiCecRemoteControlPassThroughTest() {
         super(DUT_DEVICE_TYPE);
@@ -69,9 +73,16 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
      */
     @Test
     public void cect_11_2_13_1_UserControlPressAndRelease() throws Exception {
-        LogicalAddress dutLogicalAddress = getTargetLogicalAddress(getDevice(), DUT_DEVICE_TYPE);
-        RemoteControlPassthrough.checkUserControlPressAndRelease(
-                hdmiCecClient, getDevice(), LogicalAddress.TV, dutLogicalAddress);
+        ITestDevice device = getDevice();
+        try {
+            // Wait for DeviceDiscoveryAction to end before starting the test.
+            LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
+                    DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } finally {
+            LogicalAddress dutLogicalAddress = getTargetLogicalAddress(device, DUT_DEVICE_TYPE);
+            RemoteControlPassthrough.checkUserControlPressAndRelease(
+                    hdmiCecClient, device, LogicalAddress.TV, dutLogicalAddress);
+        }
     }
 
     /**
@@ -81,9 +92,17 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
      */
     @Test
     public void cect_11_2_13_2_UserControlPressAndHold() throws Exception {
-        LogicalAddress dutLogicalAddress = getTargetLogicalAddress(getDevice(), DUT_DEVICE_TYPE);
-        RemoteControlPassthrough.checkUserControlPressAndHold(
-                hdmiCecClient, getDevice(), LogicalAddress.TV, dutLogicalAddress);
+        ITestDevice device = getDevice();
+        try {
+            // Wait for DeviceDiscoveryAction to end before starting the test.
+            LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
+                    DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } finally {
+            LogicalAddress dutLogicalAddress = getTargetLogicalAddress(device,
+                    DUT_DEVICE_TYPE);
+            RemoteControlPassthrough.checkUserControlPressAndHold(
+                    hdmiCecClient, device, LogicalAddress.TV, dutLogicalAddress);
+        }
     }
 
     /**
@@ -102,9 +121,17 @@ public final class HdmiCecRemoteControlPassThroughTest extends BaseHdmiCecCtsTes
     @Test
     public void cect_4_8_4_UserControlPressAndRelease_20() throws Exception {
         setCec20();
-        LogicalAddress dutLogicalAddress = getTargetLogicalAddress(getDevice(), DUT_DEVICE_TYPE);
-        RemoteControlPassthrough.checkUserControlPressAndRelease_20(
-                hdmiCecClient, getDevice(), LogicalAddress.TV, dutLogicalAddress);
+        ITestDevice device = getDevice();
+        try {
+            // Wait for DeviceDiscoveryAction to end before starting the test.
+            LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
+                    DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } finally {
+            LogicalAddress dutLogicalAddress = getTargetLogicalAddress(device,
+                    DUT_DEVICE_TYPE);
+            RemoteControlPassthrough.checkUserControlPressAndRelease_20(
+                    hdmiCecClient, device, LogicalAddress.TV, dutLogicalAddress);
+        }
     }
 
     /**
