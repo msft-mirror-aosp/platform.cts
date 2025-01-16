@@ -25,6 +25,7 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAddButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findPreviewAddButton;
 import static android.provider.CloudMediaProvider.CloudMediaSurfaceStateChangedCallback.PLAYBACK_STATE_BUFFERING;
 import static android.provider.CloudMediaProvider.CloudMediaSurfaceStateChangedCallback.PLAYBACK_STATE_ERROR_PERMANENT_FAILURE;
@@ -51,8 +52,12 @@ import android.util.Pair;
 import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -68,6 +73,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * PhotoPicker test coverage for remote video preview APIs.
@@ -334,47 +341,95 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
         CloudProviderPrimary.setPlaybackState(surfaceId, PLAYBACK_STATE_BUFFERING);
         // Wait for photo picker to receive the event and invoke media play via binder calls.
         MediaStore.waitForIdle(mContext.getContentResolver());
-        assertWithMessage("Expected circular progress indicator to be visible when state is "
-                + "buffering").that(findPreviewProgressIndicator().waitForExists(SHORT_TIMEOUT))
-                .isTrue();
+        if (isVisibleBackgroundUser()) {
+            BySelector indicator = getPreviewProgressIndicatorSelector(getMainDisplayId());
+            assertWithMessage("Expected circular progress indicator to be visible when state is "
+                    + "buffering").that(sDevice.wait(Until.hasObject(indicator), SHORT_TIMEOUT))
+                    .isTrue();
+        } else {
+            assertWithMessage("Expected circular progress indicator to be visible when state is "
+                    + "buffering").that(findPreviewProgressIndicator().waitForExists(SHORT_TIMEOUT))
+                    .isTrue();
+        }
     }
 
     private void verifySnackbarShowsWhenPermanentError(int surfaceId) throws Exception {
         CloudProviderPrimary.setPlaybackState(surfaceId, PLAYBACK_STATE_ERROR_PERMANENT_FAILURE);
         // Wait for photo picker to receive the event and invoke media play via binder calls.
         MediaStore.waitForIdle(mContext.getContentResolver());
-        assertWithMessage("Expected snackbar to be visible when state is permanent error")
-                .that(findPreviewErrorSnackbar().waitForExists(SHORT_TIMEOUT)).isTrue();
+        if (isVisibleBackgroundUser()) {
+            BySelector snackbar = getPreviewErrorSnackbarSelector(getMainDisplayId());
+            assertWithMessage("Expected snackbar to be visible when state is permanent error")
+                    .that(sDevice.wait(Until.hasObject(snackbar), SHORT_TIMEOUT)).isTrue();
+        } else {
+            assertWithMessage("Expected snackbar to be visible when state is permanent error")
+                    .that(findPreviewErrorSnackbar().waitForExists(SHORT_TIMEOUT)).isTrue();
+        }
     }
 
     private void verifyAlertDialogShowsWhenRetriableError(int surfaceId) throws Exception {
         CloudProviderPrimary.setPlaybackState(surfaceId, PLAYBACK_STATE_ERROR_RETRIABLE_FAILURE);
         // Wait for photo picker to receive the event and invoke media play via binder calls.
         MediaStore.waitForIdle(mContext.getContentResolver());
+        if (isVisibleBackgroundUser()) {
+            final int displayId = getMainDisplayId();
+            BySelector dialogTitle = getPreviewErrorAlertDialogTitleSelector(displayId);
+            BySelector dialogBody = getPreviewErrorAlertDialogBodySelector(displayId);
+            BySelector retryButton = getPreviewErrorAlertDialogRetryButtonSelector(displayId);
+            BySelector cancelButton = getPreviewErrorAlertDialogCancelButtonSelector(displayId);
+            assertWithMessage("Expected alert dialog with title to be visible when state is "
+                    + "retriable error")
+                    .that(sDevice.wait(Until.hasObject(dialogTitle), SHORT_TIMEOUT))
+                    .isTrue();
+            assertWithMessage("Expected alert dialog with text body to be visible when state is "
+                    + "retriable error").that(sDevice.hasObject(dialogBody)).isTrue();
+            assertWithMessage("Expected alert dialog with retry button to be visible when state is "
+                    + "retriable error").that(sDevice.hasObject(retryButton)).isTrue();
+            assertWithMessage("Expected alert dialog with cancel button to be visible when state "
+                    + "is retriable error").that(sDevice.hasObject(cancelButton)).isTrue();
 
-        assertWithMessage("Expected alert dialog with title to be visible when state is retriable "
-                + "error").that(findPreviewErrorAlertDialogTitle().waitForExists(SHORT_TIMEOUT))
-                .isTrue();
-        assertWithMessage("Expected alert dialog with text body to be visible when state is "
-                + "retriable error").that(findPreviewErrorAlertDialogBody().exists()).isTrue();
-        assertWithMessage("Expected alert dialog with retry button to be visible when state is "
-                + "retriable error").that(findPreviewErrorAlertDialogRetryButton().exists())
-                .isTrue();
-        assertWithMessage("Expected alert dialog with cancel button to be visible when state is "
-                + "retriable error").that(findPreviewErrorAlertDialogCancelButton().exists())
-                .isTrue();
+        } else {
+            assertWithMessage("Expected alert dialog with title to be visible when state is "
+                    + "retriable error")
+                    .that(findPreviewErrorAlertDialogTitle().waitForExists(SHORT_TIMEOUT))
+                    .isTrue();
+            assertWithMessage("Expected alert dialog with text body to be visible when state is "
+                    + "retriable error").that(findPreviewErrorAlertDialogBody().exists()).isTrue();
+            assertWithMessage("Expected alert dialog with retry button to be visible when state is "
+                    + "retriable error").that(findPreviewErrorAlertDialogRetryButton().exists())
+                    .isTrue();
+            assertWithMessage("Expected alert dialog with cancel button to be visible when state "
+                    + "is retriable error").that(findPreviewErrorAlertDialogCancelButton().exists())
+                    .isTrue();
+        }
     }
 
     private void verifyAlertDialogRetry(int surfaceId) throws Exception {
         CloudProviderPrimary.setPlaybackState(surfaceId, PLAYBACK_STATE_ERROR_RETRIABLE_FAILURE);
         // Wait for photo picker to receive the event and invoke media play via binder calls.
         MediaStore.waitForIdle(mContext.getContentResolver());
+        if (isVisibleBackgroundUser()) {
+            BySelector retryButtonSelector =
+                    getPreviewErrorAlertDialogRetryButtonSelector(getMainDisplayId());
+            assertWithMessage("Expected alert dialog with retry button to be visible when state is "
+                    + "retriable error")
+                    .that(sDevice.wait(Until.hasObject(retryButtonSelector), SHORT_TIMEOUT))
+                    .isTrue();
+            UiObject2 retryButton = findObject(sDevice, retryButtonSelector);
+            clickAndWait(sDevice, retryButton);
+            // It needs to take some time before verifying.
+            try {
+                TimeUnit.MILLISECONDS.sleep(SHORT_TIMEOUT);
+            } catch (InterruptedException e) {
+            }
+        } else {
+            assertWithMessage("Expected alert dialog with retry button to be visible when state is "
+                    + "retriable error")
+                    .that(findPreviewErrorAlertDialogRetryButton().waitForExists(SHORT_TIMEOUT))
+                    .isTrue();
+            clickAndWait(sDevice, findPreviewErrorAlertDialogRetryButton());
+        }
 
-        assertWithMessage("Expected alert dialog with retry button to be visible when state is "
-                + "retriable error")
-                .that(findPreviewErrorAlertDialogRetryButton().waitForExists(SHORT_TIMEOUT))
-                .isTrue();
-        clickAndWait(sDevice, findPreviewErrorAlertDialogRetryButton());
         mAssertInOrder.verify(mSurfaceControllerListener).onMediaPlay(eq(surfaceId));
     }
 
@@ -415,18 +470,37 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        final List<UiObject> itemList = findItemList(count);
-        final int itemCount = itemList.size();
+        if (isVisibleBackgroundUser()) {
+            final int displayId = getMainDisplayId();
+            final List<UiObject2> itemList = findItemList(sDevice, count, displayId);
+            final int itemCount = itemList.size();
+            assertThat(itemCount).isEqualTo(count);
 
-        assertThat(itemCount).isEqualTo(count);
+            for (final UiObject2 item : itemList) {
+                item.click();
+                sDevice.waitForIdle();
+            }
 
-        for (final UiObject item : itemList) {
-            item.click();
-            sDevice.waitForIdle();
+            final UiObject2 viewSelectedButton = findViewSelectedButton(displayId);
+            viewSelectedButton.click();
+            // It needs to take some time for readying the surface controller.
+            try {
+                TimeUnit.MILLISECONDS.sleep(SHORT_TIMEOUT);
+            } catch (InterruptedException e) {
+            }
+        } else {
+            final List<UiObject> itemList = findItemList(count);
+            final int itemCount = itemList.size();
+            assertThat(itemCount).isEqualTo(count);
+
+            for (final UiObject item : itemList) {
+                item.click();
+                sDevice.waitForIdle();
+            }
+
+            final UiObject viewSelectedButton = findViewSelectedButton();
+            viewSelectedButton.click();
         }
-
-        final UiObject viewSelectedButton = findViewSelectedButton();
-        viewSelectedButton.click();
         sDevice.waitForIdle();
 
         // Wait for CloudMediaProvider binder calls to finish.
@@ -436,6 +510,12 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
     private static UiObject findViewSelectedButton() {
         return new UiObject(new UiSelector().resourceIdMatches(
                 REGEX_PACKAGE_NAME + ":id/button_view_selected"));
+    }
+
+    private static UiObject2 findViewSelectedButton(int displayId) {
+        final BySelector button = By.res(Pattern.compile(
+                REGEX_PACKAGE_NAME + ":id/button_view_selected")).displayId(displayId);
+        return findObject(sDevice, button);
     }
 
     private void swipeLeftAndWait() throws Exception {
@@ -463,23 +543,48 @@ public class RemoteVideoPreviewTest extends PhotoPickerBaseTest {
                 REGEX_PACKAGE_NAME + ":id/preview_progress_indicator"));
     }
 
+    private static BySelector getPreviewProgressIndicatorSelector(int displayId) {
+        return By.res(Pattern.compile(
+                REGEX_PACKAGE_NAME + ":id/preview_progress_indicator")).displayId(displayId);
+    }
+
     private static UiObject findPreviewErrorAlertDialogTitle() {
         return new UiObject(new UiSelector().text("Trouble playing video"));
+    }
+
+    private static BySelector getPreviewErrorAlertDialogTitleSelector(int displayId) {
+        return By.text("Trouble playing video").displayId(displayId);
     }
 
     private static UiObject findPreviewErrorAlertDialogBody() {
         return new UiObject(new UiSelector().text("Check your internet connection and try again"));
     }
 
+    private static BySelector getPreviewErrorAlertDialogBodySelector(int displayId) {
+        return By.text("Check your internet connection and try again").displayId(displayId);
+    }
+
     private static UiObject findPreviewErrorAlertDialogRetryButton() {
         return new UiObject(new UiSelector().textMatches("R(etry|ETRY)"));
+    }
+
+    private static BySelector getPreviewErrorAlertDialogRetryButtonSelector(int displayId) {
+        return By.text(Pattern.compile("R(etry|ETRY)")).displayId(displayId);
     }
 
     private static UiObject findPreviewErrorAlertDialogCancelButton() {
         return new UiObject(new UiSelector().textMatches("C(ancel|ANCEL)"));
     }
 
+    private static BySelector getPreviewErrorAlertDialogCancelButtonSelector(int displayId) {
+        return By.text(Pattern.compile("C(ancel|ANCEL)")).displayId(displayId);
+    }
+
     private static UiObject findPreviewErrorSnackbar() {
         return new UiObject(new UiSelector().text("Can't play video"));
+    }
+
+    private static BySelector getPreviewErrorSnackbarSelector(int displayId) {
+        return By.text("Can't play video").displayId(displayId);
     }
 }

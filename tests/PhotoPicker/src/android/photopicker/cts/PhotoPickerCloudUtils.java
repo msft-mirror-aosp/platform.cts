@@ -42,6 +42,7 @@ import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
@@ -106,9 +107,50 @@ public class PhotoPickerCloudUtils {
         uiDevice.waitForIdle();
     }
 
+    /**
+     * Selects and adds media items from the media picker interface.
+     *
+     * @param uiDevice The {@link UiDevice} instance to use for interacting with the UI.
+     * @param maxCount an integer value that specifies the maximum number of
+     *                 media items to select from the picker
+     * @param displayId The id of the target display.
+     * @throws Exception if there is an error during the selection or addition
+     *                   of media items
+     */
+    public static void selectAndAddPickerMedia(UiDevice uiDevice, int maxCount,
+            int displayId) throws Exception {
+        final List<UiObject2> itemList = findItemList(uiDevice, maxCount, displayId);
+        for (int i = 0; i < itemList.size(); i++) {
+            final UiObject2 item = itemList.get(i);
+            item.click();
+            uiDevice.waitForIdle();
+        }
+
+        final UiObject2 addButton = findAddButton(uiDevice, displayId);
+        addButton.click();
+        uiDevice.waitForIdle();
+    }
+
     public static ClipData fetchPickerMedia(GetResultActivity activity, UiDevice uiDevice,
             int maxCount) throws Exception {
         selectAndAddPickerMedia(uiDevice, maxCount);
+
+        return activity.getResult().data.getClipData();
+    }
+
+    /**
+     * Fetches media items from the media picker interface.
+     *
+     * @param activity the activity to get the result
+     * @param uiDevice The {@link UiDevice} instance to use for interacting with the UI.
+     * @param maxCount an integer value that specifies the maximum number of media items to fetch.
+     * @param displayId The id of the target display.
+     * @throws Exception if there is an error during the selection or retrieval of media items
+     * @return ClipData the ClipData object containing the selected media items
+     */
+    public static ClipData fetchPickerMedia(GetResultActivity activity, UiDevice uiDevice,
+            int maxCount, int displayId) throws Exception {
+        selectAndAddPickerMedia(uiDevice, maxCount, displayId);
 
         return activity.getResult().data.getClipData();
     }
