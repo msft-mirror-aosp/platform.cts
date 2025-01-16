@@ -389,10 +389,11 @@ public final class CredentialManagementAppTest {
                                     + "app: " + appOpsModeAfterSetting);
                     return appOpsModeAfterSetting;
                 })
-                .toMeet(appOps -> appOps.equals(ALLOWED))
+                .toBeEqualTo(ALLOWED)
                 // Fail the test if AppOps was not set within 5 seconds, because otherwise we have
                 // a performance issue.
                 .timeout(Duration.ofSeconds(5))
+                .errorOnFail()
                 .await();
     }
 
