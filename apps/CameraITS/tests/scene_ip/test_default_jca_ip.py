@@ -207,10 +207,9 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
       if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
         e_msg.append('Device fails the white balance difference criteria.')
-
       if e_msg:
         raise AssertionError(
-            f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n.join(e_msg)')
+            f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
 
 
 if __name__ == '__main__':
