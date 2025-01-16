@@ -38,6 +38,9 @@ _CAMERA_HARDWARE_LEVEL_MAPPING = types.MappingProxyType({
     4: 'EXTERNAL',
 })
 _JETPACK_CAMERA_APP_PACKAGE_NAME = 'com.google.jetpackcamera'
+_AWB_DIFF_THRESHOLD = 4
+_BRIGHTNESS_DIFF_THRESHOLD = 10
+_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 
 class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
@@ -184,18 +187,30 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       jca_dynamic_range_patch_cells = ce.get_cropped_dynamic_range_patch_cells(
           jca_capture_path, self.log_path, 'jca'
       )
-
+      e_msg = []
       # Get brightness diff between default and jca captures
       mean_brightness_diff = ip_metrics_utils.do_brightness_check(
           default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
       )
+      # logging for data collection
+      print(f'{_NAME}_mean_brightness_diff: {mean_brightness_diff}')
       logging.debug('mean_brightness_diff: %f', mean_brightness_diff)
+      if abs(mean_brightness_diff) > _BRIGHTNESS_DIFF_THRESHOLD:
+        e_msg.append('Device fails the brightness difference criteria.')
 
       # Get white balance diff between default and jca captures
       mean_white_balance_diff = ip_metrics_utils.do_white_balance_check(
           default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells
       )
+      # logging for data collection
+      print(f'{_NAME}_mean_white_balance_diff: {mean_white_balance_diff}')
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
+      if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
+        e_msg.append('Device fails the white balance difference criteria.')
+
+      if e_msg:
+        raise AssertionError(
+            f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n.join(e_msg)')
 
 
 if __name__ == '__main__':
