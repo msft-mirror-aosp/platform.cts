@@ -618,8 +618,11 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
                                             JETPACK_CAMERA_APP_PACKAGE_NAME)
   try:
     logging.debug('Launching JCA app')
-    launch_cmd = (f'monkey -p {JETPACK_CAMERA_APP_PACKAGE_NAME} '
-                  '-c android.intent.category.LAUNCHER 1')
+    launch_cmd = (
+        'am start -n '
+        f'{JETPACK_CAMERA_APP_PACKAGE_NAME}/{JETPACK_CAMERA_APP_PACKAGE_NAME}.MainActivity '
+        '--ez "KEY_DEBUG_MODE" true'
+    )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
     change_jca_aspect_ratio(dut, log_path,
