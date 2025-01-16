@@ -25,6 +25,8 @@
 
 #include "NativeMediaCommon.h"
 
+#include <vector>
+
 template <typename T>
 bool equals(const T& op1, const T& op2) {
     return op1 == op2;
@@ -48,6 +50,11 @@ bool equals(const AMediaCodecKind& kind1, const AMediaCodecKind& kind2) {
     return kind1 == kind2;
 }
 
+template <>
+bool equals(const ADoubleRange& op1, const ADoubleRange& op2) {
+    return op1.mLower == op2.mLower && op1.mUpper == op2.mUpper;
+}
+
 template <typename T>
 std::string toString(const T& val) {
     return std::to_string(val);
@@ -62,6 +69,11 @@ std::string toString(const char* const& val) {
 template <>
 std::string toString(const AIntRange& val) {
     return StringFormat("range lower %d, range upper %d", val.mLower, val.mUpper);
+}
+
+template <>
+std::string toString(const ADoubleRange& val) {
+    return StringFormat("range lower %f, range upper %f", val.mLower, val.mUpper);
 }
 
 template <>
@@ -81,6 +93,7 @@ private:
     const ACodecVideoCapabilities* mVideoCaps;
     const ACodecAudioCapabilities* mAudioCaps;
     const ACodecEncoderCapabilities* mEncoderCaps;
+    std::vector<const ACodecPerformancePoint*> mPerformancePoints;
     std::string mErrorLogs;
 
     template <typename T, typename U>
@@ -109,6 +122,22 @@ private:
                                            const U* expArray, size_t expCount,
                                            const char* funcName);
 
+    template <typename T, typename U>
+    bool validateGetCodecMetadataIntRangeFor(
+            const T* obj, media_status_t (*func)(const T* obj, U input, AIntRange* outRange),
+            U input, const AIntRange& expRange, const char* funcName);
+
+    template <typename T, typename U>
+    bool validateGetCodecMetadataDoubleRangeFor(
+            const T* obj,
+            media_status_t (*func)(const T* obj, U width, U height, ADoubleRange* outRange),
+            U width, U height, const ADoubleRange& expRange, const char* funcName);
+
+    template <typename T>
+    bool validatePerformancePoint(const ACodecPerformancePoint* pp, const T* arg,
+                                  int32_t (*func)(const ACodecPerformancePoint*, const T*),
+                                  int32_t expected, const char* funcName);
+
 public:
     NativeAMediaCodecInfoUnitTest(const char* codecName);
     NativeAMediaCodecInfoUnitTest(const char* codecName, bool testAudio, bool testVideo);
@@ -133,6 +162,20 @@ public:
     bool validateVideoCodecFrameRatesRange(int lower, int higher);
     bool validateVideoCodecWidthAlignment(int alignment);
     bool validateVideoCodecHeightAlignment(int alignment);
+
+    bool validateGetSupportedWidthsFor(int height, int expectedLower, int expectedUpper);
+    bool validateGetSupportedHeightsFor(int width, int expectedLower, int expectedUpper);
+    bool validateGetSupportedFrameRatesFor(int width, int height, double expectedLower,
+                                           double expectedUpper);
+    bool validateGetAchievableFrameRatesFor(int width, int height, double expectedLower,
+                                            double expectedUpper);
+    bool validateSizeSupport(int width, int height, bool expected);
+    bool validateSizeAndRateSupport(int width, int height, double frameRate, bool expected);
+
+    bool getPerformancePointsList(int expSize);
+    bool validatePerformancePointCoversFormat(int width, int height, float frameRate, int expMap);
+    bool validatePerformancePointCoversEqualsPoint(int width, int height, int frameRate,
+                                                   int coversMap, int equalsMap);
 
     bool validateAudioCodecBitRateRange(int mLower, int mUpper);
     bool validateAudioCodecMaxInputChannelCount(int maxInputChannelCount);
@@ -749,6 +792,360 @@ bool NativeAMediaCodecInfoUnitTest::validateEncoderQualityRange(int lower, int h
     return false;
 }
 
+template <typename T, typename U>
+bool NativeAMediaCodecInfoUnitTest::validateGetCodecMetadataIntRangeFor(
+        const T* obj, media_status_t (*func)(const T* obj, U input, AIntRange* outRange), U input,
+        const AIntRange& expRange, const char* funcName) {
+    if (__builtin_available(android 36, *)) {
+        AIntRange range;
+        media_status_t status = func(nullptr, input, &range);
+        if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+            mErrorLogs.append(StringFormat("For invalid args %s returned %d expected "
+                                           "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                           funcName, status));
+            return false;
+        }
+        if (nullptr != obj) {
+            status = func(obj, input, nullptr);
+            if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+                mErrorLogs.append(StringFormat("For invalid args %s returned %d expected "
+                                               "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                               funcName, status));
+                return false;
+            }
+            status = func(obj, input, &range);
+            if (AMEDIA_ERROR_UNSUPPORTED == status) {
+                if (!equals({-1, -1}, expRange)) {
+                    mErrorLogs.append(StringFormat("For codec %s, %s returned "
+                                                   "AMEDIA_ERROR_UNSUPPORTED but expected is %s \n",
+                                                   mCodecName, funcName,
+                                                   toString(expRange).c_str()));
+                    return false;
+                }
+                return true;
+            } else {
+                if (AMEDIA_OK != status) {
+                    mErrorLogs.append(
+                            StringFormat("For codec %s, %s returned %d expected AMEDIA_OK\n",
+                                         mCodecName, funcName, status));
+                    return false;
+                }
+                if (!equals(range, expRange)) {
+                    mErrorLogs.append(StringFormat("For codec %s with input %s, %s returned %s, "
+                                                   "expected %s\n",
+                                                   mCodecName, toString(input).c_str(), funcName,
+                                                   toString(range).c_str(),
+                                                   toString(expRange).c_str()));
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validateGetSupportedWidthsFor(int height, int expectedLower,
+                                                                  int expectedUpper) {
+    if (__builtin_available(android 36, *)) {
+        AIntRange expectedRange = {expectedLower, expectedUpper};
+        return validateGetCodecMetadataIntRangeFor<
+                ACodecVideoCapabilities, int>(mVideoCaps,
+                                              ACodecVideoCapabilities_getSupportedWidthsFor, height,
+                                              expectedRange,
+                                              "ACodecVideoCapabilities_getSupportedWidthsFor");
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validateGetSupportedHeightsFor(int width, int expectedLower,
+                                                                   int expectedUpper) {
+    if (__builtin_available(android 36, *)) {
+        AIntRange expectedRange = {expectedLower, expectedUpper};
+        return validateGetCodecMetadataIntRangeFor<
+                ACodecVideoCapabilities, int>(mVideoCaps,
+                                              ACodecVideoCapabilities_getSupportedHeightsFor, width,
+                                              expectedRange,
+                                              "ACodecVideoCapabilities_getSupportedHeightsFor");
+    }
+    return false;
+}
+
+template <typename T, typename U>
+bool NativeAMediaCodecInfoUnitTest::validateGetCodecMetadataDoubleRangeFor(
+        const T* obj,
+        media_status_t (*func)(const T* obj, U width, U height, ADoubleRange* outRange), U width,
+        U height, const ADoubleRange& expRange, const char* funcName) {
+    if (__builtin_available(android 36, *)) {
+        ADoubleRange range;
+        media_status_t status = func(nullptr, width, height, &range);
+        if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+            mErrorLogs.append(StringFormat("For invalid args %s returned %d expected "
+                                           "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                           funcName, status));
+            return false;
+        }
+        if (nullptr != obj) {
+            status = func(obj, width, height, nullptr);
+            if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+                mErrorLogs.append(StringFormat("For invalid args %s returned %d expected "
+                                               "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                               funcName, status));
+                return false;
+            }
+            status = func(obj, width, height, &range);
+            if (AMEDIA_ERROR_UNSUPPORTED == status) {
+                if (!(equals({-1, -1}, expRange) || equals({-2, -2}, expRange))) {
+                    mErrorLogs.append(
+                            StringFormat("For codec %s with width %s, height %s, %s returned "
+                                         "AMEDIA_ERROR_UNSUPPORTED but expected %s \n",
+                                         mCodecName, toString(width).c_str(),
+                                         toString(height).c_str(), funcName,
+                                         toString(expRange).c_str()));
+                    return false;
+                }
+                return true;
+            } else {
+                if (AMEDIA_OK != status) {
+                    mErrorLogs.append(
+                            StringFormat("For codec %s, %s returned %d expected AMEDIA_OK\n",
+                                         mCodecName, funcName, status));
+                    return false;
+                }
+                if (!equals(range, expRange)) {
+                    mErrorLogs.append(
+                            StringFormat("For codec %s with width %s, height %s %s returned "
+                                         "%s, expected %s\n",
+                                         mCodecName, toString(width).c_str(),
+                                         toString(height).c_str(), funcName,
+                                         toString(range).c_str(), toString(expRange).c_str()));
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validateGetSupportedFrameRatesFor(int width, int height,
+                                                                      double expectedLower,
+                                                                      double expectedUpper) {
+    if (__builtin_available(android 36, *)) {
+        ADoubleRange expectedRange = {expectedLower, expectedUpper};
+        return validateGetCodecMetadataDoubleRangeFor<
+                ACodecVideoCapabilities, int>(mVideoCaps,
+                                              ACodecVideoCapabilities_getSupportedFrameRatesFor,
+                                              width, height, expectedRange,
+                                              "ACodecVideoCapabilities_getSupportedFrameRatesFor");
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validateGetAchievableFrameRatesFor(int width, int height,
+                                                                       double expectedLower,
+                                                                       double expectedUpper) {
+    if (__builtin_available(android 36, *)) {
+        ADoubleRange expectedRange = {expectedLower, expectedUpper};
+        return validateGetCodecMetadataDoubleRangeFor<
+                ACodecVideoCapabilities, int>(mVideoCaps,
+                                              ACodecVideoCapabilities_getAchievableFrameRatesFor,
+                                              width, height, expectedRange,
+                                              "ACodecVideoCapabilities_getAchievableFrameRatesFor");
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validateSizeSupport(int width, int height,
+                                                        bool expectedResult) {
+    if (__builtin_available(android 36, *)) {
+        int got = ACodecVideoCapabilities_isSizeSupported(nullptr, width, height);
+        if (got != -1) {
+            mErrorLogs.append(
+                    StringFormat("For invalid args ACodecVideoCapabilities_isSizeSupported "
+                                 "returned %d expected -1\n",
+                                 got));
+            return false;
+        }
+        if (mVideoCaps != nullptr) {
+            got = ACodecVideoCapabilities_isSizeSupported(mVideoCaps, width, height);
+            if (got != expectedResult) {
+                mErrorLogs.append(StringFormat("For ACodecVideoCapabilities_isSizeSupported width "
+                                               "%d, height %d, expected %d, returned %d\n",
+                                               width, height, expectedResult, got));
+                return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validateSizeAndRateSupport(int width, int height,
+                                                               double frameRate, bool expected) {
+    if (__builtin_available(android 36, *)) {
+        int got =
+                ACodecVideoCapabilities_areSizeAndRateSupported(nullptr, width, height, frameRate);
+        if (got != -1) {
+            mErrorLogs.append(
+                    StringFormat("For invalid args ACodecVideoCapabilities_areSizeAndRateSupported "
+                                 "returned %d expected -1\n",
+                                 got));
+            return false;
+        }
+        if (mVideoCaps != nullptr) {
+            got = ACodecVideoCapabilities_areSizeAndRateSupported(mVideoCaps, width, height,
+                                                                  frameRate);
+            if (got != expected) {
+                mErrorLogs.append(
+                        StringFormat("For ACodecVideoCapabilities_areSizeAndRateSupported width "
+                                     "%d, height %d, expected %d, "
+                                     "returned %d\n",
+                                     width, height, expected, got));
+                return false;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::getPerformancePointsList(int expSize) {
+    if (__builtin_available(android 36, *)) {
+        const ACodecPerformancePoint* outPoint = nullptr;
+        media_status_t status =
+                ACodecVideoCapabilities_getNextSupportedPerformancePoint(nullptr, &outPoint);
+        if (AMEDIA_ERROR_INVALID_PARAMETER != status) {
+            mErrorLogs.append(
+                    StringFormat("For invalid args "
+                                 "ACodecVideoCapabilities_getNextSupportedPerformancePoint "
+                                 "returned %d expected %d\n",
+                                 status, AMEDIA_ERROR_INVALID_PARAMETER));
+            return false;
+        }
+        status = ACodecVideoCapabilities_getNextSupportedPerformancePoint(mVideoCaps, nullptr);
+        if (AMEDIA_ERROR_INVALID_PARAMETER != status) {
+            mErrorLogs.append(
+                    StringFormat("For invalid args "
+                                 "ACodecVideoCapabilities_getNextSupportedPerformancePoint "
+                                 "returned %d expected %d\n",
+                                 status, AMEDIA_ERROR_INVALID_PARAMETER));
+            return false;
+        }
+        do {
+            status =
+                    ACodecVideoCapabilities_getNextSupportedPerformancePoint(mVideoCaps, &outPoint);
+            if (AMEDIA_ERROR_UNSUPPORTED == status && outPoint != nullptr) {
+                mErrorLogs.append("reached end of performance points list, but outPerformancePoint "
+                                  "is not null\n");
+                return false;
+            }
+            if (AMEDIA_OK == status && outPoint == nullptr) {
+                mErrorLogs.append(
+                        "call to ACodecVideoCapabilities_getNextSupportedPerformancePoint "
+                        "succeeded, but outPerformancePoint is null\n");
+                return false;
+            }
+            if (AMEDIA_OK == status) {
+                mPerformancePoints.push_back(outPoint);
+            }
+        } while (outPoint != nullptr);
+        if (mPerformancePoints.size() != expSize) {
+            mErrorLogs.append(StringFormat("Performance points list size exp %d, got %d \n",
+                                           expSize, mPerformancePoints.size()));
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+template <typename T>
+bool NativeAMediaCodecInfoUnitTest::validatePerformancePoint(
+        const ACodecPerformancePoint* pp, const T* arg,
+        int32_t (*func)(const ACodecPerformancePoint*, const T*), int32_t expected,
+        const char* funcName) {
+    if (__builtin_available(android 36, *)) {
+        auto got = func(nullptr, arg);
+        if (-1 != got) {
+            mErrorLogs.append(StringFormat("%s returned %d expected -1\n", funcName, got));
+            return false;
+        }
+        got = func(pp, nullptr);
+        if (-1 != got) {
+            mErrorLogs.append(StringFormat("%s returned %d expected -1\n", funcName, got));
+            return false;
+        }
+        got = func(pp, arg);
+        if (expected != got) {
+            mErrorLogs.append(
+                    StringFormat("%s returned %d expected %d\n", funcName, got, expected));
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validatePerformancePointCoversFormat(int width, int height,
+                                                                         float frameRate,
+                                                                         int expMap) {
+    if (__builtin_available(android 36, *)) {
+        AMediaFormat* format = AMediaFormat_new();
+        const char* mediaType = AMediaCodecInfo_getMediaType(mCodecInfo);
+        AMediaFormat_setString(format, AMEDIAFORMAT_KEY_MIME, mediaType);
+        AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_WIDTH, width);
+        AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_HEIGHT, height);
+        AMediaFormat_setFloat(format, AMEDIAFORMAT_KEY_FRAME_RATE, frameRate);
+        bool res;
+        for (auto& it : mPerformancePoints) {
+            res = validatePerformancePoint<AMediaFormat>(it, format,
+                                                         ACodecPerformancePoint_coversFormat,
+                                                         expMap & 1,
+                                                         "ACodecPerformancePoint_coversFormat");
+            if (!res) break;
+            expMap >>= 1;
+        }
+        AMediaFormat_delete(format);
+        return res;
+    }
+    return false;
+}
+
+bool NativeAMediaCodecInfoUnitTest::validatePerformancePointCoversEqualsPoint(int width, int height,
+                                                                              int frameRate,
+                                                                              int coversMap,
+                                                                              int equalsMap) {
+    if (__builtin_available(android 36, *)) {
+        ACodecPerformancePoint* point = ACodecPerformancePoint_create(width, height, frameRate);
+        if (point == nullptr) {
+            mErrorLogs.append("ACodecPerformancePoint_create failed, expected non-null\n");
+            return false;
+        }
+        bool res;
+        for (auto& it : mPerformancePoints) {
+            res = validatePerformancePoint<ACodecPerformancePoint>(it, point,
+                                                                   ACodecPerformancePoint_covers,
+                                                                   coversMap & 1,
+                                                                   "ACodecPerformancePoint_covers");
+            if (!res) break;
+            coversMap >>= 1;
+            res = validatePerformancePoint<ACodecPerformancePoint>(it, point,
+                                                                   ACodecPerformancePoint_equals,
+                                                                   equalsMap & 1,
+                                                                   "ACodecPerformancePoint_equals");
+            if (!res) break;
+            equalsMap >>= 1;
+        }
+        ACodecPerformancePoint_destroy(point);
+        if (res) {
+            ACodecPerformancePoint_destroy(nullptr);
+        }
+        return res;
+    }
+    return false;
+}
+
 jboolean nativeTestAMediaCodecInfo(JNIEnv* env, jobject, jstring jCodecName, jboolean isEncoder,
                                    jint jCodecKind, jboolean isVendor, jstring jCanonicalName,
                                    jint jMaxSupportedInstances, jint jExpectedCodecType,
@@ -844,6 +1241,70 @@ CleanUp:
     return static_cast<jboolean>(isPass);
 }
 
+jboolean nativeTestAMediaCodecInfoVideoCapsGetSupportFor(
+        JNIEnv* env, jobject, jstring jCodecName, jint jTestWidth, jint jTestHeight,
+        jdouble jFrameRate, jint jSupportedWidthLowerForHeight, jint jSupportedWidthUpperForHeight,
+        jint jSupportedHeightLowerForWidth, jint jSupportedHeightUpperForWidth,
+        jdouble jSupportedFrameRateLower, jdouble jSupportedFrameRateUpper,
+        jdouble jAchievedFrameRateLower, jdouble jAchievedFrameRateUpper, jboolean jIsSizeSupported,
+        jboolean jAreSizeAndRateSupported, jobject jRetMsg) {
+    const char* codecName = env->GetStringUTFChars(jCodecName, nullptr);
+    auto testUtil = new NativeAMediaCodecInfoUnitTest(codecName, false, true);
+    bool isPass;
+    CLEANUP_IF_FALSE(testUtil->validateGetSupportedWidthsFor(jTestHeight,
+                                                             jSupportedWidthLowerForHeight,
+                                                             jSupportedWidthUpperForHeight))
+    CLEANUP_IF_FALSE(testUtil->validateGetSupportedHeightsFor(jTestWidth,
+                                                              jSupportedHeightLowerForWidth,
+                                                              jSupportedHeightUpperForWidth))
+    CLEANUP_IF_FALSE(testUtil->validateGetSupportedFrameRatesFor(jTestWidth, jTestHeight,
+                                                                 jSupportedFrameRateLower,
+                                                                 jSupportedFrameRateUpper))
+    CLEANUP_IF_FALSE(testUtil->validateGetAchievableFrameRatesFor(jTestWidth, jTestHeight,
+                                                                  jAchievedFrameRateLower,
+                                                                  jAchievedFrameRateUpper))
+    CLEANUP_IF_FALSE(testUtil->validateSizeSupport(jTestWidth, jTestHeight, jIsSizeSupported))
+    CLEANUP_IF_FALSE(testUtil->validateSizeAndRateSupport(jTestWidth, jTestHeight, jFrameRate,
+                                                          jAreSizeAndRateSupported))
+CleanUp:
+    std::string msg = isPass ? std::string{} : testUtil->getErrorMsg();
+    delete testUtil;
+    jclass clazz = env->GetObjectClass(jRetMsg);
+    jmethodID mId =
+            env->GetMethodID(clazz, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+    env->CallObjectMethod(jRetMsg, mId, env->NewStringUTF(msg.c_str()));
+    env->ReleaseStringUTFChars(jCodecName, codecName);
+    return static_cast<jboolean>(isPass);
+}
+
+jboolean nativeTestACodecPerformancePoint(JNIEnv* env, jobject, jstring jCodecName, jint jWidth,
+                                          jint jHeight, jdouble jFrameRate, jint jCoversFormat,
+                                          jint jCoversPoint, jint jEqualsPoint, jint jPpListSize,
+                                          jobject jRetMsg) {
+    const char* codecName = env->GetStringUTFChars(jCodecName, nullptr);
+    auto testUtil = new NativeAMediaCodecInfoUnitTest(codecName, false, true);
+    bool isPass;
+    CLEANUP_IF_FALSE(testUtil->getPerformancePointsList(jPpListSize))
+    if (jPpListSize != 0) {
+        CLEANUP_IF_FALSE(testUtil->validatePerformancePointCoversFormat(jWidth, jHeight,
+                                                                        (float)jFrameRate,
+                                                                        jCoversFormat))
+        CLEANUP_IF_FALSE(testUtil->validatePerformancePointCoversEqualsPoint(jWidth, jHeight,
+                                                                             (int)jFrameRate,
+                                                                             jCoversPoint,
+                                                                             jEqualsPoint))
+    }
+CleanUp:
+    std::string msg = isPass ? std::string{} : testUtil->getErrorMsg();
+    delete testUtil;
+    env->ReleaseStringUTFChars(jCodecName, codecName);
+    jclass clazz = env->GetObjectClass(jRetMsg);
+    jmethodID mId =
+            env->GetMethodID(clazz, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+    env->CallObjectMethod(jRetMsg, mId, env->NewStringUTF(msg.c_str()));
+    return static_cast<jboolean>(isPass);
+}
+
 jboolean nativeTestAMediaCodecInfoGetAudioCapabilities(
         JNIEnv* env, jobject, jstring jCodecName, jint jBitRateRangeLower, jint jBitRateRangeUpper,
         jint jMaxInputChannelCount, jint jMinInputChannelCount, jintArray jSampleRates,
@@ -935,6 +1396,12 @@ int registerAndroidMediaV2CtsNativeMediaCodecInfoUnitTest(JNIEnv* env) {
             {"nativeTestAMediaCodecInfoVideoCaps",
              "(Ljava/lang/String;IIIIIIIIIILjava/lang/StringBuilder;)Z",
              (void*)nativeTestAMediaCodecInfoVideoCaps},
+            {"nativeTestAMediaCodecInfoVideoCapsGetSupportFor",
+             "(Ljava/lang/String;IIDIIIIDDDDZZLjava/lang/StringBuilder;)Z",
+             (void*)nativeTestAMediaCodecInfoVideoCapsGetSupportFor},
+            {"nativeTestACodecPerformancePoint",
+             "(Ljava/lang/String;IIDIIIILjava/lang/StringBuilder;)Z",
+             (void*)nativeTestACodecPerformancePoint},
             {"nativeTestAMediaCodecInfoGetAudioCapabilities",
              "(Ljava/lang/String;IIII[I[I[I[IILjava/lang/StringBuilder;)Z",
              (void*)nativeTestAMediaCodecInfoGetAudioCapabilities},
