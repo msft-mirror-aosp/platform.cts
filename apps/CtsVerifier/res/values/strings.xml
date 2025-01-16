@@ -84,7 +84,6 @@
     <string name="test_category_display_cutout">DisplayCutout</string>
     <string name="test_category_other">Other</string>
     <string name="test_category_device_controls">Device controls</string>
-    <string name="test_category_multidevice">Multi Device</string>
     <string name="test_category_interactive">Interactive</string>
     <string name="clear">Clear</string>
     <string name="test_results_clear_title">Remove all test results?</string>
@@ -3280,18 +3279,6 @@ You should be prompted to select credentials; choose the ones you just installed
         This test verifies that the user is prompted for the current keyguard password before prompting for a new password.\n
         \nClick the \"Set password\" button if you currently don\'t have a password set.\n
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
-    </string>
-
-    <!-- Strings for NFC Tests. -->
-    <string name="nfc_tests_title">NFC Tests</string>
-    <string name="nfc_tests_dialog_title">NFC Tests Dialog</string>
-    <string name="nfc_tests_dialog_content">
-        The NFC tests.\n
-        The DUT \"must\" be connected to a host to run these tests.\n
-        Please follow the detailed instruction of the tests to execute scripts and get results.\n
-        The tests will be set as passing if the DUT is not supported with NFC.\n
-        See the instruction in the following link.\n
-        https://source.android.com/docs/compatibility/cts/ctsv-multidevice
     </string>
 
     <!-- String for Projection Tests -->

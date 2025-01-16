@@ -4405,22 +4405,6 @@
                        android:value="android.provider.AlarmClock#ACTION_SHOW_ALARMS|android.provider.AlarmClock#ACTION_SET_ALARM|android.provider.AlarmClock#ACTION_SET_TIMER" />
         </activity>
 
-        <activity android:name=".multidevice.MultiDeviceTestsActivity"
-                android:exported="true"
-                android:label="@string/nfc_tests_title">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_multidevice" />
-            <meta-data android:name="test_applicable_features"
-                       android:value="android.hardware.nfc:android.hardware.nfc.hce" />
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="CddTest"
-                       android:value="7.4.4/C-1-2,C-2-2|9.1/C-0-1" />
-        </activity>
-
         <activity
             android:name=".InteractiveTestsActivity"
             android:exported="true"
