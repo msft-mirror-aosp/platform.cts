@@ -24,6 +24,7 @@ import android.graphics.fonts.FontFamily
 import android.graphics.fonts.SystemFonts
 import android.graphics.text.TextRunShaper
 import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.Layout
 import android.text.TextPaint
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,12 +35,18 @@ import java.io.File
 import kotlin.math.ceil
 import org.junit.Assume.assumeNotNull
 import org.junit.Assume.assumeTrue
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
 class FontVariationSettingsTest {
+
+    @Rule
+    @JvmField
+    val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     fun assumeDefaultFontHasVariableFont() {
         val paint = Paint()
         val glyphs = TextRunShaper.shapeTextRun("a", 0, 1, 0, 1, 0f, 0f, false, paint)

@@ -1083,7 +1083,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
 
     private static File pullJarFromDevice(INativeDevice device,
             String remoteJarPath) throws DeviceNotAvailableException {
-        String sha1OnDevice = device.executeAdbCommand("sha1sum", remoteJarPath);
+        String sha1OnDevice = device.executeShellCommand("sha1sum " + remoteJarPath);
         CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
         File jar = device.pullFile(remoteJarPath);
         if (jar == null) {

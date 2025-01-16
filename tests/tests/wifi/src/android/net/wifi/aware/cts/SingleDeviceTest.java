@@ -696,10 +696,19 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
     /**
      * Validate:
-     * - Characteristics are available
-     * - Characteristics values are legitimate. Not in the CDD. However, the tested values are
-     *   based on the Wi-Fi Aware protocol.
+     *
+     * <ul>
+     *   <li>Characteristics are available
+     *   <li>Characteristics values are legitimate. Not in the CDD. However, the tested values are
+     *       based on the Wi-Fi Aware protocol.
+     * </ul>
      */
+    @ApiTest(
+            apis = {
+                "android.net.wifi.aware.Characteristics#isPeriodicRangingSupported",
+                "android.net.wifi.aware.Characteristics#getMaxSupportedRangingPacketBandwidth",
+                "android.net.wifi.aware.Characteristics#getMaxSupportedRxChains"
+            })
     public void testCharacteristics() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -731,6 +740,19 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_128) != 0)
                     || ((characteristics.getSupportedPairingCipherSuites()
                     & WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256) != 0));
+        }
+
+        if (WifiBuildCompat.isAtLeastB() && com.android.ranging.flags.Flags.rangingRttEnabled()) {
+            if (characteristics.isPeriodicRangingSupported()) {
+                int bw = characteristics.getMaxSupportedRangingPacketBandwidth();
+                assertTrue(
+                        bw == ScanResult.CHANNEL_WIDTH_20MHZ
+                                || bw == ScanResult.CHANNEL_WIDTH_40MHZ
+                                || bw == ScanResult.CHANNEL_WIDTH_80MHZ
+                                || bw == ScanResult.CHANNEL_WIDTH_160MHZ
+                                || bw == ScanResult.CHANNEL_WIDTH_320MHZ);
+                assertTrue(characteristics.getMaxSupportedRxChains() > 0);
+            }
         }
     }
 
@@ -1256,7 +1278,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     @ApiTest(
             apis = {
                 "android.net.wifi.aware.PublishConfig.Builder#setPeriodicRangingResultsEnabled",
-                "android.net.wifi.aware.Characteristics#getMaxSupportedRangingPacketBandwidth"
+                "android.net.wifi.aware.PublishConfig#isPeriodicRangingResultsEnabled"
             })
     public void testPublishWithPeriodicRangingEnabled() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
@@ -1266,14 +1288,6 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         if (!characteristics.isPeriodicRangingSupported()) {
             return;
         }
-        int maxSupportedRangingPacketBandwidth =
-                characteristics.getMaxSupportedRangingPacketBandwidth();
-        assertTrue(
-                maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_20MHZ
-                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_40MHZ
-                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_80MHZ
-                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_160MHZ
-                        || maxSupportedRangingPacketBandwidth == ScanResult.CHANNEL_WIDTH_320MHZ);
         final String serviceName = "PublishName";
         WifiAwareSession session = attachAndGetSession();
 
@@ -1281,6 +1295,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 .setServiceName(serviceName)
                 .setPeriodicRangingResultsEnabled(true)
                 .build();
+        assertTrue(publishConfig.isPeriodicRangingResultsEnabled());
 
         DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
 
@@ -1568,13 +1583,30 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         });
     }
 
-    /**
-     * Validate success subscribe with periodic ranging.
-     */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName =
-            "Baklava")
+    /** Validate success subscribe with periodic ranging. */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_RTT_ENABLED)
-    @ApiTest(apis = {"android.net.wifi.aware.DiscoverySessionCallback#onRangingResultsReceived"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.aware.DiscoverySessionCallback#onRangingResultsReceived",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setPeriodicRangingEnabled",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setPeriodicRangingInterval",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setRttBurstSize",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setFrequencyMhz",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setCenterFreq0Mhz",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setCenterFreq1Mhz",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setPreamble",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setRttBurstSize",
+                "android.net.wifi.aware.SubscribeConfig.Builder#setChannelWidth",
+                "android.net.wifi.aware.SubscribeConfig#isPeriodicRangingEnabled",
+                "android.net.wifi.aware.SubscribeConfig#getPeriodicRangingInterval",
+                "android.net.wifi.aware.SubscribeConfig#getRttBurstSize",
+                "android.net.wifi.aware.SubscribeConfig#getFrequencyMhz",
+                "android.net.wifi.aware.SubscribeConfig#getCenterFreq0Mhz",
+                "android.net.wifi.aware.SubscribeConfig#getCenterFreq1Mhz",
+                "android.net.wifi.aware.SubscribeConfig#getPreamble",
+                "android.net.wifi.aware.SubscribeConfig#getChannelWidth",
+            })
     public void testSubscribeWithPeriodicRanging() {
         if (!TestUtils.shouldTestWifiAware(getContext())) {
             return;
@@ -1597,6 +1629,18 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                 .setPreamble(ScanResult.PREAMBLE_LEGACY)
                 .setChannelWidth(ScanResult.CHANNEL_WIDTH_20MHZ)
                 .build();
+
+        // validate periodic ranging config
+        assertTrue(subscribeConfig.isPeriodicRangingEnabled());
+        assertEquals(
+                SubscribeConfig.PERIODIC_RANGING_INTERVAL_128TU,
+                subscribeConfig.getPeriodicRangingInterval());
+        assertEquals(MIN_RTT_BURST_SIZE, subscribeConfig.getRttBurstSize());
+        assertEquals(2437, subscribeConfig.getFrequencyMhz());
+        assertEquals(0, subscribeConfig.getCenterFreq0Mhz());
+        assertEquals(0, subscribeConfig.getCenterFreq1Mhz());
+        assertEquals(ScanResult.PREAMBLE_LEGACY, subscribeConfig.getPreamble());
+        assertEquals(ScanResult.CHANNEL_WIDTH_20MHZ, subscribeConfig.getChannelWidth());
 
         DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
 

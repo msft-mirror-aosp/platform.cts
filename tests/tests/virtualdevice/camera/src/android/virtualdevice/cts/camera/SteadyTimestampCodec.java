@@ -16,7 +16,7 @@
 
 package android.virtualdevice.cts.camera;
 
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.createHandler;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createHandler;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * A fake pair of video encoder/decoder writing mock data
  * on a surface and incrementing by 1 the provided timestamp for each decoded frame.
  */
-public class SteadyTimestampCodec {
+public class SteadyTimestampCodec implements AutoCloseable {
 
     private static final int VIDEO_BITRATE = 4000000;
     private static final int FRAME_RATE = 30;
@@ -49,7 +49,7 @@ public class SteadyTimestampCodec {
     private final AtomicReference<MediaCodec> mDecoderRef;
     private final AtomicReference<MediaCodec> mEncoderRef;
 
-    private final AtomicReference<Boolean> mCodecRunning = new AtomicReference<>(true);
+    private final AtomicReference<Boolean> mCodecRunning = new AtomicReference<>(false);
     private final LinkedBlockingDeque<byte[]> mBufferQueue = new LinkedBlockingDeque<>();
     private final int mWidth;
     private final int mHeight;
@@ -99,14 +99,18 @@ public class SteadyTimestampCodec {
                 if (!mCodecRunning.get()) {
                     return;
                 }
-                if (i >= 0) {
-                    ByteBuffer inputBuffer = encoder.getInputBuffer(i);
-                    assertThat(inputBuffer).isNotNull();
-                    inputBuffer.clear();
-                    byte[] blackFrameData = generateBlackFrameData(mWidth, mHeight);
-                    inputBuffer.put(blackFrameData);
-                    encoder.queueInputBuffer(i, 0, blackFrameData.length,
-                            mRenderTimestampNs, 0); // Custom PTS
+                try {
+                    if (i >= 0) {
+                        ByteBuffer inputBuffer = encoder.getInputBuffer(i);
+                        assertThat(inputBuffer).isNotNull();
+                        inputBuffer.clear();
+                        byte[] blackFrameData = generateBlackFrameData(mWidth, mHeight);
+                        inputBuffer.put(blackFrameData);
+                        encoder.queueInputBuffer(i, 0, blackFrameData.length,
+                                mRenderTimestampNs, 0); // Custom PTS
+                    }
+                } catch (IllegalStateException exception) {
+                    mCodecRunning.set(false);
                 }
             }
 
@@ -160,6 +164,8 @@ public class SteadyTimestampCodec {
                     mediaCodec.queueInputBuffer(i, 0, bytes.length, mRenderTimestampNs++ / 2, 0);
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Timeout polling for encoded buffer", e);
+                } catch (IllegalStateException e) {
+                    mCodecRunning.set(false);
                 }
             }
 
@@ -197,7 +203,6 @@ public class SteadyTimestampCodec {
         for (int i = ySize; i < data.length; i++) {
             data[i] = (byte) 0xFF;
         }
-
         return data;
     }
 
@@ -208,12 +213,14 @@ public class SteadyTimestampCodec {
         writeBlankFrame(surface);
         MediaCodec decoder = createDecoder(surface);
         mDecoderRef.set(decoder);
+        mCodecRunning.set(true);
         decoder.start();
         mEncoderRef.get().start();
     }
 
 
     /** Stops and release the codecs */
+    @Override
     public void close() {
         mCodecRunning.set(false);
         mDecoderRef.get().stop();

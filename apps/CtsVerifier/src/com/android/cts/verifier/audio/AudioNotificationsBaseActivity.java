@@ -107,24 +107,18 @@ public abstract class AudioNotificationsBaseActivity extends PassFailButtons.Act
         DisplayUtils.setKeepScreenOn(this, true);
     }
 
-    // These can probably be moved up into the super class.
     @Override
     public void onResume() {
         super.onResume();
+        startAudio();
         registerReceiver(mPluginReceiver, new IntentFilter(Intent.ACTION_HEADSET_PLUG));
     }
 
     @Override
     public void onPause() {
-        super.onPause();
         unregisterReceiver(mPluginReceiver);
-    }
-
-
-    @Override
-    public void onStop() {
-        super.onStop();
         stopAudio();
+        super.onPause();
     }
 
     //

@@ -83,6 +83,9 @@ android_test_helper_app {
     jni_libs: [
         "libctsgraphicsgpuprofiling_jni",
     ],
+    static_libs: [
+        "androidx.test.rules",
+    ],
     use_embedded_native_libs: false,
     stl: "c++_shared",
 }

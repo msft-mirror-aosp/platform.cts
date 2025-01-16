@@ -30,7 +30,6 @@
         <option name="test-file-name" value="CtsAppSearchTestCases.apk" />
         <option name="test-file-name" value="CtsAppSearchTestHelperA.apk" />
         <option name="test-file-name" value="CtsAppSearchTestHelperB.apk" />
-        <option name="test-file-name" value="CtsAppSearchIndexerTestAppADynamicSchema.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
@@ -45,6 +44,10 @@
             value="CtsAppSearchIndexerTestAppBV1.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBV1.apk" />
         <option name="push"
             value="CtsAppSearchIndexerTestAppADynamicSchema.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppADynamicSchema.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppBDynamicSchema.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBDynamicSchema.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">

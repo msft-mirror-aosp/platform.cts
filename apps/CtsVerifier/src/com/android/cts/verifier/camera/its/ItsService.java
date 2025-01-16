@@ -1125,6 +1125,9 @@ public class ItsService extends Service implements SensorEventListener {
                     doGetDefaultCameraPkgName();
                 } else if ("doGainMapCheck".equals(cmdObj.getString("cmdName"))) {
                     doGainMapCheck(cmdObj);
+                } else if ("isNightModeIndicatorSupported".equals(cmdObj.getString("cmdName"))) {
+                    String cameraId = cmdObj.getString("cameraId");
+                    doCheckNightModeIndicatorSupported(cameraId);
                 } else {
                     throw new ItsException("Unknown command: " + cmd);
                 }
@@ -1540,6 +1543,15 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    private void doCheckNightModeIndicatorSupported(String cameraId) throws ItsException {
+        try {
+            mSocketRunnableObj.sendResponse("isNightModeIndicatorSupported",
+                    isNightModeIndicatorSupported(cameraId) ? "true" : "false");
+        } catch (CameraAccessException e) {
+            throw new ItsException("Failed to check night mode indicator supported", e);
+        }
+    }
+
     /**
      * Checks if low light boost AE mode is supported.
      *
@@ -1570,6 +1582,30 @@ public class ItsService extends Service implements SensorEventListener {
         }
         return isLowLightBoostSupported = aeModes == null ? false : Ints.asList(aeModes)
             .contains(CameraMetadata.CONTROL_AE_MODE_ON_LOW_LIGHT_BOOST_BRIGHTNESS_PRIORITY);
+    }
+
+    /**
+     * Checks if night mode indicator is supported.
+     *
+     * This method queries Camera2 and Camera Extension for the night mode indicator key and checks
+     * if night mode extension is supported.
+     **/
+    private boolean isNightModeIndicatorSupported(String cameraId) throws CameraAccessException {
+        CameraExtensionCharacteristics extensionCharacteristics =
+                mCameraManager.getCameraExtensionCharacteristics(cameraId);
+        if (!extensionCharacteristics.getSupportedExtensions()
+                .contains(CameraExtensionCharacteristics.EXTENSION_NIGHT)) {
+            return false;
+        }
+
+        boolean isExtensionNightModeIndicatorSupported = extensionCharacteristics
+                .getAvailableCaptureResultKeys(CameraExtensionCharacteristics.EXTENSION_NIGHT)
+                .contains(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+        boolean isNightModeIndicatorSupported = mCameraCharacteristics
+                .getAvailableCaptureResultKeys()
+                .contains(CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+
+        return isExtensionNightModeIndicatorSupported && isNightModeIndicatorSupported;
     }
 
     private Set<String> getUnavailablePhysicalCameras(
@@ -3512,6 +3548,10 @@ public class ItsService extends Service implements SensorEventListener {
         mSession.setRepeatingRequest(reqBuilder.build(), captureResultListener,
                 mCameraHandler);
         frameNumLatch.await(TIMEOUT_CAPTURE_PREVIEW_FRAME_SECONDS, TimeUnit.SECONDS);
+        mSocketRunnableObj.sendResponseCaptureResult(
+            captureResultListener.mCaptureRequest,
+            captureResultListener.mCaptureResult,
+            new ImageReader[] {});
         Log.d(TAG, "capturePreviewFrame [getting frame]");
         pr.getFrame(outputStream);
 
@@ -3604,6 +3644,10 @@ public class ItsService extends Service implements SensorEventListener {
         Log.d(TAG, "capturePreviewFrameWithExtension [wait for " + frameNumToCapture + " frames]");
         // Wait until the requested number of frames have been received and then capture the frame
         frameNumLatch.await(TIMEOUT_CAPTURE_PREVIEW_FRAME_SECONDS, TimeUnit.SECONDS);
+        mSocketRunnableObj.sendResponseCaptureResult(
+            captureResultListener.mCaptureRequest,
+            captureResultListener.mCaptureResult,
+            new ImageReader[] {});
 
         Log.d(TAG, "capturePreviewFrameWithExtension [getting frame]");
         pr.getFrame(outputStream);
@@ -4923,6 +4967,9 @@ public class ItsService extends Service implements SensorEventListener {
 
     private class PreviewFrameCaptureResultListener extends CaptureResultListener {
         private CountDownLatch mFrameCaptureLatch;
+        private CaptureRequest mCaptureRequest = null;
+        private TotalCaptureResult mCaptureResult = null;
+
         PreviewFrameCaptureResultListener(CountDownLatch frameCaptureLatch) {
             mFrameCaptureLatch = frameCaptureLatch;
         }
@@ -4942,6 +4989,8 @@ public class ItsService extends Service implements SensorEventListener {
                     throw new ItsException("Request/Result is invalid");
                 }
                 Logt.i(TAG, buildLogString(result));
+                mCaptureRequest = request;
+                mCaptureResult = result;
                 mFrameCaptureLatch.countDown();
             } catch (ItsException e) {
                 throw new ItsRuntimeException("Error handling capture result", e);
@@ -4959,6 +5008,8 @@ public class ItsService extends Service implements SensorEventListener {
     private class ExtensionPreviewFrameCaptureResultListener
             extends ExtensionCaptureResultListener {
         private CountDownLatch mFrameCaptureLatch;
+        private CaptureRequest mCaptureRequest = null;
+        private TotalCaptureResult mCaptureResult = null;
 
         ExtensionPreviewFrameCaptureResultListener(CountDownLatch frameCaptureLatch) {
             mFrameCaptureLatch = frameCaptureLatch;
@@ -4985,6 +5036,8 @@ public class ItsService extends Service implements SensorEventListener {
                 if (request == null || result == null) {
                     throw new ItsException("Request/result is invalid");
                 }
+                mCaptureRequest = request;
+                mCaptureResult = result;
                 Logt.i(TAG, buildLogString(result));
             } catch (ItsException e) {
                 Logt.e(TAG, "Script error: ", e);

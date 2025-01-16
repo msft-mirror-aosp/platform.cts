@@ -22,9 +22,9 @@ import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENT
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.getMaximumTextureSize;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.assertVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.getMaximumTextureSize;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 

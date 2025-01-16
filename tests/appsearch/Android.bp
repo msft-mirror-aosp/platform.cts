@@ -48,6 +48,8 @@ android_test {
         ":CtsAppSearchIndexerTestAppAV3",
         ":CtsAppSearchIndexerTestAppBV1",
         ":CtsAppSearchIndexerTestAppADynamicSchema",
+        ":CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes",
+        ":CtsAppSearchIndexerTestAppBDynamicSchema",
     ],
     per_testcase_directory: true,
     min_sdk_version: "31",
@@ -186,9 +188,43 @@ android_test_helper_app {
         "general-tests",
         "mts-appsearch",
     ],
-    asset_dirs: ["indexer-test-app/asset_dir_dynamic_schema"],
+    asset_dirs: ["indexer-test-app/asset_dir_a_dynamic_schema"],
     manifest: "indexer-test-app/AndroidManifest_A_dynamic_schema.xml",
     certificate: ":cts-appsearch-helper-cert-a",
+    sdk_version: "test_current",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "indexer-test-app/src/**/*.java",
+    ],
+    test_suites: [
+        "general-tests",
+        "mts-appsearch",
+    ],
+    asset_dirs: ["indexer-test-app/asset_dir_a_dynamic_schema_fewer_types"],
+    manifest: "indexer-test-app/AndroidManifest_A_dynamic_schema_fewer_types.xml",
+    certificate: ":cts-appsearch-helper-cert-a",
+    sdk_version: "test_current",
+    min_sdk_version: "31",
+}
+
+android_test_helper_app {
+    name: "CtsAppSearchIndexerTestAppBDynamicSchema",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "indexer-test-app/src/**/*.java",
+    ],
+    test_suites: [
+        "general-tests",
+        "mts-appsearch",
+    ],
+    asset_dirs: ["indexer-test-app/asset_dir_b_dynamic_schema"],
+    manifest: "indexer-test-app/AndroidManifest_B_dynamic_schema.xml",
+    certificate: ":cts-appsearch-helper-cert-b",
     sdk_version: "test_current",
     min_sdk_version: "31",
 }

@@ -56,6 +56,9 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowInsets() {
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
         final TestActivity activity = startActivitySync(TestActivity.class);
 
         runOnMainSync(() -> {
@@ -92,47 +95,68 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_unspecified() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeUnspecified;
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
+        TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeUnspecified);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_never() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeNever;
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
+        TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeNever);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_default() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeDefault;
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
+        TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeDefault);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_shortEdges() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeShortEdges;
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
+        TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeShortEdges);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testWindowStyleLayoutInDisplayCutoutMode_always() {
-        TestActivity.sStyleId = R.style.LayoutInDisplayCutoutModeAlways;
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
+        TestActivity.sStyleIdList.add(R.style.LayoutInDisplayCutoutModeAlways);
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_unspecified() {
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_never() {
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -140,6 +164,9 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_default() {
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -147,6 +174,9 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_shortEdges() {
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -154,6 +184,9 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testLayoutParamsLayoutInDisplayCutoutMode_always() {
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
         TestActivity.sLayoutInDisplayCutoutMode = LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
         assertFillWindowBounds(startActivitySync(TestActivity.class));
     }
@@ -161,7 +194,10 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
     public void testSystemBarColor() {
-        TestActivity.sStyleId = R.style.BlackSystemBars;
+        if (Flags.disableOptOutEdgeToEdge()) {
+            TestActivity.sStyleIdList.add(R.style.OptOutEdgeToEdgeEnforcement);
+        }
+        TestActivity.sStyleIdList.add(R.style.BlackSystemBars);
         final TestActivity activity = startActivitySync(TestActivity.class);
         runOnMainSync(() -> {
             final Window window = activity.getWindow();

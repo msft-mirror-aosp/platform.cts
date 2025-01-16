@@ -15,9 +15,11 @@
  */
 package android.app.appsearch.cts.appindexer;
 
+import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_V2_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionConstants.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionConstants.APP_B_PRINT_APP_FUNCTION;
-import static android.app.appsearch.testutil.AppFunctionConstants.DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -68,6 +70,10 @@ public class AppIndexerCtsTest {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk";
     private static final String TEST_APP_A_DYNAMIC_SCHEMA_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
+    private static final String TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk";
+    private static final String TEST_APP_B_DYNAMIC_SCHEMA_PATH =
+            TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBDynamicSchema.apk";
     private static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
     private static final String TEST_APP_B_PKG = "com.android.cts.appsearch.indexertestapp.b";
     private static final String NAMESPACE_MOBILE_APPLICATION = "apps";
@@ -88,8 +94,15 @@ public class AppIndexerCtsTest {
 
     @Before
     @After
-    public void uninstallTestApks() {
+    public void uninstallTestApks() throws Throwable {
         uninstallPackage(TEST_APP_A_PKG);
+        uninstallPackage(TEST_APP_B_PKG);
+
+        retryAssert(
+                () -> {
+                    assertThat(searchMobileApplicationWithId(TEST_APP_A_PKG)).isNull();
+                    assertThat(searchMobileApplicationWithId(TEST_APP_B_PKG)).isNull();
+                });
     }
 
     @Test
@@ -401,7 +414,37 @@ public class AppIndexerCtsTest {
         assertThat(
                         clearTimestampsAndParentTypesInDocument(
                                 appFnMap.get("com.example.utils#print1")))
-                .isEqualTo(DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @Test
+    public void indexMultipleAppsWithDynamicSchema() throws Throwable {
+
+        installPackage(TEST_APP_B_DYNAMIC_SCHEMA_PATH);
+        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+        retryAssert(
+                () -> {
+                    Map<String, GenericDocument> appFnMapAppB =
+                            searchAppFunctionsIntoAFunctionIdMap(TEST_APP_B_PKG);
+                    assertThat(appFnMapAppB).hasSize(1);
+                    assertThat(
+                                    clearTimestampsAndParentTypesInDocument(
+                                            appFnMapAppB.get("com.example.utils#print1")))
+                            .isEqualTo(APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                });
+
+        retryAssert(
+                () -> {
+                    Map<String, GenericDocument> appFnMapAppA =
+                            searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                    assertThat(appFnMapAppA).hasSize(1);
+                    assertThat(
+                                    clearTimestampsAndParentTypesInDocument(
+                                            appFnMapAppA.get("com.example.utils#print1")))
+                            .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                });
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
@@ -423,7 +466,7 @@ public class AppIndexerCtsTest {
         assertThat(
                         clearTimestampsAndParentTypesInDocument(
                                 appFnMap.get("com.example.utils#print1")))
-                .isEqualTo(DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         // Verify app B app function.
         appFnMap = searchAppFunctionsIntoAFunctionIdMap(TEST_APP_B_PKG);
         assertThat(appFnMap).hasSize(1);
@@ -475,7 +518,7 @@ public class AppIndexerCtsTest {
             assertThat(
                             clearTimestampsAndParentTypesInDocument(
                                     appFnMap.get("com.example.utils#print1")))
-                    .isEqualTo(DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                    .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         }
     }
 
@@ -500,7 +543,7 @@ public class AppIndexerCtsTest {
             assertThat(
                             clearTimestampsAndParentTypesInDocument(
                                     appFnMap.get("com.example.utils#print1")))
-                    .isEqualTo(DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+                    .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         }
 
         {
@@ -516,6 +559,88 @@ public class AppIndexerCtsTest {
                                         clearTimestampsAndParentTypesInDocument(
                                                 appFnMap.get("com.example.utils#print1")))
                                 .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @Test
+    public void indexApp_updateToDynamicSchemaWithFewerTypes() throws Throwable {
+        {
+            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // A MobileApplication for it should be inserted.
+                        GenericDocument mobileApplication =
+                                searchMobileApplicationWithId(TEST_APP_A_PKG);
+                        assertThat(mobileApplication).isNotNull();
+                    });
+            // Its app functions should be indexed.
+            Map<String, GenericDocument> appFnMap =
+                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+            assertThat(appFnMap).hasSize(1);
+            assertThat(
+                            clearTimestampsAndParentTypesInDocument(
+                                    appFnMap.get("com.example.utils#print1")))
+                    .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+        }
+
+        {
+            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH);
+
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(1);
+                        assertThat(
+                                        clearTimestampsAndParentTypesInDocument(
+                                                appFnMap.get("com.example.utils#print1")))
+                                .isEqualTo(APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @Test
+    public void indexApp_updateToDynamicSchemaWithMoreTypesThanBefore() throws Throwable {
+        {
+            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH);
+
+            // Retry till the indexer has completed a run.
+            retryAssert(
+                    () -> {
+                        // A MobileApplication for it should be inserted.
+                        GenericDocument mobileApplication =
+                                searchMobileApplicationWithId(TEST_APP_A_PKG);
+                        assertThat(mobileApplication).isNotNull();
+                    });
+            // Its app functions should be indexed.
+            Map<String, GenericDocument> appFnMap =
+                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+            assertThat(appFnMap).hasSize(1);
+            assertThat(
+                            clearTimestampsAndParentTypesInDocument(
+                                    appFnMap.get("com.example.utils#print1")))
+                    .isEqualTo(APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION);
+        }
+
+        {
+            installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
+
+            // Retry till the indexer has completed another run.
+            retryAssert(
+                    () -> {
+                        Map<String, GenericDocument> appFnMap =
+                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                        assertThat(appFnMap).hasSize(1);
+                        assertThat(
+                                        clearTimestampsAndParentTypesInDocument(
+                                                appFnMap.get("com.example.utils#print1")))
+                                .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                     });
         }
     }
