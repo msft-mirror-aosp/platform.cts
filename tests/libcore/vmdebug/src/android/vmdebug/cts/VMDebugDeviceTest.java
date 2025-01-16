@@ -15,6 +15,10 @@
  */
 package android.vmdebug.cts;
 
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -56,6 +60,22 @@ public class VMDebugDeviceTest {
         } finally {
             file.delete();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(com.android.art.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS)
+    public void testGetExecutableMethodFileOffsets() throws Exception {
+        java.lang.reflect.Method method = this.getClass().getDeclaredMethod("testMethod");
+
+        VMDebug.ExecutableMethodFileOffsets offsets =
+                VMDebug.getExecutableMethodFileOffsets(method);
+
+        assertNotNull(offsets);
+        String containerPath = offsets.getContainerPath();
+        assertNotNull(containerPath);
+        assertNotEquals("", containerPath);
+        assertTrue(offsets.getMethodOffset() > 0);
+        assertTrue(offsets.getContainerOffset() > 0);
     }
 
     private void testMethod() {

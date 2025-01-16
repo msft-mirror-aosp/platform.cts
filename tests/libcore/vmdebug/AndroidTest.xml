@@ -26,6 +26,12 @@
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsVMDebugDeviceTestCases.apk" />
     </target_preparer>
+    <!-- VMDebug#getExecutableMethodFileOffets works on AOT compiled code.
+         Precompile the test package so we can fetch offsets from the test package itself. -->
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="throw-if-cmd-fail" value="true" />
+        <option name="run-command" value="pm compile -m speed android.libcore.cts.vmdebug" />
+    </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.libcore.cts.vmdebug" />
     </test>
