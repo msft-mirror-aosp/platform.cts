@@ -16,17 +16,11 @@
 
 package android.packageinstaller.packagescheme.cts
 
-import android.Manifest
 import android.app.Activity
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
@@ -37,22 +31,19 @@ import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
+import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
-import java.io.InputStream
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.function.Supplier
 import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Before
 
 open class PackageSchemeTestBase {
     val LOG_TAG = PackageSchemeTestBase::class.java.simpleName
+    val BASE_PATH = "/data/local/tmp/cts/packagescheme/"
     val TARGET_APP_PKG_NAME = "android.packageinstaller.emptytestapp.cts"
-    val TARGET_APP_APK = "CtsEmptyTestApp.apk"
-    val RECEIVER_ACTION = "android.packageinstaller.emptytestapp.cts.action"
+    val TARGET_APP_APK = BASE_PATH + "CtsEmptyTestApp.apk"
     val POSITIVE_BTN_ID = "button1"
     val NEGATIVE_BTN_ID = "button2"
     val SYSTEM_PACKAGE_NAME = "android"
@@ -64,7 +55,6 @@ open class PackageSchemeTestBase {
     val mUiDevice = UiDevice.getInstance(mInstrumentation)
     var mButton: UiObject2? = null
     val mContext: Context = mInstrumentation.context
-    val mInstaller: PackageInstaller = mContext.packageManager.packageInstaller
 
     class TestActivity : Activity() {
         val mLatch: CountDownLatch = CountDownLatch(1)
@@ -84,66 +74,22 @@ open class PackageSchemeTestBase {
         }
     }
 
-    private val receiver = object : BroadcastReceiver() {
-        private val results = ArrayBlockingQueue<Intent>(1)
-
-        override fun onReceive(context: Context, intent: Intent) {
-            // Added as a safety net. Have observed instances where the Queue isn't empty which
-            // causes the test suite to crash.
-            if (results.size != 0) {
-                clear()
-            }
-            results.add(intent)
-        }
-
-        fun makeIntentSender(sessionId: Int) = PendingIntent.getBroadcast(
-            mContext,
-            sessionId,
-            Intent(RECEIVER_ACTION)
-                .setPackage(mContext.packageName)
-                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE_UNAUDITED
-        ).intentSender
-
-        fun getResult(unit: TimeUnit, timeout: Long) = results.poll(timeout, unit)
-
-        fun clear() = results.clear()
-    }
-
-    @Before
-    fun setup() {
-        receiver.clear()
-        mContext.registerReceiver(
-            receiver,
-            IntentFilter(RECEIVER_ACTION),
-            Context.RECEIVER_EXPORTED
-        )
-    }
-
     @Before
     @After
     fun uninstall() {
-        mInstrumentation.uiAutomation.executeShellCommand("pm uninstall $TARGET_APP_PKG_NAME")
-    }
-
-    @After
-    fun tearDown() {
-        mContext.unregisterReceiver(receiver)
-        mInstrumentation.uiAutomation.dropShellPermissionIdentity()
+        SystemUtil.runShellCommand("pm uninstall $TARGET_APP_PKG_NAME")
     }
 
     fun runTest(packageName: String, packageHasVisibility: Boolean, needTargetApp: Boolean) {
         if (packageHasVisibility) {
-            mInstrumentation.uiAutomation.executeShellCommand(
-                "appops set $packageName android:query_all_packages allow"
-            )
-            mInstrumentation.uiAutomation.executeShellCommand(
+            SystemUtil.runShellCommand("appops set $packageName android:query_all_packages allow")
+            SystemUtil.runShellCommand(
                 "appops set $packageName android:request_install_packages allow"
             )
         }
 
         if (needTargetApp) {
-            installTargetApp(resourceSupplier(TARGET_APP_APK))
+            installTargetApp()
         }
 
         val intent = Intent(ApplicationProvider.getApplicationContext(), TestActivity::class.java)
@@ -185,47 +131,10 @@ open class PackageSchemeTestBase {
         mScenario!!.close()
     }
 
-    private fun installTargetApp(apkStreamSupplier: Supplier<InputStream>) {
-        setupPermissions()
-        val params = PackageInstaller.SessionParams(
-            PackageInstaller.SessionParams.MODE_FULL_INSTALL
-        )
-        params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
-        val sessionId: Int = mInstaller.createSession(params)
-        val session: PackageInstaller.Session = mInstaller.openSession(sessionId)
-
-        session.openWrite("apk", 0, -1).use { os ->
-            apkStreamSupplier.get().copyTo(os)
-        }
-
-        session.commit(receiver.makeIntentSender(sessionId))
-        session.close()
-
-        val result = receiver.getResult(TimeUnit.SECONDS, 30)
-        val installStatus = result.getIntExtra(PackageInstaller.EXTRA_STATUS, Int.MIN_VALUE)
-        if (installStatus != PackageInstaller.STATUS_SUCCESS) {
-            val id = result.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, Int.MIN_VALUE)
-            try {
-                mInstaller.abandonSession(id)
-            } catch (e: SecurityException) {
-                Log.w(LOG_TAG, "Could not abandon session: ${e.message}")
-            }
-        }
-        assertThat(installStatus).isEqualTo(PackageInstaller.STATUS_SUCCESS)
-    }
-
-    private fun resourceSupplier(resourceName: String): Supplier<InputStream> {
-        return Supplier<InputStream> {
-            val resourceAsStream = javaClass.classLoader.getResourceAsStream(resourceName)
-                ?: throw RuntimeException("Resource $resourceName could not be found.")
-            resourceAsStream
-        }
-    }
-
-    private fun setupPermissions() {
-        mInstrumentation.uiAutomation.adoptShellPermissionIdentity(
-            Manifest.permission.INSTALL_PACKAGES
-        )
+    private fun installTargetApp() {
+        assertThat(
+            SystemUtil.runShellCommand("pm install $TARGET_APP_APK").trim()
+        ).isEqualTo("Success")
     }
 
     private fun getAppInstallIntent(): Intent {
