@@ -71,6 +71,8 @@ var CUSTOM_ID_INVALID = "A".repeat(1025)
 const val DEVICE_DISPLAY_NAME_A = "Device A"
 const val DEVICE_DISPLAY_NAME_B = "Device B"
 
+const val ASSOCIATION_ID = 1
+
 val SIMPLE_EXECUTOR: Executor by lazy { Executor { it.run() } }
 
 val MAIN_THREAD_EXECUTOR: Executor by lazy {

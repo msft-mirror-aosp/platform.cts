@@ -1,12 +1,15 @@
 package android.companion.cts.core
 import android.Manifest
+import android.companion.DevicePresenceEvent
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.DevicePresenceEvent.EVENT_BT_DISCONNECTED
 import android.companion.Flags.FLAG_DEVICE_PRESENCE
+import android.companion.cts.common.ASSOCIATION_ID
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
+import android.companion.cts.common.UUID_A
 import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.toUpperCaseString
 import android.os.SystemClock
@@ -33,6 +36,15 @@ import org.junit.runner.RunWith
 class DeviceEventTest : CoreTestBase() {
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
+    @Test
+    fun test_DevicePresenceEvent() {
+        val deviceEvent = DevicePresenceEvent(ASSOCIATION_ID, EVENT_BLE_APPEARED, UUID_A)
+
+        assertEquals(expected = EVENT_BLE_APPEARED, actual = deviceEvent.event)
+        assertEquals(expected = UUID_A, actual = deviceEvent.uuid)
+        assertEquals(expected = ASSOCIATION_ID, actual = deviceEvent.associationId)
+    }
 
     @Test
     fun test_ble_device_event() {
