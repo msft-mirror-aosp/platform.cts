@@ -121,6 +121,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testWriteAndReadBlob() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1, mHandle2)).get()) {
@@ -178,6 +180,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testWriteAfterCommit() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1)).get();
@@ -211,6 +215,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testRemovePendingBlob() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1)).get()) {
@@ -246,6 +252,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testRemoveCommittedBlob() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         mDb1.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
 
         try (OpenBlobForWriteResponse writeResponse =
@@ -284,6 +292,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testRemoveAndReWriteBlob() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         mDb1.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
 
         try (OpenBlobForWriteResponse writeResponse =
@@ -340,6 +350,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testWriteAndReadBlob_withoutCommit() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         mDb1.setSchemaAsync(new SetSchemaRequest.Builder().setForceOverride(true).build()).get();
 
         try (OpenBlobForWriteResponse writeResponse =
@@ -375,6 +387,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testRewrite_notAllowed() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1)).get()) {
@@ -424,6 +438,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testOpenWriteForRead_allowed() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1)).get()) {
@@ -445,6 +461,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testOpenReadForWrite_notAllowed() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1)).get()) {
@@ -485,6 +503,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testCommitBlobWithWrongDigest() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1)).get()) {
@@ -517,6 +537,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGetStorageInfo() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         StorageInfo before = mDb1.getStorageInfoAsync().get();
 
@@ -551,6 +573,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGetStorageInfoAfterRemoveBlob() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         StorageInfo before = mDb1.getStorageInfoAsync().get();
 
         OpenBlobForWriteResponse writeResponse =
@@ -597,6 +621,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testCloseWriteResponse() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1, mHandle2)).get();
@@ -631,6 +657,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testCloseReadResponse() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         try (OpenBlobForWriteResponse writeResponse =
                 mDb1.openBlobForWriteAsync(ImmutableSet.of(mHandle1, mHandle2)).get()) {
@@ -695,6 +723,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testSetBlobSchema() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("Type")
                         .addProperty(
@@ -714,6 +744,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testPutDocumentWithBlobProperty() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         AppSearchSchema schema =
                 new AppSearchSchema.Builder("Type")
                         .addProperty(
@@ -751,6 +783,8 @@ public abstract class AppSearchSessionBlobCtsTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testSetBlobVisibility() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
 
         mDb1.setBlobVisibilityAsync(
                         new SetBlobVisibilityRequest.Builder()
