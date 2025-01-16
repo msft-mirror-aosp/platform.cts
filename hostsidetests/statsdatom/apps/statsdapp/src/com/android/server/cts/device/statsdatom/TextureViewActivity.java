@@ -21,12 +21,17 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorSpace;
+import android.graphics.HardwareBufferRenderer;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.DataSpace;
+import android.hardware.HardwareBuffer;
+import android.graphics.RecordingCanvas;
+import android.graphics.RenderNode;
 import android.media.Image;
 import android.media.ImageWriter;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.TextureView.SurfaceTextureListener;
@@ -35,8 +40,10 @@ import android.widget.FrameLayout.LayoutParams;
 
 
 public class TextureViewActivity extends Activity implements SurfaceTextureListener  {
+    private static final String TAG = "TextureViewActivity";
     private static final int MAX_SRGB_FRAMES = 3;
     private static final int MAX_P3_FRAMES = 2;
+    private static final int BUFFER_DIMENSION = 25;
 
     private FrameLayout mLayout;
     private TextureView mTextureView;
@@ -47,6 +54,7 @@ public class TextureViewActivity extends Activity implements SurfaceTextureListe
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
 
         mTextureView = new TextureView(this);
         mTextureView.setSurfaceTextureListener(this);
@@ -58,15 +66,18 @@ public class TextureViewActivity extends Activity implements SurfaceTextureListe
 
     private void pushFrame() {
         if (mFrameCount >= MAX_SRGB_FRAMES + MAX_P3_FRAMES) {
+            Log.d(TAG, "Done pushing frames");
             getMainExecutor().execute(() -> mLayout.removeView(mTextureView));
             return;
         }
         if (mWriter == null) {
+            Log.d(TAG, "No image writer set up!");
             return;
         }
         if (mFrameCount >= MAX_SRGB_FRAMES) {
             mDataSpace = DataSpace.DATASPACE_DISPLAY_P3;
         }
+        Log.d(TAG, "Pushing frame " + mFrameCount + " with dataspace " + mDataSpace);
         Image image = mWriter.dequeueInputImage();
         image.setDataSpace(mDataSpace);
         Image.Plane plane = image.getPlanes()[0];
@@ -81,13 +92,16 @@ public class TextureViewActivity extends Activity implements SurfaceTextureListe
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        Log.d(TAG, "onSurfaceTextureAvailable");
         mDataSpace = DataSpace.DATASPACE_SRGB;
 
         mWriter = new ImageWriter
                         .Builder(new Surface(surface))
                         .setHardwareBufferFormat(PixelFormat.RGBA_8888)
                         .setDataSpace(mDataSpace)
+                        .setWidthAndHeight(BUFFER_DIMENSION, BUFFER_DIMENSION)
                         .build();
+
         pushFrame();
     }
 

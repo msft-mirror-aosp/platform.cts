@@ -59,6 +59,8 @@ import java.util.List;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildReceiver {
 
+    private static final long WAIT_TIME_MILLIS = 5000;
+
     private static final int DATASPACE_SRGB = 142671872;
     private static final int DATASPACE_P3 = 143261696;
     private IBuildInfo mCtsBuild;
@@ -96,7 +98,7 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 TEXTURE_VIEW_EVENT_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
         DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                "TextureViewActivity", null, null);
+                "TextureViewActivity", null, null, WAIT_TIME_MILLIS);
 
         List<StatsLog.EventMetricData> data =
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
@@ -127,7 +129,7 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 HARDWARE_RENDERER_EVENT_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
         DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                "ColorModeSwitchActivity", null, null);
+                "ColorModeSwitchActivity", null, null, WAIT_TIME_MILLIS);
 
         List<StatsLog.EventMetricData> data =
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
@@ -169,7 +171,7 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 SURFACE_CONTROL_EVENT_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
         DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
-                "SurfaceViewActivity", null, null);
+                "SurfaceViewActivity", null, null, WAIT_TIME_MILLIS);
 
         List<StatsLog.EventMetricData> data =
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
@@ -200,8 +202,8 @@ public class GraphicsAtomTests extends BaseHostJUnit4Test implements IBuildRecei
         CoregraphicsExtensionAtoms.registerAllExtensions(registry);
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 IMAGE_DECODED_FIELD_NUMBER, /*uidInAttributionChain=*/ false);
-        DeviceUtils.runActivity(
-                getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG, "ImageViewActivity", null, null);
+        DeviceUtils.runActivity(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                "ImageViewActivity", null, null, WAIT_TIME_MILLIS);
 
         List<StatsLog.EventMetricData> data =
                 ReportUtils.getEventMetricDataList(getDevice(), registry);
