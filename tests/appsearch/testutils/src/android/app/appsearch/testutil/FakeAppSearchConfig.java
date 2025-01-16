@@ -291,6 +291,14 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
         return DEFAULT_MAX_OPEN_BLOB_COUNT;
     }
 
+    // The absolute path for the ICU data file is not available in Framework.
+    // This method is functionally no-op and returns an empty string.
+    @Override
+    public String getIcuDataFileAbsolutePath() {
+        throwIfClosed();
+        return DEFAULT_ICU_DATA_FILE_ABSOLUTE_PATH;
+    }
+
     private void throwIfClosed() {
         if (mIsClosed.get()) {
             throw new IllegalStateException(

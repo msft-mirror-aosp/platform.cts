@@ -16,7 +16,6 @@
 
 package com.android.server.appsearch.external.localstorage;
 
-
 /**
  * Icing options for AppSearch local-storage. Note, these values are not necessarily the defaults
  * set in {@link com.google.android.icing.proto.IcingSearchEngineOptions} proto.
@@ -100,5 +99,12 @@ public class LocalStorageIcingOptionsConfig implements IcingOptionsConfig {
     @Override
     public long getOrphanBlobTimeToLiveMs() {
         return DEFAULT_ORPHAN_BLOB_TIME_TO_LIVE_MS;
+    }
+
+    // The absolute path for the ICU data file is not available in Framework.
+    // This method is functionally no-op and returns an empty string.
+    @Override
+    public String getIcuDataFileAbsolutePath() {
+        return DEFAULT_ICU_DATA_FILE_ABSOLUTE_PATH;
     }
 }

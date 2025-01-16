@@ -163,4 +163,11 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     public long getOrphanBlobTimeToLiveMs() {
         return mIcingOptionsConfig.getOrphanBlobTimeToLiveMs();
     }
+
+    // The absolute path for the ICU data file is not available in Framework.
+    // This method is functionally no-op and returns an empty string.
+    @Override
+    public String getIcuDataFileAbsolutePath() {
+        return mIcingOptionsConfig.getIcuDataFileAbsolutePath();
+    }
 }
