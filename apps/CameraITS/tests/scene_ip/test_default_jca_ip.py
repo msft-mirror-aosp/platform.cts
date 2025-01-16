@@ -19,6 +19,7 @@ import pathlib
 import types
 
 import camera_properties_utils
+import gen2_rig_controller_utils
 import ip_chart_extraction_utils as ce
 import ip_chart_pattern_detector as pd
 import ip_metrics_utils
@@ -26,6 +27,7 @@ import its_base_test
 import its_device_utils
 import its_session_utils
 from mobly import test_runner
+import sensor_fusion_utils
 from snippet_uiautomator import uiautomator
 import ui_interaction_utils
 
@@ -45,6 +47,20 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
   """Test for default camera and JCA image parity."""
+
+  def _setup_gen2rig(self):
+    # Configure and setup gen2 rig
+    motor_channel = int(self.rotator_ch)
+    lights_channel = int(self.lighting_ch)
+    lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
+    sensor_fusion_utils.establish_serial_comm(lights_port)
+    gen2_rig_controller_utils.set_lighting_state(
+        lights_port, lights_channel, 'ON')
+
+    motor_port = gen2_rig_controller_utils.find_serial_port(
+        self.rotator_cntl)
+    gen2_rig_controller_utils.configure_rotator(motor_port, motor_channel)
+    gen2_rig_controller_utils.rotate(motor_port, motor_channel)
 
   def setup_class(self):
     super().setup_class()
@@ -82,6 +98,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       logging.debug('Camera hardware level: %s', camera_hardware_level)
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       is_tablet = its_device_utils.is_dut_tablet(self.dut.serial)
+
       # Skip the test if camera is not primary or if it is a tablet
       is_primary_camera = self.hidden_physical_id is None
       camera_properties_utils.skip_unless(
@@ -92,6 +109,9 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       # close camera after props have been retrieved
       cam.close_camera()
       device_id = self.dut.serial
+
+      # Set up gen2 rig controllers
+      self._setup_gen2rig()
 
       # Get default camera app pkg name
       pkg_name = cam.get_default_camera_pkg()
@@ -188,6 +208,7 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           jca_capture_path, self.log_path, 'jca'
       )
       e_msg = []
+
       # Get brightness diff between default and jca captures
       mean_brightness_diff = ip_metrics_utils.do_brightness_check(
           default_dynamic_range_patch_cells, jca_dynamic_range_patch_cells

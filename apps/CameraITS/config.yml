@@ -67,11 +67,11 @@ TestBeds:
     TestParams:
       debug_mode: "False"  # quotes are needed here
       chart_distance: 25
-      rotator_cntl: <controller-type>
+      rotator_cntl: gen2_rotator   # gen2 rig specific
       rotator_ch: <controller-channel>
       camera: <camera-id>
       foldable_device: "False"  # "True" if testing foldable device
       tablet_device: "False"  # "True" if testing tablet device
-      lighting_cntl: <controller-type>
+      lighting_cntl: gen2_lights  # gen2 rig specific
       lighting_ch: <controller-channel>
-      scene: <scene-name>
+      scene: scene_ip
