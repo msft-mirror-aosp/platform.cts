@@ -2666,25 +2666,28 @@ class ItsSession(object):
       raise AssertionError('No camera IDs were found.')
     return id_to_props
 
-  def has_ultrawide_camera(self, facing):
-    """Return if device has an ultrawide camera facing the same direction.
-
-    Args:
-      facing: constant describing the direction the camera device lens faces.
-
-    Returns:
-      True if the device has an ultrawide camera facing in that direction.
-    """
+  def get_primary_camera_id(self, facing):
+    """Return the primary camera ID facing the given direction."""
     camera_ids = self.get_camera_ids()
     primary_rear_camera_id = camera_ids.get('primaryRearCameraId', '')
     primary_front_camera_id = camera_ids.get('primaryFrontCameraId', '')
     if facing == camera_properties_utils.LENS_FACING['BACK']:
-      primary_camera_id = primary_rear_camera_id
+      return primary_rear_camera_id
     elif facing == camera_properties_utils.LENS_FACING['FRONT']:
-      primary_camera_id = primary_front_camera_id
+      return primary_front_camera_id
     else:
       raise NotImplementedError('Cameras not facing either front or back '
                                 'are currently unsupported.')
+
+  def _get_id_to_fov_facing(self):
+    """Return the FoV and facing of each camera ID.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+    Returns:
+      A dictionary mapping camera IDs to a namedtuple containing the camera's
+      field of view and facing.
+    """
     id_to_props = self._camera_id_to_props()
     fov_and_facing = collections.namedtuple('FovAndFacing', ['fov', 'facing'])
     id_to_fov_facing = {
@@ -2694,18 +2697,61 @@ class ItsSession(object):
         for unparsed_id, props in id_to_props.items()
     }
     logging.debug('IDs to (FOVs, facing): %s', id_to_fov_facing)
+    return id_to_fov_facing
+
+  def _has_physical_camera_with_different_fov(
+      self, facing, is_fov_beyond_threshold, camera_type='physical'):
+    """Return if device has a physical camera with different FoV than primary.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+      is_fov_beyond_threshold: Callable that compares the FoV of a physical
+        camera against an FoV threshold.
+      camera_type: Optional[string]; description of the FoV of the camera.
+    Returns:
+      True if the device has a physical camera with different FoV than primary.
+    """
+    primary_camera_id = self.get_primary_camera_id(facing)
+    id_to_fov_facing = self._get_id_to_fov_facing()
     primary_camera_fov, primary_camera_facing = id_to_fov_facing[
         primary_camera_id]
     for unparsed_id, fov_facing_combo in id_to_fov_facing.items():
-      if (float(fov_facing_combo.fov) > float(primary_camera_fov) and
+      if (is_fov_beyond_threshold(float(fov_facing_combo.fov)) and
           fov_facing_combo.facing == primary_camera_facing and
           unparsed_id != primary_camera_id):
-        logging.debug('Ultrawide camera found with ID %s and FoV %.3f. '
+        logging.debug('Found %s camera with ID %s and FoV %.3f. '
                       'Primary camera has ID %s and FoV: %.3f.',
+                      camera_type,
                       unparsed_id, float(fov_facing_combo.fov),
                       primary_camera_id, float(primary_camera_fov))
         return True
     return False
+
+  def has_ultrawide_camera(self, facing):
+    """Return if device has an ultrawide camera facing the same direction.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+    Returns:
+      True if the device has an ultrawide camera facing in that direction.
+    """
+    return self._has_physical_camera_with_different_fov(
+        facing,
+        lambda fov: fov >= opencv_processing_utils.FOV_THRESH_UW,
+        camera_type='ultrawide')
+
+  def has_tele_camera(self, facing):
+    """Return if device has a telephoto camera facing the same direction.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+    Returns:
+      True if the device has a telephoto camera facing in that direction.
+    """
+    return self._has_physical_camera_with_different_fov(
+        facing,
+        lambda fov: fov <= opencv_processing_utils.FOV_THRESH_TELE,
+        camera_type='telephoto')
 
   def get_facing_to_ids(self):
     """Returns mapping from lens facing to list of corresponding camera IDs."""
