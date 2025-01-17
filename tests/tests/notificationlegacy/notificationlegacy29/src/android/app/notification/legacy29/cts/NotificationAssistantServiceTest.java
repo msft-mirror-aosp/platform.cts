@@ -21,7 +21,10 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.app.NotificationChannel.NEWS_ID;
 import static android.app.NotificationChannel.PROMOTIONS_ID;
+import static android.service.notification.Adjustment.KEY_CONTEXTUAL_ACTIONS;
 import static android.service.notification.Adjustment.KEY_IMPORTANCE;
+import static android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT;
+import static android.service.notification.Adjustment.KEY_TEXT_REPLIES;
 import static android.service.notification.Adjustment.KEY_TYPE;
 import static android.service.notification.Adjustment.TYPE_NEWS;
 import static android.service.notification.NotificationAssistantService.FEEDBACK_RATING;
@@ -506,15 +509,6 @@ public class NotificationAssistantServiceTest {
 
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, true));
-        boolean resetAllowedAdjustments = false;
-        if (!mNotificationManager.getAllowedAssistantAdjustments().contains(KEY_TYPE)) {
-            CountDownLatch adjustmentLatch
-                    = mAssistant.setAllowedAdjustmentCountdown(1);
-            SystemUtil.runWithShellPermissionIdentity(
-                    () -> mNotificationManager.allowAssistantAdjustment(KEY_TYPE));
-            adjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
-            resetAllowedAdjustments = true;
-        }
         try {
             sendNotification(1, null, ICON_ID);
             StatusBarNotification sbn = mHelper.findPostedNotification(
@@ -556,10 +550,6 @@ public class NotificationAssistantServiceTest {
         } finally {
             SystemUtil.runWithShellPermissionIdentity(() ->
                     mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, false));
-            if (resetAllowedAdjustments) {
-                SystemUtil.runWithShellPermissionIdentity(
-                        () -> mNotificationManager.disallowAssistantAdjustment(KEY_TYPE));
-            }
         }
     }
 
@@ -640,6 +630,11 @@ public class NotificationAssistantServiceTest {
         assertTrue(
                 mAssistant.mCurrentCapabilities.contains(
                         Adjustment.KEY_NOT_CONVERSATION));
+        if (android.service.notification.Flags.notificationClassification()) {
+            assertTrue(
+                    mAssistant.mCurrentCapabilities.contains(
+                            KEY_TYPE));
+        }
 
         mUi.dropShellPermissionIdentity();
     }
@@ -898,7 +893,7 @@ public class NotificationAssistantServiceTest {
         mAssistant.setAdjustmentTypeSupportedState(KEY_IMPORTANCE, false);
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).containsExactly(
+            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).contains(
                     KEY_IMPORTANCE);
         });
     }
@@ -911,7 +906,8 @@ public class NotificationAssistantServiceTest {
         mAssistant.setAdjustmentTypeSupportedState(KEY_IMPORTANCE, true);
 
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).isEmpty();
+            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes())
+                    .doesNotContain(KEY_IMPORTANCE);
         });
     }
 
@@ -920,7 +916,24 @@ public class NotificationAssistantServiceTest {
     public void testSetAdjustmentTypeSupportedState_default() throws Exception {
         setUpListeners(); // also enables assistant
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).isEmpty();
+            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).containsNoneOf(
+                    KEY_CONTEXTUAL_ACTIONS, KEY_SENSITIVE_CONTENT, KEY_TEXT_REPLIES);
+        });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testSetAdjustmentTypeSupportedState_updateDefault() throws Exception {
+        setUpListeners(); // also enables assistant
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            boolean typeDisabledByDefault =  mNotificationManager.getUnsupportedAdjustmentTypes()
+                    .contains(KEY_TYPE);
+            if  (typeDisabledByDefault) {
+                mAssistant.setAdjustmentTypeSupportedState(KEY_TYPE, true);
+                assertThat(mNotificationManager.getUnsupportedAdjustmentTypes())
+                        .doesNotContain(KEY_TYPE);
+            }
         });
     }
 
@@ -996,8 +1009,8 @@ public class NotificationAssistantServiceTest {
             int newImportance = currentImportance == NotificationManager.IMPORTANCE_DEFAULT
                     ? NotificationManager.IMPORTANCE_HIGH : NotificationManager.IMPORTANCE_DEFAULT;
 
-            CountDownLatch notificationRankingLatch =
-                    mNotificationListenerService.setRankingUpdateCountDown(1);
+            CountDownLatch notificationRankingLatch
+                    = mNotificationListenerService.setRankingUpdateCountDown(1);
 
             Bundle signals = new Bundle();
             signals.putInt(KEY_IMPORTANCE, newImportance);
@@ -1023,15 +1036,6 @@ public class NotificationAssistantServiceTest {
         setUpListeners();
         SystemUtil.runWithShellPermissionIdentity(() ->
                 mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, true));
-        boolean resetAllowedAdjustments = false;
-        if (!mNotificationManager.getAllowedAssistantAdjustments().contains(KEY_TYPE)) {
-            CountDownLatch adjustmentLatch
-                    = mAssistant.setAllowedAdjustmentCountdown(1);
-            SystemUtil.runWithShellPermissionIdentity(
-                    () -> mNotificationManager.allowAssistantAdjustment(KEY_TYPE));
-            adjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
-            resetAllowedAdjustments = true;
-        }
 
         try {
             // trigger creation of reserved channel
@@ -1064,10 +1068,6 @@ public class NotificationAssistantServiceTest {
         } finally {
             SystemUtil.runWithShellPermissionIdentity(() ->
                     mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, false));
-            if (resetAllowedAdjustments) {
-                SystemUtil.runWithShellPermissionIdentity(
-                        () -> mNotificationManager.disallowAssistantAdjustment(KEY_TYPE));
-            }
         }
     }
 
@@ -1075,16 +1075,6 @@ public class NotificationAssistantServiceTest {
     @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
     public void testCannotDeleteReservedChannel() throws Exception {
         setUpListeners();
-
-        boolean resetAllowedAdjustments = false;
-        if (!mNotificationManager.getAllowedAssistantAdjustments().contains(KEY_TYPE)) {
-            CountDownLatch adjustmentLatch
-                    = mAssistant.setAllowedAdjustmentCountdown(1);
-            SystemUtil.runWithShellPermissionIdentity(
-                    () -> mNotificationManager.allowAssistantAdjustment(KEY_TYPE));
-            adjustmentLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
-            resetAllowedAdjustments = true;
-        }
 
         // trigger creation of reserved channel
         sendNotification(1, null, ICON_ID);
@@ -1105,10 +1095,5 @@ public class NotificationAssistantServiceTest {
 
         mNotificationManager.deleteNotificationChannel(PROMOTIONS_ID);
         assertThat(mNotificationManager.getNotificationChannel(PROMOTIONS_ID)).isNotNull();
-
-        if (resetAllowedAdjustments) {
-            SystemUtil.runWithShellPermissionIdentity(
-                    () -> mNotificationManager.disallowAssistantAdjustment(KEY_TYPE));
-        }
     }
 }
