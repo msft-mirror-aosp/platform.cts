@@ -18,6 +18,7 @@ package android.content.cts;
 
 import static com.android.compatibility.common.util.RequiredServiceRule.hasService;
 
+import android.Manifest;
 import android.app.DownloadManager;
 import android.app.SearchManager;
 import android.content.ComponentName;
@@ -43,31 +44,91 @@ import android.provider.Telephony;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.test.AndroidTestCase;
+import android.util.Log;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.cts.install.lib.Install;
+import com.android.cts.install.lib.TestApp;
+import com.android.cts.install.lib.Uninstall;
 import com.android.media.flags.Flags;
 
+import java.io.IOException;
 import java.util.List;
 
 @AppModeFull // TODO(Instant) Figure out which intents should be visible
 public class AvailableIntentsTest extends AndroidTestCase {
+    private static final String TAG = "AvailableIntentsTest";
     private static final String NORMAL_URL = "http://www.google.com/";
     private static final String SECURE_URL = "https://www.google.com/";
     private static final String QRCODE= "DPP:I:SN=4774LH2b4044;M:010203040506;K:MDkwEwYHKoZIzj" +
             "0CAQYIKoZIzj0DAQcDIgADURzxmttZoIRIPWGoQMV00XHWCAQIhXruVWOz0NjlkIA=;;";
+    private static final TestApp MOTION_PHOTO_CAPTURE_APP =
+            new TestApp(
+                    "CtsMotionPhotoCaptureApp",
+                    "android.content.cts.motionphotocaptureapp",
+                    30,
+                    false,
+                    "CtsMotionPhotoCaptureApp.apk");
 
     /**
-     * Assert target intent can be handled by at least one Activity.
-     * @param intent - the Intent will be handled.
+     * Uninstall CtsMotionPhotoCaptureApp.
      */
-    private void assertCanBeHandled(final Intent intent) {
+    private void uninstallMotionPhotoCaptureApp() throws InterruptedException {
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(Manifest.permission.DELETE_PACKAGES)) {
+            Uninstall.packages(MOTION_PHOTO_CAPTURE_APP.getPackageName());
+        }
+    }
+
+    /**
+     * Install CtsMotionPhotoCaptureApp.
+     */
+    private void installMotionPhotoCaptureApp() throws InterruptedException, IOException {
+        try (PermissionContext p =
+                TestApis.permissions().withPermission(Manifest.permission.INSTALL_PACKAGES)) {
+            Install.single(MOTION_PHOTO_CAPTURE_APP).commit();
+        }
+    }
+
+    /**
+     * Checks if the motionphotocaptureapp package is present.
+     *
+     * @return Whether the app has been installed.
+     */
+    private boolean isMotionPhotoCaptureAppInstalled() {
+        String appPackage = MOTION_PHOTO_CAPTURE_APP.getPackageName();
+        try {
+            mContext.getPackageManager().getPackageInfo(appPackage, PackageManager.GET_ACTIVITIES);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check target intent can be handled by at least one Activity.
+     *
+     * @param intent - the Intent to be handled.
+     */
+    private boolean canBeHandled(final Intent intent) {
         PackageManager packageManager = mContext.getPackageManager();
         List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
         assertNotNull(resolveInfoList);
         // one or more activity can handle this intent.
-        assertTrue(resolveInfoList.size() > 0);
+        return resolveInfoList.size() > 0;
+    }
+
+    /**
+     * Assert target intent can be handled by at least one Activity.
+     *
+     * @param intent - the Intent will be handled.
+     */
+    private void assertCanBeHandled(final Intent intent) {
+        assertTrue(canBeHandled(intent));
     }
 
     /**
@@ -290,6 +351,36 @@ public class AvailableIntentsTest extends AndroidTestCase {
 
             intent.setAction(MediaStore.INTENT_ACTION_VIDEO_CAMERA);
             assertHandledBySystemOnly(intent);
+        }
+    }
+
+    @RequiresFlagsEnabled(com.android.providers.media.flags.Flags.FLAG_MOTION_PHOTO_INTENT)
+    public void testMotionPhotoCaptureIntentsHandledBySystem()
+            throws InterruptedException, PackageManager.NameNotFoundException, IOException {
+        PackageManager packageManager = mContext.getPackageManager();
+        if (packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA)
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)) {
+
+            // Ensure that the motion photo capture app has been cleaned up from previous runs.
+            uninstallMotionPhotoCaptureApp();
+            assertFalse(isMotionPhotoCaptureAppInstalled());
+
+            Intent intent = new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
+            if (canBeHandled(intent)) {
+                Log.i(TAG, "Device has an app handling implicit ACTION_MOTION_PHOTO_CAPTURE");
+                assertHandledBySystemOnly(intent);
+            } else {
+                // On devices without a camera app handling this intent, ensure that newly installed
+                // apps don't hijack the implicit intent.
+                Log.i(
+                        TAG,
+                        "Device does not have an app handling implicit"
+                            + " ACTION_MOTION_PHOTO_CAPTURE");
+                installMotionPhotoCaptureApp();
+                assertTrue(isMotionPhotoCaptureAppInstalled());
+                assertFalse(canBeHandled(intent));
+                uninstallMotionPhotoCaptureApp();
+            }
         }
     }
 
