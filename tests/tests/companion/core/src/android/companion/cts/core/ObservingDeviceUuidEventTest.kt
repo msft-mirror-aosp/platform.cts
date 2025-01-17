@@ -25,6 +25,7 @@ import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.DevicePresenceEvent.EVENT_BT_DISCONNECTED
 import android.companion.Flags
 import android.companion.ObservingDevicePresenceRequest
+import android.companion.cts.common.ASSOCIATION_ID
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.common.UUID_A
@@ -68,6 +69,16 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_B.toString())
 
         super.tearDown()
+    }
+
+    @Test
+    fun test_ObservingDevicePresenceRequest_builder() {
+        val requestA = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
+        assertEquals(expected = UUID_A, actual = requestA.uuid)
+
+        val requestB = ObservingDevicePresenceRequest.Builder()
+            .setAssociationId(ASSOCIATION_ID).build()
+        assertEquals(expected = ASSOCIATION_ID, actual = requestB.associationId)
     }
 
     @Test
