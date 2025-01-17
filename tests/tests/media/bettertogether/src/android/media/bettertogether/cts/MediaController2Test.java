@@ -34,9 +34,12 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Process;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -52,10 +55,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Tests {@link android.media.MediaController2}.
- */
-@RunWith(AndroidJUnit4.class)
+/** Tests {@link android.media.MediaController2}. */
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class MediaController2Test {
     private static final long WAIT_TIME_MS = 100L;
@@ -145,6 +146,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_withIllegalArguments() {
         final Session2Token token = new Session2Token(
                 mContext, new ComponentName(mContext, this.getClass()));
@@ -179,6 +181,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_setConnectionHints_withFrameworkParcelable() throws Exception {
         final List<MediaSession2.ControllerInfo> controllerInfoList = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -218,6 +221,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testBuilder_setConnectionHints_withCustomParcelable() {
         final Session2Token token = new Session2Token(
                 mContext, new ComponentName(mContext, this.getClass()));
@@ -236,6 +240,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCreatingControllerWithoutCallback() throws Exception {
         try (MediaController2 controller =
                      new MediaController2.Builder(mContext, mSession.getToken()).build()) {
@@ -247,6 +252,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetConnectedToken() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -269,6 +275,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onConnected_onDisconnected() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -285,6 +292,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onSessionCommand() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -321,6 +329,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onCommandResult() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -355,6 +364,7 @@ public class MediaController2Test {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCancelSessionCommand() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
