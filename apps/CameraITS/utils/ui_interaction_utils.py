@@ -600,13 +600,15 @@ def default_camera_app_dut_setup(device_id, pkg_name):
         device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
 
 
-def launch_jca_and_capture(dut, log_path, camera_facing):
+def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
     dut: An Android controller device object.
     log_path: str; log path to save screenshots.
     camera_facing: camera lens facing orientation
+    zoom_ratio: optional; zoom_ratio to be set while taking the JCA capture.
+    By default it will be set to 1 if the value is None.
   Returns:
     img_path_on_dut: Path of the captured image on the device
   """
@@ -625,6 +627,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
     )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
+    if zoom_ratio:
+      jca_ui_zoom(dut, zoom_ratio, log_path)
     change_jca_aspect_ratio(dut, log_path,
                             aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
     # Take dumpsys before capturing the image
