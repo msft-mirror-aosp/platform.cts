@@ -39,13 +39,15 @@ class GeneratedPreviewsTest : BaseHostJUnit4Test() {
     @get:Rule
     val checkFlagsRule = HostFlagsValueProvider.createCheckFlagsRule { device }
 
+    var user = 0
+
     @Before
     fun setUp() {
         // Clear package (which clears previews)
         val pmResult = device.executeShellV2Command("pm clear $PACKAGE")
         assertThat(pmResult.exitCode).isEqualTo(0)
-
-        device.startUser(device.mainUserId, true)
+        user = device.mainUserId ?: device.currentUser
+        device.startUser(user, true)
     }
 
     @Test
@@ -57,7 +59,7 @@ class GeneratedPreviewsTest : BaseHostJUnit4Test() {
         // Reboot
         device.rebootUntilOnline()
         device.waitForBootComplete(60_000L)
-        device.startUser(device.mainUserId, true)
+        device.startUser(user, true)
 
         // Check preview
         val checkResult = runDeviceTests(PACKAGE, TEST_CLASS, CHECK_PREVIEW_TEST)
