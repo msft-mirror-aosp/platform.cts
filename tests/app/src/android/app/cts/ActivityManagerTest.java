@@ -2284,6 +2284,8 @@ public final class ActivityManagerTest {
     @Test
     public void testSwitchToHeadlessSystemUser_whenCanSwitchToHeadlessSystemUserEnabled() {
         assumeHeadlessSystemUserMode();
+        assumeFalse(isAutomotive(mTargetContext));
+
         assumeTrue("Switch to Non-full headless SYSTEM user is only allowed when "
                         + "config_canSwitchToHeadlessSystemUser is enabled.",
                 canSwitchToHeadlessSystemUser());
