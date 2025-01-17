@@ -5958,6 +5958,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_basiclatency">Basic Latency:</string>
     <string name="audio_loopback_mpclatency">MPC Latency</string>
     <string name="audio_loopback_proaudiolatency">"Pro Audio Latency"</string>
+    <string name="audio_loopback_noproaudiosupport">No Pro Audio Support (PASS)</string>
+    <string name="audio_loopback_nopmpcsupport">No MPC Support (PASS)</string>
     <string name="audio_loopback_wavcapturefolder">WAV Capture Folder:</string>
     <string name="audio_loopback_wavcapturefile">Capture File:</string>
     <string name="audio_loopback_nocapture">No Capture</string>
