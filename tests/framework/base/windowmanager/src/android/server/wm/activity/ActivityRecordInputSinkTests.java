@@ -182,11 +182,12 @@ public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBa
 
         mWmState.waitAndAssertActivityState(mTestActivity, STATE_PAUSED);
         mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
-        touchButtonsAndAssert(false);
+        touchButtonsAndAssert(false /* expectTouchesToReachActivity */);
 
         final int displayId = mWmState.getTaskByActivity(OVERLAY_IN_DIFFERENT_UID).mDisplayId;
         mContext.sendBroadcast(new Intent(ACTION_FINISH).putExtra(EXTRA_FADE_EXIT, true));
         assertThat(mWmState.waitForAppTransitionRunningOnDisplay(displayId)).isTrue();
+        assertThat(mWmState.waitForAppTransitionIdleOnDisplay(displayId)).isTrue();
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/, false /* waitForAnimation */);
     }
 }
