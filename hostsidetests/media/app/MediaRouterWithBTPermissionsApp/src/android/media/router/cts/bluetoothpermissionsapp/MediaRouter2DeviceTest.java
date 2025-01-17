@@ -20,6 +20,8 @@ import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_VIDEO;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_3_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_1;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_3;
@@ -503,6 +505,33 @@ public class MediaRouter2DeviceTest {
         router.setRouteListingPreference(null);
         mediaRouter2ManagerCallback.waitForRouteListingPreferenceUpdateOnManager();
         Truth.assertThat(mediaRouter2ManagerCallback.mRouteListingPreference).isNull();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MEDIA_ROUTE_2_INFO_PROVIDER_PACKAGE_NAME)
+    @Test
+    public void getProviderPackageName_propagatesCorrectlyFromProvider() throws TimeoutException {
+        launchScreenOnActivity();
+        MediaRouter2 router = MediaRouter2.getInstance(mContext);
+
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ true)
+                        .build();
+        Map<String, MediaRoute2Info> routes =
+                waitForAndGetRoutes(
+                        router,
+                        preference,
+                        Set.of(
+                                ROUTE_ID_APP_1_ROUTE_1,
+                                ROUTE_ID_APP_2_ROUTE_1,
+                                ROUTE_ID_APP_3_ROUTE_1),
+                        mExecutor);
+        Truth.assertThat(routes.get(ROUTE_ID_APP_1_ROUTE_1).getProviderPackageName())
+                .isEqualTo(MEDIA_ROUTER_PROVIDER_1_PACKAGE);
+        Truth.assertThat(routes.get(ROUTE_ID_APP_2_ROUTE_1).getProviderPackageName())
+                .isEqualTo(MEDIA_ROUTER_PROVIDER_2_PACKAGE);
+        Truth.assertThat(routes.get(ROUTE_ID_APP_3_ROUTE_1).getProviderPackageName())
+                .isEqualTo(MEDIA_ROUTER_PROVIDER_3_PACKAGE);
     }
 
     @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
