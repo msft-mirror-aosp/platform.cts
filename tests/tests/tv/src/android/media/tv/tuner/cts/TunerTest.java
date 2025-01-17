@@ -110,6 +110,7 @@ import android.media.tv.tuner.frontend.IsdbtFrontendCapabilities;
 import android.media.tv.tuner.frontend.IsdbtFrontendSettings;
 import android.media.tv.tuner.frontend.OnTuneEventListener;
 import android.media.tv.tuner.frontend.ScanCallback;
+import android.media.tv.tuner.frontend.StandardExtension;
 import android.media.tv.tunerresourcemanager.TunerFrontendInfo;
 import android.media.tv.tunerresourcemanager.TunerFrontendRequest;
 import android.media.tv.tunerresourcemanager.TunerResourceManager;
@@ -859,7 +860,16 @@ public class TunerTest {
                             status.getIptvAverageJitterMillis();
                             break;
                         case FrontendStatus.FRONTEND_STATUS_TYPE_STANDARD_EXTENSION:
-                            status.getStandardExtension();
+                            StandardExtension ext = status.getStandardExtension();
+                            // Other frontend type shouldn't report frontend status capability of
+                            // standard extension.
+                            assertTrue(info.getType() == FrontendSettings.TYPE_DVBS ||
+                                       info.getType() == FrontendSettings.TYPE_DVBT);
+                            if (info.getType() == FrontendSettings.TYPE_DVBS) {
+                                ext.getDvbsStandardExtension();
+                            } else if (info.getType() == FrontendSettings.TYPE_DVBT) {
+                                ext.getDvbtStandardExtension();
+                            }
                             break;
                     }
                 }

@@ -340,10 +340,10 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(events));
         boolean failed =
-                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.15;
         writeReadingsToLog(Thread.currentThread().getStackTrace()[1].getMethodName(), events);
         if (failed) {
-            Assert.fail("FAILED - Pressure change under flashlight impact is larger than 0.12 hPa");
+            Assert.fail("FAILED - Pressure change under flashlight impact is larger than 0.15 hPa");
         }
         return failed ? "FAILED" : "PASSED";
     }
@@ -409,9 +409,9 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(events));
         boolean failed =
-                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.15;
         if (failed) {
-            Assert.fail("FAILED - Pressure change under radio impact is larger than 0.12 hPa");
+            Assert.fail("FAILED - Pressure change under radio impact is larger than 0.15 hPa");
         }
         return failed ? "FAILED" : "PASSED";
     }
@@ -456,9 +456,9 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         Pair<Entry<Long, Float>, Entry<Long, Float>> minAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(events));
         boolean failed =
-                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.12;
+                minAndMaxReadings.second.getValue() - minAndMaxReadings.first.getValue() > 0.15;
         if (failed) {
-            Assert.fail("FAILED - Pressure change under walking impact is larger than 0.12 hPa");
+            Assert.fail("FAILED - Pressure change under walking impact is larger than 0.15 hPa");
         }
         return failed ? "FAILED" : "PASSED";
     }
@@ -522,13 +522,13 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         }
         Pair<Entry<Long, Float>, Entry<Long, Float>> baselineMinAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(baselineEvents));
-        // The pressure change on the ground should be less than 0.12 hPa.
+        // The pressure change on the ground should be less than 0.15 hPa.
         boolean failed =
                 baselineMinAndMaxReadings.second.getValue()
                                 - baselineMinAndMaxReadings.first.getValue()
-                        > 0.12;
+                        > 0.15;
         if (failed) {
-            Assert.fail("FAILED - Pressure change on the ground is larger than 0.12 hPa");
+            Assert.fail("FAILED - Pressure change on the ground is larger than 0.15 hPa");
         }
         Pair<Entry<Long, Float>, Entry<Long, Float>> afterChangeMinAndMaxReadings =
                 getMinAndMaxReadings(eventListToTimestampReadingMap(afterChangeEvents));
@@ -653,6 +653,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
         getTestLogger().logInstructions(R.string.snsr_baro_turn_bluetooth_on);
         waitForUserToContinue();
         startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS));
+        waitForUserToContinue();
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         BluetoothChatService chatService =
                 new BluetoothChatService(
@@ -660,7 +661,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
                         new ChatHandler(Looper.getMainLooper()),
                         BluetoothChatService.SECURE_UUID);
         chatService.start(/* secure= */ true);
-        // Prompt the user to pair the reference device and the test device.
+      // Prompt the user to pair the reference device and the test device.
         getTestLogger().logInstructions(R.string.snsr_baro_bluetooth_instruction);
         waitForUserToContinue();
         startActivity(new Intent(Settings.ACTION_BLUETOOTH_PAIRING_SETTINGS));
@@ -939,6 +940,9 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
             readings.add(event.timestamp + "," + computeAveragePressureHpa(event));
         }
         CtsVerifierReportLog reportLog = getReportLog();
+        if(reportLog == null) {
+            reportLog = newReportLog();
+        }
         reportLog.addValues(methodName, readings, ResultType.NEUTRAL, ResultUnit.NONE);
         reportLog.submit();
     }

@@ -24,10 +24,13 @@ import static android.photopicker.cts.util.PhotoPickerPackageUtils.getDocumentsU
 import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickBrowse;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertReadOnlyAccess;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ClipData;
 import android.content.Intent;
@@ -37,9 +40,13 @@ import android.photopicker.cts.util.UiAssertionUtils;
 import android.provider.MediaStore;
 import android.util.Pair;
 
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiObjectNotFoundException;
 import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.Before;
@@ -47,6 +54,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Photo Picker tests for PhotoPicker launched via {@link Intent#ACTION_GET_CONTENT} intent
@@ -88,6 +96,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
 
     @Test
     public void testMimeTypeFilter() throws Exception {
+        // TODO(b/374851711): Re-enable these tests once b/374851711 is fixed.
+        assumeFalse("DocumentsUi does not support visible background users",
+                isVisibleBackgroundUser());
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -103,6 +114,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
 
     @Test
     public void testExtraMimeTypeFilter() throws Exception {
+        // TODO(b/374851711): Re-enable these tests once b/374851711 is fixed.
+        assumeFalse("DocumentsUi does not support visible background users",
+                isVisibleBackgroundUser());
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -119,6 +133,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
 
     @Test
     public void testBrowse_singleSelect() throws Exception {
+        // TODO(b/374851711): Re-enable these tests once b/374851711 is fixed.
+        assumeFalse("DocumentsUi does not support visible background users",
+                isVisibleBackgroundUser());
         final int itemCount = 1;
         List<Pair<Uri, String>> createdImagesData = createImagesAndGetUriAndPath(itemCount,
                 mContext.getUserId(), /* isFavorite */ false);
@@ -133,7 +150,11 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         intent.setType("image/*");
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        findAndClickBrowse(sDevice);
+        if (isVisibleBackgroundUser()) {
+            findAndClickBrowse(sDevice, getMainDisplayId());
+        } else {
+            findAndClickBrowse(sDevice);
+        }
 
         findAndClickFilesInDocumentsUi(fileNameList);
 
@@ -144,6 +165,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
 
     @Test
     public void testBrowse_multiSelect() throws Exception {
+        // TODO(b/374851711): Re-enable these tests once b/374851711 is fixed.
+        assumeFalse("DocumentsUi does not support visible background users",
+                isVisibleBackgroundUser());
         final int itemCount = 3;
         List<Pair<Uri, String>> createdImagesData = createImagesAndGetUriAndPath(itemCount,
                 mContext.getUserId(), /* isFavorite */ false);
@@ -159,7 +183,11 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         intent.setType("image/*");
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        findAndClickBrowse(sDevice);
+        if (isVisibleBackgroundUser()) {
+            findAndClickBrowse(sDevice, getMainDisplayId());
+        } else {
+            findAndClickBrowse(sDevice);
+        }
 
         findAndClickFilesInDocumentsUi(fileNameList);
 
@@ -183,6 +211,9 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
 
     @Test
     public void testChooserIntent_nonMediaFilter() throws Exception {
+        // TODO(b/374851711): Re-enable these tests once b/374851711 is fixed.
+        assumeFalse("DocumentsUi does not support visible background users",
+                isVisibleBackgroundUser());
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
         mActivity.startActivityForResult(intent, REQUEST_CODE);
@@ -207,8 +238,14 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     private void assertThatShowsDocumentsUiButtons() {
         // Assert that "Recent files" header for DocumentsUi shows
         // Add a short timeout wait for DocumentsUi to show
-        assertThat(new UiObject(new UiSelector().resourceId(sDocumentsUiPackageName
-                + ":id/header_title")).waitForExists(SHORT_TIMEOUT)).isTrue();
+        if (isVisibleBackgroundUser()) {
+            final BySelector selector = By.res(Pattern.compile(
+                    sDocumentsUiPackageName + ":id/header_title")).displayId(getMainDisplayId());
+            assertThat(sDevice.wait(Until.hasObject(selector), SHORT_TIMEOUT)).isTrue();
+        } else {
+            assertThat(new UiObject(new UiSelector().resourceId(sDocumentsUiPackageName
+                    + ":id/header_title")).waitForExists(SHORT_TIMEOUT)).isTrue();
+        }
     }
 
     private UiObject findSaveButton() {
@@ -217,18 +254,42 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
                 .childSelector(new UiSelector().resourceId("android:id/button1")));
     }
 
+    private UiObject2 findSaveButton(int displayId) {
+        final BySelector containerSelector = By.res(Pattern.compile(
+                sDocumentsUiPackageName + ":id/container_save")).displayId(displayId);
+        final BySelector buttonSelector = containerSelector.hasChild(By.res("android:id/button1"));
+        return sDevice.findObject(buttonSelector);
+    }
+
     private void findAndClickFilesInDocumentsUi(List<String> fileNameList) throws Exception {
-        final UiSelector docList = getDirectoryListSelector();
-        for (String fileName : fileNameList) {
-            findAndClickFileInDocumentsUi(docList, fileName);
+        if (isVisibleBackgroundUser()) {
+            final int displayId = getMainDisplayId();
+            final BySelector docList = getDirectoryListSelector(displayId);
+            for (String fileName : fileNameList) {
+                findAndClickFileInDocumentsUi(docList, fileName, displayId);
+            }
+        } else {
+            final UiSelector docList = getDirectoryListSelector();
+            for (String fileName : fileNameList) {
+                findAndClickFileInDocumentsUi(docList, fileName);
+            }
         }
         findAndClickSelect();
     }
 
     private void findAndClickSelect() throws Exception {
-        final UiObject selectButton = new UiObject(new UiSelector().resourceId(
-                sDocumentsUiPackageName + ":id/action_menu_select"));
-        clickAndWait(sDevice, selectButton);
+        if (isVisibleBackgroundUser()) {
+            final int displayId = getMainDisplayId();
+            final BySelector buttonSelector = By.res(Pattern.compile(
+                    sDocumentsUiPackageName + ":id/action_menu_select")).displayId(displayId);
+            final UiObject2 selectButton = findObject(sDevice, buttonSelector);
+            clickAndWait(sDevice, selectButton);
+        } else {
+            final UiObject selectButton = new UiObject(new UiSelector().resourceId(
+                    sDocumentsUiPackageName + ":id/action_menu_select"));
+            clickAndWait(sDevice, selectButton);
+        }
+
     }
 
     private UiSelector getDirectoryListSelector() throws Exception {
@@ -249,6 +310,25 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
         } catch (UiObjectNotFoundException ignored) {
             // Do nothing, already be in list mode.
         }
+        return docList;
+    }
+
+    private BySelector getDirectoryListSelector(int displayId) throws Exception {
+        final BySelector docList = By.res(Pattern.compile(sDocumentsUiPackageName
+                + ":id/dir_list")).displayId(displayId);
+
+        // Wait for the first list item to appear
+        assertWithMessage("First list item")
+                .that(sDevice.wait(Until.hasObject(docList.hasChild(By.depth(1))), SHORT_TIMEOUT))
+                .isTrue();
+
+        // Enforce to set the list mode
+        // Because UiScrollable can't reach the real bottom (when WEB_LINKABLE_FILE item)
+        // in grid mode when screen landscape mode
+        final BySelector subMenuSelector = By.res(Pattern.compile(sDocumentsUiPackageName
+                + ":id/sub_menu_list")).displayId(displayId);
+        final UiObject2 subMenu = findObject(sDevice, subMenuSelector);
+        clickAndWait(sDevice, subMenu);
         return docList;
     }
 
@@ -278,6 +358,31 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
                     /* steps= */ 40);
         }
 
+        targetObject.longClick();
+    }
+
+    private void findAndClickFileInDocumentsUi(BySelector docList, String fileName, int displayId)
+            throws Exception {
+        // Repeat swipe gesture to find our item
+        final BySelector targetSelect = By.textContains(fileName).displayId(displayId);
+        UiObject2 targetObject = findObject(sDevice, targetSelect);
+        UiObject2 saveButton = findSaveButton(displayId);
+        int stepLimit = 10;
+        while (stepLimit-- > 0) {
+            boolean targetObjectFullyVisible = (saveButton == null)
+                    || targetObject.getVisibleBounds().bottom
+                    <= saveButton.getVisibleBounds().top;
+            if (targetObjectFullyVisible) {
+                break;
+            }
+            sDevice.swipe(/* startX= */ sDevice.getDisplayWidth() / 2,
+                    /* startY= */ sDevice.getDisplayHeight() / 2,
+                    /* endX= */ sDevice.getDisplayWidth() / 2,
+                    /* endY= */ 0,
+                    /* steps= */ 40);
+            targetObject = findObject(sDevice, targetSelect);
+            saveButton = findSaveButton(displayId);
+        }
         targetObject.longClick();
     }
 }

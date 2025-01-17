@@ -107,6 +107,18 @@ class AttributionSourceTest {
     }
 
     @Test
+    @ApiTest(apis = ["android.content.AttributionSource.Builder#Builder"])
+    fun testCopyConstructor() {
+        // random integer
+        val deviceId = 100
+        val attributionSource = AttributionSource.Builder(Process.myUid())
+            .setDeviceId(deviceId)
+            .build()
+        val attributionSource2 = AttributionSource.Builder(attributionSource).build()
+        assertEquals(attributionSource, attributionSource2)
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_SHOULD_REGISTER_ATTRIBUTION_SOURCE)
     fun attributionSourceRegisteredWhenContextFlagSet() {
         val baseContext = InstrumentationRegistry.getInstrumentation().context

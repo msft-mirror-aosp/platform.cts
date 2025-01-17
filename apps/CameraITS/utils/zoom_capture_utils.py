@@ -692,7 +692,7 @@ def verify_zoom_data(
 
 
 def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
-                                plot_name_stem):
+                                plot_name_stem, number_of_cameras_to_test=0):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -708,6 +708,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
     z_min: float; the minimum zoom ratio being tested
     z_step_size: float; zoom step size to zoom from z_min to z_max
     plot_name_stem: str; log path and name of the plot
+    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -747,7 +748,8 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
 
   return test_success and verify_zoom_data(
       test_data, size, plot_name_stem=plot_name_stem,
-      monotonicity_atol=_PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL)
+      monotonicity_atol=_PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
+      number_of_cameras_to_test=number_of_cameras_to_test)
 
 
 def get_preview_zoom_params(zoom_range, steps):

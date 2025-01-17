@@ -22,9 +22,12 @@ import static android.photopicker.cts.util.PhotoPickerFilesUtils.deleteMedia;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.assertUiObjectExistsWithId;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickUiObjectWithId;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getMediaItem;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.getMediaItemSelector;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingDescription;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingText;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingTextSelector;
 
 import static com.android.providers.media.flags.Flags.enableEmbeddedPhotopicker;
 
@@ -43,16 +46,20 @@ import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.view.Display;
 import android.view.SurfaceView;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.Until;
 
+import com.android.compatibility.common.util.UserHelper;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.After;
@@ -93,6 +100,9 @@ public class EmbeddedPhotoPickerTest {
     private Intent mIntent = new Intent(ACTION_EMBEDDED_PHOTOPICKER_SERVICE);
     private CountDownLatch mSessionCountDownLatch;
 
+    private boolean mIsVisibleBackgroundUser = false;
+    private int mDisplayId = Display.DEFAULT_DISPLAY;
+
     @Rule
     public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -104,6 +114,9 @@ public class EmbeddedPhotoPickerTest {
         // Wake up the device and dismiss the keyguard before the test starts
         sDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
         sDevice.executeShellCommand("wm dismiss-keyguard");
+        UserHelper userHelper = new UserHelper(mContext);
+        mIsVisibleBackgroundUser = userHelper.isVisibleBackgroundUser();
+        mDisplayId = userHelper.getMainDisplayId();
     }
 
     @After
@@ -143,7 +156,11 @@ public class EmbeddedPhotoPickerTest {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
 
-        clickAndWait(sDevice, getMediaItem(sDevice));
+        if (mIsVisibleBackgroundUser) {
+            clickAndWait(sDevice, findObject(sDevice, getMediaItemSelector(mDisplayId)));
+        } else {
+            clickAndWait(sDevice, getMediaItem(sDevice));
+        }
 
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
         assertThat(selectedUris.size()).isEqualTo(1);
@@ -166,8 +183,11 @@ public class EmbeddedPhotoPickerTest {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
 
-        UiObject mediaItem = getMediaItem(sDevice);
-        clickAndWait(sDevice, mediaItem);
+        if (mIsVisibleBackgroundUser) {
+            clickAndWait(sDevice, findObject(sDevice, getMediaItemSelector(mDisplayId)));
+        } else {
+            clickAndWait(sDevice, getMediaItem(sDevice));
+        }
 
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
         assertThat(selectedUris.size()).isEqualTo(1);
@@ -178,7 +198,11 @@ public class EmbeddedPhotoPickerTest {
         mActivity.setCountDownLatchForItemsDeselectedClientInvocation(countDownLatch);
 
         // 4. Deselect the previously selected media item
-        clickAndWait(sDevice, mediaItem);
+        if (mIsVisibleBackgroundUser) {
+            clickAndWait(sDevice, findObject(sDevice, getMediaItemSelector(mDisplayId)));
+        } else {
+            clickAndWait(sDevice, getMediaItem(sDevice));
+        }
 
         // 5. Assert that the item is deselected.
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
@@ -230,14 +254,27 @@ public class EmbeddedPhotoPickerTest {
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        // 2. Assert that "Photos" tab is hidden when expanded state is set to false
-        UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
-        assertThat(photosTab.exists()).isFalse();
+        if (mIsVisibleBackgroundUser) {
+            // 2. Assert that "Photos" tab is hidden when expanded state is set to false
+            BySelector photosTabSelector = getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL,
+                    mDisplayId);
+            assertThat(sDevice.hasObject(photosTabSelector)).isFalse();
 
-        // 3. Set the expanded state to true and assert that the "Photos" tab is visible
-        mActivity.getSession().notifyPhotoPickerExpanded(true);
-        assertPhotosTabExists();
-        assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
+            // 3. Set the expanded state to true and assert that the "Photos" tab is visible
+            mActivity.getSession().notifyPhotoPickerExpanded(true);
+            assertPhotosTabExists();
+            UiObject2 photosTab = findObject(sDevice, photosTabSelector);
+            assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
+        } else {
+            // 2. Assert that "Photos" tab is hidden when expanded state is set to false
+            UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
+            assertThat(photosTab.exists()).isFalse();
+
+            // 3. Set the expanded state to true and assert that the "Photos" tab is visible
+            mActivity.getSession().notifyPhotoPickerExpanded(true);
+            assertPhotosTabExists();
+            assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
+        }
     }
 
     @Test
@@ -252,8 +289,11 @@ public class EmbeddedPhotoPickerTest {
         // constitutes the surface package can be extracted
         mActivity.getSession().notifyPhotoPickerExpanded(true);
         assertPhotosTabExists();
-        UiObject2 surfacePackage = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
-                .getParent().getParent().getParent();
+        UiObject2 surfacePackage = mIsVisibleBackgroundUser
+                ? getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice, mDisplayId)
+                    .getParent().getParent().getParent()
+                : getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
+                    .getParent().getParent().getParent();
         assertThat(surfacePackage).isNotNull();
         int oldWidth = surfacePackage.getVisibleBounds().width();
         int oldHeight = surfacePackage.getVisibleBounds().height();
@@ -266,8 +306,11 @@ public class EmbeddedPhotoPickerTest {
 
         // 4. Get the new surface package and its dimensions
         assertPhotosTabExists();
-        UiObject2 newSurfacePackage = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
-                .getParent().getParent().getParent();
+        UiObject2 newSurfacePackage =  mIsVisibleBackgroundUser
+                ? getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice, mDisplayId)
+                    .getParent().getParent().getParent()
+                : getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
+                    .getParent().getParent().getParent();
         assertThat(newSurfacePackage).isNotNull();
         int newWidth = newSurfacePackage.getVisibleBounds().width();
         int newHeight = newSurfacePackage.getVisibleBounds().height();
@@ -288,15 +331,28 @@ public class EmbeddedPhotoPickerTest {
         // 2. For the 'Done' button to show up, notify picker expanded and click a media item
         mActivity.getSession().notifyPhotoPickerExpanded(true);
         assertPhotosTabExists();
-        clickAndWait(sDevice, getMediaItem(sDevice));
+        if (mIsVisibleBackgroundUser) {
+            clickAndWait(sDevice, findObject(sDevice, getMediaItemSelector(mDisplayId)));
+        } else {
+            clickAndWait(sDevice, getMediaItem(sDevice));
+        }
+
 
         // 3. Set a new count down latch for 'onSelectionComplete' client invocation
         CountDownLatch countDownLatch = new CountDownLatch(1);
         mActivity.setCountDownLatchForSelectionCompleteClientInvocation(countDownLatch);
 
         // 4. Click the 'Done' button to trigger 'onSelectionComplete'
-        final UiObject doneButton = getUiObjectMatchingText(DONE_BUTTON_LABEL, sDevice);
-        clickAndWait(sDevice, doneButton);
+        if (mIsVisibleBackgroundUser) {
+            final BySelector doneButtonSelector = getUiObjectMatchingTextSelector(DONE_BUTTON_LABEL,
+                    mDisplayId);
+            final UiObject2 doneButton = findObject(sDevice, doneButtonSelector);
+            clickAndWait(sDevice, doneButton);
+        } else {
+            final UiObject doneButton = getUiObjectMatchingText(DONE_BUTTON_LABEL, sDevice);
+            clickAndWait(sDevice, doneButton);
+        }
+
 
         // 5. Assert that 'onSelectionComplete' is invoked and the surface package is released
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
@@ -317,8 +373,11 @@ public class EmbeddedPhotoPickerTest {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
 
-        UiObject mediaItem = getMediaItem(sDevice);
-        clickAndWait(sDevice, mediaItem);
+        if (mIsVisibleBackgroundUser) {
+            clickAndWait(sDevice, findObject(sDevice, getMediaItemSelector(mDisplayId)));
+        } else {
+            clickAndWait(sDevice, getMediaItem(sDevice));
+        }
 
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
         assertThat(selectedUris.size()).isEqualTo(1);
@@ -363,7 +422,11 @@ public class EmbeddedPhotoPickerTest {
         assertUiObjectExistsWithId(EMBEDDED_SURFACE_ID, sDevice);
         mSessionCountDownLatch = new CountDownLatch(1);
         mActivity.setCountDownLatchForSessionOpenedClientInvocation(mSessionCountDownLatch);
-        findAndClickUiObjectWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice);
+        if (mIsVisibleBackgroundUser) {
+            findAndClickUiObjectWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice, mDisplayId);
+        } else {
+            findAndClickUiObjectWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice);
+        }
         assertThat(mSessionCountDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
     }
 
@@ -420,7 +483,12 @@ public class EmbeddedPhotoPickerTest {
      * @throws AssertionError If the "Photos" tab is not found within the specified timeout.
      */
     private void assertPhotosTabExists() {
-        UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
-        assertThat(photosTab.waitForExists(1000)).isTrue();
+        if (mIsVisibleBackgroundUser) {
+            BySelector photosTab = getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId);
+            assertThat(sDevice.wait(Until.hasObject(photosTab), 1000)).isTrue();
+        } else {
+            UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
+            assertThat(photosTab.waitForExists(1000)).isTrue();
+        }
     }
 }

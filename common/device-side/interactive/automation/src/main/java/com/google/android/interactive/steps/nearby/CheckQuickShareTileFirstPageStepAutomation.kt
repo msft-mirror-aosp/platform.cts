@@ -16,7 +16,7 @@
 
 package com.google.android.interactive.steps.nearby
 
-import android.platform.uiautomator_helpers.DeviceHelpers
+import android.platform.uiautomatorhelpers.DeviceHelpers
 import androidx.test.uiautomator.By
 import com.android.bedstead.nene.TestApis.ui
 import com.android.interactive.Automation

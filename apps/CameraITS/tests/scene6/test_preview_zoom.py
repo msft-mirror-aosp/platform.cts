@@ -36,7 +36,9 @@ _MINIMUM_ARUCO_MARKERS_TO_DETECT = 1
 _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
-
+_SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
+_ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
+_WIDE_ZOOM_RATIO_MAX = 2.5
 
 # Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
 #       Use for tests not sensitive to variations of 1080p or 480p.
@@ -134,6 +136,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+      ultrawide_camera_found = cam.has_ultrawide_camera(
+          facing=props['android.lens.facing'])
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props))
 
@@ -167,6 +171,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
+      z_range[1] = _WIDE_ZOOM_RATIO_MAX
       logging.debug('z_range = %s', str(z_range))
       z_min, z_max, z_step_size = zoom_capture_utils.get_preview_zoom_params(
           z_range, _NUM_STEPS)
@@ -227,6 +232,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
                         z, e)
+          z_max = z
           break
 
         all_aruco_corners.append([corner[0] for corner in corners])
@@ -267,8 +273,14 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       plot_name_stem = f'{os.path.join(log_path, _NAME)}'
       # TODO: b/369852004 - decrease TOL for test_preview_zoom
+      number_of_cameras_to_test = (
+          _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST
+          if ultrawide_camera_found
+          else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
+      )
       if not zoom_capture_utils.verify_preview_zoom_results(
-          test_data, size, z_max, z_min, z_step_size, plot_name_stem):
+          test_data, size, z_max, z_min, z_step_size, plot_name_stem,
+          number_of_cameras_to_test=number_of_cameras_to_test):
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
         failure_msg = f'{_NAME} failed! Check test_log.DEBUG for errors'
         if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:

@@ -722,7 +722,7 @@ public class KeyguardTests extends KeyguardTestBase {
     }
 
     @Test
-    public void testKeyguardLock() {
+    public void testKeyguardDisabledThenReenabledLocks() {
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.gotoKeyguard();
         mWmState.assertKeyguardShowingAndNotOccluded();
