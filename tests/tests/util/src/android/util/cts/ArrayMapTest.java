@@ -483,7 +483,8 @@ public class ArrayMapTest {
     /**
      * Test creating a malformed array map with duplicated keys and that we will catch this
      * when unparcelling.
-     */
+     *
+     * TODO: remove use of private APIs, see b/384599385
     @Test
     public void testDuplicateKeys() throws NoSuchMethodException,
             InvocationTargetException, IllegalAccessException, NoSuchFieldException {
@@ -517,6 +518,7 @@ public class ArrayMapTest {
         dump(map1, map2);
         fail(msg);
     }
+    */
 
     private static void checkEntrySetToArray(ArrayMap<?, ?> testMap) {
         try {
