@@ -75,7 +75,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testContextualSearchInvocation() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -85,7 +84,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testContextualSearchExtras() {
         val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
@@ -119,7 +117,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchState() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
@@ -141,7 +138,7 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE, Flags.FLAG_ENABLE_TOKEN_REFRESH)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchStateWithTokenRefresh() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -174,7 +171,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testTokenWithinValidDuration() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -195,7 +191,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testTokenAfterValidDuration() {
         // The token should expire immediately.
         setTokenDuration(1)
