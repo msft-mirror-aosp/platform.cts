@@ -50,7 +50,7 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
     static final ComponentName TRAMPOLINE_DIFFERENT_UID =
             Components.TrampolineActivity.getComponent(APP_A);
 
-    int mTouchCount;
+    private int mTouchCount;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -81,7 +81,7 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
 
     void launchActivityInSameTask(
             ComponentName componentName, @Nullable Bundle extras, @Nullable Bundle options) {
-        Intent intent = new Intent(ActivityRecordInputSinkTestsActivity.LAUNCH_ACTIVITY_ACTION);
+        final Intent intent = new Intent(ActivityRecordInputSinkTestsActivity.LAUNCH_ACTIVITY_ACTION);
         intent.setPackage(getAppSelf());
         intent.putExtra(ActivityRecordInputSinkTestsActivity.COMPONENT_EXTRA, componentName);
         intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_EXTRA, extras);
@@ -94,11 +94,10 @@ public abstract class ActivityRecordInputSinkTestsBase extends ActivityManagerTe
         touchButtonsAndAssert(expectTouchesToReachActivity, true /* waitForAnimation */);
     }
 
-    void touchButtonsAndAssert(
-            boolean expectTouchesToReachActivity, boolean waitForAnimation) {
-        WindowManagerState.Activity activity = mWmState.getActivity(mTestActivity);
-        int displayId = activity.getTask().mDisplayId;
-        Rect bounds = activity.getBounds();
+    void touchButtonsAndAssert(boolean expectTouchesToReachActivity, boolean waitForAnimation) {
+        final WindowManagerState.Activity activity = mWmState.getActivity(mTestActivity);
+        final int displayId = activity.getTask().mDisplayId;
+        final Rect bounds = activity.getBounds();
         bounds.offset(0, -bounds.height() / 3);
         mTouchHelper.tapOnCenter(bounds, displayId, waitForAnimation);
         mTouchCount += (expectTouchesToReachActivity ? 1 : 0);

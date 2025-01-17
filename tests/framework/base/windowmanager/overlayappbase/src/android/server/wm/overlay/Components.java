@@ -73,7 +73,7 @@ public class Components extends ComponentsBase {
         }
 
         static Bundle buildTrampolineExtra(ComponentName... componentNames) {
-            Bundle trampolineTarget = new Bundle();
+            final Bundle trampolineTarget = new Bundle();
             trampolineTarget.putParcelableArray(COMPONENTS_EXTRA, componentNames);
             return trampolineTarget;
         }
