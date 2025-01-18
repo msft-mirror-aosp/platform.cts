@@ -19,7 +19,6 @@ package android.videocodec.cts;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.media.codec.Flags.apvSupport;
-import static android.mediav2.common.cts.CodecTestBase.ComponentClass.ALL;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
@@ -166,7 +165,7 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
         List<Object[]> finalParams = defaultParams;
         if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
             List<Object[]> apvParams =
-                    prepareParamList(apvArgsList, true, false, true, false, ALL, null, true);
+                    prepareParamList(apvArgsList, true, false, true, false, HARDWARE);
             finalParams = Stream.concat(apvParams.stream(), defaultParams.stream())
                     .collect(Collectors.toList());
         }
