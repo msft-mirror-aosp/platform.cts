@@ -357,10 +357,10 @@ public class AccessibilityTextActionTest {
         assertNotNull(parcelables);
         final RectF[] locationsBeforeScroll = (RectF[]) parcelables;
         assertEquals(text.getText().length(), locationsBeforeScroll.length);
-        // The first character should be visible immediately
+        // The first character should be visible immediately.
         assertFalse(locationsBeforeScroll[0].isEmpty());
         // Some of the characters should be off the screen, and thus have empty rects. Find the
-        // break point
+        // break point.
         int firstNullRectIndex = -1;
         for (int i = 1; i < locationsBeforeScroll.length; i++) {
             boolean isNull = locationsBeforeScroll[i] == null;
@@ -373,22 +373,28 @@ public class AccessibilityTextActionTest {
             }
         }
 
-        // Scroll down one line
-        sInstrumentation.runOnMainSync(() -> {
-            int[] viewPosition = new int[2];
-            editText.getLocationOnScreen(viewPosition);
-            final int oneLineDownY = (int) locationsBeforeScroll[0].bottom - viewPosition[1];
-            editText.scrollTo(0, oneLineDownY + 1);
-        });
+        // Scroll down one line.
+        sInstrumentation.runOnMainSync(
+                () -> {
+                    // Calculate the height of a line from the relative character heights.
+                    int firstLineBottom = (int) locationsBeforeScroll[0].bottom;
+                    int i = 1;
+                    while ((int) locationsBeforeScroll[i].bottom == firstLineBottom) {
+                        i++;
+                    }
+                    final int oneLineDownY =
+                            (int) locationsBeforeScroll[i].bottom - firstLineBottom;
+                    editText.scrollTo(0, oneLineDownY + 1);
+                });
 
         extras = waitForExtraTextData(text, extraDataKey);
         parcelables = extras
                 .getParcelableArray(extraDataKey, RectF.class);
         assertNotNull(parcelables);
         final RectF[] locationsAfterScroll = (RectF[]) parcelables;
-        // Now the first character should be off the screen
+        // Now the first character should be off the screen.
         assertNull(locationsAfterScroll[0]);
-        // The first character that was off the screen should now be on it
+        // The first character that was off the screen should now be on it.
         assertNotNull(locationsAfterScroll[firstNullRectIndex]);
     }
 

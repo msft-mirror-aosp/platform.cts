@@ -38,10 +38,6 @@ public class NativeSystemHealthTest {
 
     private static native String nativeTestGetMaxCpuHeadroomTidsSize();
 
-    private static native String nativeTestGetCpuHeadroomCalculationWindowRange();
-
-    private static native String nativeTestGetGpuHeadroomCalculationWindowRange();
-
     private static native String nativeTestGetCpuHeadroomDefault();
 
     private static native String nativeTestGetCpuHeadroomAverage();
@@ -83,18 +79,6 @@ public class NativeSystemHealthTest {
     public void testGetMaxCpuHeadroomTidsSize() throws Exception {
         String res = nativeTestGetMaxCpuHeadroomTidsSize();
         checkResult(res, "GetMaxCpuHeadroomTidsSize");
-    }
-
-    @Test
-    public void testGetCpuHeadroomCalculationWindowRange() throws Exception {
-        String res = nativeTestGetCpuHeadroomCalculationWindowRange();
-        checkResult(res, "GetCpuHeadroomCalculationWindowRange");
-    }
-
-    @Test
-    public void testGetGpuHeadroomCalculationWindowRange() throws Exception {
-        String res = nativeTestGetGpuHeadroomCalculationWindowRange();
-        checkResult(res, "GetGpuHeadroomCalculationWindowRange");
     }
 
     @Test

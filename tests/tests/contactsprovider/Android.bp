@@ -4,7 +4,7 @@ package {
 
 android_test {
     name: "CtsContactsProviderTestCases",
-    team: "trendy_team_framework_backstage_power",
+    team: "trendy_team_android_safer_apps",
     defaults: ["cts_defaults"],
 
     compile_multilib: "both",

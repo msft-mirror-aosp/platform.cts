@@ -42,6 +42,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -65,6 +66,10 @@ public class MediaQualityTest {
         if (mManager == null || !isSupported()) {
             return;
         }
+    }
+
+    private boolean isSupported() {
+        return mManager.isSupported();
     }
 
     @After
@@ -109,10 +114,61 @@ public class MediaQualityTest {
         mManager.getAvailablePictureProfiles(null);
     }
 
-    private boolean isSupported() {
-        return mManager.isSupported();
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetPictureProfileAllowlist() {
+        Exception exception = null;
+        try {
+            List<String> allow = Arrays.asList("Profile1", "Profile2", "Profile3");
+            mManager.setPictureProfileAllowList(allow);
+        } catch (Exception e) {
+            exception = e;
+        }
+        Assert.assertNull("No exceptions caught", exception);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetPictureProfileAllowlist() {
+        List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
+        mManager.setPictureProfileAllowList(allow);
+
+        List<String> queries = mManager.getPictureProfileAllowList();
+        Assert.assertNotNull(queries);
+        Assert.assertEquals(queries.size(), 3);
+        for (String a : allow) {
+            Assert.assertTrue(queries.contains(a));
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetSoundProfileAllowlist() {
+        Exception exception = null;
+        try {
+            List<String> allow = Arrays.asList("Profile1", "Profile2", "Profile3");
+            mManager.setSoundProfileAllowList(allow);
+        } catch (Exception e) {
+            exception = e;
+        }
+        Assert.assertNull("No exceptions caught", exception);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetSoundProfileAllowlist() {
+        List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
+        mManager.setSoundProfileAllowList(allow);
+
+        List<String> queries = mManager.getSoundProfileAllowList();
+        Assert.assertNotNull(queries);
+        Assert.assertEquals(queries.size(), 3);
+        for (String a : allow) {
+            Assert.assertTrue(queries.contains(a));
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testCreatePictureProfile() {
         Exception exception = null;
@@ -126,6 +182,7 @@ public class MediaQualityTest {
         Assert.assertNull("No exceptions caught", exception);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testUpdatePictureProfile() {
         PictureProfile toCreate = getTestPictureProfile("updatePictureProfile");
@@ -171,6 +228,7 @@ public class MediaQualityTest {
                 updated.getInt(PictureQuality.PARAMETER_CONTRAST));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testRemovePictureProfile() {
         PictureProfile toCreate = getTestPictureProfile("removePictureProfile");
@@ -188,6 +246,7 @@ public class MediaQualityTest {
         Assert.assertNull(profile2);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetPictureProfile() {
         PictureProfile toCreate = getTestPictureProfile("getPictureProfile");
@@ -214,6 +273,7 @@ public class MediaQualityTest {
                 expected.getString(PictureQuality.PARAMETER_CONTRAST));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetPictureProfilesByPackage() {
         PictureProfile toCreate = getTestPictureProfile("getPictureProfilesByPackage");
@@ -247,6 +307,7 @@ public class MediaQualityTest {
         mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testCreateSoundProfile() {
         Exception exception = null;
@@ -260,6 +321,7 @@ public class MediaQualityTest {
         Assert.assertNull("No exceptions caught", exception);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testUpdateSoundProfile() {
         SoundProfile toCreate = getTestSoundProfile("updateSoundProfile");
@@ -303,6 +365,7 @@ public class MediaQualityTest {
                 updated.getInt(SoundQuality.PARAMETER_TREBLE));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testRemoveSoundProfile() {
         SoundProfile toCreate = getTestSoundProfile("removeSoundProfile");
@@ -320,6 +383,7 @@ public class MediaQualityTest {
         Assert.assertNull(profile2);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetSoundProfile() {
         SoundProfile toCreate = getTestSoundProfile("getSoundProfile");
@@ -346,6 +410,7 @@ public class MediaQualityTest {
                 expected.getInt(SoundQuality.PARAMETER_TREBLE));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetSoundProfilesByPackage() {
         SoundProfile toCreate = getTestSoundProfile("getSoundProfilesByPackage");

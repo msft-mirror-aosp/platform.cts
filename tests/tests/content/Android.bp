@@ -122,6 +122,7 @@ android_test {
         "android.security.flags-aconfig-java",
         "flag-junit",
         "mediaprovider_flags_java_lib",
+        "NeneInternal",
         "TestParameterInjector",
     ],
     srcs: [
@@ -132,6 +133,9 @@ android_test {
     exclude_srcs: [
         "src/android/content/cts/AvailableDocumentIntentsTest.java",
         "src/android/content/cts/DocumentsUIUsedContentApiTest.java",
+    ],
+    java_resources: [
+        ":CtsMotionPhotoCaptureApp",
     ],
     data: [
         ":CtsSyncAccountAccessStubs",

@@ -68,6 +68,10 @@ class ItsBaseTest(base_test.BaseTestClass):
     else:
       self.lighting_cntl = 'None'
       self.lighting_ch = '1'
+    if (self.user_params.get('rotator_cntl') and
+        self.user_params.get('rotator_ch')):
+      self.rotator_cntl = self.user_params['rotator_cntl']
+      self.rotator_ch = str(self.user_params['rotator_ch'])
     if self.user_params.get('tablet_device'):
       self.tablet_device = self.user_params['tablet_device'] == 'True'
     if self.user_params.get('debug_mode'):

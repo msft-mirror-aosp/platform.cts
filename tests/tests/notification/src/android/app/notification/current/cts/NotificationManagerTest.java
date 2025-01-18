@@ -36,6 +36,7 @@ import static android.app.NotificationManager.IMPORTANCE_LOW;
 import static android.app.NotificationManager.IMPORTANCE_MIN;
 import static android.app.NotificationManager.IMPORTANCE_NONE;
 import static android.app.NotificationManager.IMPORTANCE_UNSPECIFIED;
+import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.service.notification.NotificationListenerService.META_DATA_DEFAULT_AUTOBIND;
 
@@ -3464,6 +3465,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNoPermission() throws Exception {
+        assumeFalse(
+                "Permission for POST_NOTIFICATIONS is always granted on TV and cannot be revoked",
+                mPackageManager.hasSystemFeature(FEATURE_LEANBACK));
+
         int id = 7;
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mContext.getSystemService(PermissionManager.class)

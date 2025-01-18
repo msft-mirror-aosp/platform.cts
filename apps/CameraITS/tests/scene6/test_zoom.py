@@ -67,10 +67,17 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       # Determine test zoom range
       z_range = props['android.control.zoomRatioRange']
       debug = self.debug_mode
+      camera_facing = props['android.lens.facing']
       z_min, z_max = float(z_range[0]), float(z_range[1])
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
-      z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
+      tele_camera_found = cam.has_tele_camera(
+          facing=camera_facing)
+      # Truncate zoom range if test_zoom_tele will be run
+      if tele_camera_found:
+        logging.debug('Tele camera found, truncating zoom range max to %.2f',
+                      _WIDE_ZOOM_RATIO_MAX)
+        z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
@@ -79,7 +86,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
       ultrawide_camera_found = cam.has_ultrawide_camera(
-          facing=props['android.lens.facing'])
+          facing=camera_facing)
       if (media_performance_class >= _TEST_REQUIRED_MPC and
           cam.is_primary_camera() and
           ultrawide_camera_found and
@@ -120,7 +127,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
           self.dut,
           self.log_path,
           flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
-          lens_facing=props['android.lens.facing'],
+          lens_facing=camera_facing,
           zoom_ratios=z_list
       )
       for zoom_ratio, capture in zip(z_list, captures):

@@ -1,4 +1,3 @@
-//
 // Copyright (C) 2023 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,49 +11,23 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package {
-    default_team: "trendy_team_platform_security",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test_helper_app {
-    name: "CtsDynamicCodeLoadingApp",
+    name: "Bug-277207798-test",
     defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.java"],
-    sdk_version: "35",
-    min_sdk_version: "35",
-    libs: [
-        "junit",
-    ],
-    compile_multilib: "both",
-    jni_libs: ["read_only_native_lib"],
-    static_libs: [
-        "ctstestrunner-axt",
-        "truth",
-    ],
-    // Tag this module as a cts test artifact
     test_suites: [
-        "cts",
-        "vts",
-        "general-tests",
+        "sts",
     ],
-    use_embedded_native_libs: false,
-}
-
-cc_test_library {
-    name: "read_only_native_lib",
-    srcs: ["native_lib.cpp"],
-    sdk_version: "35",
-
-    cflags: [
-        "-Wall",
-        "-Werror",
+    static_libs: [
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "androidx.test.core",
     ],
-    header_libs: ["jni_headers"],
-    strip: {
-        none: true,
-    },
-    stl: "libc++_static",
+    sdk_version: "current",
+    platform_apis: true,
 }

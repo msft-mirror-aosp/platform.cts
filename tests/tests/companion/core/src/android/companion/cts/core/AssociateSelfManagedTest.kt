@@ -119,10 +119,9 @@ class AssociateSelfManagedTest : CoreTestBase() {
         val callbackA = RecordingCallback()
 
         withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-            // Attempts to create a normal association with setDeviceIcon
-            assertFailsWith(IllegalArgumentException::class) {
-                cdm.associate(request, SIMPLE_EXECUTOR, callbackA)
-            }
+            // Even if the provided icon is invalid, the system will resize the
+            // invalid icon to an acceptable size.
+            cdm.associate(request, SIMPLE_EXECUTOR, callbackA)
         }
     }
 
@@ -141,14 +140,16 @@ class AssociateSelfManagedTest : CoreTestBase() {
         }
         val iconB = cdm.myAssociations[0].deviceIcon
         assertNotNull(iconB, "The device icon should not be null.")
-        assertEquals(actual = iconB.resId, expected = iconA.resId)
-        assertEquals(actual = iconB.type, expected = iconA.type)
+
         // Reload associationInfo from the disk, the deviceIcon should be remain.
         runShellCommand("cmd companiondevice refresh-cache")
         val iconC = cdm.myAssociations[0].deviceIcon
+        iconB?.bitmap?.let { bBitmap ->
+            iconC?.bitmap?.let { cBitmap ->
+                assertTrue(bBitmap.sameAs(cBitmap))
+            }
+        }
         assertNotNull(iconC, "The device icon should not be null.")
-        assertEquals(actual = iconC.resId, expected = iconA.resId)
-        assertEquals(actual = iconC.type, expected = iconA.type)
     }
 
     @Test

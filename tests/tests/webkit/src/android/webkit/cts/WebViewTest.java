@@ -451,7 +451,10 @@ public class WebViewTest extends SharedWebViewTest {
             String header = value.getKey();
             String[] matchingHeaders = request.getHeaders(header);
             assertEquals("header " + header + " not found", 1, matchingHeaders.length);
-            assertEquals(value.getValue(), matchingHeaders[0]);
+            assertEquals(
+                    "Checking value of " + header + " header",
+                    value.getValue(),
+                    matchingHeaders[0]);
         }
     }
 
@@ -2769,13 +2772,20 @@ public class WebViewTest extends SharedWebViewTest {
 
         // check all the steps in the history
         for (int i = start; i <= end; i++) {
-            assertEquals(expected, mWebView.canGoBackOrForward(i));
+            assertEquals(
+                    "Checking whether we can navigate " + i + " steps",
+                    expected,
+                    mWebView.canGoBackOrForward(i));
 
             // shortcut methods for one step
             if (i == 1) {
-                assertEquals(expected, mWebView.canGoForward());
+                assertEquals(
+                        "Checking whether we can go forward 1 step",
+                        expected,
+                        mWebView.canGoForward());
             } else if (i == -1) {
-                assertEquals(expected, mWebView.canGoBack());
+                assertEquals(
+                        "Checking whether we can go back 1 step", expected, mWebView.canGoBack());
             }
         }
     }

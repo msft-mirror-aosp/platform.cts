@@ -138,6 +138,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
       ultrawide_camera_found = cam.has_ultrawide_camera(
           facing=props['android.lens.facing'])
+      tele_camera_found = cam.has_tele_camera(
+          facing=props['android.lens.facing'])
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props))
 
@@ -171,7 +173,11 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
-      z_range[1] = _WIDE_ZOOM_RATIO_MAX
+      # Truncate zoom range if test_preview_zoom_tele will be run
+      if tele_camera_found:
+        logging.debug('Tele camera found, truncating zoom range max to %.2f',
+                      _WIDE_ZOOM_RATIO_MAX)
+        z_range[1] = _WIDE_ZOOM_RATIO_MAX
       logging.debug('z_range = %s', str(z_range))
       z_min, z_max, z_step_size = zoom_capture_utils.get_preview_zoom_params(
           z_range, _NUM_STEPS)
