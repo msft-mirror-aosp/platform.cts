@@ -33,6 +33,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ServiceInfo;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -49,6 +51,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerNotifyMediaFGSTypeTest {
@@ -74,6 +78,9 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
         cleanUp();
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity("android.permission.MEDIA_CONTENT_CONTROL");
     }
 
     @After
@@ -183,6 +190,18 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         }
     }
 
+    private MediaController getMediaControllerForActiveSession() {
+        MediaSessionManager mediaSessionManager =
+                mTargetContext.getSystemService(MediaSessionManager.class);
+        List<MediaController> mediaControllers = mediaSessionManager.getActiveSessions(null);
+        for (MediaController controller : mediaControllers) {
+            if (PACKAGE_NAME_APP1.equals(controller.getPackageName())) {
+                return controller;
+            }
+        }
+        return null;
+    }
+
     // This test tests activity manager internal API to set media foreground service inactive.
     @Test
     @RequiresFlagsEnabled(
@@ -265,6 +284,36 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 PACKAGE_NAME_APP1,
                 0,
                 extras);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void
+            testAppInBgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToFgs()
+                    throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+
+        // Set the service inactive for test case.
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        // Get the controller and press play.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        // Check if service moves to fgs.
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 }

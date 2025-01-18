@@ -16,20 +16,29 @@
 
 package android.media.mediaquality.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.hardware.tv.mediaquality.IMediaQuality;
 import android.media.quality.AmbientBacklightEvent;
 import android.media.quality.AmbientBacklightSettings;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
 import android.media.quality.MediaQualityManager;
 import android.media.quality.PictureProfile;
+import android.media.quality.PictureProfileHandle;
 import android.media.quality.SoundProfile;
+import android.media.quality.SoundProfileHandle;
 import android.media.tv.flags.Flags;
 import android.os.PersistableBundle;
+import android.os.RemoteException;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.InstrumentationRegistry;
@@ -41,6 +50,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.List;
@@ -52,6 +62,7 @@ public class MediaQualityTest {
     private MediaQualityManager mManager;
     private static final String PACKAGE_NAME = "android.media.mediaquality.cts";
     private AmbientBacklightSettings mAmbientBacklightSettings;
+    private IMediaQuality mMediaQuality;
 
     @Before
     public void setUp() throws Exception {
@@ -63,6 +74,7 @@ public class MediaQualityTest {
         mManager = context.getSystemService(MediaQualityManager.class);
         mAmbientBacklightSettings = createAmbientBacklightSettings();
         assumeTrue(mManager != null);
+        mMediaQuality = Mockito.mock(IMediaQuality.class);
         if (mManager == null || !isSupported()) {
             return;
         }
@@ -88,83 +100,6 @@ public class MediaQualityTest {
             for (SoundProfile profile : soundProfiles) {
                 mManager.removeSoundProfile(profile.getProfileId());
             }
-        }
-    }
-
-    public static class MockCallback implements MediaQualityManager.AmbientBacklightCallback {
-        public MockCallback() {
-            super();
-        }
-
-        @Override
-        public void onAmbientBacklightEvent(AmbientBacklightEvent event) {
-            assertNotNull("Ambient backlight event is null", event);
-            if (event.getEventType() == MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA) {
-                assertNotNull("Ambient Backlight Metadata is null", event.getMetadata());
-                assertNotNull(
-                        "Ambient Backlight Metadata zone color is null",
-                        event.getMetadata().getZoneColors());
-            }
-        }
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testGetAvailablePictureProfiles() throws Exception {
-        mManager.getAvailablePictureProfiles(null);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testSetPictureProfileAllowlist() {
-        Exception exception = null;
-        try {
-            List<String> allow = Arrays.asList("Profile1", "Profile2", "Profile3");
-            mManager.setPictureProfileAllowList(allow);
-        } catch (Exception e) {
-            exception = e;
-        }
-        Assert.assertNull("No exceptions caught", exception);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testGetPictureProfileAllowlist() {
-        List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
-        mManager.setPictureProfileAllowList(allow);
-
-        List<String> queries = mManager.getPictureProfileAllowList();
-        Assert.assertNotNull(queries);
-        Assert.assertEquals(queries.size(), 3);
-        for (String a : allow) {
-            Assert.assertTrue(queries.contains(a));
-        }
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testSetSoundProfileAllowlist() {
-        Exception exception = null;
-        try {
-            List<String> allow = Arrays.asList("Profile1", "Profile2", "Profile3");
-            mManager.setSoundProfileAllowList(allow);
-        } catch (Exception e) {
-            exception = e;
-        }
-        Assert.assertNull("No exceptions caught", exception);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testGetSoundProfileAllowlist() {
-        List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
-        mManager.setSoundProfileAllowList(allow);
-
-        List<String> queries = mManager.getSoundProfileAllowList();
-        Assert.assertNotNull(queries);
-        Assert.assertEquals(queries.size(), 3);
-        for (String a : allow) {
-            Assert.assertTrue(queries.contains(a));
         }
     }
 
@@ -290,21 +225,8 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetAmbientBacklightEnabled() throws Exception {
-        mManager.setAmbientBacklightEnabled(true);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testRegisterAmbientBacklightCallback() throws Exception {
-        mManager.registerAmbientBacklightCallback(
-                Executors.newSingleThreadExecutor(), new MockCallback());
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
-    @Test
-    public void testSetAmbientBacklightSettings() throws Exception {
-        mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
+    public void testGetAvailablePictureProfiles() throws Exception {
+        mManager.getAvailablePictureProfiles(null);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -424,6 +346,187 @@ public class MediaQualityTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetAvailableSoundProfiles() throws Exception {
+        mManager.getAvailableSoundProfiles(null);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetPictureProfileAllowlist() {
+        Exception exception = null;
+        try {
+            List<String> allow = Arrays.asList("Profile1", "Profile2", "Profile3");
+            mManager.setPictureProfileAllowList(allow);
+        } catch (Exception e) {
+            exception = e;
+        }
+        Assert.assertNull("No exceptions caught", exception);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetPictureProfileAllowlist() {
+        List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
+        mManager.setPictureProfileAllowList(allow);
+
+        List<String> queries = mManager.getPictureProfileAllowList();
+        Assert.assertNotNull(queries);
+        Assert.assertEquals(queries.size(), 3);
+        for (String a : allow) {
+            Assert.assertTrue(queries.contains(a));
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetSoundProfileAllowlist() {
+        Exception exception = null;
+        try {
+            List<String> allow = Arrays.asList("Profile1", "Profile2", "Profile3");
+            mManager.setSoundProfileAllowList(allow);
+        } catch (Exception e) {
+            exception = e;
+        }
+        Assert.assertNull("No exceptions caught", exception);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetSoundProfileAllowlist() {
+        List<String> allow = Arrays.asList("Profile4", "Profile5", "Profile6");
+        mManager.setSoundProfileAllowList(allow);
+
+        List<String> queries = mManager.getSoundProfileAllowList();
+        Assert.assertNotNull(queries);
+        Assert.assertEquals(queries.size(), 3);
+        for (String a : allow) {
+            Assert.assertTrue(queries.contains(a));
+        }
+    }
+
+    @Test
+    public void testGetPictureProfileHandle() {
+        PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandle");
+
+        mManager.createPictureProfile(profile);
+        PictureProfile created =
+                mManager.getPictureProfile(
+                        profile.getProfileType(), profile.getName(), includeParams(false));
+        assertNotNull(created);
+
+        String[] ids = {created.getProfileId()};
+        List<PictureProfileHandle> ppHandle = mManager.getPictureProfileHandle(ids);
+        assertNotNull(ppHandle);
+        assertEquals(ppHandle.size(), 1);
+    }
+
+    @Test
+    public void testGetSoundProfileHandle() {
+        SoundProfile profile = getTestSoundProfile("testGetSoundProfileHandle");
+
+        mManager.createSoundProfile(profile);
+        SoundProfile created =
+                mManager.getSoundProfile(
+                        profile.getProfileType(), profile.getName(), includeParams(false));
+        assertNotNull(created);
+
+        String[] ids = {created.getProfileId()};
+        List<SoundProfileHandle> spHandle = mManager.getSoundProfileHandle(ids);
+        assertNotNull(spHandle);
+        assertEquals(spHandle.size(), 1);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAutoPictureQualityEnabled() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        when(mMediaQuality.isAutoPqSupported()).thenReturn(true);
+        doNothing().when(mMediaQuality).setAutoPqEnabled(anyBoolean());
+        mManager.setAutoPictureQualityEnabled(true);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testIsAutoPictureQualityEnabled() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        when(mMediaQuality.isAutoPqSupported()).thenReturn(true);
+        when(mMediaQuality.getAutoPqEnabled()).thenReturn(false);
+        assertFalse(mManager.isAutoPictureQualityEnabled());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetSuperResolutionEnabled() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        when(mMediaQuality.isAutoSrSupported()).thenReturn(true);
+        doNothing().when(mMediaQuality).setAutoSrEnabled(anyBoolean());
+        mManager.setAutoPictureQualityEnabled(true);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testIsSuperResolutionEnable() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        when(mMediaQuality.isAutoSrSupported()).thenReturn(true);
+        when(mMediaQuality.getAutoSrEnabled()).thenReturn(false);
+        assertFalse(mManager.isSuperResolutionEnabled());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAutoSoundQualityEnabled() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        when(mMediaQuality.isAutoAqSupported()).thenReturn(true);
+        doNothing().when(mMediaQuality).setAutoAqEnabled(anyBoolean());
+        mManager.setAutoPictureQualityEnabled(true);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testIsAutoSoundQualityEnabled() throws RemoteException {
+        assumeTrue(mMediaQuality != null);
+        when(mMediaQuality.isAutoAqSupported()).thenReturn(true);
+        when(mMediaQuality.getAutoAqEnabled()).thenReturn(false);
+        assertFalse(mManager.isAutoSoundQualityEnabled());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAmbientBacklightEnabled() throws Exception {
+        mManager.setAmbientBacklightEnabled(true);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testRegisterPictureProfileCallback() throws Exception {
+        mManager.registerPictureProfileCallback(
+                Executors.newSingleThreadExecutor(),
+                Mockito.mock(MediaQualityManager.PictureProfileCallback.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testRegisterSoundProfileCallback() throws Exception {
+        mManager.registerSoundProfileCallback(
+                Executors.newSingleThreadExecutor(),
+                Mockito.mock(MediaQualityManager.SoundProfileCallback.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testRegisterAmbientBacklightCallback() throws Exception {
+        mManager.registerAmbientBacklightCallback(
+                Executors.newSingleThreadExecutor(), new MockCallback());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAmbientBacklightSettings() throws Exception {
+        mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
+    }
+
     private PictureProfile getTestPictureProfile(String methodName) {
         PersistableBundle bundle = new PersistableBundle();
         bundle.putInt(PictureQuality.PARAMETER_BRIGHTNESS, 56);
@@ -468,5 +571,22 @@ public class MediaQualityTest {
                         5 // Example threshold
                         );
         return settings;
+    }
+
+    public static class MockCallback implements MediaQualityManager.AmbientBacklightCallback {
+        public MockCallback() {
+            super();
+        }
+
+        @Override
+        public void onAmbientBacklightEvent(AmbientBacklightEvent event) {
+            assertNotNull("Ambient backlight event is null", event);
+            if (event.getEventType() == MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA) {
+                assertNotNull("Ambient Backlight Metadata is null", event.getMetadata());
+                assertNotNull(
+                        "Ambient Backlight Metadata zone color is null",
+                        event.getMetadata().getZoneColors());
+            }
+        }
     }
 }

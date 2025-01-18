@@ -74,6 +74,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Process
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.ContactsContract
@@ -104,6 +105,7 @@ import org.junit.Rule
 import org.junit.Test
 import android.bluetooth.cts.BTAdapterUtils.disableAdapter as disableBTAdapter
 import android.bluetooth.cts.BTAdapterUtils.enableAdapter as enableBTAdapter
+import android.permission.flags.Flags
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
 private const val TIMEOUT_MILLIS = 10000L
@@ -381,11 +383,23 @@ class AppOpsLoggingTest {
         }
     }
 
-    @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
+    @RequiresFlagsEnabled(Flags.FLAG_NOTE_OP_BATCHING_ENABLED)
+    @RequiresFlagsDisabled(Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED)
     @Test
-    fun noteAsyncOpsMultipleTimes() {
+    fun noteAsyncOpsMultipleTimesAndReceiveMultipleAsyncCallbacks() {
         rethrowThrowableFrom {
-            testService.callApiThatNotesAsyncOpMultipleTimes(AppOpsUserClient(context))
+            testService.callApiThatNotesAsyncOpMultipleTimes(AppOpsUserClient(context), false)
+        }
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_NOTE_OP_BATCHING_ENABLED,
+        Flags.FLAG_RATE_LIMIT_BATCHED_NOTE_OP_ASYNC_CALLBACKS_ENABLED
+    )
+    @Test
+    fun noteAsyncOpsMultipleTimesAndReceiveSingleAsyncCallback() {
+        rethrowThrowableFrom {
+            testService.callApiThatNotesAsyncOpMultipleTimes(AppOpsUserClient(context), true)
         }
     }
 

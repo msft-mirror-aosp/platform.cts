@@ -51,10 +51,38 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
         return NOTIFICATION_CHANNEL_ID;
     }
 
+    private static long sAllPlayStateActions =
+            PlaybackState.ACTION_PLAY
+                    | PlaybackState.ACTION_PAUSE
+                    | PlaybackState.ACTION_PLAY_PAUSE
+                    | PlaybackState.ACTION_STOP
+                    | PlaybackState.ACTION_SKIP_TO_NEXT
+                    | PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                    | PlaybackState.ACTION_FAST_FORWARD
+                    | PlaybackState.ACTION_REWIND;
+
+    private void setPlaybackState(int state, MediaSession mediaSession) {
+        PlaybackState playbackState =
+                new PlaybackState.Builder()
+                        .setActions(sAllPlayStateActions)
+                        .setState(state, 0L, 0.0f)
+                        .build();
+        mediaSession.setPlaybackState(playbackState);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         mMediaSession = new MediaSession(this, TAG);
+        mMediaSession.setCallback(
+                new MediaSession.Callback() {
+                    @Override
+                    public void onPlay() {
+                        Log.d(getTag(), "received onPlay");
+                        super.onPlay();
+                        setPlaybackState(PlaybackState.STATE_PLAYING, mMediaSession);
+                    }
+                });
         mMediaSession.setActive(true);
         Log.d(
                 getTag(),
@@ -128,21 +156,7 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
 
             case COMMAND_PLAY_MEDIA:
                 Log.d(TAG, "Setting media session state to playing");
-                final long allActions =
-                        PlaybackState.ACTION_PLAY
-                                | PlaybackState.ACTION_PAUSE
-                                | PlaybackState.ACTION_PLAY_PAUSE
-                                | PlaybackState.ACTION_STOP
-                                | PlaybackState.ACTION_SKIP_TO_NEXT
-                                | PlaybackState.ACTION_SKIP_TO_PREVIOUS
-                                | PlaybackState.ACTION_FAST_FORWARD
-                                | PlaybackState.ACTION_REWIND;
-                PlaybackState playbackState =
-                        new PlaybackState.Builder()
-                                .setActions(allActions)
-                                .setState(PlaybackState.STATE_PLAYING, 0L, 0.0f)
-                                .build();
-                mMediaSession.setPlaybackState(playbackState);
+                setPlaybackState(PlaybackState.STATE_PLAYING, mMediaSession);
                 break;
             default:
                 Log.e(TAG, "Unknown command: " + command);

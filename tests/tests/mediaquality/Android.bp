@@ -22,6 +22,7 @@ android_library {
     srcs: [
         "src/**/*.java",
         "src/**/*.aidl",
+        ":android.hardware.tv.mediaquality-V1-java-source",
     ],
     libs: [
         "platform-test-annotations",
