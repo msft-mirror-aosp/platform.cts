@@ -36,13 +36,17 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.media.audioserver.Flags;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,11 +57,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.annotation.concurrent.GuardedBy;
-
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @NonMainlineTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
@@ -152,6 +151,7 @@ public class AudioTrackOffloadTest {
             .isTrue();
     }
 
+    @CddTest(requirements = {"5.5.4/C-SR-2"})
     @Test
     public void testMP3AudioTrackOffload() throws Exception {
         testAudioTrackOffload(R.raw.sine1khzs40dblong,
@@ -237,6 +237,7 @@ public class AudioTrackOffloadTest {
         };
     }
 
+    @CddTest(requirements = {"5.5.4/C-SR-2"})
     @Test
     public void testPcmAudioTrackOffload() throws Exception {
         final int sampleRate = 44100;
@@ -251,6 +252,7 @@ public class AudioTrackOffloadTest {
                 bitRateInKbps, format);
     }
 
+    @CddTest(requirements = {"5.5.4/C-SR-2"})
     @Test
     public void testOpusAudioTrackOffload() throws Exception {
         testAudioTrackOffload(R.raw.testopus,
@@ -258,6 +260,7 @@ public class AudioTrackOffloadTest {
                 getAudioFormatWithEncoding(AudioFormat.ENCODING_OPUS));
     }
 
+    @CddTest(requirements = {"5.5.4/C-SR-2"})
     @Test
     public void testAacLCAudioTrackOffload() throws Exception {
         if (!mTestAacSupport) {
@@ -268,7 +271,7 @@ public class AudioTrackOffloadTest {
                 getAudioFormatWithEncoding(AudioFormat.ENCODING_AAC_LC));
     }
 
-    @CddTest(requirement="5.5.4")
+    @CddTest(requirements = {"5.5.4/C-SR-1"})
     @Test
     public void testGaplessMP3AudioTrackOffload() throws Exception {
         // sine882hz3s has a gapless delay of 576 and padding of 756.
