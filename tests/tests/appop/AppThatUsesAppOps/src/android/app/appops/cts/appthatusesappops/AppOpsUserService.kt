@@ -334,12 +334,16 @@ class AppOpsUserService : Service() {
                 }
             }
 
-            override fun callApiThatNotesAsyncOpMultipleTimes(client: IAppOpsUserClient) {
+            override fun callApiThatNotesAsyncOpMultipleTimes(client: IAppOpsUserClient, rateLimitCallback: Boolean) {
                 forwardThrowableFrom {
                     client.noteAsyncOpMultipleTimesWithAttribution(TEST_ATTRIBUTION_TAG)
 
                     eventually {
-                        assertThat(asyncNoted.size).isEqualTo(5)
+                        if (rateLimitCallback) {
+                            assertThat(asyncNoted.size).isEqualTo(2)
+                        } else {
+                            assertThat(asyncNoted.size).isEqualTo(5)
+                        }
                     }
                 }
             }
