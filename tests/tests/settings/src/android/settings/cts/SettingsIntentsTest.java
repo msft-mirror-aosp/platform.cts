@@ -31,6 +31,7 @@ import android.provider.Settings;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.UserHelper;
 import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
@@ -52,10 +53,11 @@ public class SettingsIntentsTest {
 
     private PackageManager mPackageManager;
 
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+
     @Before
     public void setUp() throws Exception {
-        mPackageManager =
-                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        mPackageManager = mContext.getPackageManager();
     }
 
     @Test
@@ -84,6 +86,12 @@ public class SettingsIntentsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ACTION_SIM_PREFERENCE_SETTINGS)
     public void testSimPreferenceIntentReceiverExists() {
+        // Skipping for visible background users as SIM is not supported on visible background
+        // users.
+        assumeFalse(
+                "SIM is not supported on visible background user",
+                new UserHelper(mContext).isVisibleBackgroundUser());
+
         final Intent intent = new Intent(Settings.ACTION_SIM_PREFERENCE_SETTINGS).addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK);
         final ResolveInfo info = mPackageManager.resolveActivity(intent,
