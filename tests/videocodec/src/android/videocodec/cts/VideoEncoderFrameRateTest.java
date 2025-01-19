@@ -16,7 +16,12 @@
 
 package android.videocodec.cts;
 
+import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.ComponentClass.ALL;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +41,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This test is to verify whether the rate control process of the tested encoder generates a
@@ -58,12 +65,13 @@ public class VideoEncoderFrameRateTest extends VideoEncoderValidationTestBase {
     private static final int FRAME_LIMIT = 300;
     private static final int BASE_FRAME_RATE = 30;
     private static final int BIT_RATE = 5000000;
-    private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
+    private static final List<Object[]> defaultArgsList = new ArrayList<>();
+    private static final List<Object[]> apvArgsList = new ArrayList<>();
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int width,
-            int height, int maxBFrames) {
+            int height, int maxBFrames, int bitrate) {
         return new EncoderConfigParams.Builder(mediaType)
-                .setBitRate(BIT_RATE)
+                .setBitRate(bitrate)
                 .setKeyFrameInterval(KEY_FRAME_INTERVAL)
                 .setFrameRate(BASE_FRAME_RATE)
                 .setWidth(width)
@@ -86,17 +94,37 @@ public class VideoEncoderFrameRateTest extends VideoEncoderValidationTestBase {
                 }
                 String label = String.format("%dkbps_%dx%d_maxb-%d", BIT_RATE / 1000, width,
                         height, maxBFrames);
-                exhaustiveArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
-                        width, height, maxBFrames), label});
+                defaultArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
+                        width, height, maxBFrames, BIT_RATE), label});
             }
         }
+    }
+
+    private static void addParamsAPV(int width, int height, int bitrate) {
+        // mediaType, cfg, test label
+        String label = String.format("%dkbps_%dx%d_maxb-%d", bitrate / 1000, width,
+                height, 0);
+        apvArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_APV, getVideoEncoderCfgParams(
+                MediaFormat.MIMETYPE_VIDEO_APV, width, height, 0, bitrate), label});
     }
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {
         addParams(1920, 1080);
         addParams(1080, 1920);
-        return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> defaultParams =
+                prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> finalParams = defaultParams;
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            addParamsAPV(352, 288, 4000000);
+            addParamsAPV(640, 480, 16000000);
+            addParamsAPV(1280, 720, 30000000);
+            List<Object[]> apvParams =
+                    prepareParamList(apvArgsList, true, false, true, false, ALL, null, true);
+            finalParams = Stream.concat(apvParams.stream(), defaultParams.stream())
+                    .collect(Collectors.toList());
+        }
+        return finalParams;
     }
 
     public VideoEncoderFrameRateTest(String encoder, String mediaType,

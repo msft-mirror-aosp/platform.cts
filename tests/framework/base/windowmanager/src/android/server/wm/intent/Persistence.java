@@ -16,6 +16,12 @@
 
 package android.server.wm.intent;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
+import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
+
 import static java.util.stream.Collectors.toList;
 
 import android.content.ComponentName;
@@ -52,8 +58,8 @@ public class Persistence {
      */
     public static class TestCase {
         private static final String SETUP_KEY = "setup";
-        private static final String INITIAL_STATE_KEY = "initialState";
-        private static final String END_STATE_KEY = "endState";
+        private static final String INITIAL_STATES_KEY = "initialStates";
+        private static final String END_STATES_KEY = "endStates";
 
         /**
          * Contains the {@link android.content.Intent}-s that will be launched in this test case.
@@ -61,14 +67,16 @@ public class Persistence {
         private final Setup mSetup;
 
         /**
-         * The state of the system after the {@link Setup#mInitialIntents} have been launched.
+         * The possible states of the system after the {@link Setup#mInitialIntents} have been
+         * launched. These are organized by launched windowing mode.
          */
-        private final StateDump mInitialState;
+        private final List<StateDump> mInitialStates;
 
         /**
-         * The state of the system after the {@link Setup#mAct} have been launched
+         * The possible states of the system after the {@link Setup#mAct} have been launched. These
+         * are organized by launched windowing mode.
          */
-        private final StateDump mEndState;
+        private final List<StateDump> mEndStates;
 
         /**
          * The name of the testCase, usually the file name it is stored in.
@@ -76,42 +84,98 @@ public class Persistence {
          */
         private final String mName;
 
-        public TestCase(Setup setup, StateDump initialState,
-                StateDump endState, String name) {
+        public TestCase(Setup setup, List<StateDump> initialStates,
+                List<StateDump> endStates, String name) {
             mSetup = setup;
-            mInitialState = initialState;
-            mEndState = endState;
+            mInitialStates = initialStates;
+            mEndStates = endStates;
             mName = name;
         }
 
         public JSONObject toJson() throws JSONException {
             return new JSONObject()
                     .put(SETUP_KEY, mSetup.toJson())
-                    .put(INITIAL_STATE_KEY, mInitialState.toJson())
-                    .put(END_STATE_KEY, mEndState.toJson());
+                    .put(INITIAL_STATES_KEY, stateDumpsToJson(mInitialStates))
+                    .put(END_STATES_KEY, stateDumpsToJson(mEndStates));
         }
 
         public static TestCase fromJson(JSONObject object,
                 Map<String, IntentFlag> table, String name) throws JSONException {
             return new TestCase(Setup.fromJson(object.getJSONObject(SETUP_KEY), table),
-                    StateDump.fromJson(object.getJSONObject(INITIAL_STATE_KEY)),
-                    StateDump.fromJson(object.getJSONObject(END_STATE_KEY)), name);
+                    stateDumpsFromJson(object.getJSONArray(INITIAL_STATES_KEY)),
+                    stateDumpsFromJson(object.getJSONArray(END_STATES_KEY)), name);
+        }
+
+        public static JSONArray stateDumpsToJson(List<StateDump> stateDumps)
+                throws JSONException {
+            JSONArray stateDumpArray = new JSONArray();
+            for (StateDump stateDump : stateDumps) {
+                stateDumpArray.put(stateDump.toJson());
+            }
+            return stateDumpArray;
+        }
+
+        public static List<StateDump> stateDumpsFromJson(
+                JSONArray stateDumpsArray) throws JSONException {
+            List<StateDump> stateDumps = new ArrayList<>();
+            for (int i = 0; i < stateDumpsArray.length(); i++) {
+                JSONObject object = (JSONObject) stateDumpsArray.get(i);
+                StateDump stateDump = StateDump.fromJson(object);
+                stateDumps.add(stateDump);
+            }
+            return stateDumps;
         }
 
         public Setup getSetup() {
             return mSetup;
         }
 
-        public StateDump getInitialState() {
-            return mInitialState;
+        /**
+         * Returns the initial state with the matching launched windowing mode. If no matching
+         * launched windowing mode is found, use the default initial state.
+         */
+        public StateDump getInitialStateWithLaunchedWindowingModeOrDefault(
+                String launchedWindowingMode) {
+            StateDump defaultInitialState = null;
+            for (StateDump initialState : mInitialStates) {
+                if (Objects.equals(initialState.mLaunchedWindowingMode, launchedWindowingMode)) {
+                    return initialState;
+                } else if (Objects.equals(initialState.mLaunchedWindowingMode,
+                        StateDump.DEFAULT_LAUNCHED_WINDOWING_MODE)) {
+                    defaultInitialState = initialState;
+                }
+            }
+            if (defaultInitialState == null) {
+                throw new RuntimeException(
+                        "No initial state with default launched windowing mode found");
+            }
+            return defaultInitialState;
         }
 
         public String getName() {
             return mName;
         }
 
-        public StateDump getEndState() {
-            return mEndState;
+        /**
+         * Returns the end state with the matching launched windowing mode. If no matching
+         * launched windowing mode is found, use the default end state.
+         */
+        public StateDump getEndStateWithLaunchedWindowingModeOrDefault(
+                String launchedWindowingMode) {
+            StateDump defaultEndState = null;
+            for (StateDump endState : mEndStates) {
+                if (Objects.equals(endState.mLaunchedWindowingMode, launchedWindowingMode)) {
+                    return endState;
+                } else if (Objects.equals(endState.mLaunchedWindowingMode,
+                        StateDump.DEFAULT_LAUNCHED_WINDOWING_MODE)) {
+                    defaultEndState = endState;
+                }
+            }
+            if (defaultEndState == null) {
+                throw new RuntimeException(
+                        "No end state with default launched windowing mode found");
+            }
+            return defaultEndState;
         }
     }
 
@@ -158,7 +222,6 @@ public class Persistence {
 
             return new Setup(initialState, act);
         }
-
 
         public static JSONArray intentsToJson(List<GenerationIntent> intents)
                 throws JSONException {
@@ -445,25 +508,87 @@ public class Persistence {
         return new IntentFlag(flag, name);
     }
 
+    /**
+     * A windowing mode class that also stores the name of the windowing mode.
+     * It is used to be able to put the modes in human readable form in the JSON file.
+     */
+    public static class ReadableWindowingMode {
+        /**
+         * The underlying mode, should be a value from WindowConfiguration.WINDOWING_MODE_*.
+         */
+        public final int windowingMode;
+
+        /**
+         * The name of the windowing mode.
+         */
+        public final String name;
+
+        public ReadableWindowingMode(int windowingMode, String name) {
+            this.windowingMode = windowingMode;
+            this.name = name;
+        }
+
+        public int getWindowingMode() {
+            return windowingMode;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String toString() {
+            return name;
+        }
+
+        static ReadableWindowingMode covert(int windowingMode) {
+            return switch (windowingMode) {
+                case WINDOWING_MODE_FULLSCREEN -> new ReadableWindowingMode(windowingMode,
+                        "WINDOWING_MODE_FULLSCREEN");
+                case WINDOWING_MODE_PINNED -> new ReadableWindowingMode(windowingMode,
+                        "WINDOWING_MODE_PINNED");
+                case WINDOWING_MODE_FREEFORM -> new ReadableWindowingMode(windowingMode,
+                        "WINDOWING_MODE_FREEFORM");
+                case WINDOWING_MODE_MULTI_WINDOW -> new ReadableWindowingMode(windowingMode,
+                        "WINDOWING_MODE_MULTI_WINDOW");
+                default -> new ReadableWindowingMode(windowingMode,
+                        StateDump.DEFAULT_LAUNCHED_WINDOWING_MODE);
+            };
+        }
+    }
+
     public static class StateDump {
         private static final String TASKS_KEY = "tasks";
+        private static final String LAUNCHED_WINDOWING_MODE_KEY = "launchedWindowingMode";
+        private static final String DEFAULT_LAUNCHED_WINDOWING_MODE = "WINDOWING_MODE_UNDEFINED";
 
         /**
          * The Tasks in this stack ordered from most recent to least recent.
          */
         private final List<TaskState> mTasks;
 
+        /**
+         * The windowing mode of which tasks in this stack are launched in.
+         */
+        private final String mLaunchedWindowingMode;
+
         public static StateDump fromTasks(List<WindowManagerState.Task> activityTasks,
                 List<WindowManagerState.Task> baseStacks) {
             List<TaskState> tasks = new ArrayList<>();
+            int launchedWindowingMode = WINDOWING_MODE_UNDEFINED;
             for (WindowManagerState.Task task : trimTasks(activityTasks, baseStacks)) {
                 tasks.add(new TaskState(task));
+                if (launchedWindowingMode != task.getWindowingMode()) {
+                    launchedWindowingMode = task.getWindowingMode();
+                }
             }
-            return new StateDump(tasks);
+            Persistence.ReadableWindowingMode readableLaunchedWindowingMode =
+                    Persistence.ReadableWindowingMode.covert(launchedWindowingMode);
+            return new StateDump(tasks, readableLaunchedWindowingMode.getName());
         }
 
-        private StateDump(List<TaskState> tasks) {
+        private StateDump(List<TaskState> tasks, String launchedWindowingMode) {
             mTasks = tasks;
+            mLaunchedWindowingMode = launchedWindowingMode;
         }
 
         JSONObject toJson() throws JSONException {
@@ -472,7 +597,9 @@ public class Persistence {
                 tasks.put(task.toJson());
             }
 
-            return new JSONObject().put(TASKS_KEY, tasks);
+            return new JSONObject()
+                    .put(TASKS_KEY, tasks)
+                    .put(LAUNCHED_WINDOWING_MODE_KEY, mLaunchedWindowingMode);
         }
 
         static StateDump fromJson(JSONObject object) throws JSONException {
@@ -483,7 +610,7 @@ public class Persistence {
                 tasks.add(TaskState.fromJson((JSONObject) jsonTasks.get(i)));
             }
 
-            return new StateDump(tasks);
+            return new StateDump(tasks, object.getString(LAUNCHED_WINDOWING_MODE_KEY));
         }
 
         /**
@@ -507,12 +634,19 @@ public class Persistence {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             StateDump stateDump = (StateDump) o;
-            return Objects.equals(mTasks, stateDump.mTasks);
+            final boolean defaultLaunchedWindowingModeUsed =
+                    Objects.equals(mLaunchedWindowingMode, DEFAULT_LAUNCHED_WINDOWING_MODE)
+                            || Objects.equals(stateDump.mLaunchedWindowingMode,
+                                    DEFAULT_LAUNCHED_WINDOWING_MODE);
+            final boolean launchedWindowingModeEqualOrDefault =
+                    Objects.equals(mLaunchedWindowingMode, stateDump.mLaunchedWindowingMode)
+                            || defaultLaunchedWindowingModeUsed;
+            return Objects.equals(mTasks, stateDump.mTasks) && launchedWindowingModeEqualOrDefault;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(mTasks);
+            return Objects.hash(mTasks, mLaunchedWindowingMode);
         }
     }
 

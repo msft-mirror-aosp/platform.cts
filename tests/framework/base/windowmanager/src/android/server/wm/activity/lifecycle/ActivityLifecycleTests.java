@@ -76,6 +76,7 @@ import static android.view.Surface.ROTATION_90;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -189,6 +190,13 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 .setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
                 .setOptions(activityOptions)
                 .launch();
+
+        // Different form factors may force tasks to be non-overlapping multi-window mode
+        // (e.g. in freeform windowing mode) instead of fullscreen, which could
+        // result in translucentActivity remaining in RESUMED state.
+        // TODO(b/388831963): Add a test case to cover non-overlapping multi-window mode.
+        assumeFalse(isNonOverlappingMultiWindowMode(firstActivity));
+
         waitAndAssertActivityStates(state(translucentActivity, ON_STOP));
 
         final ComponentName firstActivityName = getComponentName(FirstActivity.class);

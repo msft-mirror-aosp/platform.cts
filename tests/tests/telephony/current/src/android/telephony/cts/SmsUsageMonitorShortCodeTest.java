@@ -235,6 +235,7 @@ public class SmsUsageMonitorShortCodeTest {
             new ShortCodeTest("de", "55655", SMS_CATEGORY_PREMIUM_SHORT_CODE),
             new ShortCodeTest("de", "66766", SMS_CATEGORY_PREMIUM_SHORT_CODE),
             new ShortCodeTest("de", "66777", SMS_CATEGORY_PREMIUM_SHORT_CODE),
+            new ShortCodeTest("de", "70997", SMS_CATEGORY_FREE_SHORT_CODE),
             new ShortCodeTest("de", "77677", SMS_CATEGORY_PREMIUM_SHORT_CODE),
             new ShortCodeTest("de", "80888", SMS_CATEGORY_PREMIUM_SHORT_CODE),
             new ShortCodeTest("de", "1232286", SMS_CATEGORY_PREMIUM_SHORT_CODE),

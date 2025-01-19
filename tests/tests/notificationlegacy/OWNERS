@@ -1,4 +1,2 @@
 # Bug component: 181562
-juliacr@google.com
-beverlyt@google.com
-evanlaird@google.com
+include platform/frameworks/base:/services/core/java/com/android/server/notification/OWNERS

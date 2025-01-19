@@ -19,7 +19,7 @@ package android.keystore.cts;
 import static android.keystore.cts.util.TestUtils.KmType;
 import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
-import static android.keystore.cts.util.TestUtils.checkDeviceCompatibility;
+import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -748,7 +748,7 @@ public class KeyGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm)
             throws Exception {
-        checkDeviceCompatibility();
+        assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
@@ -768,7 +768,7 @@ public class KeyGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
             throws Exception {
-        checkDeviceCompatibility();
+        assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);

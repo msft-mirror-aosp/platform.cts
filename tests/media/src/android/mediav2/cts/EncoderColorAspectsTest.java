@@ -20,9 +20,13 @@ import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitAB
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.MuxerUtils.getMuxerFormatForMediaType;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
 import static android.mediav2.common.cts.MuxerUtils.muxOutput;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -56,6 +60,7 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -94,6 +99,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
         IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_AV1);
         IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_AVC);
         IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_HEVC);
+        IGNORE_COLOR_BOX_LIST.add(MediaFormat.MIMETYPE_VIDEO_APV);
     }
 
     @After
@@ -112,7 +118,7 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
         mLatency = encCfgParams.mMaxBFrames;
     }
 
-    private static void prepareArgsList(List<Object[]> exhaustiveArgsList, String[] mediaTypes,
+    private static void prepareArgsList(List<Object[]> exhaustiveArgsList, List<String> mediaTypes,
             int[] ranges, int[] standards, int[] transfers, int colorFormat, int bitDepth) {
         // Assuming all combinations are supported by the standard which is true for AVC, HEVC, AV1,
         // VP8 and VP9.
@@ -156,11 +162,13 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
 
         List<Object[]> exhaustiveArgsList = new ArrayList<>();
 
-        String[] mediaTypes = {MediaFormat.MIMETYPE_VIDEO_AV1,
+        List<String> mediaTypes = new ArrayList<>(Arrays.asList(
+                MediaFormat.MIMETYPE_VIDEO_AV1,
                 MediaFormat.MIMETYPE_VIDEO_AVC,
                 MediaFormat.MIMETYPE_VIDEO_HEVC,
                 MediaFormat.MIMETYPE_VIDEO_VP8,
-                MediaFormat.MIMETYPE_VIDEO_VP9};
+                MediaFormat.MIMETYPE_VIDEO_VP9
+        ));
         // ColorAspects for SDR profiles
         int[] ranges = {-1,
                 UNSPECIFIED,
@@ -184,10 +192,15 @@ public class EncoderColorAspectsTest extends CodecEncoderTestBase {
         // above
         if (IS_AT_LEAST_T) {
             // ColorAspects for HDR profiles
-            String[] mediaTypesHighBitDepth = {MediaFormat.MIMETYPE_VIDEO_AV1,
+            List<String> mediaTypesHighBitDepth = new ArrayList<>(Arrays.asList(
+                    MediaFormat.MIMETYPE_VIDEO_AV1,
                     MediaFormat.MIMETYPE_VIDEO_AVC,
                     MediaFormat.MIMETYPE_VIDEO_HEVC,
-                    MediaFormat.MIMETYPE_VIDEO_VP9};
+                    MediaFormat.MIMETYPE_VIDEO_VP9
+            ));
+            if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+                mediaTypesHighBitDepth.add(MediaFormat.MIMETYPE_VIDEO_APV);
+            }
             int[] standardsHighBitDepth = {-1,
                     UNSPECIFIED,
                     MediaFormat.COLOR_STANDARD_BT709,
