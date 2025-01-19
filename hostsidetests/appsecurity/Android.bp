@@ -212,6 +212,7 @@ java_test_host {
         ":KeyStoreManagerTestGranteeApp",
         ":KeyStoreManagerTestGranterApp",
     ],
+    device_common_java_resources: [":all_apex_certs{.avbpubkey}"],
 }
 
 java_test_host {

@@ -18,9 +18,14 @@ package android.videocodec.cts;
 
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
+import static android.media.codec.Flags.apvSupport;
+import static android.mediav2.common.cts.CodecTestBase.ComponentClass.ALL;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -44,6 +49,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 1. MinMaxResolutionsTest should query the ranges of supported width and height using
@@ -69,7 +76,8 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
     private static final int TARGET_HEIGHT = 720;
     private static final int TARGET_FRAME_RATE = 30;
     private static final int TARGET_BIT_RATE = 5000000;
-    private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
+    private static final List<Object[]> defaultArgsList = new ArrayList<>();
+    private static final List<Object[]> apvArgsList = new ArrayList<>();
 
     private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int bitRateMode,
             int maxBFrames, int intraInterval) {
@@ -95,13 +103,19 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
                 for (int intraInterval : intraIntervals) {
                     for (int bitRateMode : bitRateModes) {
                         // mediaType, cfg
-                        exhaustiveArgsList.add(
+                        defaultArgsList.add(
                                 new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
                                         bitRateMode, maxBFrames, intraInterval)});
                     }
                 }
             }
         }
+    }
+
+    private static void addParamsAPV() {
+        // mediaType, cfg
+        apvArgsList.add(new Object[]{MediaFormat.MIMETYPE_VIDEO_APV, getVideoEncoderCfgParams(
+                MediaFormat.MIMETYPE_VIDEO_APV, BITRATE_MODE_VBR, 0, 1)});
     }
 
     private static List<Object> applyMinMaxRanges(MediaCodecInfo.VideoCapabilities caps,
@@ -245,8 +259,17 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() throws CloneNotSupportedException {
         addParams();
-        return updateParamList(prepareParamList(exhaustiveArgsList, true, false, true, false,
-                HARDWARE));
+        List<Object[]> defaultParams =
+                prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> finalParams = defaultParams;
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            addParamsAPV();
+            List<Object[]> apvParams =
+                    prepareParamList(apvArgsList, true, false, true, false, ALL, null, true);
+            finalParams = Stream.concat(apvParams.stream(), defaultParams.stream())
+                    .collect(Collectors.toList());
+        }
+        return updateParamList(finalParams);
     }
 
     public VideoEncoderMinMaxTest(String encoder, String mediaType, EncoderConfigParams cfgParams,

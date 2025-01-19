@@ -249,6 +249,21 @@ public class UiBot {
     }
 
     /**
+     * Assumes the device has a minimum height and width of {@code minSizeDp}, throwing a
+     * {@code AssumptionViolatedException} if it doesn't (so the test is skipped by the JUnit
+     * Runner).
+     */
+    public void assumeMinimumResolutionInDp(int minSizeDp) {
+        final int widthInDp = mDevice.getDisplaySizeDp().x;
+        final int heightInDp = mDevice.getDisplaySizeDp().y;
+        final int min = Math.min(widthInDp, heightInDp);
+        assumeTrue("Screen size is too small (" + widthInDp + "x" + heightInDp + ")",
+                min >= minSizeDp);
+        Log.d(TAG, "assumeMinimumResolutionInDp(" + minSizeDp + ") passed: screen size is "
+                + widthInDp + "x" + heightInDp);
+    }
+
+    /**
      * Sets the screen resolution in a way that the IME doesn't interfere with the Autofill UI
      * when the device is rotated to landscape.
      *

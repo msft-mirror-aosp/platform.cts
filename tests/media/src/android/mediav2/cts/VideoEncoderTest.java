@@ -18,11 +18,15 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ANY;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_HW_RECOMMENDED;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_SHOULD;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -236,6 +240,23 @@ public class VideoEncoderTest extends CodecEncoderTestBase {
                             COLOR_FormatYUVP010, CODEC_HW},
                     {MediaFormat.MIMETYPE_VIDEO_AV1, 50000000, 3840, 2160, 30,
                             COLOR_FormatYUVP010, CODEC_SHOULD},
+            }));
+        }
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            defArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 1000000, 320, 240, 20,
+                            COLOR_FormatYUV420Flexible, CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 16000000, 720, 480, 30,
+                            COLOR_FormatYUV420Flexible, CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 40000000, 1280, 720, 30,
+                            COLOR_FormatYUV420Flexible, CODEC_OPTIONAL},
+
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 1000000, 320, 240, 20, COLOR_FormatYUVP010,
+                            CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 16000000, 720, 480, 30, COLOR_FormatYUVP010,
+                            CODEC_OPTIONAL},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 40000000, 1280, 720, 30, COLOR_FormatYUVP010,
+                            CODEC_OPTIONAL},
             }));
         }
         List<Object[]> argsList = prepareTestArgs(defArgsList);

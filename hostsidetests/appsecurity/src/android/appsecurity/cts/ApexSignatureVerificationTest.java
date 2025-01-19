@@ -46,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -70,8 +71,7 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
     private static final String TEST_APEX_SOURCE_DIR_PREFIX = "tests-apex_";
     private static final String APEX_PUB_KEY_NAME = "apex_pubkey";
 
-    private static final Pattern WELL_KNOWN_PUBKEY_PATTERN = Pattern.compile(
-            "^apexsigverify\\/.*.avbpubkey");
+    private static final Pattern WELL_KNOWN_PUBKEY_PATTERN = Pattern.compile(".*.avbpubkey");
 
     private static boolean mHasTestFailure;
 
@@ -267,7 +267,7 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
         Iterator<String> keyIterator = keyPath.iterator();
         while (keyIterator.hasNext()) {
             final String tmpKeyPath = keyIterator.next();
-            final String keyFileName = tmpKeyPath.substring(tmpKeyPath.lastIndexOf("/"));
+            final String keyFileName = Paths.get(tmpKeyPath).getFileName().toString();
             File outFile;
             try (InputStream in = getClass().getResourceAsStream("/" + tmpKeyPath)) {
                 outFile = File.createTempFile(keyFileName, "", mWellKnownKeyStorePath);

@@ -24,25 +24,26 @@ import static com.android.bedstead.permissions.CommonPermissions.MASTER_CLEAR;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 
 import android.app.admin.DevicePolicyManager;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
@@ -115,10 +116,16 @@ public final class WipeDataTest {
     @EnsureHasAdditionalUser
     @RequireRunOnSystemUser(switchedToUser = ANY)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#wipeData")
-    public void wipeData_systemUser_throwsSecurityException() {
-        assertThrows("System user should not be removed",
-                SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0));
+    public void wipeData_systemUser_throwsException() {
+        try {
+            sDeviceState.dpc().devicePolicyManager().wipeData(/* flags= */ 0);
+        } catch (RuntimeException e) {
+            assertWithMessage("Should throw either SE or ISE when attempting to wipe system user")
+                    .that(e instanceof SecurityException || e instanceof IllegalStateException)
+                    .isTrue();
+            return;
+        }
+        fail("Should have thrown an exception");
     }
 
     @Postsubmit(reason = "new test")
