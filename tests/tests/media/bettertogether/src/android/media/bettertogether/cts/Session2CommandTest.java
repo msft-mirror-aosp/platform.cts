@@ -24,17 +24,18 @@ import android.media.Session2Command;
 import android.os.Bundle;
 import android.os.Parcel;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-/**
- * Tests {@link android.media.Session2Command}.
- */
-@RunWith(AndroidJUnit4.class)
+/** Tests {@link android.media.Session2Command}. */
+@RunWith(BedsteadJUnit4.class)
 @SmallTest
 public class Session2CommandTest {
     private static final int TEST_COMMAND_CODE = 10000;
@@ -50,18 +51,21 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testConstructorWithCommandCodeCustom() {
         assertThrows(IllegalArgumentException.class,
                 () -> new Session2Command(Session2Command.COMMAND_CODE_CUSTOM));
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testConstructorWithNullAction() {
         assertThrows(IllegalArgumentException.class,
                 () -> new Session2Command(null, null));
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetCommandCode() {
         Session2Command commandWithCode = new Session2Command(TEST_COMMAND_CODE);
         assertThat(commandWithCode.getCommandCode()).isEqualTo(TEST_COMMAND_CODE);
@@ -73,6 +77,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetCustomAction() {
         Session2Command commandWithCode = new Session2Command(TEST_COMMAND_CODE);
         assertThat(commandWithCode.getCustomAction()).isNull();
@@ -83,6 +88,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetCustomExtras() {
         Session2Command commandWithCode = new Session2Command(TEST_COMMAND_CODE);
         assertThat(commandWithCode.getCustomExtras()).isNull();
@@ -93,6 +99,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testDescribeContents() {
         final int expected = 0;
         Session2Command command = new Session2Command(TEST_COMMAND_CODE);
@@ -100,6 +107,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testWriteToParcel() {
         Session2Command command = new Session2Command(TEST_CUSTOM_ACTION, null);
         Parcel dest = Parcel.obtain();
@@ -111,6 +119,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testEquals() {
         Session2Command commandWithCode1 = new Session2Command(TEST_COMMAND_CODE);
         Session2Command commandWithCode2 = new Session2Command(TEST_COMMAND_CODE);
@@ -124,6 +133,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testHashCode() {
         Session2Command commandWithCode1 = new Session2Command(TEST_COMMAND_CODE);
         Session2Command commandWithCode2 = new Session2Command(TEST_COMMAND_CODE);
@@ -131,6 +141,7 @@ public class Session2CommandTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetResultCodeAndData() {
         Session2Command.Result result = new Session2Command.Result(TEST_RESULT_CODE,
                 mTestResultData);

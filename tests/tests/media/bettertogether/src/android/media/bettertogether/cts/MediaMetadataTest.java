@@ -29,6 +29,8 @@ import android.text.TextUtils;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
@@ -47,6 +49,7 @@ import java.util.Set;
 public class MediaMetadataTest {
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_defaultConstructor_hasNoData() {
         MediaMetadata metadata = new MediaMetadata.Builder().build();
 
@@ -55,6 +58,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putText() {
         String testTitle = "test_title";
         MediaMetadata metadata = new MediaMetadata.Builder()
@@ -67,6 +71,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putString() {
         String testTitle = "test_title";
         MediaMetadata metadata = new MediaMetadata.Builder()
@@ -79,6 +84,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putLong() {
         long testYear = 2021;
         MediaMetadata metadata = new MediaMetadata.Builder()
@@ -91,6 +97,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putRating() {
         Rating testHeartRating = Rating.newHeartRating(/*hasHeart=*/ true);
         MediaMetadata metadata = new MediaMetadata.Builder()
@@ -103,6 +110,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putText_throwsIAE_withNonTextKey() {
         MediaMetadata.Builder builder = new MediaMetadata.Builder();
 
@@ -111,6 +119,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putString_throwsIAE_withNonTextKey() {
         MediaMetadata.Builder builder = new MediaMetadata.Builder();
 
@@ -119,6 +128,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putLong_throwsIAE_withNonLongKey() {
         MediaMetadata.Builder builder = new MediaMetadata.Builder();
 
@@ -127,6 +137,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putRating_throwsIAE_withNonRatingKey() {
         Rating testHeartRating = Rating.newHeartRating(/*hasHeart=*/ true);
         MediaMetadata.Builder builder = new MediaMetadata.Builder();
@@ -136,6 +147,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_putBitmap_throwsIAE_withNonBitmapKey() {
         Bitmap testBitmap = Bitmap.createBitmap(/*width=*/ 16, /*height=*/16,
                 Bitmap.Config.ARGB_8888);
@@ -146,6 +158,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_copyConstructor() {
         long testYear = 2021;
         MediaMetadata originalMetadata = new MediaMetadata.Builder()
@@ -157,6 +170,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void equalsAndHashCode() {
         String testTitle = "test_title";
         long testYear = 2021;
@@ -174,6 +188,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void equalsAndHashCode_ignoreRatingAndBitmap() {
         Rating testHeartRating = Rating.newHeartRating(/*hasHeart=*/ true);
         Bitmap testBitmap = Bitmap.createBitmap(/*width=*/ 16, /*height=*/16,
@@ -189,6 +204,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void sizeAndKeySet() {
         Rating testHeartRating = Rating.newHeartRating(/*hasHeart=*/ true);
         Bitmap testBitmap = Bitmap.createBitmap(/*width=*/ 16, /*height=*/16,
@@ -205,6 +221,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void describeContents() {
         long testYear = 2021;
         MediaMetadata metadata = new MediaMetadata.Builder()
@@ -215,6 +232,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void writeToParcel() {
         String testTitle = "test_title";
         long testYear = 2021;
@@ -233,6 +251,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void getDescription() {
         String testMediaId = "media_id";
         String testTitle = "test_title";
@@ -261,12 +280,14 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void getBitmapDimensionLimit_returnsIntegerMaxWhenNotSet() {
         MediaMetadata metadata = new MediaMetadata.Builder().build();
         assertThat(metadata.getBitmapDimensionLimit()).isEqualTo(Integer.MAX_VALUE);
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_setBitmapDimensionLimit_bitmapsAreScaledDown() {
         // A large bitmap (64MB).
         final int originalWidth = 4096;
@@ -289,6 +310,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_setBitmapDimensionLimit_bitmapsAreNotScaledDown() {
         // A small bitmap.
         final int originalWidth = 16;
@@ -312,6 +334,7 @@ public class MediaMetadataTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void builder_setMaxBitmapDimensionLimit_unsetLimit() {
         final int testBitmapDimensionLimit = 256;
         MediaMetadata metadata = new MediaMetadata.Builder()
