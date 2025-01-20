@@ -28,9 +28,6 @@ import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_DOUBLETAP
 import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
-import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
-import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
-import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_CAPSLOCK
 import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
 import com.android.cts.input.UinputDevice
@@ -254,8 +251,8 @@ class EmulateInputDevice {
     fun createKeyboardDeviceAndSendCapsLockKey() {
         UinputKeyboard(instrumentation).use { keyboard ->
             // Wait for device to be added
-            injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, EV_KEY_PRESS, 0, 0, 0))
-            injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, EV_KEY_RELEASE, 0, 0, 0))
+            keyboard.injectKeyDown(KEY_CAPSLOCK)
+            keyboard.injectKeyUp(KEY_CAPSLOCK)
             Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
