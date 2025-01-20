@@ -165,8 +165,7 @@ public class SystemMediaRoutingTest {
     @Test
     public void transferTo_systemMediaProviderServiceRoute_readsAudioAsExpected() {
         var route = waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
-        var previouslySelectedRoute =
-                mSelfProxyRoute.getSystemController().getSelectedRoutes().getFirst();
+        var previouslySelectedRoute = getSelectedRoute();
 
         // Even though this test transfers to previouslySelectedRoute later, we still schedule a
         // transfer back to the original route so that the routing gets reset, even if the test
@@ -177,16 +176,11 @@ public class SystemMediaRoutingTest {
         var toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, VOLUME_TONE);
         mResourceReleaser.add(toneGenerator::release);
         toneGenerator.startTone(ToneGenerator.TONE_DTMF_0);
-        new PollingCheck(TIMEOUT_MS) {
-            @Override
-            protected boolean check() {
-                return mService.getNoisyBytesCount() > EXPECTED_NOISY_BYTE_COUNT;
-            }
-        }.run();
+        waitForCondition(() -> mService.getNoisyBytesCount() > EXPECTED_NOISY_BYTE_COUNT);
 
         transferAndWaitForSessionUpdate(previouslySelectedRoute);
 
-        assertThat(mService.getSelectedRouteOriginalId()).isNull();
+        waitForCondition(() -> mService.getSelectedRouteOriginalId() == null);
         assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
     }
 
@@ -195,8 +189,7 @@ public class SystemMediaRoutingTest {
     public void transferTo_withinRoutingSession_updatesRoutingSession() {
         var firstTargetRoute =
                 waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
-        var previouslySelectedRoute =
-                mSelfProxyRoute.getSystemController().getSelectedRoutes().getFirst();
+        var previouslySelectedRoute = getSelectedRoute();
         mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
         transferAndWaitForSessionUpdate(firstTargetRoute);
 
@@ -220,6 +213,34 @@ public class SystemMediaRoutingTest {
 
         assertThat(mService.getSelectedRouteOriginalId())
                 .isEqualTo(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2);
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void setRouteVolume_updatesRouteCorrectly() {
+        var targetRoute =
+                waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+        var previouslySelectedRoute = getSelectedRoute();
+        mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
+        transferAndWaitForSessionUpdate(targetRoute);
+
+        assertThat(mService.getSelectedRouteOriginalId())
+                .isEqualTo(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+
+        int newVolume = 70;
+        assertThat(newVolume).isNotEqualTo(SystemMediaRoutingProviderService.INITIAL_VOLUME);
+        assertThat(newVolume).isLessThan(SystemMediaRoutingProviderService.VOLUME_MAX);
+        var selectedRoute = getSelectedRoute();
+        mSelfProxyRoute.setRouteVolume(selectedRoute, newVolume);
+
+        waitForCondition(() -> getSelectedRoute().getVolume() == newVolume);
+    }
+
+    /** Retrieves the selected routes, asserts it contains one entry, and returns it. */
+    private MediaRoute2Info getSelectedRoute() {
+        var selectedRoutes = mSelfProxyRoute.getSystemController().getSelectedRoutes();
+        assertWithMessage("Unexpected number of selected routes").that(selectedRoutes).hasSize(1);
+        return selectedRoutes.getFirst();
     }
 
     /**
@@ -305,6 +326,15 @@ public class SystemMediaRoutingTest {
                                 .map(MediaRoute2Info::getName)
                                 .collect(Collectors.toSet())
                                 .containsAll(nameSet));
+    }
+
+    private void waitForCondition(Supplier<Boolean> condition) {
+        new PollingCheck(TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return condition.get();
+            }
+        }.run();
     }
 
     /** Convenience interface for retrieving routes from a routing controller. */
