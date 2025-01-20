@@ -33,6 +33,7 @@ import android.os.Messenger;
 import android.os.PowerManager;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -165,7 +166,42 @@ public class DisplayEventTest extends TestBase {
         assertNoDisplayEventEmitted();
     }
 
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
+    public void test_displayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedDisabled()
+            throws InterruptedException {
+        registerDisplayListener();
+
+        switchRefreshRate();
+
+        waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
+    public void test_noDisplayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedEnabled()
+            throws InterruptedException {
+        // Reset the implicit RR callbacks registration
+        mDisplayManager.resetImplicitRefreshRateCallbackStatus();
+
+        registerDisplayListener();
+        switchRefreshRate();
+        assertNoDisplayEventEmitted();
+
+        // This tells DisplayManager that the client is interested in refresh rate data, so register
+        // them for refresh rate change callbacks
+        mDisplay.getRefreshRate();
+        switchRefreshRate();
+        waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
+    }
+
     private void registerDisplayListener(int eventFlagMask) {
+        initDisplayListener();
+        mDisplayManager.registerDisplayListener(
+                mContext.getMainExecutor(), eventFlagMask, mDisplayListener);
+    }
+
+    private void initDisplayListener() {
         mDisplayListener = new DisplayManager.DisplayListener() {
             @Override
             public void onDisplayAdded(int displayId) {
@@ -182,8 +218,12 @@ public class DisplayEventTest extends TestBase {
                 callback(displayId, DISPLAY_CHANGED);
             }
         };
-        mDisplayManager.registerDisplayListener(mContext.getMainExecutor(), eventFlagMask,
-                mDisplayListener);
+    }
+
+    private void registerDisplayListener() {
+        initDisplayListener();
+        mDisplayManager.registerDisplayListener(
+                mDisplayListener, new Handler(Looper.getMainLooper()));
     }
 
     /**
@@ -205,8 +245,8 @@ public class DisplayEventTest extends TestBase {
         while (true) {
             try {
                 Pair<Integer, Integer> expectedPair = new Pair<>(displayId, expect);
-                Pair<Integer, Integer> event = mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC,
-                        TimeUnit.MILLISECONDS);
+                Pair<Integer, Integer> event =
+                        mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC, TimeUnit.MILLISECONDS);
                 assertNotNull(event);
                 if (expectedPair.equals(event)) {
                     return;
@@ -228,6 +268,11 @@ public class DisplayEventTest extends TestBase {
         }
     }
 
+    /** Flushes all the display events received soo far */
+    private void flushDisplayEventsQueue() {
+        mExpectations.clear();
+    }
+
     private void switchDisplayState() {
         if (!mPowerManager.isInteractive()) {
             UiDeviceUtils.pressWakeupButton();
@@ -242,6 +287,7 @@ public class DisplayEventTest extends TestBase {
         int mInitialMatchContentFrameRate =
                 toSwitchingType(mDisplayManager.getMatchContentFrameRateUserPreference());
         setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE, true);
+        flushDisplayEventsQueue();
 
         int alternateRefreshRateModeId = getAlternateRefreshRateModeId();
         mActivityRule.getScenario().onActivity(activity -> {
