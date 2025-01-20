@@ -25,6 +25,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputDevice
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
@@ -50,6 +51,9 @@ class EmulateInputDevice {
     private lateinit var verifier: EventVerifier
 
     @get:Rule
+    val debugInputRule = DebugInputRule()
+
+    @get:Rule
     val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
     @Suppress("DEPRECATION")
@@ -73,6 +77,7 @@ class EmulateInputDevice {
      * Registers a USB touchscreen through uinput, interacts with it for at least
      * five seconds, and disconnects the device.
      */
+    @DebugInputRule.DebugInput(bug = 385015451)
     @Test
     fun useTouchscreenForFiveSeconds() {
         UinputTouchScreen(instrumentation, activity.display).use { touchscreen ->
