@@ -15,9 +15,10 @@
  */
 package com.android.bedstead.nene.notifications
 
+import java.lang.IllegalStateException
 import java.time.Duration
+import java.util.ArrayDeque
 import java.util.Deque
-import java.util.concurrent.TimeUnit
 
 /**
  * Registered notification listener for receiving notifications on device.
@@ -26,12 +27,13 @@ class NotificationListener internal constructor(private val notifications: Notif
     AutoCloseable {
 
     private val receivedNotifications: Deque<Notification> by lazy {
-        NeneNotificationListenerService.connectedLatch.await(60, TimeUnit.SECONDS)
+        NeneNotificationListenerService.connectedLatch.await()
+        val d = ArrayDeque<Notification>()
 
-        ArrayDeque(
-            NeneNotificationListenerService.instance.get()!!
-                .activeNotifications.map { Notification(it) }
-        ) as Deque<Notification>
+        d.addAll(NeneNotificationListenerService.instance.get()!!
+            .activeNotifications.map { Notification(it) })
+
+        d
     }
 
     private val query by lazy { query() }
