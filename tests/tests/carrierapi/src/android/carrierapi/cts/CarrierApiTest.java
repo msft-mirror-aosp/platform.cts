@@ -71,6 +71,7 @@ import android.telephony.SignalStrengthUpdateRequest;
 import android.telephony.SignalThresholdInfo;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.SubscriptionPlan;
 import android.telephony.TelephonyManager;
 import android.telephony.data.NetworkSlicingConfig;
 import android.telephony.ims.ImsException;
@@ -98,6 +99,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -220,6 +222,15 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final List<String> FPLMN_TEST = Arrays.asList(PLMN_A, PLMN_B);
     private static final int MAX_FPLMN_NUM = 1000;
     private static final int MIN_FPLMN_NUM = 3;
+
+    private static final ZonedDateTime SUB_PLAN_START =
+            ZonedDateTime.parse("2024-01-01T00:00:00.000Z");
+    private static final ZonedDateTime SUB_PLAN_END =
+            ZonedDateTime.parse("2029-12-31T00:00:00.000Z");
+    private static final CharSequence SUB_PLAN_TITLE = "CTS test subscription plan";
+    private static final CharSequence SUB_PLAN_SUMMARY = "CTS test subscription plan summary";
+    private static final long SUB_PLAN_EXPIRATION_DURATION = 36000L;
+    private static final long SUB_PLAN_DATA_LIMIT_BYTES = 1200000L;
 
     @Before
     public void setUp() throws Exception {
@@ -1902,6 +1913,60 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         }
     }
 
+    @Test
+    public void testSetAndGetSubscriptionPlan() {
+        final int subId = getFirstActivateCarrierPrivilegedSubscriptionId();
+        // This test case requires subscription with carrier privileges
+        assumeFalse(subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        final SubscriptionPlan plan = createTestSubscriptionPlan();
+        try {
+            mSubscriptionManager.setSubscriptionPlans(
+                    subId, List.of(plan), SUB_PLAN_EXPIRATION_DURATION);
+        } catch (SecurityException se) {
+            fail("setSubscriptionPlans with carrier privilege throws " + se);
+        }
+
+        try {
+            List<SubscriptionPlan> plans = mSubscriptionManager.getSubscriptionPlans(subId);
+            assertThat(plans).isNotEmpty();
+            SubscriptionPlan retrievedPlan = plans.get(0);
+            assertThat(retrievedPlan).isEqualTo(plan);
+        } catch (SecurityException se) {
+            fail("getSubscriptionPlans with carrier privilege throws " + se);
+        }
+    }
+
+    @Test
+    public void testSetSubscriptionOverrideUnmetered() {
+        final int subId = getFirstActivateCarrierPrivilegedSubscriptionId();
+        // This test case requires subscription with carrier privileges
+        assumeFalse(subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        try {
+            mSubscriptionManager.setSubscriptionOverrideUnmetered(
+                    subId, true, SUB_PLAN_EXPIRATION_DURATION);
+        } catch (SecurityException se) {
+            fail("setSubscriptionOverrideUnmetered with carrier privilege throws " + se);
+        }
+    }
+
+    @Test
+    public void testSetSubscriptionOverrideCongested() {
+        final int subId = getFirstActivateCarrierPrivilegedSubscriptionId();
+        // This test case requires subscription with carrier privileges
+        assumeFalse(subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        SubscriptionPlan plan = createTestSubscriptionPlan();
+        try {
+            mSubscriptionManager.setSubscriptionPlans(
+                    subId, List.of(plan), SUB_PLAN_EXPIRATION_DURATION);
+            mSubscriptionManager.setSubscriptionOverrideCongested(
+                    subId, true, SUB_PLAN_EXPIRATION_DURATION);
+        } catch (SecurityException se) {
+            fail("setSubscriptionOverrideCongested with carrier privilege throws " + se);
+        }
+    }
 
     /**
      * Verify that the phone is supporting the action of setForbiddenPlmn.
@@ -1913,5 +1978,13 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             return false;
         }
         return mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM;
+    }
+
+    private SubscriptionPlan createTestSubscriptionPlan() {
+        return SubscriptionPlan.Builder.createNonrecurring(SUB_PLAN_START, SUB_PLAN_END)
+                .setDataLimit(SUB_PLAN_DATA_LIMIT_BYTES, SubscriptionPlan.LIMIT_BEHAVIOR_THROTTLED)
+                .setTitle(SUB_PLAN_TITLE)
+                .setSummary(SUB_PLAN_SUMMARY)
+                .build();
     }
 }
