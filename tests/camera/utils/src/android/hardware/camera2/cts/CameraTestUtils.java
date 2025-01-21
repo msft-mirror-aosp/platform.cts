@@ -4780,30 +4780,41 @@ public class CameraTestUtils extends Assert {
         static final int USE_CASE_CROPPED_RAW =
                 CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW;
 
-        // Note: This must match the required stream combinations defined in
+        // Note:
+        // This must match the required stream combinations defined in
         // CameraCharacteristcs#INFO_SESSION_CONFIGURATION_QUERY_VERSION.
+        // - First PRIV stream is preview or preview recording,
+        // - Second PRIV stream is video recording,
+        // - YUV stream is analysis.
+        private static final int V = Build.VERSION_CODES.VANILLA_ICE_CREAM;
+        private static final int B = V + 1;
         private static final int[][] QUERY_COMBINATIONS = {
-            {PRIV, S1080P},
-            {PRIV, S720P},
-            {PRIV, S1080P,  JPEG, MAXIMUM_16_9},
-            {PRIV, S1080P,  JPEG, UHD},
-            {PRIV, S1080P,  JPEG, S1440P_16_9},
-            {PRIV, S1080P,  JPEG, S1080P},
-            {PRIV, S1080P,  PRIV, UHD},
-            {PRIV, S720P,   JPEG, MAXIMUM_16_9},
-            {PRIV, S720P,   JPEG, UHD},
-            {PRIV, S720P,   JPEG, S1080P},
-            {PRIV, XVGA,    JPEG, MAXIMUM_4_3},
-            {PRIV, S1080P_4_3, JPEG, MAXIMUM_4_3},
-            {PRIV, S1080P,  JPEG_R, MAXIMUM_16_9},
-            {PRIV, S1080P,  JPEG_R, UHD},
-            {PRIV, S1080P,  JPEG_R, S1440P_16_9},
-            {PRIV, S1080P,  JPEG_R, S1080P},
-            {PRIV, S720P,   JPEG_R, MAXIMUM_16_9},
-            {PRIV, S720P,   JPEG_R, UHD},
-            {PRIV, S720P,   JPEG_R, S1080P},
-            {PRIV, XVGA,    JPEG_R, MAXIMUM_4_3},
-            {PRIV, S1080P_4_3, JPEG_R, MAXIMUM_4_3},
+            {V, PRIV, S1080P},
+            {V, PRIV, S720P},
+            {V, PRIV, S1080P,  JPEG, MAXIMUM_16_9},
+            {V, PRIV, S1080P,  JPEG, UHD},
+            {V, PRIV, S1080P,  JPEG, S1440P_16_9},
+            {V, PRIV, S1080P,  JPEG, S1080P},
+            {V, PRIV, S1080P,  PRIV, UHD},
+            {V, PRIV, S720P,   JPEG, MAXIMUM_16_9},
+            {V, PRIV, S720P,   JPEG, UHD},
+            {V, PRIV, S720P,   JPEG, S1080P},
+            {V, PRIV, XVGA,    JPEG, MAXIMUM_4_3},
+            {V, PRIV, S1080P_4_3, JPEG, MAXIMUM_4_3},
+            {V, PRIV, S1080P,  JPEG_R, MAXIMUM_16_9},
+            {V, PRIV, S1080P,  JPEG_R, UHD},
+            {V, PRIV, S1080P,  JPEG_R, S1440P_16_9},
+            {V, PRIV, S1080P,  JPEG_R, S1080P},
+            {V, PRIV, S720P,   JPEG_R, MAXIMUM_16_9},
+            {V, PRIV, S720P,   JPEG_R, UHD},
+            {V, PRIV, S720P,   JPEG_R, S1080P},
+            {V, PRIV, XVGA,    JPEG_R, MAXIMUM_4_3},
+            {V, PRIV, S1080P_4_3, JPEG_R, MAXIMUM_4_3},
+
+            {B, PRIV, S1080P,  PRIV, S1080P},
+            {B, PRIV, S1080P,  PRIV, S1440P_16_9},
+            {B, PRIV, S1080P,  PRIV, UHD},         // In V, 4k recording wasn't tested
+            {B, PRIV, S1080P,  YUV, S1080P, PRIV, S1080P},
         };
 
         private final Size[] mMaxPrivSizes = new Size[RESOLUTION_COUNT];
@@ -5003,16 +5014,15 @@ public class CameraTestUtils extends Assert {
                         mMaxJpegRSizes[S1440P_16_9] = s1440p169Size;
                         mMaxJpegRSizes[UHD] = uhdSize;
                     }
-                    mQueryableCombinations = QUERY_COMBINATIONS;
                 }
 
                 // Remove all combinations that are not supported by the camera device
                 List<int[]> combinationsToQuery = new ArrayList<int[]>();
-                for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
+                for (int[] combination: QUERY_COMBINATIONS) {
                     boolean hasUnsupportedStream = false;
-                    for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
-                        int format = QUERY_COMBINATIONS[i][j];
-                        int sizeIndex = QUERY_COMBINATIONS[i][j + 1];
+                    for (int j = 1; j < combination.length; j += 2) {
+                        int format = combination[j];
+                        int sizeIndex = combination[j + 1];
                         Size[] supportedSizes = configs.getOutputSizes(format);
                         Size[] sizeArray;
                         switch (format) {
@@ -5024,6 +5034,9 @@ public class CameraTestUtils extends Assert {
                                 break;
                             case ImageFormat.JPEG_R:
                                 sizeArray = mMaxJpegRSizes;
+                                break;
+                            case ImageFormat.YUV_420_888:
+                                sizeArray = mMaxYuvSizes;
                                 break;
                             default:
                                 sizeArray = new Size[0];
@@ -5040,7 +5053,7 @@ public class CameraTestUtils extends Assert {
 
                     // Skip combinations containing with unsupported stream sizes
                     if (!hasUnsupportedStream) {
-                        combinationsToQuery.add(QUERY_COMBINATIONS[i]);
+                        combinationsToQuery.add(combination);
                     }
                 }
                 mQueryableCombinations = combinationsToQuery.toArray(int[][]::new);

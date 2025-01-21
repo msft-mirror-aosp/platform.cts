@@ -106,14 +106,18 @@ def collect_data(cam, tablet_device, preview_size, stabilize, rot_rig,
   """
 
   output_surfaces = cam.preview_surface(preview_size, hlg10)
+  video_stream_index = 0
+  stabilize_mode = camera_properties_utils.STABILIZATION_MODE_OFF
+  if stabilize:
+    stabilize_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
   return collect_data_with_surfaces(cam, tablet_device, output_surfaces,
-                                    stabilize, rot_rig, zoom_ratio,
-                                    fps_range, ois)
+                                    video_stream_index, stabilize_mode, rot_rig,
+                                    zoom_ratio, fps_range, ois)
 
 
 def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
-                               stabilize, rot_rig, zoom_ratio=None,
-                               fps_range=None, ois=False):
+                               video_stream_index, stabilize_mode, rot_rig,
+                               zoom_ratio=None, fps_range=None, ois=False):
   """Capture a new set of data from the device.
 
   Captures camera preview frames while the user is moving the device in
@@ -125,7 +129,8 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
     output_surfaces: list of dict; The list of output surfaces configured for
       the recording. Only the first surface is used for recording; the rest are
       configured, but not requested.
-    stabilize: boolean; whether preview stabilization is ON.
+    video_stream_index: The index of output surface used for recording
+    stabilize_mode: int; Video stabilization mode.
     rot_rig: dict with 'cntl' and 'ch' defined.
     zoom_ratio: float; static zoom ratio. None if default zoom.
     fps_range: list; target fps range.
@@ -169,8 +174,8 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   min_fps = fps_range[0] if (fps_range is not None) else None
   max_fps = fps_range[1] if (fps_range is not None) else None
   recording_obj = cam.do_preview_recording_multiple_surfaces(
-      output_surfaces, _VIDEO_DURATION, stabilize, ois, zoom_ratio=zoom_ratio,
-      ae_target_fps_min=min_fps, ae_target_fps_max=max_fps)
+      output_surfaces, video_stream_index, _VIDEO_DURATION, stabilize_mode, ois,
+      zoom_ratio=zoom_ratio, ae_target_fps_min=min_fps, ae_target_fps_max=max_fps)
 
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])

@@ -79,6 +79,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -175,10 +176,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             return;
         }
         CameraCharacteristics characteristics = staticInfo.getCharacteristics();
-        boolean supportSessionConfigurationQuery = characteristics.get(
-                CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION)
-                > Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-        if (!supportSessionConfigurationQuery) {
+        int featureCombinationQueryVersion = characteristics.get(
+                CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION);
+        if (featureCombinationQueryVersion <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             Log.i(TAG, "Camera " + id + " doesn't support session configuration query");
             return;
         }
@@ -190,7 +190,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
         try {
             for (int[] c : maxStreamSizes.getQueryableCombinations()) {
-                testIsSessionConfigurationSupported(cameraDeviceSetup, maxStreamSizes, c);
+                if (featureCombinationQueryVersion < c[0]) continue;
+                int[] comb = Arrays.copyOfRange(c, 1, c.length);
+                testIsSessionConfigurationSupported(cameraDeviceSetup, maxStreamSizes, comb);
             }
         } finally {
             closeDevice(id);

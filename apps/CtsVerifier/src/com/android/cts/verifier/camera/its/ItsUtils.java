@@ -147,6 +147,11 @@ public class ItsUtils {
         return getOutputSizes(ccs, ImageFormat.JPEG, false);
     }
 
+    public static Size[] getPrivOutputSizes(CameraCharacteristics ccs)
+            throws ItsException {
+        return getOutputSizes(ccs, ImageFormat.PRIVATE, false);
+    }
+
     public static Size[] getHeicUltraHdrOutputSizes(CameraCharacteristics ccs)
             throws ItsException {
         return getOutputSizes(ccs, ImageFormat.HEIC_ULTRAHDR, false);
