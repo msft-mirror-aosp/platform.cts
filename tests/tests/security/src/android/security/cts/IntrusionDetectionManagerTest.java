@@ -94,6 +94,10 @@ public class IntrusionDetectionManagerTest {
 
     @After
     public void teardown() throws InterruptedException {
+        // Only perform teardown if the hardware is testable.
+        if (!isTestableHardware(mContext)) {
+          return;
+        }
         reset();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
