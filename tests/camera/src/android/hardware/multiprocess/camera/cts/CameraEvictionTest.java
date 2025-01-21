@@ -41,7 +41,6 @@ import android.server.wm.NestedShellPermission;
 import android.server.wm.TestTaskOrganizer;
 import android.server.wm.WindowManagerStateHelper;
 import android.test.ActivityInstrumentationTestCase2;
-import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
 import android.view.InputDevice;
@@ -380,22 +379,6 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     }
 
     /**
-     * Return a Map of eventTag -> number of times encountered
-     */
-    private Map<Integer, Integer> getEventTagCountMap(List<ErrorLoggingService.LogEvent> events) {
-        ArrayMap<Integer, Integer> eventTagCountMap = new ArrayMap<>();
-        for (ErrorLoggingService.LogEvent e : events) {
-            int eventTag = e.getEvent();
-            if (!eventTagCountMap.containsKey(eventTag)) {
-                eventTagCountMap.put(eventTag, 1);
-            } else {
-                eventTagCountMap.put(eventTag, eventTagCountMap.get(eventTag) + 1);
-            }
-        }
-        return eventTagCountMap;
-    }
-
-    /**
      * Test camera availability access callback in split window mode.
      */
     @AppModeFull(reason = "TestTaskOrganizer.putTaskInSplitPrimary, .putTaskInSplitSecondary")
@@ -426,7 +409,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         boolean cameraConnected = false;
         boolean activityPaused = false;
 
-        Map<Integer, Integer> eventTagCountMap = getEventTagCountMap(allEvents);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
         for (int eventTag : eventTagCountMap.keySet()) {
             if (eventTag == TestConstants.EVENT_ACTIVITY_RESUMED) {
                 activityResumed += eventTagCountMap.get(eventTag);
@@ -452,7 +435,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(SETUP_TIMEOUT,
                     TestConstants.EVENT_ACTIVITY_PAUSED);
             assertNotNull("Remote activity not paused!", allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             for (int eventTag : eventTagCountMap.keySet()) {
                 if (eventTag == TestConstants.EVENT_ACTIVITY_RESUMED) {
                     activityResumed += eventTagCountMap.get(eventTag);
@@ -467,7 +450,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(SETUP_TIMEOUT,
                     TestConstants.EVENT_ACTIVITY_RESUMED);
             assertNotNull("Remote activity not resumed after pause!", allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             for (int eventTag : eventTagCountMap.keySet()) {
                 if (eventTag == TestConstants.EVENT_ACTIVITY_RESUMED) {
                     activityResumed += eventTagCountMap.get(eventTag);
@@ -500,7 +483,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(CAMERA_ACCESS_TIMEOUT,
                     expectedEventsSecondary);
             assertNotNull(allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             assertTrue(eventTagCountMap.containsKey(
                     TestConstants.EVENT_CAMERA_ACCESS_PRIORITIES_CHANGED));
             assertTrue(eventTagCountMap.containsKey(
@@ -512,7 +495,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(CAMERA_ACCESS_TIMEOUT,
                     expectedEventsPrimary);
             assertNotNull(allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             assertTrue(eventTagCountMap.containsKey(
                     TestConstants.EVENT_CAMERA_ACCESS_PRIORITIES_CHANGED));
             assertTrue(eventTagCountMap.containsKey(

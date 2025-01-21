@@ -29,17 +29,21 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.cts.Camera2ParameterizedTestCase;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
 import android.hardware.camera2.cts.helpers.StaticMetadata.CheckLevel;
+import android.hardware.camera2.params.SharedSessionConfiguration;
+import android.hardware.camera2.params.SharedSessionConfiguration.SharedOutputConfiguration;
 import android.os.Bundle;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
+import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.internal.camera.flags.Flags;
 
@@ -52,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /** Tests for shared camera access where multiple clients can access a camera. */
@@ -62,6 +67,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private static final int SETUP_TIMEOUT = 5000; // Remote camera setup timeout (ms).
     private static final int WAIT_TIME = 3000; // Time to wait for process to launch (ms).
     private static final int EVICTION_TIMEOUT = 1000; // Remote camera eviction timeout (ms).
+    private static final long PREVIEW_TIME_MS = 2000;
     private ErrorLoggingService.ErrorServiceConnection mErrorServiceConnection;
     private int mProcessPid = -1;
     private Context mContext;
@@ -69,6 +75,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private String mCameraId;
     private Messenger mRemoteMessenger;
     private ResultReceiver mResultReceiver;
+    private UiDevice mUiDevice;
     protected HashMap<String, StaticMetadata> mAllStaticInfo;
 
     @Rule
@@ -90,8 +97,8 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
          * https://code.google.com/p/dexmaker/issues/detail?id=2
          */
         System.setProperty("dexmaker.dexcache", mContext.getCacheDir().toString());
-
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mUiDevice = UiDevice.getInstance(instrumentation);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mErrorServiceConnection = new ErrorLoggingService.ErrorServiceConnection(mContext);
         mErrorServiceConnection.start();
@@ -160,15 +167,15 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 continue;
             }
             long nativeSharedTest =
-                    openSharedCameraNativeClient(mCameraId, /* isPrimaryClient */ true);
+                    openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/true);
             openCameraJavaClient(mCameraId);
             assertCameraEvictedNativeClient(nativeSharedTest);
             closeNativeClient(nativeSharedTest);
             closeCameraJavaClient();
-            openSharedCameraJavaClient(mCameraId, /* isPrimaryClient */ true);
-            nativeSharedTest = openCameraNativeClient(mCameraId, /* expectFail */ true);
+            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+            nativeSharedTest = openCameraNativeClient(mCameraId, /*expectFail*/true);
             closeCameraJavaClient();
-            closeNativeClient(nativeSharedTest, /* expectCameraAlreadyClosed */ true);
+            closeNativeClient(nativeSharedTest, /*expectCameraAlreadyClosed*/true);
         }
     }
 
@@ -183,13 +190,16 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
                 continue;
             }
-            assertTrue("Camera device sharing is only supported for system cameras. Camera "
-                    + mCameraId + " is not a system camera.", mAdoptShellPerm);
-            assertCameraDeviceSharingSupportedJavaClient(mCameraId);
-            openSharedCameraJavaClient(mCameraId, /* isPrimaryClient */ true);
-            assertCameraDeviceSharingSupportedNativeClient(mCameraId);
+            assertTrue(
+                    "Camera device sharing is only supported for system cameras. Camera "
+                            + mCameraId
+                            + " is not a system camera.",
+                    mAdoptShellPerm);
+            assertCameraDeviceSharingSupportedJavaClient(mCameraId, /*sharingSupported*/true);
+            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+            assertCameraDeviceSharingSupportedNativeClient(mCameraId, /*sharingSupported*/true);
             long nativeSharedTest =
-                    openSharedCameraNativeClient(mCameraId, /* isPrimaryClient */ false);
+                    openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/false);
             // Verify that attempting to open the camera didn't cause anything weird to happen in
             // the other process.
             List<ErrorLoggingService.LogEvent> eventList2 = null;
@@ -206,28 +216,169 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         }
     }
 
-    private void assertCameraDeviceSharingSupportedJavaClient(String cameraId) throws Exception {
-        assertTrue(
-                "Camera characteristic SHARED_SESSION_CONFIGURATION is present and"
-                        + " isCameraDeviceSharingSupported should return true for camera id "
-                        + cameraId,
-                mCameraManager.isCameraDeviceSharingSupported(cameraId));
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
+    public void testCameraDeviceSharingNotSupported() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (mAllStaticInfo.get(mCameraId).sharedSessionConfigurationPresent()) {
+                Log.i(TAG, "Camera " + mCameraId + " does support camera sharing, skipping");
+                continue;
+            }
+            assertCameraDeviceSharingSupportedJavaClient(mCameraId, /*sharingSupported*/false);
+            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true, /*expectedFail*/true);
+            assertCameraDeviceSharingSupportedNativeClient(mCameraId, /*sharingSupported*/false);
+            long nativeSharedTest =
+                    openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/false,
+                    /*expectedFail*/true);
+            closeNativeClient(nativeSharedTest, /*expectCameraAlreadyClosed*/true);
+        }
     }
 
-    private void assertCameraDeviceSharingSupportedNativeClient(String cameraId) throws Exception {
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
+    public void testClientSharedAccessPriorityChanged() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+                Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
+                continue;
+            }
+            long nativeSharedTest = openSharedCameraNativeClient(mCameraId,
+                    /*isPrimaryClient*/true);
+            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+            assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/false);
+            mUiDevice.pressHome();
+            SystemClock.sleep(WAIT_TIME);
+            assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/true);
+            assertClientAccessPriorityChangedJava(/*isPrimaryClient*/false);
+            forceCtsActivityToTop();
+            assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/false);
+            assertClientAccessPriorityChangedJava(/*isPrimaryClient*/true);
+            closeCameraJavaClient();
+            assertClientAccessPriorityChangedNative(nativeSharedTest, /*isPrimaryClient*/true);
+            closeNativeClient(nativeSharedTest);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
+    public void testSharedSessionCreationDifferentStreams() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+                Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
+                continue;
+            }
+            SharedSessionConfiguration sharedSessionConfig =
+                    mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
+            assertNotNull("Shared session configuration is null", sharedSessionConfig);
+            if (sharedSessionConfig.getOutputStreamsInformation().size() < 2) {
+                Log.i(
+                        TAG,
+                        "Camera "
+                                + mCameraId
+                                + " has less than two streams for "
+                                + "shared session, skipping");
+                continue;
+            }
+            int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
+            int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
+            if ((surfaceViewIdx == -1) || (imageReaderIdx == -1)) {
+                Log.i(
+                        TAG,
+                        "Camera "
+                                + mCameraId
+                                + " does not have two different streams supporting surface view and"
+                                + " ImageReader for shared session, skipping");
+                continue;
+            }
+            int imgWidth, imgHeight, imgFormat;
+            SharedOutputConfiguration imgReaderConfig =
+                    sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
+            imgWidth = imgReaderConfig.getSize().getWidth();
+            imgHeight = imgReaderConfig.getSize().getHeight();
+            imgFormat = imgReaderConfig.getFormat();
+            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+            long nativeSharedTest = openSharedCameraNativeClient(mCameraId,
+                    /*isPrimaryClient*/false);
+            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+            sharedStreamArray.add(surfaceViewIdx);
+            createSharedSessionJavaClient(sharedStreamArray);
+            startPreviewJavaClient();
+            SystemClock.sleep(PREVIEW_TIME_MS);
+            createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+            startSharedStreamingNative(nativeSharedTest);
+            SystemClock.sleep(PREVIEW_TIME_MS);
+            stopSharedStreamingNative(nativeSharedTest);
+            closeSessionNative(nativeSharedTest);
+            stopPreviewJavaClient();
+            closeCameraJavaClient();
+            closeNativeClient(nativeSharedTest);
+        }
+    }
+
+    private int getSurfaceViewStreamIdx(SharedSessionConfiguration sharedSessionConfig) {
+        int surfaceViewIdx = -1;
+        List<SharedOutputConfiguration> sharedConfigs =
+                sharedSessionConfig.getOutputStreamsInformation();
+        for (int i = 0; i < sharedConfigs.size(); i++) {
+            SharedOutputConfiguration outputStream = sharedConfigs.get(i);
+            if (outputStream.getSurfaceType() == TestConstants.SURFACE_TYPE_SURFACE_VIEW) {
+                surfaceViewIdx = i;
+                break;
+            }
+        }
+        return surfaceViewIdx;
+    }
+
+    private int getImageReaderStreamIdx(SharedSessionConfiguration sharedSessionConfig) {
+        int imageReaderIdx = -1;
+        List<SharedOutputConfiguration> sharedConfigs =
+                sharedSessionConfig.getOutputStreamsInformation();
+        for (int i = 0; i < sharedConfigs.size(); i++) {
+            SharedOutputConfiguration outputStream = sharedConfigs.get(i);
+            if (outputStream.getSurfaceType() == TestConstants.SURFACE_TYPE_IMAGE_READER) {
+                imageReaderIdx = i;
+                break;
+            }
+        }
+        return imageReaderIdx;
+    }
+
+    private void assertCameraDeviceSharingSupportedJavaClient(String cameraId, boolean expectedTrue)
+            throws Exception {
+        assertEquals(
+                "isCameraDeviceSharingSupported expected to return " + expectedTrue
+                + " for camera id " + cameraId,
+                expectedTrue, mCameraManager.isCameraDeviceSharingSupported(cameraId));
+    }
+
+    private void assertCameraDeviceSharingSupportedNativeClient(String cameraId,
+            boolean expectedTrue) throws Exception {
         boolean[] outBoolean = new boolean[1];
         assertTrue(
                 "testIsCameraDeviceSharingSupportedNative fail, see log for details",
                 testIsCameraDeviceSharingSupportedNative(cameraId, outBoolean));
-        assertTrue(
-                "Camera characteristic SHARED_SESSION_CONFIGURATION is present and"
-                        + " isCameraDeviceSharingSupported should return true for camera id "
-                        + cameraId,
-                outBoolean[0]);
+        assertEquals(
+                "isCameraDeviceSharingSupported expected to return " + expectedTrue
+                + " for camera id " + cameraId,
+                expectedTrue, outBoolean[0]);
     }
 
     private void openSharedCameraJavaClient(String cameraId, boolean isPrimaryClient)
             throws Exception {
+        openSharedCameraJavaClient(cameraId, isPrimaryClient, /*expectFail*/ false);
+    }
+
+    private void openSharedCameraJavaClient(String cameraId, boolean isPrimaryClient,
+            boolean expectFail) throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_OPEN_CAMERA_SHARED);
         msg.getData().putString(TestConstants.EXTRA_CAMERA_ID, cameraId);
         boolean remoteExceptionHit = false;
@@ -238,19 +389,94 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         }
         assertFalse(
                 "Error in sending open camera command to SharedCameraActivity", remoteExceptionHit);
-        int constant =
-                isPrimaryClient
-                        ? TestConstants.EVENT_CAMERA_CONNECT_SHARED_PRIMARY
-                        : TestConstants.EVENT_CAMERA_CONNECT_SHARED_SECONDARY;
+        int expectedEvent;
+        if (expectFail) {
+            expectedEvent = TestConstants.EVENT_CAMERA_ERROR;
+        } else {
+            expectedEvent =
+                    isPrimaryClient
+                            ? TestConstants.EVENT_CAMERA_CONNECT_SHARED_PRIMARY
+                            : TestConstants.EVENT_CAMERA_CONNECT_SHARED_SECONDARY;
+        }
         List<ErrorLoggingService.LogEvent> events =
-                mErrorServiceConnection.getLog(SETUP_TIMEOUT, constant);
-        assertNotNull("Camera device not connected in remote process!", events);
-        TestUtils.assertOnly(constant, events);
+                mErrorServiceConnection.getLog(SETUP_TIMEOUT, expectedEvent);
+        assertNotNull("Did not receive any events from the camera device in remote process!",
+                events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(expectedEvent));
+    }
+
+    private void startPreviewJavaClient() throws Exception {
+        Message msg = Message.obtain(null, TestConstants.OP_START_PREVIEW);
+        boolean remoteExceptionHit = false;
+        try {
+            mRemoteMessenger.send(msg);
+        } catch (RemoteException e) {
+            remoteExceptionHit = true;
+        }
+        assertFalse(
+                "Error in sending startPreview command to SharedCameraActivity",
+                remoteExceptionHit);
+        List<ErrorLoggingService.LogEvent> events =
+                mErrorServiceConnection.getLog(
+                        SETUP_TIMEOUT, TestConstants.EVENT_CAMERA_PREVIEW_STARTED);
+        assertNotNull(
+                "Did not receive any events from the camera device in remote process!", events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_PREVIEW_STARTED));
+    }
+
+    private void stopPreviewJavaClient() throws Exception {
+        Message msg = Message.obtain(null, TestConstants.OP_STOP_PREVIEW);
+        boolean remoteExceptionHit = false;
+        try {
+            mRemoteMessenger.send(msg);
+        } catch (RemoteException e) {
+            remoteExceptionHit = true;
+        }
+        assertFalse(
+                "Error in sending stopPreview command to SharedCameraActivity", remoteExceptionHit);
+        List<ErrorLoggingService.LogEvent> events =
+                mErrorServiceConnection.getLog(
+                        SETUP_TIMEOUT, TestConstants.EVENT_CAMERA_PREVIEW_COMPLETED);
+        assertNotNull(
+                "Did not receive any events from the camera device in remote process!", events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_PREVIEW_COMPLETED));
+    }
+
+    private void createSharedSessionJavaClient(ArrayList<Integer> sharedStreamArray)
+            throws Exception {
+        Message msg = Message.obtain(null, TestConstants.OP_CREATE_SHARED_SESSION);
+        msg.getData()
+                .putIntegerArrayList(TestConstants.EXTRA_SHARED_STREAM_ARRAY, sharedStreamArray);
+        boolean remoteExceptionHit = false;
+        try {
+            mRemoteMessenger.send(msg);
+        } catch (RemoteException e) {
+            remoteExceptionHit = true;
+        }
+        assertFalse(
+                "Error in sending createSharedSession command to SharedCameraActivity",
+                remoteExceptionHit);
+        List<ErrorLoggingService.LogEvent> events =
+                mErrorServiceConnection.getLog(
+                        SETUP_TIMEOUT, TestConstants.EVENT_CAMERA_SESSION_CONFIGURED);
+        assertNotNull(
+                "Did not receive any events from the camera device in remote process!", events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_SESSION_CONFIGURED));
     }
 
     private long openSharedCameraNativeClient(String cameraId, boolean isPrimaryClient)
             throws Exception {
-        long nativeSharedTest = testInitAndOpenSharedCameraNative(cameraId, isPrimaryClient);
+        return testInitAndOpenSharedCameraNative(cameraId, isPrimaryClient, /*expectFail*/false);
+    }
+
+    private long openSharedCameraNativeClient(String cameraId, boolean isPrimaryClient,
+            boolean expectFail) throws Exception {
+        long nativeSharedTest = testInitAndOpenSharedCameraNative(cameraId, isPrimaryClient,
+                expectFail);
         assertTrue(
                 "testInitAndOpenSharedCameraNative fail, see log for details",
                 nativeSharedTest != 0);
@@ -297,8 +523,29 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 remoteExceptionHit);
         List<ErrorLoggingService.LogEvent> events =
                 mErrorServiceConnection.getLog(SETUP_TIMEOUT, TestConstants.EVENT_CAMERA_CLOSED);
-        assertNotNull("Camera device still connected in remote process!", events);
-        TestUtils.assertOnly(TestConstants.EVENT_CAMERA_CLOSED, events);
+        assertNotNull(
+                "Did not receive any events from the camera device in remote process!", events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(TestConstants.EVENT_CAMERA_CLOSED));
+    }
+
+    private void assertClientAccessPriorityChangedJava(boolean isPrimaryClient) throws Exception {
+        int expectedEvent;
+        expectedEvent = isPrimaryClient
+                ? TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_PRIMARY :
+                TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_SECONDARY;
+        List<ErrorLoggingService.LogEvent> events =
+                mErrorServiceConnection.getLog(SETUP_TIMEOUT, expectedEvent);
+        assertNotNull(
+                "Did not receive any events from the camera device in remote process!", events);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
+        assertTrue(eventTagCountMap.containsKey(expectedEvent));
+    }
+
+    private void assertClientAccessPriorityChangedNative(long nativeSharedTest,
+            boolean isPrimaryClient) throws Exception {
+        assertTrue("testClientAccessPriorityChangedNative fail, see log for details",
+                testClientAccessPriorityChangedNative(nativeSharedTest, isPrimaryClient));
     }
 
     private void closeNativeClient(long nativeSharedTest) throws Exception {
@@ -316,6 +563,32 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         assertTrue(
                 "testIsCameraEvictedNative fail, see log for details",
                 testIsCameraEvictedNative(nativeSharedTest));
+
+    }
+
+    private void createCaptureSessionNative(long nativeSharedTest, int imgWidth, int imgHeight,
+            int imgFormat) {
+        assertTrue(
+                "testCreateCaptureSessionNative fail, see log for details",
+                testCreateCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat));
+    }
+
+    private void startSharedStreamingNative(long nativeSharedTest) {
+        assertTrue(
+                "testStartStreamingNative fail, see log for details",
+                testStartSharedStreamingNative(nativeSharedTest));
+    }
+
+    private void stopSharedStreamingNative(long nativeSharedTest) {
+        assertTrue(
+                "testStopStreamingNative fail, see log for details",
+                testStopSharedStreamingNative(nativeSharedTest));
+    }
+
+    private void closeSessionNative(long nativeSharedTest) {
+        assertTrue(
+                "testCloseSessionNative fail, see log for details",
+                 testCloseSessionNative(nativeSharedTest));
     }
 
     /**
@@ -346,15 +619,30 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 + "processes.", -1 != mProcessPid);
     }
 
+    /**
+     * Ensure the CTS activity becomes foreground again instead of launcher.
+     */
+    private void forceCtsActivityToTop() throws InterruptedException {
+        Intent bringToTopIntent = new Intent(mContext, SharedCameraActivity.class);
+        bringToTopIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        mContext.startActivity(bringToTopIntent);
+        Thread.sleep(WAIT_TIME);
+    }
+
     private static native boolean testIsCameraDeviceSharingSupportedNative(String cameraId,
             boolean[] outResult);
     private static native long testInitAndOpenSharedCameraNative(String cameraId,
-            boolean primaryClient);
-
+            boolean primaryClient, boolean expectFail);
     private static native long testInitAndOpenCameraNative(String cameraId, boolean expectFail);
-
     private static native boolean testIsCameraEvictedNative(long sharedTestContext);
-
     private static native boolean testDeInitAndCloseSharedCameraNative(
             long sharedTestContext, boolean expectCameraAlreadyClosed);
+    private static native boolean testCreateCaptureSessionNative(long sharedTestContext, int width,
+            int height, int format);
+    private static native boolean testCloseSessionNative(long sharedTestContext);
+    private static native boolean testStartSharedStreamingNative(long sharedTestContext);
+    private static native boolean testStopSharedStreamingNative(long sharedTestContext);
+    private static native boolean testClientAccessPriorityChangedNative(long sharedTestContext,
+            boolean primaryClient);
 }
