@@ -245,7 +245,7 @@ public class StorageOtherAndOwnedFilesTest {
                 assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
             }
         } finally {
-            testFile.delete();
+            executeShellCommand("rm " + testFile);
         }
     }
 
@@ -302,10 +302,10 @@ public class StorageOtherAndOwnedFilesTest {
             assertFalse(renamedFile3.exists());
         } finally {
             modifyReadAccess(renamedFile1, THIS_PACKAGE_NAME, REVOKE);
+            executeShellCommand("rm " + testFile);
             executeShellCommand("rm " + renamedFile1);
-            testFile.delete();
-            renamedFile2.delete();
-            renamedFile3.delete();
+            executeShellCommand("rm " + renamedFile2);
+            executeShellCommand("rm " + renamedFile3);
         }
     }
 }

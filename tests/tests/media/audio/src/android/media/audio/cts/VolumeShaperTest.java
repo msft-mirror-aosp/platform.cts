@@ -228,7 +228,7 @@ public class VolumeShaperTest {
 
     private MediaPlayer createMediaPlayer(boolean offloaded) {
         // MP3 resource should be greater than 1m to introduce offloading
-        final int RESOURCE_ID = R.raw.test1m1s;
+        final int RESOURCE_ID = R.raw.testmp3_2;
 
         final MediaPlayer mediaPlayer = MediaPlayer.create(getContext(),
                 RESOURCE_ID,
