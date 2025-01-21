@@ -37,10 +37,10 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.Flags;
 import android.security.intrusiondetection.IntrusionDetectionManager;
+import android.util.Slog;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
-import android.util.Slog;
 
 import org.junit.After;
 import org.junit.Before;
@@ -51,7 +51,6 @@ import org.junit.runner.RunWith;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.Process;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -87,6 +86,9 @@ public class IntrusionDetectionManagerTest {
             return false;
         }
         if (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
+            return false;
+        }
+        if (pm.hasSystemFeature(PackageManager.FEATURE_PC)) {
             return false;
         }
         return true;
