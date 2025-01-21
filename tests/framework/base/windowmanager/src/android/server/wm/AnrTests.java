@@ -182,7 +182,7 @@ public class AnrTests extends ActivityManagerTestBase {
         final long timestamp = System.currentTimeMillis();
         UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         UiObject2 closeAppButton = uiDevice.wait(Until.findObject(By.res("android:id/aerr_close")),
-                20000);
+                20000L * BuildUtils.HW_TIMEOUT_MULTIPLIER);
         if (closeAppButton == null) {
             fail("Could not find anr dialog");
             return;
