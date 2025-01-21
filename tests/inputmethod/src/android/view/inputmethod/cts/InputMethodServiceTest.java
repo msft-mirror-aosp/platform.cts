@@ -1248,6 +1248,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                         PackageManager.FEATURE_PC));
         assumeTrue(mGestureNavSwitchHelper.hasSystemGestureFeature());
 
+        assertTrue("Gesture navigation mode overlay exists",
+                mGestureNavSwitchHelper.hasGestureNavOverlay());
+        assertTrue("Three button navigation mode overlay exists",
+                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
+
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
                 var imeSession = MockImeSession.create(
                         InstrumentationRegistry.getInstrumentation().getContext(),
@@ -1305,6 +1310,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
         assumeFalse("Skip PC devices, as they do not support navigation bar overlays",
                 mInstrumentation.getContext().getPackageManager().hasSystemFeature(
                         PackageManager.FEATURE_PC));
+
+        assertTrue("Three button navigation mode overlay exists",
+                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
 
         try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
                 var imeSession = MockImeSession.create(
