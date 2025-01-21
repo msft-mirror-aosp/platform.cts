@@ -86,7 +86,7 @@ public class VirtualDeviceRule implements TestRule {
     public static final ComponentName BLOCKED_ACTIVITY_COMPONENT =
             new ComponentName("android", "com.android.internal.app.BlockedAppStreamingActivity");
 
-    private RuleChain mRuleChain;
+    private final RuleChain mRuleChain;
     private final FakeAssociationRule mFakeAssociationRule;
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
@@ -122,12 +122,6 @@ public class VirtualDeviceRule implements TestRule {
                 .around(new AdoptShellPermissionsRule(
                         getInstrumentation().getUiAutomation(), permissions))
                 .around(mTrackerRule);
-    }
-
-    /** Creates a rule with virtual camera support check before test execution. */
-    public VirtualDeviceRule withVirtualCameraSupportCheck() {
-        mRuleChain = mRuleChain.around(new VirtualCameraSupportRule(this));
-        return this;
     }
 
     @Override
@@ -528,5 +522,4 @@ public class VirtualDeviceRule implements TestRule {
             super.after();
         }
     }
-
 }
