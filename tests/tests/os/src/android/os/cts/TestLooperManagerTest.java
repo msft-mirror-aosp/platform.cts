@@ -122,7 +122,7 @@ public class TestLooperManagerTest {
 
         MessageQueue mQueue = looper.getQueue();
         int token = mQueue.postSyncBarrier();
-        assertFalse(tlm.isBlockedOnSyncBarrier());
+        assertTrue(tlm.isBlockedOnSyncBarrier());
         handler.sendEmptyMessage(42);
         assertTrue(tlm.isBlockedOnSyncBarrier());
         mQueue.removeSyncBarrier(token);
