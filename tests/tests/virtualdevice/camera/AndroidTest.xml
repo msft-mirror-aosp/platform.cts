@@ -16,9 +16,19 @@
 <configuration description="Configuration for Virtual Device Manager Camera Tests">
     <!-- Only run tests if the device under test is SDK version 34 (Android 14) or above. -->
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.DeviceFeatureModuleController">
+        <!-- Skip the test on automotive devices, as virtual camera is not supported there. -->
+        <option name="forbidden-feature" value="android.hardware.type.automotive"/>
+    </object>
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
+        <option name="command-timeout" value="2000" />
         <!-- Skip the test on low ram devices. -->
         <option name="run-command" value="getprop ro.config.low_ram | grep -v true" />
+        <!-- Skip the test if we're not able to execute virtual_camera commands on device. -->
+        <option name="run-command" value="cmd -w virtual_camera" />
+        <!-- Skip the test if a virtual camera cannot be created successfully. -->
+        <option name="run-command" value="cmd -w virtual_camera enable_test_camera" />
+        <option name="run-command" value="cmd -w virtual_camera disable_test_camera" />
     </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />
