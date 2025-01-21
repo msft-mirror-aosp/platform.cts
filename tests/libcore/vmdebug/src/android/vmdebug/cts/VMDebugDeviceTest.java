@@ -90,7 +90,7 @@ public class VMDebugDeviceTest {
     }
 
     private void testLowOverheadTrace(VMDebug.TraceDestination trace) throws Exception {
-        VMDebug.startLowOverheadTrace();
+        VMDebug.startLowOverheadTraceForAllMethods();
         testMethod();
         VMDebug.dumpLowOverheadTrace(trace);
         VMDebug.stopLowOverheadTrace();
