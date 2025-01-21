@@ -1664,11 +1664,14 @@ class ItsSession(object):
     for zoom_ratio in zoom_ratios:
       ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
       # Get physical ID
-      physical_camera_id = int(
-          dut.ui(
-              res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
-      )
-      logging.debug('Physical camera ID: %d', physical_camera_id)
+      try:
+        physical_camera_id = int(
+            dut.ui(
+                res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
+        )
+        logging.debug('Physical camera ID: %d', physical_camera_id)
+      except ValueError:
+        physical_camera_id = None
       physical_camera_ids.append(physical_camera_id)
       # Take capture
       dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
