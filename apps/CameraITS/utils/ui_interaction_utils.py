@@ -112,6 +112,8 @@ DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
 WATCH_WAIT_TIME_SECONDS = 2
 _CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
 _REQ_STR_PATTERN = 'REQ'
+JCA_VIDEO_STABILIZATION_MODE_OFF = 0
+JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
 
 
 @dataclasses.dataclass(frozen=True)
@@ -362,7 +364,8 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     dut: An Android controller device object.
     log_path: str; log path to save screenshots.
     stabilization_mode: int; constant describing the video stabilization mode.
-      Acceptable values: 0, 1, 2
+      Acceptable values: JCA_VIDEO_STABILIZATION_MODE_OFF,
+                         JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY
   """
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
@@ -373,7 +376,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
         'Set Video Stabilization settings not found!'
         'Make sure you have the latest JCA app.'
     )
-  if stabilization_mode == 0:
+  if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_OFF:
     if not dut.ui(text=SETTINGS_MENU_STABILIZATION_OFF_TEXT).wait.exists(
         UI_OBJECT_WAIT_TIME_SECONDS):
       try:
@@ -384,7 +387,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
             log_path, prefix='failed_to_set_video_stabilization_to_off')
         raise AssertionError('Set Video Stabilization to Off failed!') from e
 
-  if stabilization_mode == 1:
+  if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY:
     if not dut.ui(
         text=SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT).wait.exists(
             UI_OBJECT_WAIT_TIME_SECONDS):
@@ -602,7 +605,8 @@ def default_camera_app_dut_setup(device_id, pkg_name):
         device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
 
 
-def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None):
+def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
+                           video_stabilization=None):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
@@ -611,6 +615,13 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None):
     camera_facing: camera lens facing orientation
     zoom_ratio: optional; zoom_ratio to be set while taking the JCA capture.
     By default it will be set to 1 if the value is None.
+    video_stabilization: optional; video stabilization mode to be set while
+    taking the JCA capture. By default, JCA uses AUTO mode.
+
+    AUTO in JCA will set the stabilization mode to PREVIEW_STABILIZATION,
+    if the lens supports it, and if not, it will set it to OIS. If neither
+    preview stabilization or OIS are supported it will be OFF.
+
   Returns:
     img_path_on_dut: Path of the captured image on the device
   """
@@ -633,6 +644,8 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None):
       jca_ui_zoom(dut, zoom_ratio, log_path)
     change_jca_aspect_ratio(dut, log_path,
                             aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
+    if video_stabilization:
+      _set_jca_video_stabilization(dut, log_path, video_stabilization)
     # Take dumpsys before capturing the image
     take_dumpsys_report(dut, file_path=DEFAULT_JCA_UI_DUMPSYS_PATH)
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
