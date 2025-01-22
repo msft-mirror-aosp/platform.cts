@@ -406,6 +406,7 @@ public class MediaQualityTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetPictureProfileHandle() {
         PictureProfile profile = getTestPictureProfile("testGetPictureProfileHandle");
@@ -422,6 +423,7 @@ public class MediaQualityTest {
         assertEquals(ppHandle.size(), 1);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
     public void testGetSoundProfileHandle() {
         SoundProfile profile = getTestSoundProfile("testGetSoundProfileHandle");
@@ -436,6 +438,32 @@ public class MediaQualityTest {
         List<SoundProfileHandle> spHandle = mManager.getSoundProfileHandle(ids);
         assertNotNull(spHandle);
         assertEquals(spHandle.size(), 1);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetDefaultPictureProfile() {
+        PictureProfile toCreate = getTestPictureProfile("testSetDefaultPictureProfile");
+        mManager.createPictureProfile(toCreate);
+
+        PictureProfile created =
+                mManager.getPictureProfile(
+                        toCreate.getProfileType(), toCreate.getName(), includeParams(false));
+
+        mManager.setDefaultPictureProfile(created.getProfileId());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetDefaultSoundProfile() {
+        SoundProfile toCreate = getTestSoundProfile("testSetDefaultSoundProfile");
+        mManager.createSoundProfile(toCreate);
+
+        SoundProfile created =
+                mManager.getSoundProfile(
+                        toCreate.getProfileType(), toCreate.getName(), includeParams(false));
+
+        mManager.setDefaultSoundProfile(created.getProfileId());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
