@@ -32,11 +32,11 @@ package {
 }
 
 java_library_host {
-    name: "cts-interactive-tradefed-tests",
+    name: "cts-v-host-tradefed-tests",
     srcs: ["src/**/*.java"],
     libs: [
         "tradefed",
-        "cts-interactive-tradefed",
+        "cts-v-host-tradefed",
     ],
     static_libs: ["suite-loading-tests"],
 }
