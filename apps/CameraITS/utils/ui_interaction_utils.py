@@ -110,6 +110,8 @@ WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
 JCA_WATCH_DUMP_FILE = 'jca_watch_dump.txt'
 DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
 WATCH_WAIT_TIME_SECONDS = 2
+_CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
+_REQ_STR_PATTERN = 'REQ'
 
 
 @dataclasses.dataclass(frozen=True)
@@ -697,9 +699,9 @@ def _watch_start(device_id, pkg_name):
       'start',
       '-m',
       (
-          '3a,android.control.captureIntent,android.jpeg.quality,'
+          'android.control.captureIntent,android.jpeg.quality,'
           'android.control.zoomRatio,'
-          'android.control.videoStabilizationMode'
+          '3a'
       ),
       '-c',
       pkg_name,
@@ -765,3 +767,38 @@ def stop_cameraservice_watch(watch_process):
   cmd = f'adb -s {device_id} shell cmd media.camera watch stop'.split(' ')
   subprocess.run(cmd, check=True)
   logging.debug('Stopped watching 3a')
+
+
+def get_default_camera_zoom_ratio(file_name):
+  """Returns the zoom_ratio used by default camera capture.
+
+  Args:
+    file_name: str; file name storing default camera pkg watch
+    cameraservice dump output.
+  Returns:
+    zoom_ratio: zoom_ratio rounded up to 2 decimal places
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  zoom_ratio_values = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if _CONTROL_ZOOM_RATIO_KEY in line:
+        if _REQ_STR_PATTERN not in line:
+          continue
+        logging.debug('zoomRatio line: %s', line)
+        values = line.split(':')
+        value_str = values[-1]
+        match = re.search(r'[\d.]+', value_str)
+        if match:
+          value = float(match.group())
+          rounded_value = round(value, 2)
+          logging.debug('zoomRatio found: %s', rounded_value)
+          zoom_ratio_values.append(rounded_value)
+
+  if zoom_ratio_values:
+    logging.debug('zoom_ratio_values: %s', zoom_ratio_values)
+    return zoom_ratio_values[-1]
+  return None

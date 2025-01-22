@@ -123,12 +123,23 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           f'{default_capture_path.stem}_default{default_capture_path.suffix}'
       )
       os.rename(default_path, default_capture_path)
-
+      # Get the zoomRatio value used by default camera app
+      default_watch_dump_file = os.path.join(
+          self.log_path,
+          ui_interaction_utils.DEFAULT_CAMERA_WATCH_DUMP_FILE
+      )
+      zoom_ratio = ui_interaction_utils.get_default_camera_zoom_ratio(
+          default_watch_dump_file)
+      logging.debug('Default camera captures zoomRatio value: %s', zoom_ratio)
+      jca_zoom_ratio = None
+      if zoom_ratio != 1:
+        jca_zoom_ratio = zoom_ratio
       # Take JCA capture with UI
       jca_capture_path = ui_interaction_utils.launch_jca_and_capture(
           self.dut,
           self.log_path,
-          camera_facing=props['android.lens.facing']
+          camera_facing=props['android.lens.facing'],
+          zoom_ratio=jca_zoom_ratio
       )
       ui_interaction_utils.pull_img_files(
           device_id, jca_capture_path, self.log_path
