@@ -115,7 +115,7 @@ public class MultiUserTest extends BaseHostJUnit4Test {
             return;
         }
         // Switch back to the initial user.
-        getDevice().switchUser(mInitialUserId);
+        getDevice().switchUser(getDeviceMainUserId(getDevice()));
 
         // We suspect that the optimization made for Bug 38143512 was a bit unstable.  Let's see
         // if adding a sleep improves the stability or not.
@@ -279,14 +279,9 @@ public class MultiUserTest extends BaseHostJUnit4Test {
         assertIme1ImplicitlyEnabledSubtypeNotExist(profileUserId);
     }
 
-    private int getDeviceMainUserId(ITestDevice device) throws Exception {
-        Integer userId = device.getMainUserId();
-
-        // Some headless surfaces like auto may not necessarily define a MAIN user.
-        if (userId == null) {
-            userId = mInitialUserId;
-        }
-        return userId;
+    private static int getDeviceMainUserId(ITestDevice device) throws DeviceNotAvailableException {
+        return device.isHeadlessSystemUserMode() ? device.getPrimaryUserId() :
+                device.getMainUserId();
     }
 
     private String shell(String command) {
@@ -305,6 +300,13 @@ public class MultiUserTest extends BaseHostJUnit4Test {
      */
     private void switchUser(int userId) throws Exception {
         getDevice().switchUser(userId);
+
+        // TODO(b/282196632): Implement cmd input_method get-last-switch-user-id in
+        // Android Auto IMMS
+        if (isMultiUserMultiDisplayIme()) {
+            return;
+        }
+
         final long initialTime = System.currentTimeMillis();
         while (true) {
             final CommandResult result = getDevice().executeShellV2Command(
@@ -338,6 +340,16 @@ public class MultiUserTest extends BaseHostJUnit4Test {
                         + " ID from InputMethodManagerService.");
             }
         }
+    }
+
+    // TODO(b/282196632): remove this method once b/282196632) is fixed
+    private boolean isMultiUserMultiDisplayIme() throws DeviceNotAvailableException {
+        CommandResult result = getDevice().executeShellV2Command("dumpsys input_method",
+                IME_COMMAND_TIMEOUT, TimeUnit.MILLISECONDS);
+        if (result.getStatus() != CommandStatus.SUCCESS) {
+            return false;
+        }
+        return result.getStdout().startsWith("*InputMethodManagerServiceProxy");
     }
 
     private void installPossibleInstantPackage(String apkFileName, int userId, boolean instant)
