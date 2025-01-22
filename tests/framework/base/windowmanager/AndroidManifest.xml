@@ -403,9 +403,11 @@
                   android:theme="@android:style/Theme.Material.NoActionBar"/>
 
         <activity android:name="android.server.wm.window.WindowPolicyTests$PortraitTestActivity"
+                  android:configChanges="resourcesUnused"
                   android:screenOrientation="portrait"/>
 
         <activity android:name="android.server.wm.window.WindowPolicyTests$LandscapeTestActivity"
+                  android:configChanges="resourcesUnused"
                   android:screenOrientation="landscape"/>
 
         <activity android:name="android.server.wm.window.WindowCtsActivity"
