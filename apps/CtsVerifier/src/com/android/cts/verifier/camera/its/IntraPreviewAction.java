@@ -192,7 +192,8 @@ class PreviewDynamicZoomAction extends IntraPreviewAction {
         mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                 mRecordingResultListener, mCameraHandler);
         // Wait for autofocus to converge
-        if (!mRecordingResultListener.waitForAfConvergence()) {
+        if (!ItsUtils.isFixedFocusLens(mCameraCharacteristics) &&
+                    !mRecordingResultListener.waitForAfConvergence()) {
             throw new ItsException(
                     "AF failed to converge before dynamic zoom requests sent.");
         }
@@ -249,7 +250,8 @@ class PreviewDynamicMeteringAction extends IntraPreviewAction {
         mSession.setRepeatingRequest(mCaptureRequestBuilder.build(),
                 mRecordingResultListener, mCameraHandler);
         // Wait for autofocus to converge
-        if (!mRecordingResultListener.waitForAfConvergence()) {
+        if (!ItsUtils.isFixedFocusLens(mCameraCharacteristics) &&
+                    !mRecordingResultListener.waitForAfConvergence()) {
             throw new ItsException(
                     "AF failed to converge before dynamic metering requests sent.");
         }
