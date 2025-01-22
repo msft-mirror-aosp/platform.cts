@@ -51,6 +51,10 @@ public final class GestureNavSwitchHelper {
 
     private static final String STATE_ENABLED = "STATE_ENABLED";
 
+    private static final String STATE_DISABLED = "STATE_DISABLED";
+
+    private static final String STATE_UNKNOWN = "STATE_UNKNOWN";
+
     private static final long OVERLAY_WAIT_TIMEOUT = 10000;
 
     private final Instrumentation mInstrumentation;
@@ -90,6 +94,28 @@ public final class GestureNavSwitchHelper {
 
     private void insetsToRect(Insets insets, Rect outRect) {
         outRect.set(insets.left, insets.top, insets.right, insets.bottom);
+    }
+
+    /**
+     * Checks whether the gesture navigation mode overlay is installed, regardless of whether it is
+     * enabled.
+     */
+    public boolean hasGestureNavOverlay() {
+        return hasOverlay(NAV_BAR_MODE_GESTURAL_OVERLAY);
+    }
+
+    /**
+     * Checks whether the three button navigation mode overlay is installed, regardless of whether
+     * it is enabled.
+     */
+    public boolean hasThreeButtonNavOverlay() {
+        return hasOverlay(NAV_BAR_MODE_3BUTTON_OVERLAY);
+    }
+
+    /** Checks whether the given overlay is installed, regardless of whether it is enabled. */
+    private boolean hasOverlay(@NonNull String overlayPackage) {
+        final String state = getStateForOverlay(overlayPackage);
+        return STATE_ENABLED.equals(state) || STATE_DISABLED.equals(state);
     }
 
     /**
@@ -178,16 +204,8 @@ public final class GestureNavSwitchHelper {
      * @return whether the navigation mode was successfully set.
      */
     private boolean setNavigationMode(@NonNull String navigationModePkgName) {
-        try {
-            final boolean hasOverlay = mDevice.executeShellCommand(
-                    "cmd overlay list --user current").contains(navigationModePkgName);
-            if (!hasOverlay) {
-                Log.i(TAG, "setNavigationMode, overlay: " + navigationModePkgName
-                        + " does not exist");
-                return false;
-            }
-        } catch (IOException e) {
-            Log.w(TAG, "Failed to get overlay list", e);
+        if (!hasOverlay(navigationModePkgName)) {
+            Log.i(TAG, "setNavigationMode, overlay: " + navigationModePkgName + " does not exist");
             return false;
         }
         Log.d(TAG, "setNavigationMode: " + navigationModePkgName);
@@ -268,8 +286,7 @@ public final class GestureNavSwitchHelper {
         final long startTime = System.currentTimeMillis();
 
         while (System.currentTimeMillis() - startTime < OVERLAY_WAIT_TIMEOUT) {
-            final String state = getStateForOverlay(overlayPackage);
-            if (expectedState.equals(state)) {
+            if (expectedState.equals(getStateForOverlay(overlayPackage))) {
                 return true;
             }
         }
@@ -286,49 +303,12 @@ public final class GestureNavSwitchHelper {
      */
     @NonNull
     private String getStateForOverlay(@NonNull String overlayPackage) {
-        // TODO(b/377912666): create TestApi for checking overlay state directly
-        final String dumpResult;
         try {
-            dumpResult = mDevice.executeShellCommand("cmd overlay dump");
+            return mDevice.executeShellCommand("cmd overlay dump --user current state "
+                    + overlayPackage).trim();
         } catch (IOException e) {
-            Log.w(TAG, "Failed to get overlay dump", e);
-            return "";
+            Log.w(TAG, "Failed to get overlay state", e);
+            return STATE_UNKNOWN;
         }
-
-        final String overlayPackageForCurrentUser =
-                overlayPackage + ":" + mInstrumentation.getContext().getUserId();
-
-        final int startIndex = dumpResult.indexOf(overlayPackageForCurrentUser);
-        if (startIndex < 0) {
-            Log.i(TAG, "getStateForOverlay, " + overlayPackageForCurrentUser + " not found");
-            return "";
-        }
-
-        final int endIndex = dumpResult.indexOf('}', startIndex);
-        if (endIndex <= startIndex) {
-            Log.i(TAG, "getStateForOverlay, state closing bracket not found");
-            return "";
-        }
-
-        final int stateIndex = dumpResult.indexOf("mState", startIndex);
-        if (stateIndex <= startIndex || stateIndex >= endIndex) {
-            Log.i(TAG, "getStateForOverlay, mState not found");
-            return "";
-        }
-
-        final int colonIndex = dumpResult.indexOf(':', stateIndex);
-        if (colonIndex <= stateIndex || colonIndex >= endIndex) {
-            Log.i(TAG, "getStateForOverlay, colon separator not found");
-            return "";
-        }
-
-        final int endLineIndex = dumpResult.indexOf('\n', colonIndex);
-        if (endLineIndex <= colonIndex || endLineIndex >= endIndex) {
-            Log.i(TAG, "getStateForOverlay, line end not found");
-            return "";
-        }
-
-        final var overlayState = dumpResult.substring(colonIndex + 2, endLineIndex);
-        return overlayState;
     }
 }
