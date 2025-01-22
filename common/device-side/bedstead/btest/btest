@@ -445,7 +445,9 @@ supported_modules = {
         "package": "com.android.bedstead.testapp.test",
         "path": "com.android.bedstead.testapp",
         "runner": "androidx.test.runner.AndroidJUnitRunner",
-        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE]
+        "states": [RUN_ON_SYSTEM_USER, RUN_ON_WORK_PROFILE, RUN_ON_SECONDARY_USER, RUN_ON_ADDITIONAL_USER, RUN_ON_CLONE_PROFILE, RUN_ON_PRIVATE_PROFILE],
+        "additional_targets": ["bedstead-testapp-test1"],
+        "files": [{"from": "bedstead-testapp-test1.apk", "to": "/data/local/tmp/bedstead-testapp-test1.apk"}]
     },
     "CtsDevicePolicySimTestCases": {
         "package": "android.devicepolicy.cts.telephony",

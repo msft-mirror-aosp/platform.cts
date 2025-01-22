@@ -18,13 +18,16 @@ package android.sensitivecontentprotection.cts
 import android.server.wm.WindowManagerState
 import android.server.wm.WindowManagerStateHelper
 import android.view.WindowManager.LayoutParams.TYPE_TOAST
+import com.android.compatibility.common.util.SystemUtil.eventually
 import com.google.common.truth.Truth
 
 class ToastVerifier {
     companion object {
         fun verifyToastShowsAndGoes() {
             Truth.assertThat(waitForToast()).isTrue()
-            Truth.assertThat(waitForNoToast()).isTrue()
+            // Toasts using Toast.LENGTH_LONG tends to not dismiss before the
+            // WindowManagerStateHelper().waitFor timeout
+            eventually { Truth.assertThat(waitForNoToast()).isTrue() }
         }
 
         fun verifyToastDoesNotShow() {

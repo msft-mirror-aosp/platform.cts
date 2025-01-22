@@ -254,7 +254,7 @@ public class MediaStorePlacementTest {
     @Test
     @Ignore("b/369795989")
     public void testRelated() throws Exception {
-        final Uri unusualUri = stageImageInAudio();
+        final Uri unusualUri = stageImageInDownload();
 
         // Normal file creation should fail (image in audio)
         mValues.put(MediaColumns.DISPLAY_NAME, "edited" + System.nanoTime());
@@ -291,12 +291,12 @@ public class MediaStorePlacementTest {
     @Test
     public void testRelated_InvalidMime() throws Exception {
         assumeFalse("not testable in automotive device", mAutomotiveDevice);
-        final Uri unusualUri = stageImageInAudio();
+        final Uri unusualUri = stageImageInDownload();
 
         // Normal file creation should fail (video doesn't match related image)
         mValues.put(MediaColumns.DISPLAY_NAME, "edited" + System.nanoTime());
         mValues.put(MediaColumns.MIME_TYPE, "video/mp4");
-        mValues.put(MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_ALARMS + "/");
+        mValues.put(MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/");
         mExtras.putParcelable(MediaStore.QUERY_ARG_RELATED_URI, unusualUri);
         try {
             mContentResolver.insert(mExternalVideo, mValues, mExtras);
@@ -308,12 +308,12 @@ public class MediaStorePlacementTest {
     @Test
     public void testRelated_InvalidPath() throws Exception {
         assumeFalse("not testable in automotive device", mAutomotiveDevice);
-        final Uri unusualUri = stageImageInAudio();
+        final Uri unusualUri = stageImageInDownload();
 
         // Normal file creation should fail (path not exact match)
         mValues.put(MediaColumns.DISPLAY_NAME, "edited" + System.nanoTime());
         mValues.put(MediaColumns.MIME_TYPE, "image/jpeg");
-        mValues.put(MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_ALARMS + "/cts/");
+        mValues.put(MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/cts/");
         mExtras.putParcelable(MediaStore.QUERY_ARG_RELATED_URI, unusualUri);
         try {
             mContentResolver.insert(mExternalImages, mValues, mExtras);
@@ -322,12 +322,12 @@ public class MediaStorePlacementTest {
         }
     }
 
-    private Uri stageImageInAudio() throws Exception {
+    private Uri stageImageInDownload() throws Exception {
         Assume.assumeFalse(MediaStore.VOLUME_EXTERNAL.equals(mVolumeName));
 
         final String displayName = "cts" + System.nanoTime() + ".jpg";
         final File file = Environment.buildPath(MediaProviderTestUtils.getVolumePath(mVolumeName),
-                Environment.DIRECTORY_ALARMS, displayName);
+                Environment.DIRECTORY_DOWNLOADS, displayName);
         return MediaProviderTestUtils.scanFileFromShell(
                 MediaProviderTestUtils.stageFile(R.raw.scenery, file));
     }

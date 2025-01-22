@@ -108,6 +108,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
 
     private static final int WAIT_FOR_FOCUS_DONE_TIMEOUT_MS = 6000;
 
+    private static final int MAX_IMAGES = 1; // Common maximum images that can be acquired during
+                                             // still capture
+
     private static final CaptureRequest.Key[] FOCUS_CAPTURE_REQUEST_SET = {
             CaptureRequest.CONTROL_AF_MODE,
             CaptureRequest.CONTROL_AF_REGIONS,
@@ -556,7 +559,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         }
 
                         SimpleImageReaderListener imageListener = new SimpleImageReaderListener(
-                                false, 1);
+                                false, MAX_IMAGES);
                         ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
                                 captureFormat, /*maxImages*/ 1, imageListener,
                                 mTestRule.getHandler());
@@ -569,7 +572,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         Size postviewSize =
                                 CameraTestUtils.getMaxSize(postviewSizes.toArray(new Size[0]));
                         SimpleImageReaderListener imageListenerPostview =
-                                new SimpleImageReaderListener(false, 1);
+                                new SimpleImageReaderListener(false, MAX_IMAGES);
                         ImageReader postviewImageReader = CameraTestUtils.makeImageReader(
                                     postviewSize, postviewFormat, /*maxImages*/ 1,
                                     imageListenerPostview, mTestRule.getHandler());
@@ -789,7 +792,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
 
                 Size maxSize = CameraTestUtils.getMaxSize(extensionSizes.toArray(new Size[0]));
                 SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false,
-                        1);
+                        MAX_IMAGES);
                 ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
                         captureFormat, /*maxImages*/ 1, imageListener,
                         mTestRule.getHandler());
@@ -1112,7 +1115,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     }
                     Size maxSize = CameraTestUtils.getMaxSize(extensionSizes.toArray(new Size[0]));
                     SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false,
-                            1);
+                            MAX_IMAGES);
                     ImageReader extensionImageReader = CameraTestUtils.makeImageReader(maxSize,
                             captureFormat, /*maxImages*/ 1, imageListener,
                             mTestRule.getHandler());
@@ -1456,7 +1459,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         CameraTestUtils.getMaxSize(captureSizes.toArray(new Size[0]));
 
                 SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false
-                        , 1);
+                        , MAX_IMAGES);
                 ImageReader extensionImageReader = CameraTestUtils.makeImageReader(
                         captureMaxSize, captureFormat, /*maxImages*/ 1, imageListener,
                         mTestRule.getHandler());
@@ -2375,6 +2378,22 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                 List<OutputConfiguration> outputConfigs = new ArrayList<>();
                 outputConfigs.add(new OutputConfiguration(texturedSurface));
 
+                int captureFormat = ImageFormat.JPEG;
+                List<Size> captureSizes = extensionChars.getExtensionSupportedSizes(extension,
+                        captureFormat);
+                assertFalse("No Jpeg output supported", captureSizes.isEmpty());
+                Size captureMaxSize =
+                        CameraTestUtils.getMaxSize(captureSizes.toArray(new Size[0]));
+
+                SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false
+                        , MAX_IMAGES);
+                ImageReader extensionImageReader = CameraTestUtils.makeImageReader(
+                        captureMaxSize, captureFormat, /*maxImages*/ 1, imageListener,
+                        mTestRule.getHandler());
+                Surface imageReaderSurface = extensionImageReader.getSurface();
+                OutputConfiguration readerOutput = new OutputConfiguration(imageReaderSurface);
+                outputConfigs.add(readerOutput);
+
                 BlockingExtensionSessionCallback sessionListener =
                         new BlockingExtensionSessionCallback(mock(
                                 CameraExtensionSession.StateCallback.class));
@@ -2402,6 +2421,10 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                             mTestRule.getCamera().createCaptureRequest(
                                     android.hardware.camera2.CameraDevice.TEMPLATE_PREVIEW);
                     captureBuilder.addTarget(texturedSurface);
+                    CaptureRequest.Builder stillCaptureBuilder =
+                            mTestRule.getCamera().createCaptureRequest(
+                                    CameraDevice.TEMPLATE_STILL_CAPTURE);
+                    stillCaptureBuilder.addTarget(imageReaderSurface);
                     for (Float currentZoomRatio : candidateZoomRatios) {
                         captureBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, currentZoomRatio);
                         CaptureRequest request = captureBuilder.build();
@@ -2415,6 +2438,30 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                                 timeout(REPEATING_REQUEST_TIMEOUT_MS).atLeastOnce())
                                 .onCaptureResultAvailable(eq(extensionSession), eq(request),
                                         any(TotalCaptureResult.class));
+
+                        stillCaptureBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, currentZoomRatio);
+                        CaptureRequest stillRequest = stillCaptureBuilder.build();
+                        CameraExtensionSession.ExtensionCaptureCallback captureCallback =
+                                mock(CameraExtensionSession.ExtensionCaptureCallback.class);
+
+                        extensionSession.capture(stillRequest,
+                                new HandlerExecutor(mTestRule.getHandler()), captureCallback);
+
+                        // Only ensure we have a valid image. Further image validation is already
+                        // done by other test cases.
+                        Image img = imageListener.getImage(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS);
+                        img.close();
+
+                        verify(captureCallback,
+                                timeout(MULTI_FRAME_CAPTURE_IMAGE_TIMEOUT_MS).times(1))
+                                .onCaptureResultAvailable(eq(extensionSession),
+                                        eq(stillRequest), any(TotalCaptureResult.class));
+                        verify(captureCallback, times(0))
+                                .onCaptureFailed(any(CameraExtensionSession.class),
+                                        any(CaptureRequest.class));
+                        verify(captureCallback, times(0))
+                                .onCaptureFailed(any(CameraExtensionSession.class),
+                                        any(CaptureRequest.class), anyInt());
                     }
 
                     extensionSession.stopRepeating();
@@ -2427,6 +2474,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                 } finally {
                     mTestRule.closeDevice(id);
                     texturedSurface.release();
+                    extensionImageReader.close();
                 }
             }
         }
@@ -2493,7 +2541,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                 assertFalse("No Jpeg output supported", captureSizes.isEmpty());
                 Size captureMaxSize = captureSizes.get(0);
 
-                SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false, 1);
+                SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false,
+                        MAX_IMAGES);
                 ImageReader extensionImageReader = CameraTestUtils.makeImageReader(
                         captureMaxSize, captureFormat, /*maxImages*/ 1, imageListener,
                         mTestRule.getHandler());
@@ -2730,7 +2779,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     }
 
                     SimpleImageReaderListener imageListener = new SimpleImageReaderListener(false,
-                            1);
+                            MAX_IMAGES);
                     Size invalidCaptureSize = new Size(1, 1);
                     ImageReader extensionImageReader = CameraTestUtils.makeImageReader(
                             invalidCaptureSize, captureFormat, /*maxImages*/ 1,
@@ -2776,7 +2825,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         }
                     }
 
-                    imageListener = new SimpleImageReaderListener(false, 1);
+                    imageListener = new SimpleImageReaderListener(false, MAX_IMAGES);
                     extensionImageReader = CameraTestUtils.makeImageReader(captureMaxSize,
                             captureFormat, /*maxImages*/ 1, imageListener, mTestRule.getHandler());
                     imageReaderSurface = extensionImageReader.getSurface();

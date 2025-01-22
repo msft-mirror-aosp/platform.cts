@@ -97,6 +97,8 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
     }
 
     public void testAtom_executeAppFunction_crossUser_success() throws Exception {
+        if (!getDevice().isMultiUserSupported()) return;
+
         AppFunctionsRequestReported afRequestReported =
                 runTestAndGetAtom("executeAppFunction_crossUser_success_nonParam");
 

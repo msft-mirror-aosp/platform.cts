@@ -626,9 +626,10 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
         // Add state sets to the list in order.
         List<Set<Integer>> stateSet = Arrays.asList(syncOn, syncOff, syncOn, syncOff);
 
+        DeviceUtils.allowImmediateSyncs(getDevice());
+
         ConfigUtils.uploadConfigForPushedAtomWithUid(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 atomTag, /*useUidAttributionChain=*/true);
-        DeviceUtils.allowImmediateSyncs(getDevice());
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testSyncState");
 
         // Sorted list of events in order in which they occurred.

@@ -26,6 +26,18 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/uapNotificationsTestInfo"
+            android:padding="20dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/uapNotificationsTest_Status"
+            android:textSize="20sp" />
+
         <!-- Device Notifications -->
         <!-- USB_HEADSET -->
         <LinearLayout

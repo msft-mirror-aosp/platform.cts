@@ -94,6 +94,7 @@ android_test {
         "testng", // for assertThrows
         "bedstead-performance-analyzer",
     ],
+    data: [":bedstead-testapp-test1"],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
     plugins: ["auto_annotation_plugin"],
@@ -201,6 +202,15 @@ java_genrule {
     ],
     cmd: "mkdir -p $(genDir)/resources" +
         " && cp $(in) $(genDir)/resources",
+}
+
+android_test_helper_app {
+    name: "bedstead-testapp-test1",
+    static_libs: [
+        "EventLib",
+    ],
+    manifest: "testapps/TestApp1.xml",
+    min_sdk_version: "29",
 }
 
 android_test_helper_app {

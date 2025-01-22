@@ -27,6 +27,7 @@ import static android.os.Build.VERSION_CODES.S;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
 import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_CONNECT;
 import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.permissions.CommonPermissions.WRITE_CONTACTS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
@@ -483,32 +484,32 @@ public final class TestAppInstanceTest {
     @Test
     public void permissions_withPermission_permissionStateDoesNotApplyToInstrumentedApp() {
         try (TestAppInstance testApp = sTestApp.install();
-             PermissionContext p = testApp.permissions().withPermission(READ_CONTACTS)) {
+             PermissionContext p = testApp.permissions().withPermission(WRITE_CONTACTS)) {
             assertThat(sContext.checkSelfPermission(
-                    READ_CONTACTS)).isNotEqualTo(PERMISSION_GRANTED);
+                    WRITE_CONTACTS)).isNotEqualTo(PERMISSION_GRANTED);
         }
     }
 
     @Test
     public void permissions_withPermission_permissionStateDoesNotApplyToInstrumentedAppAfterCall() {
         try (TestAppInstance testApp = sTestApp.install();
-             PermissionContext p = testApp.permissions().withPermission(READ_CONTACTS)) {
-            testApp.context().checkSelfPermission(READ_CONTACTS);
+             PermissionContext p = testApp.permissions().withPermission(WRITE_CONTACTS)) {
+            testApp.context().checkSelfPermission(WRITE_CONTACTS);
 
             assertThat(sContext.checkSelfPermission(
-                    READ_CONTACTS)).isNotEqualTo(PERMISSION_GRANTED);
+                    WRITE_CONTACTS)).isNotEqualTo(PERMISSION_GRANTED);
         }
     }
 
     @Test
     public void permissions_withPermission_instrumentedPermissionStateDoesNotAffectTestApp() {
         try (TestAppInstance testApp = sTestApp.install();
-             PermissionContext p = TestApis.permissions().withoutPermission(READ_CONTACTS);
-             PermissionContext p2 = testApp.permissions().withPermission(READ_CONTACTS)) {
+             PermissionContext p = TestApis.permissions().withoutPermission(WRITE_CONTACTS);
+             PermissionContext p2 = testApp.permissions().withPermission(WRITE_CONTACTS)) {
             assertThat(sContext.checkSelfPermission(
-                    READ_CONTACTS)).isNotEqualTo(PERMISSION_GRANTED);
+                    WRITE_CONTACTS)).isNotEqualTo(PERMISSION_GRANTED);
             assertThat(testApp.context().checkSelfPermission(
-                    READ_CONTACTS)).isEqualTo(PERMISSION_GRANTED);
+                    WRITE_CONTACTS)).isEqualTo(PERMISSION_GRANTED);
         }
     }
 

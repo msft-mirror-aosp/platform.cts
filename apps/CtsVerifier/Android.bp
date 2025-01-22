@@ -253,7 +253,6 @@ genrule {
     device_common_srcs: [
         ":android-cts-verifier-notice",
         ":CtsVerifier",
-        ":multidevice-test",
     ],
     tools: [
         "soong_zip",
@@ -262,7 +261,7 @@ genrule {
     out: ["android-cts-verifier.zip"],
     cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) $(location :android-cts-verifier-notice) > $(genDir)/list &&" +
         " $(location soong_zip) -o $(genDir)/cts-verifier.zip -j -P android-cts-verifier -l $(genDir)/list &&" +
-        " $(location merge_zips) $(out) $(genDir)/cts-verifier.zip $(location :camera-its) $(location :camera-webcam-test) $(location :multidevice-test)",
+        " $(location merge_zips) $(out) $(genDir)/cts-verifier.zip $(location :camera-its) $(location :camera-webcam-test)",
 }
 
 gen_notice {
@@ -282,13 +281,12 @@ genrule {
     name: "android-cts-verifier-app-list",
     srcs: [
         ":cts_apps_to_include",
-        ":multidevice-test-app-list",
     ],
     device_common_srcs: [
         ":CtsVerifier",
     ],
     out: ["android-cts-verifier-app-list.txt"],
-    cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) $(location :multidevice-test-app-list) > $(out)",
+    cmd: "echo $(locations :cts_apps_to_include) $(location :CtsVerifier) > $(out)",
 }
 
 filegroup {

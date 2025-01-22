@@ -43,6 +43,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.text.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -53,6 +54,7 @@ import java.util.HashSet;
 @RunWith(AndroidJUnit4.class)
 public class TextRunShaperTest {
 
+    @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test

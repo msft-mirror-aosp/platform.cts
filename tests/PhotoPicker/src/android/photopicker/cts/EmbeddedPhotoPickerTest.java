@@ -39,7 +39,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
-import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
@@ -48,7 +47,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.Display;
 import android.view.SurfaceView;
-import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -394,22 +392,6 @@ public class EmbeddedPhotoPickerTest {
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
         assertThat(selectedUris.isEmpty()).isTrue();
         assertThat(hasUriPermission(selectedUri)).isFalse();
-    }
-
-    @Test
-    public void testCustomThemeNightModeInEmbeddedPhotoPickerFeatureInfo() throws Exception {
-        EmbeddedPhotoPickerFeatureInfo embeddedPhotoPickerFeatureInfo =
-                new EmbeddedPhotoPickerFeatureInfo.Builder().build();
-
-        assertThat(embeddedPhotoPickerFeatureInfo.getThemeNightMode())
-                .isEqualTo(Configuration.UI_MODE_NIGHT_UNDEFINED);
-
-        embeddedPhotoPickerFeatureInfo =
-                new EmbeddedPhotoPickerFeatureInfo.Builder()
-                        .setThemeNightMode(Configuration.UI_MODE_NIGHT_YES).build();
-
-        assertThat(embeddedPhotoPickerFeatureInfo.getThemeNightMode())
-                .isEqualTo(Configuration.UI_MODE_NIGHT_YES);
     }
 
     private void addMediaAndLaunchActivity(int itemCount) throws Exception {

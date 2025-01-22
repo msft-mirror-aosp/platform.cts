@@ -34,3 +34,9 @@ java_aconfig_library {
     name: "cts_flags_tests_java",
     aconfig_declarations: "cts_flags_tests",
 }
+
+rust_aconfig_library {
+    name: "libcts_flags_tests_rust",
+    crate_name: "cts_flags_tests_rust",
+    aconfig_declarations: "cts_flags_tests",
+}
