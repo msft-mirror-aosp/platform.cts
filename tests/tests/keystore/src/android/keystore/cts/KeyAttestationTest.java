@@ -73,7 +73,10 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.KeyStoreException;
 import android.security.keystore.AttestationUtils;
 import android.security.keystore.DeviceIdAttestationException;
@@ -97,6 +100,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateHolder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -138,6 +142,9 @@ import javax.crypto.KeyGenerator;
 @RunWith(AndroidJUnit4.class)
 public class KeyAttestationTest {
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final String TAG = AndroidKeyStoreTest.class.getSimpleName();
 
     private static final int ORIGINATION_TIME_OFFSET = 1000000;
@@ -165,6 +172,8 @@ public class KeyAttestationTest {
     private static final int KM_ERROR_UNKNOWN_ERROR = -1000;
     private static final int KM_ERROR_PERMISSION_DENIED = 6;
 
+    private static final int KS_ERROR_INVALID_ARGUMENT = 20;
+
     private static final Map<String, Integer> sECKeySizes = new HashMap<>();
 
     static {
@@ -177,6 +186,31 @@ public class KeyAttestationTest {
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.security.keystore2.Flags.FLAG_ATTEST_MODULES)
+    public void testSupplementaryAttestationInfoAbsence() throws Exception {
+        // Valid tag IDs that have no supplementary info.
+        checkAbsentSupplementaryInfo(805307074); // OS_PATCHLEVEL = TagType.UINT | 706
+        checkAbsentSupplementaryInfo(-1879047488); // ROOT_OF_TRUST = TagType.BYTES | 704
+
+        // Invalid tag value
+        checkAbsentSupplementaryInfo(9999);
+    }
+
+    private void checkAbsentSupplementaryInfo(int tag) throws Exception {
+        KeyStoreManager manager = KeyStoreManager.getInstance();
+        try {
+            byte[] data = manager.getSupplementaryAttestationInfo(tag);
+            fail(
+                    "Call to getSupplementaryAttestationInfo() for tag "
+                            + tag
+                            + " should throw a KeyStoreException; instead got: "
+                            + HexEncoding.encode(data));
+        } catch (KeyStoreException e) {
+            assertTrue(e.getErrorCode() == KS_ERROR_INVALID_ARGUMENT);
+        }
     }
 
     @Test
