@@ -34,6 +34,7 @@ import android.media.AudioTrack;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.Build;
 import android.os.Looper;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -45,6 +46,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -106,7 +108,8 @@ public class LoopbackPassthroughTest {
     @Test
     @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testPcmLoopback() {
-        if (!supportsLoopback()) {
+        if (!supportsLoopback()
+                || PropertyUtil.getVsrApiLevel() <= Build.VENDOR_API_2024_Q2) {
             return;
         }
         final int NUM_BUFFERS_TO_WRITE = 32;
@@ -131,7 +134,8 @@ public class LoopbackPassthroughTest {
     @Test
     @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testEac3JocLoopback() {
-        if (!supportsLoopback()) {
+        if (!supportsLoopback()
+                || PropertyUtil.getVsrApiLevel() <= Build.VENDOR_API_2024_Q2) {
             return;
         }
         final int EAC3_JOC_RESOURCE = R.raw.Living_Room_Atmos_6ch_640kbps_eac3_joc_10s;
