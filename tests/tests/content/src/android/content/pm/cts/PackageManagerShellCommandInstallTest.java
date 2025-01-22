@@ -1483,6 +1483,7 @@ public class PackageManagerShellCommandInstallTest {
     }
 
     @Test
+    @EnsureCanAddUser
     @RequiresFlagsEnabled(FLAG_SDK_DEPENDENCY_INSTALLER)
     public void testAppWithMissingDependency_dependencyInstallerRoleHolderMissing()
             throws Exception {
