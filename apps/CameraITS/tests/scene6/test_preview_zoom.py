@@ -257,12 +257,12 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
               (f'{os.path.join(log_path, img_name)}_{z:.2f}_'
                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
               aruco_marker_count=_MINIMUM_ARUCO_MARKERS_TO_DETECT,
-              save_images=debug
+              save_images=debug,
+              force_greyscale=True  # Maximize number of markers detected
           )
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
                         z, e)
-          z_max = z
           break
 
         all_aruco_corners.append([corner[0] for corner in corners])
