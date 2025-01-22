@@ -34,12 +34,14 @@ import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
+import androidx.test.filters.SdkSuppress;
+
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.rules.ExternalResource;
 import org.mockito.Mock;
@@ -54,6 +56,7 @@ import java.util.function.Consumer;
  * A test rule that creates a {@link CompanionDeviceManager} association with the instrumented
  * package for the duration of the test.
  */
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 class FakeAssociationRule extends ExternalResource {
     private static final String TAG = "FakeAssociationRule";
 
@@ -91,9 +94,6 @@ class FakeAssociationRule extends ExternalResource {
         if (mNextDeviceId > 99) {
             throw new IllegalArgumentException("At most 99 associations supported");
         }
-        if (mNextDeviceId > 1 && !SdkLevel.isAtLeastT()) {
-            throw new IllegalArgumentException("Multiple associations require API level 33");
-        }
 
         Log.d(TAG, "Associations before shell cmd: "
                 + mCompanionDeviceManager.getMyAssociations().size());
@@ -111,16 +111,13 @@ class FakeAssociationRule extends ExternalResource {
                 .onAssociationsChanged(any());
         List<AssociationInfo> associations = mCompanionDeviceManager.getMyAssociations();
 
-        if (SdkLevel.isAtLeastT()) {
-            final AssociationInfo associationInfo = associations.stream()
-                    .filter(a -> deviceAddress.equals(a.getDeviceMacAddress().toString()))
-                    .findAny().orElse(null);
-            assertThat(associationInfo).isNotNull();
-            return associationInfo;
-        } else {
-            assertThat(associations).hasSize(1);
-            return associations.get(0);
-        }
+        final AssociationInfo associationInfo =
+                associations.stream()
+                        .filter(a -> deviceAddress.equals(a.getDeviceMacAddress().toString()))
+                        .findAny()
+                        .orElse(null);
+        assertThat(associationInfo).isNotNull();
+        return associationInfo;
     }
 
     @Override
