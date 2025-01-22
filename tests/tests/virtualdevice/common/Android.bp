@@ -38,7 +38,4 @@ android_library {
         "android.permission.flags-aconfig-java",
     ],
     manifest: "AndroidManifest.xml",
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }
