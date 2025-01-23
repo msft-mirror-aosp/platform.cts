@@ -1320,9 +1320,9 @@ public class MediaMetadataRetrieverTest {
                 for (int imageIndex = 0; imageIndex < imageCount; imageIndex++) {
                     timer.start();
                     bitmap = mRetriever.getImageAtIndex(imageIndex);
+                    assertNotNull("Failed to retrieve image at index " + imageIndex, bitmap);
                     assertEquals("Wrong bitmap width", width, bitmap.getWidth());
                     assertEquals("Wrong bitmap height", height, bitmap.getHeight());
-                    assertNotNull("Failed to retrieve image at index " + imageIndex, bitmap);
                     timer.end();
                     timer.printDuration("getImageAtIndex");
 
