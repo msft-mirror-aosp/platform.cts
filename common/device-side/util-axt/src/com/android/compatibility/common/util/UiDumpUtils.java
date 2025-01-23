@@ -217,6 +217,8 @@ public class UiDumpUtils {
             Rect bounds = new Rect();
             window.getBoundsInScreen(bounds);
             out.append(bounds.width()).append("x").append(bounds.height()).append(" ");
+            int dpi = sInstrumentation.getContext().getResources().getDisplayMetrics().densityDpi;
+            out.append("dpi: ").append(dpi).append(" ");
             if (window.isInPictureInPictureMode()) out.append("#PIP ");
         }
         return out;
