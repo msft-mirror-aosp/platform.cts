@@ -18,6 +18,7 @@ package android.media.router.cts;
 
 import static android.media.MediaRoute2Info.FLAG_ROUTING_TYPE_REMOTE;
 import static android.media.MediaRoute2Info.FLAG_ROUTING_TYPE_SYSTEM_AUDIO;
+import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_VARIABLE;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -40,7 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -67,6 +67,8 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
             "ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2";
     public static final String ROUTE_ID_ONLY_REMOTE = "ROUTE_ID_ONLY_REMOTE";
     public static final String ROUTE_ID_BOTH_SYSTEM_AND_REMOTE = "ROUTE_ID_BOTH_SYSTEM_AND_REMOTE";
+    public static final int VOLUME_MAX = 100;
+    public static final int INITIAL_VOLUME = 50;
     private static final String ROUTING_SESSION_ID = "ROUTING_SESSION_ID";
 
     /**
@@ -88,8 +90,9 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private final byte[] mBuffer = new byte[1024 * 100];
-    private final AtomicReference<RoutingSessionInfo> mCurrentRoutingSession =
-            new AtomicReference<>();
+
+    @GuardedBy("sLock")
+    private RoutingSessionInfo mCurrentRoutingSession = null;
 
     private final AtomicInteger mNoisyByteCount = new AtomicInteger(0);
 
@@ -109,10 +112,11 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
      */
     @Nullable
     public String getSelectedRouteOriginalId() {
-        var currentRoutingSession = mCurrentRoutingSession.get();
-        return currentRoutingSession != null
-                ? currentRoutingSession.getSelectedRoutes().getFirst()
-                : null;
+        synchronized (sLock) {
+            return mCurrentRoutingSession != null
+                    ? mCurrentRoutingSession.getSelectedRoutes().getFirst()
+                    : null;
+        }
     }
 
     /**
@@ -146,7 +150,17 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
 
     @Override
     public void onSetRouteVolume(long requestId, @NonNull String routeId, int volume) {
-        throw new IllegalStateException("Unexpected: Routes have fixed volume.");
+        synchronized (sLock) {
+            var route = mRoutes.get(routeId);
+            if (route == null
+                    || mCurrentRoutingSession == null
+                    || !mCurrentRoutingSession.getSelectedRoutes().contains(routeId)) {
+                notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
+            }
+            MediaRoute2Info newRoute = new MediaRoute2Info.Builder(route).setVolume(volume).build();
+            mRoutes.put(routeId, newRoute);
+            notifyRoutes(mRoutes.values());
+        }
     }
 
     @Override
@@ -185,23 +199,20 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
     @Override
     public void onTransferToRoute(
             long requestId, @NonNull String sessionId, @NonNull String routeId) {
-        var currentSession = mCurrentRoutingSession.get();
-        if (currentSession == null
-                || !TextUtils.equals(currentSession.getOriginalId(), sessionId)) {
-            // Unexpected call to transfer or invalid id received.
-            notifyRequestFailed(requestId, REASON_INVALID_COMMAND);
-            return;
-        }
-        boolean routeIsValid;
         synchronized (sLock) {
-            routeIsValid = mRoutes.containsKey(routeId);
+            if (mCurrentRoutingSession == null
+                    || !TextUtils.equals(mCurrentRoutingSession.getOriginalId(), sessionId)) {
+                // Unexpected call to transfer or invalid id received.
+                notifyRequestFailed(requestId, REASON_INVALID_COMMAND);
+                return;
+            }
+            if (!mRoutes.containsKey(routeId)) {
+                notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
+                return;
+            }
+            String clientPackageName = mCurrentRoutingSession.getClientPackageName();
+            mHandler.post(() -> transferToRouteOnHandler(clientPackageName, routeId));
         }
-        if (!routeIsValid) {
-            notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
-            return;
-        }
-        mHandler.post(
-                () -> transferToRouteOnHandler(currentSession.getClientPackageName(), routeId));
     }
 
     @Override
@@ -222,7 +233,9 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         if (audioRecord != null) {
             audioRecord.startRecording();
             mNoisyByteCount.set(0);
-            mCurrentRoutingSession.set(routingSession);
+            synchronized (sLock) {
+                mCurrentRoutingSession = routingSession;
+            }
             mHandler.post(() -> readFromAudioRecordOnHandler(audioRecord));
         }
     }
@@ -246,8 +259,12 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         synchronized (sLock) {
             if (preference.shouldPerformActiveScan()) {
                 populateRoutes();
-            } else {
+            } else if (mCurrentRoutingSession == null) {
                 mRoutes.clear();
+            } else {
+                // We must keep routes that are in a routing session, even while not scanning.
+                mRoutes.keySet()
+                        .removeIf(it -> !mCurrentRoutingSession.getSelectedRoutes().contains(it));
             }
             notifyRoutes(mRoutes.values());
         }
@@ -283,14 +300,21 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         var route =
                 new MediaRoute2Info.Builder(/* id= */ idAndName, /* name= */ idAndName)
                         .addFeature(FEATURE_SAMPLE)
+                        .setVolumeHandling(PLAYBACK_VOLUME_VARIABLE)
+                        .setVolumeMax(VOLUME_MAX)
+                        .setVolume(INITIAL_VOLUME)
                         .setSupportedRoutingTypes(supportedRoutingTypes)
                         .build();
-        mRoutes.put(route.getOriginalId(), route);
+        // We only put it if not already there, to avoid overriding a "mutable" property, such as
+        // volume.
+        mRoutes.putIfAbsent(route.getOriginalId(), route);
     }
 
     private void transferToRouteOnHandler(String packageName, String routeId) {
         var updatedSession = createRoutingSession(packageName, routeId);
-        mCurrentRoutingSession.set(updatedSession);
+        synchronized (sLock) {
+            mCurrentRoutingSession = updatedSession;
+        }
         mNoisyByteCount.set(0);
         notifySessionUpdated(updatedSession);
     }
@@ -312,7 +336,9 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
 
     private void releaseSessionOnHandler(String sessionId) {
         mHandler.removeCallbacksAndMessages(/* token= */ null);
-        mCurrentRoutingSession.set(null);
+        synchronized (sLock) {
+            mCurrentRoutingSession = null;
+        }
         mNoisyByteCount.set(0);
         notifySessionReleased(sessionId);
     }
