@@ -19,15 +19,14 @@ package android.packageinstaller.criticaluserjourney.cts;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.PlatinumTest;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
+import com.google.testing.junit.testparameterinjector.TestParameterInjector;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
  * Tests for PackageInstaller CUJs via startActivity with ACTION_VIEW.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(TestParameterInjector.class)
 @PlatinumTest(focusArea = "pm")
 @AppModeFull
 public class InstallationViaIntentActionViewTest extends InstallationTestBase {
