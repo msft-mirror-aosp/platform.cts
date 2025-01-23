@@ -21,6 +21,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.pm.PackageManager;
 
+import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.Test;
@@ -30,6 +31,7 @@ import org.junit.runner.RunWith;
  * This class tests that the install reason is correctly recorded for packages.
  */
 @RunWith(BedsteadJUnit4.class)
+@RequireRunOnSystemUser
 public class InstallReasonTest extends BasePackageInstallTest {
     @Test
     public void testInstallReason() throws Exception {
