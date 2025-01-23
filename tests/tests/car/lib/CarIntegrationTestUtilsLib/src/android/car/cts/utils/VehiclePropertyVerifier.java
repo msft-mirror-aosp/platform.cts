@@ -2222,10 +2222,6 @@ public class VehiclePropertyVerifier<T> {
             int propertyId, int areaId, int status, long timestampNanos, T value,
             int expectedAreaId, String source) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        mCarPropertyValueVerifier.ifPresent(
-                propertyValueVerifier -> propertyValueVerifier.verify(
-                        mVerifierContext, carPropertyConfig, propertyId,
-                        areaId, timestampNanos, value));
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -2290,6 +2286,21 @@ public class VehiclePropertyVerifier<T> {
                                 + " type value")
                 .that(value.getClass())
                 .isEqualTo(mPropertyType);
+
+        // Only validate value if STATUS_AVAILABLE
+        if (status != CarPropertyValue.STATUS_AVAILABLE) {
+            return;
+        }
+
+        mCarPropertyValueVerifier.ifPresent(
+                propertyValueVerifier ->
+                        propertyValueVerifier.verify(
+                                mVerifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                value));
 
         if (mRequirePropertyValueToBeInConfigArray) {
             assertWithMessage(
