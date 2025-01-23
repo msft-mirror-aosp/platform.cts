@@ -37,7 +37,6 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_MEMORY_TAGGING_EXTENSION)
 public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
-    private static final int TIMEOUT_S = 1;
     private static final String MTE_CONTROL_PROPERTY = "arm64.memtag.bootctl";
 
     @Override
@@ -96,8 +95,7 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
     @Test
     public void testEnableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
-        mManager.setAdvancedProtectionEnabled(true);
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(true);
         assertEquals("The MTE system is not enabled",
                 "memtag",
                 SystemProperties.get(MTE_CONTROL_PROPERTY));
@@ -109,8 +107,7 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
     @Test
     public void testDisableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
-        mManager.setAdvancedProtectionEnabled(false);
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(false);
         assertEquals("The MTE system is not in default state",
                 "default",
                 SystemProperties.get(MTE_CONTROL_PROPERTY));
