@@ -29,13 +29,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Activity to list testcases of interactive tests in CtsVerifier. */
-public class InteractiveTestListActivity extends PassFailButtons.TestListActivity {
+/** Activity to list testcases of host-side tests in CtsVerifier. */
+public class HostTestListActivity extends PassFailButtons.TestListActivity {
 
     private static final String TAG = "InteractiveTestsListActivity";
 
-    public static final String MODULE_TITLE = "com.android.cts.verifier.interactive.module_title";
-    public static final String MODULE_NAME = "com.android.cts.verifier.interactive.module_name";
+    static final String MODULE_TITLE = "com.android.cts.verifier.host.module_title";
+    static final String MODULE_NAME = "com.android.cts.verifier.host.module_name";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
