@@ -38,8 +38,6 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_INSTALL_UNKNOWN_SOURCES)
 public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTest {
-    private static final int TIMEOUT_S = 1;
-
     private UserManager mUserManager;
 
     @Override
@@ -68,15 +66,12 @@ public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTes
                         .count());
     }
 
-    // TODO(b/369361373): Replace sleep with a callback to ensure the restriction is set by the time
-    //  we check it.
     @ApiTest(apis = {
             "android.security.advancedprotection.AdvancedProtectionManager"
                     + "#setAdvancedProtectionEnabled"})
     @Test
     public void testEnableProtection() throws InterruptedException {
-        mManager.setAdvancedProtectionEnabled(true);
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(true);
         assertTrue("The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is not set",
                 mUserManager.hasUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY));
     }
@@ -86,8 +81,7 @@ public class DisallowInstallUnknownSourcesTest extends BaseAdvancedProtectionTes
                     + "#setAdvancedProtectionEnabled"})
     @Test
     public void testDisableProtection() throws InterruptedException {
-        mManager.setAdvancedProtectionEnabled(false);
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(false);
         assertFalse("The DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY));
     }
