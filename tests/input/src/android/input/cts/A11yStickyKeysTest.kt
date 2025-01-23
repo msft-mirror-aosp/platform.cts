@@ -18,7 +18,6 @@ package android.input.cts
 
 import android.hardware.input.InputManager
 import android.hardware.input.InputSettings
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -30,7 +29,6 @@ import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_A
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTSHIFT
 import com.android.cts.input.UinputKeyboard
-import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_STICKY_KEYS_FLAG
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -116,7 +114,6 @@ class A11yStickyKeysTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_KEYBOARD_A11Y_STICKY_KEYS_FLAG)
     fun testStickyShiftModifierKey() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
@@ -144,7 +141,6 @@ class A11yStickyKeysTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_KEYBOARD_A11Y_STICKY_KEYS_FLAG)
     fun testLockedShiftModifierKey() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
