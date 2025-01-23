@@ -17,6 +17,7 @@
 package android.app.cts;
 
 import static android.app.stubs.LocalForegroundServiceMedia.ACTION_START_FGSM_RESULT;
+import static android.os.SystemClock.sleep;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -66,6 +67,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     private static final int USER_ENGAGED_TIMEOUT_MSEC = 2000;
     private static final String USER_ENGAGED_TIMEOUT_KEY =
             "media_session_temp_user_engaged_duration_ms";
+    private static final long PLAY_TIMEOUT_MS = 1000;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -387,6 +389,39 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 dumpLines.contains(expectedLine));
         // Transition session to user disengaged.
         controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithNonActiveMediaSessionAndNotificationGoesToBg() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller and press play.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        // Play media for some time and then deactivate the media session.
+        sleep(PLAY_TIMEOUT_MS);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_DEACTIVATE_MEDIA_SESSION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
 }

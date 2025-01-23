@@ -244,29 +244,6 @@ public class ActivityManagerFgsDelegateTest {
     @Test(expected = IllegalStateException.class)
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testAppInBgWithNonActivePlayingMediaSessionAndNotificationIsStillInBg()
-            throws Exception {
-        // Disallow app1 to start FGS.
-        allowBgFgsStart(PACKAGE_NAME_APP1, false);
-        WatchUidRunner uidWatcher = createUiWatcher();
-        try {
-            prepareProcess(uidWatcher);
-            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
-            sendCommandReceiverCommand(
-                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
-            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
-            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
-
-            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-        } finally {
-            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
-            cleanupResources(uidWatcher);
-        }
-    }
-
-    @Test(expected = IllegalStateException.class)
-    @RequiresFlagsEnabled(
-            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
     public void testAppInBgWithActivePlayingMediaSessionAndNoNotificationIsStillInBg()
             throws Exception {
         // Disallow app1 to start FGS.

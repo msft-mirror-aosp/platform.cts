@@ -38,6 +38,7 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
     public static final int COMMAND_START_FOREGROUND_WITH_TYPE = 1;
     public static final int COMMAND_PLAY_MEDIA = 100;
     public static final int COMMAND_POST_MEDIA_NOTIFICATION = 101;
+    public static final int COMMAND_DEACTIVATE_MEDIA_SESSION = 102;
     public static String ACTION_START_FGSM_RESULT =
             "android.app.stubs.LocalForegroundServiceMedia.RESULT";
     public static String FGSM_NOTIFICATION_ID =
@@ -171,6 +172,10 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
             case COMMAND_PLAY_MEDIA:
                 Log.d(TAG, "Setting media session state to playing");
                 setPlaybackState(PlaybackState.STATE_PLAYING, mMediaSession);
+                break;
+            case COMMAND_DEACTIVATE_MEDIA_SESSION:
+                Log.d(TAG, "Deactivating media session");
+                mMediaSession.setActive(false);
                 break;
             default:
                 Log.e(TAG, "Unknown command: " + command);
