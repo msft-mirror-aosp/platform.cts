@@ -3259,8 +3259,8 @@ public class VehiclePropertyVerifier<T> {
         SparseIntArray requestIdToAreaIdMap = new SparseIntArray();
         for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
             int areaId = areaIdConfig.getAreaId();
-            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
-                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
+            if (doesAreaIdAccessMatch(
+                    carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
                 verifyGetPropertiesAsyncFails(areaId);
                 continue;
             }
@@ -3283,8 +3283,10 @@ public class VehiclePropertyVerifier<T> {
             int propertyId = getPropertyResult.getPropertyId();
             if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                 assertWithMessage(
-                        "getPropertiesAsync received GetPropertyResult with unknown requestId: "
-                                + getPropertyResult).fail();
+                                "getPropertiesAsync received GetPropertyResult with unknown"
+                                        + " requestId: "
+                                        + getPropertyResult)
+                        .fail();
             }
             Integer expectedAreaId = requestIdToAreaIdMap.get(requestId);
             verifyCarPropertyValue(propertyId, getPropertyResult.getAreaId(),
@@ -3300,13 +3302,12 @@ public class VehiclePropertyVerifier<T> {
         for (PropertyAsyncError propertyAsyncError :
                 testGetPropertyCallback.getPropertyAsyncErrors()) {
             int requestId = propertyAsyncError.getRequestId();
+            // Async errors are ok as long the requestId is valid
             if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                 assertWithMessage(
                         "getPropertiesAsync received PropertyAsyncError with unknown requestId: "
                                 + propertyAsyncError).fail();
             }
-            assertWithMessage("Received PropertyAsyncError when testing getPropertiesAsync: "
-                    + propertyAsyncError).fail();
         }
     }
 
@@ -3381,8 +3382,8 @@ public class VehiclePropertyVerifier<T> {
                 // Always use the last possible value if we run out of possible values.
                 int index = Math.min(i, possibleValues.size() - 1);
                 SetPropertyRequest setPropertyRequest =
-                        mCarPropertyManager.generateSetPropertyRequest(mPropertyId, areaId,
-                                possibleValues.get(index));
+                        mCarPropertyManager.generateSetPropertyRequest(
+                                mPropertyId, areaId, possibleValues.get(index));
                 if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                         == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
                     setPropertyRequest.setWaitForPropertyUpdate(false);
@@ -3410,19 +3411,18 @@ public class VehiclePropertyVerifier<T> {
                 assertThat(setPropertyResult.getAreaId()).isEqualTo(
                         requestIdToAreaIdMap.get(requestId));
                 assertThat(setPropertyResult.getUpdateTimestampNanos()).isAtLeast(0);
-                assertThat(setPropertyResult.getUpdateTimestampNanos()).isLessThan(
-                        SystemClock.elapsedRealtimeNanos());
+                assertThat(setPropertyResult.getUpdateTimestampNanos())
+                        .isLessThan(SystemClock.elapsedRealtimeNanos());
             }
 
             for (PropertyAsyncError propertyAsyncError :
                     testSetPropertyCallback.getPropertyAsyncErrors()) {
                 int requestId = propertyAsyncError.getRequestId();
+                // Async errors are ok as long the requestId is valid
                 if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                     assertWithMessage("setPropertiesAsync received PropertyAsyncError with unknown "
                             + "requestId: " + propertyAsyncError).fail();
                 }
-                assertWithMessage("Received PropertyAsyncError when testing setPropertiesAsync: "
-                        + propertyAsyncError).fail();
             }
         }
     }
