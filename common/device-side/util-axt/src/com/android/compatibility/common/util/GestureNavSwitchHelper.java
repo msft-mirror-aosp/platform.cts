@@ -40,9 +40,6 @@ public final class GestureNavSwitchHelper {
 
     private static final String TAG = "GestureNavSwitchHelper";
 
-    private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
-    private static final int NAV_BAR_MODE_GESTURAL = 2;
-
     private static final String NAV_BAR_MODE_3BUTTON_OVERLAY =
             "com.android.internal.systemui.navbar.threebutton";
 
@@ -132,7 +129,7 @@ public final class GestureNavSwitchHelper {
         if (!hasSystemGestureFeature()) {
             return false;
         }
-        if (isGestureModeWithOverlay()) {
+        if (isGestureMode()) {
             return true;
         }
         final boolean success = setNavigationMode(NAV_BAR_MODE_GESTURAL_OVERLAY);
@@ -169,7 +166,7 @@ public final class GestureNavSwitchHelper {
      */
     @NonNull
     public AutoCloseable withGestureNavigationMode() {
-        if (isGestureModeWithOverlay() || !hasSystemGestureFeature()) {
+        if (isGestureMode() || !hasSystemGestureFeature()) {
             return () -> {};
         }
 
@@ -230,20 +227,6 @@ public final class GestureNavSwitchHelper {
         }
     }
 
-    /**
-     * Returns the current navigation mode, as set on the resource with id
-     * {@link #NAV_BAR_INTERACTION_MODE_RES_NAME}. Note on instant app mode, as well as in general
-     * on some targets, this will return the incorrect value. The actual state of the overlay
-     * should be checked instead ({@link #getStateForOverlay}).
-     *
-     * @return {@code 0} for three button navigation mode, {@code 2} for gesture navigation mode.
-     */
-    private int getCurrentNavMode() {
-        final var res = mInstrumentation.getTargetContext().getResources();
-        int naviModeId = res.getIdentifier(NAV_BAR_INTERACTION_MODE_RES_NAME, "integer", "android");
-        return res.getInteger(naviModeId);
-    }
-
     private boolean containsNavigationBar() {
         final var peekSize = new Rect();
         getCurrentInsetsSize(peekSize);
@@ -256,21 +239,10 @@ public final class GestureNavSwitchHelper {
                 && STATE_ENABLED.equals(getStateForOverlay(NAV_BAR_MODE_3BUTTON_OVERLAY));
     }
 
-    /**
-     * Whether gesture navigation mode is enabled. Differs from {@link #isGestureMode} by checking
-     * the actual overlay being used. */
-    public boolean isGestureModeWithOverlay() {
+    /** Whether gesture navigation mode is enabled. */
+    public boolean isGestureMode() {
         return containsNavigationBar()
                 && STATE_ENABLED.equals(getStateForOverlay(NAV_BAR_MODE_GESTURAL_OVERLAY));
-    }
-
-    /**
-     * Whether gesture navigation mode is enabled. Left to avoid breakages to existing tests.
-     */
-    public boolean isGestureMode() {
-        // TODO(b/377912666): replace with {@link #isGestureModeWithOverlay} after ensuring tests
-        //  don't break.
-        return containsNavigationBar() && getCurrentNavMode() == NAV_BAR_MODE_GESTURAL;
     }
 
     /**
