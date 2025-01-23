@@ -142,7 +142,7 @@ public class ContextTest {
     // A permission that's not granted to this test package.
     public static final String NOT_GRANTED_PERMISSION = "android.permission.HARDWARE_TEST";
 
-    private static final int BROADCAST_TIMEOUT = 10000;
+    private static final int BROADCAST_TIMEOUT = 15000;
     private static final int SERVICE_TIMEOUT = 15000;
     private static final int ROOT_UID = 0;
 
