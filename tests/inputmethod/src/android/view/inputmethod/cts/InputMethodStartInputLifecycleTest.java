@@ -38,6 +38,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
+
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -183,8 +185,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             TestUtils.unlockScreen();
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_ON
                             && editText.getWindowVisibility() == VISIBLE, TIMEOUT);
-            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
-
+            clickOnViewCenter(editText);
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {
                 // Expected only onStartInput and the EditText is active for input method.
