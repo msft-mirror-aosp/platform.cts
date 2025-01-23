@@ -22,6 +22,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.view.Display;
+import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -40,7 +42,7 @@ public class NotTouchableWindowTestActivity extends AccessibilityTestActivity  {
                         throw new IllegalStateException("Window already exists");
                     }
                     rootView = new View(context);
-                    params = createDefaultWindowParams();
+                    params = createDefaultWindowParams(NotTouchableWindowTestActivity.this.getDisplay());
                     context.getSystemService(WindowManager.class).addView(rootView, params);
                     break;
 
@@ -49,7 +51,7 @@ public class NotTouchableWindowTestActivity extends AccessibilityTestActivity  {
                         throw new IllegalStateException("Window already exists");
                     }
                     rootView = new Button(context);
-                    params = createDefaultWindowParams();
+                    params = createDefaultWindowParams(NotTouchableWindowTestActivity.this.getDisplay());
                     params.privateFlags |= PRIVATE_FLAG_TRUSTED_OVERLAY;
                     context.getSystemService(WindowManager.class).addView(rootView, params);
                     break;
@@ -98,14 +100,22 @@ public class NotTouchableWindowTestActivity extends AccessibilityTestActivity  {
         this.unregisterReceiver(mBroadcastReceiver);
     }
 
-    private static WindowManager.LayoutParams createDefaultWindowParams() {
+    private static WindowManager.LayoutParams createDefaultWindowParams(Display display) {
         WindowManager.LayoutParams params = new WindowManager.LayoutParams();
+
+        DisplayCutout cutout = display != null? display.getCutout(): null;
+        if (cutout != null) {
+            params.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        }
+
         params.width = WindowManager.LayoutParams.MATCH_PARENT;
         params.height = WindowManager.LayoutParams.MATCH_PARENT;
         params.flags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
                 | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                 | WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR
                 | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+
         params.type = WindowManager.LayoutParams.TYPE_APPLICATION_PANEL;
         params.setFitInsetsTypes(0);
         params.gravity = Gravity.TOP;
