@@ -25,7 +25,6 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.findAndClickUiObje
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getMediaItem;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getMediaItemSelector;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingDescription;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingText;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.getUiObjectMatchingTextSelector;
 
@@ -287,11 +286,11 @@ public class EmbeddedPhotoPickerTest {
         // constitutes the surface package can be extracted
         mActivity.getSession().notifyPhotoPickerExpanded(true);
         assertPhotosTabExists();
-        UiObject2 surfacePackage = mIsVisibleBackgroundUser
-                ? getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice, mDisplayId)
-                    .getParent().getParent().getParent()
-                : getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
-                    .getParent().getParent().getParent();
+        UiObject2 surfacePackage =
+                sDevice.findObject(getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId))
+                        .getParent()
+                        .getParent()
+                        .getParent();
         assertThat(surfacePackage).isNotNull();
         int oldWidth = surfacePackage.getVisibleBounds().width();
         int oldHeight = surfacePackage.getVisibleBounds().height();
@@ -304,11 +303,11 @@ public class EmbeddedPhotoPickerTest {
 
         // 4. Get the new surface package and its dimensions
         assertPhotosTabExists();
-        UiObject2 newSurfacePackage =  mIsVisibleBackgroundUser
-                ? getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice, mDisplayId)
-                    .getParent().getParent().getParent()
-                : getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
-                    .getParent().getParent().getParent();
+        UiObject2 newSurfacePackage =
+                sDevice.findObject(getUiObjectMatchingTextSelector(PHOTOS_TAB_LABEL, mDisplayId))
+                        .getParent()
+                        .getParent()
+                        .getParent();
         assertThat(newSurfacePackage).isNotNull();
         int newWidth = newSurfacePackage.getVisibleBounds().width();
         int newHeight = newSurfacePackage.getVisibleBounds().height();
