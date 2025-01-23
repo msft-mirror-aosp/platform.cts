@@ -245,6 +245,8 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
             isAtLeastV() && Flags.areaIdConfigAccess();
+    private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
+            isAtLeastB() && Flags.carPropertySupportedValue();
     private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
             CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
             CarPropertyValue.STATUS_ERROR);
@@ -811,17 +813,17 @@ public class VehiclePropertyVerifier<T> {
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyGetMinMaxSupportedValue();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyGetSupportedValuesList();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyRegisterUnregisterSupportedValuesChangeCallback();
                         }
 
@@ -1300,6 +1302,10 @@ public class VehiclePropertyVerifier<T> {
 
     private static boolean isAtLeastV() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
+    private static boolean isAtLeastB() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
     /**
@@ -1943,7 +1949,7 @@ public class VehiclePropertyVerifier<T> {
                 assertWithMessage(mPropertyName + " - area ID: " + areaId
                         + " must have max value defined").that(areaIdMaxValue).isNotNull();
 
-                if (Flags.carPropertySupportedValue()) {
+                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                     assertWithMessage(mPropertyName + " - area ID: " + areaId
                             + " config must set hasMaxSupportedValue to true")
                             .that(carPropertyConfig.getAreaIdConfig(areaId).hasMaxSupportedValue())
@@ -1977,21 +1983,29 @@ public class VehiclePropertyVerifier<T> {
             }
 
             if (mRequirePropertyValueToBeInConfigArray && isAtLeastU()) {
-                List<?> supportedEnumValues = carPropertyConfig.getAreaIdConfig(
-                        areaId).getSupportedEnumValues();
-                assertWithMessage(mPropertyName + " - areaId: " + areaId
-                        + "'s supported enum values must match the values in the config array.")
+                List<?> supportedEnumValues =
+                        carPropertyConfig.getAreaIdConfig(areaId).getSupportedEnumValues();
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + "'s supported enum values must match the values in the"
+                                        + " config array.")
                         .that(carPropertyConfig.getConfigArray())
                         .containsExactlyElementsIn(supportedEnumValues);
             }
 
             if (mChangeMode == CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE
                     && !mAllPossibleEnumValues.isEmpty() && isAtLeastU()) {
-                List<?> supportedEnumValues = carPropertyConfig.getAreaIdConfig(
-                        areaId).getSupportedEnumValues();
-                assertWithMessage(mPropertyName + " - areaId: " + areaId
-                        + "'s supported enum values must be defined").that(
-                        supportedEnumValues).isNotEmpty();
+                List<?> supportedEnumValues =
+                        carPropertyConfig.getAreaIdConfig(areaId).getSupportedEnumValues();
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + "'s supported enum values must be defined")
+                        .that(supportedEnumValues)
+                        .isNotEmpty();
                 assertWithMessage(mPropertyName + " - areaId: " + areaId
                         + "'s supported enum values must not contain any duplicates").that(
                         supportedEnumValues).containsNoDuplicates();
@@ -2000,7 +2014,7 @@ public class VehiclePropertyVerifier<T> {
                                 + supportedEnumValues + " must all exist in all possible enum set "
                                 + mAllPossibleEnumValues).that(
                         mAllPossibleEnumValues.containsAll(supportedEnumValues)).isTrue();
-                if (Flags.carPropertySupportedValue()) {
+                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                     assertWithMessage(
                             mPropertyName + " - areaId: " + areaId
                             + " config must set hasSupportedValuesList to true")
