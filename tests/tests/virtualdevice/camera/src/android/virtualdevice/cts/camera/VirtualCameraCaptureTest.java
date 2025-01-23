@@ -58,7 +58,6 @@ import android.virtualdevice.cts.camera.util.ImageSubject;
 import android.virtualdevice.cts.camera.util.VirtualCameraCaptureHelper;
 import android.virtualdevice.cts.camera.util.VirtualCameraCaptureHelper.CaptureConfiguration;
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils;
-import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import com.google.common.collect.Range;
@@ -69,10 +68,8 @@ import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 import java.util.List;
@@ -84,13 +81,11 @@ public class VirtualCameraCaptureTest {
     private static final int SECOND_TO_NANOS = 1_000_000_000;
     private static final int MILLISECOND_TO_NANOS = 1_000_000;
 
-    @ClassRule
-    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
     private final VirtualCameraCaptureHelper mCaptureHelper = new VirtualCameraCaptureHelper();
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
+    public VirtualDeviceRule mRule =
+            VirtualDeviceRule.withAdditionalPermissions(GRANT_RUNTIME_PERMISSIONS);
 
     @Before
     public void setUp() {

@@ -27,7 +27,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.UiAutomation;
@@ -43,6 +42,7 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.Condition;
@@ -54,6 +54,7 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.BuildCompat;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -69,10 +70,8 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-/**
- * A test rule that allows for testing VDM and virtual device features.
- */
-@TargetApi(34)
+/** A test rule that allows for testing VDM and virtual device features. */
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 public class VirtualDeviceRule implements TestRule {
 
     public static final VirtualDeviceParams DEFAULT_VIRTUAL_DEVICE_PARAMS =
@@ -86,7 +85,7 @@ public class VirtualDeviceRule implements TestRule {
     public static final ComponentName BLOCKED_ACTIVITY_COMPONENT =
             new ComponentName("android", "com.android.internal.app.BlockedAppStreamingActivity");
 
-    private RuleChain mRuleChain;
+    private final RuleChain mRuleChain;
     private final FakeAssociationRule mFakeAssociationRule;
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
@@ -122,12 +121,6 @@ public class VirtualDeviceRule implements TestRule {
                 .around(new AdoptShellPermissionsRule(
                         getInstrumentation().getUiAutomation(), permissions))
                 .around(mTrackerRule);
-    }
-
-    /** Creates a rule with virtual camera support check before test execution. */
-    public VirtualDeviceRule withVirtualCameraSupportCheck() {
-        mRuleChain = mRuleChain.around(new VirtualCameraSupportRule(this));
-        return this;
     }
 
     @Override
@@ -528,5 +521,4 @@ public class VirtualDeviceRule implements TestRule {
             super.after();
         }
     }
-
 }

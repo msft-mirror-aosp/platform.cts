@@ -283,6 +283,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         IntentFilter filter = new IntentFilter(ACTION_HOST_TEST_RESULT);
         registerReceiver(mResultsReceiver, filter, Context.RECEIVER_EXPORTED);
         mReceiverRegistered = true;
+        Log.i(TAG, "Registered broadcast receivers.");
     }
 
     @Override

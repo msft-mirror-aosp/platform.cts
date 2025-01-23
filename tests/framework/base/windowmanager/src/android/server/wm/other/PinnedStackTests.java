@@ -1530,6 +1530,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 388657870)
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PIP2)
     public void testDismissThenReopenMultiWindowCallbacks() {
         // Launch a PiP activity

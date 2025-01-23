@@ -48,32 +48,6 @@ _ZOOM_RANGE_W_TELE = (1.8, 5.0)  # W/Tele crossover range
 _ZOOM_STEP = 0.02
 
 
-def _do_af_check(w_img, tele_img):
-  """Checks the AF difference between the wide and tele img.
-
-  Args:
-    w_img: image captured using wide lens.
-    tele_img: image captured using tele lens.
-
-  Returns:
-    failed_af_msg: failed AF check messages if any. None otherwise.
-    sharpness_w: sharpness value for wide lens.
-    sharpness_tele: sharpness value for tele lens.
-  """
-  failed_af_msg = []
-  sharpness_w = image_processing_utils.compute_image_sharpness(w_img)
-  logging.debug('Sharpness for wide patch: %.2f', sharpness_w)
-  sharpness_tele = image_processing_utils.compute_image_sharpness(tele_img)
-  logging.debug('Sharpness for tele patch: %.2f', sharpness_tele)
-
-  if not math.isclose(
-      sharpness_tele, sharpness_w, rel_tol=_AF_RTOL, abs_tol=_AF_ATOL):
-    failed_af_msg.append('Sharpness delta is too high between wide and tele. '
-                         f'Sharpness tele: {sharpness_tele:.4f} '
-                         f'Sharpness wide: {sharpness_w:.4f}')
-  return failed_af_msg, sharpness_w, sharpness_tele
-
-
 class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
   """Test that the switch from wide to tele lens has similar RGB values.
 
@@ -193,20 +167,20 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
       # Find ArUco markers in the image with wide lens
       # and extract the outer box patch
       corners, ids = multi_camera_switch_utils.find_aruco_markers(
-          w_img, w_path, 'w')
+          w_img, w_path, _LENS_SUFFIX_W)
       w_chart_patch = multi_camera_switch_utils.extract_main_patch(
-          corners, ids, w_img, w_path, 'w')
+          corners, ids, w_img, w_path, _LENS_SUFFIX_W)
       w_four_patches = image_processing_utils.get_four_quadrant_patches(
-          w_chart_patch, w_path, 'w', _PATCH_MARGIN)
+          w_chart_patch, w_path, _LENS_SUFFIX_W, _PATCH_MARGIN)
 
       # Find ArUco markers in the image with tele lens
       # and extract the outer box patch
       corners, ids = multi_camera_switch_utils.find_aruco_markers(
-          tele_img, tele_path, 'tele')
+          tele_img, tele_path, _LENS_SUFFIX_TELE)
       tele_chart_patch = multi_camera_switch_utils.extract_main_patch(
-          corners, ids, tele_img, tele_path, 'tele')
+          corners, ids, tele_img, tele_path, _LENS_SUFFIX_TELE)
       tele_four_patches = image_processing_utils.get_four_quadrant_patches(
-          tele_chart_patch, tele_path, 'tele', _PATCH_MARGIN)
+          tele_chart_patch, tele_path, _LENS_SUFFIX_TELE, _PATCH_MARGIN)
 
       ae_w_y_avgs = {}
       ae_tele_y_avgs = {}
@@ -218,8 +192,8 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
         # AE Check: Extract the Y component from rectangle patch
         file_stem = f'{os.path.join(self.log_path, _NAME)}'
         ae_msg, w_y_avg, tele_y_avg = multi_camera_switch_utils.do_ae_check(
-            w_patch, tele_patch, file_stem, patch_color, 'w', 'tele', _AE_RTOL,
-            _AE_ATOL)
+            w_patch, tele_patch, file_stem, patch_color, _LENS_SUFFIX_W,
+            _LENS_SUFFIX_TELE, _AE_RTOL, _AE_ATOL)
         if ae_msg:
           failed_ae_msg.append(f'{ae_msg}\n')
         ae_w_y_avgs.update({patch_color: f'{w_y_avg:.4f}'})
@@ -229,7 +203,8 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
         if camera_properties_utils.awb_regions(props):
           c_atol = _AWB_ATOL_L if patch_color == _COLOR_GRAY else _AWB_ATOL_AB
           awb_msg = image_processing_utils.do_awb_check(
-              w_patch, tele_patch, c_atol, patch_color, 'W', 'tele')
+              w_patch, tele_patch, c_atol, patch_color, _LENS_SUFFIX_W,
+              _LENS_SUFFIX_TELE)
           if awb_msg:
             failed_awb_msg.append(f'{awb_msg}\n')
 
@@ -244,9 +219,9 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
       else:
         # AF check using slanted edge
         w_slanted_edge_patch = image_processing_utils.get_slanted_edge_patch(
-            w_chart_patch, w_path, 'w', _PATCH_MARGIN)
+            w_chart_patch, w_path, _LENS_SUFFIX_W, _PATCH_MARGIN)
         tele_slanted_edge_patch = image_processing_utils.get_slanted_edge_patch(
-            tele_chart_patch, tele_path, 'tele', _PATCH_MARGIN)
+            tele_chart_patch, tele_path, _LENS_SUFFIX_TELE, _PATCH_MARGIN)
         failed_af_msg, sharpness_w, sharpness_tele = (
             multi_camera_switch_utils.do_af_check(
                 w_slanted_edge_patch, tele_slanted_edge_patch, _LENS_SUFFIX_W,

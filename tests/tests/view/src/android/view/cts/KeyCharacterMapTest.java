@@ -364,4 +364,26 @@ public class KeyCharacterMapTest {
         assertEquals(keyChar.length, keys.length);
     }
 
+    @Test
+    public void testGetDeadChar() {
+        assertEquals('\u0110', KeyCharacterMap.getDeadChar('-', 'D'));
+        assertEquals('\u01e4', KeyCharacterMap.getDeadChar('-', 'G'));
+        assertEquals('\u0126', KeyCharacterMap.getDeadChar('-', 'H'));
+        assertEquals('\u0197', KeyCharacterMap.getDeadChar('-', 'I'));
+        assertEquals('\u0141', KeyCharacterMap.getDeadChar('-', 'L'));
+        assertEquals('\u00d8', KeyCharacterMap.getDeadChar('-', 'O'));
+        assertEquals('\u0166', KeyCharacterMap.getDeadChar('-', 'T'));
+        assertEquals('\u0111', KeyCharacterMap.getDeadChar('-', 'd'));
+        assertEquals('\u01e5', KeyCharacterMap.getDeadChar('-', 'g'));
+        assertEquals('\u0127', KeyCharacterMap.getDeadChar('-', 'h'));
+        assertEquals('\u0268', KeyCharacterMap.getDeadChar('-', 'i'));
+        assertEquals('\u0142', KeyCharacterMap.getDeadChar('-', 'l'));
+        assertEquals('\u00f8', KeyCharacterMap.getDeadChar('-', 'o'));
+        assertEquals('\u0167', KeyCharacterMap.getDeadChar('-', 't'));
+        assertEquals('\u00E0', KeyCharacterMap.getDeadChar('`', 'a'));
+        assertEquals('\u00C0', KeyCharacterMap.getDeadChar('`', 'A'));
+        assertEquals('\u00E8', KeyCharacterMap.getDeadChar('`', 'e'));
+        assertEquals('\u00C8', KeyCharacterMap.getDeadChar('`', 'E'));
+    }
+
 }

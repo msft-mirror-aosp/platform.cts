@@ -1832,6 +1832,18 @@ public final class Helper {
         setDeviceConfig(deviceConfigStateManager, "false");
     }
 
+    /** Enable fill dialog improvements */
+    public static void setMultipleSessionFillEventHistoryFeature(
+            @NonNull Context context, boolean enabled) {
+        DeviceConfigStateManager deviceConfigStateManager =
+                new DeviceConfigStateManager(
+                        context,
+                        DeviceConfig.NAMESPACE_AUTOFILL,
+                        "session_fill_event_history");
+        String setting = enabled ? "true" : "false";
+        setDeviceConfig(deviceConfigStateManager, setting);
+    }
+
     /**
      * Enable PCC Detection Feature Hints
      */

@@ -101,7 +101,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
 
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
-        test_tols, size = zoom_capture_utils.get_test_tols_and_cap_size(
+        test_tols, _ = zoom_capture_utils.get_test_tols_and_cap_size(
             cam, props, self.chart_distance, debug)
       else:
         test_tols = {}
@@ -109,9 +109,6 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-        yuv_size = capture_request_utils.get_largest_format('yuv', props)
-        size = [yuv_size['width'], yuv_size['height']]
-      logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
       # do captures over zoom range and find ArUco markers with cv2
@@ -123,6 +120,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       all_aruco_corners = []
       images = []
       physical_ids = set()
+      size = None
       captures = cam.do_jca_captures_across_zoom_ratios(
           self.dut,
           self.log_path,
@@ -134,6 +132,11 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
         physical_ids.add(capture.physical_id)
         logging.debug('Physical IDs: %s', physical_ids)
         bgr_img = cv2.imread(capture.capture_path)
+        # Use first image size for all captures
+        if not size:
+          height, width, _ = bgr_img.shape
+          size = (width, height)
+          logging.debug('Size: %s', size)
         radius_tol, offset_tol = (
             zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL
         )
