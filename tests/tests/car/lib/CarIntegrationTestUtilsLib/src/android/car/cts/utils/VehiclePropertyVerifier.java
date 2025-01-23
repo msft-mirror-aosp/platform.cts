@@ -1420,6 +1420,12 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private void verifySetPropertyFails(int areaId) {
+        if (!isAtLeastU()) {
+            // The precondition check in CarPropertyService that throws an IllegalArgumentException
+            // when a client tries to write a property that is implemented as read_only was added in
+            // Android U. API behavior prior to Android U is undefined so skipping this check.
+            return;
+        }
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         assertThrows(
                 mPropertyName
