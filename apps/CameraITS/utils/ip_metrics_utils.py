@@ -22,8 +22,6 @@ import numpy as np
 _DYNAMIC_PATCH_MID_TONE_START_IDX = 5
 _DYNAMIC_PATCH_MID_TONE_END_IDX = 15
 AR_REL_TOL = 0.1
-# 20% tolerance as per CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION
-FOV_REL_TOL = 0.2
 EXPECTED_BRIGHTNESS_50 = 50.0
 MAX_BRIGHTNESS_DIFF_ABSOLUTE_ERROR = 10.0
 MAX_BRIGHTNESS_DIFF_RELATIVE_ERROR = 8.0
@@ -79,7 +77,7 @@ def check_if_qr_code_size_match(img1, img2):
     raise ValueError(
         'Aspect ratio of the non-transparent region of the image 2 is not 1:1.'
     )
-  return math.isclose(height1, height2, rel_tol=FOV_REL_TOL)
+  return math.isclose(height1, height2, rel_tol=AR_REL_TOL)
 
 
 def get_lab_mean_values(img):
