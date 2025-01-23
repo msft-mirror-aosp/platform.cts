@@ -208,6 +208,12 @@ public class ItsUtils {
         return allSizes;
     }
 
+    public static boolean isFixedFocusLens(CameraCharacteristics c) {
+        Float minFocusDistance = c.get(
+                CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
+        return (minFocusDistance != null) && (minFocusDistance == 0.0);
+    }
+
     public static Size getMaxSize(Size[] sizes) {
         if (sizes == null || sizes.length == 0) {
             throw new IllegalArgumentException("sizes was empty");

@@ -2298,7 +2298,7 @@ public class ItsService extends Service implements SensorEventListener {
                 }
             }
 
-            boolean isFixedFocusLens = isFixedFocusLens(c);
+            boolean isFixedFocusLens = ItsUtils.isFixedFocusLens(c);
             if (mDoAF && isFixedFocusLens) {
                 // Send a fake result back for the code that is waiting for this message to see
                 // that AF has converged.
@@ -4777,7 +4777,7 @@ public class ItsService extends Service implements SensorEventListener {
         private boolean awbResultSent = false;
         private boolean afResultSent = false;
         private CameraCharacteristics c = mCameraCharacteristics;
-        private boolean isFixedFocusLens = isFixedFocusLens(c);
+        private boolean isFixedFocusLens = ItsUtils.isFixedFocusLens(c);
 
         void handleCaptureResult(CaptureRequest request, TotalCaptureResult result)
                 throws ItsException {
@@ -5326,12 +5326,6 @@ public class ItsService extends Service implements SensorEventListener {
         }
 
         throw new ItsException("Unknown reprocess format: " + reprocessFormat);
-    }
-
-    private boolean isFixedFocusLens(CameraCharacteristics c) {
-        Float minFocusDistance = c.get(
-                CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE);
-        return (minFocusDistance != null) && (minFocusDistance == 0.0);
     }
 
     private void validateCameraId(String cameraId) throws ItsException {
