@@ -532,33 +532,24 @@ public class VehiclePropertyVerifiers {
                 .setCarPropertyConfigVerifier(
                         (verifierContext, carPropertyConfig) -> {
                             // HVAC_TEMPERATURE_VALUE_SUGGESTION's access must be read+write.
-                            assertThat((Flags.areaIdConfigAccess()
-                                    ? carPropertyConfig.getAreaIdConfig(0).getAccess()
-                                    : carPropertyConfig.getAccess())).isEqualTo(
-                                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
+                            assertThat(
+                                            (Flags.areaIdConfigAccess()
+                                                    ? carPropertyConfig
+                                                            .getAreaIdConfig(0)
+                                                            .getAccess()
+                                                    : carPropertyConfig.getAccess()))
+                                    .isEqualTo(
+                                            CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
                         })
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                temperatureSuggestion) -> {
-                            assertWithMessage(
-                                            "HVAC_TEMPERATURE_VALUE_SUGGESTION Float[] value"
-                                                + " must be size 4.")
-                                    .that(temperatureSuggestion.length)
-                                    .isEqualTo(4);
-
-                            Float requestedTempUnits = temperatureSuggestion[1];
-                            assertWithMessage(
-                                            "The value at index 1 must be one of"
-                                                + " {VehicleUnit#CELSIUS, VehicleUnit#FAHRENHEIT}"
-                                                + " which correspond to values {"
-                                                + (float) VehicleUnit.CELSIUS
-                                                + ", "
-                                                + (float) VehicleUnit.FAHRENHEIT
-                                                + "}.")
-                                    .that(requestedTempUnits)
-                                    .isIn(ImmutableList.of((float) VehicleUnit.CELSIUS,
-                                            (float) VehicleUnit.FAHRENHEIT));
-                        })
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                temperatureSuggestion) ->
+                                verifyHvacTemperatureValueSuggestion(verifierContext,
+                                        temperatureSuggestion))
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE);
     }
@@ -1478,5 +1469,85 @@ public class VehiclePropertyVerifiers {
                 .requireMinMaxValues()
                 .requireZeroToBeContainedInMinMaxRanges()
                 .addReadPermission(Car.PERMISSION_CAR_DYNAMICS_STATE);
+    }
+
+    private static void verifyHvacTemperatureValueSuggestion(
+            VehiclePropertyVerifier.VerifierContext verifierContext,
+            Float[] temperatureSuggestion) {
+        assertWithMessage(
+                "HVAC_TEMPERATURE_VALUE_SUGGESTION Float[] value"
+                        + " must be size 4.")
+                .that(temperatureSuggestion.length)
+                .isEqualTo(4);
+
+        Float requestedTempUnits = temperatureSuggestion[1];
+        assertWithMessage(
+                "The value at index 1 must be one of"
+                        + " {VehicleUnit#CELSIUS, VehicleUnit#FAHRENHEIT}"
+                        + " which correspond to values {"
+                        + (float) VehicleUnit.CELSIUS
+                        + ", "
+                        + (float) VehicleUnit.FAHRENHEIT
+                        + "}.")
+                .that(requestedTempUnits)
+                .isIn(
+                        ImmutableList.of(
+                                (float) VehicleUnit.CELSIUS,
+                                (float) VehicleUnit.FAHRENHEIT));
+
+        Float suggestedTempInCelsius = temperatureSuggestion[2];
+        Float suggestedTempInFahrenheit = temperatureSuggestion[3];
+        CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
+                verifierContext
+                        .getCarPropertyManager()
+                        .getCarPropertyConfig(
+                                VehiclePropertyIds.HVAC_TEMPERATURE_SET);
+        if (hvacTemperatureSetCarPropertyConfig == null) {
+            return;
+        }
+        List<Integer> hvacTemperatureSetConfigArray =
+                hvacTemperatureSetCarPropertyConfig.getConfigArray();
+        if (hvacTemperatureSetConfigArray.isEmpty()) {
+            return;
+        }
+        Integer minTempInCelsiusTimesTen = hvacTemperatureSetConfigArray.get(0);
+        Integer maxTempInCelsiusTimesTen = hvacTemperatureSetConfigArray.get(1);
+        Integer incrementInCelsiusTimesTen =
+                hvacTemperatureSetConfigArray.get(2);
+        VehiclePropertyVerifier.verifyHvacTemperatureIsValid(
+                suggestedTempInCelsius, minTempInCelsiusTimesTen,
+                maxTempInCelsiusTimesTen, incrementInCelsiusTimesTen);
+
+        Integer minTempInFahrenheitTimesTen =
+                hvacTemperatureSetConfigArray.get(3);
+        Integer maxTempInFahrenheitTimesTen =
+                hvacTemperatureSetConfigArray.get(4);
+        Integer incrementInFahrenheitTimesTen =
+                hvacTemperatureSetConfigArray.get(5);
+        VehiclePropertyVerifier.verifyHvacTemperatureIsValid(
+                suggestedTempInFahrenheit, minTempInFahrenheitTimesTen,
+                maxTempInFahrenheitTimesTen, incrementInFahrenheitTimesTen);
+
+        int suggestedTempInCelsiusTimesTen =
+                (int) (suggestedTempInCelsius * 10f);
+        int suggestedTempInFahrenheitTimesTen =
+                (int) (suggestedTempInFahrenheit * 10f);
+        int numIncrementsCelsius =
+                Math.round(
+                        (suggestedTempInCelsiusTimesTen
+                                - minTempInCelsiusTimesTen)
+                                / incrementInCelsiusTimesTen.floatValue());
+        int numIncrementsFahrenheit =
+                Math.round(
+                        (suggestedTempInFahrenheitTimesTen
+                                - minTempInFahrenheitTimesTen)
+                                / incrementInFahrenheitTimesTen.floatValue());
+        assertWithMessage(
+                "The temperature in celsius must map to the same"
+                        + " temperature in fahrenheit using the"
+                        + " HVAC_TEMPERATURE_SET config array: "
+                        + hvacTemperatureSetConfigArray)
+                .that(numIncrementsFahrenheit)
+                .isEqualTo(numIncrementsCelsius);
     }
 }
