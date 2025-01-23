@@ -358,4 +358,35 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         controller.getTransportControls().pause();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithStoppedMediaSessionAndNotificationGoesToBg() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller and press play.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        // Configure temp user engaged timeout.
+        mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
+                Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
+        // Verify if timeout is set.
+        final String dumpLines = runShellCommand("dumpsys media_session");
+        final String expectedLine =
+                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
+        assertTrue(
+                "Failed to configure temp user engaged timeout",
+                dumpLines.contains(expectedLine));
+        // Transition session to user disengaged.
+        controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
 }
