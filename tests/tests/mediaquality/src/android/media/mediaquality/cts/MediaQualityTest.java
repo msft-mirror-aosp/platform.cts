@@ -32,6 +32,7 @@ import android.media.quality.AmbientBacklightSettings;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
 import android.media.quality.MediaQualityManager;
+import android.media.quality.ParameterCapability;
 import android.media.quality.PictureProfile;
 import android.media.quality.PictureProfileHandle;
 import android.media.quality.SoundProfile;
@@ -225,6 +226,16 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testGetPictureProfilePackageNames() {
+        PictureProfile toCreate = getTestPictureProfile("testGetPictureProfilePackageNames");
+        mManager.createPictureProfile(toCreate);
+
+        List<String> packageNames = mManager.getPictureProfilePackageNames();
+        Assert.assertNotNull(packageNames);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testGetAvailablePictureProfiles() throws Exception {
         mManager.getAvailablePictureProfiles(null);
     }
@@ -344,6 +355,16 @@ public class MediaQualityTest {
         for (SoundProfile profile : profiles) {
             Assert.assertEquals(profile.getPackageName(), toCreate.getPackageName());
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetSoundProfilePackageNames() {
+        SoundProfile toCreate = getTestSoundProfile("testGetSoundProfilePackageNames");
+        mManager.createSoundProfile(toCreate);
+
+        List<String> packageNames = mManager.getSoundProfilePackageNames();
+        Assert.assertNotNull(packageNames);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -522,13 +543,13 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetAmbientBacklightEnabled() throws Exception {
+    public void testSetAmbientBacklightEnabled() {
         mManager.setAmbientBacklightEnabled(true);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testRegisterPictureProfileCallback() throws Exception {
+    public void testRegisterPictureProfileCallback() {
         mManager.registerPictureProfileCallback(
                 Executors.newSingleThreadExecutor(),
                 Mockito.mock(MediaQualityManager.PictureProfileCallback.class));
@@ -536,7 +557,14 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testRegisterSoundProfileCallback() throws Exception {
+    public void testUnregisterPictureProfileCallback() {
+        mManager.unregisterPictureProfileCallback(
+                Mockito.mock(MediaQualityManager.PictureProfileCallback.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testRegisterSoundProfileCallback() {
         mManager.registerSoundProfileCallback(
                 Executors.newSingleThreadExecutor(),
                 Mockito.mock(MediaQualityManager.SoundProfileCallback.class));
@@ -544,15 +572,33 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testRegisterAmbientBacklightCallback() throws Exception {
-        mManager.registerAmbientBacklightCallback(
-                Executors.newSingleThreadExecutor(), new MockCallback());
+    public void testUnregisterSoundProfileCallback() {
+        mManager.unregisterSoundProfileCallback(
+                Mockito.mock(MediaQualityManager.SoundProfileCallback.class));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
-    public void testSetAmbientBacklightSettings() throws Exception {
+    public void testRegisterAmbientBacklightCallback() {
+        mManager.registerAmbientBacklightCallback(
+                Executors.newSingleThreadExecutor(), new MockAmbientBacklightCallback());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testSetAmbientBacklightSettings() {
         mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testAreParametersIncluded() {
+        MediaQualityManager.ProfileQueryParams params =
+                new MediaQualityManager.ProfileQueryParams.Builder()
+                        .setParametersIncluded(true)
+                        .build();
+
+        assumeTrue(params.areParametersIncluded());
     }
 
     private PictureProfile getTestPictureProfile(String methodName) {
@@ -584,7 +630,9 @@ public class MediaQualityTest {
     }
 
     private MediaQualityManager.ProfileQueryParams includeParams(boolean include) {
-        return new MediaQualityManager.ProfileQueryParams(include);
+        return new MediaQualityManager.ProfileQueryParams.Builder()
+                .setParametersIncluded(include)
+                .build();
     }
 
     private AmbientBacklightSettings createAmbientBacklightSettings() {
@@ -601,8 +649,9 @@ public class MediaQualityTest {
         return settings;
     }
 
-    public static class MockCallback implements MediaQualityManager.AmbientBacklightCallback {
-        public MockCallback() {
+    public static class MockAmbientBacklightCallback
+            implements MediaQualityManager.AmbientBacklightCallback {
+        public MockAmbientBacklightCallback() {
             super();
         }
 
@@ -615,6 +664,64 @@ public class MediaQualityTest {
                         "Ambient Backlight Metadata zone color is null",
                         event.getMetadata().getZoneColors());
             }
+        }
+    }
+
+    public static class MockPictureProfileCallback
+            extends MediaQualityManager.PictureProfileCallback {
+
+        @Override
+        public void onPictureProfileAdded(String profileId, PictureProfile profile) {
+            super.onPictureProfileAdded(profileId, profile);
+        }
+
+        @Override
+        public void onPictureProfileUpdated(String profileId, PictureProfile profile) {
+            super.onPictureProfileUpdated(profileId, profile);
+        }
+
+        @Override
+        public void onPictureProfileRemoved(String profileId, PictureProfile profile) {
+            super.onPictureProfileRemoved(profileId, profile);
+        }
+
+        @Override
+        public void onError(String profileId, int errorCode) {
+            super.onError(profileId, errorCode);
+        }
+
+        @Override
+        public void onParameterCapabilitiesChanged(
+                String profileId, List<ParameterCapability> updatedCaps) {
+            super.onParameterCapabilitiesChanged(profileId, updatedCaps);
+        }
+    }
+
+    public static class MockSoundProfileCallback extends MediaQualityManager.SoundProfileCallback {
+        @Override
+        public void onSoundProfileAdded(String profileId, SoundProfile profile) {
+            super.onSoundProfileAdded(profileId, profile);
+        }
+
+        @Override
+        public void onSoundProfileUpdated(String profileId, SoundProfile profile) {
+            super.onSoundProfileUpdated(profileId, profile);
+        }
+
+        @Override
+        public void onSoundProfileRemoved(String profileId, SoundProfile profile) {
+            super.onSoundProfileRemoved(profileId, profile);
+        }
+
+        @Override
+        public void onError(String profileId, int errorCode) {
+            super.onError(profileId, errorCode);
+        }
+
+        @Override
+        public void onParameterCapabilitiesChanged(
+                String profileId, List<ParameterCapability> updatedCaps) {
+            super.onParameterCapabilitiesChanged(profileId, updatedCaps);
         }
     }
 }
