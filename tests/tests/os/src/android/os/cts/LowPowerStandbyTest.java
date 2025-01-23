@@ -58,9 +58,9 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.compatibility.common.util.CallbackAsserter;
@@ -141,6 +141,7 @@ public class LowPowerStandbyTest {
 
     @Test
     @ApiTest(apis = "android.os.PowerManager#setLowPowerStandbyEnabled")
+    @AppModeFull(reason = "Instant app CTS tests hold shell permissions which include DEVICE_POWER")
     public void testSetLowPowerStandbyEnabled_withoutPermission_throwsSecurityException() {
         try {
             mPowerManager.setLowPowerStandbyEnabled(false);
