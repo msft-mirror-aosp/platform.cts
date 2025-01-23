@@ -31,6 +31,9 @@ import zoom_capture_utils
 
 _CRF = 23
 _CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
+_CV2_FLIP_ACROSS_X_AXIS = 0
+_CV2_FLIP_ACROSS_Y_AXIS = 1
+_SENSOR_ORIENTATIONS_X_AXIS_MIRRORING = (90, 270)
 _FPS = 30
 _MINIMUM_ARUCO_MARKERS_TO_DETECT = 1
 _MP4V = 'mp4v'
@@ -143,6 +146,11 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props))
 
+      is_front_facing = (
+          props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']
+      )
+
       # Load chart for scene
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance)
@@ -215,6 +223,22 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
         # read image
         img_bgr = cv2.imread(os.path.join(log_path, img_name))
+        # flip image across correct axis for front camera (preview is flipped)
+        if is_front_facing:
+          sensor_orientation = props['android.sensor.orientation']
+          if sensor_orientation in _SENSOR_ORIENTATIONS_X_AXIS_MIRRORING:
+            logging.debug(
+                'Found sensor orientation %d, flipping up down',
+                sensor_orientation
+            )
+            img_bgr = cv2.flip(img_bgr, _CV2_FLIP_ACROSS_X_AXIS)
+          else:
+            logging.debug(
+                'Found sensor orientation %d, flipping left right',
+                sensor_orientation
+            )
+            img_bgr = cv2.flip(img_bgr, _CV2_FLIP_ACROSS_Y_AXIS)
+          cv2.imwrite(os.path.join(log_path, img_name), img_bgr)
 
         # add path to image name
         img_path = f'{os.path.join(self.log_path, img_name)}'
