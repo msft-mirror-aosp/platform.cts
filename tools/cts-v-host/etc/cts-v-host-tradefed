@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# launcher script for cts-interactive
+# launcher script for cts-v-host
 # can be used from an Android build environment, or a standalone cts-v zip
 
 UTILS_SCRIPT="$(dirname $(realpath $0))/test-utils-script"
@@ -59,23 +59,23 @@ fi
 # check if in Android build env
 if [ ! -z "${ANDROID_BUILD_TOP}" ]; then
     if [ ! -z "${ANDROID_HOST_OUT}" ]; then
-      CTSI_ROOT=${ANDROID_HOST_OUT}/cts-interactive
+      CTSV_HOST_ROOT=${ANDROID_HOST_OUT}/cts-v-host
     else
-      CTSI_ROOT=${ANDROID_BUILD_TOP}/${OUT_DIR:-out}/host/${OS}/cts-interactive
+      CTSV_HOST_ROOT=${ANDROID_BUILD_TOP}/${OUT_DIR:-out}/host/${OS}/cts-v-host
     fi
-    if [ ! -d ${CTSI_ROOT} ]; then
-        echo "Could not find $CTSI_ROOT in Android build environment. Try 'make cts-interactive'"
+    if [ ! -d ${CTSV_HOST_ROOT} ]; then
+        echo "Could not find $CTSV_HOST_ROOT in Android build environment. Try 'make cts-v-host'"
         exit
     fi;
 fi;
 
-if [ -z ${CTSI_ROOT} ]; then
+if [ -z ${CTSV_HOST_ROOT} ]; then
     # assume we're in an extracted cts-v install
-    CTSI_ROOT="$(dirname $(realpath $0))/../.."
+    CTSV_HOST_ROOT="$(dirname $(realpath $0))/../.."
 fi;
 
 if [ -z ${JAVA_BINARY} ]; then
-    JAVA_BINARY=${CTSI_ROOT}/android-cts-interactive/jdk/bin/java
+    JAVA_BINARY=${CTSV_HOST_ROOT}/android-cts-v-host/jdk/bin/java
 fi;
 
 if [ ! -f "${JAVA_BINARY}" ]; then
@@ -93,8 +93,8 @@ fi
 
 loadSharedLibraries "$HOST"
 
-ATS_CONSOLE_JAR=${CTSI_ROOT}/android-cts-interactive/tools/ats_console_deploy.jar
-ATS_OLC_SERVER_JAR=${CTSI_ROOT}/android-cts-interactive/tools/ats_olc_server_local_mode_deploy.jar
+ATS_CONSOLE_JAR=${CTSV_HOST_ROOT}/android-cts-v-host/tools/ats_console_deploy.jar
+ATS_OLC_SERVER_JAR=${CTSV_HOST_ROOT}/android-cts-v-host/tools/ats_olc_server_local_mode_deploy.jar
 checkFile ${ATS_CONSOLE_JAR}
 checkFile ${ATS_OLC_SERVER_JAR}
 
@@ -122,4 +122,4 @@ DEVICE_INFRA_SERVICE_FLAGS=" \
   ${FASTBOOT_FLAGS} \
 "
 
-LANG=en_US.UTF-8 TEST_TMPDIR=/tmp ${JAVA_BINARY} --add-opens=java.base/java.lang=ALL-UNNAMED -Xmx4g -XX:+HeapDumpOnOutOfMemoryError -DXTS_ROOT=${CTSI_ROOT} -DXTS_TYPE=cts-interactive -DDEVICE_INFRA_SERVICE_FLAGS="${DEVICE_INFRA_SERVICE_FLAGS}" -jar ${ATS_CONSOLE_JAR} "$@"
+LANG=en_US.UTF-8 TEST_TMPDIR=/tmp ${JAVA_BINARY} --add-opens=java.base/java.lang=ALL-UNNAMED -Xmx4g -XX:+HeapDumpOnOutOfMemoryError -DXTS_ROOT=${CTSV_HOST_ROOT} -DXTS_TYPE=cts-v-host -DDEVICE_INFRA_SERVICE_FLAGS="${DEVICE_INFRA_SERVICE_FLAGS}" -jar ${ATS_CONSOLE_JAR} "$@"
