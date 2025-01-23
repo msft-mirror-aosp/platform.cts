@@ -33,6 +33,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -44,9 +46,12 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageWriter;
 import android.os.SystemClock;
@@ -60,6 +65,9 @@ import android.virtualdevice.cts.camera.util.VirtualCameraCaptureHelper.CaptureC
 import android.virtualdevice.cts.camera.util.VirtualCameraUtils;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.NonNull;
+import androidx.test.core.app.ApplicationProvider;
+
 import com.google.common.collect.Range;
 
 import junitparams.JUnitParamsRunner;
@@ -72,6 +80,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -159,6 +168,28 @@ public class VirtualCameraCaptureTest {
         Image image = mCaptureHelper.captureImages(config);
         mCaptureHelper.verifyCaptureFailed();
         ImageSubject.assertThat(image).isNull();
+    }
+
+    @Test
+    public void capture_withZeroOutput_doesNotTriggerOnStreamConfigured() throws Exception {
+        mCaptureHelper.createVirtualCamera();
+
+        CameraDevice cameraDevice = mCaptureHelper.getOrOpenCameraDevice();
+        cameraDevice.createCaptureSession(
+                new SessionConfiguration(
+                        SessionConfiguration.SESSION_REGULAR,
+                        Collections.emptyList(),
+                        ApplicationProvider.getApplicationContext().getMainExecutor(),
+                        new CameraCaptureSession.StateCallback() {
+                            @Override
+                            public void onConfigured(@NonNull CameraCaptureSession session) {}
+
+                            @Override
+                            public void onConfigureFailed(@NonNull CameraCaptureSession session) {}
+                        }));
+
+        verify(mCaptureHelper.getVirtualCameraCallback(), after(2000L).never())
+                .onStreamConfigured(anyInt(), any(), anyInt(), anyInt(), anyInt());
     }
 
     @Test
