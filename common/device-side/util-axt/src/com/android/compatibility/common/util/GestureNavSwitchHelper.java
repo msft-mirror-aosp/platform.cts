@@ -276,8 +276,10 @@ public final class GestureNavSwitchHelper {
     @NonNull
     private String getStateForOverlay(@NonNull String overlayPackage) {
         try {
-            return mDevice.executeShellCommand("cmd overlay dump --user current state "
-                    + overlayPackage).trim();
+            final String res = mDevice.executeShellCommand("cmd overlay dump --user current state "
+                    + overlayPackage);
+            // When current user is not 0 (e.g. HSUM), the output will contain an additional line.
+            return res.split("\\r?\\n")[0].trim();
         } catch (IOException e) {
             Log.w(TAG, "Failed to get overlay state", e);
             return STATE_UNKNOWN;
