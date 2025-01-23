@@ -1656,11 +1656,33 @@
     4. Pass button will light up if intent and URI trigger were NOT received.\n
     5. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
     </string>
+    <string name="ci_instruction_text_intent_motion_photo_label">\n
+    Note: If this intent is not supported by the device, the Start Test button will not be enabled.
+    If this is expected, press the pass button to continue. Otherwise open the settings app, allow
+    location permissions and click "Fail."\n\n
+
+    1. Click Start Test.\n
+    2. Camera app will launch, prompting to take motion photo.\n
+    3. Capture/confirm motion photo using camera app controls within 1 minute.\n
+    4. Pass button will light up if intent and URI trigger were NOT received.\n
+    5. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
+    </string>
+    <string name="ci_instruction_text_intent_motion_photo_secure_label">\n
+    Note: If this intent is not supported by the device, the Start Test button will not be enabled.
+    If this is expected, press the pass button to continue. Otherwise open the settings app, allow
+    location permissions and click "Fail."\n\n
+
+    1. Click Start Test.\n
+    2. Camera app will launch, prompting to take motion photo.\n
+    3. Capture/confirm motion photo using camera app controls within 1 minute.\n
+    4. Pass button will light up if intent and URI trigger were NOT received.\n
+    5. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
+    </string>
     <string name="ci_instruction_text_intent_video_label">\n
     1. Click Start Test.\n
     2. Camera app will launch, prompting to take video.\n
     3. Capture/confirm video using camera app controls within 1 minute.\n
-    4. Return to the CTS Verifier app. Click Open Settings and give back CTS Verifier location permissions \n
+    4. Return to the CTS Verifier app. Click Open Settings and ensure CTS Verifier has location permissions \n
     (Note this must be done before clicking on Pass / Fail).\n
     5. Click "Pass" if possible.
     </string>
