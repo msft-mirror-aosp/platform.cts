@@ -18,22 +18,32 @@ package android.virtualdevice.cts.audio;
 import static android.Manifest.permission.GRANT_RUNTIME_PERMISSIONS;
 import static android.Manifest.permission.MODIFY_AUDIO_ROUTING;
 import static android.Manifest.permission.RECORD_AUDIO;
+import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.content.Intent.EXTRA_RESULT_RECEIVER;
 import static android.media.AudioFormat.ENCODING_PCM_16BIT;
+import static android.virtualdevice.cts.common.StreamedAppConstants.EXTRA_RECORD_AUDIO_SUCCESS;
+import static android.virtualdevice.cts.common.StreamedAppConstants.RECORD_AUDIO_TEST_ACTIVITY;
+import static android.virtualdevice.cts.common.StreamedAppConstants.STREAMED_APP_PACKAGE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.audio.VirtualAudioDevice;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.AudioDeviceCallback;
@@ -46,6 +56,8 @@ import android.media.MediaRecorder;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.Bundle;
+import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
@@ -59,9 +71,11 @@ import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -77,13 +91,16 @@ import java.util.concurrent.TimeoutException;
 public class VirtualAudioPermissionTest {
 
     private static final int AUDIO_PERMISSIONS_PROPAGATION_TIME_MS = 80;
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
-            MODIFY_AUDIO_ROUTING, GRANT_RUNTIME_PERMISSIONS);
+            MODIFY_AUDIO_ROUTING, GRANT_RUNTIME_PERMISSIONS, REVOKE_RUNTIME_PERMISSIONS);
 
     @Mock
     VirtualAudioDevice.AudioConfigurationChangeCallback mAudioConfigurationChangeCallback;
+    @Mock
+    private RemoteCallback.OnResultListener mResultReceiver;
 
     private final Context mContext = getInstrumentation().getTargetContext();
     private VirtualDevice mVirtualDevice;
@@ -101,6 +118,14 @@ public class VirtualAudioPermissionTest {
         assumeNotNull(mContext.getSystemService(AudioManager.class));
         assumeTrue(
                 mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE));
+
+        // reset permissions before the test
+        Context deviceContext = mContext.createDeviceContext(mVirtualDeviceId);
+        mContext.getPackageManager().revokeRuntimePermission(
+                STREAMED_APP_PACKAGE, RECORD_AUDIO, UserHandle.of(mContext.getUserId()));
+
+        deviceContext.getPackageManager().revokeRuntimePermission(
+                STREAMED_APP_PACKAGE, RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
     }
 
     @After
@@ -194,7 +219,7 @@ public class VirtualAudioPermissionTest {
         PermissionActivity permissionActivity = launchPermissionActivity(Display.DEFAULT_DISPLAY);
         setupAudioPolicy(permissionActivity.getAttributionSource().getUid());
 
-        // TODO - b/383048413 - use PermissionUpdateBarrierRule
+        // TODO: b/383048413 - use PermissionUpdateBarrierRule
         // Account for the intentional delay until the audio permissions are propagated
         SystemClock.sleep(AUDIO_PERMISSIONS_PROPAGATION_TIME_MS);
 
@@ -209,6 +234,103 @@ public class VirtualAudioPermissionTest {
         assertThat(permissionActivity.checkSelfPermission(RECORD_AUDIO))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
         permissionActivity.recordAudio();
+    }
+
+    @RequiresFlagsEnabled({
+        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
+    })
+    @Test
+    public void audioInjection_localPermissionDenied_remotePermissionDenied() throws Exception {
+        testAudioRecordWithPermissions(/*localPermission*/ false, /*remotePermission*/ false);
+    }
+
+    @RequiresFlagsEnabled({
+        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
+    })
+    @Ignore("b/381386115, fix device aware 'RECORD_AUDIO' permission")
+    @Test
+    public void audioInjection_localPermissionDenied_remotePermissionGranted() throws Exception {
+        testAudioRecordWithPermissions(/*localPermission*/ false, /*remotePermission*/ true);
+    }
+
+    @RequiresFlagsEnabled({
+        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
+    })
+    @Ignore("b/381386115, fix device aware 'RECORD_AUDIO' permission")
+    @Test
+    public void audioInjection_localPermissionGranted_remotePermissionDenied() throws Exception {
+        testAudioRecordWithPermissions(/*localPermission*/ true, /*remotePermission*/ false);
+    }
+
+    @RequiresFlagsEnabled({
+        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
+    })
+    @Test
+    public void audioInjection_localPermissionGranted_remotePermissionGranted() throws Exception {
+        testAudioRecordWithPermissions(/*localPermission*/ true, /*remotePermission*/ true);
+    }
+
+    /**
+     * Tests a combination of local and remote device permission values for RECORD_AUDIO. The test
+     * has the following steps:
+     * - Checks the initial state of the permissions for the STREAMED_APP_PACKAGE
+     * - Sets the required value of the permission on each device/context
+     * - Checks the value of the permission is as expected on each device/context
+     * - Starts the RecordAudioTestActivity from STREAMED_APP_PACKAGE which tries to open and
+     * record from an AudioRecord
+     * - Checks expectation of the audio record succeeding or failing depending on the permission
+     * value for the tested device/context
+     *
+     * @param localPermission - true if permission granted on the local device, false otherwise
+     * @param remotePermission - true if permission granted on the remote device, false otherwise
+     */
+    private void testAudioRecordWithPermissions(boolean localPermission, boolean remotePermission)
+            throws Exception {
+
+        setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
+        setupVirtualAudioDevice();
+
+        Context deviceContext = mContext.createDeviceContext(mVirtualDeviceId);
+
+        // Assert no initial permissions on neither local nor remote devices
+        assertThat(mContext.getPackageManager().checkPermission(RECORD_AUDIO, STREAMED_APP_PACKAGE))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThat(deviceContext.getPackageManager().checkPermission(RECORD_AUDIO,
+                STREAMED_APP_PACKAGE)).isEqualTo(PackageManager.PERMISSION_DENIED);
+
+        // grant local permission if needed
+        if (localPermission) {
+            mContext.getPackageManager().grantRuntimePermission(STREAMED_APP_PACKAGE, RECORD_AUDIO,
+                    UserHandle.of(mContext.getUserId()));
+
+            assertThat(mContext.getPackageManager().checkPermission(RECORD_AUDIO,
+                    STREAMED_APP_PACKAGE)).isEqualTo(PackageManager.PERMISSION_GRANTED);
+        }
+
+        // grant remote permission if needed
+        if (remotePermission) {
+            deviceContext.getPackageManager().grantRuntimePermission(STREAMED_APP_PACKAGE,
+                    RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
+
+            assertThat(deviceContext.getPackageManager().checkPermission(RECORD_AUDIO,
+                    STREAMED_APP_PACKAGE)).isEqualTo(PackageManager.PERMISSION_GRANTED);
+        }
+
+        // audio record succeeds on local device with permission and it doesn't without
+        verifyRecordAudioResulFromActivity(Display.DEFAULT_DISPLAY, localPermission,
+                "Record on local device.");
+
+        // audio record succeeds on remote device with permission and it doesn't without
+        verifyRecordAudioResulFromActivity(mVirtualDisplayId, remotePermission,
+                "Record on remote device.");
     }
 
     private void setupVirtualDevice(int audioPolicy) {
@@ -306,5 +428,30 @@ public class VirtualAudioPermissionTest {
             audioRecord.stop();
             audioRecord.release();
         }
+    }
+
+    public void verifyRecordAudioResulFromActivity(int displayId, boolean expected, String msg) {
+        launchRecordAudioActivity(displayId);
+
+        ArgumentCaptor<Bundle> bundle = ArgumentCaptor.forClass(Bundle.class);
+        verify(mResultReceiver, timeout(TIMEOUT_MILLIS)).onResult(bundle.capture());
+
+        if (bundle.getValue() != null
+                && bundle.getValue().containsKey(EXTRA_RECORD_AUDIO_SUCCESS)) {
+            assertEquals(msg, expected, bundle.getValue().getBoolean(EXTRA_RECORD_AUDIO_SUCCESS));
+        } else {
+            fail("RecordAudio didn't return a result!");
+        }
+    }
+
+    private void launchRecordAudioActivity(int displayId) {
+        RemoteCallback remoteCallback = new RemoteCallback(mResultReceiver);
+
+        Intent intent = new Intent()
+                .setComponent(RECORD_AUDIO_TEST_ACTIVITY)
+                .putExtra(EXTRA_RESULT_RECEIVER, remoteCallback)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        mVirtualDeviceRule.sendIntentToDisplay(intent, displayId);
     }
 }
