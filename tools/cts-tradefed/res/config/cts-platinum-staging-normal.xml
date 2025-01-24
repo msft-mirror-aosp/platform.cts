@@ -2679,14 +2679,15 @@
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.InstallSourceInfoTest#installViaAdbValidInstallerName"/>
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.IntentTest#cancelInstallation"/>
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.IntentTest#installWithAnotherInstallerPackageName"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[runtimePermissionDenied_Failure]"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[runtimePermissionGranted_Failure]"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[unknownPermissionDenied_Failure]"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[unknownPermissionGranted_Failure]"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#confirmFrpInstallationFails"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#confirmInstantInstallationFails"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#sessionWithImmutablePendingIntent"/>
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#withPrivilegedPermissions_canAccessResolvedPath"/>
+    <!-- CtsPackageInstallSessionTestCases -->
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[runtimePermissionDenied_Failure]"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[runtimePermissionGranted_Failure]"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[unknownPermissionDenied_Failure]"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionParamsPermissionStateTest#checkInstall[unknownPermissionGranted_Failure]"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionTest#confirmFrpInstallationFails"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionTest#confirmInstantInstallationFails"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionTest#sessionWithImmutablePendingIntent"/>
+    <option name="compatibility:include-filter" value="CtsPackageInstallSessionTestCases android.packageinstaller.install.cts.SessionTest#withPrivilegedPermissions_canAccessResolvedPath"/>
     <!-- CtsPackageManagerHostTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListCrossUserGrant"/>
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListCrossUserNoGrant"/>
