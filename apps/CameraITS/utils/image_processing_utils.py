@@ -24,7 +24,6 @@ import os
 import sys
 
 import capture_request_utils
-import opencv_processing_utils
 import preview_processing_utils
 import error_util
 import noise_model_constants
