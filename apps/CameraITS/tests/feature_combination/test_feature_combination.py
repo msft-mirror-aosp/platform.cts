@@ -430,7 +430,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   output_surfaces, fps_range, hlg10,
                   features_passed, streams_name, fps_range_tuple
               )
-              # Get result from future before continuning if desired
+              # Get result from future before continuing if desired
               if not self.parallel_execution:
                 future.result()
               feature_verification_futures.append(future)
