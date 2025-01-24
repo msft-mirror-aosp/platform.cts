@@ -424,4 +424,38 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         waiter.doWait(WAITFOR_MSEC);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActivePlayingMediaSessionAndNotificationReleaseItsSessionGoesToBg()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller and press play.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        // Play media for some time and then release the media session.
+        sleep(PLAY_TIMEOUT_MS);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_RELEASE_MEDIA_SESSION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
 }
