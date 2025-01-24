@@ -147,6 +147,19 @@ public class MediaCodecCryptoAsyncHelper {
         private final boolean mContentEncrypted;
     }
 
+    private static OutputSurface getOutputSurface(
+            int width, int height, boolean useHighBitDepth, boolean secure) {
+        OutputSurface outputSurface = null;
+        try {
+            outputSurface = new OutputSurface(width, height, useHighBitDepth, secure);
+        } catch (RuntimeException e) {
+            // Relaxing EGL errors as these tests are not meant
+            // to test EGL.
+            Assume.assumeTrue("Surface creation failed when using EGL", false);
+        }
+        return outputSurface;
+    }
+
     private static class SurfaceOutputSlotListener
             implements MediaCodecAsyncHelper.OutputSlotListener {
 
@@ -192,7 +205,7 @@ public class MediaCodecCryptoAsyncHelper {
                 slotQueue = new LinkedBlockingQueue<>();
         boolean isSecureDecodeASuccess = false;
         try {
-            outputSurface = new OutputSurface(1, 1, false, secure);
+            outputSurface = getOutputSurface(1, 1, false, secure);
             MediaFormat mediaFormat = mediaExtractor.getTrackFormat(
                     mediaExtractor.getSampleTrackIndex());
             String mime = mediaFormat.getString(MediaFormat.KEY_MIME);
@@ -310,7 +323,7 @@ public class MediaCodecCryptoAsyncHelper {
         final LinkedBlockingQueue<MediaCodecAsyncHelper.SlotEvent>
                 slotQueue = new LinkedBlockingQueue<>();
         try {
-            outputSurface = new OutputSurface(1, 1, false, secure);
+            outputSurface = getOutputSurface(1, 1, false, secure);
             MediaFormat mediaFormat = mediaExtractor.getTrackFormat(
                     mediaExtractor.getSampleTrackIndex());
             String mime = mediaFormat.getString(MediaFormat.KEY_MIME);
@@ -438,7 +451,7 @@ public class MediaCodecCryptoAsyncHelper {
        final LinkedBlockingQueue<MediaCodec.CryptoInfo>
               cryptoInfoQueue = new LinkedBlockingQueue<>();
         try {
-            outputSurface = new OutputSurface(1, 1, false, secure);
+            outputSurface = getOutputSurface(1, 1, false, secure);
             MediaFormat mediaFormat = mediaExtractor.getTrackFormat(
                     mediaExtractor.getSampleTrackIndex());
             String mime = mediaFormat.getString(MediaFormat.KEY_MIME);
