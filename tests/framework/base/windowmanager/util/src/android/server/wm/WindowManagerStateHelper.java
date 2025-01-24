@@ -44,10 +44,8 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.graphics.Rect;
-import android.server.wm.WindowManagerState.Activity;
 import android.text.TextUtils;
 import android.util.SparseArray;
-import android.view.InputEvent;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -511,21 +509,27 @@ public class WindowManagerStateHelper extends WindowManagerState {
 
     /**
      * Waits until the given activity is ready for input, this is only needed when directly
-     * injecting input on screen via
-     * {@link android.hardware.input.InputManager#injectInputEvent(InputEvent, int)}.
+     * injecting input on screen.
      */
-    public <T extends android.app.Activity> void waitUntilActivityReadyForInputInjection(T activity,
-            Instrumentation instrumentation, String tag, String windowDumpErrMsg)
-                    throws InterruptedException {
+    public <T extends android.app.Activity> void waitUntilActivityReadyForInputInjection(
+            T activity, Instrumentation instrumentation, String tag, String windowDumpErrMsg)
+            throws InterruptedException {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
-        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
+        assertTrue(
+                "Failed to wait for app transition to idle on display " + activity.getDisplayId(),
+                waitForAppTransitionIdleOnDisplay(activity.getDisplayId()));
+
+        waitForValidState(activity.getComponentName());
         instrumentation.getUiAutomation().syncInputTransactions();
         instrumentation.waitForIdleSync();
-        if (activity.getWindow() != null
-                && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
+
+        assertTrue(
+                "Failed to wait for window geometry to stabilize",
+                CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5)));
+        assertNotNull("Activity is not attached to a window", activity.getWindow());
+        if (!CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
             fail("Activity window did not become visible: " + activity);
         }
