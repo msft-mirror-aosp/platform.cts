@@ -74,6 +74,9 @@ class ItsBaseTest(base_test.BaseTestClass):
       self.debug_mode = self.user_params['debug_mode'] == 'True'
     if self.user_params.get('scene'):
       self.scene = self.user_params['scene']
+    self.parallel_execution = (
+        self.user_params.get('parallel_execution', 'True') == 'True'
+    )
     camera_id_combo = self.parse_hidden_camera_id()
     self.camera_id = camera_id_combo[0]
     if len(camera_id_combo) == 2:
