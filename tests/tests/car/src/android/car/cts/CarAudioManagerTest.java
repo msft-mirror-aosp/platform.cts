@@ -19,6 +19,7 @@ package android.car.cts;
 import static android.car.Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_AUDIO_MIRRORING;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_DYNAMIC_ROUTING;
+import static android.car.media.CarAudioManager.AUDIO_FEATURE_OEM_AUDIO_SERVICE;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_VOLUME_GROUP_EVENTS;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_VOLUME_GROUP_MUTING;
 import static android.car.media.CarAudioManager.AUDIO_MIRROR_CAN_ENABLE;
@@ -253,6 +254,7 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     @ApiTest(apis = {
             "android.car.media.CarAudioManager#registerCarVolumeCallback"})
     public void registerCarVolumeCallback_onGroupVolumeChanged() throws Exception {
+        assumeOemServiceIsDisabled();
         assumeDynamicRoutingIsEnabled();
         mCallback = new CarAudioManagerTestUtils.SyncCarVolumeCallback();
 
@@ -1893,6 +1895,11 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
     private void assumeDynamicRoutingIsDisabled() {
         assumeFalse("Requires dynamic audio routing disabled",
                 mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
+    }
+
+    private void assumeOemServiceIsDisabled() {
+        assumeFalse("Requires OEM service disabled",
+                mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_OEM_AUDIO_SERVICE));
     }
 
     private void assumeVolumeGroupMutingIsEnabled() {
