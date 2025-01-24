@@ -145,8 +145,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
   def _finish_combination(self, combination_name, is_stabilized, passed,
                           recording_obj, gyro_events, test_name, log_path,
-                          facing, output_surfaces, fps_range, hlg10, features_passed,
-                          streams_name, fps_range_tuple):
+                          facing, output_surfaces, fps_range, hlg10,
+                          features_passed, streams_name, fps_range_tuple):
     """Finish verifying a feature combo & preview stabilization if necessary."""
     result = {'name': combination_name,
               'output_surfaces': output_surfaces,
@@ -283,8 +283,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 continue
 
               # Check if the hlg10 is supported for size and fps
-              if hlg10 and not cam.is_hlg10_recording_supported_for_size_and_fps(
-                  preview_size, fps_range[1]):
+              if (hlg10 and
+                  not cam.is_hlg10_recording_supported_for_size_and_fps(
+                      preview_size, fps_range[1])
+                 ):
                 continue
 
               logging.debug('combination name: %s', combination_name)
@@ -325,12 +327,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               # the subset of those features are supported. Do not skip [60, *]
               # even if its superset feature passes (b/385753212).
               with self.features_passed_lock:
-                skip_test = (streams_name in features_passed and
+                skip_test = (
+                    streams_name in features_passed and
                     fps_range_tuple in features_passed[streams_name] and
                     fps_range[0] < 60 and
                     its_session_utils.check_features_passed(
                         features_passed, streams_name, fps_range_tuple,
-                        hlg10, is_stabilized))
+                        hlg10, is_stabilized)
+                )
                 if skip_test:
                   self._add_feature_combo_entry_to_proto(
                       database, output_surfaces, passed,
