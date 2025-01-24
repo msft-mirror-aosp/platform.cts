@@ -33,6 +33,8 @@ import android.service.settings.preferences.SettingsPreferenceServiceClient
 import android.service.settings.preferences.SettingsPreferenceValue
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.RequireHandheldDevice
 import com.android.bedstead.nene.TestApis
 import com.android.settingslib.flags.Flags.FLAG_SETTINGS_CATALYST
 import com.android.settingslib.flags.Flags.FLAG_WRITE_SYSTEM_PREFERENCE_PERMISSION_ENABLED
@@ -40,6 +42,7 @@ import com.google.common.truth.Truth
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.use
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,6 +55,7 @@ class PreferenceServiceTest {
     val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
+    @RequireHandheldDevice
     fun getAllPreferenceMetadata_retrievesPopulatedValidResult() {
         val possibleSensitivities = setOf(
             SettingsPreferenceMetadata.NO_SENSITIVITY,
@@ -70,6 +74,7 @@ class PreferenceServiceTest {
     }
 
     @Test
+    @RequireHandheldDevice
     fun getPreferenceValue_writablePreference_valueRetrievable() {
         val possibleTypes = setOf(
             SettingsPreferenceValue.TYPE_BOOLEAN,
@@ -103,6 +108,7 @@ class PreferenceServiceTest {
     }
 
     @Test
+    @RequireHandheldDevice
     fun setPreferenceValue_highSensitivityPreferences_failToWrite() {
         val prefs = metadata.filter {
             it.isWritable && it.writeSensitivity in setOf(
@@ -149,12 +155,16 @@ class PreferenceServiceTest {
     }
 
     companion object {
+        @get:ClassRule @get:Rule
+        val deviceState = DeviceState()
+
         // share state for tests as these should not change
         private lateinit var context: Context
         private lateinit var client: SettingsPreferenceServiceClient
         private lateinit var metadata: List<SettingsPreferenceMetadata>
 
         @com.android.bedstead.harrier.annotations.BeforeClass
+        @RequireHandheldDevice
         @JvmStatic
         fun setup() {
             val bindingLatch = CountDownLatch(1)
@@ -206,6 +216,7 @@ class PreferenceServiceTest {
         }
 
         @com.android.bedstead.harrier.annotations.AfterClass
+        @RequireHandheldDevice
         @JvmStatic
         fun teardown() {
             client.close()
