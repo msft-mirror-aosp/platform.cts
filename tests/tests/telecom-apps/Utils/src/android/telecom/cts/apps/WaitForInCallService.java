@@ -56,7 +56,7 @@ public class WaitForInCallService {
             return;
         }
         if (!containsCall) {
-            fail("call is not in map");
+            fail("call " + id + " is not in map - it may have been dropped");
         }
         assertCallState(targetCall, targetCallState);
     }

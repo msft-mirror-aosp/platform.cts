@@ -19,6 +19,7 @@ package android.telecom.cts.apps;
 import android.content.Context;
 import android.telecom.CallEndpoint;
 import android.telecom.Connection;
+import android.telecom.ConnectionService;
 import android.telecom.DisconnectCause;
 import android.telecom.VideoProfile;
 import android.util.Log;
@@ -32,16 +33,14 @@ public class ManagedConnection extends Connection {
     private boolean mIsMuted = false;
     private CallEndpoint mCallEndpoint = null;
     private List<CallEndpoint> mCallEndpoints = null;
-    private final Context mContext;
-    private final boolean mIsOutgoingCall;
+    private final ConnectionService mConnectionService;
+
     // Delegates the completion of call state transition operations to potentially another entity
     // to control the completion.
     private Consumer<CallStateTransitionOperation> mOperationConsumer;
 
-
-    public ManagedConnection(Context context, boolean isOutgoingCall) {
-        mContext = context;
-        mIsOutgoingCall = isOutgoingCall;
+    public ManagedConnection(ConnectionService service) {
+        mConnectionService = service;
     }
 
     public boolean isMuted() {
@@ -132,6 +131,14 @@ public class ManagedConnection extends Connection {
     @Override
     public void onAnswer(int videoState) {
         setVideoState(videoState);
+        // Special case - we expect the ConnectionService to handle holding an existing call if the
+        // new call is on the same PhoneAccount
+        for (Connection c : mConnectionService.getAllConnections()) {
+            if (c.getState() == STATE_ACTIVE) {
+                c.onHold();
+            }
+        }
+
         setActive();
         super.onAnswer(videoState);
         if (mOperationConsumer != null) {

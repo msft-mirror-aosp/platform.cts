@@ -29,6 +29,7 @@ public class ManagedConnectionService extends ConnectionService {
     private static final String LOG_TAG = "ManagedConnectionService";
     public static ManagedConnectionService sConnectionService;
     public static ManagedConnection sLastConnection = null;
+    public static ConnectionRequest sLastFailedRequest = null;
 
     @Override
     public void onBindClient(Intent intent) {
@@ -56,7 +57,13 @@ public class ManagedConnectionService extends ConnectionService {
                 .filter(c-> c.getState() != Connection.STATE_DISCONNECTED).count() > 1) {
             return Connection.createFailedConnection(new DisconnectCause(DisconnectCause.ERROR));
         }
-        makeRoomForNewConnection();
+        // Special case: for multiple call scenarios on the same PA, Telecom assumes the
+        // ConnectionService will handle holding the existing call.
+        for (Connection c : getAllConnections()) {
+            if (c.getState() == Connection.STATE_ACTIVE) {
+                c.onHold();
+            }
+        }
         return createConnection(request, true);
     }
 
@@ -65,6 +72,7 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateOutgoingConnectionFailed: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        sLastFailedRequest = request;
         super.onCreateOutgoingConnectionFailed(connectionManagerPhoneAccount, request);
     }
 
@@ -73,17 +81,6 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateIncomingConnection: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
-        // For calls from the same managed connection service, operations are handled at the
-        // connection service level.
-        if (getAllConnections().size() > 1) {
-            for (Connection c : getAllConnections()) {
-                if (c.getState() == Connection.STATE_HOLDING) {
-                    c.setDisconnected(new DisconnectCause(DisconnectCause.OTHER));
-                    break;
-                }
-            }
-        }
-        makeRoomForNewConnection();
         return createConnection(request, false);
     }
 
@@ -92,22 +89,12 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateIncomingConnectionFailed: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        sLastFailedRequest = request;
         super.onCreateIncomingConnectionFailed(connectionManagerPhoneAccount, request);
     }
 
-    /**
-     * Make sure that active calls are held for handling cases with calls from the same CS.
-     */
-    private void makeRoomForNewConnection() {
-        for (Connection c : getAllConnections()) {
-            if (c.getState() == Connection.STATE_ACTIVE) {
-                c.onHold();
-            }
-        }
-    }
-
     private Connection createConnection(ConnectionRequest request, boolean isOutgoing) {
-        ManagedConnection connection = new ManagedConnection(getApplicationContext(), isOutgoing);
+        ManagedConnection connection = new ManagedConnection(this);
         sLastConnection = connection;
 
         if (isOutgoing) {
