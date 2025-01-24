@@ -1484,6 +1484,26 @@ public class StrictModeTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
+    public void testBackgroundBalAborted_IgnoresViolation() throws Exception {
+        StrictMode.setVmPolicy(
+                new StrictMode.VmPolicy.Builder()
+                        .detectAll()
+                        .ignoreBlockedBackgroundActivityLaunch()
+                        .penaltyLog()
+                        .build());
+        Context context = getContext();
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setPendingIntentBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+        PendingIntent pi = PendingIntent.getActivity(
+                context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        assertThat(pi).isNotNull();
+        assertNoViolation(() -> pi.send(options.toBundle()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
     public void testBackgroundBalAborted_NoViolation() throws Exception {
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder()
