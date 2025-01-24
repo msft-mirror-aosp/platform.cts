@@ -1387,6 +1387,261 @@ CleanUp:
     return static_cast<jboolean>(isPass);
 }
 
+jboolean nativeTestAMediaCodecStoreGetSupportedTypes(JNIEnv* env, jobject,
+                                                     jobjectArray jMediaTypesArray,
+                                                     jintArray jModesArray, jobject jRetMsg) {
+    bool isPass = false;
+    if (__builtin_available(android 36, *)) {
+        const AMediaCodecSupportedMediaType* outMediaTypes = nullptr;
+        size_t outCount = 0;
+        std::string errorLogs;
+        jint* modesArray = env->GetIntArrayElements(jModesArray, nullptr);
+        jsize modesCount = env->GetArrayLength(jModesArray);
+        jstring jMediaType = nullptr;
+        const char* mediaType = nullptr;
+
+        auto status = AMediaCodecStore_getSupportedMediaTypes(nullptr, nullptr);
+        if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+            errorLogs.append(StringFormat("For invalid args, %s returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          "AMediaCodecSupportedMediaType", status));
+            goto CleanUp;
+        }
+        status = AMediaCodecStore_getSupportedMediaTypes(nullptr, &outCount);
+        if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+            errorLogs.append(StringFormat("For invalid args, %s returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          "AMediaCodecSupportedMediaType", status));
+            goto CleanUp;
+        }
+        status = AMediaCodecStore_getSupportedMediaTypes(&outMediaTypes, nullptr);
+        if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+            errorLogs.append(StringFormat("For invalid args, %s returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          "AMediaCodecSupportedMediaType", status));
+            goto CleanUp;
+        }
+        status = AMediaCodecStore_getSupportedMediaTypes(&outMediaTypes, &outCount);
+        if (status != AMEDIA_OK) {
+            errorLogs.append(StringFormat("%s returned %d, expected AMEDIA_OK\n",
+                                          "AMediaCodecSupportedMediaType", status));
+            goto CleanUp;
+        }
+        if (outCount != modesCount) {
+            errorLogs.append(StringFormat("%s returned %d supported media types, expected %d\n",
+                                          "AMediaCodecSupportedMediaType", outCount, modesCount));
+            goto CleanUp;
+        }
+        for (auto i = 0; i < modesCount; i++) {
+            jMediaType = (jstring)env->GetObjectArrayElement(jMediaTypesArray, i);
+            mediaType = env->GetStringUTFChars(jMediaType, nullptr);
+            bool found = false;
+            for (auto j = 0; j < outCount; j++) {
+                if (strcmp(outMediaTypes[j].mMediaType, mediaType) == 0) {
+                    found = true;
+                    if (outMediaTypes[j].mMode != modesArray[i]) {
+                        errorLogs.append(StringFormat("For mediaType %s, supported modes got is "
+                                                      "%d, expected %d \n",
+                                                      mediaType, outMediaTypes[j].mMode,
+                                                      modesArray[i]));
+                        goto CleanUp;
+                    }
+                }
+            }
+            if (!found) {
+                errorLogs.append(
+                        StringFormat("no entry seen for mediaType %s.\nAvailable entries are : ",
+                                     mediaType));
+                for (auto j = 0; j < outCount; j++) {
+                    errorLogs.append(StringFormat("%s, ", outMediaTypes[j].mMediaType));
+                }
+                goto CleanUp;
+            }
+            env->ReleaseStringUTFChars(jMediaType, mediaType);
+            mediaType = nullptr;
+        }
+        isPass = true;
+    CleanUp:
+        std::string msg = isPass ? std::string{} : errorLogs;
+        env->ReleaseIntArrayElements(jModesArray, modesArray, 0);
+        if (mediaType) env->ReleaseStringUTFChars(jMediaType, mediaType);
+        jclass clazz = env->GetObjectClass(jRetMsg);
+        jmethodID mId =
+                env->GetMethodID(clazz, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+        env->CallObjectMethod(jRetMsg, mId, env->NewStringUTF(msg.c_str()));
+    }
+    return static_cast<jboolean>(isPass);
+}
+
+jboolean nativeTestAMediaCodecStoreGetNextCodecsForFormat(JNIEnv* env, jobject,
+                                                          jstring jFormatString,
+                                                          jstring jFormatSeparator,
+                                                          jobjectArray jCodecs, jboolean isEncoder,
+                                                          jobject jRetMsg) {
+    bool isPass = false;
+    if (__builtin_available(android 36, *)) {
+        media_status_t (*func)(const AMediaFormat* format, const AMediaCodecInfo** outCodecInfo);
+        func = isEncoder ? AMediaCodecStore_findNextEncoderForFormat
+                         : AMediaCodecStore_findNextDecoderForFormat;
+        const char* label = isEncoder ? "AMediaCodecStore_findNextEncoderForFormat"
+                                      : "AMediaCodecStore_findNextDecoderForFormat";
+        std::string errorLogs;
+        const AMediaCodecInfo* outCodecInfo;
+        std::vector<const char*> codecs;
+        media_status_t status;
+        AMediaFormat* format = nullptr;
+        const char* formatString = nullptr;
+        const char* formatSeparator = nullptr;
+        const char* formatStringBeautify = "null format";
+        if (jFormatString != nullptr) {
+            formatString = env->GetStringUTFChars(jFormatString, nullptr);
+        }
+        if (jFormatSeparator != nullptr) {
+            formatSeparator = env->GetStringUTFChars(jFormatSeparator, nullptr);
+        }
+        if (formatString && formatSeparator) {
+            format = deSerializeMediaFormat(formatString, formatSeparator);
+            formatStringBeautify = AMediaFormat_toString(format);
+        }
+        jsize codecsCount = env->GetArrayLength(jCodecs);
+        jstring jCodec;
+        const char* codec = nullptr;
+        status = func(format, nullptr);
+        if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+            errorLogs.append(StringFormat("For invalid args, %s returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          label, status));
+            goto CleanUp;
+        }
+        outCodecInfo = nullptr;
+        if (format != nullptr) {
+            AMediaFormat* formatDup = AMediaFormat_new();
+            AMediaFormat_clear(formatDup);
+            status = func(formatDup, &outCodecInfo);
+            AMediaFormat_delete(formatDup);
+            if (status != AMEDIA_ERROR_INVALID_PARAMETER) {
+                if (outCodecInfo != nullptr) {
+                    errorLogs.append(
+                            StringFormat("%s returned %d but format does not have key - 'mime'. "
+                                         "expected AMEDIA_ERROR_INVALID_PARAMETER \n",
+                                         label, status));
+                    goto CleanUp;
+                }
+            }
+        }
+        while (1) {
+            status = func(format, &outCodecInfo);
+            if (status == AMEDIA_OK) {
+                if (outCodecInfo == nullptr) {
+                    errorLogs.append(StringFormat("%s returned AMEDIA_OK but outCodecInfo is "
+                                                  "pointing to nullptr \n",
+                                                  label));
+                    goto CleanUp;
+                }
+                codecs.push_back(AMediaCodecInfo_getCanonicalName(outCodecInfo));
+            } else if (status == AMEDIA_ERROR_UNSUPPORTED) {
+                if (outCodecInfo != nullptr) {
+                    errorLogs.append(StringFormat("%s returned AMEDIA_ERROR_UNSUPPORTED but "
+                                                  "outCodecInfo is not pointing to nullptr \n",
+                                                  label));
+                    goto CleanUp;
+                }
+                break;
+            }
+        }
+        if (codecs.size() != codecsCount) {
+            errorLogs.append(StringFormat("For format %s codecs %d supported, expected %d\n",
+                                          formatStringBeautify, codecs.size(), codecsCount));
+            goto CleanUp;
+        }
+        for (auto i = 0; i < codecsCount; i++) {
+            jCodec = (jstring)env->GetObjectArrayElement(jCodecs, i);
+            codec = env->GetStringUTFChars(jCodec, nullptr);
+            bool found = false;
+            for (auto j = 0; j < codecs.size(); j++) {
+                if (strcmp(codecs[j], codec) == 0) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                errorLogs.append(StringFormat("For format %s, sdk indicates %s is supported, but "
+                                              "ndk indicates otherwise. List of ndk entries, \n",
+                                              formatStringBeautify, codec));
+                for (auto j = 0; j < codecs.size(); j++) {
+                    errorLogs.append(StringFormat("%s, ", codecs[i]));
+                }
+                goto CleanUp;
+            }
+            env->ReleaseStringUTFChars(jCodec, codec);
+            codec = nullptr;
+        }
+        isPass = true;
+    CleanUp:
+        std::string msg = isPass ? std::string{} : errorLogs;
+        if (formatString) env->ReleaseStringUTFChars(jFormatString, formatString);
+        if (formatSeparator) env->ReleaseStringUTFChars(jFormatSeparator, formatSeparator);
+        if (format) AMediaFormat_delete(format);
+        if (codec) env->ReleaseStringUTFChars(jCodec, codec);
+        jclass clazz = env->GetObjectClass(jRetMsg);
+        jmethodID mId =
+                env->GetMethodID(clazz, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+        env->CallObjectMethod(jRetMsg, mId, env->NewStringUTF(msg.c_str()));
+    }
+    return static_cast<jboolean>(isPass);
+}
+
+jboolean nativeTestAMediaCodecStoreGetCodecInfo(JNIEnv* env, jobject, jobject retMsg) {
+    bool isPass = false;
+    if (__builtin_available(android 36, *)) {
+        std::string errorLogs;
+        media_status_t status;
+        const AMediaCodecInfo* outCodecInfo = nullptr;
+        status = AMediaCodecStore_getCodecInfo(nullptr, nullptr);
+        if (AMEDIA_ERROR_INVALID_PARAMETER != status) {
+            errorLogs.append(StringFormat("For null parameters, returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          status));
+            goto CleanUp;
+        }
+        status = AMediaCodecStore_getCodecInfo(nullptr, &outCodecInfo);
+        if (AMEDIA_ERROR_INVALID_PARAMETER != status) {
+            errorLogs.append(StringFormat("For null name parameter, returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          status));
+            goto CleanUp;
+        }
+        status = AMediaCodecStore_getCodecInfo("c2.android.avc.decoder", nullptr);
+        if (AMEDIA_ERROR_INVALID_PARAMETER != status) {
+            errorLogs.append(StringFormat("For null output parameter, returned %d, expected "
+                                          "AMEDIA_ERROR_INVALID_PARAMETER\n",
+                                          status));
+            goto CleanUp;
+        }
+        status = AMediaCodecStore_getCodecInfo("non.existent.codec", &outCodecInfo);
+        if (AMEDIA_ERROR_UNSUPPORTED != status) {
+            errorLogs.append(StringFormat("For non-existent codec, returned %d, expected "
+                                          "AMEDIA_ERROR_UNSUPPORTED\n",
+                                          status));
+            goto CleanUp;
+        }
+        if (outCodecInfo != nullptr) {
+            errorLogs.append("CodecInfo should be null for non-existent codec\n");
+            goto CleanUp;
+        }
+        isPass = true;
+    CleanUp:
+        std::string msg = isPass ? std::string{} : errorLogs;
+        jstring jErrorMsg = env->NewStringUTF(errorLogs.c_str());
+        jclass clazz = env->GetObjectClass(retMsg);
+        jmethodID mId =
+                env->GetMethodID(clazz, "append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;");
+        env->CallObjectMethod(retMsg, mId, jErrorMsg);
+        env->DeleteLocalRef(jErrorMsg);
+    }
+    return static_cast<jboolean>(isPass);
+}
+
 int registerAndroidMediaV2CtsNativeMediaCodecInfoUnitTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestAMediaCodecInfo",
@@ -1413,9 +1668,25 @@ int registerAndroidMediaV2CtsNativeMediaCodecInfoUnitTest(JNIEnv* env) {
     return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
 }
 
+int registerAndroidMediaV2CtsNativeMediaCodecStoreUnitTest(JNIEnv* env) {
+    const JNINativeMethod methodTable[] = {
+            {"nativeTestAMediaCodecStoreGetSupportedTypes",
+             "([Ljava/lang/String;[ILjava/lang/StringBuilder;)Z",
+             (void*)nativeTestAMediaCodecStoreGetSupportedTypes},
+            {"nativeTestAMediaCodecStoreGetNextCodecsForFormat",
+             "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;ZLjava/lang/StringBuilder;)Z",
+             (void*)nativeTestAMediaCodecStoreGetNextCodecsForFormat},
+            {"nativeTestAMediaCodecStoreGetCodecInfo", "(Ljava/lang/StringBuilder;)Z",
+             (void*)nativeTestAMediaCodecStoreGetCodecInfo},
+    };
+    jclass c = env->FindClass("android/mediav2/cts/NativeAMediaCodecStoreTest");
+    return env->RegisterNatives(c, methodTable, sizeof(methodTable) / sizeof(JNINativeMethod));
+}
+
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) return JNI_ERR;
     if (registerAndroidMediaV2CtsNativeMediaCodecInfoUnitTest(env) != JNI_OK) return JNI_ERR;
+    if (registerAndroidMediaV2CtsNativeMediaCodecStoreUnitTest(env) != JNI_OK) return JNI_ERR;
     return JNI_VERSION_1_6;
 }
