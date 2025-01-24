@@ -253,7 +253,9 @@ public class StrictModeTest {
                 info -> {
                     assertThat(info.getViolationDetails())
                             .isEqualTo(
-                                    "A resource was acquired at attached stack trace but never released. See java.io.Closeable for information on avoiding resource leaks.");
+                                    "A resource was acquired at attached stack trace but never"
+                                            + " released. See java.io.Closeable for information on"
+                                            + " avoiding resource leaks.");
                     assertThat(info.getStackTrace())
                             .contains("Explicit termination method 'close' not called");
                     assertThat(info.getStackTrace()).contains("leakCloseable");
@@ -660,8 +662,7 @@ public class StrictModeTest {
                                             .isAssignableTo(DiskWriteViolation.class);
                                     assertThat(info.getViolationDetails())
                                             .isNull(); // Disk write has no message.
-                                    assertThat(info.getStackTrace())
-                                            .contains("DiskWriteViolation");
+                                    assertThat(info.getStackTrace()).contains("DiskWriteViolation");
                                     assertThat(info.getStackTrace())
                                             .contains(
                                                     "at android.os.StrictMode$AndroidBlockGuardPolicy.onWriteToDisk");
@@ -1496,8 +1497,8 @@ public class StrictModeTest {
         options.setPendingIntentBackgroundActivityStartMode(
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
         Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-        PendingIntent pi = PendingIntent.getActivity(
-                context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pi =
+                PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         assertThat(pi).isNotNull();
         assertNoViolation(() -> pi.send(options.toBundle()));
     }
