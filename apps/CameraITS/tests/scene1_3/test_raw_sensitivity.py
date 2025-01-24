@@ -83,7 +83,9 @@ class RawSensitivityTest(its_base_test.ItsBaseTest):
         req = capture_request_utils.manual_capture_request(s, e, 0)
 
         # Capture in rawStats to reduce test run time
-        fmt = its_session_utils.define_raw_stats_fmt_exposure(props, _IMG_STATS_GRID)
+        fmt = its_session_utils.define_raw_stats_fmt_exposure(
+            props, _IMG_STATS_GRID
+        )
         caps = cam.do_capture([req]*_NUM_FRAMES, fmt)
         image_processing_utils.assert_capture_width_and_height(
             caps[0], _IMG_STATS_GRID, _IMG_STATS_GRID

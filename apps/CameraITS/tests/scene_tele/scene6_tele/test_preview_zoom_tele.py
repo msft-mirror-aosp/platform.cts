@@ -77,7 +77,7 @@ def _get_test_tols(cam, props, chart_distance, debug):
     fls = props['android.lens.info.availableFocalLengths']
     for fl in fls:
       test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
-                        zoom_capture_utils.OFFSET_RTOL)
+                       zoom_capture_utils.OFFSET_RTOL)
   logging.debug('Threshold levels to be used for testing: %s', test_tols)
   return test_tols
 
@@ -118,7 +118,7 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
       camera_properties_utils.check_front_or_rear_camera(props)
 
       # set TOLs based on camera and test rig params
-      test_tols = _get_test_tols(cam, props,self.chart_distance, debug)
+      test_tols = _get_test_tols(cam, props, self.chart_distance, debug)
 
       # get max preview size
       preview_size = preview_processing_utils.get_max_preview_test_size(
