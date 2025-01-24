@@ -24,6 +24,7 @@ import static android.app.NotificationChannel.PROMOTIONS_ID;
 import static android.service.notification.Adjustment.KEY_CONTEXTUAL_ACTIONS;
 import static android.service.notification.Adjustment.KEY_IMPORTANCE;
 import static android.service.notification.Adjustment.KEY_SENSITIVE_CONTENT;
+import static android.service.notification.Adjustment.KEY_SUMMARIZATION;
 import static android.service.notification.Adjustment.KEY_TEXT_REPLIES;
 import static android.service.notification.Adjustment.KEY_TYPE;
 import static android.service.notification.Adjustment.TYPE_NEWS;
@@ -55,6 +56,9 @@ import android.app.stubs.shared.TestNotificationAssistant;
 import android.app.stubs.shared.TestNotificationListener;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -69,6 +73,7 @@ import android.service.notification.Flags;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.util.ArraySet;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -89,8 +94,10 @@ import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -1095,5 +1102,68 @@ public class NotificationAssistantServiceTest {
 
         mNotificationManager.deleteNotificationChannel(PROMOTIONS_ID);
         assertThat(mNotificationManager.getNotificationChannel(PROMOTIONS_ID)).isNotNull();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_NM_SUMMARIZATION)
+    public void testSummarizeNotification() throws Exception {
+        String SHARE_SHORTCUT_ID = "shareShortcut";
+        String SUMMARIZATION = "This is a summarization. It's pretty long, right? Like, two lines "
+                + "long? Maybe even a little longer?";
+        setUpListeners();
+
+        Person person = new Person.Builder()
+                .setBot(false)
+                .setIcon(Icon.createWithResource(mContext, ICON_ID))
+                .setName("Person A")
+                .setImportant(true)
+                .build();
+
+        Set<String> categorySet = new ArraySet<>();
+        categorySet.add("testSummarizeNotification");
+        Intent shortcutIntent = new Intent(mContext, BubbleActivity.class);
+        shortcutIntent.setAction(Intent.ACTION_VIEW);
+
+        ShortcutInfo shortcut = new ShortcutInfo.Builder(mContext, SHARE_SHORTCUT_ID)
+                .setShortLabel(SHARE_SHORTCUT_ID)
+                .setIcon(Icon.createWithResource(mContext, ICON_ID))
+                .setIntent(shortcutIntent)
+                .setPerson(person)
+                .setCategories(categorySet)
+                .setLongLived(true)
+                .build();
+
+        ShortcutManager scManager = mContext.getSystemService(ShortcutManager.class);
+        scManager.addDynamicShortcuts(Arrays.asList(shortcut));
+
+        Notification n = new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle("foo")
+                .setShortcutId(SHARE_SHORTCUT_ID)
+                .setStyle(new Notification.MessagingStyle(person)
+                        .setConversationTitle("Bubble Chat")
+                        .addMessage("Hello?",
+                                SystemClock.currentThreadTimeMillis() - 300000, person)
+                        .addMessage("Is it me you're looking for?",
+                                SystemClock.currentThreadTimeMillis(), person)
+                )
+                .setSmallIcon(ICON_ID)
+                .build();
+
+        mNotificationManager.notify(1, n);
+        StatusBarNotification sbn = mHelper.findPostedNotification(
+                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+
+        Bundle signals = new Bundle();
+        signals.putString(KEY_SUMMARIZATION, SUMMARIZATION);
+        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+        CountDownLatch rankingUpdateLatch =
+                mNotificationListenerService.setRankingUpdateCountDown(1);
+        mAssistant.adjustNotification(adjustment);
+        rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        assertEquals(SUMMARIZATION, out.getSummarization());
+
     }
 }
