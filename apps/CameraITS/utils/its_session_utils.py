@@ -1664,11 +1664,14 @@ class ItsSession(object):
     for zoom_ratio in zoom_ratios:
       ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
       # Get physical ID
-      physical_camera_id = int(
-          dut.ui(
-              res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
-      )
-      logging.debug('Physical camera ID: %d', physical_camera_id)
+      try:
+        physical_camera_id = int(
+            dut.ui(
+                res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
+        )
+        logging.debug('Physical camera ID: %d', physical_camera_id)
+      except ValueError:
+        physical_camera_id = None
       physical_camera_ids.append(physical_camera_id)
       # Take capture
       dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
@@ -3274,3 +3277,15 @@ def mark_features_passed(
     features_passed[streams_name][fps_range_tuple].append(feature_mask)
   else:
     features_passed.setdefault(streams_name, {}).setdefault(fps_range_tuple, [feature_mask])
+
+
+def define_raw_stats_fmt_exposure(props, img_stats_grid):
+  """Define format with active array width and height."""
+  aa_width = (props['android.sensor.info.preCorrectionActiveArraySize']['right'] -
+         props['android.sensor.info.preCorrectionActiveArraySize']['left'])
+  aa_height = (props['android.sensor.info.preCorrectionActiveArraySize']['bottom'] -
+         props['android.sensor.info.preCorrectionActiveArraySize']['top'])
+  logging.debug('Active array W,H: %d,%d', aa_width, aa_height)
+  return {'format': 'rawStats',
+          'gridWidth': aa_width // img_stats_grid,
+          'gridHeight': aa_height // img_stats_grid}

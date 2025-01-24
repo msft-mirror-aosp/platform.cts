@@ -48,9 +48,6 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_CELLULAR_2G)
 public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
-    // TODO(b/369361373): Replace sleep with a callback to ensure the restriction is set by the time
-    //  we check it.
-    private static final int TIMEOUT_S = 1;
     private UserManager mUserManager;
 
     @Override
@@ -113,13 +110,6 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
         return false;
     }
 
-    private void setAdvancedProtectionModeEnabled(boolean enabled) {
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                mManager,
-                (m) -> m.setAdvancedProtectionEnabled(enabled),
-                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
-    }
-
     private long getNumFeatures() {
         return ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mManager,
@@ -173,9 +163,8 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     public void testEnableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
 
-        setAdvancedProtectionModeEnabled(true);
+        setAdvancedProtectionEnabled(true);
 
-        Thread.sleep(TIMEOUT_S * 1000);
         assertTrue(
                 "The DISALLOW_CELLULAR_2G restriction is not set",
                 mUserManager.hasUserRestriction(DISALLOW_CELLULAR_2G));
@@ -190,9 +179,8 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     public void testDisableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
 
-        setAdvancedProtectionModeEnabled(false);
+        setAdvancedProtectionEnabled(false);
 
-        Thread.sleep(TIMEOUT_S * 1000);
         assertFalse(
                 "The DISALLOW_CELLULAR_2G restriction is set",
                 mUserManager.hasUserRestriction(DISALLOW_CELLULAR_2G));

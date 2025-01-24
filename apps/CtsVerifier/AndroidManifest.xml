@@ -4406,30 +4406,30 @@
         </activity>
 
         <activity
-            android:name=".InteractiveTestsActivity"
+            android:name=".HostTestsActivity"
             android:exported="true"
-            android:label="@string/interactive_tests_title">
+            android:label="@string/host_tests_title">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data
                 android:name="test_category"
-                android:value="@string/test_category_interactive" />
+                android:value="@string/test_category_host" />
             <meta-data
                 android:name="display_mode"
                 android:value="single_display_mode" />
             <meta-data
                 android:name="NonApiTest"
-                android:value="Helper class. List interactive modules." />
+                android:value="Helper class. List host-side modules." />
         </activity>
 
         <activity
-            android:name=".InteractiveTestListActivity"
-            android:label="@string/interactive_tests_title">
+            android:name=".HostTestListActivity"
+            android:label="@string/host_tests_title">
             <meta-data
                 android:name="NonApiTest"
-                android:value="Helper class. List interactive testcases." />
+                android:value="Helper class. List host-side testcases." />
         </activity>
 
 <!-- TODO: enable when not requiring to tap the screen and timeouts are tuned -->

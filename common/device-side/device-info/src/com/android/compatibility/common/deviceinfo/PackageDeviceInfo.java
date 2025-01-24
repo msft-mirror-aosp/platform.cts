@@ -446,9 +446,15 @@ public class PackageDeviceInfo extends DeviceInfo {
 
     private static void collectSharedUidAllowlistEnabled(@NonNull DeviceInfoStore store)
             throws IOException {
-        Boolean enabled = FeatureFlagUtils.isFeatureFlagEnabled(
-                "package_manager_service/android.content.pm.restrict_nonpreloads_system_shareduids",
-                "system");
+        Boolean enabled;
+        if (SdkLevel.isAtLeastB()) {
+            enabled = FeatureFlagUtils.isFeatureFlagEnabled("android.content.pm",
+                    "restrict_nonpreloads_system_shareduids");
+        } else {
+            enabled = FeatureFlagUtils.isFeatureFlagEnabledOnV(
+                    "package_manager_service/android.content.pm.restrict_nonpreloads_system_shareduids",
+                    "system");
+        }
         if (enabled == null) {
             Log.e(LOG_TAG, "Failed to check whether shared UID allowlist is enabled");
             return;

@@ -51,7 +51,9 @@ class DeviceEventTest : CoreTestBase() {
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
 
-        cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        }
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
@@ -69,8 +71,9 @@ class DeviceEventTest : CoreTestBase() {
         )
 
         PrimaryCompanionService.forgetDevicePresence(associationId)
-
-        cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        }
     }
 
     @Test
@@ -78,7 +81,9 @@ class DeviceEventTest : CoreTestBase() {
         targetApp.associate(MAC_ADDRESS_A)
         val idA = cdm.myAssociations[0].id
 
-        cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        }
 
         simulateDeviceEvent(idA, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitAssociationToBtConnect(idA)
@@ -96,8 +101,9 @@ class DeviceEventTest : CoreTestBase() {
         )
 
         PrimaryCompanionService.forgetDevicePresence(idA)
-
-        cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        }
     }
 
     @Test
@@ -105,7 +111,9 @@ class DeviceEventTest : CoreTestBase() {
         targetApp.associate(MAC_ADDRESS_A)
         val associationId = cdm.myAssociations[0].id
 
-        cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.startObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        }
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
@@ -128,7 +136,8 @@ class DeviceEventTest : CoreTestBase() {
                 ?.let { assertDevicePresenceEvent(EVENT_BLE_DISAPPEARED, it) }
 
         PrimaryCompanionService.forgetDevicePresence(associationId)
-
-        cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {
+            cdm.stopObservingDevicePresence(MAC_ADDRESS_A.toUpperCaseString())
+        }
     }
 }

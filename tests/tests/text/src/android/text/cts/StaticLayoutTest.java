@@ -1786,4 +1786,19 @@ public class StaticLayoutTest {
 
         assertEquals(1, layout.getLineCount());
     }
+
+    // b/391378120
+    @Test
+    public void testUseBoundsForWidthMemberCleared() {
+        TextPaint paint = new TextPaint();
+        paint.setTextSize(32f);
+        StaticLayout.Builder b = StaticLayout.Builder.obtain("a", 0, 1, paint, 1024);
+        b.setUseBoundsForWidth(true);
+        b.build(); // build() method recycle the Builder class
+
+        // On the second time, the previous instance is used. Check the useBoundsForWidth state.
+        b = StaticLayout.Builder.obtain("a", 0, 1, paint, 1024);
+        Layout layout = b.build();
+        assertFalse(layout.getUseBoundsForWidth());
+    }
 }

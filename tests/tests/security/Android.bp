@@ -304,5 +304,5 @@ test_module_config {
     name: "CtsSecurityTestCases_cts_advancedprotectiontest",
     base: "CtsSecurityTestCases",
     test_suites: ["general-tests"],
-    include_filters: ["android.security.cts.AdvancedProtectionManagerTest"],
+    include_filters: ["android.security.cts.advancedprotection."],
 }

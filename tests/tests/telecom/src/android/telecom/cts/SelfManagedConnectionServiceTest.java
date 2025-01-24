@@ -114,12 +114,14 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
             CtsSelfManagedConnectionService connectionService =
                     CtsSelfManagedConnectionService.getConnectionService();
+            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_1);
+            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_2);
+            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_3);
+            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_4);
             if (connectionService != null) {
                 connectionService.tearDown();
-                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_1);
-                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_2);
-                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_3);
-                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_4);
+            } else {
+                Log.d(TAG, "tearDown: connectionService is null");
             }
         }
         super.tearDown();
@@ -781,6 +783,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         } finally {
             unregisterSimPhoneAccount();
             if (selfManagedConnection != null) {
+                selfManagedConnection.getInterface().disconnectConnection();
                 tearDownControl(selfManagedConnection);
             }
         }
@@ -1525,50 +1528,55 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
             return;
         }
 
-        // register a self-managed phone account from self-managed CS test app
-        TestServiceConnection conn = bindExternalSelfManagedServiceAndRegister(
-                TestUtils.TEST_SELF_MANAGED_CS_1_PHONE_ACCOUNT_3);
-
-        // place a self-managed call
-        conn.getInterface().initiateIncomingCall(
-                TestUtils.TEST_SELF_MANAGED_CS_1_HANDLE_3, TEST_ADDRESS_2.toString());
-
-        // Wait for Telecom to finish creating the new connection.
+        TestServiceConnection conn = null;
+        Call call = null;
         try {
-            TestUtils.waitOnAllHandlers(getInstrumentation());
-        } catch (Exception e) {
-            fail("Failed to wait on handlers");
+            // register a self-managed phone account from self-managed CS test app
+            conn =
+                    bindExternalSelfManagedServiceAndRegister(
+                            TestUtils.TEST_SELF_MANAGED_CS_1_PHONE_ACCOUNT_3);
+
+            // place a self-managed call
+            conn.getInterface()
+                    .initiateIncomingCall(
+                            TestUtils.TEST_SELF_MANAGED_CS_1_HANDLE_3, TEST_ADDRESS_2.toString());
+
+            // Wait for Telecom to finish creating the new connection.
+            try {
+                TestUtils.waitOnAllHandlers(getInstrumentation());
+            } catch (Exception e) {
+                fail("Failed to wait on handlers");
+            }
+
+            assertTrue(conn.getInterface().waitForBinding());
+
+            conn.getInterface().setConnectionCapabilityNoHold();
+
+            conn.getInterface().setConnectionActive();
+
+            assertEquals(Connection.STATE_ACTIVE, conn.getInterface().getConnectionState());
+
+            // add new managed call
+            addAndVerifyNewIncomingCall(createTestNumber(), null);
+            Connection connection = verifyConnectionForIncomingCall();
+
+            assertConnectionState(connection, Connection.STATE_RINGING);
+            assertEquals(Connection.STATE_ACTIVE, conn.getInterface().getConnectionState());
+
+            // answer the incoming call
+            MockInCallService inCallService = mInCallCallbacks.getService();
+            call = inCallService.getLastCall();
+
+            call.answer(VideoProfile.STATE_AUDIO_ONLY);
+
+            assertConnectionState(connection, Connection.STATE_ACTIVE);
+
+            assertTrue(conn.getInterface().waitOnDisconnect());
+            assertEquals(Connection.STATE_DISCONNECTED, conn.getInterface().getConnectionState());
+        } finally {
+            if (conn != null) tearDownControl(conn);
+            if (call != null) call.disconnect();
         }
-
-        assertTrue(conn.getInterface().waitForBinding());
-
-        conn.getInterface().setConnectionCapabilityNoHold();
-
-        conn.getInterface().setConnectionActive();
-
-        assertEquals(Connection.STATE_ACTIVE, conn.getInterface().getConnectionState());
-
-        // add new managed call
-        addAndVerifyNewIncomingCall(createTestNumber(), null);
-        Connection connection = verifyConnectionForIncomingCall();
-
-        assertConnectionState(connection, Connection.STATE_RINGING);
-        assertEquals(Connection.STATE_ACTIVE, conn.getInterface().getConnectionState());
-
-        // answer the incoming call
-        MockInCallService inCallService = mInCallCallbacks.getService();
-        Call call = inCallService.getLastCall();
-
-        call.answer(VideoProfile.STATE_AUDIO_ONLY);
-
-        assertConnectionState(connection, Connection.STATE_ACTIVE);
-
-        assertTrue(conn.getInterface().waitOnDisconnect());
-        assertEquals(Connection.STATE_DISCONNECTED, conn.getInterface().getConnectionState());
-
-        tearDownControl(conn);
-
-        call.disconnect();
     }
 
     /**

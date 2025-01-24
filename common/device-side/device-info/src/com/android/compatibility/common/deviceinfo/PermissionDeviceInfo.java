@@ -105,9 +105,15 @@ public class PermissionDeviceInfo extends DeviceInfo {
 
     private static void collectSignaturePermissionAllowlistEnabled(@NonNull DeviceInfoStore store)
             throws IOException {
-        Boolean enabled = FeatureFlagUtils.isFeatureFlagEnabled(
-                "permissions/android.permission.flags.signature_permission_allowlist_enabled",
-                "system");
+        Boolean enabled;
+        if (SdkLevel.isAtLeastB()) {
+            enabled = FeatureFlagUtils.isFeatureFlagEnabled("android.permission.flags",
+                    "signature_permission_allowlist_enabled");
+        } else {
+            enabled = FeatureFlagUtils.isFeatureFlagEnabledOnV(
+                    "permissions/android.permission.flags.signature_permission_allowlist_enabled",
+                    "system");
+        }
         if (enabled == null) {
             Log.e(LOG_TAG, "Failed to check whether signature permission allowlist is enabled");
             return;

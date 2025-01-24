@@ -19,7 +19,7 @@ package {
 }
 
 java_library_host {
-    name: "cts-interactive-tradefed-harness",
+    name: "cts-v-host-tradefed-harness",
 
     java_resource_dirs: ["res"],
     libs: [
@@ -32,11 +32,11 @@ java_library_host {
 }
 
 tradefed_binary_host {
-    name: "cts-interactive-tradefed",
-    wrapper: "etc/cts-interactive-tradefed",
-    short_name: "CTS-INTERACTIVE",
-    full_name: "Compatibility Test Suite Interactive",
+    name: "cts-v-host-tradefed",
+    wrapper: "etc/cts-v-host-tradefed",
+    short_name: "CTS-V-HOST",
+    full_name: "Compatibility Test Suite Verifier Host",
     version: "15_r1",
-    static_libs: ["cts-interactive-tradefed-harness"],
+    static_libs: ["cts-v-host-tradefed-harness"],
     required: ["compatibility-host-util"],
 }

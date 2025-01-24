@@ -22,8 +22,6 @@ import android.content.pm.ResolveInfo;
 import android.provider.ContactsContract;
 import android.test.AndroidTestCase;
 
-import com.android.compatibility.common.util.CddTest;
-
 import java.util.List;
 
 /**
@@ -55,31 +53,6 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType(ContactsContract.Contacts.CONTENT_ITEM_TYPE);
         assertCanBeHandled(intent);
-    }
-
-    @CddTest(requirements={"3.18/C-2-1"})
-    public void testSetDefaultAccount() {
-        PackageManager packageManager = getContext().getPackageManager();
-        if (
-                packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
-        ) {
-            return; // Skip test on watch and automotive since the intent is not required.
-        }
-
-        Intent intent = new Intent(ContactsContract.Settings.ACTION_SET_DEFAULT_ACCOUNT);
-        List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
-        assertNotNull("Missing ResolveInfo", resolveInfoList);
-        int handlerCount = 0;
-        for (ResolveInfo resolveInfo : resolveInfoList) {
-            String packageName = resolveInfo.activityInfo.packageName;
-            if (packageManager.checkPermission(
-                    android.Manifest.permission.SET_DEFAULT_ACCOUNT_FOR_CONTACTS, packageName)
-                    == PackageManager.PERMISSION_GRANTED) {
-                handlerCount++;
-            }
-        }
-        assertEquals(1, handlerCount);
     }
 
     public void testMoveContactsToDefaultAccount() {

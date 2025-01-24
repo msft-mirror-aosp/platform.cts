@@ -16,11 +16,15 @@
 
 package com.android.compatibility.common.deviceinfo;
 
+import android.os.Build;
+import android.os.flagging.AconfigPackage;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 
 import com.android.compatibility.common.util.SystemUtil;
 
-// TODO(b/362562898): Convert this to use a proper test API when that becomes available.
 /**
  * Utility methods for collecting feature flag information.
  */
@@ -29,7 +33,28 @@ public final class FeatureFlagUtils {
     private FeatureFlagUtils() {}
 
     /**
-     * Check if a feature flag is enabled in a certain mount point or device config.
+     * Check if a feature flag is enabled.
+     *
+     * @param packageName the name of the aconfig package
+     * @param flagName the name of the feature flag
+     *
+     * @return whether the feature flag is enabled, or {@code null} if unknown
+     */
+    @Nullable
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    public static Boolean isFeatureFlagEnabled(@NonNull String packageName,
+            @NonNull String flagName) {
+        AconfigPackage aconfigPackage = AconfigPackage.load(packageName);
+        boolean defaultTrueValue = aconfigPackage.getBooleanFlagValue(flagName, true);
+        boolean defaultFalseValue = aconfigPackage.getBooleanFlagValue(flagName, false);
+        if (defaultTrueValue != defaultFalseValue) {
+            return null;
+        }
+        return defaultFalseValue;
+    }
+
+    /**
+     * Check if a feature flag is enabled on V, before we had the {@link AconfigPackage} API.
      *
      * @param featureFlagName the name of the feature flag
      * @param mountPoint the mount point to check (e.g. {@code "system"}), or
@@ -37,7 +62,8 @@ public final class FeatureFlagUtils {
      *
      * @return whether the feature flag is enabled, or {@code null} if unknown
      */
-    public static Boolean isFeatureFlagEnabled(@NonNull String featureFlagName,
+    @Nullable
+    public static Boolean isFeatureFlagEnabledOnV(@NonNull String featureFlagName,
             @NonNull String mountPoint) {
         final String[] lines = SystemUtil.runShellCommand("printflags").trim().split("\n");
         String featureFlag = "";

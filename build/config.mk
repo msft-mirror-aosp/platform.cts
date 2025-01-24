@@ -16,8 +16,8 @@
 # directory before creating the final CTS distribution.
 COMPATIBILITY_TESTCASES_OUT_cts := $(HOST_OUT)/cts/android-cts/testcases
 COMPATIBILITY_TESTCASES_OUT_INCLUDE_MODULE_FOLDER_cts := true
-COMPATIBILITY_TESTCASES_OUT_cts-interactive := $(HOST_OUT)/cts-interactive/android-cts-interactive/testcases
-COMPATIBILITY_TESTCASES_OUT_INCLUDE_MODULE_FOLDER_cts-interactive := true
+COMPATIBILITY_TESTCASES_OUT_cts-v-host := $(HOST_OUT)/cts-v-host/android-cts-v-host/testcases
+COMPATIBILITY_TESTCASES_OUT_INCLUDE_MODULE_FOLDER_cts-v-host := true
 
 # CTS build rules
 BUILD_COMPATIBILITY_SUITE := cts/build/compatibility_test_suite.mk

@@ -847,6 +847,25 @@ public abstract class CodecTestBase {
         return isFormatSimilar(refFormat, testFormat);
     }
 
+    public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+            if (codecName.equals(codecInfo.getName())) {
+                return codecInfo.getCapabilitiesForType(mediaType);
+            }
+        }
+        return null;
+    }
+
+    public static int getMaxSupportedInstances(String codecName, String mediaType) {
+        CodecCapabilities caps = getCodecCapabilities(codecName, mediaType);
+        return caps != null ? caps.getMaxSupportedInstances() : 0;
+    }
+
+    public static boolean isFeatureRequired(String codecName, String mediaType, String feature) {
+        CodecCapabilities caps = getCodecCapabilities(codecName, mediaType);
+        return caps != null && caps.isFeatureRequired(feature);
+    }
+
     /**
      * Stop the current codec session and transfer component to uninitialized state.
      * <p>
