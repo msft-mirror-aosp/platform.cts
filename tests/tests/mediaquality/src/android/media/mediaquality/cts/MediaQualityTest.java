@@ -56,6 +56,7 @@ import org.mockito.Mockito;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -599,6 +600,26 @@ public class MediaQualityTest {
                         .build();
 
         assumeTrue(params.areParametersIncluded());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testAddActiveProcessingPictureListener() {
+        mManager.addActiveProcessingPictureListener(
+                Executors.newSingleThreadExecutor(), Mockito.mock(Consumer.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testRemoveActiveProcessingPictureListener() {
+        mManager.removeActiveProcessingPictureListener(Mockito.mock(Consumer.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testAddGlobalActiveProcessingPictureListener() {
+        mManager.addGlobalActiveProcessingPictureListener(
+                Executors.newSingleThreadExecutor(), Mockito.mock(Consumer.class));
     }
 
     private PictureProfile getTestPictureProfile(String methodName) {
