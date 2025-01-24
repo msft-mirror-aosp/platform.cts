@@ -121,6 +121,10 @@ class PointerIconTest {
     @After
     fun tearDown() {
         device.tearDown()
+        // Have the virtual device rule re-acquire the permissions needed for its tear-down logic.
+        // VirtualDisplayActivityScenario.Rule drops the shell identity, which makes the virtual
+        // device rule lose its required permissions.
+        virtualDeviceRule.acquireNecessaryPermissions()
     }
 
     @Test

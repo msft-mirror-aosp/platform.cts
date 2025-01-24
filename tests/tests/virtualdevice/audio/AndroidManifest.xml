@@ -17,11 +17,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.virtualdevice.cts.audio">
 
-    <uses-feature android:name="android.software.companion_device_setup" />
-
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
-    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
 
     <application>
         <activity

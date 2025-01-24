@@ -39,7 +39,6 @@ import android.view.MotionEvent.ACTION_DOWN
 import android.view.MotionEvent.ACTION_UP
 import android.view.View
 import android.view.ViewTreeObserver
-import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -72,10 +71,6 @@ class TouchModeTest {
     private val uiDevice: UiDevice = UiDevice.getInstance(instrumentation)
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
-
-    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
-    @get:Rule
-    val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
 
     @get:Rule
     val activityRule = ActivityScenarioRule<Activity>(Activity::class.java)
@@ -267,9 +262,11 @@ class TouchModeTest {
     @Test
     fun testTouchModeUpdate_DisplayHasOwnFocus() {
         assumeTrue(isRunningActivitiesOnSecondaryDisplaysSupported())
-        val secondaryDisplayId = createVirtualDisplay(
-                VIRTUAL_DISPLAY_FLAG_OWN_FOCUS or VIRTUAL_DISPLAY_FLAG_TRUSTED
-        )
+        var secondaryDisplayId = 0
+        SystemUtil.runWithShellPermissionIdentity({
+            secondaryDisplayId = createVirtualDisplay(
+                VIRTUAL_DISPLAY_FLAG_OWN_FOCUS or VIRTUAL_DISPLAY_FLAG_TRUSTED)
+        }, Manifest.permission.ADD_TRUSTED_DISPLAY)
 
         touchDownOnDefaultDisplay().use {
             PollingCheck.waitFor({ isInTouchMode() }, "Expected to be in touch mode")

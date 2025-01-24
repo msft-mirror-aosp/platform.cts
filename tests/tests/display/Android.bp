@@ -35,7 +35,6 @@ android_test {
         "flag-junit",
         "bedstead",
         "CtsSurfaceValidatorLib",
-        "CtsVirtualDeviceCommonLib",
         "android.companion.virtualdevice.flags-aconfig-java",
         "display_flags_lib",
         "junit-params",
