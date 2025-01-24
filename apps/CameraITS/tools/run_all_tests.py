@@ -640,8 +640,7 @@ def main():
       if scenes == ['scene_ip']:
         if TEST_KEY_GEN2 not in name:
           testbed_to_remove.append(i)
-      elif scenes in (['sensor_fusion'], ['checkerboard'], ['scene_flash'],
-                      ['feature_combination']):
+      elif set(scenes).intersection(set(_CHECKERBOARD_SCENES)):
         if TEST_KEY_SENSOR_FUSION not in name:
           testbed_to_remove.append(i)
       else:
@@ -778,16 +777,14 @@ def main():
 
     # Run through all scenes if user does not supply one and config file doesn't
     # have specific scene name listed.
-    if its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
+    if TEST_KEY_SENSOR_FUSION in config_file_test_key:
+      possible_scenes = _CHECKERBOARD_SCENES
+    elif its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
       possible_scenes = list(SUB_CAMERA_TESTS.keys())
       if auto_scene_switch:
         possible_scenes.remove('sensor_fusion')
     else:
-      if 'checkerboard' in scenes:
-        possible_scenes = _CHECKERBOARD_SCENES
-      elif 'scene_flash' in scenes:
-        possible_scenes = _FLASH_SCENES
-      elif 'scene_extensions' in scenes:
+      if 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
       elif 'scene_tele' in scenes:
         possible_scenes = _TELE_SCENES
@@ -795,7 +792,6 @@ def main():
         possible_scenes = _GEN2_RIG_SCENES
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
-
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or
         'scene_extensions' in scenes or 'scene_tele' in scenes
         or 'scene_ip' in scenes):
