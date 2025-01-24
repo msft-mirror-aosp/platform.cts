@@ -205,10 +205,12 @@ def _find_chart_bounding_region(img):
       area = w * h
       if area > max_area:
         max_area = area
-        max_box = (x + _BOX_PADDING,
+        max_box = (
+            x + _BOX_PADDING,
             y + _BOX_PADDING,
             w - _BOX_PADDING * 2,
-            h - _BOX_PADDING * 2)
+            h - _BOX_PADDING * 2
+        )
 
   return max_box
 

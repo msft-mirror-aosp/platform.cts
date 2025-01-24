@@ -2685,8 +2685,6 @@ class ItsSession(object):
   def _get_id_to_fov_facing(self):
     """Return the FoV and facing of each camera ID.
 
-    Args:
-      facing: constant describing the direction the camera device lens faces.
     Returns:
       A dictionary mapping camera IDs to a namedtuple containing the camera's
       field of view and facing.
@@ -3229,8 +3227,7 @@ def remove_mp4_file(file_name_with_path):
 def check_features_passed(
     features_passed, streams_name, fps_range_tuple,
     hlg10, is_stabilized):
-  """Check if the [hlg10, is_stabilized] combination is already tested
-  to be supported.
+  """Check if [hlg10, is_stabilized] combo is already tested to be supported.
 
   Args:
     features_passed: The 2d dictionary of feature combinations already passed
@@ -3282,9 +3279,9 @@ def mark_features_passed(
 def define_raw_stats_fmt_sensor_sensitivity(props, img_stats_grid):
   """Define format with active array width and height for sensor sensitivity testing."""
   aa_width = (props['android.sensor.info.preCorrectionActiveArraySize']['right'] -
-         props['android.sensor.info.preCorrectionActiveArraySize']['left'])
+              props['android.sensor.info.preCorrectionActiveArraySize']['left'])
   aa_height = (props['android.sensor.info.preCorrectionActiveArraySize']['bottom'] -
-         props['android.sensor.info.preCorrectionActiveArraySize']['top'])
+               props['android.sensor.info.preCorrectionActiveArraySize']['top'])
   logging.debug('Active array W,H: %d,%d', aa_width, aa_height)
   return {'format': 'rawStats',
           'gridWidth': aa_width // img_stats_grid,
