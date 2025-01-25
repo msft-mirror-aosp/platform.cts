@@ -409,9 +409,9 @@ def update_zoom_test_data_with_shared_aruco_marker(
         break
     else:
       shared_id = min(
-        shared_ids,
-        key=lambda i: _get_average_offset(i, aruco_ids, aruco_corners, size)
-    )
+          shared_ids,
+          key=lambda i: _get_average_offset(i, aruco_ids, aruco_corners, size)
+      )
   else:
     raise AssertionError('No shared ArUco marker found across all captures.')
   logging.debug('Using shared aruco ID %d', shared_id)

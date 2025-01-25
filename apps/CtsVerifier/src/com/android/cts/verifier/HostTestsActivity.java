@@ -62,7 +62,10 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
                         "CtsCompanionDeviceManagerMultiDeviceTestCases",
                         "CtsCompanionDeviceManagerMultiDeviceTestCases"),
         new HostTestCategory("NFC Tests")
-                .addTest("CtsNfcHceMultiDeviceTestCases", "CtsNfcHceMultiDeviceTestCases")
+                .addTest("CtsNfcHceMultiDeviceTestCases", "CtsNfcHceMultiDeviceTestCases"),
+        new HostTestCategory("Wi-Fi Tests")
+                .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
+                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
     };
 
     // The action to identify the broadcast Intent.

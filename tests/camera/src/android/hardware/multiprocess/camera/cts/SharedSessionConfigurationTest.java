@@ -81,7 +81,8 @@ public class SharedSessionConfigurationTest {
         assertEquals(sharedOutputConfigs[7], outputs.get(0).getDataspace());
         assertEquals(sharedOutputConfigs[8], outputs.get(0).getUsage());
         assertEquals(sharedOutputConfigs[9], outputs.get(0).getStreamUseCase());
-        assertEquals(sharedOutputConfigs[11], outputs.get(0).getPhysicalCameraId());
+        assertEquals(Character.toString((char) sharedOutputConfigs[11]),
+                outputs.get(0).getPhysicalCameraId());
     }
 
     @Test
@@ -132,7 +133,8 @@ public class SharedSessionConfigurationTest {
         assertEquals(sharedOutputConfigs[7], outputs.get(0).getDataspace());
         assertEquals(sharedOutputConfigs[8], outputs.get(0).getUsage());
         assertEquals(sharedOutputConfigs[9], outputs.get(0).getStreamUseCase());
-        assertEquals(sharedOutputConfigs[11], outputs.get(0).getPhysicalCameraId());
+        assertEquals(Character.toString((char) sharedOutputConfigs[11]),
+                outputs.get(0).getPhysicalCameraId());
 
         assertEquals(sharedOutputConfigs[12], outputs.get(1).getSurfaceType());
         assertEquals(

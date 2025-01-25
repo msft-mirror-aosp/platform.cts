@@ -33,7 +33,9 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES = 4
 _NUM_SENS_STEPS = 5
 _VAR_THRESH = 1.01  # Each shot must be 1% noisier than previous
-_CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY = 1 # CameraMetadata enum value
+# CameraMetadata enum value
+_CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY = 1
+
 
 def ae_iso_priority_capture_request(sensitivity):
   """Returns a capture request enabling ISO priority mode.
@@ -46,16 +48,19 @@ def ae_iso_priority_capture_request(sensitivity):
     its_session_utils.device.do_capture function.
   """
   req = {
-      'android.control.mode': 1, # CONTROL_MODE_AUTO
-      'android.control.aeMode': 1, # CONTROL_AE_MODE_ON
-      'android.control.aePriorityMode': 1, # CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY
+      'android.control.mode': 1,  # CONTROL_MODE_AUTO
+      'android.control.aeMode': 1,  # CONTROL_AE_MODE_ON
+      'android.control.aePriorityMode': 1,
+        # CONTROL_AE_PRIORITY_MODE_SENSOR_SENSITIVITY_PRIORITY
       'android.sensor.sensitivity': sensitivity,
   }
 
   return req
 
-class sensor_sensitivity_priority(its_base_test.ItsBaseTest):
-  """Capture a set of raw images with increasing gains and measure the noise."""
+class SensorSensitivityPriorityTest(its_base_test.ItsBaseTest):
+  """Capture a set of raw images with increasing gains and
+     measure the noise.
+  """
 
   def test_sensor_sensitivity_priority(self):
     logging.debug('Starting %s', _NAME)
@@ -105,7 +110,8 @@ class sensor_sensitivity_priority(its_base_test.ItsBaseTest):
         capture_requests.extend([req] * _NUM_FRAMES)
 
       # Capture in rawStats to reduce test run time
-      fmt = its_session_utils.define_raw_stats_fmt_exposure(props, _IMG_STATS_GRID)
+      fmt = its_session_utils.define_raw_stats_fmt_sensor_sensitivity(
+          props,_IMG_STATS_GRID)
       caps = cam.do_capture(capture_requests, fmt)
 
       image_processing_utils.assert_capture_width_and_height(

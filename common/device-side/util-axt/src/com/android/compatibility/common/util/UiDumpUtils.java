@@ -213,12 +213,11 @@ public class UiDumpUtils {
                     AccessibilityWindowInfo.class, "TYPE_", window.getType())).append(" ");
             if (CONCISE) return out;
             appendArea(out, window::getBoundsInScreen);
-
-            Rect bounds = new Rect();
-            window.getBoundsInScreen(bounds);
-            out.append(bounds.width()).append("x").append(bounds.height()).append(" ");
             int dpi = sInstrumentation.getContext().getResources().getDisplayMetrics().densityDpi;
             out.append("dpi: ").append(dpi).append(" ");
+            int orientation =
+                    sInstrumentation.getContext().getResources().getConfiguration().orientation;
+            out.append("orientation: ").append(orientation).append(" ");
             if (window.isInPictureInPictureMode()) out.append("#PIP ");
         }
         return out;
@@ -229,6 +228,7 @@ public class UiDumpUtils {
         getBoundsInScreen.accept(rect);
         out.append("size:");
         out.append(toStringRounding((float) area(rect) * 100 / sScreenArea)).append("% ");
+        out.append(rect.toString()).append(" ");
     }
 
     private static boolean appendNode(StringBuilder out, AccessibilityNodeInfo node) {

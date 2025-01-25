@@ -245,6 +245,8 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
             isAtLeastV() && Flags.areaIdConfigAccess();
+    private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
+            isAtLeastB() && Flags.carPropertySupportedValue();
     private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
             CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
             CarPropertyValue.STATUS_ERROR);
@@ -811,17 +813,17 @@ public class VehiclePropertyVerifier<T> {
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyGetMinMaxSupportedValue();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyGetSupportedValuesList();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyRegisterUnregisterSupportedValuesChangeCallback();
                         }
 
@@ -1302,6 +1304,10 @@ public class VehiclePropertyVerifier<T> {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
     }
 
+    private static boolean isAtLeastB() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
+    }
+
     /**
      * Gets the possible values for an integer property.
      */
@@ -1581,7 +1587,6 @@ public class VehiclePropertyVerifier<T> {
                     temperatureRequest, expectedTemperatureResponse);
             verifyCarPropertyValue(updatedCarPropertyValue, areaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            verifyHvacTemperatureValueSuggestionResponse(updatedCarPropertyValue.getValue());
         }
     }
 
@@ -1803,10 +1808,6 @@ public class VehiclePropertyVerifier<T> {
             for (CarPropertyValue<?> carPropertyValue : carPropertyValues) {
                 verifyCarPropertyValue(carPropertyValue, carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             }
         }
     }
@@ -1948,7 +1949,7 @@ public class VehiclePropertyVerifier<T> {
                 assertWithMessage(mPropertyName + " - area ID: " + areaId
                         + " must have max value defined").that(areaIdMaxValue).isNotNull();
 
-                if (Flags.carPropertySupportedValue()) {
+                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                     assertWithMessage(mPropertyName + " - area ID: " + areaId
                             + " config must set hasMaxSupportedValue to true")
                             .that(carPropertyConfig.getAreaIdConfig(areaId).hasMaxSupportedValue())
@@ -1982,21 +1983,29 @@ public class VehiclePropertyVerifier<T> {
             }
 
             if (mRequirePropertyValueToBeInConfigArray && isAtLeastU()) {
-                List<?> supportedEnumValues = carPropertyConfig.getAreaIdConfig(
-                        areaId).getSupportedEnumValues();
-                assertWithMessage(mPropertyName + " - areaId: " + areaId
-                        + "'s supported enum values must match the values in the config array.")
+                List<?> supportedEnumValues =
+                        carPropertyConfig.getAreaIdConfig(areaId).getSupportedEnumValues();
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + "'s supported enum values must match the values in the"
+                                        + " config array.")
                         .that(carPropertyConfig.getConfigArray())
                         .containsExactlyElementsIn(supportedEnumValues);
             }
 
             if (mChangeMode == CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE
                     && !mAllPossibleEnumValues.isEmpty() && isAtLeastU()) {
-                List<?> supportedEnumValues = carPropertyConfig.getAreaIdConfig(
-                        areaId).getSupportedEnumValues();
-                assertWithMessage(mPropertyName + " - areaId: " + areaId
-                        + "'s supported enum values must be defined").that(
-                        supportedEnumValues).isNotEmpty();
+                List<?> supportedEnumValues =
+                        carPropertyConfig.getAreaIdConfig(areaId).getSupportedEnumValues();
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + "'s supported enum values must be defined")
+                        .that(supportedEnumValues)
+                        .isNotEmpty();
                 assertWithMessage(mPropertyName + " - areaId: " + areaId
                         + "'s supported enum values must not contain any duplicates").that(
                         supportedEnumValues).containsNoDuplicates();
@@ -2005,7 +2014,7 @@ public class VehiclePropertyVerifier<T> {
                                 + supportedEnumValues + " must all exist in all possible enum set "
                                 + mAllPossibleEnumValues).that(
                         mAllPossibleEnumValues.containsAll(supportedEnumValues)).isTrue();
-                if (Flags.carPropertySupportedValue()) {
+                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                     assertWithMessage(
                             mPropertyName + " - areaId: " + areaId
                             + " config must set hasSupportedValuesList to true")
@@ -2139,10 +2148,6 @@ public class VehiclePropertyVerifier<T> {
             try {
                 carPropertyValue = mCarPropertyManager.getProperty(mPropertyId, areaId);
                 verifyCarPropertyValue(carPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             } catch (PropertyNotAvailableException | CarInternalErrorException e) {
                 handleGetPropertyExceptions(e);
             }
@@ -2499,53 +2504,6 @@ public class VehiclePropertyVerifier<T> {
                     SecurityException.class,
                     () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId, FAKE_CALLBACK));
         }
-    }
-
-    private void verifyHvacTemperatureValueSuggestionResponse(Float[] temperatureSuggestion) {
-        Float suggestedTempInCelsius = temperatureSuggestion[2];
-        Float suggestedTempInFahrenheit = temperatureSuggestion[3];
-        CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
-                getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
-        if (hvacTemperatureSetCarPropertyConfig == null) {
-            return;
-        }
-        List<Integer> hvacTemperatureSetConfigArray =
-                hvacTemperatureSetCarPropertyConfig.getConfigArray();
-        if (hvacTemperatureSetConfigArray.isEmpty()) {
-            return;
-        }
-        Integer minTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(0);
-        Integer maxTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(1);
-        Integer incrementInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(2);
-        verifyHvacTemperatureIsValid(suggestedTempInCelsius, minTempInCelsiusTimesTen,
-                maxTempInCelsiusTimesTen, incrementInCelsiusTimesTen);
-
-        Integer minTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(3);
-        Integer maxTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(4);
-        Integer incrementInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(5);
-        verifyHvacTemperatureIsValid(suggestedTempInFahrenheit, minTempInFahrenheitTimesTen,
-                maxTempInFahrenheitTimesTen, incrementInFahrenheitTimesTen);
-
-        int suggestedTempInCelsiusTimesTen = (int) (suggestedTempInCelsius * 10f);
-        int suggestedTempInFahrenheitTimesTen = (int) (suggestedTempInFahrenheit * 10f);
-        int numIncrementsCelsius =
-                Math.round((suggestedTempInCelsiusTimesTen - minTempInCelsiusTimesTen)
-                        / incrementInCelsiusTimesTen.floatValue());
-        int numIncrementsFahrenheit =
-                Math.round((suggestedTempInFahrenheitTimesTen - minTempInFahrenheitTimesTen)
-                        / incrementInFahrenheitTimesTen.floatValue());
-        assertWithMessage(
-                        "The temperature in celsius must map to the same temperature in fahrenheit"
-                            + " using the HVAC_TEMPERATURE_SET config array: "
-                            + hvacTemperatureSetConfigArray)
-                .that(numIncrementsFahrenheit)
-                .isEqualTo(numIncrementsCelsius);
     }
 
     private static Optional<Integer> getAreaIdAccess(CarPropertyConfig<?> carPropertyConfig,
@@ -3304,10 +3262,6 @@ public class VehiclePropertyVerifier<T> {
                     CarPropertyValue.STATUS_AVAILABLE, getPropertyResult.getTimestampNanos(),
                     (T) getPropertyResult.getValue(), expectedAreaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                verifyHvacTemperatureValueSuggestionResponse(
-                        (Float[]) getPropertyResult.getValue());
-            }
         }
 
         for (PropertyAsyncError propertyAsyncError :

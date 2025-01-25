@@ -7761,5 +7761,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string-array name="host_modules">
         <item>CtsCompanionDeviceManagerMultiDeviceTestCases</item>
         <item>CtsNfcHceMultiDeviceTestCases</item>
+        <item>CtsWifiAwareTests</item>
+        <item>CtsWifiDirectTests</item>
     </string-array>
 </resources>
