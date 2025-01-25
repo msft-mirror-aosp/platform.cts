@@ -49,8 +49,8 @@ import java.util.Map;
 public class Av1FilmGrainValidationTest {
     private static final String LOG_TAG = Av1FilmGrainValidationTest.class.getSimpleName();
     private static final String FILE_AV1_LVL41_FG_SUPPORT =
-                                    "dpov_1920x1080_60fps_av1_10bit_film_grain.mp4";
-    private static final double TOLERANCE = 0.95;
+            "dpov_1920x1080_60fps_av1_10bit_film_grain.mp4";
+    private static final double TOLERANCE = 0.05;
 
     @Rule
     public final TestName mTestName = new TestName();
@@ -68,15 +68,14 @@ public class Av1FilmGrainValidationTest {
         MediaFormat format = MediaFormat.createVideoFormat(mediaType, width, height);
         ArrayList<MediaFormat> formats = new ArrayList<>();
         formats.add(format);
-        ArrayList<String> av1HwDecoders =
-                selectHardwareCodecs(mediaType, formats, null, false);
+        ArrayList<String> av1HwDecoders = selectHardwareCodecs(mediaType, formats, null, false);
 
         boolean isDecoded = false;
         int numFramesWithoutFilmGrain = Integer.MAX_VALUE;
         for (String av1HwDecoder : av1HwDecoders) {
             Av1FilmGrainValidationTestBase av1Dec =
                     new Av1FilmGrainValidationTestBase(av1HwDecoder, mediaType,
-                                                       FILE_AV1_LVL41_FG_SUPPORT, null);
+                            FILE_AV1_LVL41_FG_SUPPORT, null);
             try {
                 av1Dec.doDecode();
                 isDecoded = true;
@@ -90,11 +89,10 @@ public class Av1FilmGrainValidationTest {
                 for (Map.Entry<Integer, FrameMetadata> entry : av1Dec.mRefFrameVarList.entrySet()) {
                     Integer frameId = entry.getKey();
                     FrameMetadata metadata = entry.getValue();
-                    double refVariance = metadata.mVarWithoutFilmGrain + (
-                            (metadata.mVarWithFilmGrain - metadata.mVarWithoutFilmGrain)
-                                    * TOLERANCE);
+                    double refVariance = metadata.mVarWithoutFilmGrain;
                     double testVariance = av1Dec.mTestFrameVarList.get(frameId);
-                    if (testVariance < refVariance) {
+                    if (testVariance < (1 - TOLERANCE) * refVariance
+                            || testVariance > (1 + TOLERANCE) * refVariance) {
                         numFramesWithoutFilmGrain++;
                     }
                 }

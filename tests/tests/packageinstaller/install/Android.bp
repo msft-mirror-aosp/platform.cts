@@ -18,6 +18,49 @@ package {
 }
 
 android_test {
+    name: "CtsPackageInstallSessionTestCases",
+    sdk_version: "test_current",
+    srcs: [
+        // go/keep-sorted start
+        "src/android/packageinstaller/install/cts/PackageInstallerTestBase.kt",
+        "src/android/packageinstaller/install/cts/PreapprovalInstallTest.kt",
+        "src/android/packageinstaller/install/cts/SessionParamsPermissionStateTest.kt",
+        "src/android/packageinstaller/install/cts/SessionTest.kt",
+        "src/android/packageinstaller/install/cts/SessionTestInstant.kt",
+        "src/android/packageinstaller/install/cts/SessionTestWithPia.kt",
+        // go/keep-sorted end
+    ],
+    static_libs: [
+        // go/keep-sorted start
+        "TestParameterInjector",
+        "android.security.flags-aconfig-java",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
+        "cts-install-lib",
+        "flag-junit",
+        "kotlin-test",
+        "platform-test-annotations",
+        "platform-test-rules",
+        "truth",
+        // go/keep-sorted end
+    ],
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    data: [
+        ":CtsEmptyInstallerApp",
+        ":CtsEmptyTestApp",
+        ":CtsEmptyTestAppV2",
+        ":CtsEmptyTestApp_FullScreenIntent",
+    ],
+    per_testcase_directory: true,
+    platform_apis: true,
+    test_config: "CtsPackageInstallSessionTestCases.xml",
+}
+
+android_test {
     name: "CtsPackageInstallTestCases",
     sdk_version: "test_current",
 
@@ -32,29 +75,24 @@ android_test {
         "src/android/packageinstaller/install/cts/InstallSourceInfoTest.kt",
         "src/android/packageinstaller/install/cts/IntentTest.kt",
         "src/android/packageinstaller/install/cts/PackageInstallerTestBase.kt",
-        "src/android/packageinstaller/install/cts/PreapprovalInstallTest.kt",
-        "src/android/packageinstaller/install/cts/SessionParamsPermissionStateTest.kt",
-        "src/android/packageinstaller/install/cts/SessionTest.kt",
-        "src/android/packageinstaller/install/cts/SessionTestWithPia.kt",
-        "src/android/packageinstaller/install/cts/SessionTestInstant.kt",
     ],
 
     static_libs: [
-        "androidx.test.uiautomator_uiautomator",
-        "androidx.test.rules",
-        "androidx.test.ext.junit",
-        "compatibility-device-util-axt",
+        "TestParameterInjector",
+        "android.content.pm.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
         "androidx.legacy_legacy-support-v4",
-        "platform-test-annotations",
-        "truth",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "bedstead-root",
+        "compatibility-device-util-axt",
         "cts-install-lib",
         "flag-junit",
         "kotlin-test",
-        "bedstead-root",
-        "android.content.pm.flags-aconfig-java",
-        "android.security.flags-aconfig-java",
+        "platform-test-annotations",
         "platform-test-rules",
-        "TestParameterInjector",
+        "truth",
     ],
 
     test_suites: [
@@ -62,13 +100,13 @@ android_test {
         "general-tests",
     ],
     data: [
+        ":CtsDisabledLauncherActivityApp",
+        ":CtsEmptyInstallerApp",
         ":CtsEmptyTestApp",
         ":CtsEmptyTestAppV2",
-        ":CtsEmptyInstallerApp",
-        ":CtsEmptyTestApp_FullScreenIntent",
-        ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
         ":CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+        ":CtsEmptyTestApp_FullScreenIntent",
         ":CtsEmptyTestApp_RejectedByVerifier",
         ":CtsSufficientVerifierReject",
     ],
@@ -92,21 +130,21 @@ android_test {
     ],
 
     static_libs: [
-        "androidx.test.uiautomator_uiautomator",
-        "androidx.test.rules",
-        "androidx.test.ext.junit",
-        "compatibility-device-util-axt",
+        "TestParameterInjector",
+        "android.content.pm.flags-aconfig-java",
+        "android.security.flags-aconfig-java",
         "androidx.legacy_legacy-support-v4",
-        "platform-test-annotations",
-        "truth",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "bedstead-root",
+        "compatibility-device-util-axt",
         "cts-install-lib",
         "flag-junit",
         "kotlin-test",
-        "bedstead-root",
-        "android.content.pm.flags-aconfig-java",
-        "android.security.flags-aconfig-java",
+        "platform-test-annotations",
         "platform-test-rules",
-        "TestParameterInjector",
+        "truth",
     ],
 
     test_suites: [
@@ -116,8 +154,8 @@ android_test {
     data: [
         ":CtsArchiveInstallerApp",
         ":CtsArchiveTestApp",
-        ":CtsEmptyTestApp",
         ":CtsEmptyInstallerApp",
+        ":CtsEmptyTestApp",
     ],
     per_testcase_directory: true,
     platform_apis: true,

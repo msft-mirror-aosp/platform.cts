@@ -1248,9 +1248,9 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                         PackageManager.FEATURE_PC));
         assumeTrue(mGestureNavSwitchHelper.hasSystemGestureFeature());
 
-        assertTrue("Gesture navigation mode overlay exists",
+        assertTrue("Gesture navigation mode overlay should be installed",
                 mGestureNavSwitchHelper.hasGestureNavOverlay());
-        assertTrue("Three button navigation mode overlay exists",
+        assertTrue("Three button navigation mode overlay should be installed",
                 mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
 
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
@@ -1311,7 +1311,7 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
                 mInstrumentation.getContext().getPackageManager().hasSystemFeature(
                         PackageManager.FEATURE_PC));
 
-        assertTrue("Three button navigation mode overlay exists",
+        assertTrue("Three button navigation mode overlay should be installed",
                 mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
 
         try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();

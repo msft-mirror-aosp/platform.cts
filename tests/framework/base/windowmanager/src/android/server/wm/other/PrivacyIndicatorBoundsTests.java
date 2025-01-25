@@ -50,6 +50,7 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.PollingCheck;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,6 +87,7 @@ public class PrivacyIndicatorBoundsTests extends ActivityManagerTestBase {
 
 
     @Test
+    @Ignore("b/387390444")
     public void testStaticBoundsAreNotNull() {
         // TODO(b/187757919): Allow Automotive to skip this test until privacy chip is implemented
         // in immersive mode

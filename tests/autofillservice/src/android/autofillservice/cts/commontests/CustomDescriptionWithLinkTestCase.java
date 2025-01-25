@@ -25,6 +25,7 @@ import android.app.PendingIntent;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.AbstractAutoFillActivity;
 import android.autofillservice.cts.testcore.Helper;
+import android.autofillservice.cts.testcore.Timeouts;
 import android.autofillservice.cts.testcore.UiBot;
 import android.content.Intent;
 import android.service.autofill.CustomDescription;
@@ -329,13 +330,12 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
         return saveUi;
     }
 
-    protected final UiObject2 getLink(final UiObject2 container) {
-        final UiObject2 link = container.findObject(By.res(mPackageName, ID_LINK));
-        assertThat(link).isNotNull();
+    protected final UiObject2 getLink(final UiObject2 container) throws Exception{
+        final UiObject2 link = mUiBot.waitForObject(container, ID_LINK, Timeouts.UI_TIMEOUT);
         return link;
     }
 
-    protected final void tapSaveUiLink(UiObject2 saveUi) {
+    protected final void tapSaveUiLink(UiObject2 saveUi) throws Exception{
         getLink(saveUi).click();
     }
 }

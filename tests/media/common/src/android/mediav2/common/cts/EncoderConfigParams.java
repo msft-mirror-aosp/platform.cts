@@ -258,10 +258,13 @@ public class EncoderConfigParams {
         java.util.Set<String> keys = format.getKeys();
         for (String key : keys) {
             int valueTypeForKey = format.getValueTypeForKey(key);
+            if (valueTypeForKey == MediaFormat.TYPE_BYTE_BUFFER) continue;
             msg.append(key).append(TOKEN_SEPARATOR);
             msg.append(valueTypeForKey).append(TOKEN_SEPARATOR);
             if (valueTypeForKey == MediaFormat.TYPE_INTEGER) {
                 msg.append(format.getInteger(key)).append(TOKEN_SEPARATOR);
+            } else if (valueTypeForKey == MediaFormat.TYPE_LONG) {
+                msg.append(format.getLong(key)).append(TOKEN_SEPARATOR);
             } else if (valueTypeForKey == MediaFormat.TYPE_FLOAT) {
                 msg.append(format.getFloat(key)).append(TOKEN_SEPARATOR);
             } else if (valueTypeForKey == MediaFormat.TYPE_STRING) {

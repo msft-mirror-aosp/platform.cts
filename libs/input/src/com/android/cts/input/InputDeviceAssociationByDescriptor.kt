@@ -35,9 +35,7 @@ import java.util.concurrent.TimeUnit
  */
 class InputDeviceAssociationByDescriptor private constructor(
         private val inputManager: InputManager,
-        val inputDeviceDescriptor: String?,
-        val inputDevicePort: String?,
-        val byDescriptor: Boolean,
+        val inputDeviceDescriptor: String,
         val associatedDisplay: Display
 ) : AutoCloseable {
 
@@ -70,38 +68,6 @@ class InputDeviceAssociationByDescriptor private constructor(
                 )
             }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
 
-            waitForDeviceAssociation(deviceId, display)
-
-            return InputDeviceAssociationByDescriptor(
-                inputManager = inputManager,
-                    inputDeviceDescriptor = descriptor,
-                inputDevicePort = null,
-                byDescriptor = true,
-                    associatedDisplay = display
-            )
-        }
-
-        fun associateByPort(deviceId: Int, port: String, display: Display):
-                InputDeviceAssociationByDescriptor {
-            runWithShellPermissionIdentity({
-                inputManager.addUniqueIdAssociationByPort(
-                        port,
-                        display.uniqueId!!
-                )
-            }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
-
-            waitForDeviceAssociation(deviceId, display)
-
-            return InputDeviceAssociationByDescriptor(
-                inputManager = inputManager,
-                    inputDeviceDescriptor = null,
-                inputDevicePort = port,
-                byDescriptor = false,
-                    associatedDisplay = display
-            )
-        }
-
-        private fun waitForDeviceAssociation(deviceId: Int, display: Display) {
             waitForDeviceUpdatesUntil {
                 val inputDevice = inputManager.getInputDevice(deviceId)!!
                 inputDevice.associatedDisplayId == display.displayId
@@ -112,6 +78,8 @@ class InputDeviceAssociationByDescriptor private constructor(
             // new transition.
             WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
             instrumentation.uiAutomation.syncInputTransactions()
+
+            return InputDeviceAssociationByDescriptor(inputManager, descriptor, display)
         }
 
         private fun waitForDeviceUpdatesUntil(condition: () -> Boolean) {
@@ -147,15 +115,9 @@ class InputDeviceAssociationByDescriptor private constructor(
 
     override fun close() {
         if (!closed) {
-            if (byDescriptor) {
-                runWithShellPermissionIdentity({
-                    inputManager.removeUniqueIdAssociationByDescriptor(inputDeviceDescriptor!!)
-                }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
-            } else {
-                runWithShellPermissionIdentity({
-                    inputManager.removeUniqueIdAssociationByPort(inputDevicePort!!)
-                }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
-            }
+            runWithShellPermissionIdentity({
+                inputManager.removeUniqueIdAssociationByDescriptor(inputDeviceDescriptor)
+            }, PERMISSION_ASSOCIATE_INPUT_DEVICE_TO_DISPLAY)
             closed = true
         }
     }

@@ -97,7 +97,7 @@ def _take_captures(
   # Take multiple still captures with torch strength
   else:
     cam.do_3a(do_af=False, lock_awb=True, flash_mode=_TORCH_MODE,
-        out_surfaces=out_surfaces)
+              out_surfaces=out_surfaces)
     # turn OFF lights to darken scene
     lighting_control_utils.set_lighting_state(
         arduino_serial_port, self.lighting_ch, 'OFF'

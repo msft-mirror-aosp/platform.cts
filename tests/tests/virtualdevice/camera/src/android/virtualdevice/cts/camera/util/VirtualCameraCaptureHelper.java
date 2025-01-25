@@ -246,7 +246,8 @@ public class VirtualCameraCaptureHelper {
         }
     }
 
-    private CameraDevice getOrOpenCameraDevice() {
+    /** Returns the {@link CameraDevice} corresponding to the virtual camera. */
+    public CameraDevice getOrOpenCameraDevice() {
         try {
             if (mCameraDevice != null) {
                 return mCameraDevice;
@@ -344,11 +345,14 @@ public class VirtualCameraCaptureHelper {
         return mTotalCaptureResultCaptor;
     }
 
-    /**
-     * Return a {@link Mock} of {@link CameraCaptureSession.CaptureCallback}
-     */
+    /** Returns a {@link Mock} of {@link CameraCaptureSession.CaptureCallback} */
     public CameraCaptureSession.CaptureCallback getCaptureCallback() {
         return mCaptureCallback;
+    }
+
+    /** Returns a {@link Mock} of {@link VirtualCameraCallback} */
+    public VirtualCameraCallback getVirtualCameraCallback() {
+        return mVirtualCameraCallback;
     }
 
     /**

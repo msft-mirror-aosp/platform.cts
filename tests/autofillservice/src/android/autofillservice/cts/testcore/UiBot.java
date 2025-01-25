@@ -1111,6 +1111,22 @@ public class UiBot {
     }
 
     /**
+     * Waits and returns an object that is a child of a parent {@link UiObject2} base on string
+     * resource id.
+     *
+     * @param parent where to find the object (or {@code null} to use device's root).
+     * @param resourceId resource id of the child.
+     * @param timeout specifies the timeout for retries
+     * @return the object that is found
+     * @throws Exception if the object is not found after the timeout
+     */
+    public UiObject2 waitForObject(
+            @Nullable UiObject2 parent, @NonNull String resourceId, @NonNull Timeout timeout)
+            throws Exception {
+        return waitForObject(parent, By.res(mPackageName, resourceId), timeout);
+    }
+
+    /**
      * Waits for and returns an object.
      *
      * @param selector {@link BySelector} that identifies the object.
@@ -1121,9 +1137,7 @@ public class UiBot {
         return waitForObject(/* parent= */ null, selector, timeout);
     }
 
-    /**
-     * Waits for and returns a child from a parent {@link UiObject2}.
-     */
+    /** Waits for and returns a child from a parent {@link UiObject2}. */
     public UiObject2 assertChildText(UiObject2 parent, String resourceId, String expectedText)
             throws Exception {
         final UiObject2 child = waitForObject(parent, By.res(mPackageName, resourceId),

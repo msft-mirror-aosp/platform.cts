@@ -146,7 +146,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
           corners, ids, _ = opencv_processing_utils.find_aruco_markers(
               bgr_img,
               (f'{img_name_stem}_{zoom_ratio:.2f}_'
-                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
+               f'ArUco.{zoom_capture_utils.JPEG_STR}'),
               aruco_marker_count=1,
               force_greyscale=True  # Maximize number of markers detected
           )

@@ -35,6 +35,7 @@ _LSS_CONFIG_ANGULAR_HOLDING_STIFFNESS = 'CAH'
 _LSS_CONFIG_ANGULAR_ACCELERATION = 'CAA'
 _LSS_CONFIG_ANGULAR_DECELERATION = 'CAD'
 _LSS_ACTION_MOVE = 'D'
+_LSS_ACTION_HOLD = 'H'
 
 # servo controller configuration
 _DEFAULT_MAX_SPEED_RPM = 45
@@ -194,6 +195,8 @@ def rotate(serial_port, channel, position_degree=0):
     logging.debug('Moving servo %s to position %s', channel, position)
     _move_to(serial_port, channel, position)
     response = f'Moving servo {channel} to direction {position_degree}'
+    # Hold the angular position after movement
+    _rotator_write(serial_port, channel, _LSS_ACTION_HOLD)
     return response
   else:
     logging.debug('Not a valid servo position: %s', position_degree)
@@ -235,4 +238,6 @@ def set_lighting_state(serial_port, channel, state):
     level = 0
   else:
     raise ValueError(f'Lighting state not defined correctly: {state}')
-  set_light_brightness(serial_port, channel, level, delay=_WAIT_FOR_CMD_COMPLETION)
+  set_light_brightness(serial_port, channel, level,
+                       delay=_WAIT_FOR_CMD_COMPLETION)
+

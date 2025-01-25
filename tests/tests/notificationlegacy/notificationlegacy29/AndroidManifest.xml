@@ -43,6 +43,21 @@
             </intent-filter>
         </service>
 
+        <activity android:name="android.app.notification.legacy29.cts.BubbleActivity"
+                  android:turnScreenOn="true"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <action android:name="android.intent.action.SEND"/>
+                <data android:mimeType="text/plain"/>
+                <data android:mimeType="image/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

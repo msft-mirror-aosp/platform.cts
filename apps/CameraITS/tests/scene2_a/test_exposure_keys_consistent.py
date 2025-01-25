@@ -26,7 +26,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_SAD_THRESHOLD = 0.04 # No block should be >= 4% different
+_SAD_THRESHOLD = 0.04  # No block should be >= 4% different
 _BLOCK_SIZE = 16
 _JPG_FORMAT = 'jpg'
 
@@ -62,6 +62,7 @@ def calc_max_avg_exposure_sad(cap_no_ae, cap_ae, name_with_log_path):
   Args:
     cap_no_ae: Camera capture object without auto exposure.
     cap_ae: Camera capture object with auto exposure.
+    name_with_log_path: File name with path to write image.
 
   Returns:
     The sum of absolute differences for the two images.
@@ -164,18 +165,20 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       )
 
       # Capture for each available reprocess format
-      sizes = capture_request_utils.get_available_output_sizes(_JPG_FORMAT, props)
+      sizes = capture_request_utils.get_available_output_sizes(
+          _JPG_FORMAT, props
+      )
 
       size = None
       for i in range(len(sizes)):
         if (sizes[i][0] >= _BLOCK_SIZE and sizes[i][1] >= _BLOCK_SIZE):
-          size =  sizes[i]
+          size = sizes[i]
           break
 
       camera_properties_utils.skip_unless(size is not None)
 
-      logging.info(f'capture width: {size[0]}')
-      logging.info(f'capture height: {size[1]}')
+      logging.info('capture width: %d', size[0])
+      logging.info('capture height: %d', size[1])
       out_surface = {'width': size[0], 'height': size[1], 'format': _JPG_FORMAT}
 
       # Create req, do caps and determine SAD
@@ -189,10 +192,10 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       post_raw_sensitivity_boost = cr['android.control.postRawSensitivityBoost']
       frame_duration = cr['android.sensor.frameDuration']
 
-      logging.info(f'sensor_sensitivity: {sensor_sensitivity}')
-      logging.info(f'exposure_time: {exposure_time}')
-      logging.info(f'post_raw_sensitivity_boost: {post_raw_sensitivity_boost}')
-      logging.info(f'frame_duration: {frame_duration}')
+      logging.info('sensor_sensitivity: %s', sensor_sensitivity)
+      logging.info('exposure_time: %s', exposure_time)
+      logging.info('post_raw_sensitivity_boost: %s', post_raw_sensitivity_boost)
+      logging.info('frame_duration: %s', frame_duration)
 
       req['android.control.aeMode'] = 0  # OFF
       req['android.sensor.sensitivity'] = sensor_sensitivity
@@ -208,7 +211,7 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
           cap_no_ae['data'], cap_ae['data'], name_with_log_path
       )
 
-      logging.info(f'Max block SAD: {sad} (threshold: {_SAD_THRESHOLD})')
+      logging.info('Max block SAD: %s (threshold: %s)', sad, _SAD_THRESHOLD)
       if sad > _SAD_THRESHOLD:
         raise AssertionError(
             f'Max block SAD greater than threshold: {sad} / {_SAD_THRESHOLD}'

@@ -16,10 +16,12 @@
 
 package android.mediapc.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getImage;
 import static android.mediav2.common.cts.DecodeStreamToYuv.unWrapYUVImage;
 import static android.mediav2.common.cts.VideoErrorManager.computeFrameVariance;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import android.graphics.ImageFormat;
@@ -32,6 +34,8 @@ import android.mediav2.common.cts.OutputManager;
 import android.util.Log;
 import android.util.Pair;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,9 +47,9 @@ public class Av1FilmGrainValidationTestBase extends CodecDecoderTestBase {
 
     /**
      * **Frame Metadata Structure:**
-     *  - Frame Index: The index of the frame in the clip.
-     *  - Variance Without Film-Grain: The variance of the frame when film-grain is disabled.
-     *  - Variance With Film-Grain: The variance of the frame when film-grain is enabled.
+     * - Frame Index: The index of the frame in the clip.
+     * - Variance Without Film-Grain: The variance of the frame when film-grain is disabled.
+     * - Variance With Film-Grain: The variance of the frame when film-grain is enabled.
      */
     public static class FrameMetadata {
         public final int mFrameIndex;
@@ -63,24 +67,38 @@ public class Av1FilmGrainValidationTestBase extends CodecDecoderTestBase {
      * Please refer to the Av1FilmGrainValidationTest.md for details.
      */
     final Map<Integer, FrameMetadata> mRefFrameVarList = Map.ofEntries(
-            Map.entry(1, new FrameMetadata(1, 902.981148, 910.197185)),
-            Map.entry(3, new FrameMetadata(3, 865.235099, 869.224709)),
-            Map.entry(5, new FrameMetadata(5, 871.873536, 878.137057)),
-            Map.entry(7, new FrameMetadata(7, 865.805314, 867.937594)),
-            Map.entry(11, new FrameMetadata(11, 861.05864, 865.446286)),
-            Map.entry(12, new FrameMetadata(12, 1739.076607, 1742.521371)),
-            Map.entry(15, new FrameMetadata(15, 863.359298, 867.886144)),
-            Map.entry(19, new FrameMetadata(19, 861.721434, 866.071932)),
-            Map.entry(24, new FrameMetadata(24, 1729.799078, 1732.138971)),
-            Map.entry(25, new FrameMetadata(25, 879.232184, 884.244364)),
-            Map.entry(27, new FrameMetadata(27, 857.220242, 860.515852)),
-            Map.entry(29, new FrameMetadata(29, 883.072407, 886.974015))
+            Map.entry(0, new FrameMetadata(0, 6000.441895, 6036.660666)),
+            Map.entry(2, new FrameMetadata(2, 6023.912926, 6056.566605)),
+            Map.entry(4, new FrameMetadata(4, 6038.928583, 6067.471322)),
+            Map.entry(6, new FrameMetadata(6, 5998.420908, 6051.48108)),
+            Map.entry(8, new FrameMetadata(8, 5891.097766, 5934.600298)),
+            Map.entry(10, new FrameMetadata(10, 5837.958102, 5881.128501)),
+            Map.entry(12, new FrameMetadata(12, 5818.852211, 5861.067651)),
+            Map.entry(14, new FrameMetadata(14, 5738.605461, 5787.236232)),
+            Map.entry(16, new FrameMetadata(16, 5862.405073, 5897.406853)),
+            Map.entry(18, new FrameMetadata(18, 5884.802443, 5921.534628)),
+            Map.entry(20, new FrameMetadata(20, 5909.591605, 5933.699168)),
+            Map.entry(22, new FrameMetadata(22, 5953.370089, 5993.686707)),
+            Map.entry(24, new FrameMetadata(24, 5967.687195, 6007.651102)),
+            Map.entry(26, new FrameMetadata(26, 6013.546157, 6044.971079)),
+            Map.entry(28, new FrameMetadata(28, 6059.718453, 6109.048043))
     );
     Map<Integer, Double> mTestFrameVarList = new HashMap<>();
 
     public Av1FilmGrainValidationTestBase(String decoder, String mediaType, String testFile,
             String allTestParams) {
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
+    }
+
+    private short[] extractLuma(byte[] inputData) {
+        int length = inputData.length / 2;
+        short[] p010Data = new short[length];
+        ByteBuffer.wrap(inputData)
+                .order(ByteOrder.nativeOrder())
+                .asShortBuffer()
+                .get(p010Data);
+
+        return p010Data;
     }
 
     @Override
@@ -103,8 +121,20 @@ public class Av1FilmGrainValidationTestBase extends CodecDecoderTestBase {
                 if (mRefFrameVarList.containsKey(mOutputCount - 1)) {
                     MediaFormat format = getOutputFormat();
                     ArrayList<byte[]> data = unWrapYUVImage(getImage(image));
-                    Pair<Double, Integer> var =
-                            computeFrameVariance(getWidth(format), getHeight(format), data.get(0));
+                    int imgformat = image.getFormat();
+                    int colorFormat = format.getInteger(MediaFormat.KEY_COLOR_FORMAT);
+                    int bytesPerSample = (ImageFormat.getBitsPerPixel(imgformat) * 2) / (8 * 3);
+                    assertEquals("received image with incorrect bit depth.",
+                            bytesPerSample, colorFormat == COLOR_FormatYUVP010 ? 2 : 1);
+
+                    Pair<Double, Integer> var;
+                    if (bytesPerSample == 2) {
+                        var = computeFrameVariance(getWidth(format), getHeight(format),
+                                extractLuma(data.get(0)));
+                    } else {
+                        var = computeFrameVariance(getWidth(format), getHeight(format),
+                                data.get(0));
+                    }
                     double frameVariance = var.first / var.second;
                     mTestFrameVarList.put(mOutputCount - 1, frameVariance);
                 }
@@ -117,9 +147,11 @@ public class Av1FilmGrainValidationTestBase extends CodecDecoderTestBase {
 
     public void doDecode() throws Exception {
         MediaFormat format = setUpSource(mTestFile);
+        int colorFormat = format.getInteger(MediaFormat.KEY_COLOR_FORMAT);
         mImageSurface = new ImageSurface();
-        setUpSurface(getWidth(format), getHeight(format), ImageFormat.YUV_420_888,
-                1, 0, null);
+        int imageFormat = colorFormat == COLOR_FormatYUVP010 ? ImageFormat.YCBCR_P010 :
+                ImageFormat.YUV_420_888;
+        setUpSurface(getWidth(format), getHeight(format), imageFormat, 1, 0, null);
         mOutputBuff = new OutputManager();
         mCodec = MediaCodec.createByCodecName(mCodecName);
         configureCodec(format, true, true, false);

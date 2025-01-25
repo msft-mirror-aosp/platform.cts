@@ -169,6 +169,12 @@ public class ResourceManagerStubActivity extends Activity {
                     Intent intent2 = new Intent(context, ResourceManagerTestActivity2.class);
                     intent2.putExtra("test-type", mType2);
                     intent2.putExtra("high-resolution", highResolutionForActivity2);
+                    if (!highResolutionForActivity2) {
+                        // If the codec is to configure at lower resolution,
+                        // we should be able to create MAX_INSTANCES even on low ram devices.
+                        // This will override the value from getMaxCodecInstances().
+                        intent2.putExtra("max-codec-instances", MAX_INSTANCES);
+                    }
                     startActivityForResult(intent2, mRequestCodes[1]);
 
                     waitForActivitiesToComplete();

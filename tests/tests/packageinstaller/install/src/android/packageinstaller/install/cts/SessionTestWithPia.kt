@@ -20,6 +20,7 @@ import android.app.Activity.RESULT_CANCELED
 import android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED
 import android.content.pm.PackageInstaller.STATUS_SUCCESS
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import java.util.concurrent.TimeUnit
@@ -34,7 +35,8 @@ import org.junit.runner.RunWith
  */
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(TestParameterInjector::class)
-class SessionTestWithPia: PackageInstallerTestBase() {
+@ScreenRecord
+class SessionTestWithPia : PackageInstallerTestBase() {
 
     /**
      * Check that we can install an app via a package-installer session

@@ -17,9 +17,7 @@
 #define LOG_TAG "NativeMediaCommon"
 #include <log/log.h>
 
-#include <cstdio>
-#include <cstring>
-#include <utility>
+#include <stdlib.h>
 
 #include "NativeMediaCommon.h"
 
@@ -157,8 +155,10 @@ bool isMediaTypeOutputUnAffectedBySeek(const char* mediaType) {
 }
 
 AMediaFormat* deSerializeMediaFormat(const char* msg, const char* separator) {
+    if (msg == nullptr || separator == nullptr) return nullptr;
     // constants to be kept in sync with definitions at MediaFormat.java
     static const int TYPE_INTEGER = 1;
+    static const int TYPE_LONG = 2;
     static const int TYPE_FLOAT = 3;
     static const int TYPE_STRING = 4;
     std::string limiter{separator};
@@ -196,11 +196,13 @@ AMediaFormat* deSerializeMediaFormat(const char* msg, const char* separator) {
         start = end + limiter.length();
         end = fmtMsg.find(limiter, start);
 
-        auto valueType = std::stoi(valueTypeStr);
+        auto valueType = atoi(valueTypeStr.c_str());
         if (valueType == TYPE_INTEGER) {
-            AMediaFormat_setInt32(fmt, keyStr.c_str(), std::stoi(valueStr));
+            AMediaFormat_setInt32(fmt, keyStr.c_str(), atoi(valueStr.c_str()));
+        } else if (valueType == TYPE_LONG) {
+            AMediaFormat_setInt64(fmt, keyStr.c_str(), atol(valueStr.c_str()));
         } else if (valueType == TYPE_FLOAT) {
-            AMediaFormat_setFloat(fmt, keyStr.c_str(), std::stof(valueStr));
+            AMediaFormat_setFloat(fmt, keyStr.c_str(), atof(valueStr.c_str()));
         } else if (valueType == TYPE_STRING) {
             AMediaFormat_setString(fmt, keyStr.c_str(), valueStr.c_str());
         } else {
