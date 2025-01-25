@@ -1621,6 +1621,8 @@
     <string name="ci_directory_creation_error">CTS Verifier debug directory could not be created, please try again</string>
     <string name="ci_instruction_text_photo_label">READ BEFORE STARTING TEST</string>
     <string name="ci_instruction_text_passfail_label">Choose \"Pass\" if the right intent is fired after taking a photo from the camera app. Otherwise, choose \"Fail\".</string>
+    <string name="ci_verify_capture_title">Verify capture</string>
+    <string name="ci_dismiss_result_dialog">Dismiss</string>
     <string name="ci_instruction_text_app_picture_label">\n
 
     1. Click Open Settings and deny location permissions to CTS Verifier and return. \n
@@ -1663,8 +1665,10 @@
     1. Click Start Test.\n
     2. Camera app will launch, prompting to take motion photo.\n
     3. Capture/confirm motion photo using camera app controls within 1 minute.\n
-    4. Pass button will light up if intent and URI trigger were NOT received.\n
-    5. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
+    4. A dialog will open with the video embedded in the motion photo.\n
+    5. Pass button will light up if intent and URI trigger were NOT received.\n
+    6. Click "Pass" if possible and the video embedded in the motion photo displayed correctly,
+    otherwise open settings app, allow location again and click "Fail".
     </string>
     <string name="ci_instruction_text_intent_motion_photo_secure_label">\n
     Note: If this intent is not supported by the device, the Start Test button will not be enabled.
@@ -1674,8 +1678,10 @@
     1. Click Start Test.\n
     2. Camera app will launch, prompting to take motion photo.\n
     3. Capture/confirm motion photo using camera app controls within 1 minute.\n
-    4. Pass button will light up if intent and URI trigger were NOT received.\n
-    5. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
+    4. A dialog will open with the video embedded in the motion photo.\n
+    5. Pass button will light up if intent and URI trigger were NOT received.\n
+    6. Click "Pass" if possible and the video embedded in the motion photo displayed correctly,
+    otherwise open settings app, allow location again and click "Fail".
     </string>
     <string name="ci_instruction_text_intent_video_label">\n
     1. Click Start Test.\n
