@@ -21,15 +21,16 @@ android_test {
     team: "trendy_team_system_intelligence",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.app.contextualsearch.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "com.android.window.flags.window-aconfig-java",
         "ctstestrunner-axt",
         "flag-junit",
+        "kotlin-test",
         "platform-test-annotations",
         "truth",
-        "android.app.contextualsearch.flags-aconfig-java",
     ],
     manifest: "AndroidManifest.xml",
     srcs: [

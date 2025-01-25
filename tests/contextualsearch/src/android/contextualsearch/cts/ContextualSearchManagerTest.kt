@@ -38,6 +38,7 @@ import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.test.assertFailsWith
 import org.junit.After
 import org.junit.Assume
 import org.junit.Before
@@ -88,6 +89,15 @@ class ContextualSearchManagerTest {
             mWatcher?.created,
             "Waiting for CtsContextualSearchActivity.onCreate to be called."
         )
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    fun testContextualSearchSelfInvocationWithoutForegroundActivity() {
+        // Without a foreground activity, this invocation method should fail.
+        assertFailsWith(SecurityException::class) {
+            mManager.startContextualSearch()
+        }
     }
 
     @Test
@@ -281,6 +291,9 @@ class ContextualSearchManagerTest {
         private const val TEST_LIFECYCLE_TIMEOUT_MS: Long = 5000
         private val TAG = ContextualSearchManagerTest::class.java.simpleName
         private const val TEMPORARY_PACKAGE = "android.contextualsearch.cts"
+
+        // Copied from ContextualSearchManagerService.
+        private const val INTERNAL_ENTRYPOINT_APP = -1
 
         // TODO: remove in W
         private const val EXTRA_INVOCATION_TIME_MS =
