@@ -28,8 +28,9 @@
              check reflection abuse. This must be set before installing the test app. -->
         <option name="run-command" value="settings put global hidden_api_policy 1" />
         <option name="teardown-command" value="settings delete global hidden_api_policy" />
-        <!-- Dismiss all system dialogs before launch test -->
-        <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
+        <!-- Dismiss all system dialogs for all users before launch test -->
+        <option name="run-command"
+            value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user -1" />
         <!-- Collapse notifications -->
         <option name="run-command" value="cmd statusbar collapse" />
     </target_preparer>

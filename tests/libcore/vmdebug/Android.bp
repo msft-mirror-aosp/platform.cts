@@ -1,4 +1,4 @@
-// Copyright (C) 2017 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,28 +13,30 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_art_performance",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test {
-    name: "CtsContactsProviderWipe",
-    team: "trendy_team_android_safer_apps",
+    name: "CtsVMDebugDeviceTestCases",
     defaults: ["cts_defaults"],
+    platform_apis: true,
+    dex_preopt: {
+        enabled: false,
+    },
+    optimize: {
+        enabled: false,
+    },
     static_libs: [
-        "androidx.test.rules",
-        "androidx.legacy_legacy-support-v4",
-        "mockito-target-minus-junit4",
         "compatibility-device-util-axt",
-        "ctstestrunner-axt",
-    ],
-    libs: [
-        "android.test.runner.stubs.test",
-        "android.test.base.stubs.test",
+        "art-aconfig-flags-java-lib-host",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [
         "cts",
         "general-tests",
+        "mcts-art",
+        "mts-art",
     ],
-    sdk_version: "test_current",
+    sdk_version: "module_current",
 }
