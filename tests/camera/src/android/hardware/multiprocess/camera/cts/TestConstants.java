@@ -48,6 +48,7 @@ public class TestConstants {
     public static final int OP_CREATE_SHARED_SESSION = 103;
     public static final int OP_START_PREVIEW = 104;
     public static final int OP_STOP_PREVIEW = 105;
+    public static final int OP_CREATE_SHARED_SESSION_INVALID_CONFIGS = 106;
 
     public static final String EVENT_CAMERA_ERROR_STR = "error";
     public static final String EVENT_CAMERA_CONNECT_STR = "connect";
