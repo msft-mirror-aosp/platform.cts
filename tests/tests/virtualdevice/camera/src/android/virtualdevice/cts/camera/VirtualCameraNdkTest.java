@@ -20,6 +20,7 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
+import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
 import static android.virtualdevice.cts.common.VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG;
@@ -27,6 +28,7 @@ import static android.virtualdevice.cts.common.VirtualDeviceRule.TRUSTED_VIRTUAL
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeNoException;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.clearInvocations;
@@ -101,8 +103,16 @@ public class VirtualCameraNdkTest {
     private VirtualDisplay mVirtualDisplay;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
+
+        // Check whether the default camera id's contain the front and back cameras.
+        // This is a workaround for a device-awareness bug in Camera NDK.
+        // TODO(b/391957505): Remove the following assumptions once the bug is fixed.
+        List<String> defaultCameraIds = Arrays.asList(mContext.getSystemService(
+                CameraManager.class).getCameraIdListNoLazy());
+        assumeTrue(defaultCameraIds.contains(FRONT_CAMERA_ID));
+        assumeTrue(defaultCameraIds.contains(BACK_CAMERA_ID));
 
         mVirtualDevice = mRule.createManagedVirtualDevice(
                 new VirtualDeviceParams.Builder()
