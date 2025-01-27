@@ -1477,6 +1477,10 @@ class PreviewTestCase {
         return ret;
     }
 
+    camera_status_t createCaptureSessionSharedOutput() {
+        return ACaptureSessionSharedOutput_create(mImgReaderAnw, &mImgReaderOutput);
+    }
+
     camera_status_t createCaptureSessionWithLog(
             const std::vector<ACaptureSessionOutput*> extraOutputs,
             bool isPreviewShared = false, ACaptureRequest *sessionParameters = nullptr,
@@ -1928,7 +1932,9 @@ class PreviewTestCase {
         return mPreviewOutput;
     }
 
-  private:
+    ANativeWindow* getImageReaderNativeWindow() { return mImgReaderAnw; }
+
+private:
     ACameraManager* createManager() {
         if (!mCameraManager) {
             mCameraManager = ACameraManager_create();
@@ -5376,3 +5382,82 @@ cleanup:
     }
     return pass;
 }
+
+// TODO (b/394083987): Investigate native tests failures. For now they are commented out.
+
+//extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+//testPerformUnsupportedOperationsNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
+//                                       int width, int height, int format) {
+//    ALOGV("%s", __FUNCTION__);
+//    bool pass = false;
+//    const int NUM_TEST_IMAGES = 10;
+//    media_status_t mediaRet = AMEDIA_ERROR_UNKNOWN;
+//    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+//    PreviewTestCase* sharedCtx = nullptr;
+//    if (sharedTestContext == 0) {
+//        LOG_ERROR(errorString, "Invalid shared Test Context");
+//        goto cleanup;
+//    }
+//    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+//    mediaRet = sharedCtx->initImageReaderWithErrorLog(width, height, format, NUM_TEST_IMAGES);
+//    if (mediaRet != AMEDIA_OK) {
+//        LOG_ERROR(errorString, "initImageReaderWithErrorLog failure: ret %d", mediaRet);
+//        goto cleanup;
+//    }
+//    ret = sharedCtx->createRequestsWithErrorLog();
+//    if (ret == ACAMERA_OK) {
+//        LOG_ERROR(errorString,
+//                  "Expected failure for createRequestsWithErrorLog, but got success: ret %d",
+//                  ret);
+//        goto cleanup;
+//    }
+//    ret = sharedCtx->createCaptureSessionSharedOutput();
+//    if (ret == ACAMERA_OK) {
+//        LOG_ERROR(errorString,
+//                  "Expected failure for createCaptureSessionSharedOutput, but got success: ret
+//                  %d", ret);
+//        goto cleanup;
+//    }
+//    pass = true;
+// cleanup:
+//    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+//    if (!pass) {
+//        throwAssertionError(env, errorString);
+//    }
+//    return pass;
+//}
+
+//extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+//testUnsupportedCaptureSessionCommandsNative(JNIEnv* env, jclass /*clazz*/,
+//                                            jlong sharedTestContext) {
+//    ALOGV("%s", __FUNCTION__);
+//    bool pass = false;
+//    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+//    bool frameStarted = false;
+//    const int timeoutSec = 1;
+//    PreviewTestCase* sharedCtx = nullptr;
+//    ANativeWindow* anw = nullptr;
+//    if (sharedTestContext == 0) {
+//        LOG_ERROR(errorString, "Invalid shared Test Context");
+//        goto cleanup;
+//    }
+//    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+//    ret = sharedCtx->abortCaptures();
+//    if (ret == ACAMERA_OK) {
+//        LOG_ERROR(errorString, "Expected failure for abortCaptures, but got success: ret %d",
+//        ret); goto cleanup;
+//    }
+//    anw = sharedCtx->getImageReaderNativeWindow();
+//        ret = sharedCtx->prepareWindow(anw);
+//        if (ret == ACAMERA_OK) {
+//            LOG_ERROR(errorString, "Expected failure for prepareWindow, but got success: ret %d",
+//            ret); goto cleanup;
+//        }
+//    pass = true;
+// cleanup:
+//    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+//    if (!pass) {
+//        throwAssertionError(env, errorString);
+//    }
+//    return pass;
+//}

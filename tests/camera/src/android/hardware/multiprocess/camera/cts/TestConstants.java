@@ -41,6 +41,8 @@ public class TestConstants {
     public static final int EVENT_CAMERA_SESSION_CLOSED = 18;
     public static final int EVENT_CAMERA_PREVIEW_STARTED = 19;
     public static final int EVENT_CAMERA_PREVIEW_COMPLETED = 20;
+    public static final int EVENT_CAMERA_UNSUPPORTED_ACTIVITY_STARTED = 21;
+    public static final int EVENT_CAMERA_UNSUPPORTED_ACTIVITY_FAILED = 22;
 
     public static final int OP_OPEN_CAMERA = 100;
     public static final int OP_OPEN_CAMERA_SHARED = 101;
@@ -49,6 +51,8 @@ public class TestConstants {
     public static final int OP_START_PREVIEW = 104;
     public static final int OP_STOP_PREVIEW = 105;
     public static final int OP_CREATE_SHARED_SESSION_INVALID_CONFIGS = 106;
+    public static final int OP_PERFORM_UNSUPPORTED_COMMANDS = 107;
+    public static final int OP_PERFORM_UNSUPPORTED_CAPTURE_SESSION_COMMANDS = 108;
 
     public static final String EVENT_CAMERA_ERROR_STR = "error";
     public static final String EVENT_CAMERA_CONNECT_STR = "connect";
