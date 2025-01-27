@@ -247,9 +247,18 @@ public class VehiclePropertyVerifier<T> {
             isAtLeastV() && Flags.areaIdConfigAccess();
     private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
             isAtLeastB() && Flags.carPropertySupportedValue();
-    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
-            CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
-            CarPropertyValue.STATUS_ERROR);
+    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES =
+            Arrays.asList(
+                    CarPropertyValue.STATUS_AVAILABLE,
+                    CarPropertyValue.STATUS_UNAVAILABLE,
+                    CarPropertyValue.STATUS_ERROR);
+    private static final List<Integer> VALID_SET_ERROR_CODES =
+            Arrays.asList(
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_TRY_AGAIN,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_INVALID_ARG,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_PROPERTY_NOT_AVAILABLE,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_ACCESS_DENIED,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_UNKNOWN);
 
     private static final CarPropertyValueCallback FAKE_CALLBACK = new CarPropertyValueCallback(
             /* propertyName= */ "", new int[]{}, /* totalCarPropertyValuesPerAreaId= */ 0,
@@ -3027,14 +3036,11 @@ public class VehiclePropertyVerifier<T> {
         }
 
         @Override
-        public void onErrorEvent(int propId, int zone) {
-        }
+        public void onErrorEvent(int propId, int zone) {}
 
         @Override
-        public void onErrorEvent(int propId, int areaId, int errorCode) {
-        }
+        public void onErrorEvent(int propId, int areaId, int errorCode) {}
     }
-
 
     private static class SetterCallback<T> implements CarPropertyManager.CarPropertyEventCallback {
         private final int mPropertyId;
@@ -3045,6 +3051,7 @@ public class VehiclePropertyVerifier<T> {
         private final long mCreationTimeNanos = SystemClock.elapsedRealtimeNanos();
         private CarPropertyValue<?> mUpdatedCarPropertyValue = null;
         private T mReceivedValue = null;
+        private Integer mSetErrorCode = null;
 
         SetterCallback(int propertyId, int areaId, T expectedSetValue) {
             mPropertyId = propertyId;
@@ -3061,61 +3068,86 @@ public class VehiclePropertyVerifier<T> {
         }
 
         /**
-         * Waits at most {@code timeoutInSec} for a property event that is the result of a
-         * {@code setProperty} request.
+         * Waits at most {@code timeoutInSec} for a property event that is the result of a {@code
+         * setProperty} request.
          *
          * <p>If {@link #onChangeEvent(CarPropertyValue)} is called, then this method will return
          * the {@link CarPropertyValue} if:
+         *
          * <ul>
-         *  <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
-         *  <li>The event is timestamped after {@link #mCreationTimeNanos} but before
-         *  {@link SystemClock#elapsedRealtimeNanos()}
-         *  <li>One of the following is true:
-         *    <ul>
-         *      <li>{@link CarPropertyValue#getStatus()} is NOT
-         *      {@link CarPropertyValue#STATUS_AVAILABLE}
-         *      <li>{@link CarPropertyValue#getStatus()} is
-         *      {@link CarPropertyValue#STATUS_AVAILABLE} and {@link CarPropertyValue#getValue()}
-         *      equals {@link #mExpectedSetValue}.
-         *    </ul>
+         *   <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
+         *   <li>The event is timestamped after {@link #mCreationTimeNanos} but before {@link
+         *       SystemClock#elapsedRealtimeNanos()}
+         *   <li>One of the following is true:
+         *       <ul>
+         *         <li>{@link CarPropertyValue#getStatus()} is NOT {@link
+         *             CarPropertyValue#STATUS_AVAILABLE}
+         *         <li>{@link CarPropertyValue#getStatus()} is {@link
+         *             CarPropertyValue#STATUS_AVAILABLE} and {@link CarPropertyValue#getValue()}
+         *             equals {@link #mExpectedSetValue}.
+         *       </ul>
          * </ul>
          *
-         * <p>If {@link #onErrorEvent(int, int)} is called, then this method will return
-         * {@code null} if:
+         * <p>If {@link #onErrorEvent(int, int)} is called, then this method will return {@code
+         * null} if:
+         *
          * <ul>
-         *  <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
+         *   <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
          * </ul>
          *
          * <p>If {@code timeoutInSec} is reached before any of the above conditions are met or if
-         * {@link InterruptedException} is thrown, then this method will throw an
-         * {@code AssertionError} and fail the test.
+         * {@link InterruptedException} is thrown, then this method will throw an {@code
+         * AssertionError} and fail the test.
+         *
+         * <p>If the callback receives a valid CarPropertyValue and a valid set property error code,
+         * then an {@code AssertionError} will be thrown and the test will fail.
          *
          * @param timeoutInSec maximum time in seconds to wait for an expected event
          * @return a valid {@link CarPropertyValue} if all {@link #onChangeEvent(CarPropertyValue)}
-         * conditions are met, or {@code null} if all {@link #onErrorEvent(int, int)} conditions
-         * are met.
+         *     conditions are met, or {@code null} if all {@link #onErrorEvent(int, int)} conditions
+         *     are met.
          */
         public CarPropertyValue<?> waitForPropertyEvent(int timeoutInSec) {
             try {
                 assertWithMessage(
-                        "Never received onChangeEvent(s) or onErrorEvent(s) for " + mPropertyName
-                                + " new value: " + valueToString(mExpectedSetValue) + " before"
-                                + " timeout. Received: "
-                                + (mReceivedValue == null
-                                    ? "No value"
-                                    : valueToString(mReceivedValue)))
-                        .that(mCountDownLatch.await(timeoutInSec, TimeUnit.SECONDS)).isTrue();
+                                "Never received onChangeEvent(s) or onErrorEvent(s) for "
+                                        + mPropertyName
+                                        + " new value: "
+                                        + valueToString(mExpectedSetValue)
+                                        + " before"
+                                        + " timeout. Received: "
+                                        + (mReceivedValue == null
+                                                ? "No value"
+                                                : valueToString(mReceivedValue)))
+                        .that(mCountDownLatch.await(timeoutInSec, TimeUnit.SECONDS))
+                        .isTrue();
             } catch (InterruptedException e) {
-                assertWithMessage("Waiting for onChangeEvent set callback for "
-                        + mPropertyName + " threw an exception: " + e).fail();
+                assertWithMessage(
+                                "Waiting for onChangeEvent set callback for "
+                                        + mPropertyName
+                                        + " threw an exception: "
+                                        + e)
+                        .fail();
             }
+            assertWithMessage(
+                            "Received both a set error code"
+                                    + mSetErrorCode
+                                    + " and a new value: "
+                                    + mUpdatedCarPropertyValue
+                                    + " for propertyId: "
+                                    + mPropertyName
+                                    + " areaId: "
+                                    + mAreaId)
+                    .that(mUpdatedCarPropertyValue != null && mSetErrorCode != null)
+                    .isFalse();
             return mUpdatedCarPropertyValue;
         }
 
         @Override
         public void onChangeEvent(CarPropertyValue carPropertyValue) {
             // Checking whether the updated carPropertyValue is caused by the setProperty request.
-            if (mUpdatedCarPropertyValue != null || carPropertyValue.getPropertyId() != mPropertyId
+            if (mUpdatedCarPropertyValue != null
+                    || carPropertyValue.getPropertyId() != mPropertyId
                     || carPropertyValue.getAreaId() != mAreaId
                     || carPropertyValue.getTimestamp() <= mCreationTimeNanos
                     || carPropertyValue.getTimestamp() >= SystemClock.elapsedRealtimeNanos()) {
@@ -3135,16 +3167,80 @@ public class VehiclePropertyVerifier<T> {
             onErrorEvent(propId, areaId, CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_UNKNOWN);
         }
 
-
         @Override
-        public void onErrorEvent(int propId, int areaId, int errorCode) {
-            if (propId != mPropertyId || areaId != mAreaId) {
-                Log.d(TAG, "SetterCallback - Received unexpected setProperty error code: "
-                        + errorCode + " - propertyId: " + mPropertyName + " - areaId: " + areaId);
+        public void onErrorEvent(int propertyId, int areaId, int errorCode) {
+            if (mCountDownLatch.getCount() == 0) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Received an onErrorEvent call "
+                                + " after the CountDownLatch finished - "
+                                + "propertyId: "
+                                + VehiclePropertyIds.toString(propertyId)
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (propertyId != mPropertyId) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Property ID does not match"
+                                + " expected property ID: "
+                                + mPropertyName
+                                + " - propertyId: "
+                                + VehiclePropertyIds.toString(propertyId)
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (areaId != mAreaId) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Area ID does not match expected"
+                                + " area ID: "
+                                + mAreaId
+                                + " - propertyId: "
+                                + mPropertyName
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (!VALID_SET_ERROR_CODES.contains(errorCode)) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. errorCode is not a valid error"
+                                + " code: "
+                                + VALID_SET_ERROR_CODES
+                                + " - propertyId: "
+                                + mPropertyName
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (mSetErrorCode != null) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Already received a valid"
+                                + " errorCode: "
+                                + mSetErrorCode
+                                + " - propertyId: "
+                                + mPropertyName
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
                 return;
             }
             Log.w(TAG, "SetterCallback - Received setProperty error code: " + errorCode
                     + " - propertyId: " + mPropertyName + " - areaId: " + areaId);
+            mSetErrorCode = Integer.valueOf(errorCode);
             mCountDownLatch.countDown();
         }
     }
