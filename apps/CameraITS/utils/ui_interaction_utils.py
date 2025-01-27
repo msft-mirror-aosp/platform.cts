@@ -84,10 +84,8 @@ SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
 SETTINGS_CLOSE_TEXT = 'Close'
 SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
 SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
-SETTINGS_SELECT_STABILIZATION_HIGH_QUALITY_TEXT = 'High Quality'
 SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
 SETTINGS_MENU_STABILIZATION_OFF_TEXT = 'Stabilization Off'
-SETTINGS_SELECT_STABILIZATION_OFF_TEXT = 'Off'
 THREE_TO_FOUR_ASPECT_RATIO_DESC = '3 to 4 aspect ratio'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
@@ -115,6 +113,12 @@ _CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
 _REQ_STR_PATTERN = 'REQ'
 JCA_VIDEO_STABILIZATION_MODE_OFF = 0
 JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
+JCA_VIDEO_STABILIZATION_MODE_ON = 2
+JCA_STABILIZATION_MODES = {
+    0: 'Off',
+    1: 'High Quality',
+    2: 'On',
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -366,7 +370,16 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     log_path: str; log path to save screenshots.
     stabilization_mode: int; constant describing the video stabilization mode.
       Acceptable values: JCA_VIDEO_STABILIZATION_MODE_OFF,
-                         JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY
+                         JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY,
+                         JCA_VIDEO_STABILIZATION_MODE_ON
+  Mapping of JCA modes:
+  ON: corresponds to setting android.control.videoStabilizationMode
+    to PREVIEW_STABILIZATION.
+  HIGH_QUALITY: corresponds to setting android.control.videoStabilizationMode
+    to ON
+  AUTO: will set the stabilization mode to PREVIEW_STABILIZATION,
+    if the lens supports it, and if not, it will set it to OIS.
+    If neither preview stabilization or OIS are supported it will be OFF.
   """
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
@@ -377,32 +390,44 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
         'Set Video Stabilization settings not found!'
         'Make sure you have the latest JCA app.'
     )
-  if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_OFF:
-    if not dut.ui(text=SETTINGS_MENU_STABILIZATION_OFF_TEXT).wait.exists(
-        UI_OBJECT_WAIT_TIME_SECONDS):
-      try:
-        dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
-        dut.ui(text=SETTINGS_SELECT_STABILIZATION_OFF_TEXT).click()
-      except Exception as e:
-        dut.take_screenshot(
-            log_path, prefix='failed_to_set_video_stabilization_to_off')
-        raise AssertionError('Set Video Stabilization to Off failed!') from e
+  dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
 
-  if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY:
-    if not dut.ui(
-        text=SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT).wait.exists(
-            UI_OBJECT_WAIT_TIME_SECONDS):
-      try:
-        dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
-        dut.ui(text=SETTINGS_SELECT_STABILIZATION_HIGH_QUALITY_TEXT).click()
-      except Exception as e:
-        dut.take_screenshot(
-            log_path, prefix='failed_to_set_video_stabilization_to_high_quality'
-        )
-        raise AssertionError(
-            'Set Video Stabilization to High Quality failed!') from e
+  if not dut.ui(text=JCA_STABILIZATION_MODES[stabilization_mode]).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.take_screenshot(
+        log_path, prefix='failed_to_find_video_stabilization_mode')
+    raise AssertionError(
+        'Video Stabilization Mode not found!'
+    )
+
+  # Ensure that the stabilzation options are enabled.
+  # They will be disabled if the camera does not support stabilization
+  if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).enabled:
+    raise AssertionError('Set Video Stabilization not enabled.')
+
+  dut.ui(text=JCA_STABILIZATION_MODES[stabilization_mode]).click()
+  time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+  logging.debug('JCA Video Stabilization set to %s successfully.',
+                JCA_STABILIZATION_MODES[stabilization_mode])
+  screenshot_prefix = (
+      f'jca_stabilization_mode_{JCA_STABILIZATION_MODES[stabilization_mode]}_set'
+  )
+  dut.take_screenshot(log_path, prefix=screenshot_prefix)
   dut.ui(text=SETTINGS_CLOSE_TEXT).click()
   dut.ui(res=SETTINGS_BACK_BUTTON_RESOURCE_ID).click()
+  # Verify that the setting was applied
+  if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_ON:
+    if not dut.ui(desc='Preview is Stabilized').wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      raise AssertionError('JCA video stabilization_mode not set to ON.')
+  elif stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY:
+    if not dut.ui(desc='Only Video is Stabilized').wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      raise AssertionError(
+          'JCA video stabilization_mode not set to HIGH_QUALITY.')
+  else:
+    if 'stabilize' in dut.ui.dump().lower():
+      raise AssertionError('JCA video stabilization_mode not set to OFF.')
 
 
 def default_camera_app_setup(device_id, pkg_name):
@@ -648,11 +673,11 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
-    if zoom_ratio:
+    if zoom_ratio is not None:
       jca_ui_zoom(dut, zoom_ratio, log_path)
     change_jca_aspect_ratio(dut, log_path,
                             aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
-    if video_stabilization:
+    if video_stabilization is not None:
       _set_jca_video_stabilization(dut, log_path, video_stabilization)
     # Take dumpsys before capturing the image
     take_dumpsys_report(dut, file_path=DEFAULT_JCA_UI_DUMPSYS_PATH)
@@ -822,4 +847,40 @@ def get_default_camera_zoom_ratio(file_name):
   if zoom_ratio_values:
     logging.debug('zoom_ratio_values: %s', zoom_ratio_values)
     return zoom_ratio_values[-1]
+  return None
+
+
+def get_default_camera_video_stabilization(file_name):
+  """Returns the video stabilization mode used by default camera capture.
+
+  Args:
+    file_name: str; file name storing default camera pkg watch
+    cameraservice dump output.
+  Returns:
+    video_stabilization_mode: str; video stabilization mode used by
+    default camera app during the capture
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  video_stabilization_modes = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if 'videoStabilizationMode' in line:
+        if _REQ_STR_PATTERN not in line:
+          continue
+        logging.debug('videoStabilizationMode line: %s', line)
+        values = line.split(':')
+        value_str = values[-1]
+        match = re.search(r'[a-zA-Z]+', value_str)
+        if match:
+          value = str(match.group())
+          logging.debug('videoStabilizationMode found: %s', value)
+          video_stabilization_modes.append(value)
+  if video_stabilization_modes:
+    logging.debug('video_stabilization_modes: %s', video_stabilization_modes)
+    logging.debug('videoStabilizationMode used for default captures: %s',
+                  video_stabilization_modes[-1])
+    return video_stabilization_modes[-1].strip()
   return None
