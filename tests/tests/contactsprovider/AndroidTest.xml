@@ -32,15 +32,6 @@
         <option name="test-file-name" value="CtsContactsProviderGalProvider.apk" />
     </target_preparer>
 
-    <!-- TODO:: remove FeatureFlagTargetPreparer once new_default_account_api_enabled and
-                disable_cp2_account_move_flag are released-->
-    <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
-        <option name="flag-value"
-            value="contacts/android.provider.new_default_account_api_enabled=true"/>
-        <option name="flag-value"
-            value="contacts/com.android.providers.contacts.flags.disable_cp2_account_move_flag=false"/>
-    </target_preparer>
-
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="package" value="android.provider.cts.contacts" />
