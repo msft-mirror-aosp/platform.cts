@@ -7763,5 +7763,6 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsNfcHceMultiDeviceTestCases</item>
         <item>CtsWifiAwareTests</item>
         <item>CtsWifiDirectTests</item>
+        <item>CtsWifiSoftApTestCases</item>
     </string-array>
 </resources>
