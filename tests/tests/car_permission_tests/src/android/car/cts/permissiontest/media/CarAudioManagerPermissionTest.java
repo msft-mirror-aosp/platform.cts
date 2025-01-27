@@ -20,11 +20,15 @@ import static android.car.Car.AUDIO_SERVICE;
 import static android.car.Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS;
 import static android.car.Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_DYNAMIC_ROUTING;
+import static android.car.media.CarAudioManager.AUDIO_FEATURE_OEM_AUDIO_SERVICE;
 import static android.car.media.CarAudioManager.PRIMARY_AUDIO_ZONE;
 import static android.media.AudioAttributes.USAGE_MEDIA;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.UiAutomation;
@@ -307,6 +311,7 @@ public final class CarAudioManagerPermissionTest extends AbstractCarManagerPermi
     @ApiTest(apis = {
             "android.car.media.CarAudioManager#unregisterCarVolumeCallback(CarVolumeCallback)"})
     public void unregisterCarVolumeCallback_withoutPermission_receivesCallback() {
+        assumeOemServiceIsDisabled();
         assumeDynamicRoutingIsEnabled();
         mCallback = new CarAudioManagerTestUtils.SyncCarVolumeCallback();
         runWithCarControlAudioVolumePermission(
@@ -337,6 +342,11 @@ public final class CarAudioManagerPermissionTest extends AbstractCarManagerPermi
     private void assumeDynamicRoutingIsEnabled() {
         assumeTrue("Requires dynamic audio routing",
                 mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_DYNAMIC_ROUTING));
+    }
+
+    private void assumeOemServiceIsDisabled() {
+        assumeFalse("Requires OEM service disabled",
+                mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_OEM_AUDIO_SERVICE));
     }
 
     private void injectVolumeDownKeyEvent() {
