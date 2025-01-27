@@ -28,6 +28,7 @@ import android.content.Context;
 import android.graphics.PixelFormat;
 import android.hardware.tv.mediaquality.IMediaQuality;
 import android.media.quality.AmbientBacklightEvent;
+import android.media.quality.AmbientBacklightMetadata;
 import android.media.quality.AmbientBacklightSettings;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
@@ -550,6 +551,12 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testIsAmbientBacklightEnabled() {
+        mManager.isAmbientBacklightEnabled();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testRegisterPictureProfileCallback() {
         mManager.registerPictureProfileCallback(
                 Executors.newSingleThreadExecutor(),
@@ -680,10 +687,16 @@ public class MediaQualityTest {
         public void onAmbientBacklightEvent(AmbientBacklightEvent event) {
             assertNotNull("Ambient backlight event is null", event);
             if (event.getEventType() == MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA) {
-                assertNotNull("Ambient Backlight Metadata is null", event.getMetadata());
+                AmbientBacklightMetadata metadata = event.getMetadata();
+                int compressionAlgorithm = metadata.getCompressionAlgorithm();
+                int source = metadata.getSource();
+                int colorFormat = metadata.getColorFormat();
+                int horizontalZonesCount = metadata.getHorizontalZonesCount();
+                int verticalZonesCount = metadata.getVerticalZonesCount();
+                assertNotNull("Ambient Backlight Metadata is null", metadata);
+                assertNotNull("Ambient Backlight package name is null", metadata.getPackageName());
                 assertNotNull(
-                        "Ambient Backlight Metadata zone color is null",
-                        event.getMetadata().getZoneColors());
+                        "Ambient Backlight Metadata zone color is null", metadata.getZoneColors());
             }
         }
     }
