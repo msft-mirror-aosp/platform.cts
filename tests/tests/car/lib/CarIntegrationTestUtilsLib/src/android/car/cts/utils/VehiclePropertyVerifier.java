@@ -1142,15 +1142,21 @@ public class VehiclePropertyVerifier<T> {
         }
         var propertyId = carPropertyConfig.getPropertyId();
         if (mPropertyToAreaIdValues.contains(propertyId)) {
-            throw new IllegalStateException("The property: "
-                    + VehiclePropertyIds.toString(propertyId) + " already has a stored value");
+            throw new IllegalStateException(
+                    "The property: "
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " already has a stored value");
         }
         mStoredProperties.add(propertyId);
         for (int i = 0; i < areaIdToInitialValue.size(); i++) {
-            Log.i(TAG, "Storing initial value for property:"
-                    + VehiclePropertyIds.toString(propertyId) + " at area ID: "
-                    + areaIdToInitialValue.keyAt(i)
-                    + " to " + areaIdToInitialValue.valueAt(i));
+            Log.i(
+                    TAG,
+                    "Storing initial value for property:"
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " at area ID: "
+                            + areaIdToInitialValue.keyAt(i)
+                            + " to "
+                            + areaIdToInitialValue.valueAt(i));
         }
         mPropertyToAreaIdValues.put(propertyId, areaIdToInitialValue);
     }
@@ -1160,22 +1166,24 @@ public class VehiclePropertyVerifier<T> {
         SparseArray<?> areaIdToInitialValue = mPropertyToAreaIdValues.get(propertyId);
 
         if (areaIdToInitialValue == null || carPropertyConfig == null) {
-            Log.w(TAG, "No stored values for " + VehiclePropertyIds.toString(propertyId)
-                    + " to restore to, ignore");
+            Log.w(
+                    TAG,
+                    "No stored values for "
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " to restore to, ignore");
             return;
         }
 
-        restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager,
-                areaIdToInitialValue);
+        restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager, areaIdToInitialValue);
     }
 
     /**
      * Restore the property's and dependent properties values to original values stored by previous
      * {@link #storeCurrentValues}.
      *
-     * Do nothing if no stored current values are available.
+     * <p>Do nothing if no stored current values are available.
      *
-     * The properties values are restored in the reverse-order as they are stored.
+     * <p>The properties values are restored in the reverse-order as they are stored.
      */
     public void restoreInitialValues() {
         for (int i = mStoredProperties.size() - 1; i >= 0; i--) {
@@ -1189,30 +1197,56 @@ public class VehiclePropertyVerifier<T> {
     @Nullable
     private static <U> SparseArray<U> getInitialValuesByAreaId(
             CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager) {
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && carPropertyConfig.getAccess()
-                != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+        if (!AREA_ID_CONFIG_ACCESS_FLAG
+                && carPropertyConfig.getAccess()
+                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
             return null;
         }
         SparseArray<U> areaIdToInitialValue = new SparseArray<U>();
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
         for (int areaId : carPropertyConfig.getAreaIds()) {
-            if (doesAreaIdAccessNotMatch(carPropertyConfig, areaId,
+            if (doesAreaIdAccessNotMatch(
+                    carPropertyConfig,
+                    areaId,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
                 continue;
             }
-            CarPropertyValue<U> carPropertyValue = null;
+            CarPropertyValue<U> carPropertyValue;
             try {
                 carPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
-            } catch (PropertyNotAvailableAndRetryException | PropertyNotAvailableException
+            } catch (PropertyNotAvailableAndRetryException
+                    | PropertyNotAvailableException
                     | CarInternalErrorException e) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to save initial car property value. Error: " + e);
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to save initial car property value. Error: "
+                                + e);
                 continue;
             }
             if (carPropertyValue == null) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to save initial car property value.");
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to save initial car property value.");
+                continue;
+            }
+            if (carPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                Log.w(
+                        TAG,
+                        "Cannot save initial value for property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " because status: "
+                                + carPropertyValue.getStatus());
                 continue;
             }
             areaIdToInitialValue.put(areaId, (U) carPropertyValue.getValue());
@@ -1220,55 +1254,88 @@ public class VehiclePropertyVerifier<T> {
         return areaIdToInitialValue;
     }
 
-    /**
-     * Set boolean property to a desired value in all supported area IDs.
-     */
-    private void setBooleanPropertyInAllAreaIds(CarPropertyConfig<Boolean> booleanCarPropertyConfig,
-            Boolean setValue) {
+    /** Set boolean property to a desired value in all supported area IDs. */
+    private void setBooleanPropertyInAllAreaIds(
+            CarPropertyConfig<Boolean> booleanCarPropertyConfig, Boolean setValue) {
         int propertyId = booleanCarPropertyConfig.getPropertyId();
         for (int areaId : booleanCarPropertyConfig.getAreaIds()) {
             if (mCarPropertyManager.getBooleanProperty(propertyId, areaId) == setValue) {
                 continue;
             }
-            CarPropertyValue<Boolean> carPropertyValue = setPropertyAndWaitForChange(
-                    mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
+            CarPropertyValue<Boolean> carPropertyValue =
+                    setPropertyAndWaitForChange(
+                            mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
             assertWithMessage(
-                    VehiclePropertyIds.toString(propertyId)
-                            + " carPropertyValue is null for area id: " + areaId)
-                    .that(carPropertyValue).isNotNull();
+                            VehiclePropertyIds.toString(propertyId)
+                                    + " carPropertyValue is null for area id: "
+                                    + areaId)
+                    .that(carPropertyValue)
+                    .isNotNull();
         }
     }
 
     // Restore the initial values of the property provided by {@code areaIdToInitialValue}.
-    private static void restoreInitialValuesByAreaId(CarPropertyConfig<?> carPropertyConfig,
-            CarPropertyManager carPropertyManager, SparseArray<?> areaIdToInitialValue) {
+    private static void restoreInitialValuesByAreaId(
+            CarPropertyConfig<?> carPropertyConfig,
+            CarPropertyManager carPropertyManager,
+            SparseArray<?> areaIdToInitialValue) {
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
         for (int i = 0; i < areaIdToInitialValue.size(); i++) {
             int areaId = areaIdToInitialValue.keyAt(i);
             Object originalValue = areaIdToInitialValue.valueAt(i);
-            CarPropertyValue<?> currentCarPropertyValue = null;
+            CarPropertyValue<?> currentCarPropertyValue;
             try {
                 currentCarPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
-            } catch (PropertyNotAvailableAndRetryException | PropertyNotAvailableException
+            } catch (PropertyNotAvailableAndRetryException
+                    | PropertyNotAvailableException
                     | CarInternalErrorException e) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to restore initial car property value. Error: " + e);
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to restore initial car property value. Error: "
+                                + e);
                 continue;
             }
             if (currentCarPropertyValue == null) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to restore initial car property value.");
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to restore initial car property value.");
                 continue;
             }
-            Log.i(TAG, "Restoring value for: " + propertyName + " at area ID: " + areaId + " to "
-                    + originalValue);
+            if (currentCarPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                Log.w(
+                        TAG,
+                        "Cannot restore initial value for property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " because status: "
+                                + currentCarPropertyValue.getStatus());
+                continue;
+            }
             Object currentValue = currentCarPropertyValue.getValue();
             if (valueEquals(originalValue, currentValue)) {
                 continue;
             }
-            CarPropertyValue<Object> carPropertyValue = setPropertyAndWaitForChange(
-                    carPropertyManager, propertyId, Object.class, areaId, originalValue);
+            Log.i(
+                    TAG,
+                    "Restoring value for: "
+                            + propertyName
+                            + " at area ID: "
+                            + areaId
+                            + " to "
+                            + originalValue);
+            CarPropertyValue<Object> carPropertyValue =
+                    setPropertyAndWaitForChange(
+                            carPropertyManager, propertyId, Object.class, areaId, originalValue);
             assertWithMessage(
                     "Failed to restore car property value for property: " + propertyName
                             + " at area ID: " + areaId + " to its original value: " + originalValue
