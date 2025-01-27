@@ -289,7 +289,6 @@ public final class AccountManagementTest {
 
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = DisallowModifyAccounts.class)
-    @EnsureDoesNotHaveUserRestriction(CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS)
     public void removeAccount_withDisallowModifyAccountsRestriction_throwsException()
             throws Exception {
         AccountReference account = null;
@@ -330,7 +329,7 @@ public final class AccountManagementTest {
     }
 
     @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = AccountManagement.class)
+    @PolicyAppliesTest(policy = AccountManagement.class)
     @EnsureHasAccount
     @EnsureDoesNotHaveUserRestriction(CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS)
     public void removeAccount_withAccountManagementDisabled_throwsException()
