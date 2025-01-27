@@ -594,6 +594,18 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testOnAmbientBacklightEvent() {
+        MockAmbientBacklightCallback callback = new MockAmbientBacklightCallback();
+        AmbientBacklightMetadata metadata = createAmbientBacklightMetadata();
+
+        AmbientBacklightEvent event = new AmbientBacklightEvent(
+                MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA, metadata);
+
+        callback.onAmbientBacklightEvent(event);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testSetAmbientBacklightSettings() {
         mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
     }
@@ -675,6 +687,21 @@ public class MediaQualityTest {
                         5 // Example threshold
                         );
         return settings;
+    }
+
+    private AmbientBacklightMetadata createAmbientBacklightMetadata() {
+        int[] zoneColors = {0xFF0000, 0x00FF00, 0x0000FF};
+        AmbientBacklightMetadata metadata =
+                new AmbientBacklightMetadata(
+                        "com.example.test", // Example package name
+                        1, // Example compression algorithm
+                        1, // Example source
+                        1, // Example color format
+                        1, // Example horizontalZonesNumber
+                        1, // Example verticalZonesNumber
+                        zoneColors // Example zoneColors
+                );
+        return metadata;
     }
 
     public static class MockAmbientBacklightCallback
