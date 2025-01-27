@@ -248,7 +248,7 @@ class PreviewNumFacesTest(its_base_test.ItsBaseTest):
         if (props['android.lens.facing'] ==
             camera_properties_utils.LENS_FACING['FRONT']):
           preview_img = (
-              preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+              image_processing_utils.mirror_preview_image_by_sensor_orientation(
                   props['android.sensor.orientation'], preview_img))
         else:
           file_name_stem = os.path.join(log_path, 'rear_preview')

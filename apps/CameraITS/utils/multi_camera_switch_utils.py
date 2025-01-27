@@ -21,7 +21,6 @@ import camera_properties_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
-import preview_processing_utils
 
 _ARUCO_MARKERS_COUNT = 4
 _CH_FULL_SCALE = 255
@@ -43,7 +42,7 @@ def check_orientation_and_flip(props, img, img_name_stem, suffix):
   Returns:
     numpy array of the image.
   """
-  img = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+  img = image_processing_utils.mirror_preview_image_by_sensor_orientation(
       props['android.sensor.orientation'], img)
   image_processing_utils.write_image(img / _CH_FULL_SCALE,
                                      f'{img_name_stem}_{suffix}.png')

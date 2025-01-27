@@ -24,7 +24,6 @@ import os
 import sys
 
 import capture_request_utils
-import preview_processing_utils
 import error_util
 import noise_model_constants
 import numpy
@@ -38,6 +37,7 @@ _CMAP_BLUE = ('black', 'blue', 'lightblue')
 _CMAP_GREEN = ('black', 'green', 'lightgreen')
 _CMAP_RED = ('black', 'red', 'lightcoral')
 _CMAP_SIZE = 6  # 6 inches
+_NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_RAW_CHANNELS = 4  # R, Gr, Gb, B
 
 LENS_SHADING_MAP_ON = 1
@@ -1640,6 +1640,34 @@ def convert_sensor_coords_to_image_coords(
   return image_coords
 
 
+def mirror_preview_image_by_sensor_orientation(
+    sensor_orientation, input_preview_img):
+  """If testing front camera, mirror preview image to match camera capture.
+
+  Preview are flipped on device's natural orientation, so for sensor
+  orientation 90 or 270, it is up or down. Sensor orientation 0 or 180
+  is left or right.
+
+  Args:
+    sensor_orientation: integer; display orientation in natural position.
+    input_preview_img: numpy array; image extracted from preview recording.
+  Returns:
+    output_preview_img: numpy array; flipped according to natural orientation.
+  """
+  if sensor_orientation in _NATURAL_ORIENTATION_PORTRAIT:
+    # Opencv expects a numpy array but np.flip generates a 'view' which
+    # doesn't work with opencv. ndarray.copy forces copy instead of view.
+    output_preview_img = numpy.ndarray.copy(numpy.flipud(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping up down', sensor_orientation)
+  else:
+    output_preview_img = numpy.ndarray.copy(numpy.fliplr(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping left right', sensor_orientation)
+
+  return output_preview_img
+
+
 def check_orientation_and_flip(props, img, img_name_stem):
   """Checks the sensor orientation and flips image.
 
@@ -1654,7 +1682,7 @@ def check_orientation_and_flip(props, img, img_name_stem):
   Returns:
     numpy array of the two images.
   """
-  img = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+  img = mirror_preview_image_by_sensor_orientation(
       props['android.sensor.orientation'], img)
   write_image(img / _CH_FULL_SCALE, f'{img_name_stem}.png')
   return img
