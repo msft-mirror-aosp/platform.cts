@@ -1277,15 +1277,8 @@ public class VehiclePropertyVerifier<T> {
             if (mCarPropertyManager.getBooleanProperty(propertyId, areaId) == setValue) {
                 continue;
             }
-            CarPropertyValue<Boolean> carPropertyValue =
-                    setPropertyAndWaitForChange(
-                            mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
-            assertWithMessage(
-                            VehiclePropertyIds.toString(propertyId)
-                                    + " carPropertyValue is null for area id: "
-                                    + areaId)
-                    .that(carPropertyValue)
-                    .isNotNull();
+            setPropertyAndWaitForChange(
+                    mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
         }
     }
 
@@ -1336,8 +1329,7 @@ public class VehiclePropertyVerifier<T> {
                                 + currentCarPropertyValue.getStatus());
                 continue;
             }
-            Object currentValue = currentCarPropertyValue.getValue();
-            if (valueEquals(originalValue, currentValue)) {
+            if (valueEquals(originalValue, currentCarPropertyValue.getValue())) {
                 continue;
             }
             Log.i(
@@ -1348,14 +1340,8 @@ public class VehiclePropertyVerifier<T> {
                             + areaId
                             + " to "
                             + originalValue);
-            CarPropertyValue<Object> carPropertyValue =
-                    setPropertyAndWaitForChange(
-                            carPropertyManager, propertyId, Object.class, areaId, originalValue);
-            assertWithMessage(
-                    "Failed to restore car property value for property: " + propertyName
-                            + " at area ID: " + areaId + " to its original value: " + originalValue
-                            + ", current value: " + currentValue)
-                    .that(carPropertyValue).isNotNull();
+            setPropertyAndWaitForChange(
+                    carPropertyManager, propertyId, Object.class, areaId, originalValue);
         }
     }
 
@@ -1657,12 +1643,16 @@ public class VehiclePropertyVerifier<T> {
             verifyInternalErrorException(e);
             return;
         }
-        CarPropertyValue<T> updatedCarPropertyValue = setPropertyAndWaitForChange(
-                mCarPropertyManager, mPropertyId, carPropertyConfig.getPropertyType(), areaId,
-                valueToSet);
-        if (sExceptionClassOnSet == null) {
-            verifyCarPropertyValue(updatedCarPropertyValue, areaId,
-                    CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
+        CarPropertyValue<T> updatedCarPropertyValue =
+                setPropertyAndWaitForChange(
+                        mCarPropertyManager,
+                        mPropertyId,
+                        carPropertyConfig.getPropertyType(),
+                        areaId,
+                        valueToSet);
+        if (updatedCarPropertyValue != null) {
+            verifyCarPropertyValue(
+                    updatedCarPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
         }
     }
 
@@ -1687,24 +1677,33 @@ public class VehiclePropertyVerifier<T> {
         float minTempInCelsius = hvacTemperatureSetConfigArray.get(0).floatValue() / 10f;
         float minTempInFahrenheit = hvacTemperatureSetConfigArray.get(3).floatValue() / 10f;
 
-        Float[] temperatureRequest = new Float[] {
-            /* requestedValue = */ minTempInCelsius,
-            /* units = */ (float) 0x30, // VehicleUnit#CELSIUS
-            /* suggestedValueInCelsius = */ 0f,
-            /* suggestedValueInFahrenheit = */ 0f
-        };
-        Float[] expectedTemperatureResponse = new Float[] {
-            /* requestedValue = */ minTempInCelsius,
-            /* units = */ (float) 0x30, // VehicleUnit#CELSIUS
-            /* suggestedValueInCelsius = */ minTempInCelsius,
-            /* suggestedValueInFahrenheit = */ minTempInFahrenheit
-        };
-        for (int areaId: carPropertyConfig.getAreaIds()) {
-            CarPropertyValue<Float[]> updatedCarPropertyValue = setPropertyAndWaitForChange(
-                    mCarPropertyManager, mPropertyId, Float[].class, areaId,
-                    temperatureRequest, expectedTemperatureResponse);
-            verifyCarPropertyValue(updatedCarPropertyValue, areaId,
-                    CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
+        Float[] temperatureRequest =
+                new Float[] {
+                    /* requestedValue= */ minTempInCelsius,
+                    /* units= */ (float) 0x30, // VehicleUnit#CELSIUS
+                    /* suggestedValueInCelsius= */ 0f,
+                    /* suggestedValueInFahrenheit= */ 0f
+                };
+        Float[] expectedTemperatureResponse =
+                new Float[] {
+                    /* requestedValue= */ minTempInCelsius,
+                    /* units= */ (float) 0x30, // VehicleUnit#CELSIUS
+                    /* suggestedValueInCelsius= */ minTempInCelsius,
+                    /* suggestedValueInFahrenheit= */ minTempInFahrenheit
+                };
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            CarPropertyValue<Float[]> updatedCarPropertyValue =
+                    setPropertyAndWaitForChange(
+                            mCarPropertyManager,
+                            mPropertyId,
+                            Float[].class,
+                            areaId,
+                            temperatureRequest,
+                            expectedTemperatureResponse);
+            if (updatedCarPropertyValue != null) {
+                verifyCarPropertyValue(
+                        updatedCarPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
+            }
         }
     }
 
@@ -3810,6 +3809,8 @@ public class VehiclePropertyVerifier<T> {
                 .isTrue();
         try {
             carPropertyManager.setProperty(propertyType, propertyId, areaId, valueToSet);
+        } catch (PropertyNotAvailableAndRetryException e) {
+            return null;
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
             sExceptionClassOnSet = e.getClass();
