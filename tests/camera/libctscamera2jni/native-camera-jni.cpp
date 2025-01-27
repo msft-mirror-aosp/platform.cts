@@ -220,6 +220,11 @@ class CameraDeviceListener {
         return;
     }
 
+    int getDisconnectCount() {
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mOnDisconnect;
+    }
+
   private:
     std::mutex mMutex;
     int mOnDisconnect = 0;
@@ -1808,6 +1813,8 @@ class PreviewTestCase {
         resetCamera();
         return ACAMERA_OK;
     }
+
+    CameraDeviceListener* getDeviceListener() { return &mDeviceListener; }
 
     CaptureSessionListener* getSessionListener() {
         return &mSessionListener;
@@ -4952,9 +4959,80 @@ cleanup:
     return (jlong)testCase;
 }
 
+extern "C" jlong Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testInitAndOpenCameraNative(JNIEnv* env, jclass /*clazz*/, jstring jCameraId, jboolean expectFail) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    int numCameras;
+    const char* cameraId = nullptr;
+    PreviewTestCase* testCase = new PreviewTestCase();
+    camera_status_t ret = testCase->initWithErrorLog(env, jCameraId);
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "initWithErrorLog failed: ret %d", ret);
+        goto cleanup;
+    }
+    numCameras = testCase->getNumCameras();
+    if (numCameras < 0) {
+        LOG_ERROR(errorString, "Testcase returned negative number of cameras: %d", numCameras);
+        goto cleanup;
+    }
+    cameraId = testCase->getCameraId(0);
+    if (cameraId == nullptr) {
+        LOG_ERROR(errorString, "Testcase returned null camera id for camera");
+        goto cleanup;
+    }
+    ret = testCase->openCamera(cameraId);
+    if ((ret != ACAMERA_OK) != expectFail) {
+        if (expectFail) {
+            LOG_ERROR(errorString, "Open camera device %s success. Expected failure. ret %d",
+                      cameraId, ret);
+        } else {
+            LOG_ERROR(errorString, "Open camera device %s failure. Expected success. ret %d",
+                      cameraId, ret);
+        }
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "fail");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+        if (testCase) {
+            delete testCase;
+        }
+        return 0;
+    }
+    return (jlong)testCase;
+}
+
 extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
-testDeInitAndCloseSharedCameraNative(
-        JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+testIsCameraEvictedNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    PreviewTestCase* sharedCtx = nullptr;
+    int disconnectedCount;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    disconnectedCount = sharedCtx->getDeviceListener()->getDisconnectCount();
+    if (disconnectedCount == 0) {
+        LOG_ERROR(errorString, "Camera eviction failure: disconnectedCount %d", 0);
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testDeInitAndCloseSharedCameraNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
+                                     jboolean expectCameraAlreadyClosed) {
     ALOGV("%s", __FUNCTION__);
     bool pass = false;
     camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
@@ -4964,21 +5042,23 @@ testDeInitAndCloseSharedCameraNative(
         goto cleanup;
     }
     sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
-    ret = sharedCtx->closeCamera();
-    if (ret != ACAMERA_OK) {
-        LOG_ERROR(errorString, "Close camera device failure: ret %d", ret);
-        goto cleanup;
+
+    if (!expectCameraAlreadyClosed) {
+        ret = sharedCtx->closeCamera();
+        if (ret != ACAMERA_OK) {
+            LOG_ERROR(errorString, "Close camera device failure: ret %d", ret);
+            goto cleanup;
+        }
     }
 
     usleep(100000); // sleep to give some time for callbacks to happen
-    ret = sharedCtx->deInit();
-    if (ret != ACAMERA_OK) {
-        LOG_ERROR(errorString, "Testcase deInit failed: ret %d", ret);
-        goto cleanup;
-    }
     pass = true;
 cleanup:
     ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (sharedCtx) {
+        delete sharedCtx;
+        sharedCtx = nullptr;
+    }
     if (!pass) {
         throwAssertionError(env, errorString);
     }

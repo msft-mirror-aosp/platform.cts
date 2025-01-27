@@ -101,6 +101,7 @@ public class SharedCameraActivity extends Activity {
 
         @Override
         public void onOpened(CameraDevice cameraDevice) {
+            mCameraDevice = cameraDevice;
             mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_CONNECT, mChosenCameraId);
             Log.i(TAG, "Camera " + mChosenCameraId + " is opened");
         }
@@ -115,7 +116,9 @@ public class SharedCameraActivity extends Activity {
                 mErrorServiceConnection.logAsync(
                         TestConstants.EVENT_CAMERA_CONNECT_SHARED_SECONDARY, mChosenCameraId);
             }
-            Log.i(TAG, "Camera " + mChosenCameraId + " is opened in shared mode primary=" + isPrimary);
+            Log.i(
+                    TAG,
+                    "Camera " + mChosenCameraId + " is opened in shared mode primary=" + isPrimary);
         }
 
         @Override
@@ -157,6 +160,22 @@ public class SharedCameraActivity extends Activity {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
+                case TestConstants.OP_OPEN_CAMERA:
+                    mCameraId = msg.getData().getString(TestConstants.EXTRA_CAMERA_ID);
+                    try {
+                        if (mStateCallback == null || mStateCallback.mChosenCameraId != mCameraId) {
+                            mStateCallback = new StateCallback(mCameraId);
+                            final Executor executor = new HandlerExecutor(mCameraHandler);
+                            mCameraManager.openCamera(mCameraId, executor, mStateCallback);
+                        }
+                    } catch (CameraAccessException e) {
+                        mErrorServiceConnection.logAsync(
+                                TestConstants.EVENT_CAMERA_ERROR,
+                                TAG + " camera exception during connection: " + e);
+                        Log.e(TAG, "Access exception: " + e);
+                    }
+                    break;
+
                 case TestConstants.OP_OPEN_CAMERA_SHARED:
                     mCameraId = msg.getData().getString(TestConstants.EXTRA_CAMERA_ID);
                     try {
