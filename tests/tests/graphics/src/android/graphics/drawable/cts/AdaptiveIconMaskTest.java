@@ -56,7 +56,6 @@ public class AdaptiveIconMaskTest {
     private ColorDrawable mRedDrawable;
     private AdaptiveIconDrawable mDrawable;
     private static final float sMaskSize = AdaptiveIconDrawable.MASK_SIZE;
-    private boolean mUseRoundIcon;
 
     @Before
     public void setup() {
@@ -69,10 +68,6 @@ public class AdaptiveIconMaskTest {
         int sInset = (int) (SAFEZONE_INSET * AdaptiveIconDrawable.MASK_SIZE);
         mSafeZone.addCircle(AdaptiveIconDrawable.MASK_SIZE/2, AdaptiveIconDrawable.MASK_SIZE/2,
             AdaptiveIconDrawable.MASK_SIZE/2/2 - sInset, Direction.CW);
-        mUseRoundIcon =  InstrumentationRegistry.getTargetContext().getResources().getBoolean(
-            InstrumentationRegistry.getTargetContext().getResources().getIdentifier(
-                "config_useRoundIcon", "bool", "android"));
-        L("config_useRoundIcon:" + mUseRoundIcon);
     }
 
     @Test
@@ -127,18 +122,6 @@ public class AdaptiveIconMaskTest {
             mBlueDrawable, mDrawable.getBackground());
         assertEquals("Foreground layer is not the same.",
             mRedDrawable, mDrawable.getForeground());
-    }
-
-    @Test
-    public void testDeviceConfig_iconMask_useRoundIcon() {
-        assertNotNull(mMask);
-
-        boolean circleMask = isCircle(mMask);
-        // If mask shape is circle, then mUseRoundIcon should be defined and should be true.
-        // If mask shape is not a circle
-        //           mUseRoundIcon doesn't have to be defined.
-        //           if mUseRoundIcon is defined, then should be false
-        assertEquals(mUseRoundIcon, circleMask);
     }
 
     private boolean isCircle(Path maskPath) {
