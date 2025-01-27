@@ -30,6 +30,7 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
@@ -51,6 +52,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.FeatureUtil;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -102,6 +104,9 @@ public class TextToSpeechTest {
         assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
         assumeTrue(packageManager.hasSystemFeature(
                 PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS));
+        // Automotive can have its own audio policies that don't play well with the VDM-created ones
+        assumeFalse(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
         assumeNotNull(mVirtualDeviceManager);
         mAudioManager = context.getSystemService(AudioManager.class);
