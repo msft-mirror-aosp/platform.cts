@@ -96,6 +96,7 @@ android_library {
         "DpmWrapper",
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
+        "mediaprovider_flags_java_lib",
         "com_android_wm_shell_flags_lib",
         "its-service",
     ],

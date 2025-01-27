@@ -102,6 +102,7 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
     private DialogTestListItem mIntentFiltersTest;
     private DialogTestListItem mPermissionLockdownTest;
     private DialogTestListItem mCrossProfileImageCaptureSupportTest;
+    private DialogTestListItem mCrossProfileMotionPhotoCaptureSupportTest;
     private DialogTestListItem mCrossProfileVideoCaptureWithExtraOutputSupportTest;
     private DialogTestListItem mCrossProfileVideoCaptureWithoutExtraOutputSupportTest;
     private DialogTestListItem mCrossProfileAudioCaptureSupportTest;
@@ -611,6 +612,27 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
             Toast.makeText(ByodFlowTestActivity.this,
                     R.string.provisioning_byod_no_video_capture_resolver, Toast.LENGTH_SHORT)
                     .show();
+        }
+
+        /* If there is an application that handles ACTION_MOTION_PHOTO_CAPTURE, test that it handles
+         * it well.
+         */
+        if (com.android.providers.media.flags.Flags.motionPhotoIntent()) {
+            if (canResolveIntent(ByodHelperActivity.getCaptureMotionPhotoIntent())) {
+                // Capture motion photo intent can be resolved in primary profile, so test.
+                mCrossProfileMotionPhotoCaptureSupportTest = new DialogTestListItem(this,
+                        R.string.provisioning_byod_capture_motion_photo_support,
+                        "BYOD_CrossProfileMotionPhotoCaptureSupportTest",
+                        R.string.provisioning_byod_capture_motion_photo_support_info,
+                        new Intent(ByodHelperActivity.ACTION_CAPTURE_AND_CHECK_MOTION_PHOTO));
+                adapter.add(mCrossProfileMotionPhotoCaptureSupportTest);
+            } else {
+                // Capture motion photo intent cannot be resolved in primary profile, so skip test.
+                Toast.makeText(ByodFlowTestActivity.this,
+                                R.string.provisioning_byod_no_motion_photo_capture_resolver,
+                                Toast.LENGTH_SHORT)
+                        .show();
+            }
         }
 
         adapter.add(mKeyChainTest);
