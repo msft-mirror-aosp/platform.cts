@@ -80,8 +80,10 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        PhotoPickerComponentUtils.setState(GET_CONTENT_ACTIVITY_COMPONENT,
-                sGetContentTakeOverActivityAliasState);
+        if (!super.isModernPickerEnabled()) {
+            PhotoPickerComponentUtils.setState(
+                    GET_CONTENT_ACTIVITY_COMPONENT, sGetContentTakeOverActivityAliasState);
+        }
     }
 
     @Before

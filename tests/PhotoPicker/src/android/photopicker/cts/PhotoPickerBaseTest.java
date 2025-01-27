@@ -22,6 +22,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.provider.DeviceConfig;
 import android.view.Display;
 
 import androidx.annotation.Nullable;
@@ -54,6 +55,8 @@ public class PhotoPickerBaseTest {
 
     private int mDisplayId = Display.DEFAULT_DISPLAY;
     private boolean mIsVisibleBackgroundUser = false;
+    private static final String READ_DEVICE_CONFIG_PERMISSION =
+            "android.permission.READ_DEVICE_CONFIG";
 
     // Do not use org.junit.BeforeClass (b/260380362) or
     // com.android.bedstead.harrier.annotations.BeforeClass (b/246986339#comment18)
@@ -63,6 +66,9 @@ public class PhotoPickerBaseTest {
     @Before
     public void setUp() throws Exception {
         Assume.assumeTrue(isHardwareSupported());
+
+        // Tests that derive from the class do not support the modern picker
+        Assume.assumeFalse(isModernPickerEnabled());
         disableDeviceConfigSync();
 
         final String setSyncDelayCommand =
@@ -85,6 +91,17 @@ public class PhotoPickerBaseTest {
         UserHelper userHelper = new UserHelper(mContext);
         mDisplayId = userHelper.getMainDisplayId();
         mIsVisibleBackgroundUser = userHelper.isVisibleBackgroundUser();
+    }
+
+    static boolean isModernPickerEnabled() {
+        sInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(READ_DEVICE_CONFIG_PERMISSION);
+        try {
+            return DeviceConfig.getBoolean("mediaprovider", "enable_modern_picker", false);
+        } finally {
+            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
     }
 
     static boolean isHardwareSupported() {
