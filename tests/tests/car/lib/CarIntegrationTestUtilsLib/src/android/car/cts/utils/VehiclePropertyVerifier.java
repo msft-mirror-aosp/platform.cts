@@ -1593,8 +1593,8 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifySetProperty(int areaId, T valueToSet) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
-                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
+        if (doesAreaIdAccessMatch(
+                carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
             return;
         }
 
@@ -1602,23 +1602,54 @@ public class VehiclePropertyVerifier<T> {
 
         if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
-            Log.w(TAG, "Property: " + mPropertyName + " will be altered during the test and it is"
-                    + " not possible to restore.");
+            Log.w(
+                    TAG,
+                    "Property: "
+                            + mPropertyName
+                            + " will be altered during the test and it is"
+                            + " not possible to restore.");
             verifySetPropertyOkayOrThrowExpectedExceptions(areaId, valueToSet);
             return;
         }
         try {
             CarPropertyValue<T> currentCarPropertyValue =
                     mCarPropertyManager.getProperty(mPropertyId, areaId);
-            verifyCarPropertyValue(currentCarPropertyValue, areaId,
-                    CAR_PROPERTY_VALUE_SOURCE_GETTER);
+            verifyCarPropertyValue(
+                    currentCarPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
+            if (currentCarPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                Log.w(
+                        TAG,
+                        "Skipping SET verification for propertyId: "
+                                + mPropertyId
+                                + " areaId: "
+                                + areaId
+                                + " valueToSet:"
+                                + valueToSet
+                                + " because getProperty did not have an AVAILABLE status - "
+                                + currentCarPropertyValue);
+                return;
+            }
             if (valueEquals(valueToSet, currentCarPropertyValue.getValue())) {
                 return;
             }
+        } catch (PropertyNotAvailableAndRetryException e) {
+            Log.w(
+                    TAG,
+                    "Skipping SET verification for propertyId: "
+                            + mPropertyName
+                            + " areaId: "
+                            + areaId
+                            + " valueToSet:"
+                            + valueToSet
+                            + " because getProperty threw PropertyNotAvailableAndRetryException - "
+                            + e);
+            return;
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
+            return;
         } catch (CarInternalErrorException e) {
             verifyInternalErrorException(e);
+            return;
         }
         CarPropertyValue<T> updatedCarPropertyValue = setPropertyAndWaitForChange(
                 mCarPropertyManager, mPropertyId, carPropertyConfig.getPropertyType(), areaId,
