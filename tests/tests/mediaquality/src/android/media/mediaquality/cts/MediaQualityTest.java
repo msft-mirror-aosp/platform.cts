@@ -551,6 +551,12 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testIsAmbientBacklightEnabled() {
+        mManager.isAmbientBacklightEnabled();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testRegisterPictureProfileCallback() {
         mManager.registerPictureProfileCallback(
                 Executors.newSingleThreadExecutor(),
