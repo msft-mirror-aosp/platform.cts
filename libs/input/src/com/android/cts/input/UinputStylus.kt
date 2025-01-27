@@ -20,8 +20,9 @@ import android.app.Instrumentation
 import android.view.Display
 import android.view.InputDevice.SOURCE_STYLUS
 import android.view.InputDevice.SOURCE_TOUCHSCREEN
-import com.android.cts.input.UinputTouchDevice.Companion.MT_TOOL_FINGER
-import com.android.cts.input.UinputTouchDevice.Companion.MT_TOOL_PALM
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_FINGER
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PEN
 
 private fun createStylusRegisterCommand(display: Display): UinputRegisterCommand {
     val configurationItems = listOf(

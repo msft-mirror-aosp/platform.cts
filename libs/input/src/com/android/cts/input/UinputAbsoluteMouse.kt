@@ -19,6 +19,7 @@ package com.android.cts.input
 import android.app.Instrumentation
 import android.view.Display
 import android.view.InputDevice
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_FINGER
 
 private fun createAbsoluteMouseRegisterCommand(display: Display): UinputRegisterCommand {
     val configurationItems = listOf(

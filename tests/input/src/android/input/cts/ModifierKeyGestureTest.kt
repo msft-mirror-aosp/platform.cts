@@ -25,6 +25,9 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTALT
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTMETA
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_Q
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.inputeventmatchers.withKeyAction
 import com.android.cts.input.inputeventmatchers.withKeyCode
@@ -43,13 +46,6 @@ import org.junit.runner.RunWith
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class ModifierKeyGestureTest {
-
-    companion object {
-        // Linux keycode defined in the "linux/input-event-codes.h" header.
-        val KEY_LEFTALT = 56
-        val KEY_LEFTMETA = 125
-        val KEY_Q = 16
-    }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
