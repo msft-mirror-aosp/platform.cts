@@ -33,7 +33,6 @@ import android.os.RemoteException;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.provider.Contacts;
 import android.provider.Contacts.People;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SubscriptionManager;
@@ -182,7 +181,6 @@ public class PhoneNumberUtilsTest {
 
         // Test getNumberFromIntent, query nothing, return null.
         Intent intent = new Intent();
-        intent.setData(Contacts.People.CONTENT_URI);
         Context context = getContext();
         assertNull(PhoneNumberUtils.getNumberFromIntent(intent, context));
 
