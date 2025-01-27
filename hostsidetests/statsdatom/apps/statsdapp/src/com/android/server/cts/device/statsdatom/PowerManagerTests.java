@@ -66,4 +66,34 @@ public class PowerManagerTests {
             throw ex;
         }
     }
+
+    @Test
+    public void testUpdateWakelockUids() {
+        Context context = InstrumentationRegistry.getContext();
+        PowerManager powerManager = context.getSystemService(PowerManager.class);
+
+        assertNotNull(powerManager);
+
+        String tag = "cts:TEST_UPDATE_WAKELOCK_UIDS";
+        PowerManager.WakeLock wakelock =
+                powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, tag);
+
+        Log.i(TAG, "Acquiring the wakelock");
+        wakelock.acquire(10000);
+
+        Log.i(TAG, "Updating the wakelock uids");
+        ShellIdentityUtils.invokeWithShellPermissions(() -> wakelock.updateUids(new int[] {1010}));
+
+        Log.i(TAG, "Updating the wakelock uids");
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> wakelock.updateUids(new int[] {1020, 1030}));
+
+        try {
+            Log.i(TAG, "Releasing the wakelock");
+            wakelock.release();
+        } catch (RuntimeException ex) {
+            Log.e(TAG, "Failed to release wakelock", ex);
+            throw ex;
+        }
+    }
 }
