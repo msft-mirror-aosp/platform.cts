@@ -74,6 +74,7 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
     }
 
     public void testGameStateStatsd() throws Exception {
+        if (gameManagerServiceNotFound()) return;
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.GAME_STATE_CHANGED_FIELD_NUMBER);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testGameState");
@@ -91,6 +92,7 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
     }
 
     public void testGameModeChangedIsPushed() throws Exception {
+        if (gameManagerServiceNotFound()) return;
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.GAME_MODE_CHANGED_FIELD_NUMBER);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testSetGameMode");
@@ -110,6 +112,7 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
     }
 
     public void testGameModeConfigurationChangedIsPushed() throws Exception {
+        if (gameManagerServiceNotFound()) return;
         ConfigUtils.uploadConfigForPushedAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.GAME_MODE_CONFIGURATION_CHANGED_FIELD_NUMBER);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests",
@@ -138,6 +141,7 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
     }
 
     public void testGameModeInfoIsPulled() throws Exception {
+        if (gameManagerServiceNotFound()) return;
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.GAME_MODE_INFO_FIELD_NUMBER);
 
@@ -167,6 +171,7 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
     }
 
     public void testGameModeConfigurationIsPulled() throws Exception {
+        if (gameManagerServiceNotFound()) return;
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.GAME_MODE_CONFIGURATION_FIELD_NUMBER);
 
@@ -192,5 +197,10 @@ public class GameManagerStatsTests extends DeviceTestCase implements IBuildRecei
         assertThat(performanceConfig.getFpsOverride()).isEqualTo(90);
         assertThat(performanceConfig.getGameUid()).isEqualTo(
                 mStatsdAtomTestUid);
+    }
+
+    private boolean gameManagerServiceNotFound() throws Exception {
+        // Skip test if device does not have GameManagerService
+        return getDevice().executeShellCommand("service check game").contains("not found");
     }
 }
