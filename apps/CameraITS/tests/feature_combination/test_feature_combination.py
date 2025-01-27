@@ -277,6 +277,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 future = executor.submit(
                     preview_processing_utils.verify_preview_stabilization,
                     recording_obj, gyro_events, _NAME, log_path, facing)
+                # Get result from future before continuing if desired
+                if not self.parallel_execution:
+                  future.result()
                 preview_verification_futures.append(future)
                 combination_names.append(combination_name)
 
