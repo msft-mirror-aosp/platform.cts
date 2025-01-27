@@ -594,6 +594,12 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testUnregisterAmbientBacklightCallback() {
+        mManager.unregisterAmbientBacklightCallback(new MockAmbientBacklightCallback());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testOnAmbientBacklightEvent() {
         MockAmbientBacklightCallback callback = new MockAmbientBacklightCallback();
         AmbientBacklightMetadata metadata = createAmbientBacklightMetadata();
@@ -700,7 +706,7 @@ public class MediaQualityTest {
                         1, // Example horizontalZonesNumber
                         1, // Example verticalZonesNumber
                         zoneColors // Example zoneColors
-                );
+                        );
         return metadata;
     }
 
