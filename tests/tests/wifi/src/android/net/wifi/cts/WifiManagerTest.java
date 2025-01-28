@@ -771,13 +771,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         synchronized (mLock) {
+            final TestWifiStateChangedListener listener = new TestWifiStateChangedListener(mLock);
             try {
-                setWifiEnabled(true);
-                final TestWifiStateChangedListener listener =
-                        new TestWifiStateChangedListener(mLock);
                 sWifiManager.addWifiStateChangedListener(mExecutor, listener);
 
-                // Set Wi-Fi disabled and verify WifiStateChangedListener was called twice.
+                // Wi-Fi is already enabled in #setUp, so set Wi-Fi to disabled and verify
+                // WifiStateChangedListener was called twice (ENABLED -> DISABLING -> DISABLED).
                 setWifiEnabled(false);
                 long now = System.currentTimeMillis();
                 long deadline = now + TEST_WAIT_DURATION_MS;
@@ -792,6 +791,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             } catch (InterruptedException e) {
                 throw new AssertionError(
                         "Thread interrupted unexpectedly while waiting on mLock", e);
+            } finally {
+                sWifiManager.removeWifiStateChangedListener(listener);
             }
         }
     }
