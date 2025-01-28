@@ -104,7 +104,7 @@ static constexpr float kProjectionHalfHeight = 2.f;
 static constexpr float kProjectionNearPlane = -1.f;
 
 /*!
- * The far plane distance for the projection matrix. Since this is an orthographic porjection
+ * The far plane distance for the projection matrix. Since this is an orthographic projection
  * matrix, it's convenient to have the far plane equidistant from 0 as the near plane.
  */
 static constexpr float kProjectionFarPlane = 1.f;
@@ -174,10 +174,19 @@ jlong Renderer::render() {
     // order provided. But the sample EGL setup requests a 24 bit depth buffer so you could
     // configure it at the end of initRenderer
     auto start = std::chrono::steady_clock::now();
-
-    if (!heads_.empty()) {
-        for (auto &model : heads_) {
+    if (headsSize_ > 0) {
+        for (auto i = 0; i < headsSize_; i++) {
+            auto &model = heads_[i];
             model.setRotation(M_PI * 2.0 * spin);
+            if (physicsIterations_ > 0) {
+                for (int j = 1; j <= physicsIterations_; j++) {
+                    auto physicsStart = std::chrono::steady_clock::now();
+                    Model::applyPhysics(1, heads_, headsSize_,
+                                        static_cast<float>(width_) * kProjectionHalfHeight * 2 /
+                                                height_,
+                                        kProjectionHalfHeight * 2);
+                }
+            }
             shader_->drawModel(model);
         }
     }
@@ -302,32 +311,39 @@ void Renderer::addHead() {
     thread_local auto assetManager = app_->activity->assetManager;
     thread_local auto spAndroidRobotTexture = TextureAsset::loadAsset(assetManager, "android.png");
     thread_local std::vector<Vertex> vertices = {
-            Vertex(Vector3{{0.3, 0.3, 0}}, Vector2{{0, 0}}),   // 0
-            Vertex(Vector3{{-0.3, 0.3, 0}}, Vector2{{1, 0}}),  // 1
-            Vertex(Vector3{{-0.3, -0.3, 0}}, Vector2{{1, 1}}), // 2
-            Vertex(Vector3{{0.3, -0.3, 0}}, Vector2{{0, 1}})   // 3
+            Vertex(Vector3{{-0.3, 0.3, 0}}, Vector2{{0, 0}}), // 0
+            Vertex(Vector3{{0.3, 0.3, 0}}, Vector2{{1, 0}}),  // 1
+            Vertex(Vector3{{0.3, -0.3, 0}}, Vector2{{1, 1}}), // 2
+            Vertex(Vector3{{-0.3, -0.3, 0}}, Vector2{{0, 1}}) // 3
     };
     thread_local std::vector<Index> indices = {0, 1, 2, 0, 2, 3};
     thread_local Model baseModel{vertices, indices, spAndroidRobotTexture};
     float angle = 2 * M_PI * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
     float x = 1.5 * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.75;
     float y = 3.0 * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 1.5;
+    float mass = rand() % 10 + 1;
     Vector3 offset{{x, y, 0}};
     Model toAdd{baseModel};
     toAdd.move(offset);
     toAdd.setRotationOffset(angle);
+    toAdd.setMass(mass);
     heads_.push_back(toAdd);
+    headsSize_++;
 }
 
 void Renderer::setNumHeads(int headCount) {
-    if (headCount > heads_.size()) {
-        int to_add = headCount - heads_.size();
+    if (headCount > headsSize_) {
+        int to_add = headCount - headsSize_;
         for (int i = 0; i < to_add; ++i) {
             addHead();
         }
-    } else if (headCount < heads_.size()) {
-        heads_.erase(heads_.begin() + headCount, heads_.end());
+    } else if (headCount < headsSize_) {
+        headsSize_ = headCount;
     }
+}
+
+void Renderer::setPhysicsIterations(int iterations) {
+    physicsIterations_ = iterations;
 }
 
 bool Renderer::startHintSession(std::vector<int32_t> &tids, int64_t target) {
