@@ -18,4 +18,7 @@
 <resources>
     <dimen name="test_background_blur_radius">80px</dimen>
     <dimen name="test_blur_behind_radius">40px</dimen>
+
+    <!-- TODO(b/389045836): remove this when rounded corners are reported correctly. -->
+    <dimen name="taskbar_corner_radius">16dp</dimen>
 </resources>
