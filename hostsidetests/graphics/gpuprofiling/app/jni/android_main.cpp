@@ -17,6 +17,9 @@
 #include <android/native_window_jni.h>
 #include <android_native_app_glue.h>
 
+#include <chrono>
+#include <thread>
+
 #include "vulkan_renderer.h"
 
 struct AppState {
@@ -58,6 +61,8 @@ void android_main(struct android_app *app) {
     app->userData = &appState;
     app->onAppCmd = onAppCmd;
 
+    int frame = 0;
+
     while (true) {
         int ident;
         int events;
@@ -70,5 +75,8 @@ void android_main(struct android_app *app) {
         }
 
         appState.renderer.render();
+        if (++frame % 10 == 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
     }
 }
