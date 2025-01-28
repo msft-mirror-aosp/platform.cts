@@ -273,6 +273,7 @@ public class TvInteractiveAppServiceTest {
         @Override
         public void onRequestSigning(String iAppServiceId, String signingId, String algorithm,
                 String host, int port, byte[] data) {
+            super.onRequestSigning(iAppServiceId, signingId, algorithm, host, port, data);
             mRequestSigningSSLCount++;
             mSigningId = signingId;
             mAlgorithm = algorithm;
@@ -283,6 +284,7 @@ public class TvInteractiveAppServiceTest {
 
         @Override
         public void onRequestCertificate(String iAppServiceId, String host, int port) {
+            super.onRequestCertificate(iAppServiceId, host, port);
             mRequestCertificateCount++;
             mHost = host;
             mPort = port;
