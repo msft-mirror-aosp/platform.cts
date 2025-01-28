@@ -30,6 +30,7 @@ import static android.telecom.cts.apps.StackTraceUtil.createStackTraceList;
 import static android.telecom.cts.apps.TelecomTestApp.CONTROL_INTERFACE_ACTION;
 import static android.telecom.cts.apps.WaitUntil.waitUntilAvailableEndpointsIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
+import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionFails;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
 import static android.telecom.cts.apps.WaitUntil.waitUntilIdIsSet;
 
@@ -42,6 +43,8 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.telecom.CallAttributes;
 import android.telecom.CallEndpoint;
+import android.telecom.Connection;
+import android.telecom.ConnectionRequest;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
@@ -75,8 +78,18 @@ public class ManagedAppControl extends Service {
     private boolean mIsBound = false;
     private TelecomManager mTelecomManager = null;
 
-    private final WaitUntil.ConnectionServiceImpl
-            mConnectionServiceImpl = () -> ManagedConnectionService.sLastConnection;
+    private final WaitUntil.ConnectionServiceImpl mConnectionServiceImpl =
+            new WaitUntil.ConnectionServiceImpl() {
+                @Override
+                public Connection getLastConnection() {
+                    return ManagedConnectionService.sLastConnection;
+                }
+
+                @Override
+                public ConnectionRequest getLastFailedRequest() {
+                    return ManagedConnectionService.sLastFailedRequest;
+                }
+            };
 
     private final IBinder mBinder =
             new IAppControl.Stub() {
@@ -104,8 +117,48 @@ public class ManagedAppControl extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addCallWithConsumer(CallAttributes callAttributes,
-                        IRemoteOperationConsumer c) {
+                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                    Log.i(TAG, "addFailedCall: enter");
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        if (isOutgoing(callAttributes)) {
+                            mTelecomManager.placeCall(
+                                    callAttributes.getAddress(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        } else {
+                            mTelecomManager.addNewIncomingCall(
+                                    callAttributes.getPhoneAccountHandle(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        }
+                        ConnectionRequest request =
+                                waitUntilConnectionFails(
+                                        PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
+                        // clear out the last failed connection since it has been noted
+                        ManagedConnectionService.sLastFailedRequest = null;
+                        if (callAttributes.getAddress().equals(request.getAddress())) {
+                            return new NoDataTransaction(TestAppTransaction.Success);
+                        } else {
+                            throw new TestAppException(
+                                    PACKAGE_NAME,
+                                    appendStackTraceList(stackTrace, CLASS_NAME + ".addFailedCall"),
+                                    "expected:<Failed call address uri("
+                                            + callAttributes.getAddress()
+                                            + ")> "
+                                            + "matches request uri("
+                                            + request.getAddress()
+                                            + ") actual:<Failed Connection doesn't match URI>");
+                        }
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
+
+                @Override
+                public NoDataTransaction addCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer c) {
                     Log.i(TAG, "addCallWithConsumer: enter");
                     try {
                         List<String> stackTrace =
@@ -159,13 +212,14 @@ public class ManagedAppControl extends Service {
                             String.format(
                                     "trackConnection: id=[%s], connection=[%s]", id, connection));
                     if (consumer != null) {
-                        connection.setOperationConsumer(c -> {
-                            try {
-                                consumer.complete(c);
-                            } catch (RemoteException e) {
-                                Log.e(TAG, "trackConnection: Failed to set consumer.", e);
-                            }
-                        });
+                        connection.setOperationConsumer(
+                                c -> {
+                                    try {
+                                        consumer.complete(c);
+                                    } catch (RemoteException e) {
+                                        Log.e(TAG, "trackConnection: Failed to set consumer.", e);
+                                    }
+                                });
                     }
                     mIdToConnection.put(id, connection);
                     // clear out the last connection since it has been added to tracking
@@ -352,10 +406,10 @@ public class ManagedAppControl extends Service {
                                     createStackTraceList(
                                             CLASS_NAME + "registerDefaultPhoneAccount"),
                                     "ManagedAppControl does not implement"
-                                        + " registerDefaultPhoneAccount b/c the account must be"
-                                        + " registered from the Test Process  (ex."
-                                        + " android.telecom.cts) or a security exception will"
-                                        + " occur."));
+                                            + " registerDefaultPhoneAccount b/c the account must be"
+                                            + " registered from the Test Process  (ex."
+                                            + " android.telecom.cts) or a security exception will"
+                                            + " occur."));
                 }
 
                 @Override
@@ -366,9 +420,9 @@ public class ManagedAppControl extends Service {
                                     PACKAGE_NAME,
                                     createStackTraceList(CLASS_NAME + "getDefaultPhoneAccount"),
                                     "ManagedAppControl does not implement getDefaultPhoneAccount"
-                                        + " b/c the account must be registered from the Test"
-                                        + " Process  (ex. android.telecom.cts) or a security"
-                                        + " exception will occur."));
+                                            + " b/c the account must be registered from the Test"
+                                            + " Process  (ex. android.telecom.cts) or a security"
+                                            + " exception will occur."));
                 }
 
                 @Override

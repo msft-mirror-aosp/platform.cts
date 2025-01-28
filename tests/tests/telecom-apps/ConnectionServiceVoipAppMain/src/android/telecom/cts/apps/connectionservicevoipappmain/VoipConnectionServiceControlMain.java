@@ -34,6 +34,7 @@ import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_MAIN_ACCOU
 import static android.telecom.cts.apps.TelecomTestApp.VOIP_CS_CONTROL_INTERFACE_ACTION;
 import static android.telecom.cts.apps.WaitUntil.waitUntilAvailableEndpointsIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
+import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionFails;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
 import static android.telecom.cts.apps.WaitUntil.waitUntilIdIsSet;
 
@@ -49,6 +50,8 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.telecom.CallAttributes;
 import android.telecom.CallEndpoint;
+import android.telecom.Connection;
+import android.telecom.ConnectionRequest;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
@@ -89,8 +92,18 @@ public class VoipConnectionServiceControlMain extends Service {
     private final String NOTIFICATION_CHANNEL_ID = mTag;
     private final String NOTIFICATION_CHANNEL_NAME = mTag + " Notification Channel";
 
-    private final WaitUntil.ConnectionServiceImpl
-            mConnectionServiceImpl = () -> VoipConnectionServiceMain.sLastConnection;
+    private final WaitUntil.ConnectionServiceImpl mConnectionServiceImpl =
+            new WaitUntil.ConnectionServiceImpl() {
+                @Override
+                public Connection getLastConnection() {
+                    return VoipConnectionServiceMain.sLastConnection;
+                }
+
+                @Override
+                public ConnectionRequest getLastFailedRequest() {
+                    return VoipConnectionServiceMain.sLastFailedRequest;
+                }
+            };
 
     private final IBinder mBinder =
             new IAppControl.Stub() {
@@ -119,8 +132,48 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addCallWithConsumer(CallAttributes callAttributes,
-                        IRemoteOperationConsumer consumer) {
+                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                    Log.i(mTag, "addFailedCall: enter");
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        mClassName + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        if (isOutgoing(callAttributes)) {
+                            mTelecomManager.placeCall(
+                                    callAttributes.getAddress(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        } else {
+                            mTelecomManager.addNewIncomingCall(
+                                    callAttributes.getPhoneAccountHandle(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        }
+                        ConnectionRequest request =
+                                waitUntilConnectionFails(
+                                        mPackageName, stackTrace, mConnectionServiceImpl);
+                        // clear out the last failed connection since it has been noted
+                        VoipConnectionServiceMain.sLastFailedRequest = null;
+                        if (callAttributes.getAddress().equals(request.getAddress())) {
+                            return new NoDataTransaction(TestAppTransaction.Success);
+                        } else {
+                            throw new TestAppException(
+                                    mPackageName,
+                                    appendStackTraceList(stackTrace, mClassName + ".addFailedCall"),
+                                    "expected:<Failed call address uri("
+                                            + callAttributes.getAddress()
+                                            + ")> "
+                                            + "matches request uri("
+                                            + request.getAddress()
+                                            + ") actual:<Failed Connection doesn't match URI>");
+                        }
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
+
+                @Override
+                public NoDataTransaction addCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer consumer) {
                     Log.i(mTag, "addCallWithConsumer: enter");
                     try {
                         List<String> stackTrace =
@@ -174,13 +227,14 @@ public class VoipConnectionServiceControlMain extends Service {
                             String.format(
                                     "trackConnection: id=[%s], connection=[%s]", id, connection));
                     if (consumer != null) {
-                        connection.setOperationConsumer(c -> {
-                            try {
-                                consumer.complete(c);
-                            } catch (RemoteException e) {
-                                Log.e(mTag, "trackConnection: Failed to set consumer.", e);
-                            }
-                        });
+                        connection.setOperationConsumer(
+                                c -> {
+                                    try {
+                                        consumer.complete(c);
+                                    } catch (RemoteException e) {
+                                        Log.e(mTag, "trackConnection: Failed to set consumer.", e);
+                                    }
+                                });
                     }
                     mIdToConnection.put(id, connection);
                     connection.setIdAndResources(

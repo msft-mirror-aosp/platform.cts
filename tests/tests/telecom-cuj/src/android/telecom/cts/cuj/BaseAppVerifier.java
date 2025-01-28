@@ -270,6 +270,17 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.addAndGetNewCall(appControl, attributes, idToExclude, consumer);
     }
 
+    public void addOutgoingCallAndVerifyFailure(AppControlWrapper appControl) throws Exception {
+        CallAttributes outgoingAttributes =
+                mBaseAppVerifierImpl.getRandomAttributes(
+                        appControl.getTelecomApps(), true /*isOutgoing*/, true /* isHoldable */);
+        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, outgoingAttributes);
+    }
+
+    public void waitUntilExpectedCallCount(int expectedCallCount) {
+        mBaseAppVerifierImpl.waitUntilExpectedCallCount(expectedCallCount);
+    }
+
     public void setCallState(AppControlWrapper appControl, String id, int callState)
             throws Exception {
         mBaseAppVerifierImpl.setCallState(appControl, id, callState);
