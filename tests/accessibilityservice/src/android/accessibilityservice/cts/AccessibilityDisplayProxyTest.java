@@ -16,6 +16,8 @@
 
 package android.accessibilityservice.cts;
 
+import static android.Manifest.permission.FORCE_STOP_PACKAGES;
+import static android.Manifest.permission.INTERNAL_SYSTEM_WINDOW;
 import static android.Manifest.permission.MANAGE_ACCESSIBILITY;
 import static android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK;
 import static android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_AUDIBLE;
@@ -125,7 +127,6 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
@@ -232,15 +233,17 @@ public class AccessibilityDisplayProxyTest {
     private AccessibilityKeyEventTestActivity mNonProxiedConcurrentActivity;
 
     private Intent mSeparateProcessActivityIntent = new Intent(Intent.ACTION_MAIN)
-                .setClassName(SEPARATE_PROCESS_PACKAGE_NAME,
-            SEPARATE_PROCESS_PACKAGE_NAME + SEPARATE_PROCESS_ACTIVITY)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);;
+            .setClassName(SEPARATE_PROCESS_PACKAGE_NAME,
+                    SEPARATE_PROCESS_PACKAGE_NAME + SEPARATE_PROCESS_ACTIVITY)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);;
 
     // Virtual Device variables.
     private VirtualDeviceManager.VirtualDevice mVirtualDevice;
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
+            INTERNAL_SYSTEM_WINDOW,
+            FORCE_STOP_PACKAGES,
             MANAGE_ACCESSIBILITY);
 
     private ListenerChangeBroadcastReceiver mReceiver =
@@ -303,13 +306,9 @@ public class AccessibilityDisplayProxyTest {
         mA11yProxy = new MyA11yProxy(mVirtualDisplayId, Executors.newSingleThreadExecutor(), infos);
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchDisplayId(mVirtualDisplayId);
-        SystemUtil.runWithShellPermissionIdentity(
-                sUiAutomation,
-                () -> {
-                    mProxiedVirtualDisplayActivityScenario =
-                            ActivityScenario.launch(ProxyDisplayActivity.class, options.toBundle())
-                                    .moveToState(Lifecycle.State.RESUMED);
-                });
+        mProxiedVirtualDisplayActivityScenario =
+                ActivityScenario.launch(ProxyDisplayActivity.class, options.toBundle())
+                        .moveToState(Lifecycle.State.RESUMED);
         mProxiedVirtualDisplayActivityScenario.onActivity(activity -> {
             mProxiedVirtualDisplayActivity = activity;
             mProxiedVirtualDisplayActivityTitle = activity.getTitle();
@@ -347,13 +346,9 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity(
-                sUiAutomation,
-                () ->
-                        assertThrows(
-                                SecurityException.class,
-                                () -> mA11yManager.registerDisplayProxy(mA11yProxy)));
+        mVirtualDeviceRule.runWithoutPermissions(() ->
+                assertThrows(SecurityException.class,
+                        () -> mA11yManager.registerDisplayProxy(mA11yProxy)));
     }
 
     @Test
@@ -393,13 +388,9 @@ public class AccessibilityDisplayProxyTest {
             // accessibility.
             final ActivityOptions options = ActivityOptions.makeBasic();
             options.setLaunchDisplayId(virtualDisplayId);
-            SystemUtil.runWithShellPermissionIdentity(
-                    sUiAutomation,
-                    () -> {
-                        activityScenario.set(
-                                ActivityScenario.launch(NonProxyActivity.class, options.toBundle())
-                                        .moveToState(Lifecycle.State.RESUMED));
-                    });
+            activityScenario.set(
+                    ActivityScenario.launch(NonProxyActivity.class, options.toBundle())
+                            .moveToState(Lifecycle.State.RESUMED));
 
             final MyA11yProxy invalidProxy = new MyA11yProxy(
                     virtualDisplayId, Executors.newSingleThreadExecutor(), new ArrayList<>());
@@ -420,13 +411,9 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
     public void testUnregisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity(
-                sUiAutomation,
-                () ->
-                        assertThrows(
-                                SecurityException.class,
-                                () -> mA11yManager.unregisterDisplayProxy(mA11yProxy)));
+        mVirtualDeviceRule.runWithoutPermissions(() ->
+                assertThrows(SecurityException.class,
+                        () -> mA11yManager.unregisterDisplayProxy(mA11yProxy)));
     }
 
     @Test
@@ -509,8 +496,7 @@ public class AccessibilityDisplayProxyTest {
         final PendingIntent p = PendingIntent.getBroadcast(sInstrumentation.getContext(), 0, i,
                 PendingIntent.FLAG_IMMUTABLE);
         final RemoteAction testAction =
-                new RemoteAction(Icon.createWithContentUri("content://test"),
-                "test", "test", p);
+                new RemoteAction(Icon.createWithContentUri("content://test"), "test", "test", p);
         mA11yManager.registerSystemAction(testAction, TEST_SYSTEM_ACTION_ID);
 
         sUiAutomation.executeAndWaitForEvent(
@@ -527,7 +513,7 @@ public class AccessibilityDisplayProxyTest {
             throws TimeoutException {
         final PackageManager pm = sInstrumentation.getContext().getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
-                        || pm.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH));
+                || pm.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH));
 
         final StubProxyConcurrentAccessibilityService service =
                 mNonProxyServiceRule.enableService();
@@ -1157,8 +1143,8 @@ public class AccessibilityDisplayProxyTest {
                 assertThrows("A proxy-ed app with touch exploration enabled was notified"
                                 + " of a non-proxy service disabling touch exploration.",
                         AssertionError.class, () ->
-                        waitOn(listener.mWaitObject, () -> listener.mAtomicBoolean.get(),
-                                TIMEOUT_MS, "(expected to timeout)"));
+                                waitOn(listener.mWaitObject, () -> listener.mAtomicBoolean.get(),
+                                        TIMEOUT_MS, "(expected to timeout)"));
             } finally {
                 mProxyActivityA11yManager.removeTouchExplorationStateChangeListener(listener);
             }
@@ -1656,11 +1642,7 @@ public class AccessibilityDisplayProxyTest {
         final ActivityManager am =
                 sInstrumentation.getContext().getSystemService(ActivityManager.class);
         for (final String pkgName : allPackageNames) {
-            SystemUtil.runWithShellPermissionIdentity(
-                    sUiAutomation,
-                    () -> {
-                        am.forceStopPackage(pkgName);
-                    });
+            am.forceStopPackage(pkgName);
         }
     }
 
