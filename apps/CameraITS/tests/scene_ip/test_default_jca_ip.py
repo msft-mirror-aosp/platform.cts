@@ -225,6 +225,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           default_qr_code, jca_qr_code
       )
       logging.debug('Default and JCA size matches: %s', size_match)
+      # logging for data collection
+      print(f'{_NAME}_size_match: {size_match}')
 
       # Get cropped dynamic range patch cells
       default_dynamic_range_patch_cells = (
@@ -255,6 +257,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
       if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
         e_msg.append('Device fails the white balance difference criteria.')
+      if not size_match:
+        e_msg.append('Device fails the size match check.')
       if e_msg:
         raise AssertionError(
             f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
