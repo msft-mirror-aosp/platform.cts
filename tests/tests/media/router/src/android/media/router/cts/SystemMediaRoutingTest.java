@@ -16,6 +16,7 @@
 
 package android.media.router.cts;
 
+import static android.media.router.cts.SystemMediaRoutingProviderService.INITIAL_VOLUME;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_BOTH_SYSTEM_AND_REMOTE;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_REMOTE;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1;
@@ -233,12 +234,32 @@ public class SystemMediaRoutingTest {
                 .isEqualTo(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
 
         int newVolume = 70;
-        assertThat(newVolume).isNotEqualTo(SystemMediaRoutingProviderService.INITIAL_VOLUME);
+        assertThat(newVolume).isNotEqualTo(INITIAL_VOLUME);
         assertThat(newVolume).isLessThan(SystemMediaRoutingProviderService.VOLUME_MAX);
         var selectedRoute = getSelectedRoute();
         mSelfProxyRoute.setRouteVolume(selectedRoute, newVolume);
 
         waitForCondition(() -> getSelectedRoute().getVolume() == newVolume);
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void setSessionVolume_updatesSessionCorrectly() {
+        var targetRoute =
+                waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+        transferAndWaitForSessionUpdate(targetRoute);
+
+        assertThat(mService.getSelectedRouteOriginalId())
+                .isEqualTo(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
+
+        int newVolume = 70;
+        assertThat(newVolume).isNotEqualTo(INITIAL_VOLUME);
+        assertThat(newVolume).isLessThan(SystemMediaRoutingProviderService.VOLUME_MAX);
+        var systemController = mSelfProxyRoute.getSystemController();
+        assertThat(systemController.getVolume()).isEqualTo(INITIAL_VOLUME);
+        systemController.setVolume(newVolume);
+
+        waitForCondition(() -> systemController.getVolume() == newVolume);
     }
 
     /** Retrieves the selected routes, asserts it contains one entry, and returns it. */
