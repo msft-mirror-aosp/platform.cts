@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "AndroidOut.h"
 #include "TextureAsset.h"
 
 union Vector3 {
@@ -58,12 +59,15 @@ typedef uint16_t Index;
 
 class Model {
 public:
-    inline Model(std::vector<Vertex> vertices, std::vector<Index> indices,
-                 std::shared_ptr<TextureAsset> spTexture)
+    static std::shared_ptr<TextureAsset> texture;
+    // Default init only useful as a placeholder
+    Model() {}
+
+    inline Model(std::vector<Vertex> vertices, std::vector<Index> indices)
           : currentVertices_(vertices),
             startVertices_(std::move(vertices)),
             indices_(std::move(indices)),
-            spTexture_(std::move(spTexture)) {
+            id_(0) {
         findCenter();
     }
 
@@ -73,9 +77,20 @@ public:
 
     inline const Index *getIndexData() const { return indices_.data(); }
 
-    inline const TextureAsset &getTexture() const { return *spTexture_; }
+    inline const TextureAsset &getTexture() const { return *texture; }
 
     inline const Vector3 getCenter() { return center_; }
+
+    inline void dump() const {
+        aout << "Indices: " << std::endl;
+        for (auto &&ver : currentVertices_) {
+            aout << "Vertex: x: " << ver.position.x << " y: " << ver.position.y
+                 << " z: " << ver.position.z << std::endl;
+        }
+        aout << std::endl;
+        aout << "Center: x: " << center_.x << " y: " << center_.y << " z: " << center_.z
+             << std::endl;
+    }
 
     void move(Vector3 offset) {
         for (int i = 0; i < startVertices_.size(); ++i) {
@@ -85,7 +100,7 @@ public:
         center_ = center_ + offset;
     }
 
-    void setRotation(float angle) {
+    void addRotation(float angle) {
         float rad = angle + rotationOffset_;
         for (int i = 0; i < startVertices_.size(); ++i) {
             Vector3 normalized = startVertices_[i].position - center_;
@@ -94,16 +109,20 @@ public:
             out.y = normalized.x * sin(rad) + normalized.y * cos(rad);
             currentVertices_[i].position = out + center_;
         }
+        rotationOffset_ = rad;
     }
 
     void setRotationOffset(float angle) { rotationOffset_ = angle; }
 
-    static void applyPhysics(float deltaTimeUnit, std::vector<Model> &models, int size, float width,
+    static void applyPhysics(float deltaTimeUnit, Model *models, int size, float width,
                              float height) {
         nBodySimulation(deltaTimeUnit, models, size, width, height);
     }
 
     void setMass(float m) { mass_ = m; }
+
+    int getId() const { return id_; }
+    void setId(int id) { id_ = id; }
 
 private:
     void findCenter() {
@@ -114,8 +133,8 @@ private:
         center_ = center / static_cast<float>(startVertices_.size());
     }
 
-    static void nBodySimulation(float deltaTimeUnit, std::vector<Model> &models, int size,
-                                float width, float height) {
+    static void nBodySimulation(float deltaTimeUnit, Model *models, int size, float width,
+                                float height) {
         static const float G = 6.67e-10;
         for (auto i = 0; i < size; i++) {
             auto &model = models[i];
@@ -154,8 +173,8 @@ private:
     std::vector<Vertex> currentVertices_;
     std::vector<Vertex> startVertices_;
     std::vector<Index> indices_;
-    std::shared_ptr<TextureAsset> spTexture_;
     float rotationOffset_;
     Vector3 velocity_;
     float mass_ = 1.0f;
+    int id_;
 };
