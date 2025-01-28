@@ -121,6 +121,20 @@ public class TransactionalVoipAppControlMain extends Service {
                 }
 
                 @Override
+                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                        CallAttributes callAttributes) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName
+                                            + ".addFailedCallWithCreateOutgoingConnectionVerify("
+                                            + callAttributes
+                                            + ")");
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(mPackageName, stackTrace, "not implemented!"));
+                }
+
+                @Override
                 public NoDataTransaction addCallWithConsumer(
                         CallAttributes callAttributes, IRemoteOperationConsumer consumer)
                         throws RemoteException {

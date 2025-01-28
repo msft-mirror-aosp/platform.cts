@@ -212,6 +212,10 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.getDefaultAttributes(name, pAH, isOutgoing);
     }
 
+    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name) throws Exception {
+        return mBaseAppVerifierImpl.getDefaultMmiAttributes(name);
+    }
+
     public CallAttributes getRandomAttributes(TelecomTestApp name, boolean isOutgoing)
             throws Exception {
         return mBaseAppVerifierImpl.getRandomAttributes(name, isOutgoing, true);
@@ -275,6 +279,18 @@ public class BaseAppVerifier {
                 mBaseAppVerifierImpl.getRandomAttributes(
                         appControl.getTelecomApps(), true /*isOutgoing*/, true /* isHoldable */);
         mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, outgoingAttributes);
+    }
+
+    public void addOutgoingCallAndVerifyFailure(
+            AppControlWrapper appControl, CallAttributes attributes) throws Exception {
+        mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, attributes);
+    }
+
+    public void addFailedCallWithCreateOutgoingConnectionVerify(
+            AppControlWrapper appControl, CallAttributes attributes)
+            throws Exception {
+        mBaseAppVerifierImpl.addFailedCallWithCreateOutgoingConnectionVerify(
+                appControl, attributes);
     }
 
     public void waitUntilExpectedCallCount(int expectedCallCount) {

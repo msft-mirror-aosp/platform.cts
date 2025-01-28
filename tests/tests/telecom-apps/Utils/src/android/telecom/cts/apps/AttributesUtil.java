@@ -33,6 +33,7 @@ public class AttributesUtil {
     private static final String TEST_NAME_OUT = "Mike Tyson";
     private static final Uri TEST_URI_IN = Uri.parse("tel:456-TEST");
     private static final String TEST_NAME_IN = "Alan Turing";
+    private static final Uri TEST_MMI_URI = Uri.parse("tel:0");
 
     /**
      * @return true if the call is holdable according to the CallAttributes
@@ -84,6 +85,21 @@ public class AttributesUtil {
                 handle,
                 getDirectionFromBool(isOutgoing),
                 TEST_NAME_IN, getDefaultAddress(isOutgoing))
+                .setCallType(CallAttributes.AUDIO_CALL)
+                .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
+                .build();
+    }
+
+    /**
+     * @return a CallAttributes object for verifying MMI codes.
+     */
+    public static CallAttributes getDefaultMmiAttributesForApp(
+            TelecomTestApp name, PhoneAccountHandle handle) throws Exception {
+        if (handle == null) {
+            handle = getPhoneAccountHandleForApp(name);
+        }
+        return new CallAttributes.Builder(
+                        handle, DIRECTION_OUTGOING, TEST_NAME_OUT, getDefaultMmiAddress())
                 .setCallType(CallAttributes.AUDIO_CALL)
                 .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                 .build();
@@ -174,6 +190,10 @@ public class AttributesUtil {
 
     private static Uri getDefaultAddress(boolean isOutgoing) {
         return isOutgoing ? TEST_URI_OUT : TEST_URI_IN;
+    }
+
+    private static Uri getDefaultMmiAddress() {
+        return TEST_MMI_URI;
     }
 
     private static String getDefaultName(boolean isOutgoing) {
