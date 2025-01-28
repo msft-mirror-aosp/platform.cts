@@ -444,6 +444,7 @@
              android:documentLaunchMode="intoExisting"/>
 
         <activity android:name="android.app.stubs.DisplayTestActivity"
+             android:resizeableActivity="false"
              android:configChanges="smallestScreenSize|orientation|screenSize|screenLayout"/>
 
         <activity android:name="android.app.stubs.ToolbarActivity"
