@@ -35,6 +35,7 @@ android_test {
         "androidx.camera_camera-video",
         "androidx.camera_camera-camera2",
         "androidx.camera_camera-lifecycle",
+        "android.permission.flags-aconfig-java",
         "kotlinx-coroutines-android",
         "androidx.lifecycle_lifecycle-runtime-testing",
     ],
