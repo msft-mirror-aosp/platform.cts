@@ -27,6 +27,7 @@ import static android.content.pm.ApplicationInfo.FLAG_HAS_CODE;
 import static android.content.pm.ApplicationInfo.FLAG_INSTALLED;
 import static android.content.pm.ApplicationInfo.FLAG_SYSTEM;
 import static android.content.pm.Flags.FLAG_ARCHIVING;
+import static android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO;
 import static android.content.pm.Flags.FLAG_GET_PACKAGE_INFO_WITH_FD;
 import static android.content.pm.Flags.FLAG_IMPROVE_HOME_APP_BEHAVIOR;
@@ -126,6 +127,7 @@ import android.content.pm.ServiceInfo;
 import android.content.pm.SharedLibraryInfo;
 import android.content.pm.Signature;
 import android.content.pm.SigningInfo;
+import android.content.pm.SigningInfoException;
 import android.content.pm.SuspendDialogInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
@@ -3919,6 +3921,24 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
             mContext.unregisterReceiver(packageRemovedBroadcastReceiver);
             mContext.unregisterReceiver(uidRemovedBroadcastReceiver);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_CLOUD_COMPILATION_PM)
+    public void testGetVerifiedSigningInfo() throws Exception {
+        SigningInfo signingInfo = mPackageManager.getVerifiedSigningInfo(
+                EMPTY_APP_APK, SigningInfo.VERSION_SIGNING_BLOCK_V3);
+        assertThat(signingInfo.getSigningCertificateHistory()).isNotEmpty();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_CLOUD_COMPILATION_PM)
+    public void testGetVerifiedSigningInfoError() throws Exception {
+        var e = expectThrows(SigningInfoException.class, () -> {
+            mPackageManager.getVerifiedSigningInfo(
+                EMPTY_APP_APK, SigningInfo.VERSION_SIGNING_BLOCK_V4);
+        });
+        assertThat(e.getCode()).isEqualTo(PackageManager.INSTALL_PARSE_FAILED_NO_CERTIFICATES);
     }
 
     private boolean isPackageSuspended(String packageName) {
