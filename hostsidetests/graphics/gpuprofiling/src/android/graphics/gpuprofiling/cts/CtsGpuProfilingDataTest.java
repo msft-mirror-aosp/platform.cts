@@ -76,7 +76,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String DEVICE_BIN_PATH = "/data/local/tmp/" + BIN_NAME;
     private static final String APP = "android.graphics.gpuprofiling.app";
     private static final String APK = "CtsGraphicsProfilingDataApp.apk";
-    private static final String ACTIVITY = "GpuRenderStagesDeviceActivity";
+    private static final String ACTIVITY = "GpuProfilingNativeActivity";
     private static final String COUNTERS_SOURCE_NAME = "gpu.counters";
     private static final String STAGES_SOURCE_NAME = "gpu.renderstages";
     private static final String FTRACE_SOURCE_NAME = "linux.ftrace";
