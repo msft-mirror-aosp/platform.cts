@@ -16,6 +16,17 @@
 
 package android.hardware.devicestate.cts;
 
+import static android.hardware.devicestate.DeviceState.PROPERTY_EMULATED_ONLY;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FEATURE_REAR_DISPLAY;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_CLOSED;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_HALF_OPEN;
+import static android.hardware.devicestate.DeviceState.PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_OPEN;
+import static android.hardware.devicestate.DeviceState.PROPERTY_POLICY_AVAILABLE_FOR_APP_REQUEST;
+import static android.hardware.devicestate.DeviceState.PROPERTY_POWER_CONFIGURATION_TRIGGER_SLEEP;
+import static android.hardware.devicestate.DeviceState.PROPERTY_POWER_CONFIGURATION_TRIGGER_WAKE;
 import static android.hardware.devicestate.DeviceStateManager.INVALID_DEVICE_STATE_IDENTIFIER;
 import static android.hardware.devicestate.DeviceStateManager.MAXIMUM_DEVICE_STATE_IDENTIFIER;
 import static android.hardware.devicestate.DeviceStateManager.MINIMUM_DEVICE_STATE_IDENTIFIER;
@@ -25,8 +36,11 @@ import static android.server.wm.DeviceStateUtils.assertValidState;
 import static android.server.wm.DeviceStateUtils.runWithControlDeviceStatePermission;
 import static android.view.Display.DEFAULT_DISPLAY;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
@@ -36,6 +50,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.app.PictureInPictureParams;
+import android.content.res.Resources;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
@@ -89,6 +104,84 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
 
         for (DeviceState state: supportedDeviceStates) {
             assertValidDeviceState(state);
+        }
+    }
+
+    /**
+     * This verifies that identifiers that are included in various overlay configuration values have
+     * the correct corresponding {@link DeviceState.DeviceStateProperties} on the matching {@link
+     * DeviceState} objects returned by {@link DeviceStateManager#getSupportedDeviceStates()}.
+     *
+     * <p>This test helps verify that devices are configured with the correct property values to
+     * align with the updated {@link DeviceStateManager} API design.
+     */
+    @Test
+    public void testDeviceStateHasExpectedProperties() {
+        final List<DeviceState> deviceStates = getDeviceStateManager().getSupportedDeviceStates();
+        final int[] foldedDeviceStates = getIntArrayConfigurationValue("config_foldedDeviceStates");
+        for (int stateIdentifier : foldedDeviceStates) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(
+                    state.hasProperties(
+                            PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY,
+                            PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_CLOSED));
+        }
+
+        final int[] halfOpenedDeviceStates =
+                getIntArrayConfigurationValue("config_halfFoldedDeviceStates");
+        for (int stateIdentifier : halfOpenedDeviceStates) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(
+                    state.hasProperties(
+                            PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY,
+                            PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_HALF_OPEN));
+        }
+
+        final int[] openDeviceStates = getIntArrayConfigurationValue("config_openDeviceStates");
+        for (int stateIdentifier : openDeviceStates) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(
+                    state.hasProperties(
+                            PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY,
+                            PROPERTY_FOLDABLE_HARDWARE_CONFIGURATION_FOLD_IN_OPEN));
+        }
+
+        final int[] rearDisplayDeviceStates =
+                getIntArrayConfigurationValue("config_rearDisplayDeviceStates");
+        for (int stateIdentifier : rearDisplayDeviceStates) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(
+                    state.hasProperties(
+                            PROPERTY_FEATURE_REAR_DISPLAY,
+                            PROPERTY_EMULATED_ONLY,
+                            PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_OUTER_PRIMARY,
+                            PROPERTY_POLICY_AVAILABLE_FOR_APP_REQUEST));
+        }
+
+        final int[] dualDisplayInternalDefaultDeviceStates =
+                getIntArrayConfigurationValue("config_concurrentDisplayDeviceStates");
+        for (int stateIdentifier : dualDisplayInternalDefaultDeviceStates) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(
+                    state.hasProperties(
+                            PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT,
+                            PROPERTY_EMULATED_ONLY,
+                            PROPERTY_FOLDABLE_DISPLAY_CONFIGURATION_INNER_PRIMARY,
+                            PROPERTY_POLICY_AVAILABLE_FOR_APP_REQUEST));
+        }
+
+        final int[] deviceStatesToSleep =
+                getIntArrayConfigurationValue("config_deviceStatesOnWhichToSleep");
+        for (int stateIdentifier : deviceStatesToSleep) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(state.hasProperty(PROPERTY_POWER_CONFIGURATION_TRIGGER_SLEEP));
+        }
+
+        final int[] deviceStatesToWake =
+                getIntArrayConfigurationValue("config_deviceStatesOnWhichToWakeUp");
+        for (int stateIdentifier : deviceStatesToWake) {
+            final DeviceState state = getDeviceStateByIdentifier(stateIdentifier, deviceStates);
+            assertTrue(state.hasProperty(PROPERTY_POWER_CONFIGURATION_TRIGGER_WAKE));
         }
     }
 
@@ -607,6 +700,30 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
             final int state = supportedStates.get(i).getIdentifier();
             assertValidState(state);
         }
+    }
+
+    /**
+     * Returns the {@link DeviceState} that matches the given identifier in the {@code states} list.
+     * Asserts that a matching state has been found.
+     */
+    private DeviceState getDeviceStateByIdentifier(int identifier, List<DeviceState> states) {
+        DeviceState matchedState = null;
+        for (DeviceState state : states) {
+            if (state.getIdentifier() == identifier) {
+                matchedState = state;
+                break;
+            }
+        }
+        assertNotNull("Identifier provided was not found in list of device states.", matchedState);
+        return matchedState;
+    }
+
+    /** Returns the int array configuration value for the {@code propertyName} provided. */
+    private int[] getIntArrayConfigurationValue(String propertyName) {
+        return getInstrumentation()
+                .getTargetContext()
+                .getResources()
+                .getIntArray(Resources.getSystem().getIdentifier(propertyName, "array", "android"));
     }
 
     private static class StateTrackingCallback implements DeviceStateManager.DeviceStateCallback {

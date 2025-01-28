@@ -29,7 +29,9 @@ java_defaults {
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "platform-test-annotations",
+        "platform-test-rules",
         "truth",
+        "TestParameterInjector",
     ],
 
     test_suites: [

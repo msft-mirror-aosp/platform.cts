@@ -47,10 +47,10 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.uiautomator.UiObject;
 
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.modules.utils.build.SdkLevel;
 
 import org.junit.After;
@@ -109,8 +109,10 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        PhotoPickerComponentUtils.setState(PICKER_SETTINGS_ACTIVITY_COMPONENT,
-                sPhotoPickerSettingsActivityState);
+        if (!super.isModernPickerEnabled()) {
+            PhotoPickerComponentUtils.setState(
+                    PICKER_SETTINGS_ACTIVITY_COMPONENT, sPhotoPickerSettingsActivityState);
+        }
 
         // Reset CloudMedia configs.
         if (SdkLevel.isAtLeastS() && sDeviceStatePreserver != null) {

@@ -18,11 +18,14 @@ package android.appwidget.cts.app
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
+import android.content.pm.PackageManager
 import android.os.Process
 import android.widget.RemoteViews
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assume.assumeTrue
+import org.junit.Before;
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -30,6 +33,11 @@ import org.junit.runner.RunWith
 class PreviewDeviceTest {
     private val context = InstrumentationRegistry.getInstrumentation().context
     private val manager = AppWidgetManager.getInstance(context)
+
+    @Before
+    fun setUp() {
+        assumeTrue(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_APP_WIDGETS))
+    }
 
     @Test
     fun setPreview() {

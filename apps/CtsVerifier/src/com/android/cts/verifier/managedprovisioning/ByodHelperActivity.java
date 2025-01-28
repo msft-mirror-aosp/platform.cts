@@ -77,6 +77,8 @@ public class ByodHelperActivity extends Activity
     public static final String ACTION_CAPTURE_AND_CHECK_VIDEO_WITH_EXTRA_OUTPUT = "com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_VIDEO_WITH_EXTRA_OUTPUT";
     // Primary -> managed intent: request to capture and check a video without custom output path
     public static final String ACTION_CAPTURE_AND_CHECK_VIDEO_WITHOUT_EXTRA_OUTPUT = "com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_VIDEO_WITHOUT_EXTRA_OUTPUT";
+    // Primary -> managed intent: request to capture and check a motion photo
+    public static final String ACTION_CAPTURE_AND_CHECK_MOTION_PHOTO = "com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_MOTION_PHOTO";
     // Primary -> managed intent: request to capture and check an audio recording
     public static final String ACTION_CAPTURE_AND_CHECK_AUDIO = "com.android.cts.verifier.managedprovisioning.BYOD_CAPTURE_AND_CHECK_AUDIO";
     public static final String ACTION_KEYGUARD_DISABLED_FEATURES =
@@ -175,6 +177,7 @@ public class ByodHelperActivity extends Activity
     private static final int EXECUTE_IMAGE_CAPTURE_TEST = 1;
     private static final int EXECUTE_VIDEO_CAPTURE_WITH_EXTRA_TEST = 2;
     private static final int EXECUTE_VIDEO_CAPTURE_WITHOUT_EXTRA_TEST = 3;
+    private static final int EXECUTE_MOTION_PHOTO_CAPTURE_TEST = 4;
 
     private NotificationManager mNotificationManager;
     private Bundle mOriginalRestrictions;
@@ -317,6 +320,13 @@ public class ByodHelperActivity extends Activity
                 requestCameraPermission(testRequestCode);
             }
             return;
+        } else if (action.equals(ACTION_CAPTURE_AND_CHECK_MOTION_PHOTO)) {
+            if (hasCameraPermission()) {
+                startCaptureMotionPhotoIntent();
+            } else {
+                requestCameraPermission(EXECUTE_MOTION_PHOTO_CAPTURE_TEST);
+            }
+            return;
         } else if (action.equals(ACTION_CAPTURE_AND_CHECK_AUDIO)) {
             Intent captureAudioIntent = getCaptureAudioIntent();
             if (captureAudioIntent.resolveActivity(getPackageManager()) != null) {
@@ -412,13 +422,20 @@ public class ByodHelperActivity extends Activity
     }
 
     private void startCaptureImageIntent() {
-        Intent captureImageIntent = getCaptureImageIntent();
+        startCaptureImageOrMotionPhotoIntent(getCaptureImageIntent());
+    }
+
+    private void startCaptureMotionPhotoIntent() {
+        startCaptureImageOrMotionPhotoIntent(getCaptureMotionPhotoIntent());
+    }
+
+    private void startCaptureImageOrMotionPhotoIntent(Intent intent) {
         Pair<File, Uri> pair = getTempUri("image.jpg");
         mImageFile = pair.first;
         mImageUri = pair.second;
-        captureImageIntent.putExtra(MediaStore.EXTRA_OUTPUT, mImageUri);
-        if (captureImageIntent.resolveActivity(getPackageManager()) != null) {
-            startActivityForResult(captureImageIntent, REQUEST_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, mImageUri);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
         } else {
             Log.e(TAG, "Capture image intent could not be resolved in managed profile.");
             showToast(R.string.provisioning_byod_capture_media_error);
@@ -525,6 +542,10 @@ public class ByodHelperActivity extends Activity
         return new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
     }
 
+    public static Intent getCaptureMotionPhotoIntent() {
+        return new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
+    }
+
     public static Intent getCaptureAudioIntent() {
         return new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
     }
@@ -628,6 +649,7 @@ public class ByodHelperActivity extends Activity
             case EXECUTE_IMAGE_CAPTURE_TEST:
             case EXECUTE_VIDEO_CAPTURE_WITH_EXTRA_TEST:
             case EXECUTE_VIDEO_CAPTURE_WITHOUT_EXTRA_TEST:
+            case EXECUTE_MOTION_PHOTO_CAPTURE_TEST:
                 if (!permissions[0].equals(android.Manifest.permission.CAMERA)
                         || grants[0] != PackageManager.PERMISSION_GRANTED) {
                     Log.e(TAG, "The test needs camera permission.");
@@ -654,6 +676,9 @@ public class ByodHelperActivity extends Activity
             case EXECUTE_VIDEO_CAPTURE_WITH_EXTRA_TEST:
             case EXECUTE_VIDEO_CAPTURE_WITHOUT_EXTRA_TEST:
                 startCaptureVideoActivity(requestCode);
+                break;
+            case EXECUTE_MOTION_PHOTO_CAPTURE_TEST:
+                startCaptureMotionPhotoIntent();
                 break;
             case REQUEST_POST_NOTIFICATIONS:
                 showNotificationInner();

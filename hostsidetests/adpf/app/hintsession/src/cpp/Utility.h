@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cassert>
+#include <chrono>
 #include <string>
 
 #include "Renderer.h"
@@ -44,4 +45,24 @@ public:
     static float *buildIdentityMatrix(float *outMatrix);
 
     static void setFailure(std::string message, Renderer *renderer = nullptr);
+
+    static int64_t now() {
+        return duration_cast<std::chrono::nanoseconds>(
+                       std::chrono::steady_clock::now().time_since_epoch())
+                .count();
+    }
+
+    // Converts lists of numbers into strings, so they can be
+    // passed up to the Java code the results map.
+    template <typename T>
+    static std::string serializeValues(const std::vector<T> &values) {
+        std::stringstream stream;
+        for (auto &&value : values) {
+            stream << value;
+            stream << ",";
+        }
+        std::string out = stream.str();
+        out.pop_back(); // remove the last comma
+        return out;
+    }
 };

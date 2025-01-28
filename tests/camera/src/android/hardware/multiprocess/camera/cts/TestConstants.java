@@ -37,8 +37,9 @@ public class TestConstants {
     public static final int EVENT_CAMERA_CLOSED = 14;
     public static final int EVENT_CAMERA_DISCONNECTED = 15;
 
-    public static final int OP_OPEN_CAMERA_SHARED = 100;
-    public static final int OP_CLOSE_CAMERA = 101;
+    public static final int OP_OPEN_CAMERA = 100;
+    public static final int OP_OPEN_CAMERA_SHARED = 101;
+    public static final int OP_CLOSE_CAMERA = 102;
 
     public static final String EVENT_CAMERA_ERROR_STR = "error";
     public static final String EVENT_CAMERA_CONNECT_STR = "connect";

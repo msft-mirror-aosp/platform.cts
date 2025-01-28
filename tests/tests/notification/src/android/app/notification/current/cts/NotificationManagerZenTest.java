@@ -3033,7 +3033,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     public void setAutomaticZenRuleState_manualActivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
         String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
@@ -3063,7 +3063,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void setAutomaticZenRuleState_manualDeactivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3097,7 +3097,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void setAutomaticZenRuleState_respectsManuallyActivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3130,7 +3130,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void setAutomaticZenRuleState_respectsManuallyDeactivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3164,7 +3164,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void setAutomaticZenRuleState_manualActivationFromApp() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3196,7 +3196,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void setAutomaticZenRuleState_manualDeactivationFromApp() {
         AutomaticZenRule ruleToCreate = createRule("rule");

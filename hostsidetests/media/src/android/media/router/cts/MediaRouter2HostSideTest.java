@@ -353,6 +353,18 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "requiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld");
     }
 
+    @ApiTest(apis = {"android.media.MediaRoute2Info#getProviderPackageName"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MEDIA_ROUTE_2_INFO_PROVIDER_PACKAGE_NAME)
+    @Test
+    public void testGetProviderPackageName_propagatesCorrectlyFromProvider() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "getProviderPackageName_propagatesCorrectlyFromProvider");
+    }
+
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})
     @AppModeFull
     @RequiresDevice

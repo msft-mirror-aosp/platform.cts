@@ -431,6 +431,9 @@ public class CommandReceiverActivity extends Activity {
                     filter = new IntentFilter();
                     filter.addAction(MediaStore.ACTION_IMAGE_CAPTURE);
                     filter.addAction(MediaStore.ACTION_VIDEO_CAPTURE);
+                    if (com.android.providers.media.flags.Flags.motionPhotoIntent()) {
+                        filter.addAction(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
+                    }
                     mDpm.addPersistentPreferredActivity(mAdmin, filter, componentName);
                     // Map
                     filter = new IntentFilter();

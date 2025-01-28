@@ -32,9 +32,9 @@ import static android.photopicker.cts.util.PhotoPickerUiUtils.SHORT_TIMEOUT;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.clickAndWait;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findAddButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findItemList;
+import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findPreviewAddButton;
 import static android.photopicker.cts.util.PhotoPickerUiUtils.findPreviewAddOrSelectButton;
-import static android.photopicker.cts.util.PhotoPickerUiUtils.findObject;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertContainsMimeType;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertExtension;
 import static android.photopicker.cts.util.ResultsAssertionsUtils.assertMimeType;
@@ -131,8 +131,10 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
             mActivity.finish();
         }
 
-        PhotoPickerComponentUtils.setState(GET_CONTENT_ACTIVITY_COMPONENT,
-                sGetContentTakeOverActivityAliasState);
+        if (!super.isModernPickerEnabled()) {
+            PhotoPickerComponentUtils.setState(
+                    GET_CONTENT_ACTIVITY_COMPONENT, sGetContentTakeOverActivityAliasState);
+        }
     }
 
     @Test

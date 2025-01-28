@@ -188,7 +188,7 @@ public final class AppFunctionConstants {
                 .setPropertyBoolean("restrictCallersWithExecuteAppFunctions", false)
                 .setPropertyLong("displayNameStringRes", 12)
                 .setPropertyString(
-                        "mobileApplicationQualifiedId", "android$apps-db/apps#com.example.utils");
+                        "mobileApplicationQualifiedId", "android$apps-db/apps#" + packageName);
 
         GenericDocument schemaMetadata =
                 new GenericDocument.Builder<>(
