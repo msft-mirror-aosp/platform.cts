@@ -42,6 +42,7 @@ import perfetto.protos.PerfettoConfig.TracingServiceState.DataSource;
 import perfetto.protos.PerfettoTrace.FtraceEvent;
 import perfetto.protos.PerfettoTrace.FtraceEventBundle;
 import perfetto.protos.PerfettoTrace.GpuCounterEvent;
+import perfetto.protos.PerfettoTrace.GpuRenderStageEvent;
 import perfetto.protos.PerfettoTrace.Trace;
 import perfetto.protos.PerfettoTrace.TracePacket;
 
@@ -226,6 +227,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 .setName(FTRACE_SOURCE_NAME)
                 .getFtraceConfigBuilder()
                 .addFtraceEvents(GPU_FREQ_FTRACE);
+        config.addDataSourcesBuilder().getConfigBuilder().setName(STAGES_SOURCE_NAME);
         File configFile = File.createTempFile("perfetto", ".cfg");
         try (OutputStream out = new FileOutputStream(configFile)) {
             config.build().writeTo(out);
@@ -233,6 +235,7 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
 
         boolean foundValidGpuCounterEvent = false;
         boolean foundGpuFrequencyEvent = false;
+        boolean foundValidGpuRenderStageEvent = false;
         for (int i = 0; i < MAX_TRACE_RETRIES; i++) {
             CommandResult queryStatus =
                     getDevice()
@@ -249,13 +252,16 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             List<TracePacket> packetList = trace.getPacketList();
             foundValidGpuCounterEvent = containsValidGpuCounterEvent(packetList);
             foundGpuFrequencyEvent = containsGpuFrequencyEvent(packetList);
+            foundValidGpuRenderStageEvent = containsValidRenderStageEvent(packetList);
 
             traceResult.delete();
             CommandResult deleteTraceStatus =
                     getDevice().executeShellV2Command("rm -f " + TRACE_FILE_PATH);
             Assert.assertEquals(CommandStatus.SUCCESS, deleteTraceStatus.getStatus());
 
-            if (foundValidGpuCounterEvent || foundGpuFrequencyEvent) {
+            if (foundValidGpuCounterEvent
+                    || foundGpuFrequencyEvent
+                    || foundValidGpuRenderStageEvent) {
                 break;
             }
         }
@@ -267,6 +273,10 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                 is(true));
         errorCollector.checkThat(
                 "Trace does not contain valid GPU frequency.", foundGpuFrequencyEvent, is(true));
+        errorCollector.checkThat(
+                "Trace does not contain valid GPU render stages.",
+                foundValidGpuRenderStageEvent,
+                is(true));
     }
 
     private static boolean containsValidGpuCounterEvent(List<TracePacket> packetList) {
@@ -300,6 +310,22 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
                         && event.getGpuFrequency().getState() > 0) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsValidRenderStageEvent(List<TracePacket> packetList) {
+        for (TracePacket packet : packetList) {
+            if (!packet.hasGpuRenderStageEvent()) continue;
+
+            GpuRenderStageEvent gpuRenderStageEvent = packet.getGpuRenderStageEvent();
+            if (gpuRenderStageEvent.hasEventId()
+                    && ((gpuRenderStageEvent.hasHwQueueIid() && gpuRenderStageEvent.hasStageIid())
+                            || (gpuRenderStageEvent.hasHwQueueId()
+                                    && gpuRenderStageEvent.hasStageId()))
+                    && gpuRenderStageEvent.hasContext()) {
+                return true;
             }
         }
         return false;
