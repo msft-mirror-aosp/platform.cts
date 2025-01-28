@@ -50,6 +50,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.PollingCheck;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -85,6 +86,8 @@ public class SystemMediaRoutingTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private MediaRouter2 mSelfProxyRoute;
+    private MediaRouter2.ScanToken mScanToken;
+    private MediaRoute2Info mSelectedRouteBeforeRunningTheTest;
     private SystemMediaRoutingProviderService mService;
 
     @BeforeClass
@@ -119,7 +122,10 @@ public class SystemMediaRoutingTest {
                         Manifest.permission.MEDIA_ROUTING_CONTROL,
                         Manifest.permission.MODIFY_AUDIO_ROUTING);
         mSelfProxyRoute = MediaRouter2.getInstance(context, context.getPackageName());
-        triggerScan();
+        mSelectedRouteBeforeRunningTheTest = getSelectedRoute();
+        mScanToken =
+                mSelfProxyRoute.requestScan(
+                        new MediaRouter2.ScanRequest.Builder().setScreenOffScan(true).build());
         mService =
                 PollingCheck.waitFor(
                         TIMEOUT_MS,
@@ -128,6 +134,20 @@ public class SystemMediaRoutingTest {
         assertWithMessage("Service failed to launch after " + TIMEOUT_MS + " milliseconds.")
                 .that(mService)
                 .isNotNull();
+    }
+
+    @After
+    public void tearDown() {
+        transferAndWaitForSessionUpdate(mSelectedRouteBeforeRunningTheTest);
+
+        // We wait for the service provider to be in a clean state before finishing. This ensures
+        // a clean state for following test runs.
+        waitForCondition(() -> mService.getSelectedRouteOriginalId() == null);
+        assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
+        mSelfProxyRoute.cancelScanRequest(mScanToken);
+
+        waitForCondition(
+                () -> mSelfProxyRoute.getSystemController().getTransferableRoutes().isEmpty());
     }
 
     @AfterClass
@@ -165,23 +185,12 @@ public class SystemMediaRoutingTest {
     @Test
     public void transferTo_systemMediaProviderServiceRoute_readsAudioAsExpected() {
         var route = waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
-        var previouslySelectedRoute = getSelectedRoute();
-
-        // Even though this test transfers to previouslySelectedRoute later, we still schedule a
-        // transfer back to the original route so that the routing gets reset, even if the test
-        // fails later.
-        mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
         transferAndWaitForSessionUpdate(route);
 
         var toneGenerator = new ToneGenerator(AudioManager.STREAM_MUSIC, VOLUME_TONE);
         mResourceReleaser.add(toneGenerator::release);
         toneGenerator.startTone(ToneGenerator.TONE_DTMF_0);
         waitForCondition(() -> mService.getNoisyBytesCount() > EXPECTED_NOISY_BYTE_COUNT);
-
-        transferAndWaitForSessionUpdate(previouslySelectedRoute);
-
-        waitForCondition(() -> mService.getSelectedRouteOriginalId() == null);
-        assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
     }
 
     @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
@@ -189,8 +198,6 @@ public class SystemMediaRoutingTest {
     public void transferTo_withinRoutingSession_updatesRoutingSession() {
         var firstTargetRoute =
                 waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
-        var previouslySelectedRoute = getSelectedRoute();
-        mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
         transferAndWaitForSessionUpdate(firstTargetRoute);
 
         assertThat(mService.getSelectedRouteOriginalId())
@@ -220,8 +227,6 @@ public class SystemMediaRoutingTest {
     public void setRouteVolume_updatesRouteCorrectly() {
         var targetRoute =
                 waitForTransferableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1);
-        var previouslySelectedRoute = getSelectedRoute();
-        mResourceReleaser.add(() -> transferAndWaitForSessionUpdate(previouslySelectedRoute));
         transferAndWaitForSessionUpdate(targetRoute);
 
         assertThat(mService.getSelectedRouteOriginalId())
@@ -253,14 +258,6 @@ public class SystemMediaRoutingTest {
     }
 
     // Internal methods.
-
-    /** Triggers an active scan and schedules its cancellation after the end of the test. */
-    private void triggerScan() {
-        MediaRouter2.ScanToken scanToken =
-                mSelfProxyRoute.requestScan(
-                        new MediaRouter2.ScanRequest.Builder().setScreenOffScan(true).build());
-        mResourceReleaser.add(() -> mSelfProxyRoute.cancelScanRequest(scanToken));
-    }
 
     /** Waits for the selected system route to have the given {@code name}. */
     private void waitForSelectedRouteWithName(String name) {
