@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.hardware.tv.mediaquality.IMediaQuality;
+import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
 import android.media.quality.AmbientBacklightMetadata;
 import android.media.quality.AmbientBacklightSettings;
@@ -54,6 +55,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -645,6 +647,24 @@ public class MediaQualityTest {
     public void testAddGlobalActiveProcessingPictureListener() {
         mManager.addGlobalActiveProcessingPictureListener(
                 Executors.newSingleThreadExecutor(), Mockito.mock(Consumer.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testActiveProcessingPicture() {
+        int id = 12;
+        String profileId = "profileId";
+        ActiveProcessingPicture app = new ActiveProcessingPicture(id, profileId);
+        Assert.assertEquals(id, app.getId());
+        Assert.assertEquals(profileId, app.getProfileId());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetParameterCapabilities() {
+        List<String> names = new ArrayList<>();
+        names.add(PictureQuality.PARAMETER_BRIGHTNESS);
+        mManager.getParameterCapabilities(names);
     }
 
     private PictureProfile getTestPictureProfile(String methodName) {
