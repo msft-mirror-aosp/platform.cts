@@ -3043,6 +3043,12 @@ public class StaticMetadata {
         return (sharedSessionConfiguration != null);
     }
 
+    public SharedSessionConfiguration getSharedSessionConfiguration() {
+        SharedSessionConfiguration sharedSessionConfiguration =
+                mCharacteristics.get(CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
+        return sharedSessionConfiguration;
+    }
+
     /**
      * Get the value in index for a fixed-size array from a given key.
      *
