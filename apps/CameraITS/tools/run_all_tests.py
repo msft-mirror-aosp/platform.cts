@@ -64,7 +64,7 @@ TIME_KEY_END = 'end'
 VALID_CONTROLLERS = ('arduino', 'canakit')
 _FRONT_CAMERA_ID = '1'
 # recover replaced '_' in scene def
-_INT_STR_DICT = types.MappingProxyType({'11': '1_1', '12': '1_2'})
+_INT_STR_DICT = types.MappingProxyType({'11': '1_1', '12': '1_2', '13': '1_3'})
 _MAIN_TESTBED = 0
 _PROPERTIES_TO_MATCH = (
     'ro.product.model', 'ro.product.name', 'ro.build.display.id', 'ro.revision'
