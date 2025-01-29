@@ -131,7 +131,7 @@
     <!-- Needed for Notification Hiding tests -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
 
-    <!-- Needed for BLE channel sounding test -->
+    <!-- Needed for BLE channel sounding and UWB test -->
     <uses-permission android:name="android.permission.RANGING" />
 
     <application android:debuggable="true"
@@ -4366,6 +4366,38 @@
             <meta-data
                 android:name="CddTest"
                 android:value="7.4.3/C-11-2" />
+        </activity>
+
+        <!--
+           CTS Verifier UWB Precision Test Screen
+               test category : UWB
+               test parent : PresenceTestActivity
+       -->
+        <activity
+            android:name=".presence.UwbAccuracyActivity"
+            android:exported="true"
+            android:label="@string/uwb_accuracy_test_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/uwb" />
+            <meta-data
+                android:name="test_parent"
+                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
+            <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.uwb" />
+            <meta-data
+                android:name="display_mode"
+                android:value="single_display_mode" />
+            <meta-data
+                android:name="CddTest"
+                android:value="7.4.9/C-1-6,C-1-7" />
         </activity>
 
         <activity-alias android:name=".CtsVerifierActivity"
