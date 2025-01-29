@@ -25,6 +25,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.provider.Settings;
 import android.util.Log;
 
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.BroadcastUtils;
 
 import org.junit.Test;
@@ -48,6 +49,7 @@ public class ZenModeTest extends BroadcastTestBase {
     private static final int ZEN_MODE_IS_ALARMS = 3;
 
     @Test
+    @RequireNotAutomotive(reason = "Auto only shows a toast for this intent.")
     public void testAll() throws Exception {
         if (!mHasFeature) {
             Log.i(TAG, "The device doesn't support feature: " + FEATURE_VOICE_RECOGNIZERS);
