@@ -32,7 +32,7 @@ _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
 _MAX_FPS_INDEX = 1
-_MAX_STREAM_COUNT = 2
+_MAX_STREAM_COUNT = 3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SEC_TO_NSEC = 1_000_000_000
 
@@ -109,12 +109,18 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
       test_failures = []
       features_tested = {}  # feature combinations already tested
       for stream_combination in combinations:
+        combo_version = stream_combination['version']
         streams_name = stream_combination['name']
         min_frame_duration = 0
         configured_streams = []
         skip = False
 
-        # Only supports combinations of up to 2 streams
+        # Skip if the combination's version is greater than the device's feature
+        # combination query version
+        if combo_version > feature_combination_query_version:
+          continue
+
+        # Only supports combinations of up to 3 streams
         if len(stream_combination['combination']) > _MAX_STREAM_COUNT:
           raise AssertionError(
               f'stream combination cannot exceed {_MAX_STREAM_COUNT} streams.')
@@ -140,12 +146,11 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             raise AssertionError(
                 'first stream in the combination must be priv format preview.')
 
-          # Second stream must be jpeg or yuv for zoom test. If not, skip
+          # Second stream must be jpeg for zoom test. If not, skip
           if (i == 1 and fmt != capture_request_utils.FMT_CODE_JPEG and
-              fmt != capture_request_utils.FMT_CODE_JPEG_R and
-              fmt != capture_request_utils.FMT_CODE_YUV):
+              fmt != capture_request_utils.FMT_CODE_JPEG_R):
             logging.debug(
-                'second stream format %s is not yuv/jpeg/jpeg_r. Skip',
+                'second stream format %s is not jpeg/jpeg_r. Skip',
                 stream['format'])
             skip = True
             break
