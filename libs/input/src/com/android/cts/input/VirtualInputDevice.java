@@ -41,7 +41,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -120,36 +119,10 @@ public abstract class VirtualInputDevice implements
         registerInputDevice(registerCommand.toString());
 
         if (display != null) {
-            if (isDeviceAssociationsAvailable()) {
-                mDisplayAssociation = new InputDeviceAssociationByDescriptor.Associator(
-                        mInstrumentation).associate(mDeviceId, display);
-            } else {
-                if (registerCommand instanceof UinputRegisterCommand) {
-                    String port = ((UinputRegisterCommand) registerCommand).getPort();
-                    mDisplayAssociation = new InputDeviceAssociationByDescriptor.Associator(
-                            mInstrumentation).associateByPort(mDeviceId, port, display);
-                } else {
-                    Log.w(TAG, "Association by port requires UinputRegisterCommand");
-                }
-            }
+            mDisplayAssociation =
+                    new InputDeviceAssociationByDescriptor.Associator(mInstrumentation)
+                            .associate(mDeviceId, display);
         }
-    }
-
-    /**
-     * Checks if the {@link InputManager#addUniqueIdAssociationByDescriptor} (test API protected by
-     * FLAG_DEVICE_ASSOCIATIONS flag) is available.
-     *
-     * @return {@code true} if the {@link InputManager#addUniqueIdAssociationByDescriptor} test API
-     * is available
-     */
-    private static boolean isDeviceAssociationsAvailable() {
-        final var methods = InputManager.class.getDeclaredMethods();
-        for (Method m : methods) {
-            if ("addUniqueIdAssociationByDescriptor".equals(m.getName())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     protected byte[] readData() throws IOException {

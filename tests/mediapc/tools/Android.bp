@@ -1,4 +1,4 @@
-// Copyright (C) 2011 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,21 +13,12 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_fwk_nfc",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsNdefTestCases",
-    defaults: ["cts_defaults"],
-    static_libs: ["ctstestrunner-axt"],
+java_binary_host {
+    name: "VarianceMain",
     srcs: ["src/**/*.java"],
-    sdk_version: "current",
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-        "mts-nfc",
-        "mcts-nfc",
-    ],
+    static_libs: ["jcommander"],
+    main_class: "com.android.mediapc.VarianceMain",
 }
