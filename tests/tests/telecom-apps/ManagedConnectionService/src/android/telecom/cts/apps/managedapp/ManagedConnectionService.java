@@ -25,17 +25,21 @@ import android.telecom.TelecomManager;
 import android.telecom.cts.apps.ManagedConnection;
 import android.util.Log;
 
+import java.util.concurrent.CountDownLatch;
+
 public class ManagedConnectionService extends ConnectionService {
     private static final String LOG_TAG = "ManagedConnectionService";
     public static ManagedConnectionService sConnectionService;
     public static ManagedConnection sLastConnection = null;
     public static ConnectionRequest sLastFailedRequest = null;
+    public static CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
 
     @Override
     public void onBindClient(Intent intent) {
         Log.i(LOG_TAG, String.format("onBindClient: intent=[%s]", intent));
         sConnectionService = this;
         sLastConnection = null;
+        sCreateOutgoingConnectionLatch = new CountDownLatch(1);
     }
 
     @Override
@@ -43,6 +47,7 @@ public class ManagedConnectionService extends ConnectionService {
         Log.i(LOG_TAG, String.format("onUnbind: intent=[%s]", intent));
         sConnectionService = null;
         sLastConnection = null;
+        sCreateOutgoingConnectionLatch = new CountDownLatch(1);
         return super.onUnbind(intent);
     }
 
@@ -51,6 +56,7 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateOutgoingConnection: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        sCreateOutgoingConnectionLatch.countDown();
         // For calls from the same managed connection service, operations are handled at the
         // connection service level.
         if (getAllConnections().stream()
@@ -95,6 +101,7 @@ public class ManagedConnectionService extends ConnectionService {
 
     private Connection createConnection(ConnectionRequest request, boolean isOutgoing) {
         ManagedConnection connection = new ManagedConnection(this);
+        Log.i("ManagedConnectionService", "Creating managed connection");
         sLastConnection = connection;
 
         if (isOutgoing) {

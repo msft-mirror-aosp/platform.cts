@@ -22,6 +22,7 @@ import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getDefaultAttributesForManaged;
+import static android.telecom.cts.apps.AttributesUtil.getDefaultMmiAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getRandomAttributesForApp;
 import static android.telecom.cts.apps.AttributesUtil.getRandomAttributesForManaged;
 import static android.telecom.cts.apps.ShellCommandExecutor.COMMAND_CLEANUP_STUCK_CALLS;
@@ -276,6 +277,17 @@ public class BaseAppVerifierImpl {
         return getDefaultAttributesForApp(name, isOutgoing);
     }
 
+    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name) throws Exception {
+        if (name.equals(ManagedConnectionServiceApp)) {
+            // Treat the first element in mManagedAccounts as the "default"
+            return getDefaultMmiAttributesForApp(name, mManagedAccounts.get(0).getAccountHandle());
+        } else if (name.equals(ManagedConnectionServiceAppClone)) {
+            return getDefaultMmiAttributesForApp(
+                    name, mManagedCloneAccounts.get(0).getAccountHandle());
+        }
+        return getDefaultMmiAttributesForApp(name, null /* handle */);
+    }
+
     public CallAttributes getRandomAttributes(TelecomTestApp name,
             boolean isOutgoing,
             boolean isHoldable)
@@ -332,6 +344,12 @@ public class BaseAppVerifierImpl {
     public void addCallAndVerifyFailure(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
         appControl.addFailedCall(attributes);
+    }
+
+    public void addFailedCallWithCreateOutgoingConnectionVerify(
+            AppControlWrapper appControl, CallAttributes attributes)
+            throws Exception {
+        appControl.addFailedCallWithCreateOutgoingConnectionVerify(attributes);
     }
 
     public void waitUntilExpectedCallCount(int expectedCallCount) {
