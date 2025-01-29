@@ -44,6 +44,7 @@ import static android.view.accessibility.AccessibilityNodeInfo.ACTION_ARGUMENT_S
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_HIDE_TOOLTIP;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_IN_DIRECTION;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_TOOLTIP;
+import static android.view.accessibility.Flags.FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS;
 
 import static androidx.test.espresso.Espresso.onView;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
@@ -1612,6 +1613,67 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                 nonToolService.disableSelfAndRemove();
             }
         }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    @RequiresFlagsEnabled(FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS)
+    public void testAccessibilityDataSensitive_observesGesturesFromTool() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(true);
+        try {
+            AccessibilityServiceInfo info = service.getServiceInfo();
+            info.flags &= ~AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE;
+            service.setServiceInfo(info);
+
+            final View adsView = mActivity.findViewById(R.id.innerView);
+            assertThat(adsView.isAccessibilityDataSensitive()).isTrue();
+
+            dispatchAndAwaitTouchOnView(adsView, service);
+        } finally {
+            service.disableSelfAndRemove();
+        }
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
+    @RequiresFlagsEnabled(FLAG_PREVENT_A11Y_NONTOOL_FROM_INJECTING_INTO_SENSITIVE_VIEWS)
+    public void testAccessibilityDataSensitive_hiddenFromGesturesFromNonTool() {
+        final InstrumentedAccessibilityService service = getServiceForA11yToolTests(false);
+        try {
+            AccessibilityServiceInfo info = service.getServiceInfo();
+            info.flags &= ~AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE;
+            service.setServiceInfo(info);
+
+            final View adsView = mActivity.findViewById(R.id.innerView);
+            assertThat(adsView.isAccessibilityDataSensitive()).isTrue();
+
+            assertThrows(AssertionError.class, () -> dispatchAndAwaitTouchOnView(adsView, service));
+        } finally {
+            service.disableSelfAndRemove();
+        }
+    }
+
+    private void dispatchAndAwaitTouchOnView(View view, InstrumentedAccessibilityService service) {
+        final Object waitLock = new Object();
+        final AtomicBoolean touched = new AtomicBoolean(false);
+        final int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        location[0] += view.getWidth() / 2;
+        location[1] += view.getHeight() / 2;
+        view.setOnTouchListener(
+                (v, event) -> {
+                    synchronized (waitLock) {
+                        touched.set(true);
+                        waitLock.notifyAll();
+                    }
+                    return false;
+                });
+
+        final GestureDescription.Builder builder =
+                new GestureDescription.Builder()
+                        .addStroke(click(new PointF(location[0], location[1])));
+        dispatch(service, builder.build());
+        TestUtils.waitOn(waitLock, touched::get, DEFAULT_TIMEOUT_MS, "Expected touch");
     }
 
     @Test

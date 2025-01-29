@@ -21,5 +21,6 @@ for all properties except isAccessibilityTool.
     android:isAccessibilityTool="false"
     android:canRetrieveWindowContent="true"
     android:canRequestTouchExplorationMode="true"
+    android:canPerformGestures="true"
     android:accessibilityEventTypes="typeAllMask"
     android:accessibilityFlags="flagDefault|flagRequestTouchExplorationMode|flagRetrieveInteractiveWindows|flagReportViewIds"/>
