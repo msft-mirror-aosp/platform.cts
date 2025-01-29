@@ -141,7 +141,8 @@
                  android:largeHeap="true"
                  android:requestLegacyExternalStorage="true"
                  android:allowBackup="false"
-                 android:theme="@android:style/Theme.DeviceDefault">
+                 android:theme="@android:style/Theme.DeviceDefault"
+                 android:manageSpaceActivity=".ManageSpaceActivity">
 
         <meta-data android:name="android.telephony.HIDE_VOICEMAIL_SETTINGS_MENU"
                    android:value="true"/>
@@ -7049,6 +7050,11 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/generated_previews_widget_info" />
         </receiver>
+
+        <activity android:name=".ManageSpaceActivity">
+            <meta-data android:name="NonApiTest"
+                android:value="Helper class. Used to test location attack on camera intents." />
+        </activity>
     </application>
 
     <queries>

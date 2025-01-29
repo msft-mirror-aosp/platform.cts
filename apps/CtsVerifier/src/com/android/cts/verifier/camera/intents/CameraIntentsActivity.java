@@ -35,6 +35,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.View;
@@ -83,6 +84,8 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         implements OnClickListener, SurfaceHolder.Callback,
         CameraPresentMediaDialog.DialogCallback {
 
+    public static Uri targetUri = null;
+
     private static final String TAG = "CameraIntents";
     private static final int STATE_OFF = 0;
     private static final int STATE_STARTED = 1;
@@ -95,13 +98,15 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
     private static final int STAGE_INTENT_PICTURE_SECURE = 3;
     private static final int STAGE_INTENT_MOTION_PHOTO = 4;
     private static final int STAGE_INTENT_MOTION_PHOTO_SECURE = 5;
-    private static final int STAGE_INTENT_VIDEO = 6;
-    private static final int NUM_STAGES = 7;
+    private static final int STAGE_INTENT_PICTURE_LOCATION_ATTACK = 6;
+    private static final int STAGE_INTENT_VIDEO = 7;
+    private static final int NUM_STAGES = 8;
     private static final String STAGE_INDEX_EXTRA = "stageIndex";
 
     private static String[] EXPECTED_INTENTS =
             new String[] {
-                Camera.ACTION_NEW_PICTURE, Camera.ACTION_NEW_VIDEO, null, null, null, null, null
+                Camera.ACTION_NEW_PICTURE, Camera.ACTION_NEW_VIDEO, null, null, null, null, null,
+                null
             };
 
     private ImageButton mPassButton;
@@ -138,6 +143,7 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
             new int[] {
                 JOB_TYPE_IMAGE,
                 JOB_TYPE_VIDEO,
+                JOB_TYPE_IMAGE,
                 JOB_TYPE_IMAGE,
                 JOB_TYPE_IMAGE,
                 JOB_TYPE_IMAGE,
@@ -258,6 +264,9 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
             return "Intent Motion Photo Secure";
         }
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return "Intent Picture (Location Attack)";
+        }
         if (stageIndex == STAGE_INTENT_VIDEO) {
             return "Intent Video";
         }
@@ -285,6 +294,9 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
             return MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE;
         }
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return MediaStore.ACTION_IMAGE_CAPTURE + " (Location Attack)";
+        }
         if (stageIndex == STAGE_INTENT_VIDEO) {
             return android.hardware.Camera.ACTION_NEW_VIDEO;
         }
@@ -311,6 +323,9 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         }
         if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
             return getString(R.string.ci_instruction_text_intent_motion_photo_secure_label);
+        }
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return getString(R.string.ci_instruction_test_intent_picture_location_attack_label);
         }
         if (stageIndex == STAGE_INTENT_VIDEO) {
             return getString(R.string.ci_instruction_text_intent_video_label);
@@ -426,7 +441,8 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         Boolean locationEnabled = (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED);
 
-        if (getStageIndex() == NUM_STAGES - 1) {
+        int stageIndex = getStageIndex();
+        if (stageIndex == NUM_STAGES - 1) {
                 /**
                  * Don't enable the pass /fail button till the user grants CTS verifier location
                  * access again.
@@ -453,6 +469,16 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
                     Toast.LENGTH_SHORT).show();
             }
         }
+
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK
+                && mState == STATE_STARTED) {
+            if (mImageTarget.exists()) {
+                handleIntentPictureResult(stageIndex);
+                updateSuccessState();
+            } else {
+                Log.v(TAG, "Image does not exist yet");
+            }
+        }
     }
 
     @Override
@@ -467,6 +493,7 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
                 || getStageIndex() == STAGE_INTENT_PICTURE_SECURE
                 || getStageIndex() == STAGE_INTENT_MOTION_PHOTO
                 || getStageIndex() == STAGE_INTENT_MOTION_PHOTO_SECURE
+                || getStageIndex() == STAGE_INTENT_PICTURE_LOCATION_ATTACK
                 || getStageIndex() == STAGE_INTENT_VIDEO) {
 
             if (mActivityResult && mState == STATE_STARTED) {
@@ -480,7 +507,11 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
     protected void onActivityResult(
         int requestCode, int resultCode, Intent data) {
         int stageIndex = getStageIndex();
-        if (requestCode == 1337 + stageIndex) {
+
+        // The location attack stage launches an activity as a new task. Check for pass/fail in
+        // onResume instead.
+        if (requestCode == 1337 + stageIndex
+                && stageIndex != STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
             Log.v(TAG, "Activity we launched was finished");
             mActivityResult = true;
             synchronized(mLock) {
@@ -677,7 +708,8 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
                     && stageIndex != STAGE_INTENT_PICTURE
                     && stageIndex != STAGE_INTENT_MOTION_PHOTO
                     && stageIndex != STAGE_INTENT_MOTION_PHOTO_SECURE
-                    && stageIndex != STAGE_INTENT_PICTURE_SECURE) {
+                    && stageIndex != STAGE_INTENT_PICTURE_SECURE
+                    && stageIndex != STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
                 JobInfo job = makeJobInfo(TEST_JOB_TYPES[stageIndex]);
                 jobScheduler.schedule(job);
                 new WaitForTriggerTask().execute();
@@ -695,7 +727,17 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
             Intent cameraIntent = null;
 
             if (intentStr != null) {
-                cameraIntent = new Intent(intentStr);
+                if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+                    Uri packageUri = Uri.fromParts("package",
+                            getApplicationContext().getPackageName(), null);
+                    int intentFlags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK;
+                    cameraIntent =
+                            new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri)
+                            .addFlags(intentFlags);
+                } else {
+                    cameraIntent = new Intent(intentStr);
+                }
                 mDebugFolder = new File(this.getFilesDir(), "debug");
                 mDebugFolder.mkdirs();
                 if (!mDebugFolder.exists()) {
@@ -712,6 +754,7 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
                     case STAGE_INTENT_PICTURE_SECURE:
                     case STAGE_INTENT_MOTION_PHOTO:
                     case STAGE_INTENT_MOTION_PHOTO_SECURE:
+                    case STAGE_INTENT_PICTURE_LOCATION_ATTACK:
                         mImageTarget = new File(mDebugFolder, timeStamp + "capture.jpg");
                         targetFile = mImageTarget;
                         break;
@@ -723,9 +766,13 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
                         Log.wtf(TAG, "Unexpected stage index to send intent with extras");
                         return;
                 }
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(this,
-                              "com.android.cts.verifier.managedprovisioning.fileprovider",
-                              targetFile));
+                Uri fileUri = FileProvider.getUriForFile(this,
+                        "com.android.cts.verifier.managedprovisioning.fileprovider", targetFile);
+                if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+                    CameraIntentsActivity.targetUri = fileUri;
+                } else {
+                    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
+                }
                 startActivityForResult(cameraIntent, 1337 + getStageIndex());
             }
 
@@ -807,6 +854,8 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
             return android.provider.MediaStore.ACTION_MOTION_PHOTO_CAPTURE;
         } else if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
             return android.provider.MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE;
+        } else if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
         } else if (stageIndex == STAGE_INTENT_VIDEO) {
             return android.provider.MediaStore.ACTION_VIDEO_CAPTURE;
         }
