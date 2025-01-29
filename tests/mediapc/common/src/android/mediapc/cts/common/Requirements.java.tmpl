@@ -247,7 +247,10 @@ public final class Requirements {
 
             {{UpperCamelCase $r.GetName}}Requirement req =
                 new {{UpperCamelCase $r.GetName}}Requirement(
-                    "{{ SafeReqID $r.GetId }}{{ SafeTestConfigID $t_id }}"
+                    /* id */ "{{ SafeReqID $r.GetId }}{{ SafeTestConfigID $t_id }}",
+                    /* cddId */ "{{$r.GetId}}",
+                    /* configId */ null,
+                    /* variantId */ null
                     {{- range $m_id, $m := $r.GetMeasurements }},
                     {{LowerCamelCase $m_id}}
                     {{- end}});
@@ -304,7 +307,10 @@ public final class Requirements {
             {{- end}}{{/* range $m_id, $m */}}
             {{UpperCamelCase $r.GetName}}Requirement req =
                 new {{UpperCamelCase $r.GetName}}Requirement(
-                    "{{ SafeReqID $r.GetId }}{{ SafeTestConfigID $t_id }}"
+                    /* id */ "{{ SafeReqID $r.GetId }}{{ SafeTestConfigID $t_id }}",
+                    /* cddId */ "{{$r.GetId}}",
+                    /* configId */ {{with $t_id}}"{{.}}"{{else}}null{{end}},
+                    /* variantId */ {{with $v_id}}"{{.}}"{{else}}null{{end}}
                     {{- range $m_id, $m := $r.GetMeasurements }},
                     {{LowerCamelCase $m_id}}
                     {{- end}});
@@ -347,8 +353,13 @@ public final class Requirements {
         {{- end }}{{/* if eq */}}
         {{- end }}{{/* range $m_id, $m */}}
 
-        private {{UpperCamelCase $r.GetName}}Requirement(String id, RequiredMeasurement<?>... reqs) {
-            super(id, reqs);
+        private {{UpperCamelCase $r.GetName}}Requirement(
+                String id,
+                String cddId,
+                String configId,
+                String variantId,
+                RequiredMeasurement<?>... reqs) {
+            super(id, cddId, configId, variantId, reqs);
         }
     }
 {{- end }} {{/* if $r.GetName */}}

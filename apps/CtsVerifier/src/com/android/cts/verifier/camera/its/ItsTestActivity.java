@@ -204,6 +204,8 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String PERF_METRICS_KEY_MAX_DELTA = "max_delta";
     private static final String PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP =
             "preview_frame_drop";
+    private static final Pattern SCENE_IP_METRICS_PATTERN =
+            Pattern.compile("test_default_jca_ip_.*");
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -731,6 +733,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                     perfMetricsResult);
             boolean multiCamMetricsMatches = multiCamMetricsMatcher.matches();
 
+            Matcher sceneIpMetricsMatcher = SCENE_IP_METRICS_PATTERN.matcher(
+                    perfMetricsResult);
+            boolean sceneIpMetricsMatches = sceneIpMetricsMatcher.matches();
+
             Matcher previewFrameDropMetricsMatcher =
                     PERF_METRICS_PREVIEW_FRAME_DROP_PATTERN.matcher(perfMetricsResult);
             boolean previewFrameDropMetricsMatches = previewFrameDropMetricsMatcher.matches();
@@ -821,6 +827,11 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                 if (multiCamMetricsMatches) {
                     Log.i(TAG, "multi cam metrics matches");
+                    addMultiCamPerfMetricsResult(perfMetricsResult, obj);
+                }
+
+                if (sceneIpMetricsMatches) {
+                    Log.i(TAG, "scene IP metrics matches");
                     addMultiCamPerfMetricsResult(perfMetricsResult, obj);
                 }
 

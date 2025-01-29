@@ -11,7 +11,7 @@
      limitations under the License.
 -->
 <configuration description="Config for CTS CDM multi-device test cases">
-    <option name="test-suite-tag" value="cts-interactive" />
+    <option name="test-suite-tag" value="cts-v-host" />
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />

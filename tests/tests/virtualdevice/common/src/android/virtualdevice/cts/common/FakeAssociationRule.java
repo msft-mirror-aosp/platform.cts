@@ -22,16 +22,19 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.app.role.RoleManager;
 import android.companion.AssociationInfo;
+import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Process;
 import android.util.Log;
 
 import androidx.test.filters.SdkSuppress;
@@ -46,6 +49,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 /**
  * A test rule that creates a {@link CompanionDeviceManager} association with the instrumented
@@ -54,6 +58,8 @@ import java.util.concurrent.Executor;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 class FakeAssociationRule extends ExternalResource {
     private static final String TAG = "FakeAssociationRule";
+
+    private static final String DEVICE_PROFILE = AssociationRequest.DEVICE_PROFILE_APP_STREAMING;
 
     private static final String FAKE_ASSOCIATION_ADDRESS_FORMAT = "00:00:00:00:00:%02d";
 
@@ -64,8 +70,6 @@ class FakeAssociationRule extends ExternalResource {
     private final Executor mCallbackExecutor = Runnable::run;
     private final RoleManager mRoleManager = mContext.getSystemService(RoleManager.class);
 
-    private final String mDeviceProfile;
-
     @Mock
     private CompanionDeviceManager.OnAssociationsChangedListener mOnAssociationsChangedListener;
 
@@ -74,8 +78,7 @@ class FakeAssociationRule extends ExternalResource {
     private AssociationInfo mAssociationInfo;
     private final CompanionDeviceManager mCompanionDeviceManager;
 
-    public FakeAssociationRule(String deviceProfile) {
-        mDeviceProfile = deviceProfile;
+    FakeAssociationRule() {
         mCompanionDeviceManager = mContext.getSystemService(CompanionDeviceManager.class);
     }
 
@@ -89,17 +92,28 @@ class FakeAssociationRule extends ExternalResource {
         Log.d(TAG, "Associations before shell cmd: "
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
+        mRoleManager.setBypassingRoleQualification(true);
         SystemUtil.runShellCommandOrThrow(String.format(Locale.getDefault(Locale.Category.FORMAT),
                 "cmd companiondevice associate %d %s %s %s true",
                 getInstrumentation().getContext().getUserId(),
                 mContext.getPackageName(),
                 deviceAddress,
-                mDeviceProfile));
+                DEVICE_PROFILE));
         verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)
                 .description(TAG
                         + ": Association changed listener did not call back. Total associations: "
                         + mCompanionDeviceManager.getMyAssociations().size()))
                 .onAssociationsChanged(any());
+        mRoleManager.setBypassingRoleQualification(false);
+
+        // Immediately drop the role and rely on Shell
+        Consumer<Boolean> callback = mock(Consumer.class);
+        mRoleManager.removeRoleHolderAsUser(
+                DEVICE_PROFILE, mContext.getPackageName(),
+                RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                mCallbackExecutor, callback);
+        verify(callback, timeout(TIMEOUT_MS)).accept(true);
+
         List<AssociationInfo> associations = mCompanionDeviceManager.getMyAssociations();
 
         final AssociationInfo associationInfo =
@@ -117,11 +131,8 @@ class FakeAssociationRule extends ExternalResource {
         MockitoAnnotations.initMocks(this);
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
 
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            mCompanionDeviceManager.addOnAssociationsChangedListener(
-                    mCallbackExecutor, mOnAssociationsChangedListener);
-            mRoleManager.setBypassingRoleQualification(true);
-        });
+        mCompanionDeviceManager.addOnAssociationsChangedListener(
+                mCallbackExecutor, mOnAssociationsChangedListener);
 
         clearExistingAssociations();
         mAssociationInfo = createManagedAssociation();
@@ -132,11 +143,8 @@ class FakeAssociationRule extends ExternalResource {
         super.after();
         clearExistingAssociations();
 
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            mRoleManager.setBypassingRoleQualification(false);
-            mCompanionDeviceManager.removeOnAssociationsChangedListener(
-                    mOnAssociationsChangedListener);
-        });
+        mCompanionDeviceManager.removeOnAssociationsChangedListener(
+                mOnAssociationsChangedListener);
     }
 
     private void clearExistingAssociations() {
@@ -160,6 +168,6 @@ class FakeAssociationRule extends ExternalResource {
         reset(mOnAssociationsChangedListener);
         mCompanionDeviceManager.disassociate(associationId);
         verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS).atLeastOnce())
-            .onAssociationsChanged(any());
+                .onAssociationsChanged(any());
     }
 }

@@ -40,6 +40,48 @@ static constexpr const char* FEATURE_RECORDING = "android.hardware.microphone";
 static constexpr const char* FEATURE_LOW_LATENCY = "android.hardware.audio.low_latency";
 bool deviceSupportsFeature(const char* feature);
 
+const static std::set<aaudio_policy_t> ALL_VALID_POLICIES = {AAUDIO_POLICY_NEVER,
+                                                             AAUDIO_POLICY_AUTO,
+                                                             AAUDIO_POLICY_ALWAYS};
+const static std::set<AAudio_DeviceType> ALL_VALID_OUTPUT_DEVICES = {
+        AAUDIO_DEVICE_BUILTIN_EARPIECE,
+        AAUDIO_DEVICE_BUILTIN_SPEAKER,
+        AAUDIO_DEVICE_WIRED_HEADSET,
+        AAUDIO_DEVICE_WIRED_HEADPHONES,
+        AAUDIO_DEVICE_LINE_ANALOG,
+        AAUDIO_DEVICE_LINE_DIGITAL,
+        AAUDIO_DEVICE_BLUETOOTH_SCO,
+        AAUDIO_DEVICE_BLUETOOTH_A2DP,
+        AAUDIO_DEVICE_HDMI,
+        AAUDIO_DEVICE_HDMI_ARC,
+        AAUDIO_DEVICE_HDMI_EARC,
+        AAUDIO_DEVICE_USB_DEVICE,
+        AAUDIO_DEVICE_USB_HEADSET,
+        AAUDIO_DEVICE_USB_ACCESSORY,
+        AAUDIO_DEVICE_DOCK,
+        AAUDIO_DEVICE_DOCK_ANALOG,
+        AAUDIO_DEVICE_FM,
+        AAUDIO_DEVICE_TELEPHONY,
+        AAUDIO_DEVICE_AUX_LINE,
+        AAUDIO_DEVICE_IP,
+        AAUDIO_DEVICE_BUS,
+        AAUDIO_DEVICE_HEARING_AID,
+        AAUDIO_DEVICE_BUILTIN_SPEAKER_SAFE,
+        AAUDIO_DEVICE_REMOTE_SUBMIX,
+        AAUDIO_DEVICE_BLE_HEADSET,
+        AAUDIO_DEVICE_BLE_SPEAKER,
+        AAUDIO_DEVICE_BLE_BROADCAST,
+};
+const static std::set<AAudio_DeviceType> ALL_VALID_INPUT_DEVICES = {
+        AAUDIO_DEVICE_BUILTIN_MIC, AAUDIO_DEVICE_BLUETOOTH_SCO, AAUDIO_DEVICE_WIRED_HEADSET,
+        AAUDIO_DEVICE_HDMI,        AAUDIO_DEVICE_TELEPHONY,     AAUDIO_DEVICE_DOCK,
+        AAUDIO_DEVICE_DOCK_ANALOG, AAUDIO_DEVICE_USB_ACCESSORY, AAUDIO_DEVICE_USB_DEVICE,
+        AAUDIO_DEVICE_USB_HEADSET, AAUDIO_DEVICE_FM_TUNER,      AAUDIO_DEVICE_TV_TUNER,
+        AAUDIO_DEVICE_LINE_ANALOG, AAUDIO_DEVICE_LINE_DIGITAL,  AAUDIO_DEVICE_BLUETOOTH_A2DP,
+        AAUDIO_DEVICE_IP,          AAUDIO_DEVICE_BUS,           AAUDIO_DEVICE_REMOTE_SUBMIX,
+        AAUDIO_DEVICE_BLE_HEADSET, AAUDIO_DEVICE_HDMI_ARC,      AAUDIO_DEVICE_HDMI_EARC,
+};
+
 class StreamBuilderHelper {
   public:
     struct Parameters {
@@ -183,12 +225,16 @@ public:
         return AAudio_getPlatformMMapExclusivePolicy(device, direction);
     }
 
+    bool isMMapSupportedFor(AAudio_DeviceType deviceType, aaudio_direction_t direction) const {
+        return isPolicyEnabled(getPlatformMMapPolicy(deviceType, direction));
+    }
+
 private:
 
     static int getIntegerProperty(const char *name, int defaultValue);
 
-    const bool   mMMapSupported;
-    const bool   mMMapExclusiveSupported;
+    bool mMMapSupported;
+    bool mMMapExclusiveSupported;
 };
 
 class AudioServerCrashMonitor {
@@ -234,5 +280,7 @@ void enableAudioHotwordPermission();
 void disablePermissions();
 
 bool isCompressedFormat(aaudio_format_t format);
+
+int getDeviceTypeFromId(int32_t deviceId);
 
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

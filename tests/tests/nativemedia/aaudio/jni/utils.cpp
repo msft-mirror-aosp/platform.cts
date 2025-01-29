@@ -16,20 +16,21 @@
 
 #define LOG_TAG "AAudioTest"
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <string>
+#include "utils.h"
 
 #include <android/binder_ibinder_jni.h>
 #include <android/binder_status.h>
 #include <android/log.h>
 #include <gtest/gtest.h>
 #include <nativetesthelper_jni/utils.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <any>
+#include <string>
 
 #include "test_aaudio.h"
-#include "utils.h"
 
 using ::ndk::SpAIBinder;
 using ::ndk::ScopedAIBinder_DeathRecipient;
@@ -237,10 +238,33 @@ void OutputStreamBuilderHelper::initBuilder() {
     AAudioStreamBuilder_setBufferCapacityInFrames(mBuilder, kBufferCapacityFrames);
 }
 
-AAudioExtensions::AAudioExtensions()
-      : mMMapSupported(isPolicyEnabled(getMMapPolicyProperty())),
-        mMMapExclusiveSupported(isPolicyEnabled(
-                getIntegerProperty("aaudio.mmap_exclusive_policy", AAUDIO_UNSPECIFIED))) {}
+AAudioExtensions::AAudioExtensions() {
+    mMMapSupported =
+            std::any_of(ALL_VALID_OUTPUT_DEVICES.begin(), ALL_VALID_OUTPUT_DEVICES.end(),
+                        [this](AAudio_DeviceType deviceType) {
+                            return isPolicyEnabled(
+                                    getPlatformMMapPolicy(deviceType, AAUDIO_DIRECTION_OUTPUT));
+                        }) ||
+            std::any_of(ALL_VALID_INPUT_DEVICES.begin(), ALL_VALID_INPUT_DEVICES.end(),
+                        [this](AAudio_DeviceType deviceType) {
+                            return isPolicyEnabled(
+                                    getPlatformMMapPolicy(deviceType, AAUDIO_DIRECTION_INPUT));
+                        });
+
+    mMMapExclusiveSupported =
+            std::any_of(ALL_VALID_OUTPUT_DEVICES.begin(), ALL_VALID_OUTPUT_DEVICES.end(),
+                        [this](AAudio_DeviceType deviceType) {
+                            return isPolicyEnabled(
+                                    getPlatformMMapExclusivePolicy(deviceType,
+                                                                   AAUDIO_DIRECTION_OUTPUT));
+                        }) ||
+            std::any_of(ALL_VALID_INPUT_DEVICES.begin(), ALL_VALID_INPUT_DEVICES.end(),
+                        [this](AAudio_DeviceType deviceType) {
+                            return isPolicyEnabled(
+                                    getPlatformMMapExclusivePolicy(deviceType,
+                                                                   AAUDIO_DIRECTION_INPUT));
+                        });
+}
 
 int AAudioExtensions::getIntegerProperty(const char *name, int defaultValue) {
     int result = defaultValue;
@@ -302,27 +326,27 @@ JNIEnv* getJNIEnv() {
     return env;
 }
 
-#define CALL_JAVA_STATIC_METHOD(_jtype, _jname)                                        \
-    _jtype callJavaStatic##_jname##Function(                                           \
-            JNIEnv* env, const char* className,                                        \
-            const char* funcName, const char* signature, ...) {                        \
-        _jtype result;                                                                 \
-        if (env == nullptr) {                                                          \
-            env = getJNIEnv();                                                         \
-        }                                                                              \
-        jclass cl = env->FindClass(className);                                         \
-        EXPECT_NE(nullptr, cl);                                                        \
-        jmethodID mid = env->GetStaticMethodID(cl, funcName, signature);               \
-        EXPECT_NE(nullptr, mid);                                                       \
-        va_list args;                                                                  \
-        va_start(args, signature);                                                     \
-        result = env->CallStatic##_jname##Method(cl, mid, args);                       \
-        va_end(args);                                                                  \
-        return result;                                                                 \
-    }                                                                                  \
+#define CALL_JAVA_STATIC_METHOD(_jtype, _jname)                                                 \
+    _jtype callJavaStatic##_jname##Function(JNIEnv* env, const char* className,                 \
+                                            const char* funcName, const char* signature, ...) { \
+        _jtype result;                                                                          \
+        if (env == nullptr) {                                                                   \
+            env = getJNIEnv();                                                                  \
+        }                                                                                       \
+        jclass cl = env->FindClass(className);                                                  \
+        EXPECT_NE(nullptr, cl);                                                                 \
+        jmethodID mid = env->GetStaticMethodID(cl, funcName, signature);                        \
+        EXPECT_NE(nullptr, mid);                                                                \
+        va_list args;                                                                           \
+        va_start(args, signature);                                                              \
+        result = env->CallStatic##_jname##MethodV(cl, mid, args);                               \
+        va_end(args);                                                                           \
+        return result;                                                                          \
+    }
 
 CALL_JAVA_STATIC_METHOD(jobject, Object)
 CALL_JAVA_STATIC_METHOD(jboolean, Boolean)
+CALL_JAVA_STATIC_METHOD(jint, Int)
 
 void callJavaStaticVoidFunction(
         JNIEnv* env, const char* className,
@@ -411,4 +435,9 @@ bool isCompressedFormat(aaudio_format_t format) {
         default:
             return true;
     }
+}
+
+int getDeviceTypeFromId(int32_t deviceId) {
+    return callJavaStaticIntFunction(nullptr, "android/nativemedia/aaudio/AAudioTests",
+                                     "getDeviceTypeFromId", "(I)I", (jint)deviceId);
 }

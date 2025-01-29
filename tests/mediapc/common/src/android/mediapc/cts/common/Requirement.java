@@ -18,6 +18,8 @@ package android.mediapc.cts.common;
 
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.android.compatibility.common.util.ReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
@@ -35,10 +37,25 @@ public abstract class Requirement {
     private static final String TAG = Requirement.class.getSimpleName();
 
     protected final ImmutableMap<String, RequiredMeasurement<?>> mRequiredMeasurements;
-    protected final String id;
+    public final String id;
+    public final String cddId;
+    public final @Nullable String configId;
+    public final @Nullable String variantId;
 
-    protected Requirement(String id, RequiredMeasurement<?>[] reqs) {
+    protected Requirement(String id, String cddId, RequiredMeasurement<?>[] reqs) {
+        this(id, cddId, null, null, reqs);
+    }
+
+    protected Requirement(
+            String id,
+            String cddId,
+            @Nullable String configId,
+            @Nullable String variantId,
+            RequiredMeasurement<?>[] reqs) {
         this.id = id;
+        this.cddId = cddId;
+        this.configId = configId;
+        this.variantId = variantId;
 
         ImmutableMap.Builder<String, RequiredMeasurement<?>> reqBuilder =
             ImmutableMap.<String, RequiredMeasurement<?>>builder();
@@ -52,8 +69,22 @@ public abstract class Requirement {
         return this.id;
     }
 
+    /** Returns id cddId with config and variant if available. */
+    public String toString() {
+        if (configId == null && variantId == null) {
+            return "[%s]".formatted(cddId);
+        }
+        if (variantId == null) {
+            return "[%s] (config=\"%s\")".formatted(cddId, configId);
+        }
+        if (configId == null) {
+            return "[%s] (variant=\"%s\")".formatted(cddId, variantId);
+        }
+        return "[%s] (config=\"%s\", variant=\"%s\")".formatted(cddId, configId, variantId);
+    }
+
     /**
-     * Finds the highest performance class where at least one RequiremdMeasurement has result
+     * Finds the highest performance class where at least one RequiredMeasurement has result
      * RequirementConstants.Result.MET and none have RequirementConstants.Result.UNMET
      */
     @VisibleForTesting
@@ -87,16 +118,22 @@ public abstract class Requirement {
         return perfClass;
     }
 
+    /** Is this requirement valid for the given performance class */
+    protected boolean appliesToPerformanceClass(int pc) {
+        return mRequiredMeasurements.values().stream()
+                .anyMatch(rm -> rm.appliesToPerformanceClass(pc));
+    }
+
     @VisibleForTesting
     protected boolean checkPerformanceClass(int devicePerfClass) {
         boolean noResultsUnment = true;
         for (RequiredMeasurement<?> rm: this.mRequiredMeasurements.values()) {
             RequirementConstants.Result res = rm.meetsPerformanceClass(devicePerfClass);
             if (res == RequirementConstants.Result.UNMET) {
-                Log.w(Requirement.TAG, rm.toString());
+                Log.w(Requirement.TAG, this + " " + rm.toString());
                 noResultsUnment = false;
             } else {
-                Log.i(Requirement.TAG, rm.toString());
+                Log.i(Requirement.TAG, this + " " + rm.toString());
             }
         }
         return noResultsUnment;

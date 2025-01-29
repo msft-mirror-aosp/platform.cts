@@ -36,7 +36,7 @@ tradefed_binary_host {
     wrapper: "etc/cts-v-host-tradefed",
     short_name: "CTS-V-HOST",
     full_name: "Compatibility Test Suite Verifier Host",
-    version: "15_r1",
+    version: "16_r1",
     static_libs: ["cts-v-host-tradefed-harness"],
     required: ["compatibility-host-util"],
 }

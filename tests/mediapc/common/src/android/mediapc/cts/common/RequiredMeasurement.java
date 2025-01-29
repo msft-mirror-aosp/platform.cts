@@ -84,6 +84,11 @@ public abstract class RequiredMeasurement<T> {
         public abstract RequiredMeasurement<T> build();
     }
 
+    /** Is this requirement measurement valid for the given performance class */
+    public final boolean appliesToPerformanceClass(int mediaPerformanceClass) {
+        return expectedValues().containsKey(mediaPerformanceClass);
+    }
+
     public final RequirementConstants.Result meetsPerformanceClass(int mediaPerformanceClass)
             throws IllegalStateException {
 

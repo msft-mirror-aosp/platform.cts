@@ -21,7 +21,6 @@ import static com.google.common.truth.Truth.assertThat;
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
 import android.mediapc.cts.common.Requirements.SequentialWriteRequirement;
 
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -108,7 +107,7 @@ public class RequirementsTest {
         req.setFilesystemIoRateMbps(150);
 
         var pc = req.computePerformanceClass();
-        assertThat(pc).isEqualTo(34);
+        assertThat(pc).isEqualTo(35);
     }
 
 }

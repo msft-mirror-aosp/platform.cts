@@ -28,7 +28,7 @@
 #include "utils.h"
 
 constexpr int kExtremelyHighCallbackPeriodMillis = 200;
-constexpr int kExpectedCallbackCount = 5;
+constexpr int kFullFilledCount = 3;
 constexpr int kPollTimeMillis = 5;
 
 static int32_t measureLatency(AAudioStream *stream) {
@@ -115,7 +115,7 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
         int32_t minLatency;
         int32_t maxLatency;
         std::atomic<aaudio_result_t> callbackError;
-        std::atomic<int32_t> callbackCount;
+        std::atomic<int32_t> framesProcessed;
         std::atomic<bool> returnStop;
 
         AAudioCallbackTestData() {
@@ -127,7 +127,7 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
             minLatency = INT32_MAX;
             maxLatency = 0;
             callbackError = AAUDIO_OK;
-            callbackCount = 0;
+            framesProcessed = 0;
             returnStop = false;
         }
         void updateFrameCount(int32_t numFrames) {
@@ -144,11 +144,24 @@ class AAudioStreamCallbackTest : public AAudioCtsBase,
             minLatency = std::min(minLatency, latency);
             maxLatency = std::max(maxLatency, latency);
         }
-        bool waitForNCallbacks(int32_t n) {
+        bool waitForProcessing(int32_t targetedFrameCount, int32_t timeToProcess) {
             int32_t timeTakenMillis = 0;
-            // Expect each callback to take less than kExtremelyHighCallbackPeriodMillis
-            while (timeTakenMillis < kExtremelyHighCallbackPeriodMillis * n) {
-                if (callbackCount >= n) {
+            while (framesProcessed.load(std::memory_order_acquire) == 0 &&
+                   timeTakenMillis < kExtremelyHighCallbackPeriodMillis) {
+                usleep(kPollTimeMillis * MICROS_PER_MILLISECOND);
+                timeTakenMillis += kPollTimeMillis;
+            }
+            if (framesProcessed.load(std::memory_order_acquire) == 0) {
+                __android_log_print(ANDROID_LOG_ERROR, LOG_TAG,
+                                    "Do not receive first callback for a long time");
+                return false;
+            } else {
+                // When cold starting, the first callback may take long time. Reset the time
+                // here to ensure enough data processed.
+                timeTakenMillis = 0;
+            }
+            while (timeTakenMillis < timeToProcess) {
+                if (framesProcessed.load(std::memory_order_acquire) >= targetedFrameCount) {
                     return true;
                 }
                 usleep(kPollTimeMillis * MICROS_PER_MILLISECOND);
@@ -212,7 +225,7 @@ aaudio_data_callback_result_t AAudioInputStreamCallbackTest::MyDataCallbackProc(
     AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData*>(userData);
     myData->updateFrameCount(numFrames);
     // No latency measurement as there is no API for querying capture position.
-    myData->callbackCount++;
+    myData->framesProcessed.fetch_add(numFrames, std::memory_order_release);
     return myData->returnStop ? AAUDIO_CALLBACK_RESULT_STOP : AAUDIO_CALLBACK_RESULT_CONTINUE;
 }
 
@@ -250,8 +263,10 @@ TEST_P(AAudioInputStreamCallbackTest, testRecording) {
         ASSERT_EQ(framesPerDataCallback, streamFramesPerDataCallback);
     }
     const int32_t framesPerBurst = AAudioStream_getFramesPerBurst(stream());
-    const int32_t callbackCountsPerBurst = streamFramesPerDataCallback == AAUDIO_UNSPECIFIED ? 1
-            : (framesPerBurst + streamFramesPerDataCallback - 1) / streamFramesPerDataCallback;
+    const int64_t framesToProcess =
+            AAudioStream_getBufferCapacityInFrames(stream()) * kFullFilledCount;
+    const int64_t timeToProcessMs =
+            framesToProcess * MILLIS_PER_SECOND / AAudioStream_getSampleRate(stream()) * 2;
 
     // Try both methods of stopping a stream.
     const int kNumMethods = 2;
@@ -267,10 +282,10 @@ TEST_P(AAudioInputStreamCallbackTest, testRecording) {
         // See b/62090113. For legacy path, the device is only known after
         // the stream has been started.
         EXPECT_NE(AAUDIO_UNSPECIFIED, AAudioStream_getDeviceId(stream()));
-        EXPECT_TRUE(mCbData->waitForNCallbacks(kExpectedCallbackCount));
+        EXPECT_TRUE(mCbData->waitForProcessing(framesToProcess, timeToProcessMs));
 
         ASSERT_EQ(AAUDIO_OK, mCbData->callbackError);
-        ASSERT_GE(mCbData->callbackCount, kExpectedCallbackCount);
+        ASSERT_GE(mCbData->framesProcessed, framesToProcess);
 
         ASSERT_LE(AAudioStream_getXRunCount(stream()), kMaxXRunCount);
 
@@ -284,15 +299,15 @@ TEST_P(AAudioInputStreamCallbackTest, testRecording) {
                 break;
         }
 
-        int32_t oldCallbackCount = mCbData->callbackCount;
-        EXPECT_GE(oldCallbackCount, kExpectedCallbackCount);
+        int32_t oldFramesProcessed = mCbData->framesProcessed;
+        EXPECT_GE(oldFramesProcessed, framesToProcess);
         usleep(kExtremelyHighCallbackPeriodMillis * MICROS_PER_MILLISECOND);
         if ((AAudioExtensions::getInstance().isMMapUsed(mHelper->stream()))) {
-            EXPECT_EQ(oldCallbackCount, mCbData->callbackCount); // expect not advancing
+            EXPECT_EQ(oldFramesProcessed, mCbData->framesProcessed); // expect not advancing
         } else {
             // Allow requesting at most one burst size data from callback after stopping
-            EXPECT_GE(mCbData->callbackCount, oldCallbackCount);
-            EXPECT_LE(mCbData->callbackCount, oldCallbackCount + callbackCountsPerBurst);
+            EXPECT_GE(mCbData->framesProcessed, oldFramesProcessed);
+            EXPECT_LE(mCbData->framesProcessed, oldFramesProcessed + framesPerBurst);
         }
 
         if (streamFramesPerDataCallback != AAUDIO_UNSPECIFIED) {
@@ -390,7 +405,7 @@ aaudio_data_callback_result_t AAudioOutputStreamCallbackTest::MyDataCallbackProc
     AAudioCallbackTestData *myData = static_cast<AAudioCallbackTestData*>(userData);
     myData->updateFrameCount(numFrames);
     myData->updateLatency(measureLatency(stream));
-    myData->callbackCount++;
+    myData->framesProcessed.fetch_add(numFrames, std::memory_order_release);
     return myData->returnStop ? AAUDIO_CALLBACK_RESULT_STOP : AAUDIO_CALLBACK_RESULT_CONTINUE;
 }
 
@@ -429,14 +444,20 @@ TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
         ASSERT_EQ(framesPerDataCallback, streamFramesPerDataCallback);
     }
     const int32_t framesPerBurst = AAudioStream_getFramesPerBurst(stream());
-    const int32_t callbackCountsPerBurst = streamFramesPerDataCallback == AAUDIO_UNSPECIFIED ? 1
-                : (framesPerBurst + streamFramesPerDataCallback - 1) / streamFramesPerDataCallback;
+    const int32_t framesToProcess =
+            AAudioStream_getBufferCapacityInFrames(stream()) * kFullFilledCount;
+    const int32_t timeToProcessMs =
+            framesToProcess * MILLIS_PER_SECOND / AAudioStream_getSampleRate(stream()) * 2;
 
     // Try all 3 methods of stopping/pausing a stream.
     constexpr int kNumMethods = 3;
 
-    // Pausing or stopping an output stream without setting returnStop sometimes results in a xRun.
-    constexpr int kMaxXRunCount = 1;
+    // For an MMAP stream, it can wait for playback flowing to count xrun and stop counting when
+    // the stream is about to stop. For a legacy stream, the mixer may start pulling data earlier
+    // than the callback thread running, that can cause underrun count. When the callback thread
+    // starts running, underrun should not happen. In that case, using a larger allowed xrun count
+    // for legacy streams.
+    const int kMaxXRunCount = AAudioExtensions::getInstance().isMMapUsed(stream()) ? 1 : 5;
 
     // Start/stop more than once to see if it fails after the first time.
     // Also check to make sure we do not get callbacks after the stop.
@@ -447,10 +468,10 @@ TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
         // See b/62090113. For legacy path, the device is only known after
         // the stream has been started.
         EXPECT_NE(AAUDIO_UNSPECIFIED, AAudioStream_getDeviceId(stream()));
-        EXPECT_TRUE(mCbData->waitForNCallbacks(kExpectedCallbackCount));
+        EXPECT_TRUE(mCbData->waitForProcessing(framesToProcess, timeToProcessMs));
 
         ASSERT_EQ(AAUDIO_OK, mCbData->callbackError);
-        ASSERT_GE(mCbData->callbackCount, kExpectedCallbackCount);
+        ASSERT_GE(mCbData->framesProcessed, framesToProcess);
 
         ASSERT_LE(AAudioStream_getXRunCount(stream()), kMaxXRunCount);
 
@@ -467,15 +488,15 @@ TEST_P(AAudioOutputStreamCallbackTest, testPlayback) {
                 break;
         }
 
-        int32_t oldCallbackCount = mCbData->callbackCount;
-        EXPECT_GE(oldCallbackCount, kExpectedCallbackCount);
+        int32_t oldFramesProcessed = mCbData->framesProcessed;
+        EXPECT_GE(oldFramesProcessed, framesToProcess);
         usleep(kExtremelyHighCallbackPeriodMillis * MICROS_PER_MILLISECOND);
         if (AAudioExtensions::getInstance().isMMapUsed(mHelper->stream())) {
-            EXPECT_EQ(oldCallbackCount, mCbData->callbackCount); // expect not advancing
+            EXPECT_EQ(oldFramesProcessed, mCbData->framesProcessed); // expect not advancing
         } else {
             // Allow requesting at most one burst size data from callback after stopping
-            EXPECT_GE(mCbData->callbackCount, oldCallbackCount);
-            EXPECT_LE(mCbData->callbackCount, oldCallbackCount + callbackCountsPerBurst);
+            EXPECT_GE(mCbData->framesProcessed, oldFramesProcessed);
+            EXPECT_LE(mCbData->framesProcessed, oldFramesProcessed + framesPerBurst);
         }
 
         if (streamFramesPerDataCallback != AAUDIO_UNSPECIFIED) {

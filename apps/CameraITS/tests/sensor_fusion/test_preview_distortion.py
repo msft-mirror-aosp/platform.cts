@@ -435,7 +435,7 @@ def get_distortion_errors(props, img_name):
   image = cv2.imread(img_name)
   if (props['android.lens.facing'] ==
       camera_properties_utils.LENS_FACING['FRONT']):
-    image = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+    image = image_processing_utils.mirror_preview_image_by_sensor_orientation(
         props['android.sensor.orientation'], image)
 
   pattern_size = (_CHESSBOARD_CORNERS, _CHESSBOARD_CORNERS)

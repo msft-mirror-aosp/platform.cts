@@ -26,7 +26,6 @@ import capture_request_utils
 import image_processing_utils
 import its_session_utils
 import opencv_processing_utils
-import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
@@ -268,7 +267,7 @@ class PreviewVideoZoomMatchTest(its_base_test.ItsBaseTest):
                   f'{img_name_stem}_zoomRatio_{z:.2f}.'
                   f'{zoom_capture_utils.JPEG_STR}')
               preview_img = (
-                  preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+                  image_processing_utils.mirror_preview_image_by_sensor_orientation(
                       props['android.sensor.orientation'], preview_img))
               image_processing_utils.write_image(preview_img / 255, img_name)
             else:

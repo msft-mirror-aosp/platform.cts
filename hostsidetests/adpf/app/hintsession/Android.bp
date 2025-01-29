@@ -34,7 +34,7 @@ cc_test_library {
     ],
     cpp_std: "c++20",
     stl: "c++_shared",
-    sdk_version: "35",
+    sdk_version: "current",
 }
 
 android_test_helper_app {
@@ -47,6 +47,6 @@ android_test_helper_app {
         "collector-device-lib",
         "com.google.android.material_material",
     ],
-    sdk_version: "35",
+    sdk_version: "current",
     jni_libs: ["libadpfhintsession_test_helper_jni"],
 }

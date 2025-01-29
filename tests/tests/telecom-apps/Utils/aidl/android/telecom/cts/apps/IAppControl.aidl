@@ -56,6 +56,7 @@ interface IAppControl {
     CallEndpointTransaction getCurrentCallEndpoint(String id);
     AvailableEndpointsTransaction getAvailableCallEndpoints(String id);
     NoDataTransaction addCall(in CallAttributes callAttributes);
+    NoDataTransaction addFailedCall(in CallAttributes callAttributes);
     NoDataTransaction addCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction setMuteState(String id, boolean isMuted);
     BooleanTransaction isMuted(String id);

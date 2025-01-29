@@ -2209,6 +2209,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             for (int i = 0; i < testBandsAndChannels.size(); i++) {
                 TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
                 int testBand = testBandsAndChannels.keyAt(i);
+                if (lohsSoftApCallback
+                                .getCurrentSoftApCapability()
+                                .getSupportedChannelList(testBand)
+                                .length
+                        == 0) {
+                    // Skip if test band isn't supported anymore.
+                    continue;
+                }
                 if (skip5g6gBand && (testBand == SoftApConfiguration.BAND_6GHZ
                         || testBand == SoftApConfiguration.BAND_5GHZ)) {
                     continue;

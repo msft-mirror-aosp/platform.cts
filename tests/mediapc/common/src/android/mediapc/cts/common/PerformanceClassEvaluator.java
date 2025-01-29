@@ -17,11 +17,14 @@
 package android.mediapc.cts.common;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeTrue;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.DeviceReportLog;
@@ -32,7 +35,9 @@ import com.google.common.base.Preconditions;
 import org.junit.rules.TestName;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Logs a set of measurements and results for defined performance class requirements.
@@ -68,20 +73,43 @@ public class PerformanceClassEvaluator {
         TRADEFED, VERIFIER
     }
 
-    public void submitAndCheck() {
-        boolean perfClassMet = submit(SubmitType.TRADEFED);
 
+    public void submitAndCheck() {
+        // submit clears the requirements so compute before submitting
+        Map<Requirement, Integer> idToGrade = computeGrades();
+        boolean perfClassMet = submit(SubmitType.TRADEFED);
         // check performance class
         assumeTrue("Build.VERSION.MEDIA_PERFORMANCE_CLASS is not declared", Utils.isPerfClass());
+        if (!perfClassMet) {
+            idToGrade.forEach(
+                    (r, grade) -> {
+                        int pc = Utils.getPerfClass();
+                        if (r.appliesToPerformanceClass(pc)) {
+                            assertWithMessage("%s performance class", r).that(grade).isAtLeast(pc);
+                        }
+                    });
+        }
+        // Safety catch.
         assertThat(perfClassMet).isTrue();
     }
 
     public void submitAndVerify() {
+        // submit clears the requirements so compute before submitting
+        Map<Requirement, Integer> grades = computeGrades();
         boolean perfClassMet = submit(SubmitType.VERIFIER);
+        int declaredPc = Utils.getPerfClass();
 
         if (!perfClassMet && Utils.isPerfClass()) {
-            Log.w(TAG, "Device did not meet specified performance class: " + Utils.getPerfClass());
+            String msg = "Declared performance class %s but requirement [%s] grades as %s";
+            grades.forEach((r, grade) -> Log.w(TAG, msg.formatted(declaredPc, r, grade)));
         }
+    }
+
+    @NonNull
+    @VisibleForTesting // Prevents warning about using computePerformanceClass
+    private Map<Requirement, Integer> computeGrades() {
+        return mRequirements.stream()
+                .collect(Collectors.toMap(r -> r, Requirement::computePerformanceClass));
     }
 
     private boolean submit(SubmitType type) {

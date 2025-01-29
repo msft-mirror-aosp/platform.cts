@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 The Android Open Source Project
+ * Copyright 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-#include <jni.h>
-#include <stdio.h>
+package android.graphics.gpuprofiling.app;
 
-extern int register_android_gputools_cts_GpuProfilingData(JNIEnv *);
+import android.app.NativeActivity;
 
-jint JNI_OnLoad(JavaVM *vm, void * /*reserved*/) {
-  JNIEnv *env = nullptr;
-  if (vm->GetEnv((void **)&env, JNI_VERSION_1_4) != JNI_OK)
-    return JNI_ERR;
-  if (register_android_gputools_cts_GpuProfilingData(env))
-    return JNI_ERR;
-  return JNI_VERSION_1_4;
+public class GpuProfilingNativeActivity extends NativeActivity {
+
+    static {
+        System.loadLibrary("ctsgraphicsgpuprofiling_jni");
+    }
 }

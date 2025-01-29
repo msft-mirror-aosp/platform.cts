@@ -74,11 +74,11 @@ public final class MaximumTimeOffTest {
             TestAppActivityReference activity = personalInstance.activities().any();
             dpc(sDeviceState).devicePolicyManager().setManagedProfileMaximumTimeOff(
                     dpc(sDeviceState).componentName(), /* timeoutMs= */ 1);
+            workProfile(sDeviceState).setQuietMode(true);
 
             assertPackageSuspended(sTestApp.pkg());
 
             startActivityWithoutBlocking(activity);
-
             assertBlockedByAdminDialogAppears();
         } finally {
             workProfile(sDeviceState).setQuietMode(false);

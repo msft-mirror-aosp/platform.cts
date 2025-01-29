@@ -66,10 +66,8 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -209,7 +207,10 @@ public class BaseAppVerifierImpl {
                 registerManagedPhoneAccount(pA);
             }
         } else if (isManagedConnectionServiceClone(applicationName)) {
-            Log.i("BaseAppVerifierImpl", "bindToApp: clone app managed - phone account: " +mManagedCloneAccounts.get(0));
+            Log.i(
+                    "BaseAppVerifierImpl",
+                    "bindToApp: clone app managed - phone account: "
+                            + mManagedCloneAccounts.get(0));
             for (PhoneAccount pA : mManagedCloneAccounts) {
                 registerManagedPhoneAccount(pA);
             }
@@ -309,14 +310,14 @@ public class BaseAppVerifierImpl {
     public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes,
             Consumer<CallStateTransitionOperation> consumer) throws Exception {
         int currentCallCount = addCall(appControl, attributes, consumer);
-        waitUntilExpectCallCount(mVerifierMethods, currentCallCount + 1);
+        waitUntilExpectedCallCount(currentCallCount + 1);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
     public String addCallAndVerify(AppControlWrapper appControl, CallAttributes attributes)
             throws Exception {
         int currentCallCount = addCall(appControl, attributes);
-        waitUntilExpectCallCount(mVerifierMethods, currentCallCount + 1);
+        waitUntilExpectedCallCount(currentCallCount + 1);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
@@ -326,6 +327,15 @@ public class BaseAppVerifierImpl {
         addCall(appControl, attr, consumer);
         waitUntilNewCallId(mVerifierMethods, idToExclude);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
+    }
+
+    public void addCallAndVerifyFailure(AppControlWrapper appControl, CallAttributes attributes)
+            throws Exception {
+        appControl.addFailedCall(attributes);
+    }
+
+    public void waitUntilExpectedCallCount(int expectedCallCount) {
+        waitUntilExpectCallCount(mVerifierMethods, expectedCallCount);
     }
 
     // -- call state

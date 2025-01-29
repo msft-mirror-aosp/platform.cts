@@ -27,7 +27,9 @@ import static org.mockito.Mockito.when;
 import android.content.Context;
 import android.graphics.PixelFormat;
 import android.hardware.tv.mediaquality.IMediaQuality;
+import android.media.quality.ActiveProcessingPicture;
 import android.media.quality.AmbientBacklightEvent;
+import android.media.quality.AmbientBacklightMetadata;
 import android.media.quality.AmbientBacklightSettings;
 import android.media.quality.MediaQualityContract.PictureQuality;
 import android.media.quality.MediaQualityContract.SoundQuality;
@@ -53,6 +55,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -550,6 +553,12 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testIsAmbientBacklightEnabled() {
+        mManager.isAmbientBacklightEnabled();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testRegisterPictureProfileCallback() {
         mManager.registerPictureProfileCallback(
                 Executors.newSingleThreadExecutor(),
@@ -587,6 +596,24 @@ public class MediaQualityTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
     @Test
+    public void testUnregisterAmbientBacklightCallback() {
+        mManager.unregisterAmbientBacklightCallback(new MockAmbientBacklightCallback());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testOnAmbientBacklightEvent() {
+        MockAmbientBacklightCallback callback = new MockAmbientBacklightCallback();
+        AmbientBacklightMetadata metadata = createAmbientBacklightMetadata();
+
+        AmbientBacklightEvent event = new AmbientBacklightEvent(
+                MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA, metadata);
+
+        callback.onAmbientBacklightEvent(event);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
     public void testSetAmbientBacklightSettings() {
         mManager.setAmbientBacklightSettings(mAmbientBacklightSettings);
     }
@@ -620,6 +647,24 @@ public class MediaQualityTest {
     public void testAddGlobalActiveProcessingPictureListener() {
         mManager.addGlobalActiveProcessingPictureListener(
                 Executors.newSingleThreadExecutor(), Mockito.mock(Consumer.class));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testActiveProcessingPicture() {
+        int id = 12;
+        String profileId = "profileId";
+        ActiveProcessingPicture app = new ActiveProcessingPicture(id, profileId);
+        Assert.assertEquals(id, app.getId());
+        Assert.assertEquals(profileId, app.getProfileId());
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
+    @Test
+    public void testGetParameterCapabilities() {
+        List<String> names = new ArrayList<>();
+        names.add(PictureQuality.PARAMETER_BRIGHTNESS);
+        mManager.getParameterCapabilities(names);
     }
 
     private PictureProfile getTestPictureProfile(String methodName) {
@@ -670,6 +715,21 @@ public class MediaQualityTest {
         return settings;
     }
 
+    private AmbientBacklightMetadata createAmbientBacklightMetadata() {
+        int[] zoneColors = {0xFF0000, 0x00FF00, 0x0000FF};
+        AmbientBacklightMetadata metadata =
+                new AmbientBacklightMetadata(
+                        "com.example.test", // Example package name
+                        1, // Example compression algorithm
+                        1, // Example source
+                        1, // Example color format
+                        1, // Example horizontalZonesNumber
+                        1, // Example verticalZonesNumber
+                        zoneColors // Example zoneColors
+                        );
+        return metadata;
+    }
+
     public static class MockAmbientBacklightCallback
             implements MediaQualityManager.AmbientBacklightCallback {
         public MockAmbientBacklightCallback() {
@@ -680,10 +740,16 @@ public class MediaQualityTest {
         public void onAmbientBacklightEvent(AmbientBacklightEvent event) {
             assertNotNull("Ambient backlight event is null", event);
             if (event.getEventType() == MediaQualityManager.AMBIENT_BACKLIGHT_EVENT_METADATA) {
-                assertNotNull("Ambient Backlight Metadata is null", event.getMetadata());
+                AmbientBacklightMetadata metadata = event.getMetadata();
+                int compressionAlgorithm = metadata.getCompressionAlgorithm();
+                int source = metadata.getSource();
+                int colorFormat = metadata.getColorFormat();
+                int horizontalZonesCount = metadata.getHorizontalZonesCount();
+                int verticalZonesCount = metadata.getVerticalZonesCount();
+                assertNotNull("Ambient Backlight Metadata is null", metadata);
+                assertNotNull("Ambient Backlight package name is null", metadata.getPackageName());
                 assertNotNull(
-                        "Ambient Backlight Metadata zone color is null",
-                        event.getMetadata().getZoneColors());
+                        "Ambient Backlight Metadata zone color is null", metadata.getZoneColors());
             }
         }
     }
@@ -714,6 +780,14 @@ public class MediaQualityTest {
         @Override
         public void onParameterCapabilitiesChanged(
                 String profileId, List<ParameterCapability> updatedCaps) {
+            boolean isSupported;
+            int paramType;
+            for (ParameterCapability paramCap : updatedCaps) {
+                assertNotNull("param cap name is null", paramCap.getParameterName());
+                assertNotNull("param cap is null", paramCap.getCapabilities());
+                isSupported = paramCap.isSupported();
+                paramType = paramCap.getParameterType();
+            }
             super.onParameterCapabilitiesChanged(profileId, updatedCaps);
         }
     }
@@ -742,6 +816,14 @@ public class MediaQualityTest {
         @Override
         public void onParameterCapabilitiesChanged(
                 String profileId, List<ParameterCapability> updatedCaps) {
+            boolean isSupported;
+            int paramType;
+            for (ParameterCapability paramCap : updatedCaps) {
+                assertNotNull("param cap name is null", paramCap.getParameterName());
+                assertNotNull("param cap is null", paramCap.getCapabilities());
+                isSupported = paramCap.isSupported();
+                paramType = paramCap.getParameterType();
+            }
             super.onParameterCapabilitiesChanged(profileId, updatedCaps);
         }
     }

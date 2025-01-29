@@ -111,10 +111,23 @@ public class TransactionalVoipAppControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addCallWithConsumer(CallAttributes callAttributes,
-                        IRemoteOperationConsumer consumer) throws RemoteException {
-                    Log.i(mTag, String.format("addCallWithConsumer: w/ attributes=[%s]",
-                            callAttributes));
+                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName + ".addFailedCall(" + callAttributes + ")");
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(mPackageName, stackTrace, "not implemented!"));
+                }
+
+                @Override
+                public NoDataTransaction addCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer consumer)
+                        throws RemoteException {
+                    Log.i(
+                            mTag,
+                            String.format(
+                                    "addCallWithConsumer: w/ attributes=[%s]", callAttributes));
                     try {
                         List<String> stackTrace =
                                 createStackTraceList(
@@ -130,13 +143,17 @@ public class TransactionalVoipAppControlMain extends Service {
                                                 NOTIFICATION_CHANNEL_ID,
                                                 sNextNotificationId++));
                         if (consumer != null) {
-                            call.setOperationConsumer(c -> {
-                                try {
-                                    consumer.complete(c);
-                                } catch (RemoteException e) {
-                                    Log.e(mTag, "addCallWithConsumer: Failed to set consumer.", e);
-                                }
-                            });
+                            call.setOperationConsumer(
+                                    c -> {
+                                        try {
+                                            consumer.complete(c);
+                                        } catch (RemoteException e) {
+                                            Log.e(
+                                                    mTag,
+                                                    "addCallWithConsumer: Failed to set consumer.",
+                                                    e);
+                                        }
+                                    });
                         }
 
                         mTelecomManager.addCall(

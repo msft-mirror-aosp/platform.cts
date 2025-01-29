@@ -102,6 +102,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           props.get('android.info.supportedHardwareLevel')
       ]
       logging.debug('Camera hardware level: %s', camera_hardware_level)
+      # logging for data collection
+      print(f'{_NAME}_camera_hardware_level: {camera_hardware_level}')
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       is_tablet = its_device_utils.is_dut_tablet(self.dut.serial)
 
@@ -160,12 +162,20 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       jca_zoom_ratio = None
       if zoom_ratio != 1:
         jca_zoom_ratio = zoom_ratio
+      video_stabilization = None
+      video_stabilization_mode = ui_interaction_utils.get_default_camera_video_stabilization(
+          default_watch_dump_file)
+      if video_stabilization_mode == 'OFF':
+        video_stabilization = ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OFF
+      else:
+        video_stabilization = ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON
       # Take JCA capture with UI
       jca_capture_path = ui_interaction_utils.launch_jca_and_capture(
           self.dut,
           self.log_path,
           camera_facing=props['android.lens.facing'],
-          zoom_ratio=jca_zoom_ratio
+          zoom_ratio=jca_zoom_ratio,
+          video_stabilization=video_stabilization
       )
       ui_interaction_utils.pull_img_files(
           device_id, jca_capture_path, self.log_path

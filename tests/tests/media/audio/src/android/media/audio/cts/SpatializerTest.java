@@ -28,6 +28,7 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.Spatializer;
+import android.media.audiofx.AudioEffect;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
@@ -73,6 +74,32 @@ public class SpatializerTest extends CtsAndroidTestCase {
         }
         assertFalse(spat.isEnabled());
         assertFalse(spat.isAvailable());
+    }
+
+    /**
+     * Test that if the device reports audio effects of type EFFECT_TYPE_SPATIALIZER,
+     * then the Spatializer's immersive audio level has some spatialization capability
+     * @throws Exception when SPATIALIZER_IMMERSIVE_LEVEL_NONE is the reported immersive level
+     *                   by the Spatializer instance
+     */
+    public void testEffectSpatializer() throws Exception {
+        AudioEffect.Descriptor[] descriptors = AudioEffect.queryEffects();
+        boolean hasSpatializer = false;
+        for (AudioEffect.Descriptor desc : descriptors) {
+            if (desc.type.equals(AudioEffect.EFFECT_TYPE_SPATIALIZER)) {
+                Log.i(TAG, "found EFFECT_TYPE_SPATIALIZER name:" + desc.name
+                        + " / implementor:" + desc.implementor);
+                hasSpatializer = true;
+                break;
+            }
+        }
+        if (!hasSpatializer) {
+            Log.i(TAG, "testEffectSpatializer: no EFFECT_TYPE_SPATIALIZER found, skipping");
+            return;
+        }
+        Spatializer spat = mAudioManager.getSpatializer();
+        assertTrue("EFFECT_TYPE_SPATIALIZER found but not available for Spatializer",
+                spat.getImmersiveAudioLevel() != Spatializer.SPATIALIZER_IMMERSIVE_LEVEL_NONE);
     }
 
     public void testSupportedDevices() throws Exception {

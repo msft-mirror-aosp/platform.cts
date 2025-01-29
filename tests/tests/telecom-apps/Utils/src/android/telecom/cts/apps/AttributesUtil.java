@@ -27,7 +27,6 @@ import android.telecom.TelecomManager;
 
 import java.util.Random;
 
-
 public class AttributesUtil {
     private static final Random sRandom = new Random(0);
     private static final Uri TEST_URI_OUT = Uri.parse("tel:123-TEST");
@@ -182,14 +181,18 @@ public class AttributesUtil {
     }
 
     private static String getRandomName() {
-        byte[] array = new byte[16];
-        sRandom.nextBytes(array);
-        return sRandom.toString();
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            builder.append((char) sRandom.nextInt('a', 'z'));
+        }
+        return builder.toString();
     }
 
     private static Uri getRandomAddress() {
-        byte[] array = new byte[11];
-        sRandom.nextBytes(array);
-        return Uri.parse("tel:" + sRandom);
+        StringBuilder builder = new StringBuilder("tel:");
+        for (int i = 0; i < 11; i++) {
+            builder.append(sRandom.nextInt(10));
+        }
+        return Uri.parse(builder.toString());
     }
 }

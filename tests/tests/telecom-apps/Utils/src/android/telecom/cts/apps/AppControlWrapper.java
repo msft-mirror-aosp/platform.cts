@@ -131,6 +131,20 @@ public class AppControlWrapper {
     }
 
     /**
+     * This method requests the app that is bound to add a new call with the given callAttributes
+     * that is expected to fail.
+     */
+    public void addFailedCall(CallAttributes callAttributes) throws Exception {
+        Log.i(TAG, "addFailedCall");
+        try {
+            NoDataTransaction transactionResult = mBinder.addFailedCall(callAttributes);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
      * This method requests the app that is bound to add a new call with the given callAttributes.
      * Note: This method does not verify the call is added for ConnectionService implementations
      * and that job should be left for the InCallService to verify.
