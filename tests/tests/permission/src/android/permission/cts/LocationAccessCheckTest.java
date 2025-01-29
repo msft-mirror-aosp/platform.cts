@@ -23,7 +23,6 @@ import static android.content.Context.BIND_AUTO_CREATE;
 import static android.content.Context.BIND_NOT_FOREGROUND;
 import static android.content.Intent.ACTION_BOOT_COMPLETED;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
-import static android.location.Criteria.ACCURACY_FINE;
 import static android.provider.Settings.RESET_MODE_PACKAGE_DEFAULTS;
 import static android.provider.Settings.Secure.LOCATION_ACCESS_CHECK_DELAY_MILLIS;
 import static android.provider.Settings.Secure.LOCATION_ACCESS_CHECK_INTERVAL_MILLIS;
@@ -40,8 +39,6 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
@@ -51,13 +48,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ResolveInfo;
-import android.location.Criteria;
-import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Bundle;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.permission.cts.appthataccesseslocation.IAccessLocationOnCommand;
 import android.platform.test.annotations.AppModeFull;
@@ -85,7 +77,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Tests the {@code LocationAccessCheck} in permission controller.
@@ -124,12 +115,6 @@ public class LocationAccessCheckTest {
 
     private static final String PERMISSION_CONTROLLER_PKG = sContext.getPackageManager()
             .getPermissionControllerPackageName();
-
-    /**
-     * The result of {@link #assumeCanGetFineLocation()}, so we don't have to run it over and over
-     * again.
-     */
-    private static Boolean sCanAccessFineLocation = null;
 
     private static ServiceConnection sConnection;
     private static IAccessLocationOnCommand sLocationAccessor;
@@ -351,6 +336,7 @@ public class LocationAccessCheckTest {
         }
         String output = runShellCommand(command + TEST_APP_LOCATION_BG_ACCESS_APK);
         assertTrue(output.contains("Success"));
+        runShellCommand("cmd appops set " + TEST_APP_PKG + " android:mock_location allow");
     }
 
     @AfterClass
@@ -431,47 +417,6 @@ public class LocationAccessCheckTest {
         runWithShellPermissionIdentity(() -> DeviceConfig.setProperty(
                 DeviceConfig.NAMESPACE_PRIVACY,
                 PROPERTY_LOCATION_ACCESS_CHECK_ENABLED, "false", false));
-    }
-
-    /**
-     * Make sure fine location can be accessed at all.
-     */
-    @Before
-    public void assumeCanGetFineLocation() {
-        if (sCanAccessFineLocation == null) {
-            Criteria crit = new Criteria();
-            crit.setAccuracy(ACCURACY_FINE);
-
-            CountDownLatch locationCounter = new CountDownLatch(1);
-            sContext.getSystemService(LocationManager.class).requestSingleUpdate(crit,
-                    new LocationListener() {
-                        @Override
-                        public void onLocationChanged(Location location) {
-                            locationCounter.countDown();
-                        }
-
-                        @Override
-                        public void onStatusChanged(String provider, int status, Bundle extras) {
-                        }
-
-                        @Override
-                        public void onProviderEnabled(String provider) {
-                        }
-
-                        @Override
-                        public void onProviderDisabled(String provider) {
-                        }
-                    }, Looper.getMainLooper());
-
-
-            try {
-                sCanAccessFineLocation = locationCounter.await(LOCATION_ACCESS_TIMEOUT_MILLIS,
-                        MILLISECONDS);
-            } catch (InterruptedException ignored) {
-            }
-        }
-
-        assumeTrue(sCanAccessFineLocation);
     }
 
     /**
