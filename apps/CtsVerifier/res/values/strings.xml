@@ -7329,7 +7329,6 @@ You should be prompted to select credentials; choose the ones you just installed
         \nReference device instructions
         \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
     </string>
-
     <!-- Strings for NAN Accuracy Test -->
     <string name="nan_accuracy_test_instructions">
         Place the device under test (DUT) at the test distance (either 10cm, 1m, 3m, or 5m) away from the reference device, in a line of sight environment. On the reference device, ensure that the "Is reference device" checkbox is checked, then click "Start Publishing"
@@ -7352,6 +7351,18 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="distance_5m_presence">5m</string>
     <string name="service_id_info_presence">Your unique service ID is: %1$d</string>
     <string name="service_id_input_presence">Enter the service ID displayed on the publishing device</string>
+
+    <!-- String for BLE channel sounding Accuracy test -->
+    <string name="ble_cs_accuracy_test_instructions">
+        Pair and bond the device under test(DUT) and the reference device from the bluetooth settings. Place the DUT at 1 meter away from the reference device, in a line of sight environment. On the reference device, ensure that the "Is reference device" checkbox is checked, then click "Start Advertising"
+        \n\nDUT instructions
+        \n1. Ensure that the reference device is already advertising.
+        \n2. Click "Start Test". The display would be updated to show status "IN_PROGRESS" for the corresponding test distance.
+        \n3. When all the required data is collected at the test distance, the display would be updated to show the status of the test, either PASSED or FAILED.
+        \n4. The test is passed if more than 90% of the results are in the required range in [0.5, 1.5].
+    </string>
+    <string name="cs_accuracy_test_name">BLE Channel Sounding Accuracy Test</string>
+    <string name="ble_cs">BLE Channel Sounding</string>
 
     <!-- Strings for AudioMicrophoneMuteToggleActivity -->
     <string name="audio_mic_toggle_test">Audio Microphone Hardware Toggle Mute Test</string>

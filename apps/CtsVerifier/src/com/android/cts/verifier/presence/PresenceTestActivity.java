@@ -46,6 +46,10 @@ public class PresenceTestActivity extends PassFailButtons.TestListActivity {
             }
         } else {
             setInfoResources(R.string.presence_test, R.string.presence_test_info, -1);
+            if (!getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE_CHANNEL_SOUNDING)) {
+                disabledTest.add("com.android.cts.verifier.presence.BleCsAccuracyActivity");
+            }
         }
 
         setTestListAdapter(new ManifestTestListAdapter(this, PresenceTestActivity.class.getName(),
