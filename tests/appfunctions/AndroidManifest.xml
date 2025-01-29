@@ -19,7 +19,6 @@
     package="android.app.appfunctions.cts"
     android:targetSandboxVersion="2">
 
-    <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS_TRUSTED" />
     <uses-permission android:name="android.permission.EXECUTE_APP_FUNCTIONS" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL"/>
