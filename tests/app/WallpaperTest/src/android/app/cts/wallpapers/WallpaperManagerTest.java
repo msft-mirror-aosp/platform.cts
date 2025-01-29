@@ -26,6 +26,7 @@ import static android.app.cts.wallpapers.WallpaperManagerTestUtils.WallpaperStat
 import static android.app.cts.wallpapers.util.WallpaperTestUtils.isSimilar;
 import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
 import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.opengl.cts.Egl14Utils.getMaxTextureSize;
 
@@ -1253,6 +1254,7 @@ public class WallpaperManagerTest {
     public void testEngineCallbackCounts() throws IOException {
         // TODO(b/339161260): Remove this assumption once the bug is fixed.
         assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_WATCH));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
         assumeTrue(mWallpaperManager.isLockscreenLiveWallpaperEnabled());
         ArrayList<String> errorMessages = new ArrayList<>();
         runWithShellPermissionIdentity(() -> {
@@ -1298,6 +1300,7 @@ public class WallpaperManagerTest {
         assumeTrue(mWallpaperManager.isLockscreenLiveWallpaperEnabled());
         assumeTrue("Skipping testExistingWallpaperWindows: FEATURE_LIVE_WALLPAPER missing.",
                 mContext.getPackageManager().hasSystemFeature(FEATURE_LIVE_WALLPAPER));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
         runWithShellPermissionIdentity(() -> {
             WallpaperWindowsTestUtils.WallpaperWindowsHelper wallpaperWindowsHelper =
                     new WallpaperWindowsTestUtils.WallpaperWindowsHelper(sWindowManagerStateHelper);
