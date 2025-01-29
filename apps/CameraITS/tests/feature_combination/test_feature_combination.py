@@ -384,6 +384,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   self._finish_combination, combination_name, is_stabilized, passed,
                   recording_obj, gyro_events, _NAME, log_path, facing, output_surfaces,
                   fps_range)
+              # Get result from future before continuing if desired
+              if not self.parallel_execution:
+                future.result()
               feature_verification_futures.append(future)
 
       # Verify feature combination results

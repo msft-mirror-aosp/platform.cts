@@ -33,6 +33,7 @@ cc_test_library {
         "libandroid",
         "libjnigraphics",
         "libnativehelper",
+        "libnativewindow",
         "libEGL",
         "libGLESv3",
         "liblog",
