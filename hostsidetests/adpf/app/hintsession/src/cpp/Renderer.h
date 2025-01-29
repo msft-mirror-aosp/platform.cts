@@ -16,34 +16,115 @@
 #pragma once
 
 #include <EGL/egl.h>
+#include <android/native_activity.h>
+#include <android/native_window.h>
 #include <android/performance_hint.h>
+#include <android/surface_control.h>
 #include <jni.h>
 
 #include <chrono>
 #include <map>
 #include <memory>
 #include <optional>
+#include <array>
 
+#include "EventLoop.h"
 #include "Model.h"
 #include "Shader.h"
 #include "external/android_native_app_glue.h"
 
+const constexpr size_t kStages = 3;
+const constexpr size_t kHeadsPerStage = 4;
+const constexpr size_t kHeads = kStages * kHeadsPerStage;
+
 struct android_app;
 
-struct FrameStats {
-    // Median of the durations
-    int64_t medianWorkDuration;
-    // Median of the intervals
-    int64_t medianFrameInterval;
-    // Standard deviation of a given run
-    double deviation;
-    // The total number of frames that exceeded target
-    std::optional<int64_t> exceededCount;
-    // The percent of frames that exceeded target
-    std::optional<double> exceededFraction;
-    // Efficiency of a given run is calculated by how close to min(target, baseline) the median is
-    std::optional<double> efficiency;
+struct Vsync {
+    size_t index;
+    int64_t deadlineNanos;
+    int64_t presentationNanos;
+    int64_t vsyncId;
 };
+
+struct VsyncData {
+    int64_t frameTimeNanos;
+    size_t numVsyncs;
+    size_t preferredVsync;
+    std::vector<Vsync> vsyncs{};
+};
+
+/*!
+ * The output of running the per-stage lambda
+ */
+struct StageState {
+    int64_t start;
+    int64_t end;
+    std::array<Model, kHeadsPerStage> models{};
+};
+
+/*!
+ * The output state of running the whole stack of the per-stage updates for each stage
+ */
+struct StackState {
+    Vsync intendedVsync;
+    std::array<StageState, kStages> stages{};
+};
+
+Vsync &getClosestCallbackToTarget(int64_t target, VsyncData &data);
+
+struct FrameStats {
+    /*!
+     * Median of the durations
+     */
+    int64_t medianWorkDuration;
+    /*!
+     * Median of the intervals
+     */
+    int64_t medianFrameInterval;
+    /*!
+     * Standard deviation of a given run
+     */
+    double deviation;
+    /*!
+     * The total number of frames that exceeded target
+     */
+    std::optional<int64_t> exceededCount;
+    /*!
+     * The percent of frames that exceeded target
+     */
+    std::optional<double> exceededFraction;
+    /*!
+     * Efficiency of a given run is calculated by how close to min(target, baseline) the median is
+     */
+    std::optional<double> efficiency;
+    /*!
+     * Median of the target duration that was closest to what we wanted
+     */
+    int64_t medianClosestDeadlineToTarget;
+    // Actual target duration, related to session target but not exactly the same
+    // This is based on the intended frame deadline based on results from Choreographer
+    int64_t actualTargetDuration;
+    void dump(std::string testName) const {
+        aerr << "Stats for: " << testName;
+        aerr << "medianWorkDuration: " << medianWorkDuration << std::endl;
+        aerr << "medianFrameInterval: " << medianFrameInterval << std::endl;
+        aerr << "deviation: " << deviation << std::endl;
+        aerr << "exceededCount: " << exceededCount.value_or(-1) << std::endl;
+        aerr << "exceededFraction: " << exceededFraction.value_or(-1) << std::endl;
+        aerr << "efficiency: " << efficiency.value_or(-1) << std::endl;
+        aerr << "medianClosestDeadlineToTarget: " << medianClosestDeadlineToTarget << std::endl;
+        aerr << "actualTargetDuration: " << actualTargetDuration << std::endl;
+    };
+};
+
+struct FrameBatchData {
+    std::vector<int64_t> durations{};
+    std::vector<int64_t> intervals{};
+    std::vector<VsyncData> vsyncs{};
+    std::vector<Vsync> selectedVsync{};
+};
+
+Renderer *getRenderer();
 
 class Renderer {
 public:
@@ -58,33 +139,25 @@ public:
             width_(0),
             height_(0),
             shaderNeedsNewProjectionMatrix_(true) {
-        initRenderer();
+        threadedInit();
     }
 
     virtual ~Renderer();
 
     /*!
-     * Renders all the models in the renderer, returns time spent waiting for CPU work
-     * to finish.
+     * Draw all models waiting to render in a given StackState.
      */
-    jlong render();
+    void render(const StackState &state);
 
     /*!
      * Attempts to start hint session and returns whether ADPF is supported on a given device.
      */
-    bool startHintSession(std::vector<pid_t> &threads, int64_t target);
+    bool startHintSession(int64_t target);
     void closeHintSession();
     void reportActualWorkDuration(int64_t duration);
     void updateTargetWorkDuration(int64_t target);
     bool isHintSessionRunning();
     int64_t getTargetWorkDuration();
-
-    /*!
-     * Sets the number of android "heads" in the scene, these are used to create a synthetic
-     * workload that scales with performance, and by adjusting the number of them, the test can
-     * adjust the amount of stress to place the system under.
-     */
-    void setNumHeads(int headCount);
 
     /*!
      * Sets the number of iterations of physics before during each draw to control the CPU overhead.
@@ -110,15 +183,42 @@ public:
     /*!
      * Calculates the above frame stats for a given run
      */
-    FrameStats getFrameStats(std::vector<int64_t> &durations, std::vector<int64_t> &intervals,
-                             std::string &testName);
+    FrameStats getFrameStats(FrameBatchData &batchData, std::string &testName);
+
+    void setChoreographer(AChoreographer *choreographer);
+    FrameStats drawFramesSync(int frames, int &events, android_poll_source *&pSource,
+                              std::string testName = "");
+
+    /*!
+     * Run a few frames to figure out what vsync targets SF uses
+     */
+    std::vector<int64_t> findVsyncTargets(int &events, android_poll_source *&pSource,
+                                          int numFrames);
+
+    static Renderer *getInstance();
+    static void makeInstance(android_app *pApp);
 
 private:
+    /*!
+     * Creates the set of android heads for load testing
+     */
+    void createHeads();
+
+    /*!
+     * Swap the waiting render buffer after everything is drawn
+     */
+    void swapBuffers(const StackState &state);
+
     /*!
      * Performs necessary OpenGL initialization. Customize this if you want to change your EGL
      * context or application-wide settings.
      */
-    void initRenderer();
+    void initRenderer(std::promise<bool> &syncOnCompletion);
+
+    /*!
+     * Run initRenderer on the drawing thread to hold the context there
+     */
+    void threadedInit();
 
     /*!
      * @brief we have to check every frame to see if the framebuffer has changed in size. If it has,
@@ -127,9 +227,21 @@ private:
     void updateRenderArea();
 
     /*!
-     * Adds an android "head" to the scene.
+     * Run physics and spin the models in a pipeline
      */
-    void addHead();
+    StageState updateModels(StageState &lastUpdate);
+
+    void choreographerCallback(const AChoreographerFrameCallbackData *data);
+
+    /*!
+     * Passed directly choreographer as the callback method
+     */
+    static void rawChoreographerCallback(const AChoreographerFrameCallbackData *data, void *appPtr);
+
+    /*!
+     * Post a new callback to Choreographer for the next frame
+     */
+    void postCallback();
 
     android_app *app_;
     EGLDisplay display_;
@@ -139,17 +251,58 @@ private:
     EGLint height_;
     APerformanceHintSession *hintSession_ = nullptr;
     APerformanceHintManager *hintManager_ = nullptr;
+    AChoreographer *choreographer_;
     int64_t lastTarget_ = 0;
     int64_t baselineMedian_ = 0;
 
-    bool shaderNeedsNewProjectionMatrix_;
+    bool shaderNeedsNewProjectionMatrix_ = true;
+
+    /*!
+     * Schedules a method to run against each level of the pipeline. At each step, the
+     * method will be passed a "Data" object and output an object of the same type, allowing
+     * different levels of the same pipeline to easily share data or work on the same problem.
+     */
+    template <class Data>
+    void recursiveSchedule(std::function<void(int level, Data &data)> fn, int level, Data &&data) {
+        loops_[level].queueWork(
+                [=, this, fn = std::move(fn), dataInner = std::move(data)]() mutable {
+                    // Run the method
+                    fn(level, dataInner);
+
+                    if (level > 0) {
+                        this->recursiveSchedule(fn, level - 1, std::move(dataInner));
+                    }
+                });
+    }
+
+    template <class Data>
+    void stackSchedule(std::function<void(int level, Data &data)> fn, Data startData) {
+        recursiveSchedule<Data>(fn, loops_.size() - 1, std::move(startData));
+    }
 
     std::unique_ptr<Shader> shader_;
-    std::vector<Model> heads_;
+    std::array<StageState, kStages> latest_stage_models_;
     int headsSize_ = 0;
     int physicsIterations_ = 1;
 
-    // Hold on to the results object in the renderer, so
-    // we can reach the data anywhere in the rendering step.
+    /*!
+     * Holds onto the results object in the renderer, so
+     * we can reach the data anywhere in the rendering step.
+     */
     std::map<std::string, std::string> results_;
+
+    std::array<EventLoop, kStages> loops_{};
+    EventLoop drawLoop_{};
+    std::vector<pid_t> tids_{};
+    std::vector<int64_t> targets_{};
+
+    FrameBatchData batchData_{};
+
+    std::optional<std::function<void(VsyncData &data)>> wakeupMethod_ = std::nullopt;
+
+    std::optional<int64_t> lastStart_ = std::nullopt;
+    int framesRemaining_ = 0;
+    std::promise<bool> framesDone_{};
+
+    static std::unique_ptr<Renderer> sRenderer;
 };
