@@ -87,6 +87,11 @@ public:
     void setNumHeads(int headCount);
 
     /*!
+     * Sets the number of iterations of physics before during each draw to control the CPU overhead.
+     */
+    void setPhysicsIterations(int iterations);
+
+    /*!
      * Adds an entry to the final result map that gets passed up to the Java side of the app, and
      * eventually to the test runner.
      */
@@ -96,12 +101,6 @@ public:
      * Retrieve the results map.
      */
     std::map<std::string, std::string> &getResults();
-
-    /*
-     * Finds the test settings that best match this device, and returns the
-     * duration of the frame's work
-     */
-    double calibrate(int &events, android_poll_source *pSource);
 
     /*!
      * Sets the baseline median, used to determine efficiency score
@@ -147,6 +146,8 @@ private:
 
     std::unique_ptr<Shader> shader_;
     std::vector<Model> heads_;
+    int headsSize_ = 0;
+    int physicsIterations_ = 1;
 
     // Hold on to the results object in the renderer, so
     // we can reach the data anywhere in the rendering step.

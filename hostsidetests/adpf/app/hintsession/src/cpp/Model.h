@@ -98,6 +98,13 @@ public:
 
     void setRotationOffset(float angle) { rotationOffset_ = angle; }
 
+    static void applyPhysics(float deltaTimeUnit, std::vector<Model> &models, int size, float width,
+                             float height) {
+        nBodySimulation(deltaTimeUnit, models, size, width, height);
+    }
+
+    void setMass(float m) { mass_ = m; }
+
 private:
     void findCenter() {
         Vector3 center{{0, 0, 0}};
@@ -107,10 +114,48 @@ private:
         center_ = center / static_cast<float>(startVertices_.size());
     }
 
+    static void nBodySimulation(float deltaTimeUnit, std::vector<Model> &models, int size,
+                                float width, float height) {
+        static const float G = 6.67e-10;
+        for (auto i = 0; i < size; i++) {
+            auto &model = models[i];
+            Vector3 acc = {{0, 0, 0}};
+            for (auto j = 0; j < size; j++) {
+                if (i != j) {
+                    auto &other = models[j];
+                    auto dx = model.center_.x - other.center_.x;
+                    auto dy = model.center_.y - other.center_.y;
+                    auto dz = model.center_.z - other.center_.z;
+                    float distanceSq = dx * dx + dy * dy + dz * dz;
+                    Vector3 direction = {{dx, dy, dz}};
+                    float distance = std::sqrt(distanceSq);
+                    float force = (G * model.mass_ * other.mass_) / std::max(0.01f, distanceSq);
+                    acc = acc + (direction / std::max(0.01f, distance)) * (force / model.mass_);
+                }
+            }
+            model.velocity_ = model.velocity_ + acc * deltaTimeUnit;
+            model.move(model.velocity_ * deltaTimeUnit);
+            if (model.center_.x <= -width / 2 || model.center_.x >= width / 2) {
+                model.velocity_.x = model.center_.x <= -width / 2 ? abs(model.velocity_.x)
+                                                                  : -abs(model.velocity_.x);
+                auto border = model.center_.x <= -width / 2 ? -width / 2 : width / 2;
+                model.move({{border - model.center_.x, 0, 0}});
+            }
+            if (model.center_.y <= -height / 2 || model.center_.y >= height / 2) {
+                model.velocity_.y = model.center_.y <= -height / 2 ? abs(model.velocity_.y)
+                                                                   : -abs(model.velocity_.y);
+                auto border = model.center_.y <= -height / 2 ? -height / 2 : height / 2;
+                model.move({{0, border - model.center_.y, 0}});
+            }
+        }
+    }
+
     Vector3 center_;
     std::vector<Vertex> currentVertices_;
     std::vector<Vertex> startVertices_;
     std::vector<Index> indices_;
     std::shared_ptr<TextureAsset> spTexture_;
     float rotationOffset_;
+    Vector3 velocity_;
+    float mass_ = 1.0f;
 };

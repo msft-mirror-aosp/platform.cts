@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
+#include <android/native_window.h>
 #include <android/performance_hint.h>
 #include <assert.h>
 #include <jni.h>
+#include <sys/system_properties.h>
 
 #include <algorithm>
 #include <chrono>
@@ -38,8 +40,9 @@
 using namespace std::chrono_literals;
 
 const constexpr auto kDrawingTimeout = 3s;
-const constexpr int kSamples = 800;
-const constexpr int kCalibrationSamples = 800;
+const constexpr int kSamples = 300;
+const constexpr int kCalibrationSamples = 100;
+bool verboseLogging = true;
 
 Renderer *getRenderer(android_app *pApp) {
     return (pApp->userData) ? reinterpret_cast<Renderer *>(pApp->userData) : nullptr;
@@ -90,7 +93,8 @@ FrameStats drawFrames(int count, android_app *pApp, int &events, android_poll_so
                 auto start = std::chrono::steady_clock::now();
 
                 // Render a frame
-                jlong spinTime = getRenderer(pApp)->render();
+                auto spinTime = getRenderer(pApp)->render();
+                // For now we only report the CPU duration
                 getRenderer(pApp)->reportActualWorkDuration(spinTime);
                 durations.push_back(spinTime);
                 intervals.push_back((start - lastStart).count());
@@ -100,7 +104,7 @@ FrameStats drawFrames(int count, android_app *pApp, int &events, android_poll_so
         }
     }
 
-    if (namedTest) {
+    if (namedTest && verboseLogging) {
         getRenderer(pApp)->addResult(testName + "_durations", serializeValues(durations));
         getRenderer(pApp)->addResult(testName + "_intervals", serializeValues(intervals));
     }
@@ -114,32 +118,84 @@ FrameStats drawFramesWithTarget(int64_t targetDuration, int &events, android_app
     return drawFrames(kSamples, pApp, events, pSource, testName);
 }
 
-// Finds the test settings that best match this device, and returns the
-// duration of the frame's work
-double calibrate(int &events, android_app *pApp, android_poll_source *&pSource) {
-    FrameStats calibration[2];
-    getRenderer(pApp)->setNumHeads(1);
+double calibrate(int64_t interval, int &events, android_app *pApp, android_poll_source *&pSource) {
+    const constexpr int initialHeads = 5;
+    const constexpr int maxHeads = 40;
+    int heads = initialHeads;
+    auto renderer = getRenderer(pApp);
+    renderer->setNumHeads(heads);
+    int64_t duration = 0;
+    int calibrateIter = 0;
+    int physicsIter = 1;
 
-    // Find a number of heads that gives a work duration approximately equal
-    // to 1/4 the vsync period. This gives enough time for the frame to finish
-    // everything, while still providing enough overhead that differences are easy
-    // to notice.
-    calibration[0] = drawFrames(kCalibrationSamples, pApp, events, pSource);
-    getRenderer(pApp)->setNumHeads(200);
-    calibration[1] = drawFrames(kCalibrationSamples, pApp, events, pSource);
+    // adjust the head count so that it generates enough base duration while the interval doesn't
+    // exceed the max
+    const int64_t intervalMax = interval + static_cast<std::chrono::nanoseconds>(1ms).count();
 
-    double target = calibration[1].medianFrameInterval / 6.0;
-    aout << "Goal duration: " << (int)target << std::endl;
-    double perHeadDuration =
-            (calibration[1].medianWorkDuration - calibration[0].medianWorkDuration) / 200.0;
-    aout << "per-head duration: " << (int)perHeadDuration << std::endl;
-    int heads = (target - static_cast<double>(calibration[0].medianWorkDuration)) / perHeadDuration;
+    // fix the head count then and calibrate only CPU actual work duration by adjusting the physics
+    // iteration count so that the actual duration is close to the goal duration
+    bool fixedHeads = false;
+    const int64_t goal = interval * 0.75;
+    const int64_t duration_min = goal -
+            std::max(static_cast<long long>(interval / 8),
+                     static_cast<std::chrono::nanoseconds>(1000us).count());
+    const int64_t duration_max = goal +
+            std::max(static_cast<long long>(interval / 8),
+                     static_cast<std::chrono::nanoseconds>(1000us).count());
 
-    getRenderer(pApp)->addResult("goal_duration", std::to_string(static_cast<int>(target)));
+    while (calibrateIter < 10 &&
+           (((duration < duration_min || duration > duration_max) && physicsIter > 0) ||
+            (interval > intervalMax && heads > 1 && !fixedHeads))) {
+        auto stats = drawFrames(kCalibrationSamples, pApp, events, pSource);
+        duration = stats.medianWorkDuration;
+        interval = stats.medianFrameInterval;
+        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) + "_duration",
+                                     std::to_string(duration));
+        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) + "_interval",
+                                     std::to_string(interval));
+        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) + "_heads",
+                                     std::to_string(heads));
+        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) +
+                                             "_physicsIter",
+                                     std::to_string(physicsIter));
+        if (!fixedHeads) {
+            // too many heads that the workload interval is exceeding frame interval
+            if ((interval > intervalMax && heads > 1)) {
+                heads = static_cast<double>(intervalMax) / interval * heads;
+            }
+            // too few heads to generate enough drawing workload
+            // we will calibrate the head count so the rendering without physics iterations can run
+            // at least (goal / 8) duration
+            else if (duration < goal / 8 && heads < maxHeads) {
+                // at most double the head count in each iteration
+                heads = std::min(2.0, (static_cast<double>(goal) / 8 / duration)) * heads;
+            } else {
+                fixedHeads = true;
+            }
+            heads = std::min(maxHeads, heads);
+            heads = std::max(heads, 1);
+        }
+        if (fixedHeads) {
+            if (duration > duration_max) {
+                physicsIter = std::min(physicsIter - 1,
+                                       int(static_cast<double>(goal) / duration * physicsIter));
+            } else if (duration < duration_min) {
+                // increase 3 iteration at most at a time
+                physicsIter = std::max(physicsIter + 3,
+                                       int(std::sqrt(static_cast<double>(goal) / duration) *
+                                           physicsIter));
+            }
+        }
+        getRenderer(pApp)->setNumHeads(heads);
+        getRenderer(pApp)->setPhysicsIterations(physicsIter);
+        calibrateIter++;
+    }
+    getRenderer(pApp)->addResult("goal", std::to_string(goal));
+    getRenderer(pApp)->addResult("duration", std::to_string(duration));
     getRenderer(pApp)->addResult("heads_count", std::to_string(heads));
-
-    getRenderer(pApp)->setNumHeads(std::max(heads, 1));
-    return target;
+    getRenderer(pApp)->addResult("interval", std::to_string(interval));
+    getRenderer(pApp)->addResult("physics_iterations", std::to_string(physicsIter));
+    return duration;
 }
 
 // /*!
@@ -167,6 +223,15 @@ void handle_cmd(android_app *pApp, int32_t cmd) {
     }
 }
 
+void setFrameRate(android_app *pApp, float frameRate) {
+    auto t = ANativeWindow_setFrameRate(pApp->window, frameRate,
+                                        ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT);
+    if (t != 0) {
+        Utility::setFailure("Can't set frame rate to " + std::to_string(frameRate),
+                            getRenderer(pApp));
+    }
+}
+
 void android_main(struct android_app *pApp) {
     app_dummy();
 
@@ -179,27 +244,57 @@ void android_main(struct android_app *pApp) {
     int events;
     android_poll_source *pSource = nullptr;
 
+    // adb shell setprop debug.adpf_cts_verbose_logging true
+    const prop_info *pi_verbose = __system_property_find("debug.adpf_cts_verbose_logging");
+    if (pi_verbose != nullptr) {
+        char value[PROP_VALUE_MAX];
+        __system_property_read(pi_verbose, nullptr, value);
+        if (strcmp(value, "false") == 0) {
+            verboseLogging = false;
+        } else {
+            verboseLogging = true;
+        }
+    }
+
     // Ensure renderer is initialized
     drawFrames(1, pApp, events, pSource);
-    std::this_thread::sleep_for(10s);
-    getRenderer(pApp)->setNumHeads(100);
-    // Run an initial load to get the CPU active and stable
-    drawFrames(kCalibrationSamples, pApp, events, pSource);
 
-    FrameStats initialStats = drawFrames(kSamples, pApp, events, pSource);
+    float frameRate = 60.0f;
+    // adb shell setprop debug.adpf_cts_frame_rate 60.0
+    const prop_info *pi_frame_rate = __system_property_find("debug.adpf_cts_frame_rate");
+    if (pi_frame_rate != nullptr) {
+        char value[PROP_VALUE_MAX];
+        __system_property_read(pi_frame_rate, nullptr, value);
+        char *endptr; // To check for valid conversion
+        float floatValue = strtof(value, &endptr);
+        if (*endptr == '\0') {
+            frameRate = floatValue;
+        }
+    }
+    setFrameRate(pApp, frameRate);
 
+    std::this_thread::sleep_for(1s);
     std::vector<pid_t> tids;
     tids.push_back(gettid());
-    bool supported = getRenderer(pApp)->startHintSession(tids, 6 * initialStats.medianWorkDuration);
+    const float lightTargetFrameRate = 30.0f;
+    const int64_t lightTarget = 33333333; // 33.3ms or 30hz
+    const float heavyTargetFrameRate = 120.0f;
+    const int64_t heavyTarget = 8333333; // 8.3ms or 120hz
+    bool supported = getRenderer(pApp)->startHintSession(tids, lightTarget);
     if (!supported) {
         JNIManager::sendResultsToJava(getRenderer(pApp)->getResults());
         return;
     }
 
-    // Do an initial load with the session to let CPU settle
-    drawFrames(kCalibrationSamples / 2, pApp, events, pSource);
-
-    double calibratedTarget = calibrate(events, pApp, pSource);
+    // Do an initial load with the session to let CPU settle and measure frame interval
+    getRenderer(pApp)->setNumHeads(1);
+    auto stats = drawFrames(kCalibrationSamples, pApp, events, pSource);
+    const int64_t interval = stats.medianFrameInterval;
+    getRenderer(pApp)->addResult("median_frame_interval", std::to_string(interval));
+    // TODO(b/344696346): skip the test if the frame interval is significantly larger than
+    // 16ms? Say the device has limited performance to run this test, or its FPS capped at 30
+    // calibrate a workload that's 2ms over the current interval
+    double calibratedTarget = calibrate(interval, events, pApp, pSource);
 
     auto testNames = JNIManager::getInstance().getTestNames();
     std::set<std::string> testSet{testNames.begin(), testNames.end()};
@@ -212,13 +307,8 @@ void android_main(struct android_app *pApp) {
              calibratedTarget);
     getRenderer(pApp)->addResult("calibration_accuracy", std::to_string(calibrationAccuracy));
 
-    const int64_t lightTarget = 6 * baselineStats.medianWorkDuration;
-
     // Used to figure out efficiency score on actual runs
     getRenderer(pApp)->setBaselineMedian(baselineStats.medianWorkDuration);
-
-    // Set heavy target to be slightly smaller than the baseline to ensure a boost is necessary
-    const int64_t heavyTarget = (3 * baselineStats.medianWorkDuration) / 4;
 
     if (testSet.count("heavy_load") > 0) {
         tests.push_back(
@@ -232,8 +322,11 @@ void android_main(struct android_app *pApp) {
 
     if (testSet.count("transition_load") > 0) {
         tests.push_back([&]() {
+            sleep(5);
             drawFramesWithTarget(lightTarget, events, pApp, pSource, "transition_load_1");
+            sleep(5);
             drawFramesWithTarget(heavyTarget, events, pApp, pSource, "transition_load_2");
+            sleep(5);
             drawFramesWithTarget(lightTarget, events, pApp, pSource, "transition_load_3");
         });
     }
