@@ -1474,9 +1474,7 @@ public class StrictModeTest {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setPendingIntentBackgroundActivityStartMode(
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
-        Intent intent = new Intent(SIMPLE_ACTIVITY_LAUNCH);
-        intent.setComponent(new ComponentName(context, SimpleTestActivity.class));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
         PendingIntent pi = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         assertViolation(BACKGROUND_ACTIVITY_LAUNCH, () ->
@@ -1515,9 +1513,7 @@ public class StrictModeTest {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setPendingIntentBackgroundActivityStartMode(
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-        Intent intent = new Intent(SIMPLE_ACTIVITY_LAUNCH);
-        intent.setComponent(new ComponentName(context, SimpleTestActivity.class));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
         PendingIntent pi = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         assertThat(pi).isNotNull();
