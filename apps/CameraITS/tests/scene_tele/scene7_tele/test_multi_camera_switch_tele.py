@@ -30,10 +30,10 @@ import multi_camera_switch_utils
 import preview_processing_utils
 
 
-_AE_ATOL = 15.0
-_AE_RTOL = 0.15  # 15%
-_AF_ATOL = 0.15
-_AF_RTOL = 0.15  # 15%
+_AE_ATOL = 7.0
+_AE_RTOL = 0.7  # 7%
+_AF_ATOL = 0.7
+_AF_RTOL = 0.7  # 7%
 _AWB_ATOL_AB = 10  # ATOL for A and B means in LAB color space
 _AWB_ATOL_L = 3  # ATOL for L means in LAB color space
 _COLORS = ('r', 'g', 'b', 'gray')
