@@ -77,6 +77,7 @@ def _get_regions_of_interest(props, cam, test_name_with_log_path):
 
   return regions
 
+
 # TODO: rdhanjal@ Refactor to utils class and use for test_ae_awb_regions
 def _define_regions(img, img_path, chart_path, props, width, height):
   """Defines the 4 rectangle regions based on ArUco markers in scene8.
@@ -157,9 +158,8 @@ def _get_ratio(img, region, img_width, img_height, channel_one, channel_two):
 
 
 def color_temperature_capture_request(color_temp, color_tint, log_path, cam,
-    props):
-  """Returns a capture request with the requested color temperature and
-  color tint.
+                                      props):
+  """Returns capture request with requested color temperature and tint.
 
   Args:
    color_temp: The color temperature value to populate the request with.
@@ -187,9 +187,7 @@ def color_temperature_capture_request(color_temp, color_tint, log_path, cam,
 
 
 def validate_r_b_ratios(blue_ratios, yellow_ratios):
-  """
-  Validates if the R/B ratios are decreasing as expected
-  for the blue_ratios, and increasing as expected for the blue ratios.
+  """Validates R/B ratios are decreasing/increasing as expected.
 
   Args:
     blue_ratios: list R/B ratios for blue region at [2856K, 4678K, 6500K]
@@ -208,9 +206,9 @@ def validate_r_b_ratios(blue_ratios, yellow_ratios):
   # Validate yellow region: R/B ratios should increase
   for i in range(len(yellow_ratios) - 1):
     if yellow_ratios[i] >= yellow_ratios[i + 1]:
-        raise AssertionError(
-            f'R/B ratio for yellow region did not increase as expected: '
-            f'{yellow_ratios} ')
+      raise AssertionError(
+          f'R/B ratio for yellow region did not increase as expected: '
+          f'{yellow_ratios} ')
 
 
 class ColorCorrectionModeCct(its_base_test.ItsBaseTest):
