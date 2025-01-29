@@ -163,12 +163,18 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       if zoom_ratio != 1:
         jca_zoom_ratio = zoom_ratio
       video_stabilization = None
-      video_stabilization_mode = ui_interaction_utils.get_default_camera_video_stabilization(
-          default_watch_dump_file)
+      video_stabilization_mode = (
+          ui_interaction_utils.get_default_camera_video_stabilization(
+              default_watch_dump_file)
+      )
       if video_stabilization_mode == 'OFF':
-        video_stabilization = ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OFF
+        video_stabilization = (
+            ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OFF
+        )
       else:
-        video_stabilization = ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON
+        video_stabilization = (
+            ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON
+        )
       # Take JCA capture with UI
       jca_capture_path = ui_interaction_utils.launch_jca_and_capture(
           self.dut,
