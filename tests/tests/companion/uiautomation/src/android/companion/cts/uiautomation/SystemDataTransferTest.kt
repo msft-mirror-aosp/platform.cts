@@ -25,6 +25,7 @@ import android.companion.CompanionDeviceManager
 import android.companion.CompanionException
 import android.companion.Flags
 import android.companion.cts.common.CompanionActivity
+import android.companion.cts.uicommon.CompanionDeviceManagerUi.Companion.SYSTEM_DATA_TRANSFER_CONFIRMATION_UI
 import android.content.Intent
 import android.os.OutcomeReceiver
 import android.platform.test.annotations.AppModeFull
@@ -305,8 +306,14 @@ class SystemDataTransferTest : UiAutomationTestBase(null, null) {
         CompanionActivity.startIntentSender(pendingUserConsent!!)
         confirmationUi.waitUntilSystemDataTransferConfirmationVisible()
         when (action) {
-            ACTION_CLICK_ALLOW -> confirmationUi.clickPositiveButton()
-            ACTION_CLICK_DISALLOW -> confirmationUi.clickNegativeButton()
+            ACTION_CLICK_ALLOW -> {
+                confirmationUi.scrollToBottom(SYSTEM_DATA_TRANSFER_CONFIRMATION_UI)
+                confirmationUi.clickPositiveButton()
+            }
+            ACTION_CLICK_DISALLOW -> {
+                confirmationUi.scrollToBottom(SYSTEM_DATA_TRANSFER_CONFIRMATION_UI)
+                confirmationUi.clickNegativeButton()
+            }
             ACTION_PRESS_BACK -> {
                 uiDevice.pressBack()
                 return -100 // an invalid result code which shouldn't be checked against
