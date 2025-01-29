@@ -81,6 +81,9 @@ android_library {
         "core-tests-support",
         "androidx.appcompat_appcompat",
         "androidx.fragment_fragment",
+        "androidx.media3.media3-common",
+        "androidx.media3.media3-exoplayer",
+        "androidx.media3.media3-ui",
         "androidx.preference_preference",
         "mockito-target-minus-junit4",
         "mockwebserver",
@@ -158,6 +161,7 @@ android_library {
         "src/**/I*.aidl",
     ],
     static_libs: [
+        "androidx.appcompat_appcompat",
         "androidx.legacy_legacy-support-v4",
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",

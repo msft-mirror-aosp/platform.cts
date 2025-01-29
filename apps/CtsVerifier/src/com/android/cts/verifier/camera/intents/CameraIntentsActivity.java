@@ -80,7 +80,8 @@ import java.util.TreeSet;
  *  rely on this functionality present and correctly working.
  */
 public class CameraIntentsActivity extends PassFailButtons.Activity
-implements OnClickListener, SurfaceHolder.Callback {
+        implements OnClickListener, SurfaceHolder.Callback,
+        CameraPresentMediaDialog.DialogCallback {
 
     private static final String TAG = "CameraIntents";
     private static final int STATE_OFF = 0;
@@ -489,7 +490,7 @@ implements OnClickListener, SurfaceHolder.Callback {
                         case STAGE_INTENT_PICTURE_SECURE:
                         case STAGE_INTENT_MOTION_PHOTO:
                         case STAGE_INTENT_MOTION_PHOTO_SECURE:
-                            handleIntentPictureResult();
+                            handleIntentPictureResult(stageIndex);
                             // No broadcast should be received. Proceed to update test result
                             updateSuccessState();
                             break;
@@ -507,7 +508,7 @@ implements OnClickListener, SurfaceHolder.Callback {
         }
     }
 
-    private void handleIntentPictureResult() {
+    private void handleIntentPictureResult(int stageIndex) {
         if (mImageTarget == null) {
             Log.d(TAG, "Image target was not set");
             return;
@@ -535,14 +536,27 @@ implements OnClickListener, SurfaceHolder.Callback {
                     mState = STATE_FAILED;
                     return;
                 }
-                mActionSuccess = true;
+
+                if (stageIndex == STAGE_INTENT_MOTION_PHOTO
+                        || stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
+                    Uri photoUri = FileProvider.getUriForFile(this,
+                            "com.android.cts.verifier.managedprovisioning.fileprovider",
+                            mImageTarget);
+                    CameraPresentMediaDialog.newInstance(photoUri)
+                            .show(getSupportFragmentManager(), "CameraPresentMediaDialogFragment");
+                } else {
+                    mActionSuccess = true;
+                }
             } catch (IOException ex) {
                 Log.e(TAG, "Failed to verify Exif", ex);
                 mState = STATE_FAILED;
                 return;
             }
         } finally {
-            mImageTarget.delete();
+            if (stageIndex != STAGE_INTENT_MOTION_PHOTO
+                    && stageIndex != STAGE_INTENT_MOTION_PHOTO_SECURE) {
+                mImageTarget.delete();
+            }
         }
     }
 
@@ -824,5 +838,14 @@ implements OnClickListener, SurfaceHolder.Callback {
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_FORWARD_RESULT);
         intent.putExtra(STAGE_INDEX_EXTRA, stageIndex + 1);
         startActivity(intent);
+    }
+
+    @Override
+    public void onDialogClose(boolean containsMotionPhotoMetadata) {
+        if (mImageTarget != null) {
+            mImageTarget.delete();
+        }
+
+        mActionSuccess = containsMotionPhotoMetadata;
     }
 }
