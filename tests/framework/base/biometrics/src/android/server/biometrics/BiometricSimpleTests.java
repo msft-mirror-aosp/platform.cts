@@ -40,12 +40,10 @@ import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricManager.Authenticators;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
-import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
@@ -634,7 +632,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * appropriately for DEVICE_CREDENTIAL after a PIN unlock.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
     public void testGetLastAuthenticationTime_unlockWithCorrectDeviceCredential() throws Exception {
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
@@ -665,7 +662,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * when an incorrect PIN is entered.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
     public void testGetLastAuthenticationTime_unlockWithIncorrectDeviceCredential()
             throws Exception {
         try (CredentialSession credentialSession = new CredentialSession()) {
@@ -688,7 +684,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
      * {@link BiometricManager#BIOMETRIC_NO_AUTHENTICATION} if there is no password/PIN set.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
     public void testGetLastAuthenticationTime_noCredential() throws Exception {
         final long lastAuthTime = mBiometricManager.getLastAuthenticationTime(
                 DEVICE_CREDENTIAL);

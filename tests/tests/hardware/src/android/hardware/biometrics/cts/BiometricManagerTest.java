@@ -32,10 +32,7 @@ import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricManager;
-import android.hardware.biometrics.Flags;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
@@ -182,17 +179,6 @@ public class BiometricManagerTest {
 
     @Test
     @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getLastAuthenticationTime"})
-    @RequiresFlagsDisabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
-    public void testGetLastAuthenticationTime_flagOff_throwsUnsupportedOperation() {
-        assertThrows(
-                "Should throw UnsupportedOperationException when flag is disabled",
-                UnsupportedOperationException.class,
-                () -> mBiometricManager.getLastAuthenticationTime(BIOMETRIC_STRONG));
-    }
-
-    @Test
-    @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getLastAuthenticationTime"})
-    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
     public void testGetLastAuthenticationTime_allowsStrongAuthenticator() {
         assertEquals("BIOMETRIC_STRONG should have no auth time",
                 BiometricManager.BIOMETRIC_NO_AUTHENTICATION,
@@ -201,7 +187,6 @@ public class BiometricManagerTest {
 
     @Test
     @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getLastAuthenticationTime"})
-    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
     public void testGetLastAuthenticationTime_allowsDeviceCredentialAuthenticator() {
         assertEquals("DEVICE_CREDENTIAL should have no auth time",
                 BiometricManager.BIOMETRIC_NO_AUTHENTICATION,
@@ -210,7 +195,6 @@ public class BiometricManagerTest {
 
     @Test
     @ApiTest(apis = {"android.hardware.biometrics.BiometricManager#getLastAuthenticationTime"})
-    @RequiresFlagsEnabled(Flags.FLAG_LAST_AUTHENTICATION_TIME)
     public void testGetLastAuthenticationTime_allowsDeviceCredentialAndStrongAuthenticator() {
         assertEquals("DEVICE_CREDENTIAL and BIOMETRIC_STRONG should have no auth time",
                 BiometricManager.BIOMETRIC_NO_AUTHENTICATION,
