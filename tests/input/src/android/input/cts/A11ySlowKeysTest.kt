@@ -29,7 +29,6 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputKeyboard
 import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_SLOW_KEYS_FLAG
-import com.android.input.flags.Flags.FLAG_ENABLE_INPUT_FILTER_RUST_IMPL
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -103,7 +102,7 @@ class A11ySlowKeysTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_INPUT_FILTER_RUST_IMPL, FLAG_KEYBOARD_A11Y_SLOW_KEYS_FLAG)
+    @RequiresFlagsEnabled(FLAG_KEYBOARD_A11Y_SLOW_KEYS_FLAG)
     fun testKeyIgnored_ifPressedForLessThanSlowThreshold() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
@@ -117,7 +116,7 @@ class A11ySlowKeysTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ENABLE_INPUT_FILTER_RUST_IMPL, FLAG_KEYBOARD_A11Y_SLOW_KEYS_FLAG)
+    @RequiresFlagsEnabled(FLAG_KEYBOARD_A11Y_SLOW_KEYS_FLAG)
     fun testKeyAccepted_ifPressedForMoreThanSlowThreshold() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
