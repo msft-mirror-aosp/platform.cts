@@ -28,12 +28,14 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraSharedCaptureSession;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.cts.Camera2SurfaceViewCtsActivity;
+import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.camera2.cts.CameraTestUtils.HandlerExecutor;
 import android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.SharedSessionConfiguration;
 import android.hardware.camera2.params.SharedSessionConfiguration.SharedOutputConfiguration;
+import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -62,6 +64,7 @@ import java.util.concurrent.Executor;
 public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     private static final String TAG = "SharedCameraActivity";
     private static final int CAPTURE_RESULT_TIMEOUT_MS = 3000;
+    private static final int NUM_MAX_IMAGES = 10;
     ErrorLoggingService.ErrorServiceConnection mErrorServiceConnection;
     CameraManager mCameraManager;
     StateCallback mStateCallback;
@@ -77,7 +80,10 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     Surface mPreviewSurface;
     int mCaptureSequenceId;
     SimpleCaptureCallback mCaptureListener;
+    ImageDropperListener mImageListener;
     SharedSessionConfiguration mSharedSessionConfig;
+    ImageReader mReader;
+    Surface mReaderSurface;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -238,6 +244,23 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     }
 
     class IncomingHandler extends Handler {
+
+        private void createImageReader(Size sz, int format) {
+            mImageListener = new ImageDropperListener();
+            mReader = makeImageReader(sz, format, NUM_MAX_IMAGES, mImageListener, mCameraHandler);
+            mReaderSurface = mReader.getSurface();
+        }
+
+        private void closeImageReader() {
+            CameraTestUtils.closeImageReader(mReader);
+            if (mImageListener != null) {
+                mImageListener.resetImageCount();
+                mImageListener = null;
+            }
+            mReader = null;
+            mReaderSurface = null;
+        }
+
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -300,6 +323,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         mCaptureListener = null;
                         mSessionCallback = null;
                     }
+                    closeImageReader();
                     if (mCameraDevice != null) {
                         mCameraDevice.close();
                         mCameraDevice = null;
@@ -337,6 +361,14 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                 outputs.add(new OutputConfiguration(mPreviewSurface));
                                 mCaptureRequestBuilder.addTarget(mPreviewSurface);
                             }
+                            if (sharedStreamInfo.getSurfaceType()
+                                    == TestConstants.SURFACE_TYPE_IMAGE_READER) {
+                                int imgFormat = sharedStreamInfo.getFormat();
+                                Size sz = sharedStreamInfo.getSize();
+                                createImageReader(sz, imgFormat);
+                                outputs.add(new OutputConfiguration(mReaderSurface));
+                                mCaptureRequestBuilder.addTarget(mReaderSurface);
+                            }
                         }
                         if (outputs.isEmpty()) {
                             mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
@@ -368,7 +400,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                 case TestConstants.OP_START_PREVIEW:
                     if (mCameraDevice == null || mSession == null) {
                         mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
-                                TAG + "No active camera device or session is present");
+                                TAG + " No active camera device or session is present");
                         Log.e(TAG, "No active camera device or session is present");
                         return;
                     }
@@ -377,6 +409,12 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         mCaptureSequenceId = mSession.setRepeatingRequest(
                                 mCaptureRequestBuilder.build(), mCaptureListener, mCameraHandler);
                         mCaptureListener.getCaptureResult(CAPTURE_RESULT_TIMEOUT_MS);
+                        if ((mReader != null) && (mImageListener.getImageCount() <= 0)) {
+                            mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
+                                    TAG + " Image reader did not receive any images");
+                            Log.e(TAG, "Image reader did not receive any images");
+                            return;
+                        }
                         mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_PREVIEW_STARTED,
                                 Integer.toString(mCaptureSequenceId));
                     } catch (Exception e) {
@@ -389,7 +427,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                 case TestConstants.OP_STOP_PREVIEW:
                     if (mCameraDevice == null || mSession == null) {
                         mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
-                                TAG + "No active camera device or session is present");
+                                TAG + " No active camera device or session is present");
                         Log.e(TAG, "No active camera device or session is present");
                         return;
                     }
@@ -402,6 +440,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                 TestConstants.EVENT_CAMERA_PREVIEW_COMPLETED,
                                 Integer.toString(mCaptureSequenceId));
                         mCaptureSequenceId = -1;
+                        closeImageReader();
                     } catch (Exception e) {
                         mErrorServiceConnection.logAsync(
                                 TestConstants.EVENT_CAMERA_ERROR,
