@@ -564,6 +564,8 @@
              android:exported="true"
              android:colorMode="wideColorGamut"
              android:theme="@style/BadBlurryDialog"/>
+        <activity android:name="android.server.wm.activity.OpenInBrowserTests$TestActivity"/>
+
 
         <!-- Overrides the activity declaration in AndroidX test library to remove the starting
              animation. -->

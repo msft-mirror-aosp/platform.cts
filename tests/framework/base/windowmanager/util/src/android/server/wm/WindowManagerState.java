@@ -2004,6 +2004,7 @@ public class WindowManagerState {
         private boolean mShouldOverrideForceResizeApp;
         private boolean mShouldEnableUserAspectRatioSettings;
         private boolean mIsUserFullscreenOverrideEnabled;
+        private long mRequestOpenInBrowserEducationTimestamp;
 
         Activity(ActivityRecordProto proto, WindowContainer parent) {
             super(proto.getWindowToken().getWindowContainer());
@@ -2063,6 +2064,7 @@ public class WindowManagerState {
             mShouldOverrideForceResizeApp = proto.shouldOverrideForceResizeApp;
             mShouldEnableUserAspectRatioSettings = proto.shouldEnableUserAspectRatioSettings;
             mIsUserFullscreenOverrideEnabled = proto.isUserFullscreenOverrideEnabled;
+            mRequestOpenInBrowserEducationTimestamp = proto.requestOpenInBrowserEducationTimestamp;
         }
 
         @NonNull
@@ -2157,6 +2159,9 @@ public class WindowManagerState {
             return mIsUserFullscreenOverrideEnabled;
         }
 
+        public long getRequestOpenInBrowserEducationTimestamp() {
+            return mRequestOpenInBrowserEducationTimestamp;
+        }
 
         @Override
         public Rect getBounds() {
