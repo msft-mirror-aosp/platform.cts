@@ -16,8 +16,6 @@
 
 package android.permission.cts.appthataccesseslocation;
 
-import static android.location.Criteria.ACCURACY_FINE;
-
 import android.app.Service;
 import android.content.Intent;
 import android.location.Criteria;
@@ -28,47 +26,83 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 
-public class AccessLocationOnCommand extends Service {
-    // Longer than the STATE_SETTLE_TIME in AppOpsManager
-    private static final long BACKGROUND_ACCESS_SETTLE_TIME = 11000;
+import java.util.Timer;
+import java.util.TimerTask;
 
-    private IAccessLocationOnCommand.Stub mBinder = new IAccessLocationOnCommand.Stub() {
-        public void accessLocation() {
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                Criteria crit = new Criteria();
-                crit.setAccuracy(ACCURACY_FINE);
+public class AccessLocationOnCommand extends Service implements LocationListener {
+    private static final String TEST_PROVIDER = "test_provider";
 
-                AccessLocationOnCommand.this.getSystemService(LocationManager.class)
-                        .requestSingleUpdate(crit, new LocationListener() {
-                            @Override
-                            public void onLocationChanged(Location location) {
-                            }
+    private LocationManager mLocationManager;
+    private IAccessLocationOnCommand.Stub mBinder;
+    private final LocationListener mLocationListener = this;
+    private final Timer mTimer = new Timer();
 
-                            @Override
-                            public void onStatusChanged(String provider, int status,
-                                    Bundle extras) {
-                            }
-
-                            @Override
-                            public void onProviderEnabled(String provider) {
-                            }
-
-                            @Override
-                            public void onProviderDisabled(String provider) {
-                            }
-                        }, null);
-            }, BACKGROUND_ACCESS_SETTLE_TIME);
-        }
-    };
+    private void updateMockLocation() {
+        final Location location = new Location(TEST_PROVIDER);
+        location.setLatitude(35.65713608933949f);
+        location.setLongitude(139.70321556882323f);
+        location.setAccuracy(1.0f);
+        location.setTime(System.currentTimeMillis());
+        location.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+        mLocationManager.setTestProviderLocation(TEST_PROVIDER, location);
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
+        mLocationManager = getSystemService(LocationManager.class);
+
+        mLocationManager.addTestProvider(TEST_PROVIDER,
+                /*requiresNetwork=*/true,
+                /*requiresSatellite=*/false,
+                /*requiresCell=*/true,
+                /*hasMonetaryCost=*/false,
+                /*supportsAltitude=*/false,
+                /*supportsSpeed=*/false,
+                /*supportsBearing=*/false,
+                Criteria.POWER_HIGH,
+                Criteria.ACCURACY_FINE);
+        mLocationManager.setTestProviderEnabled(TEST_PROVIDER, true);
+
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                updateMockLocation();
+            }
+        }, 0, 1000);
+
+        mBinder = new IAccessLocationOnCommand.Stub() {
+            public void accessLocation() {
+                mLocationManager.requestSingleUpdate(
+                        TEST_PROVIDER, mLocationListener, Looper.getMainLooper());
+            }
+        };
         return mBinder;
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
+        mTimer.cancel();
+        mLocationManager.removeTestProvider(TEST_PROVIDER);
         return true;
     }
+
+    @Override
+    public void onLocationChanged(Location location) {
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status,
+            Bundle extras) {
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+    }
+
 }
