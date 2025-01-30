@@ -166,7 +166,18 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
 
     @Override
     public void onSetSessionVolume(long requestId, @NonNull String sessionId, int volume) {
-        throw new IllegalStateException("Unexpected: The session has fixed volume.");
+        synchronized (sLock) {
+            if (mCurrentRoutingSession == null
+                    || !mCurrentRoutingSession.getOriginalId().equals(sessionId)) {
+                notifyRequestFailed(requestId, REASON_INVALID_COMMAND);
+                return;
+            }
+            mCurrentRoutingSession =
+                    new RoutingSessionInfo.Builder(mCurrentRoutingSession)
+                            .setVolume(volume)
+                            .build();
+            notifySessionUpdated(mCurrentRoutingSession);
+        }
     }
 
     @Override
@@ -250,6 +261,9 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         transferableRoutes.remove(selectedRouteId);
         var sessionBuilder =
                 new RoutingSessionInfo.Builder(ROUTING_SESSION_ID, clientPackageName)
+                        .setVolumeHandling(PLAYBACK_VOLUME_VARIABLE)
+                        .setVolumeMax(VOLUME_MAX)
+                        .setVolume(INITIAL_VOLUME)
                         .addSelectedRoute(selectedRouteId);
         transferableRoutes.forEach(sessionBuilder::addTransferableRoute);
         return sessionBuilder.build();
