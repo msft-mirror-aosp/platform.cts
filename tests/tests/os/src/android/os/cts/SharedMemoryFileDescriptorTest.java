@@ -16,8 +16,12 @@
 
 package android.os.cts;
 
+import static android.os.cts.LeakTest.runNotLeakingTest;
+
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
@@ -25,6 +29,7 @@ import android.os.SharedMemory;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.OsConstants;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
@@ -97,6 +102,21 @@ public final class SharedMemoryFileDescriptorTest {
             // Clearing the shared RAM via sharedMem2 should be visible to sharedMem1
             assertTrue(buffer1.hasCleanMemory());
         }
+    }
+
+    @LargeTest
+    @Test
+    public void testDoesntLeak() {
+        runNotLeakingTest(
+                () -> {
+                    SharedMemory mem = null;
+                    try {
+                        mem = SharedMemory.create(null, 1024);
+                    } catch (Exception ex) {
+                        fail(ex.getMessage());
+                    }
+                    assertNotNull(mem);
+                });
     }
 
     private static final class ByteBufferSession implements AutoCloseable {
