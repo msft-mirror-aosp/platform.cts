@@ -44,7 +44,7 @@ _MP4_FORMAT = '.mp4'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_MARGIN = 50  # Pixels
 _ZOOM_RANGE_W_TELE = (1.8, 5.0)  # W/Tele crossover range
-_ZOOM_STEP = 0.02
+_ZOOM_STEP = 0.05  # Empirically efficient for finding the crossover point
 
 
 class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
