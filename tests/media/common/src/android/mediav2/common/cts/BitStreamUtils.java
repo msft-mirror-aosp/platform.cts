@@ -1011,6 +1011,200 @@ public class BitStreamUtils {
         }
     }
 
+    static class ApvParser extends ParserBase {
+        private static final Map<Integer, Integer> PROFILE_MAP = Map.ofEntries(
+                Map.entry(33, APVProfile422_10));
+
+        private int getApvLevel(int level, int band) {
+            switch (level) {
+                case 30:
+                    switch (band) {
+                        case 0:
+                            return APVLevel1Band0;
+                        case 1:
+                            return APVLevel1Band1;
+                        case 2:
+                            return APVLevel1Band2;
+                        case 3:
+                            return APVLevel1Band3;
+                    }
+                case 33:
+                    switch (band) {
+                        case 0:
+                            return APVLevel11Band0;
+                        case 1:
+                            return APVLevel11Band1;
+                        case 2:
+                            return APVLevel11Band2;
+                        case 3:
+                            return APVLevel11Band3;
+                    }
+                case 60:
+                    switch (band) {
+                        case 0:
+                            return APVLevel2Band0;
+                        case 1:
+                            return APVLevel2Band1;
+                        case 2:
+                            return APVLevel2Band2;
+                        case 3:
+                            return APVLevel2Band3;
+                    }
+                case 63:
+                    switch (band) {
+                        case 0:
+                            return APVLevel21Band0;
+                        case 1:
+                            return APVLevel21Band1;
+                        case 2:
+                            return APVLevel21Band2;
+                        case 3:
+                            return APVLevel21Band3;
+                    }
+                case 90:
+                    switch (band) {
+                        case 0:
+                            return APVLevel3Band0;
+                        case 1:
+                            return APVLevel3Band1;
+                        case 2:
+                            return APVLevel3Band2;
+                        case 3:
+                            return APVLevel3Band3;
+                    }
+                case 93:
+                    switch (band) {
+                        case 0:
+                            return APVLevel31Band0;
+                        case 1:
+                            return APVLevel31Band1;
+                        case 2:
+                            return APVLevel31Band2;
+                        case 3:
+                            return APVLevel31Band3;
+                    }
+                case 120:
+                    switch (band) {
+                        case 0:
+                            return APVLevel4Band0;
+                        case 1:
+                            return APVLevel4Band1;
+                        case 2:
+                            return APVLevel4Band2;
+                        case 3:
+                            return APVLevel4Band3;
+                    }
+                case 123:
+                    switch (band) {
+                        case 0:
+                            return APVLevel41Band0;
+                        case 1:
+                            return APVLevel41Band1;
+                        case 2:
+                            return APVLevel41Band2;
+                        case 3:
+                            return APVLevel41Band3;
+                    }
+                case 150:
+                    switch (band) {
+                        case 0:
+                            return APVLevel5Band0;
+                        case 1:
+                            return APVLevel5Band1;
+                        case 2:
+                            return APVLevel5Band2;
+                        case 3:
+                            return APVLevel5Band3;
+                    }
+                case 153:
+                    switch (band) {
+                        case 0:
+                            return APVLevel51Band0;
+                        case 1:
+                            return APVLevel51Band1;
+                        case 2:
+                            return APVLevel51Band2;
+                        case 3:
+                            return APVLevel51Band3;
+                    }
+                case 180:
+                    switch (band) {
+                        case 0:
+                            return APVLevel6Band0;
+                        case 1:
+                            return APVLevel6Band1;
+                        case 2:
+                            return APVLevel6Band2;
+                        case 3:
+                            return APVLevel6Band3;
+                    }
+                case 183:
+                    switch (band) {
+                        case 0:
+                            return APVLevel61Band0;
+                        case 1:
+                            return APVLevel61Band1;
+                        case 2:
+                            return APVLevel61Band2;
+                        case 3:
+                            return APVLevel61Band3;
+                    }
+                case 210:
+                    switch (band) {
+                        case 0:
+                            return APVLevel7Band0;
+                        case 1:
+                            return APVLevel7Band1;
+                        case 2:
+                            return APVLevel7Band2;
+                        case 3:
+                            return APVLevel7Band3;
+                    }
+                case 213:
+                    switch (band) {
+                        case 0:
+                            return APVLevel71Band0;
+                        case 1:
+                            return APVLevel71Band1;
+                        case 2:
+                            return APVLevel71Band2;
+                        case 3:
+                            return APVLevel71Band3;
+                    }
+            }
+            return APVLevel71Band3;
+        }
+
+        @Override
+        public int getFrameType() {
+            return PICTURE_TYPE_UNKNOWN;
+        }
+
+        @Override
+        public Pair<Integer, Integer> getProfileLevel(@SuppressWarnings("unused") boolean isCsd) {
+            ParsableBitArray bitArray = new ParsableBitArray(mData, mOffset, mLimit);
+            //TODO(b/392976813): These 4 lines need to be removed once test data are fixed.
+            bitArray.readBits(32);
+            Assert.assertEquals(1, bitArray.readBits(8));  // configuration version
+            int numConfigEntry = bitArray.readBits(8);
+
+            for (int i = 0; i < numConfigEntry; i++) {
+                bitArray.readBits(8); // pbu_type
+                int numFrameInfo = bitArray.readBits(8);
+                for (int j = 0; j < numFrameInfo; j++) {
+                    bitArray.readBits(6); // reserved zero bits
+                    bitArray.readBits(1); // color description present flag
+                    bitArray.readBits(1); // capture time distance ignored
+                    int profile = bitArray.readBits(8);
+                    int level = bitArray.readBits(8);
+                    int band = bitArray.readBits(8);
+                    return plToPair(getHashMapVal(PROFILE_MAP, profile), getApvLevel(level, band));
+                }
+            }
+            return null;
+        }
+    }
+
     public static ParserBase getParserObject(String mediaType) {
         switch (mediaType) {
             case MediaFormat.MIMETYPE_VIDEO_MPEG4:
@@ -1027,6 +1221,8 @@ public class BitStreamUtils {
                 return new Vp9Parser();
             case MediaFormat.MIMETYPE_AUDIO_AAC:
                 return new AacParser();
+            case MediaFormat.MIMETYPE_VIDEO_APV:
+                return new ApvParser();
         }
         return null;
     }
