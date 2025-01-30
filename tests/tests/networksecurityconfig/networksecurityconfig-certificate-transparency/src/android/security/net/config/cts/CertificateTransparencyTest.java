@@ -46,6 +46,14 @@ public class CertificateTransparencyTest {
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("google.com"));
         assertTrue(mInstance.isCertificateTransparencyVerificationRequired("example.com"));
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("wikipedia.org"));
+        assertFalse(
+                mInstance.isCertificateTransparencyVerificationRequired("custom-trust-anchor.com"));
+        assertTrue(
+                mInstance.isCertificateTransparencyVerificationRequired(
+                        "ct-explicit-enabled.custom-trust-anchor.com"));
+        assertFalse(
+                mInstance.isCertificateTransparencyVerificationRequired(
+                        "raw-resource-trust-anchor.com"));
     }
 
     @Test
@@ -58,5 +66,8 @@ public class CertificateTransparencyTest {
                 mInstance.isCertificateTransparencyVerificationRequired("completely.example.com"));
         assertFalse(
                 mInstance.isCertificateTransparencyVerificationRequired("different.wikipedia.org"));
+        assertFalse(
+                mInstance.isCertificateTransparencyVerificationRequired(
+                        "sub.custom-trust-anchor.com"));
     }
 }
