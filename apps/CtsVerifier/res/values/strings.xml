@@ -7289,7 +7289,6 @@ You should be prompted to select credentials; choose the ones you just installed
         Please connect an HDMI peripheral to validate AudioDescriptor.
     </string>
 
-    <string name="uwb">Uwb</string>
     <string name="presence_test">Presence Test</string>
     <string name="presence_test_info">
         The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
@@ -7391,6 +7390,25 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="cs_accuracy_test_name">BLE Channel Sounding Accuracy Test</string>
     <string name="ble_cs">BLE Channel Sounding</string>
+
+    <!-- String for UWB sounding Accuracy test -->
+    <string name="uwb_accuracy_test_instructions">
+        Two devices with UWB hardware are required, one as the DUT and one as the reference device.
+        Two tripods to hold the devices are required.
+        The DUT and the reference device must be placed 1 meter apart in a line of sight environment in a nonreflective chamber. Both devices must be positioned in a portrait orientation with the screen facing away from each other.
+        \nDUT instructions
+        \n1. Ensure that the test is already started on the reference device, then click "Start Test".
+        \n2. The test is automatically stopped and passed (or failed) when all the required data is collected.
+        \n3. The test is passed if:
+        \n  3.a Sort the 1000 measurements in ascending order.
+        \n  3.b Compute the range as [range = 975th measurement - 25th measurement].
+        \n  3.c Report the range in the multi-device CTS test. To pass, the range must be less than 30 cm.
+        \n  3.d Report the median value (500th) in the CTS test. To pass, the value must be within [0.75 m, 1.25 m].
+        \nReference device instructions
+        \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Test"
+    </string>
+    <string name="uwb_accuracy_test_name">UWB Accuracy Test</string>
+    <string name="uwb">UWB</string>
 
     <!-- Strings for AudioMicrophoneMuteToggleActivity -->
     <string name="audio_mic_toggle_test">Audio Microphone Hardware Toggle Mute Test</string>
