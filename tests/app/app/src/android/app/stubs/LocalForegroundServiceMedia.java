@@ -80,21 +80,21 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
                 new MediaSession.Callback() {
                     @Override
                     public void onPlay() {
-                        Log.d(getTag(), "received onPlay");
+                        Log.d(TAG, "received onPlay");
                         super.onPlay();
                         setPlaybackState(PlaybackState.STATE_PLAYING, mMediaSession);
                     }
 
                     @Override
                     public void onPause() {
-                        Log.d(getTag(), "received onPause");
+                        Log.d(TAG, "received onPause");
                         super.onPause();
                         setPlaybackState(PlaybackState.STATE_PAUSED, mMediaSession);
                     }
 
                     @Override
                     public void onStop() {
-                        Log.d(getTag(), "received onStop");
+                        Log.d(TAG, "received onStop");
                         super.onStop();
                         setPlaybackState(PlaybackState.STATE_PAUSED, mMediaSession);
                     }
