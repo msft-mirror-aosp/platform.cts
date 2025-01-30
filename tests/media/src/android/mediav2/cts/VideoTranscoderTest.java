@@ -16,10 +16,15 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELESS_TX_QUALITY;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_B;
 import static android.mediav2.common.cts.MuxerUtils.getTempFilePath;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
 
@@ -113,13 +118,18 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
                 Object[] newArg = new Object[arg.length + 1];
                 newArg[0] = mediaType;
                 System.arraycopy(arg, 0, newArg, 1, arg.length);
+                // force higher bitrate for apv encoder
+                if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) newArg[3] = 8000000;
                 newArgs.add(newArg);
             }
         }
 
-        String[] mediaTypesHighBitDepth = {MediaFormat.MIMETYPE_VIDEO_AVC,
-                MediaFormat.MIMETYPE_VIDEO_HEVC, MediaFormat.MIMETYPE_VIDEO_VP9,
-                MediaFormat.MIMETYPE_VIDEO_AV1};
+        List<String> mediaTypesHighBitDepth = new ArrayList<>(Arrays.asList(
+                MediaFormat.MIMETYPE_VIDEO_AVC,
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                MediaFormat.MIMETYPE_VIDEO_VP9,
+                MediaFormat.MIMETYPE_VIDEO_AV1
+        ));
 
         final List<Object[]> argsHighBitDepth = new ArrayList<>(Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_520x390_24fps_crf22_avc_10bit.mkv",
@@ -140,12 +150,24 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
                         512000, 30, true},
         }));
 
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            mediaTypesHighBitDepth.add(MediaFormat.MIMETYPE_VIDEO_APV);
+            argsHighBitDepth.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                            512000, 30, false},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
+                            512000, 30, true},
+            }));
+        }
+
         List<Object[]> newArgsHighBitDepth = new ArrayList<>();
         for(String mediaType : mediaTypesHighBitDepth) {
             for (Object[] arg : argsHighBitDepth) {
                 Object[] newArg = new Object[arg.length + 1];
                 newArg[0] = mediaType;
                 System.arraycopy(arg, 0, newArg, 1, arg.length);
+                // force higher bitrate for apv encoder
+                if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) newArg[3] = 8000000;
                 newArgsHighBitDepth.add(newArg);
             }
         }
