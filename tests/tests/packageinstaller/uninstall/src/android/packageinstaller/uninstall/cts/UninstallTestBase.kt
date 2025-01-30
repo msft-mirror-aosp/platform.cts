@@ -238,14 +238,14 @@ open class UninstallTestBase {
     fun isInstalled(user: UserReference = UserReference.of(context.user)): Boolean {
         Log.d(
             LOG_TAG,
-            "Testing if package $TEST_APK_PACKAGE_NAME  is installed for user $user"
+            "Testing if package $TEST_APK_PACKAGE_NAME is installed for $user"
         )
         val installed = SystemUtil.runShellCommand(
             "pm list packages --user ${user.id()} $TEST_APK_PACKAGE_NAME"
         )
             .split("\\r?\\n".toRegex())
             .any { it == "package:$TEST_APK_PACKAGE_NAME" }
-        Log.d(LOG_TAG, "$TEST_APK_PACKAGE_NAME is ${if (installed) "" else "not"} installed")
+        Log.d(LOG_TAG, "$TEST_APK_PACKAGE_NAME is${if (installed) " " else " not "}installed")
         return installed
     }
 

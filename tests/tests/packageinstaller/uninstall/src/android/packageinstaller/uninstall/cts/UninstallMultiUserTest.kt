@@ -21,8 +21,8 @@ import android.os.RemoteException
 import androidx.test.uiautomator.By
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.multiuser.secondaryUser
+import com.android.bedstead.multiuser.additionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.AppOpsUtils
 import com.android.compatibility.common.util.SystemUtil
@@ -41,16 +41,18 @@ class UninstallMultiUserTest : UninstallTestBase() {
         @Rule
         val deviceState = DeviceState()
 
+        private lateinit var initialUser: UserReference
         private lateinit var secondaryUser: UserReference
     }
 
     @Before
     fun cacheUsers() {
-        secondaryUser = deviceState.secondaryUser()
+        initialUser = deviceState.initialUser()
+        secondaryUser = deviceState.additionalUser()
     }
 
     @Test
-    @EnsureHasSecondaryUser
+    @EnsureHasAdditionalUser
     @Throws(RemoteException::class)
     fun startUninstallAllUsersCrossUser() {
         // Uninstall from all users to start with a clean slate
@@ -63,8 +65,8 @@ class UninstallMultiUserTest : UninstallTestBase() {
             isInstalled(secondaryUser)
         )
         Assert.assertFalse(
-            "$TEST_APK_PACKAGE_NAME should not be installed in user ${context.user}",
-            isInstalled()
+            "$TEST_APK_PACKAGE_NAME should not be installed in user ${initialUser.id()}",
+            isInstalled(initialUser)
         )
 
         val uninstallIntent = getUninstallIntent()
