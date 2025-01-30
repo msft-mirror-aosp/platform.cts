@@ -20,6 +20,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -37,6 +38,9 @@ import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
+import androidx.annotation.ChecksSdkIntAtLeast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.FeatureUtil;
@@ -48,7 +52,10 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -60,7 +67,7 @@ class FakeAssociationRule extends ExternalResource {
     private static final String TAG = "FakeAssociationRule";
 
     private static final String DEVICE_PROFILE = AssociationRequest.DEVICE_PROFILE_APP_STREAMING;
-
+    private static final String DISPLAY_NAME = "CTS CDM VDM Association";
     private static final String FAKE_ASSOCIATION_ADDRESS_FORMAT = "00:00:00:00:00:%02d";
 
     private static final int TIMEOUT_MS = 10000;
@@ -76,19 +83,18 @@ class FakeAssociationRule extends ExternalResource {
     private int mNextDeviceId = 0;
 
     private AssociationInfo mAssociationInfo;
-    private final CompanionDeviceManager mCompanionDeviceManager;
+    private final CompanionDeviceManager mCompanionDeviceManager =
+            mContext.getSystemService(CompanionDeviceManager.class);
 
-    FakeAssociationRule() {
-        mCompanionDeviceManager = mContext.getSystemService(CompanionDeviceManager.class);
-    }
-
-    public AssociationInfo createManagedAssociation() {
+    private AssociationInfo createManagedAssociationApi35() {
         String deviceAddress = String.format(Locale.getDefault(Locale.Category.FORMAT),
                 FAKE_ASSOCIATION_ADDRESS_FORMAT, ++mNextDeviceId);
         if (mNextDeviceId > 99) {
             throw new IllegalArgumentException("At most 99 associations supported");
         }
 
+        mCompanionDeviceManager.addOnAssociationsChangedListener(
+                mCallbackExecutor, mOnAssociationsChangedListener);
         Log.d(TAG, "Associations before shell cmd: "
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
@@ -105,6 +111,8 @@ class FakeAssociationRule extends ExternalResource {
                         + mCompanionDeviceManager.getMyAssociations().size()))
                 .onAssociationsChanged(any());
         mRoleManager.setBypassingRoleQualification(false);
+        mCompanionDeviceManager.removeOnAssociationsChangedListener(
+                mOnAssociationsChangedListener);
 
         // Immediately drop the role and rely on Shell
         Consumer<Boolean> callback = mock(Consumer.class);
@@ -125,26 +133,54 @@ class FakeAssociationRule extends ExternalResource {
         return associationInfo;
     }
 
+    public AssociationInfo createManagedAssociation(String deviceProfile) {
+        final AssociationInfo[] managedAssociation = new AssociationInfo[1];
+        AssociationRequest request = new AssociationRequest.Builder()
+                .setDeviceProfile(deviceProfile)
+                .setDisplayName(DISPLAY_NAME + " - " + mNextDeviceId++)
+                .setSelfManaged(true)
+                .setSkipRoleGrant(true)
+                .build();
+        CountDownLatch latch = new CountDownLatch(1);
+        CompanionDeviceManager.Callback callback  = new CompanionDeviceManager.Callback() {
+            @Override
+            public void onAssociationCreated(@NonNull AssociationInfo associationInfo) {
+                managedAssociation[0] = associationInfo;
+                latch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nullable CharSequence error) {
+                fail(error == null ? "Failed to create CDM association" : error.toString());
+            }
+        };
+        mCompanionDeviceManager.associate(request, Runnable::run, callback);
+
+        try {
+            latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            fail("Interrupted while waiting for CDM association: " + e);
+        }
+        return managedAssociation[0];
+    }
+
     @Override
     protected void before() throws Throwable {
         super.before();
         MockitoAnnotations.initMocks(this);
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
-
-        mCompanionDeviceManager.addOnAssociationsChangedListener(
-                mCallbackExecutor, mOnAssociationsChangedListener);
-
         clearExistingAssociations();
-        mAssociationInfo = createManagedAssociation();
+        if (isAtLeastB()) {
+            mAssociationInfo = createManagedAssociation(DEVICE_PROFILE);
+        } else {
+            mAssociationInfo = createManagedAssociationApi35();
+        }
     }
 
     @Override
     protected void after() {
         super.after();
         clearExistingAssociations();
-
-        mCompanionDeviceManager.removeOnAssociationsChangedListener(
-                mOnAssociationsChangedListener);
     }
 
     private void clearExistingAssociations() {
@@ -165,9 +201,12 @@ class FakeAssociationRule extends ExternalResource {
     }
 
     private void disassociate(int associationId) {
-        reset(mOnAssociationsChangedListener);
         mCompanionDeviceManager.disassociate(associationId);
-        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS).atLeastOnce())
-                .onAssociationsChanged(any());
+    }
+
+    @ChecksSdkIntAtLeast(api = 36 /* BUILD_VERSION_CODES.Baklava */)
+    private static boolean isAtLeastB() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+                || Objects.equals(Build.VERSION.CODENAME, "Baklava");
     }
 }
