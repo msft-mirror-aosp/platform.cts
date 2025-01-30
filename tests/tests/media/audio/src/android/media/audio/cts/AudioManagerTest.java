@@ -1600,8 +1600,10 @@ public class AudioManagerTest {
 
         final int testRingerVol = getTestRingerVol();
 
-        // disallow all sounds in priority only, turn on priority only DND
-        mNm.setNotificationPolicy(new NotificationManager.Policy(0, 0 , 0));
+        // allow only system sounds in priority only, turn on priority only DND
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        NotificationManager.Policy.PRIORITY_CATEGORY_SYSTEM, 0, 0));
         setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY);
 
         // attempt to change volume
@@ -1635,10 +1637,11 @@ public class AudioManagerTest {
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
 
-        // disallow all sounds in priority only, turn on priority only DND, try to change volume
-        mNm.setNotificationPolicy(new NotificationManager.Policy(0, 0, 0));
+        // allow only system sounds in priority only, turn on priority only DND
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        NotificationManager.Policy.PRIORITY_CATEGORY_SYSTEM, 0, 0));
         setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY);
-
 
         int volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(STREAM_RING));
         assertCallDoesNotChangeStreamVolume(
