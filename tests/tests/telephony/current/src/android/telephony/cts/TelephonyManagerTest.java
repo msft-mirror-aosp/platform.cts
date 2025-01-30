@@ -7085,7 +7085,6 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
             "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IDENTIFIER_DISCLOSURE_TRANSPARENCY)
     public void testSetEnableCellularIdentifierDisclosureNotifications() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
@@ -7117,7 +7116,6 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
             "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_IDENTIFIER_DISCLOSURE_TRANSPARENCY)
     public void testCellularIdentifierDisclosureNotificationsPermissions() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {

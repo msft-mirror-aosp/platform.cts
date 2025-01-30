@@ -91,15 +91,14 @@ public class TestLooperManagerTest {
                 InstrumentationRegistry.getInstrumentation()
                         .acquireLooperManager(looper);
         try {
+            long now = SystemClock.uptimeMillis();
             final Handler handler = new Handler(looper);
             handler.postDelayed(() -> {}, 10000);
 
-            long now = SystemClock.uptimeMillis();
             final Long when = tlm.peekWhen();
             assertNotNull(when);
 
-            assertTrue(when > now);
-            assertTrue(when <= (now + 10000));
+            assertTrue(when >= (now + 10000));
         } finally {
             tlm.release();
             thread.quit();

@@ -27,6 +27,7 @@ import android.telecom.ConnectionRequest;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 
 public class WaitUntil {
     public static final long DEFAULT_TIMEOUT_MS = 10000;
@@ -97,6 +98,8 @@ public class WaitUntil {
         Connection getLastConnection();
 
         ConnectionRequest getLastFailedRequest();
+
+        CountDownLatch getCreateOutgoingConnectionLatch();
     }
 
     public static String waitUntilIdIsSet(
@@ -259,6 +262,22 @@ public class WaitUntil {
         return getLastFailedRequest(s);
     }
 
+    public static boolean waitUntilManagedCreateOutgoingConnectionInvoked(ConnectionServiceImpl s) {
+
+        return waitUntilConditionIsTrueOrReturnFalse(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return getCreateOutgoingConnectionLatch(s).getCount() == 0;
+                    }
+                });
+    }
+
     private static String extractTelecomId(Connection connection) {
         String str = connection.getTelecomCallId();
         return str.substring(0, str.indexOf(TELECOM_ID_TOKEN));
@@ -270,6 +289,10 @@ public class WaitUntil {
 
     private static ConnectionRequest getLastFailedRequest(ConnectionServiceImpl s) {
         return s.getLastFailedRequest();
+    }
+
+    private static CountDownLatch getCreateOutgoingConnectionLatch(ConnectionServiceImpl s) {
+        return s.getCreateOutgoingConnectionLatch();
     }
 
     public static void waitUntilCurrentCallEndpointIsSet(

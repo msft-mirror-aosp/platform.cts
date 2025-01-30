@@ -103,6 +103,11 @@ public class VoipConnectionServiceControlMain extends Service {
                 public ConnectionRequest getLastFailedRequest() {
                     return VoipConnectionServiceMain.sLastFailedRequest;
                 }
+
+                @Override
+                public CountDownLatch getCreateOutgoingConnectionLatch() {
+                    return VoipConnectionServiceMain.sCreateOutgoingConnectionLatch;
+                }
             };
 
     private final IBinder mBinder =
@@ -169,6 +174,20 @@ public class VoipConnectionServiceControlMain extends Service {
                     } catch (TestAppException e) {
                         return new NoDataTransaction(TestAppTransaction.Failure, e);
                     }
+                }
+
+                @Override
+                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                        CallAttributes callAttributes) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    mClassName
+                                            + ".addFailedCallWithCreateOutgoingConnectionVerify("
+                                            + callAttributes
+                                            + ")");
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(mPackageName, stackTrace, "not implemented!"));
                 }
 
                 @Override

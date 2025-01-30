@@ -18,8 +18,10 @@ package android.hardware.multiprocess.camera.cts;
 import static junit.framework.Assert.*;
 
 import android.app.ActivityManager;
+import android.util.ArrayMap;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utility functions used throughout the multi-process unit tests.
@@ -80,4 +82,18 @@ public class TestUtils {
         assertTrue(builder.toString(), events.isEmpty());
     }
 
+    /** Return a Map of eventTag -> number of times encountered */
+    public static Map<Integer, Integer> getEventTagCountMap(
+            List<ErrorLoggingService.LogEvent> events) {
+        ArrayMap<Integer, Integer> eventTagCountMap = new ArrayMap<>();
+        for (ErrorLoggingService.LogEvent e : events) {
+            int eventTag = e.getEvent();
+            if (!eventTagCountMap.containsKey(eventTag)) {
+                eventTagCountMap.put(eventTag, 1);
+            } else {
+                eventTagCountMap.put(eventTag, eventTagCountMap.get(eventTag) + 1);
+            }
+        }
+        return eventTagCountMap;
+    }
 }

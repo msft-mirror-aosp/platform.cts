@@ -36,13 +36,4 @@ python_test_host {
     device_common_data: [
         ":cdm_snippet",
     ],
-    version: {
-        py2: {
-            enabled: false,
-        },
-        py3: {
-            enabled: true,
-            embedded_launcher: true,
-        },
-    },
 }

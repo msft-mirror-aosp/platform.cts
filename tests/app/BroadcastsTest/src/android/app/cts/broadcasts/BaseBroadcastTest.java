@@ -62,7 +62,7 @@ abstract class BaseBroadcastTest {
     protected static final long TIMEOUT_BIND_SERVICE_SEC = 2;
 
     protected static final long SHORT_FREEZER_TIMEOUT_MS = 5000;
-    protected static final long BROADCAST_RECEIVE_TIMEOUT_MS = 5000;
+    protected static final long BROADCAST_RECEIVE_TIMEOUT_MS = 25000;
 
     protected static final String HELPER_PKG1 = "com.android.app.cts.broadcasts.helper";
     protected static final String HELPER_PKG2 = "com.android.app.cts.broadcasts.helper2";

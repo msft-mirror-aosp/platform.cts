@@ -290,8 +290,8 @@ public class AudioFormatTest extends CtsAndroidTestCase {
                 {AudioFormat.CHANNEL_OUT_5POINT1POINT4, 10},
                 {AudioFormat.CHANNEL_OUT_7POINT1POINT2, 10},
                 {AudioFormat.CHANNEL_OUT_7POINT1POINT4, 12},
+                {AudioFormat.CHANNEL_OUT_13POINT0, 13},
                 {AudioFormat.CHANNEL_OUT_9POINT1POINT4, 14},
-                {AudioFormat.CHANNEL_OUT_13POINT_360RA, 13},
                 {AudioFormat.CHANNEL_OUT_9POINT1POINT6, 16},
                 {AudioFormat.CHANNEL_OUT_22POINT2, 24},
         };
@@ -330,7 +330,7 @@ public class AudioFormatTest extends CtsAndroidTestCase {
                 AudioFormat.CHANNEL_OUT_9POINT1POINT4));
         assertTrue(subsetOf(AudioFormat.CHANNEL_OUT_9POINT1POINT4,
                 AudioFormat.CHANNEL_OUT_9POINT1POINT6));
-        assertTrue(subsetOf(AudioFormat.CHANNEL_OUT_13POINT_360RA,
+        assertTrue(subsetOf(AudioFormat.CHANNEL_OUT_13POINT0,
                 AudioFormat.CHANNEL_OUT_22POINT2));
     }
 

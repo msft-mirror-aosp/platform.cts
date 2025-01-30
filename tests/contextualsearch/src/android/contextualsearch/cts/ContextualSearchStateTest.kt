@@ -19,7 +19,6 @@ package android.contextualsearch.cts
 import android.app.assist.AssistContent
 import android.app.assist.AssistStructure
 import android.app.contextualsearch.ContextualSearchState
-import android.app.contextualsearch.flags.Flags
 import android.content.ComponentName
 import android.net.Uri
 import android.os.Binder
@@ -27,6 +26,7 @@ import android.os.Bundle
 import android.os.Parcel
 import android.platform.test.annotations.RequiresFlagsEnabled
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.window.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +35,7 @@ import org.junit.runner.RunWith
 class ContextualSearchStateTest {
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DESKTOP_WINDOWING_APP_TO_WEB_EDUCATION)
     fun testContextualSearchStateDataClass() {
         val testState = ContextualSearchState(testAssistStructure, testAssistContent, testExtras)
 
@@ -42,12 +43,14 @@ class ContextualSearchStateTest {
         // This test is to only verify the working of to/from parcel of ContextualSearchState.
         assertThat(testState.structure!!.activityComponent).isEqualTo(testComponentName)
         assertThat(testState.content!!.webUri).isEqualTo(testUri)
+        assertThat(testState.content!!.sessionTransferUri).isEqualTo(testSessionTransferUri)
         testState.extras.keySet().forEach { key ->
             assertThat(testState.extras.getString(key)).isEqualTo(testExtras.getString(key))
         }
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DESKTOP_WINDOWING_APP_TO_WEB_EDUCATION)
     fun testContextualSearchStateToAndFromParcel() {
         val testState = ContextualSearchState(testAssistStructure, testAssistContent, testExtras)
 
@@ -63,6 +66,7 @@ class ContextualSearchStateTest {
         // This test is to only verify the working of to/from parcel of ContextualSearchState.
         assertThat(copyState.structure!!.activityComponent).isEqualTo(testComponentName)
         assertThat(copyState.content!!.webUri).isEqualTo(testUri)
+        assertThat(copyState.content!!.sessionTransferUri).isEqualTo(testSessionTransferUri)
         testState.extras.keySet().forEach { key ->
             assertThat(copyState.extras.getString(key)).isEqualTo(testExtras.getString(key))
         }
@@ -85,7 +89,11 @@ class ContextualSearchStateTest {
             }
 
         private val testUri = Uri.parse("example.com")
-        private val testAssistContent = AssistContent().apply { webUri = testUri }
+        private val testSessionTransferUri = Uri.parse("example2.com")
+        private val testAssistContent = AssistContent().apply {
+            webUri = testUri
+            sessionTransferUri = testSessionTransferUri
+        }
         private val testExtras = Bundle().apply { putString("key", "value") }
 
         private val TAG = ContextualSearchStateTest::class.java.simpleName

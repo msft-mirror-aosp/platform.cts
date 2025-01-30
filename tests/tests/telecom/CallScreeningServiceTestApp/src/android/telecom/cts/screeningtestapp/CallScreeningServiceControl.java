@@ -19,11 +19,8 @@ package android.telecom.cts.screeningtestapp;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.graphics.drawable.Icon;
-import android.net.Uri;
 import android.os.IBinder;
 import android.telecom.CallScreeningService;
-import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
@@ -41,34 +38,40 @@ public class CallScreeningServiceControl extends Service {
     private static CallScreeningServiceControl sCallScreeningServiceControl = null;
     private CountDownLatch mBindingLatch = new CountDownLatch(1);
 
+    /** mIsBound represents the binding status from the test class to the test app */
+    public static boolean mIsBound = false;
+
     private final IBinder mControlInterface =
             new android.telecom.cts.screeningtestapp.ICallScreeningControl.Stub() {
                 @Override
                 public void reset() {
-                    mCallResponse = new CallScreeningService.CallResponse.Builder()
-                            .setDisallowCall(false)
-                            .setRejectCall(false)
-                            .setSkipCallLog(false)
-                            .setSkipNotification(false)
-                            .build();
+                    mCallResponse =
+                            new CallScreeningService.CallResponse.Builder()
+                                    .setDisallowCall(false)
+                                    .setRejectCall(false)
+                                    .setSkipCallLog(false)
+                                    .setSkipNotification(false)
+                                    .build();
                     mBindingLatch = new CountDownLatch(1);
                     CtsPostCallActivity.resetPostCallActivity();
                 }
 
                 @Override
-                public void setCallResponse(boolean shouldDisallowCall,
+                public void setCallResponse(
+                        boolean shouldDisallowCall,
                         boolean shouldRejectCall,
                         boolean shouldSilenceCall,
                         boolean shouldSkipCallLog,
                         boolean shouldSkipNotification) {
                     Log.i(TAG, "setCallResponse");
-                    mCallResponse = new CallScreeningService.CallResponse.Builder()
-                            .setSkipNotification(shouldSkipNotification)
-                            .setSkipCallLog(shouldSkipCallLog)
-                            .setDisallowCall(shouldDisallowCall)
-                            .setRejectCall(shouldRejectCall)
-                            .setSilenceCall(shouldSilenceCall)
-                            .build();
+                    mCallResponse =
+                            new CallScreeningService.CallResponse.Builder()
+                                    .setSkipNotification(shouldSkipNotification)
+                                    .setSkipCallLog(shouldSkipCallLog)
+                                    .setDisallowCall(shouldDisallowCall)
+                                    .setRejectCall(shouldRejectCall)
+                                    .setSilenceCall(shouldSilenceCall)
+                                    .build();
                 }
 
                 @Override
@@ -94,6 +97,11 @@ public class CallScreeningServiceControl extends Service {
                 public int getCachedDisconnectCause() {
                     return CtsPostCallActivity.getCachedDisconnectCause();
                 }
+
+                @Override
+                public boolean isBound() {
+                    return mIsBound;
+                }
             };
 
     private CallScreeningService.CallResponse mCallResponse =
@@ -114,6 +122,7 @@ public class CallScreeningServiceControl extends Service {
         if (CONTROL_INTERFACE_ACTION.equals(intent.getAction())) {
             Log.i(TAG, "onBind: returning control interface");
             sCallScreeningServiceControl = this;
+            mIsBound = true;
             return mControlInterface;
         }
         Log.i(TAG, "onBind: uh oh");
@@ -122,8 +131,11 @@ public class CallScreeningServiceControl extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.i(TAG, "onUnbind: call screening control interface");
         sCallScreeningServiceControl = null;
-        return false;
+        mIsBound = false;
+        super.onUnbind(intent);
+        return true; // true allows the service to stop when unbound for cleanup
     }
 
     public void onScreeningServiceBound() {

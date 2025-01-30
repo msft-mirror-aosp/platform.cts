@@ -132,6 +132,25 @@ public class AppControlWrapper {
 
     /**
      * This method requests the app that is bound to add a new call with the given callAttributes
+     * that is expected to fail. Instead, it verifies whether the onCreateOutgoingConnection
+     * callback is invoked. Note: This method is purely being used to verify MMI code deflection
+     * behavior for DSDA cases and verifies that the callback wasn't invoked.
+     */
+    public void addFailedCallWithCreateOutgoingConnectionVerify(
+            CallAttributes callAttributes) throws Exception {
+        Log.i(TAG, "addFailedCallWithCreateOutgoingConnectionVerify");
+        try {
+            NoDataTransaction transactionResult =
+                    mBinder.addFailedCallWithCreateOutgoingConnectionVerify(
+                            callAttributes);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
+     * This method requests the app that is bound to add a new call with the given callAttributes
      * that is expected to fail.
      */
     public void addFailedCall(CallAttributes callAttributes) throws Exception {

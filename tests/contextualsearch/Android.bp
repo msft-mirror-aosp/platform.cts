@@ -24,6 +24,7 @@ android_test {
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "com.android.window.flags.window-aconfig-java",
         "ctstestrunner-axt",
         "flag-junit",
         "platform-test-annotations",

@@ -267,6 +267,7 @@ public class TvInputServiceTest {
 
         @Override
         public void onVideoFreezeUpdated(String inputId, boolean isFrozen) {
+            super.onVideoFreezeUpdated(inputId, isFrozen);
             mVideoFrozenCount++;
             mVideoFrozen = isFrozen;
         }
@@ -1813,11 +1814,13 @@ public class TvInputServiceTest {
 
             @Override
             public void onResumePlayback() {
+                super.onResumePlayback();
                 mResumePlaybackCount++;
             }
 
             @Override
             public void onStopPlayback(int mode) {
+                super.onStopPlayback(mode);
                 mStopPlaybackCount++;
                 mPlaybackCommandMode = mode;
             }

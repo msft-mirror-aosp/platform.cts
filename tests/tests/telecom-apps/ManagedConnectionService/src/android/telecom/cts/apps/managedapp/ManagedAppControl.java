@@ -33,6 +33,7 @@ import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionFails;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
 import static android.telecom.cts.apps.WaitUntil.waitUntilIdIsSet;
+import static android.telecom.cts.apps.WaitUntil.waitUntilManagedCreateOutgoingConnectionInvoked;
 
 import android.app.Service;
 import android.content.Intent;
@@ -89,6 +90,11 @@ public class ManagedAppControl extends Service {
                 public ConnectionRequest getLastFailedRequest() {
                     return ManagedConnectionService.sLastFailedRequest;
                 }
+
+                @Override
+                public CountDownLatch getCreateOutgoingConnectionLatch() {
+                    return ManagedConnectionService.sCreateOutgoingConnectionLatch;
+                }
             };
 
     private final IBinder mBinder =
@@ -138,6 +144,8 @@ public class ManagedAppControl extends Service {
                                         PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
                         // clear out the last failed connection since it has been noted
                         ManagedConnectionService.sLastFailedRequest = null;
+                        ManagedConnectionService.sCreateOutgoingConnectionLatch =
+                                new CountDownLatch(1);
                         if (callAttributes.getAddress().equals(request.getAddress())) {
                             return new NoDataTransaction(TestAppTransaction.Success);
                         } else {
@@ -150,6 +158,51 @@ public class ManagedAppControl extends Service {
                                             + "matches request uri("
                                             + request.getAddress()
                                             + ") actual:<Failed Connection doesn't match URI>");
+                        }
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
+
+                @Override
+                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                        CallAttributes callAttributes) {
+                    Log.i(TAG, "addCallWithCreateOutgoingConnectionVerify: enter");
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        if (isOutgoing(callAttributes)) {
+                            mTelecomManager.placeCall(
+                                    callAttributes.getAddress(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        } else {
+                            mTelecomManager.addNewIncomingCall(
+                                    callAttributes.getPhoneAccountHandle(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        }
+                        boolean onCreateOutgoingConnectionInvoked =
+                                waitUntilManagedCreateOutgoingConnectionInvoked(
+                                        mConnectionServiceImpl);
+                        ManagedConnectionService.sCreateOutgoingConnectionLatch =
+                                new CountDownLatch(1);
+                        // signal to the test process the onCreateOutgoingConnection callback was
+                        // not fired.
+                        if (!onCreateOutgoingConnectionInvoked) {
+                            return new NoDataTransaction(TestAppTransaction.Success);
+                        } else {
+                            throw new TestAppException(
+                                    PACKAGE_NAME,
+                                    appendStackTraceList(
+                                            stackTrace,
+                                            CLASS_NAME
+                                                    + ".addFailedCallWithCreateOutgoing"
+                                                    + "ConnectionVerify"),
+                                    "expected:<onCreateOutgoingConnection should not be "
+                                            + "invoked> "
+                                            + "actual:<onCreateOutgoingConnection "
+                                            + "was invoked>");
                         }
                     } catch (TestAppException e) {
                         return new NoDataTransaction(TestAppTransaction.Failure, e);
@@ -224,6 +277,9 @@ public class ManagedAppControl extends Service {
                     mIdToConnection.put(id, connection);
                     // clear out the last connection since it has been added to tracking
                     ManagedConnectionService.sLastConnection = null;
+                    // also reset the onCreateOutgoingConnection latch so that it can properly be
+                    // tested when referenced
+                    ManagedConnectionService.sCreateOutgoingConnectionLatch = new CountDownLatch(1);
                 }
 
                 private void maybeClearHoldCapabilities(

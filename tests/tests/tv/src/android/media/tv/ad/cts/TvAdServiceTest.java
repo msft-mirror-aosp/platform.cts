@@ -106,6 +106,36 @@ public class TvAdServiceTest {
         private void resetValues() {
         }
 
+        @Override
+        public void onRequestCurrentVideoBounds(String serviceId) {
+            super.onRequestCurrentVideoBounds(serviceId);
+        }
+
+        @Override
+        public void onRequestCurrentChannelUri(String serviceId) {
+            super.onRequestCurrentChannelUri(serviceId);
+        }
+
+        @Override
+        public void onRequestTrackInfoList(String serviceId) {
+            super.onRequestTrackInfoList(serviceId);
+        }
+
+        @Override
+        public void onRequestCurrentTvInputId(String serviceId) {
+            super.onRequestCurrentTvInputId(serviceId);
+        }
+
+        @Override
+        public void onRequestSigning(
+                String serviceId, String signingId, String algorithm, String alias, byte[] data) {
+            super.onRequestSigning(serviceId, signingId, algorithm, alias, data);
+        }
+
+        @Override
+        public void onStateChanged(String serviceId, int state, int err) {
+            super.onStateChanged(serviceId, state, err);
+        }
     }
 
     public static class MockTvAdServiceCallBack extends TvAdManager.TvAdServiceCallback {

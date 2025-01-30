@@ -156,6 +156,7 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
                     || mCurrentRoutingSession == null
                     || !mCurrentRoutingSession.getSelectedRoutes().contains(routeId)) {
                 notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
+                return;
             }
             MediaRoute2Info newRoute = new MediaRoute2Info.Builder(route).setVolume(volume).build();
             mRoutes.put(routeId, newRoute);

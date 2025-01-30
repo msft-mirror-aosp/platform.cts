@@ -20,7 +20,6 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.telecom.Call;
 import android.telecom.CallScreeningService;
-
 import android.util.Log;
 
 /**
@@ -39,6 +38,13 @@ public class CtsCallScreeningService extends CallScreeningService {
         mCallScreeningServiceControl = CallScreeningServiceControl.getInstance();
         mCallScreeningServiceControl.onScreeningServiceBound();
         return super.onBind(intent);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.i(TAG, "onUnbind: unbinding the actual service");
+        super.onUnbind(intent);
+        return true; // true allows the service to stop when unbound for cleanup
     }
 
     @Override

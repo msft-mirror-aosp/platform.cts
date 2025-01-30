@@ -48,8 +48,7 @@ public class StickyBroadcastsTest extends BaseBroadcastTest {
             int testStatus = batteryStatus == BatteryManager.BATTERY_STATUS_CHARGING
                     ? BatteryManager.BATTERY_STATUS_DISCHARGING
                     : BatteryManager.BATTERY_STATUS_CHARGING;
-            runShellCmd("cmd battery set status %s", String.valueOf(testStatus));
-            waitForBatteryStatusChange(testStatus);
+            triggerAndWaitForBatteryStatusChange(testStatus);
             // Verify that sticky broadcast query returns the expected status.
             assertThat(testStatus).isEqualTo(getBatteryStatusFromBroadcast());
         } finally {
@@ -70,7 +69,7 @@ public class StickyBroadcastsTest extends BaseBroadcastTest {
         return batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS);
     }
 
-    private void waitForBatteryStatusChange(int expectedStatus) throws Exception {
+    private void triggerAndWaitForBatteryStatusChange(int expectedStatus) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         final IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         mContext.registerReceiver(new BroadcastReceiver() {
@@ -83,6 +82,8 @@ public class StickyBroadcastsTest extends BaseBroadcastTest {
                 }
             }
         }, filter);
+        runShellCmd("cmd battery set status %s", String.valueOf(expectedStatus));
+
         if (!latch.await(BROADCAST_RECEIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
             fail("Timed out waiting for the battery_changed broadcast");
         }

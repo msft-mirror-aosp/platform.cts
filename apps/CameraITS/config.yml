@@ -66,7 +66,7 @@ TestBeds:
             label: dut
     TestParams:
       debug_mode: "False"  # quotes are needed here
-      chart_distance: 25
+      chart_distance: 30
       rotator_cntl: gen2_rotator   # gen2 rig specific
       rotator_ch: <controller-channel>
       camera: <camera-id>

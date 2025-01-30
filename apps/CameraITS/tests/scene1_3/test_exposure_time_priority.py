@@ -40,7 +40,7 @@ _IMG_SAT_RTOL = 0.01  # 1%
 _IMG_STATS_GRID = 9  # Used to find the center 11.11%
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NS_TO_MS_FACTOR = 1.0E-6
-_CONTROL_AE_PRIORITY_MODE_EXPOSURE_TIME_PRIORITY = 2  # CameraMetadata enum value
+_CONTROL_AE_PRIORITY_MODE_EXPOSURE_TIME_PRIORITY = 2  # Cam Metadata enum value
 
 
 def create_test_exposure_list(e_min, e_max):
@@ -136,6 +136,7 @@ def assert_increasing_means(means, exps, black_levels, white_level):
   if not image_increasing:
     raise AssertionError('Image does not increase with exposure!')
 
+
 def ae_exposure_time_priority_capture_request(exp_time):
   """Returns a capture request enabling exposure time AE priority mode.
 
@@ -158,11 +159,9 @@ def ae_exposure_time_priority_capture_request(exp_time):
 
 
 class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
-  """Capture RAW images with increasing exp time in exp time priority mode and
-     measure pixel values."""
+  """Capture RAW images in exp time priority mode & measure pixel values."""
 
   def test_exposure_time_priority(self):
-    logging.debug('Starting %s', _NAME)
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id,
@@ -192,7 +191,9 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
       e_test_ms = [e*_NS_TO_MS_FACTOR for e in e_test]
 
       # Capture with rawStats to reduce capture times
-      fmt = its_session_utils.define_raw_stats_fmt_exposure(props, _IMG_STATS_GRID)
+      fmt = its_session_utils.define_raw_stats_fmt_exposure(
+          props, _IMG_STATS_GRID
+      )
 
       white_level = float(props['android.sensor.info.whiteLevel'])
       black_levels = image_processing_utils.get_black_levels(props)
@@ -205,24 +206,25 @@ class ExposureTimePriorityTest(its_base_test.ItsBaseTest):
 
       # Eliminate burst len==1. Error because returns [[]], not [{}, ...]
       while len(reqs) % burst_len == 1:
-          burst_len -= 1
+        burst_len -= 1
 
       # Break caps into bursts
       for i in range(len(reqs) // burst_len):
-          caps += cam.do_capture(reqs[i*burst_len:(i+1)*burst_len], fmt)
+        caps += cam.do_capture(reqs[i*burst_len:(i+1)*burst_len], fmt)
       last_n = len(reqs) % burst_len
       if last_n:
-          caps += cam.do_capture(reqs[-last_n:], fmt)
+        caps += cam.do_capture(reqs[-last_n:], fmt)
 
       # Extract means for each capture
       means = []
       means.append(black_levels)
       for i, cap in enumerate(caps):
-          mean_image, _ = image_processing_utils.unpack_rawstats_capture(cap)
-          mean = mean_image[_IMG_STATS_GRID // 2, _IMG_STATS_GRID // 2]
-          logging.debug('exp_time=%.3fms, mean=%s',
-            (e_test[i] * _NS_TO_MS_FACTOR), mean)
-          means.append(mean)
+        mean_image, _ = image_processing_utils.unpack_rawstats_capture(cap)
+        mean = mean_image[_IMG_STATS_GRID // 2, _IMG_STATS_GRID // 2]
+        logging.debug(
+            'exp_time=%.3fms, mean=%s', (e_test[i] * _NS_TO_MS_FACTOR), mean
+        )
+        means.append(mean)
 
       # Create plot
       create_plot(e_test_ms, means, log_path)

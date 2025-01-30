@@ -162,11 +162,13 @@ public class StubTvAdService extends TvAdService {
 
         @Override
         public void onStartAdService() {
+            super.onStartAdService();
             mStartAdServiceCount++;
         }
 
         @Override
         public void onStopAdService() {
+            super.onStopAdService();
             mStopAdServiceCount++;
         }
 
@@ -257,7 +259,7 @@ public class StubTvAdService extends TvAdService {
 
         @Override
         public boolean onKeyMultiple(int keyCode, int repeatCnt, KeyEvent event) {
-            super.onKeyDown(keyCode, event);
+            super.onKeyMultiple(keyCode, repeatCnt, event);
             mKeyMultipleCount++;
             mKeyMultipleCode = keyCode;
             mKeyMultipleEvent = event;
@@ -316,6 +318,26 @@ public class StubTvAdService extends TvAdService {
             mOnTvInputSessionDataCount++;
             mOnTvInputSessionDataType = type;
             mOnTvInputSessionDataBundle = bundle;
+        }
+
+        @Override
+        public void requestCurrentChannelUri() {
+            super.requestCurrentChannelUri();
+        }
+
+        @Override
+        public void requestCurrentTvInputId() {
+            super.requestCurrentTvInputId();
+        }
+
+        @Override
+        public void notifySessionStateChanged(int state, int err) {
+            super.notifySessionStateChanged(state, err);
+        }
+
+        @Override
+        public void onSurfaceChanged(int format, int width, int height) {
+            super.onSurfaceChanged(format, width, height);
         }
     }
 }

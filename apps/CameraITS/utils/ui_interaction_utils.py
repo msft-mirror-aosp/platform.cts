@@ -673,12 +673,13 @@ def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
     )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
-    if zoom_ratio is not None:
-      jca_ui_zoom(dut, zoom_ratio, log_path)
     change_jca_aspect_ratio(dut, log_path,
                             aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
     if video_stabilization is not None:
       _set_jca_video_stabilization(dut, log_path, video_stabilization)
+    # Set zoom_ratio after setting video stabilization to avoid reset to default
+    if zoom_ratio is not None:
+      jca_ui_zoom(dut, zoom_ratio, log_path)
     # Take dumpsys before capturing the image
     take_dumpsys_report(dut, file_path=DEFAULT_JCA_UI_DUMPSYS_PATH)
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
