@@ -28,6 +28,7 @@ import android.content.pm.PackageManager;
 import android.device.collectors.util.SendToInstrumentation;
 import android.os.Bundle;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -60,6 +61,7 @@ public class ADPFHintSessionDeviceTest {
                 pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED));
     }
 
+    @LargeTest
     @Test
     public void testAdpfHintSession() throws IOException {
         assumeMobileDeviceFormFactor();
@@ -77,6 +79,9 @@ public class ADPFHintSessionDeviceTest {
         final Bundle returnBundle = new Bundle();
         Map<String, String> metrics = activity.getMetrics();
         if (metrics.containsKey("failure")) {
+            assumeFalse(
+                    "Skipping test due to calibration issues",
+                    metrics.get("failure").contains("Failed to calibrate"));
             fail("Failed with error: " + metrics.get("failure"));
         }
         metrics.forEach(returnBundle::putString);

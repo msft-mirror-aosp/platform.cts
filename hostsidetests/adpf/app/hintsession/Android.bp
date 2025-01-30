@@ -20,14 +20,8 @@ cc_test_library {
     name: "libadpfhintsession_test_helper_jni",
     min_sdk_version: "34",
     srcs: [
-        "src/cpp/AndroidOut.cpp",
-        "src/cpp/JNIManager.cpp",
-        "src/cpp/main.cpp",
-        "src/cpp/Renderer.cpp",
-        "src/cpp/Shader.cpp",
-        "src/cpp/TextureAsset.cpp",
-        "src/cpp/Utility.cpp",
-        "src/cpp/external/android_native_app_glue.c",
+        "src/cpp/**/*.cpp",
+        "src/cpp/**/*.c",
     ],
     shared_libs: [
         "libandroid",
@@ -40,7 +34,6 @@ cc_test_library {
     ],
     cpp_std: "c++20",
     stl: "c++_shared",
-    whole_static_libs: ["libnativetesthelper_jni"],
     sdk_version: "current",
 }
 

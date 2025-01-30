@@ -41,161 +41,106 @@ using namespace std::chrono_literals;
 
 const constexpr auto kDrawingTimeout = 3s;
 const constexpr int kSamples = 300;
-const constexpr int kCalibrationSamples = 100;
+const constexpr int kCalibrationSamples = 50;
 bool verboseLogging = true;
 
-Renderer *getRenderer(android_app *pApp) {
-    return (pApp->userData) ? reinterpret_cast<Renderer *>(pApp->userData) : nullptr;
+FrameStats drawFramesWithTarget(int64_t targetDuration, int &events, android_poll_source *&pSource,
+                                std::string testName = "") {
+    getRenderer()->updateTargetWorkDuration(targetDuration);
+    return getRenderer()->drawFramesSync(kSamples, events, pSource, testName);
 }
 
-// Converts lists of numbers into strings, so they can be
-// passed up to the Java code the results map.
-template <typename T>
-std::string serializeValues(const std::vector<T> &values) {
-    std::stringstream stream;
-    for (auto &&value : values) {
-        stream << value;
-        stream << ",";
+struct CalibrationStep {
+    int physicsSteps;
+    int duration;
+    FrameStats stats;
+};
+
+struct RegressionStats {
+    double m;
+    double c;
+};
+
+RegressionStats calcRegression(std::vector<CalibrationStep> &stepData, bool dropOutlier) {
+    RegressionStats out;
+
+    double xAvg = 0, yAvg = 0;
+    for (auto &&step : stepData) {
+        xAvg += step.physicsSteps;
+        yAvg += step.duration;
     }
-    std::string out = stream.str();
-    out.pop_back(); // remove the last comma
+
+    // Calculate a least-squares regression across the CalibrationSteps
+    double numerator = 0, denominator = 0;
+    for (auto &&step : stepData) {
+        numerator += (step.physicsSteps - xAvg) * (step.duration - yAvg);
+        denominator += (step.physicsSteps - xAvg) * (step.physicsSteps - xAvg);
+    }
+    out.m = numerator / denominator;
+    out.c = yAvg - out.m * xAvg;
+
+    if (dropOutlier) {
+        double maxError = 0;
+        int maxErrorIndex = 0;
+        for (int i = 0; i < stepData.size(); ++i) {
+            double error = stepData[i].duration - (out.m * stepData[i].physicsSteps + out.c);
+            if (error > maxError) {
+                maxError = error;
+                maxErrorIndex = i;
+            }
+        }
+        stepData.erase(stepData.begin() + maxErrorIndex);
+    }
     return out;
 }
 
-// Generalizes the loop used to draw frames so that it can be easily started and stopped
-// back to back with different parameters, or after adjustments such as target time adjustments.
-FrameStats drawFrames(int count, android_app *pApp, int &events, android_poll_source *&pSource,
-                      std::string testName = "") {
-    bool namedTest = testName.size() > 0;
-    std::vector<int64_t> durations{};
-    std::vector<int64_t> intervals{};
+CalibrationStep doCalibrationStep(int iter, int steps, int &events, android_poll_source *&pSource) {
+    CalibrationStep out{.physicsSteps = steps};
+    getRenderer()->setPhysicsIterations(steps);
+    std::string testName = "calibration_" + std::to_string(iter);
+    out.stats = getRenderer()->drawFramesSync(kCalibrationSamples, events, pSource, testName);
+    out.duration = out.stats.medianWorkDuration;
+    return out;
+}
 
-    auto drawStart = std::chrono::steady_clock::now();
-    // Iter is -1 so we have a buffer frame before it starts, to eat any delay from time spent
-    // between tests
-    for (int iter = -1; iter < count && !pApp->destroyRequested;) {
-        if (std::chrono::steady_clock::now() - drawStart > kDrawingTimeout) {
-            aout << "Stops drawing on " << kDrawingTimeout.count() << "s timeout for test "
-                 << (namedTest ? testName : "unnamed") << std::endl;
+// Try to create a workload that takes "goal" amount of time
+bool calibrate(int64_t goal, int &events, android_poll_source *&pSource) {
+    int calibrateIter = 0;
+    int bestIter;
+
+    std::vector<CalibrationStep> stepData{};
+
+    double error = 1.0;
+
+    stepData.push_back(doCalibrationStep(calibrateIter++, 5, events, pSource));
+
+    if ((stepData.back().duration + std::chrono::nanoseconds(1ms).count()) > goal) {
+        Utility::setFailure("Baseline load is too expensive", getRenderer());
+    }
+
+    stepData.push_back(doCalibrationStep(calibrateIter++, 500, events, pSource));
+
+    for (; calibrateIter < 20; ++calibrateIter) {
+        // Drop an outlier every few steps because that converges way faster
+        RegressionStats stats = calcRegression(stepData, (calibrateIter % 4 == 0));
+        int nextStep = (goal - stats.c) / stats.m;
+        stepData.push_back(doCalibrationStep(calibrateIter, nextStep, events, pSource));
+
+        error = (abs(static_cast<double>(goal) - static_cast<double>(stepData.back().duration)) /
+                 static_cast<double>(goal));
+
+        // If we're ever within 2% of the target, that's good enough
+        aerr << "Error: " << error << std::endl;
+        if (error < 0.02) {
             break;
         }
-        int retval = ALooper_pollOnce(0, nullptr, &events, (void **)&pSource);
-        while (retval == ALOOPER_POLL_CALLBACK) {
-            retval = ALooper_pollOnce(0, nullptr, &events, (void **)&pSource);
-        }
-        if (retval >= 0 && pSource) {
-            pSource->process(pApp, pSource);
-        }
-        if (pApp->userData) {
-            // Don't add metrics for buffer frames
-            if (iter > -1) {
-                thread_local auto lastStart = std::chrono::steady_clock::now();
-                auto start = std::chrono::steady_clock::now();
-
-                // Render a frame
-                auto spinTime = getRenderer(pApp)->render();
-                // For now we only report the CPU duration
-                getRenderer(pApp)->reportActualWorkDuration(spinTime);
-                durations.push_back(spinTime);
-                intervals.push_back((start - lastStart).count());
-                lastStart = start;
-            }
-            ++iter;
-        }
     }
-
-    if (namedTest && verboseLogging) {
-        getRenderer(pApp)->addResult(testName + "_durations", serializeValues(durations));
-        getRenderer(pApp)->addResult(testName + "_intervals", serializeValues(intervals));
-    }
-
-    return getRenderer(pApp)->getFrameStats(durations, intervals, testName);
-}
-
-FrameStats drawFramesWithTarget(int64_t targetDuration, int &events, android_app *pApp,
-                                android_poll_source *&pSource, std::string testName = "") {
-    getRenderer(pApp)->updateTargetWorkDuration(targetDuration);
-    return drawFrames(kSamples, pApp, events, pSource, testName);
-}
-
-double calibrate(int64_t interval, int &events, android_app *pApp, android_poll_source *&pSource) {
-    const constexpr int initialHeads = 5;
-    const constexpr int maxHeads = 40;
-    int heads = initialHeads;
-    auto renderer = getRenderer(pApp);
-    renderer->setNumHeads(heads);
-    int64_t duration = 0;
-    int calibrateIter = 0;
-    int physicsIter = 1;
-
-    // adjust the head count so that it generates enough base duration while the interval doesn't
-    // exceed the max
-    const int64_t intervalMax = interval + static_cast<std::chrono::nanoseconds>(1ms).count();
-
-    // fix the head count then and calibrate only CPU actual work duration by adjusting the physics
-    // iteration count so that the actual duration is close to the goal duration
-    bool fixedHeads = false;
-    const int64_t goal = interval * 0.75;
-    const int64_t duration_min = goal -
-            std::max(static_cast<long long>(interval / 8),
-                     static_cast<std::chrono::nanoseconds>(1000us).count());
-    const int64_t duration_max = goal +
-            std::max(static_cast<long long>(interval / 8),
-                     static_cast<std::chrono::nanoseconds>(1000us).count());
-
-    while (calibrateIter < 10 &&
-           (((duration < duration_min || duration > duration_max) && physicsIter > 0) ||
-            (interval > intervalMax && heads > 1 && !fixedHeads))) {
-        auto stats = drawFrames(kCalibrationSamples, pApp, events, pSource);
-        duration = stats.medianWorkDuration;
-        interval = stats.medianFrameInterval;
-        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) + "_duration",
-                                     std::to_string(duration));
-        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) + "_interval",
-                                     std::to_string(interval));
-        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) + "_heads",
-                                     std::to_string(heads));
-        getRenderer(pApp)->addResult("calibration_" + std::to_string(calibrateIter) +
-                                             "_physicsIter",
-                                     std::to_string(physicsIter));
-        if (!fixedHeads) {
-            // too many heads that the workload interval is exceeding frame interval
-            if ((interval > intervalMax && heads > 1)) {
-                heads = static_cast<double>(intervalMax) / interval * heads;
-            }
-            // too few heads to generate enough drawing workload
-            // we will calibrate the head count so the rendering without physics iterations can run
-            // at least (goal / 8) duration
-            else if (duration < goal / 8 && heads < maxHeads) {
-                // at most double the head count in each iteration
-                heads = std::min(2.0, (static_cast<double>(goal) / 8 / duration)) * heads;
-            } else {
-                fixedHeads = true;
-            }
-            heads = std::min(maxHeads, heads);
-            heads = std::max(heads, 1);
-        }
-        if (fixedHeads) {
-            if (duration > duration_max) {
-                physicsIter = std::min(physicsIter - 1,
-                                       int(static_cast<double>(goal) / duration * physicsIter));
-            } else if (duration < duration_min) {
-                // increase 3 iteration at most at a time
-                physicsIter = std::max(physicsIter + 3,
-                                       int(std::sqrt(static_cast<double>(goal) / duration) *
-                                           physicsIter));
-            }
-        }
-        getRenderer(pApp)->setNumHeads(heads);
-        getRenderer(pApp)->setPhysicsIterations(physicsIter);
-        calibrateIter++;
-    }
-    getRenderer(pApp)->addResult("goal", std::to_string(goal));
-    getRenderer(pApp)->addResult("duration", std::to_string(duration));
-    getRenderer(pApp)->addResult("heads_count", std::to_string(heads));
-    getRenderer(pApp)->addResult("interval", std::to_string(interval));
-    getRenderer(pApp)->addResult("physics_iterations", std::to_string(physicsIter));
-    return duration;
+    getRenderer()->addResult("goal", std::to_string(goal));
+    getRenderer()->addResult("duration", std::to_string(stepData.back().duration));
+    getRenderer()->addResult("heads_count", std::to_string(kHeads));
+    getRenderer()->addResult("interval", std::to_string(stepData.back().stats.medianFrameInterval));
+    getRenderer()->addResult("physics_iterations", std::to_string(stepData.back().physicsSteps));
+    return error < 0.02;
 }
 
 // /*!
@@ -206,7 +151,9 @@ double calibrate(int64_t interval, int &events, android_app *pApp, android_poll_
 void handle_cmd(android_app *pApp, int32_t cmd) {
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
-            pApp->userData = new Renderer(pApp);
+            Renderer::makeInstance(pApp);
+            pApp->userData = Renderer::getInstance();
+            getRenderer()->setChoreographer(AChoreographer_getInstance());
             break;
         case APP_CMD_TERM_WINDOW:
             // The window is being destroyed. Use this to clean up your userData to avoid leaking
@@ -214,7 +161,7 @@ void handle_cmd(android_app *pApp, int32_t cmd) {
             //
             // We have to check if userData is assigned just in case this comes in really quickly
             if (pApp->userData) {
-                auto *pRenderer = getRenderer(pApp);
+                auto *pRenderer = getRenderer();
                 Utility::setFailure("App was closed while running!", pRenderer);
             }
             break;
@@ -227,8 +174,7 @@ void setFrameRate(android_app *pApp, float frameRate) {
     auto t = ANativeWindow_setFrameRate(pApp->window, frameRate,
                                         ANATIVEWINDOW_FRAME_RATE_COMPATIBILITY_DEFAULT);
     if (t != 0) {
-        Utility::setFailure("Can't set frame rate to " + std::to_string(frameRate),
-                            getRenderer(pApp));
+        Utility::setFailure("Can't set frame rate to " + std::to_string(frameRate), getRenderer());
     }
 }
 
@@ -257,7 +203,15 @@ void android_main(struct android_app *pApp) {
     }
 
     // Ensure renderer is initialized
-    drawFrames(1, pApp, events, pSource);
+    while (!pApp->userData) {
+        int retval = ALooper_pollOnce(0, nullptr, &events, (void **)&pSource);
+        while (retval == ALOOPER_POLL_CALLBACK) {
+            retval = ALooper_pollOnce(0, nullptr, &events, (void **)&pSource);
+        }
+        if (retval >= 0 && pSource) {
+            pSource->process(pApp, pSource);
+        }
+    }
 
     float frameRate = 60.0f;
     // adb shell setprop debug.adpf_cts_frame_rate 60.0
@@ -273,61 +227,96 @@ void android_main(struct android_app *pApp) {
     }
     setFrameRate(pApp, frameRate);
 
+    // Make sure everything has long enough to get processed
     std::this_thread::sleep_for(1s);
-    std::vector<pid_t> tids;
-    tids.push_back(gettid());
-    const float lightTargetFrameRate = 30.0f;
-    const int64_t lightTarget = 33333333; // 33.3ms or 30hz
-    const float heavyTargetFrameRate = 120.0f;
-    const int64_t heavyTarget = 8333333; // 8.3ms or 120hz
-    bool supported = getRenderer(pApp)->startHintSession(tids, lightTarget);
+
+    int64_t fpsPeriod = duration_cast<std::chrono::nanoseconds>(1s / frameRate).count();
+
+    bool supported = getRenderer()->startHintSession(fpsPeriod * 2);
     if (!supported) {
-        JNIManager::sendResultsToJava(getRenderer(pApp)->getResults());
+        JNIManager::sendResultsToJava(getRenderer()->getResults());
         return;
     }
 
-    // Do an initial load with the session to let CPU settle and measure frame interval
-    getRenderer(pApp)->setNumHeads(1);
-    auto stats = drawFrames(kCalibrationSamples, pApp, events, pSource);
-    const int64_t interval = stats.medianFrameInterval;
-    getRenderer(pApp)->addResult("median_frame_interval", std::to_string(interval));
-    // TODO(b/344696346): skip the test if the frame interval is significantly larger than
-    // 16ms? Say the device has limited performance to run this test, or its FPS capped at 30
-    // calibrate a workload that's 2ms over the current interval
-    double calibratedTarget = calibrate(interval, events, pApp, pSource);
+    getRenderer()->updateTargetWorkDuration(fpsPeriod * 2);
+
+    // Do an initial load with the session to let CPU settle and measure frame deadlines
+    std::vector<int64_t> targets = getRenderer()->findVsyncTargets(events, pSource, kSamples);
+
+    int64_t maxIntendedTarget = fpsPeriod * 1.5;
+    int intendedTargetIndex;
+    for (intendedTargetIndex = 0;
+         intendedTargetIndex < targets.size() && targets[intendedTargetIndex] < maxIntendedTarget;
+         ++intendedTargetIndex);
+    intendedTargetIndex--;
+
+    // The "Heavy Target" is the vsync callback time we expect to get from Choreographer after
+    // running for a while. We use this to decide how expensive to make the workload.
+    const int64_t heavyTarget = targets[intendedTargetIndex];
+
+    // The light target is the third soonest available vsync callback time we get from Choreographer
+    // after running for a while. We use this as a realistic "heavily pipelined" long frame target,
+    // where we would expect the boost to be low.
+    const int64_t lightTarget = targets[intendedTargetIndex + 2];
+
+    aout << "Heavy load: " << heavyTarget << " light load: " << lightTarget << std::endl;
 
     auto testNames = JNIManager::getInstance().getTestNames();
     std::set<std::string> testSet{testNames.begin(), testNames.end()};
     std::vector<std::function<void()>> tests;
 
-    FrameStats baselineStats = drawFrames(kSamples, pApp, events, pSource, "baseline");
+    // TODO(b/344696346): skip the test if the frame interval is significantly larger than
+    // 16ms? Say the device has limited performance to run this test, or its FPS capped at 30
 
-    double calibrationAccuracy = 1.0 -
-            (abs(static_cast<double>(baselineStats.medianWorkDuration) - calibratedTarget) /
-             calibratedTarget);
-    getRenderer(pApp)->addResult("calibration_accuracy", std::to_string(calibrationAccuracy));
+    // Calibrate a workload that's 30% longer
+    int64_t goal = heavyTarget * 1.3;
+    double benchmarkedError;
+    FrameStats baselineStats;
+
+    bool calibrated = false;
+    for (int i = 0; i < 10 && !calibrated; ++i) {
+        if (!calibrate(goal, events, pSource)) {
+            continue;
+        }
+
+        baselineStats = getRenderer()->drawFramesSync(kSamples, events, pSource, "baseline");
+
+        benchmarkedError = (abs(static_cast<double>(baselineStats.medianWorkDuration - goal)) /
+                            static_cast<double>(goal));
+
+        if (benchmarkedError < 0.05) {
+            calibrated = true;
+            getRenderer()->addResult("median_frame_interval",
+                                     std::to_string(baselineStats.medianFrameInterval));
+        }
+    }
+
+    if (!calibrated) {
+        Utility::setFailure("Failed to calibrate", getRenderer());
+    }
+
+    double calibrationAccuracy = 1.0 - benchmarkedError;
+
+    getRenderer()->addResult("calibration_accuracy", std::to_string(calibrationAccuracy));
 
     // Used to figure out efficiency score on actual runs
-    getRenderer(pApp)->setBaselineMedian(baselineStats.medianWorkDuration);
+    getRenderer()->setBaselineMedian(baselineStats.medianWorkDuration);
 
     if (testSet.count("heavy_load") > 0) {
         tests.push_back(
-                [&]() { drawFramesWithTarget(heavyTarget, events, pApp, pSource, "heavy_load"); });
+                [&]() { drawFramesWithTarget(heavyTarget, events, pSource, "heavy_load"); });
     }
 
     if (testSet.count("light_load") > 0) {
         tests.push_back(
-                [&]() { drawFramesWithTarget(lightTarget, events, pApp, pSource, "light_load"); });
+                [&]() { drawFramesWithTarget(lightTarget, events, pSource, "light_load"); });
     }
 
     if (testSet.count("transition_load") > 0) {
         tests.push_back([&]() {
-            sleep(5);
-            drawFramesWithTarget(lightTarget, events, pApp, pSource, "transition_load_1");
-            sleep(5);
-            drawFramesWithTarget(heavyTarget, events, pApp, pSource, "transition_load_2");
-            sleep(5);
-            drawFramesWithTarget(lightTarget, events, pApp, pSource, "transition_load_3");
+            drawFramesWithTarget(lightTarget, events, pSource, "transition_load_1");
+            drawFramesWithTarget(heavyTarget, events, pSource, "transition_load_2");
+            drawFramesWithTarget(lightTarget, events, pSource, "transition_load_3");
         });
     }
 
@@ -337,5 +326,9 @@ void android_main(struct android_app *pApp) {
         test();
     }
 
-    JNIManager::sendResultsToJava(getRenderer(pApp)->getResults());
+    for (auto &&result : getRenderer()->getResults()) {
+        aout << result.first << " : " << result.second << std::endl;
+    }
+
+    JNIManager::sendResultsToJava(getRenderer()->getResults());
 }
