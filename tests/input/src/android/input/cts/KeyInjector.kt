@@ -16,22 +16,21 @@
 
 package android.input.cts
 
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
+import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import com.android.cts.input.UinputDevice
-
-private const val EV_KEY = 1
-private const val KEY_DOWN = 1
-private const val KEY_UP = 0
-private const val EV_SYN = 0
-private const val SYN_REPORT = 0
 
 fun injectEvents(device: UinputDevice, events: IntArray) {
     device.injectEvents(events.joinToString(prefix = "[", postfix = "]", separator = ","))
 }
 
 fun injectKeyDown(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(EV_KEY, scanCode, KEY_DOWN, EV_SYN, SYN_REPORT, 0))
+    injectEvents(device, intArrayOf(EV_KEY, scanCode, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0))
 }
 
 fun injectKeyUp(device: UinputDevice, scanCode: Int) {
-    injectEvents(device, intArrayOf(EV_KEY, scanCode, KEY_UP, EV_SYN, SYN_REPORT, 0))
+    injectEvents(device, intArrayOf(EV_KEY, scanCode, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0))
 }

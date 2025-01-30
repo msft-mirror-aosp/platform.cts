@@ -27,6 +27,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_A
 import com.android.cts.input.UinputKeyboard
 import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_SLOW_KEYS_FLAG
 import org.junit.After
@@ -44,7 +45,6 @@ import org.junit.runner.RunWith
 class A11ySlowKeysTest {
 
     companion object {
-        const val KEY_A = 30
         const val THRESHOLD_MILLIS = 500
         const val A11Y_SETTINGS_PROPAGATE_TIME_MILLIS: Long = 100
     }

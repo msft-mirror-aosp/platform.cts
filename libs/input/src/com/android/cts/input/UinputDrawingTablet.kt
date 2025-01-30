@@ -19,8 +19,9 @@ package com.android.cts.input
 import android.app.Instrumentation
 import android.view.Display
 import android.view.InputDevice
-import com.android.cts.input.UinputTouchDevice.Companion.MT_TOOL_FINGER
-import com.android.cts.input.UinputTouchDevice.Companion.MT_TOOL_PALM
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_FINGER
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PEN
 
 /**
  * Warning! The configuration of the drawing tablet used here is not the best way of emulating an
