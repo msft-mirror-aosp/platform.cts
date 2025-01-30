@@ -75,7 +75,6 @@ cc_test_library {
     ldflags: [
         "-uANativeActivity_onCreate",
     ],
-    compile_multilib: "first",
     stl: "c++_shared",
     sdk_version: "current",
 }
@@ -94,7 +93,6 @@ android_test_helper_app {
         "libctsgraphicsgpuprofiling_jni",
     ],
     asset_dirs: ["assets"],
-    compile_multilib: "first",
     use_embedded_native_libs: false,
     stl: "c++_shared",
 }
