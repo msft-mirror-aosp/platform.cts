@@ -19,6 +19,10 @@ package android.mediav2.cts;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.media.MediaCodecInfo.CodecProfileLevel.*;
+import static android.media.codec.Flags.apvSupport;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -518,6 +522,46 @@ public class EncoderProfileLevelTest extends EncoderProfileLevelTestBase {
         for (Object[] arg : mpeg4AdvSimpleProfileArgsList) {
             argsList.addAll(prepareTestArgs(arg, new int[]{MPEG4ProfileAdvancedSimple},
                     COLOR_FormatYUV420Flexible));
+        }
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            final Object[][] apvProfileArgsList = new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 7000000, 352, 288, 30, APVLevel1Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 11000000, 352, 288, 30, APVLevel1Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 14000000, 352, 288, 30, APVLevel1Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 21000000, 352, 288, 30, APVLevel1Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 14000000, 704, 576, 15, APVLevel11Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 21000000, 704, 576, 15, APVLevel11Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 28000000, 704, 576, 15, APVLevel11Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 42000000, 704, 576, 15, APVLevel11Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 36000000, 640, 360, 30, APVLevel2Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 53000000, 640, 360, 30, APVLevel2Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 71000000, 640, 360, 30, APVLevel2Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 106000000, 640, 360, 30, APVLevel2Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 71000000, 1280, 720, 30, APVLevel21Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 106000000, 1280, 720, 30, APVLevel21Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 141000000, 1280, 720, 30, APVLevel21Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 212000000, 1280, 720, 30, APVLevel21Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 101000000, 1920, 1080, 30, APVLevel3Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 151000000, 1920, 1080, 30, APVLevel3Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 201000000, 1920, 1080, 30, APVLevel3Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 301000000, 1920, 1080, 30, APVLevel3Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 201000000, 1408, 1152, 60, APVLevel31Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 301000000, 1408, 1152, 60, APVLevel31Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 401000000, 1408, 1152, 60, APVLevel31Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 602000000, 1408, 1152, 60, APVLevel31Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 401000000, 4096, 2160, 30, APVLevel4Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 602000000, 4096, 2160, 30, APVLevel4Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 780000000, 4096, 2160, 30, APVLevel4Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 1170000000, 4096, 2160, 30, APVLevel4Band3},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 780000000, 3840, 2160, 60, APVLevel41Band0},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 1170000000, 3840, 2160, 60, APVLevel41Band1},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 1560000000, 3840, 2160, 60, APVLevel41Band2},
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 1560000000, 8192, 4320, 30, APVLevel5Band0},
+            };
+            for (Object[] arg : apvProfileArgsList) {
+                argsList.addAll(prepareTestArgs(arg, new int[]{APVProfile422_10},
+                        COLOR_FormatYUVP010));
+            }
         }
         return prepareParamList(argsList, isEncoder, needAudio, needVideo, false);
     }
