@@ -4977,6 +4977,20 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Use the Back button to return to this page.
     </string>
+    <string name="device_owner_disallow_user_switch_info" product="automotive">
+        Press \'Create uninitialized user\' to create a user that is not setup.
+        Then press \'Set restriction\' button to set the user restriction.
+        Then press \'Go\' to open \'Users\' settings.
+        In Quick Settings, confirm that user switcher is hidden or disabled.\n
+        \n
+        The following steps apply only if the created user is visible on Users page. Confirm that:\n
+        \n
+        - Pressing on managed user opens user details page.\n
+        - \"Switch to managed user\" is disabled\n
+        - Tapping \"Switch to managed user\" shows a \"Blocked by work policy\" dialog.\n
+        \n
+        Use the Back button to return to this page.
+    </string>
     <string name="device_owner_disallow_user_switch_create_user">Create uninitialized user</string>
 
     <string name="device_owner_user_switcher_message">User switcher message</string>
