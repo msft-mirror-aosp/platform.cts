@@ -24,6 +24,7 @@ import static android.mediav2.cts.AdaptivePlaybackTest.getSupportedFiles;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.RHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.compareResources;
+import static android.mediav2.cts.CodecResourceUtils.computeConsumption;
 import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
 
@@ -72,7 +73,6 @@ import java.util.function.BiFunction;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
-import java.util.Vector;
 
 /**
  * Helper class for running mediacodec in asynchronous mode with resource tracking enabled. All
@@ -119,6 +119,9 @@ class CodecAsyncHandlerResource extends CodecAsyncHandler {
 public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = VideoDecoderAvailabilityTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    // Minimum threshold for resource consumption of a codec for a given performance point.
+    // The test expects the resource consumption to be at least this value.
+    static final int MIN_UTILIZATION_THRESHOLD = 60;
     private static List<CodecResource> GLOBAL_AVBL_RESOURCES;
 
     private final String[] mSrcFiles;
@@ -306,7 +309,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 "getRequiredResources() succeeded in released state \n" + mTestEnv + mTestConfig);
     }
 
-    private static Size estimateVideoSizeFromPerformancePoint(PerformancePoint pp) {
+    static Size estimateVideoSizeFromPerformancePoint(PerformancePoint pp) {
         final Size SUBQCIF = new Size(128, 96);
         final Size QCIF = new Size(176, 144);
         final Size SD144P = new Size(256, 144);
@@ -450,6 +453,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         int numInstances;
         List<CodecResource> lastGlobalResources = getCurrentGlobalCodecResources();
         List<CodecResource> currentGlobalResources;
+        MediaFormat lastFormat = null;
+        MediaFormat currentFormat = null;
+        List<CodecResource> lastGlobalResourceForFormat = lastGlobalResources;
+        List<CodecResource> currentGlobalResourcesForFormat = null;
         StringBuilder testLogs = new StringBuilder();
         int maxInstances = getMaxCodecInstances(codecName, mediaType);
         for (List<MediaFormat> formats : testableFormats) {
@@ -481,6 +488,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                                     + " available \n" + testLogs + mTestEnv + mTestConfig,
                             LHS_RESOURCE_GE, result);
                     lastGlobalResources = currentGlobalResources;
+                    if (numInstances == 1) {
+                        currentGlobalResourcesForFormat = currentGlobalResources;
+                        currentFormat = configFormat;
+                    }
                 } catch (InterruptedException e) {
                     Assert.fail("Got unexpected InterruptedException " + e.getMessage());
                 } catch (IllegalArgumentException e) {
@@ -524,6 +535,15 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             }
             surfaces.clear();
             codecs.clear();
+            if (currentGlobalResourcesForFormat != null) {
+                int result = compareResources(lastGlobalResourceForFormat,
+                        currentGlobalResourcesForFormat, testLogs);
+                Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
+                        + " is expected to consume more resources than format : " + currentFormat
+                        + testLogs + mTestEnv + mTestConfig, LHS_RESOURCE_GE, result);
+                lastGlobalResourceForFormat = currentGlobalResourcesForFormat;
+                lastFormat = currentFormat;
+            }
         }
     }
 
@@ -617,6 +637,58 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                             + " number of files tried in apb test. exp >= %d, got %d \n",
                     resFiles.size(),
                     asyncHandleResource.getResourceChangeCbCount()) + mTestEnv + mTestConfig);
+        }
+    }
+
+    /**
+     * Tests the resource consumption of a codec for various advertised performance points.
+     * This test iterates through the supported performance points of a given codec,
+     * configures the codec with a video format corresponding to each performance point,
+     * starts the codec, and measures the resource consumption. It checks if the consumption
+     * meets a minimum threshold.
+     */
+    @LargeTest
+    @VsrTest(requirements = {"VSR-4.1-002"})
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
+    @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
+            "android.media.MediaCodec#getRequiredResources",
+            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+    public void testResourceConsumptionForPerfPoints() throws IOException, InterruptedException {
+        List<CodecResource> globalResources = getCurrentGlobalCodecResources();
+        MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(mCodecName, mMediaType);
+        Assert.assertNotNull("received null capabilities for codec : " + mCodecName, caps);
+        MediaCodecInfo.VideoCapabilities vcaps = caps.getVideoCapabilities();
+        Assert.assertNotNull("received null video capabilities for codec : " + mCodecName, vcaps);
+        List<PerformancePoint> pps = vcaps.getSupportedPerformancePoints();
+        Assume.assumeFalse(mCodecName + " did not advertise any performance points",
+                pps == null || pps.isEmpty());
+        mActivityRule.getScenario().onActivity(activity -> mDynamicActivity = activity);
+        for (PerformancePoint pp : pps) {
+            Pair<Integer, Surface> obj = mDynamicActivity.getSurface();
+            if (obj == null) {
+                int index = mDynamicActivity.addSurfaceView();
+                mDynamicActivity.waitTillSurfaceIsCreated(index);
+                obj = mDynamicActivity.getSurface();
+            }
+            MediaCodec codec = MediaCodec.createByCodecName(mCodecName);
+            Size videoSize = estimateVideoSizeFromPerformancePoint(pp);
+            MediaFormat format = MediaFormat.createVideoFormat(mMediaType, videoSize.getWidth(),
+                    videoSize.getHeight());
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, pp.getMaxFrameRate());
+            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            codec.configure(format, obj.second, null, 0);
+            codec.start();
+            List<CodecResource> usedResources = getCurrentGlobalCodecResources();
+            double consumption = computeConsumption(globalResources, usedResources);
+            codec.stop();
+            codec.release();
+            mDynamicActivity.markSurface(obj.first, true);
+            if (consumption < MIN_UTILIZATION_THRESHOLD) {
+                Assert.fail("For performance point " + pp + " and codec : " + mCodecName
+                        + " max resources consumed is expected to be at least "
+                        + MIN_UTILIZATION_THRESHOLD + "% but got " + consumption + "%");
+            }
         }
     }
 }
