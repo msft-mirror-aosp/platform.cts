@@ -565,27 +565,35 @@ public class NotificationAssistantServiceTest {
     public void testAdjustNotification_typeKey_userTurnedOff_doesNotMove() throws Exception {
         setUpListeners();
 
-        sendNotification(1, null, ICON_ID);
-        StatusBarNotification sbn = mHelper.findPostedNotification(
-                null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
-        NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
-        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, false));
 
-        Bundle signals = new Bundle();
-        signals.putInt(KEY_TYPE, Adjustment.TYPE_NEWS);
-        Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
-                sbn.getUser());
+        try {
+            sendNotification(1, null, ICON_ID);
+            StatusBarNotification sbn = mHelper.findPostedNotification(
+                    null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
+            NotificationListenerService.Ranking out = new NotificationListenerService.Ranking();
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
 
-        CountDownLatch rankingUpdateLatch =
-                mNotificationListenerService.setRankingUpdateCountDown(1);
+            Bundle signals = new Bundle();
+            signals.putInt(KEY_TYPE, Adjustment.TYPE_NEWS);
+            Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                    sbn.getUser());
 
-        mAssistant.adjustNotification(adjustment);
+            CountDownLatch rankingUpdateLatch =
+                    mNotificationListenerService.setRankingUpdateCountDown(1);
 
-        rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
+            mAssistant.adjustNotification(adjustment);
 
-        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+            rankingUpdateLatch.await(1000, TimeUnit.MILLISECONDS);
 
-        assertEquals(NOTIFICATION_CHANNEL_ID, out.getChannel().getId());
+            mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+
+            assertEquals(NOTIFICATION_CHANNEL_ID, out.getChannel().getId());
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() ->
+                    mNotificationManager.setAssistantAdjustmentKeyTypeState(TYPE_NEWS, true));
+        }
     }
 
     @Test
