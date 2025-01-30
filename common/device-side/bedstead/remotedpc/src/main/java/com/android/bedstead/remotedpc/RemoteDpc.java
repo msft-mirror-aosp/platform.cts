@@ -16,6 +16,7 @@
 
 package com.android.bedstead.remotedpc;
 
+import static android.os.UserManager.DISALLOW_DEBUGGING_FEATURES;
 import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES;
 
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
@@ -357,6 +358,14 @@ public class RemoteDpc extends RemotePolicyManager {
         // DISALLOW_INSTALL_UNKNOWN_SOURCES causes verification failures in work profiles
         remoteDpc.devicePolicyManager()
                 .clearUserRestriction(remoteDpc.componentName(), DISALLOW_INSTALL_UNKNOWN_SOURCES);
+
+        // DISALLOW_DEBUGGING_FEATURES is being added to newly-created work profile by default due
+        // to b/382064697 . This would have impacted certain CTS test flows when they interact with
+        // the work profile via ADB (for example installing an app into the work profile).
+        // Remove DISALLOW_DEBUGGING_FEATURES here to reduce the potential impact.
+        remoteDpc
+                .devicePolicyManager()
+                .clearUserRestriction(remoteDpc.componentName(), DISALLOW_DEBUGGING_FEATURES);
 
         return remoteDpc;
     }
