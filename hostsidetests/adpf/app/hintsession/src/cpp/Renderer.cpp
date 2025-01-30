@@ -15,7 +15,6 @@
  */
 #include "Renderer.h"
 
-#include <GLES3/gl3.h>
 #include <android/imagedecoder.h>
 
 #include <memory>
@@ -23,6 +22,8 @@
 #include <string>
 #include <vector>
 // #include <iostream>
+
+#include <android/hardware_buffer_jni.h>
 
 #include <chrono>
 
@@ -109,6 +110,8 @@ static constexpr float kProjectionNearPlane = -1.f;
  */
 static constexpr float kProjectionFarPlane = 1.f;
 
+std::shared_ptr<TextureAsset> Model::texture = nullptr;
+
 Renderer::~Renderer() {
     if (display_ != EGL_NO_DISPLAY) {
         eglMakeCurrent(display_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -125,7 +128,40 @@ Renderer::~Renderer() {
     }
 }
 
-jlong Renderer::render() {
+Renderer *getRenderer() {
+    return Renderer::getInstance();
+}
+
+StageState Renderer::updateModels(StageState &lastUpdate) {
+    StageState output{
+            .models = lastUpdate.models,
+            .start = Utility::now(),
+    };
+
+    // Get desired seconds per rotation
+    double spr = duration_cast<std::chrono::nanoseconds>(2s).count();
+
+    // Figure out what angle the models need to be at
+    double offset = (output.start - lastUpdate.start);
+
+    // Calculate the required spin as a fraction of a circle
+    auto spin = offset / spr;
+
+    for (Model &model : output.models) {
+        model.addRotation(M_PI * 2.0 * spin);
+    }
+
+    for (int j = 0; j < physicsIterations_; ++j) {
+        Model::applyPhysics(0.1f, output.models.data(), output.models.size(),
+                            static_cast<float>(width_) * kProjectionHalfHeight * 2 / height_,
+                            kProjectionHalfHeight * 2);
+    }
+
+    output.end = Utility::now();
+    return output;
+}
+
+void Renderer::render(const StackState &stack) {
     // Check to see if the surface has changed size. This is _necessary_ to do every frame when
     // using immersive mode as you'll get no other notification that your renderable area has
     // changed.
@@ -162,44 +198,34 @@ jlong Renderer::render() {
     // clear the color buffer
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Rotate the models
-    const std::chrono::steady_clock::duration rpm = 2s;
-    static std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
-    std::chrono::steady_clock::time_point renderTime = std::chrono::steady_clock::now();
-    // Figure out what angle the models need to be at
-    std::chrono::steady_clock::duration offset = (renderTime - startTime) % rpm;
-    auto spin = static_cast<double>(offset.count()) / static_cast<double>(rpm.count());
-
     // Render all the models. There's no depth testing in this sample so they're accepted in the
     // order provided. But the sample EGL setup requests a 24 bit depth buffer so you could
     // configure it at the end of initRenderer
-    auto start = std::chrono::steady_clock::now();
-    if (headsSize_ > 0) {
-        for (auto i = 0; i < headsSize_; i++) {
-            auto &model = heads_[i];
-            model.setRotation(M_PI * 2.0 * spin);
-            if (physicsIterations_ > 0) {
-                for (int j = 1; j <= physicsIterations_; j++) {
-                    auto physicsStart = std::chrono::steady_clock::now();
-                    Model::applyPhysics(1, heads_, headsSize_,
-                                        static_cast<float>(width_) * kProjectionHalfHeight * 2 /
-                                                height_,
-                                        kProjectionHalfHeight * 2);
-                }
-            }
+    for (auto &&stage : stack.stages) {
+        for (const Model &model : stage.models) {
             shader_->drawModel(model);
         }
     }
-
-    auto end = std::chrono::steady_clock::now();
-
-    // Present the rendered image. This is an implicit glFlush.
-    auto swapResult = eglSwapBuffers(display_, surface_);
-    assert(swapResult == EGL_TRUE);
-    return (end - start).count();
 }
 
-void Renderer::initRenderer() {
+void Renderer::swapBuffers(const StackState &) {
+    auto swapResult = eglSwapBuffers(display_, surface_);
+}
+
+void Renderer::threadedInit() {
+    std::promise<bool> syncOnCompletion;
+
+    drawLoop_.queueWork([this, &syncOnCompletion]() { initRenderer(syncOnCompletion); });
+
+    syncOnCompletion.get_future().get();
+
+    for (int i = 0; i < loops_.size(); ++i) {
+        tids_.push_back(loops_[i].getlooptid());
+    }
+    tids_.push_back(drawLoop_.getlooptid());
+}
+
+void Renderer::initRenderer(std::promise<bool> &syncOnCompletion) {
     // Choose your render attributes
     constexpr EGLint attribs[] = {EGL_RENDERABLE_TYPE,
                                   EGL_OPENGL_ES3_BIT,
@@ -262,9 +288,8 @@ void Renderer::initRenderer() {
     surface_ = surface;
     context_ = context;
 
-    // make width and height invalid so it gets updated the first frame in @a updateRenderArea()
-    width_ = -1;
-    height_ = -1;
+    width_ = static_cast<uint32_t>(ANativeWindow_getWidth(app_->window));
+    height_ = static_cast<uint32_t>(ANativeWindow_getHeight(app_->window));
 
     PRINT_GL_STRING(GL_VENDOR);
     PRINT_GL_STRING(GL_RENDERER);
@@ -286,16 +311,13 @@ void Renderer::initRenderer() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // get some demo models into memory
-    // setNumHeads(1000);
+    createHeads();
+    syncOnCompletion.set_value(true);
 }
 
 void Renderer::updateRenderArea() {
-    EGLint width;
-    eglQuerySurface(display_, surface_, EGL_WIDTH, &width);
-
-    EGLint height;
-    eglQuerySurface(display_, surface_, EGL_HEIGHT, &height);
+    EGLint width = static_cast<uint32_t>(ANativeWindow_getWidth(app_->window));
+    EGLint height = static_cast<uint32_t>(ANativeWindow_getHeight(app_->window));
 
     if (width != width_ || height != height_) {
         width_ = width;
@@ -307,38 +329,40 @@ void Renderer::updateRenderArea() {
     }
 }
 
-void Renderer::addHead() {
-    thread_local auto assetManager = app_->activity->assetManager;
-    thread_local auto spAndroidRobotTexture = TextureAsset::loadAsset(assetManager, "android.png");
-    thread_local std::vector<Vertex> vertices = {
+std::vector<int64_t> Renderer::findVsyncTargets(int &events, android_poll_source *&pSource,
+                                                int numFrames) {
+    targets_ = {};
+    drawFramesSync(numFrames, events, pSource, "findVsyncTargets");
+    return targets_;
+}
+
+void Renderer::createHeads() {
+    auto assetManager = app_->activity->assetManager;
+    Model::texture = TextureAsset::loadAsset(assetManager, "android.png");
+    std::vector<Vertex> vertices = {
             Vertex(Vector3{{-0.3, 0.3, 0}}, Vector2{{0, 0}}), // 0
             Vertex(Vector3{{0.3, 0.3, 0}}, Vector2{{1, 0}}),  // 1
             Vertex(Vector3{{0.3, -0.3, 0}}, Vector2{{1, 1}}), // 2
             Vertex(Vector3{{-0.3, -0.3, 0}}, Vector2{{0, 1}}) // 3
     };
-    thread_local std::vector<Index> indices = {0, 1, 2, 0, 2, 3};
-    thread_local Model baseModel{vertices, indices, spAndroidRobotTexture};
-    float angle = 2 * M_PI * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
-    float x = 1.5 * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.75;
-    float y = 3.0 * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 1.5;
-    float mass = rand() % 10 + 1;
-    Vector3 offset{{x, y, 0}};
-    Model toAdd{baseModel};
-    toAdd.move(offset);
-    toAdd.setRotationOffset(angle);
-    toAdd.setMass(mass);
-    heads_.push_back(toAdd);
-    headsSize_++;
-}
-
-void Renderer::setNumHeads(int headCount) {
-    if (headCount > headsSize_) {
-        int to_add = headCount - headsSize_;
-        for (int i = 0; i < to_add; ++i) {
-            addHead();
+    std::vector<Index> indices = {0, 1, 2, 0, 2, 3};
+    Model baseModel{vertices, indices};
+    int id = 0;
+    for (auto &&stage : latest_stage_models_) {
+        for (int i = 0; i < stage.models.size(); ++i) {
+            ++id;
+            float angle = 2 * M_PI * (static_cast<float>(rand()) / static_cast<float>(RAND_MAX));
+            float x = 1.5 * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 0.75;
+            float y = 3.0 * static_cast<float>(rand()) / static_cast<float>(RAND_MAX) - 1.5;
+            float mass = rand() % 10 + 1;
+            Vector3 offset{{x, y, 0}};
+            Model toAdd{baseModel};
+            toAdd.move(offset);
+            toAdd.setRotationOffset(angle);
+            toAdd.setMass(mass);
+            toAdd.setId(id);
+            stage.models[i] = toAdd;
         }
-    } else if (headCount < headsSize_) {
-        headsSize_ = headCount;
     }
 }
 
@@ -346,16 +370,18 @@ void Renderer::setPhysicsIterations(int iterations) {
     physicsIterations_ = iterations;
 }
 
-bool Renderer::startHintSession(std::vector<int32_t> &tids, int64_t target) {
+bool Renderer::startHintSession(int64_t target) {
     if (hintManager_ == nullptr) {
         hintManager_ = APerformanceHint_getManager();
     }
     long preferredRate = APerformanceHint_getPreferredUpdateRateNanos(hintManager_);
     results_["preferredRate"] = std::to_string(preferredRate);
     if (preferredRate > 0 && hintSession_ == nullptr && hintManager_ != nullptr) {
+        std::vector<int> toSend(tids_);
+        toSend.push_back(gettid());
         lastTarget_ = target;
         hintSession_ =
-                APerformanceHint_createSession(hintManager_, tids.data(), tids.size(), target);
+                APerformanceHint_createSession(hintManager_, toSend.data(), toSend.size(), target);
     }
     bool supported = preferredRate > 0 && hintSession_ != nullptr;
     results_["isHintSessionSupported"] = supported ? "true" : "false";
@@ -414,38 +440,222 @@ T getMedian(std::vector<T> values) {
     return values[values.size() / 2];
 }
 
-FrameStats Renderer::getFrameStats(std::vector<int64_t> &durations, std::vector<int64_t> &intervals,
-                                   std::string &testName) {
+void Renderer::setChoreographer(AChoreographer *choreographer) {
+    choreographer_ = choreographer;
+}
+
+void dumpCallbacksData(VsyncData &data) {
+    aerr << "Frame time: " << data.frameTimeNanos << std::endl;
+    aerr << "Num callbacks: " << data.numVsyncs << std::endl;
+    aerr << "Preferred callback: " << data.preferredVsync << std::endl;
+    for (auto &&callback : data.vsyncs) {
+        aerr << "Callback " << callback.index << " has deadline: " << callback.deadlineNanos
+             << " which is: " << callback.deadlineNanos - data.frameTimeNanos
+             << " away, vsyncId: " << callback.vsyncId << std::endl;
+    }
+    aerr << "Finished dump " << std::endl;
+}
+
+Vsync &getClosestCallbackToTarget(int64_t target, VsyncData &data) {
+    int min_i = 0;
+    int64_t min_diff = std::abs(data.vsyncs[0].deadlineNanos - data.frameTimeNanos - target);
+    for (int i = 1; i < data.vsyncs.size(); ++i) {
+        int64_t diff = std::abs(data.vsyncs[i].deadlineNanos - data.frameTimeNanos - target);
+        if (diff < min_diff) {
+            min_diff = diff;
+            min_i = i;
+        }
+    }
+    return data.vsyncs[min_i];
+}
+
+VsyncData fromFrameCallbackData(const AChoreographerFrameCallbackData *data) {
+    VsyncData out{.frameTimeNanos = AChoreographerFrameCallbackData_getFrameTimeNanos(data),
+                  .numVsyncs = AChoreographerFrameCallbackData_getFrameTimelinesLength(data),
+                  .preferredVsync =
+                          AChoreographerFrameCallbackData_getPreferredFrameTimelineIndex(data),
+                  .vsyncs{}};
+    for (size_t i = 0; i < out.numVsyncs; ++i) {
+        out.vsyncs.push_back(
+                {.index = i,
+                 .deadlineNanos =
+                         AChoreographerFrameCallbackData_getFrameTimelineDeadlineNanos(data, i),
+                 .presentationNanos =
+                         AChoreographerFrameCallbackData_getFrameTimelineExpectedPresentationTimeNanos(
+                                 data, i),
+                 .vsyncId = AChoreographerFrameCallbackData_getFrameTimelineVsyncId(data, i)});
+    }
+    return out;
+}
+
+void Renderer::rawChoreographerCallback(const AChoreographerFrameCallbackData *data, void *) {
+    static std::mutex choreographerMutex{};
+    assert(appPtr != nullptr);
+    std::scoped_lock lock(choreographerMutex);
+    getRenderer()->choreographerCallback(data);
+}
+
+void Renderer::choreographerCallback(const AChoreographerFrameCallbackData *data) {
+    if (framesRemaining_ > 0) {
+        --framesRemaining_;
+    }
+    VsyncData callbackData = fromFrameCallbackData(data);
+    batchData_.vsyncs.push_back(callbackData);
+    // Allow a passed-in method to check on the callback data
+    if (wakeupMethod_ != std::nullopt) {
+        (*wakeupMethod_)(callbackData);
+    }
+    if (framesRemaining_ == 0 && targets_.size() == 0) {
+        dumpCallbacksData(callbackData);
+        for (int i = 0; i < callbackData.vsyncs.size(); ++i) {
+            targets_.push_back(callbackData.vsyncs[i].deadlineNanos - callbackData.frameTimeNanos);
+        }
+    }
+
+    int64_t start = Utility::now();
+    if (lastStart_.has_value()) {
+        batchData_.intervals.push_back(start - *lastStart_);
+    }
+    lastStart_ = start;
+
+    StackState startState{
+            .intendedVsync = getClosestCallbackToTarget(lastTarget_, callbackData),
+            .stages{},
+    };
+
+    batchData_.selectedVsync.push_back(startState.intendedVsync);
+
+    if (framesRemaining_ > 0) {
+        postCallback();
+    }
+
+    // Copy here so the lambdas can use that copy and not the global one
+    int remain = framesRemaining_;
+
+    stackSchedule<StackState>(
+            [=, startTime = start, this](int level, StackState &state) {
+                // Render against the most recent physics data for this pipeline
+                state.stages[level] = updateModels(latest_stage_models_[level]);
+
+                // Save the output from this physics step for the next frame to use
+                latest_stage_models_[level] = state.stages[level];
+
+                // If we're at the end of the stack, push a draw job to the draw loop
+                if (level == 0) {
+                    drawLoop_.queueWork([=, this]() {
+                        if (remain == 0) {
+                            framesDone_.set_value(true);
+                        }
+
+                        render(state);
+                        // Update final stage time after render finishes
+
+                        int64_t duration = Utility::now() - startTime;
+                        batchData_.durations.push_back(duration);
+                        if (isHintSessionRunning()) {
+                            reportActualWorkDuration(duration);
+                        }
+
+                        swapBuffers(state);
+                    });
+                }
+            },
+            std::move(startState));
+}
+
+FrameStats Renderer::drawFramesSync(int frames, int &events, android_poll_source *&pSource,
+                                    std::string testName) {
+    bool namedTest = testName.size() > 0;
+
+    // Make sure this can only run once at a time because the callback is unique
+    static std::mutex mainThreadLock;
+    framesDone_ = std::promise<bool>();
+    auto frameFuture = framesDone_.get_future();
+
+    std::scoped_lock lock(mainThreadLock);
+    batchData_ = {};
+    framesRemaining_ = frames;
+    postCallback();
+
+    while (true) {
+        int retval = ALooper_pollOnce(30, nullptr, &events, (void **)&pSource);
+        if (retval > 0 && pSource) {
+            pSource->process(app_, pSource);
+        }
+        auto status = frameFuture.wait_for(0s);
+        if (status == std::future_status::ready) {
+            break;
+        }
+    }
+    if (namedTest) {
+        addResult(testName + "_durations", Utility::serializeValues(batchData_.durations));
+        addResult(testName + "_intervals", Utility::serializeValues(batchData_.intervals));
+    }
+
+    return getFrameStats(batchData_, testName);
+}
+
+void Renderer::postCallback() {
+    AChoreographer_postVsyncCallback(choreographer_, rawChoreographerCallback, nullptr);
+}
+
+FrameStats Renderer::getFrameStats(FrameBatchData &batchData, std::string &testName) {
     FrameStats stats;
-    // Double precision is int-precise up to 2^52 so we should be fine for this range
-    double sum = std::accumulate(durations.begin(), durations.end(), 0);
-    double mean = static_cast<double>(sum) / static_cast<double>(durations.size());
+    stats.actualTargetDuration = lastTarget_;
+
+    std::vector<int64_t> targets;
+    for (int i = 0; i < batchData.vsyncs.size(); ++i) {
+        VsyncData &vsyncData = batchData.vsyncs[i];
+        Vsync &selectedVsync = batchData.selectedVsync[i];
+        targets.push_back(selectedVsync.deadlineNanos - vsyncData.frameTimeNanos);
+    }
+
+    stats.medianClosestDeadlineToTarget = getMedian(targets);
+
+    double sum = std::accumulate(batchData.durations.begin(), batchData.durations.end(),
+                                 static_cast<double>(0.0));
+    double mean = sum / static_cast<double>(batchData.durations.size());
     int dropCount = 0;
     double varianceSum = 0;
-    for (int64_t &duration : durations) {
+    for (int64_t &duration : batchData.durations) {
         if (isHintSessionRunning() && duration > lastTarget_) {
             ++dropCount;
         }
         varianceSum += (duration - mean) * (duration - mean);
     }
-    if (durations.size() > 0) {
-        stats.medianWorkDuration = getMedian(durations);
+    std::vector<int64_t> selectedDeadlineDurations;
+    for (int i = 0; i < batchData.vsyncs.size(); ++i) {
+        selectedDeadlineDurations.push_back(batchData.selectedVsync[i].deadlineNanos -
+                                            batchData.vsyncs[i].frameTimeNanos);
     }
-    if (intervals.size() > 0) {
-        stats.medianFrameInterval = getMedian(intervals);
+    if (batchData.durations.size() > 0) {
+        stats.medianWorkDuration = getMedian(batchData.durations);
     }
-    stats.deviation = std::sqrt(varianceSum / static_cast<double>(durations.size() - 1));
+    if (batchData.intervals.size() > 0) {
+        stats.medianFrameInterval = getMedian(batchData.intervals);
+    }
+    stats.deviation = std::sqrt(varianceSum / static_cast<double>(batchData.durations.size() - 1));
     if (isHintSessionRunning()) {
         stats.exceededCount = dropCount;
         stats.exceededFraction =
-                static_cast<double>(dropCount) / static_cast<double>(durations.size());
+                static_cast<double>(dropCount) / static_cast<double>(batchData.durations.size());
         stats.efficiency = static_cast<double>(sum) /
-                static_cast<double>(durations.size() * std::min(lastTarget_, baselineMedian_));
+                static_cast<double>(batchData.durations.size() *
+                                    std::min(lastTarget_, baselineMedian_));
     }
 
     if (testName.size() > 0) {
+        addResult(testName + "_selected_deadline_durations",
+                  Utility::serializeValues(selectedDeadlineDurations));
+        addResult(testName + "_sum", std::to_string(sum));
+        addResult(testName + "_num_durations", std::to_string(batchData.durations.size()));
+        addResult(testName + "_mean", std::to_string(mean));
         addResult(testName + "_median", std::to_string(stats.medianWorkDuration));
         addResult(testName + "_median_interval", std::to_string(stats.medianFrameInterval));
+        addResult(testName + "_median_deadline_duration",
+                  std::to_string(stats.medianClosestDeadlineToTarget));
+        addResult(testName + "_intended_deadline_duration",
+                  std::to_string(stats.actualTargetDuration));
         addResult(testName + "_deviation", std::to_string(stats.deviation));
         if (isHintSessionRunning()) {
             addResult(testName + "_target", std::to_string(getTargetWorkDuration()));
@@ -458,3 +668,18 @@ FrameStats Renderer::getFrameStats(std::vector<int64_t> &durations, std::vector<
 
     return stats;
 }
+
+void Renderer::makeInstance(android_app *pApp) {
+    if (sRenderer == nullptr) {
+        sRenderer = std::make_unique<Renderer>(pApp);
+    }
+}
+
+Renderer *Renderer::getInstance() {
+    if (sRenderer == nullptr) {
+        return nullptr;
+    }
+    return sRenderer.get();
+}
+
+std::unique_ptr<Renderer> Renderer::sRenderer = nullptr;

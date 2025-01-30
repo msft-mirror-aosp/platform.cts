@@ -175,13 +175,25 @@ public class ActionUserSelectImagesForAppTest extends PhotoPickerBaseTest {
             photoPickerIntent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX,
                     MediaStore.getPickImagesMaxLimit());
             launchActivityForResult(photoPickerIntent);
-            final ClipData clipData = fetchPickerMedia(mActivity, sDevice, 1);
-            // Verify that selected item is a cloud item
-            containsExcept(extractMediaIds(clipData, 1), cloudId, String.valueOf(localId));
+            if (isVisibleBackgroundUser()) {
+                final int displayId = getMainDisplayId();
+                final ClipData clipData = fetchPickerMedia(mActivity, sDevice, 1, displayId);
+                // Verify that selected item is a cloud item
+                containsExcept(extractMediaIds(clipData, 1), cloudId, String.valueOf(localId));
 
-            // 2. Verify we can't see cloud item in Picker choice.
-            launchActivityForResult(getUserSelectImagesIntent());
-            selectAndAddPickerMedia(sDevice, 1);
+                // 2. Verify we can't see cloud item in Picker choice.
+                launchActivityForResult(getUserSelectImagesIntent());
+                selectAndAddPickerMedia(sDevice, 1, displayId);
+            } else {
+                final ClipData clipData = fetchPickerMedia(mActivity, sDevice, 1);
+                // Verify that selected item is a cloud item
+                containsExcept(extractMediaIds(clipData, 1), cloudId, String.valueOf(localId));
+
+                // 2. Verify we can't see cloud item in Picker choice.
+                launchActivityForResult(getUserSelectImagesIntent());
+                selectAndAddPickerMedia(sDevice, 1);
+            }
+
 
             // Query the media_grants to verify that the grant was on local id.
             // Please note that READ_MEDIA_VISUAL_USER_SELECTED is granted by declaring it in
