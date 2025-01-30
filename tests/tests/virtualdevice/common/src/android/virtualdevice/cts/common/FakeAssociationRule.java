@@ -72,7 +72,7 @@ class FakeAssociationRule extends ExternalResource {
 
     private static final int TIMEOUT_MS = 10000;
 
-    private final Context mContext = getInstrumentation().getTargetContext();
+    private final Context mContext = getInstrumentation().getContext();
 
     private final Executor mCallbackExecutor = Runnable::run;
     private final RoleManager mRoleManager = mContext.getSystemService(RoleManager.class);
