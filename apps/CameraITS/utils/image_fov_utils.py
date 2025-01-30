@@ -29,12 +29,34 @@ CIRCLE_COLOR = 0  # [0: black, 255: white]
 CIRCLE_MIN_AREA = 0.01  # 1% of image size
 FOV_PERCENT_RTOL = 0.15  # Relative tolerance on circle FoV % to expected.
 LARGE_SIZE_IMAGE = 2000  # Size of a large image (compared against max(w, h))
+MIN_FOV = 10
+MAX_FOV = 130
 THRESH_AR_L = 0.02  # Aspect ratio test threshold of large images
 THRESH_AR_S = 0.075  # Aspect ratio test threshold of mini images
 THRESH_CROP_L = 0.02  # Crop test threshold of large images
 THRESH_CROP_S = 0.075  # Crop test threshold of mini images
 THRESH_MIN_PIXEL = 4  # Crop test allowed offset
 
+
+def calc_camera_fov_from_metadata(metadata, props):
+  """Get field of view of camera.
+
+  Args:
+    metadata: capture result's metadata.
+    props: obj; camera properties object.
+  Returns:
+    fov: int; field of view of camera.
+  """
+  sensor_size = props['android.sensor.info.physicalSize']
+  diag = math.sqrt(sensor_size['height']**2 + sensor_size['width']**2)
+  fl = metadata['android.lens.focalLength']
+  logging.debug('Focal length: %.3f', fl)
+  fov = 2 * math.degrees(math.atan(diag / (2 * fl)))
+  logging.debug('Field of view: %.1f degrees', fov)
+
+  if not MIN_FOV <= fov <= MAX_FOV:
+    raise AssertionError(f'FoV error: {fov:.1f}')
+  return fov
 
 def calc_scaler_crop_region_ratio(scaler_crop_region, props):
   """Calculate ratio of scaler crop region area over active array area.
