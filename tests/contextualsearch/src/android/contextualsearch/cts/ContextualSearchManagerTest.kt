@@ -22,6 +22,7 @@ import android.app.contextualsearch.ContextualSearchState
 import android.app.contextualsearch.flags.Flags
 import android.content.Context
 import android.content.Intent
+import android.contextualsearch.caller.ContextualSearchMessage
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
 import android.os.SystemClock
@@ -32,6 +33,8 @@ import android.util.Log
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.nene.TestApis
+import com.android.compatibility.common.util.BroadcastMessenger.Receiver
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.collect.Range
 import com.google.common.truth.Truth
@@ -73,6 +76,7 @@ class ContextualSearchManagerTest {
     fun teardown() {
         setTemporaryPackage()
         setTokenDuration()
+        runShellCommand("am stop-app android.contextualsearch.caller")
         mWatcher = null
 
         CtsContextualSearchActivity.WATCHER?.instance?.finish()
@@ -268,6 +272,54 @@ class ContextualSearchManagerTest {
         await(callback.errorLatch, "Waiting for the service to throw error.")
         // Validate that there was an error.
         assertThat(callback.errorLatch.count).isEqualTo(0)
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    @Test
+    fun testContextualSearchFromOutOfProcessForegroundService() {
+        // Test startContextualSearch() from an out of process foreground service.
+        val ctx = TestApis.context().instrumentedContext()
+        // CallerFgService automatically calls startContextualSearch() upon onStartCommand().
+        ctx.startForegroundService(
+            Intent().apply {
+                setClassName(
+                    "android.contextualsearch.caller",
+                    "android.contextualsearch.caller.CallerFgService"
+                )
+            }
+        )
+        // Verify starting contextual search from a foreground service throws a security exception
+        // to that process.
+        Receiver<ContextualSearchMessage>(ctx, ContextualSearchMessage.TAG).use {
+            val message: ContextualSearchMessage =
+                it.waitForNextMessage() as ContextualSearchMessage
+            assertThat(message.result).isEqualTo(ContextualSearchMessage.RESULT_EXCEPTION)
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
+    @Test
+    fun testContextualSearchFromOutOfProcessForegroundActivity() {
+        // Test startContextualSearch() from an out of process foreground activity.
+        TestApis.activities().startActivity(
+            Intent().apply {
+                setClassName(
+                    "android.contextualsearch.caller",
+                    "android.contextualsearch.caller.CallerActivity"
+                )
+                setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+        // CallerActivity automatically calls startContextualSearch() upon onCreate(), which is
+        // what we are awaiting here.
+        await(
+            mWatcher?.created,
+            "Waiting for CtsContextualSearchActivity.onCreate to be called."
+        )
+        // Now that the CallerActivity has launched, we can verify launch extras.
+        val extras = mWatcher!!.launchExtras!!
+        assertThat(extras.getInt(ContextualSearchManager.EXTRA_ENTRYPOINT))
+            .isEqualTo(INTERNAL_ENTRYPOINT_APP)
     }
 
     private class TestOutcomeReceiver(
