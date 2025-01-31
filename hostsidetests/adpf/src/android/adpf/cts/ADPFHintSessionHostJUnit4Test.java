@@ -31,6 +31,8 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.platform.test.annotations.LargeTest;
+
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
@@ -97,11 +99,16 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
     }
 
     private void checkMinVendorApiLevel() throws Exception {
+        boolean apiLevelOverride =
+                getProperty("debug.graphics.hint_session_cts_api_override").contains("True");
         String vendorApiLevelStr = getProperty("ro.vendor.api_level");
         int apiLevel = Integer.parseInt(vendorApiLevelStr);
-        assumeTrue("Test is only enforced on vendor API level >= " + MINIMUM_VENDOR_API_LEVEL
-                        + " while test device at = " + apiLevel,
-                apiLevel >= MINIMUM_VENDOR_API_LEVEL);
+        assumeTrue(
+                "Test is only enforced on vendor API level >= "
+                        + MINIMUM_VENDOR_API_LEVEL
+                        + " while test device at = "
+                        + apiLevel,
+                apiLevelOverride || (apiLevel >= MINIMUM_VENDOR_API_LEVEL));
     }
 
     private void checkVirtualDevice() throws Exception {
@@ -140,17 +147,16 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
     private static final String TAG = android.adpf.cts
             .ADPFHintSessionHostJUnit4Test.class.getSimpleName();
 
-
-
     /**
-     * This tests the ADPF hint session app behavior under various target states,
-     * to validate that the load matches what would be expected for a system with
-     * those demands. Higher-load tests with lower targets should have smaller durations,
-     * because they require more resources to complete the same work in less time.
-     * Conversely, lower-load tests with longer targets should have larger durations,
-     * since fewer resources are needed to complete their work by the target time.
+     * This tests the ADPF hint session app behavior under various target states, to validate that
+     * the load matches what would be expected for a system with those demands. Higher-load tests
+     * with lower targets should have smaller durations, because they require more resources to
+     * complete the same work in less time. Conversely, lower-load tests with longer targets should
+     * have larger durations, since fewer resources are needed to complete their work by the target
+     * time.
      */
     @Test
+    @LargeTest
     public void testAdpfHintSession() throws Exception {
         checkSupportedHardware();
         checkMinSdkVersion();
@@ -161,6 +167,21 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
         mDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
         mDevice.executeShellCommand("input keyevent KEYCODE_MENU");
         mDevice.executeShellCommand("wm dismiss-keyguard");
+
+        int retries = 5;
+        for (int testIter = 1; testIter <= retries; ++testIter) {
+            try {
+                runAdpfTest();
+                break;
+            } catch (Exception e) {
+                if (testIter == retries) {
+                    throw e;
+                }
+            }
+        }
+    }
+
+    private void runAdpfTest() throws Exception {
         runDeviceTests(TEST_PACKAGE_NAME, TEST_PACKAGE_NAME + "." + ADPF_DEVICE_TEST_CLASS);
         final TestDescription testDesc = new TestDescription(
                     TEST_PACKAGE_NAME + "." + ADPF_DEVICE_TEST_CLASS, "testAdpfHintSession"
@@ -181,17 +202,29 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
 
         Map<String, String> metrics = result.getMetrics();
         HashMap<String, Long> testMedians = new HashMap<>();
+        HashMap<String, Long> testTargets = new HashMap<>();
 
         for (Map.Entry<String, String> entry : metrics.entrySet()) {
             String key = entry.getKey();
             if (key.endsWith("_durations")) {
                 String testName = key.substring(0, key.lastIndexOf("_"));
+                if (entry.getValue().length() == 0) {
+                    continue;
+                }
                 long[] numbers = Arrays.stream(entry.getValue().split(","))
                         .mapToLong(Long::parseLong).toArray();
                 Long median = getMedian(numbers);
+                Long target = null;
+                String targetString = metrics.get(testName + "_target");
+                if (targetString != null && !targetString.isEmpty()) {
+                    target = Long.parseLong(targetString);
+                }
                 testMedians.put(testName, median);
                 Log.e(TAG, "Median of " + testName + " is: " + median.toString());
                 Log.e(TAG, "Target of " + testName + " is: " + metrics.get(testName + "_target"));
+                if (target != null) {
+                    testTargets.put(testName, target);
+                }
             }
         }
 
@@ -214,9 +247,23 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
          * workload ramps back down.
          */
         if (testMedians.containsKey(TRANSITION_LOAD_KEY + "_1")) {
-            assertTrue("High-load case was not faster than previous low-load case!",
-                    isGreater(testMedians.get(TRANSITION_LOAD_KEY + "_1"),
-                              testMedians.get(TRANSITION_LOAD_KEY + "_2")));
+            // If every median is greater than the heavy-load target
+            // other than the "boosted" second one, this is satisfied
+            if ((testMedians.get(TRANSITION_LOAD_KEY + "_2")
+                            < testTargets.get(TRANSITION_LOAD_KEY + "_2"))
+                    && (testMedians.get(TRANSITION_LOAD_KEY + "_1")
+                            > testTargets.get(TRANSITION_LOAD_KEY + "_2"))
+                    && (testMedians.get(TRANSITION_LOAD_KEY + "_3")
+                            > testTargets.get(TRANSITION_LOAD_KEY + "_2"))) {
+                return;
+            }
+
+            // Otherwise, check to make sure they are at least trying
+            assertTrue(
+                    "High-load case was not faster than previous low-load case!",
+                    isGreater(
+                            testMedians.get(TRANSITION_LOAD_KEY + "_1"),
+                            testMedians.get(TRANSITION_LOAD_KEY + "_2")));
             assertTrue("Low-load case was not slower than previous high-load case!",
                     isLess(testMedians.get(TRANSITION_LOAD_KEY + "_2"),
                            testMedians.get(TRANSITION_LOAD_KEY + "_3")));

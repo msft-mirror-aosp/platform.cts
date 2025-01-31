@@ -42,8 +42,12 @@ import android.provider.MediaStore;
 import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiObject;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import org.junit.After;
 import org.junit.Test;
@@ -120,23 +124,45 @@ public class ActionPickImagesOnlyTest extends PhotoPickerBaseTest {
         intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, maxCount);
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        final List<UiObject> itemList = findItemList(imageCount);
-        final int itemCount = itemList.size();
-        assertThat(itemCount).isEqualTo(imageCount);
-        // Select maxCount + 1 item
-        for (int i = 0; i < itemCount; i++) {
-            clickAndWait(sDevice, itemList.get(i));
+        if (isVisibleBackgroundUser()) {
+            final int displayId = getMainDisplayId();
+            final List<UiObject2> itemList = findItemList(sDevice, imageCount, displayId);
+            final int itemCount = itemList.size();
+            assertThat(itemCount).isEqualTo(imageCount);
+            // Select maxCount + 1 item
+            for (int i = 0; i < itemCount; i++) {
+                clickAndWait(sDevice, itemList.get(i));
+            }
+
+            final BySelector snackbarSelector = By.text("Select up to 2 items")
+                    .displayId(displayId);
+            assertWithMessage(
+                    "Timed out while waiting for snackbar to appear on display " + displayId)
+                    .that(sDevice.wait(Until.hasObject(snackbarSelector), SHORT_TIMEOUT)).isTrue();
+
+            assertWithMessage("Timed out waiting for snackbar to disappear on display " + displayId)
+                    .that(sDevice.wait(Until.gone(snackbarSelector), SHORT_TIMEOUT)).isTrue();
+
+            clickAndWait(sDevice, findAddButton(sDevice, displayId));
+        } else {
+            final List<UiObject> itemList = findItemList(imageCount);
+            final int itemCount = itemList.size();
+            assertThat(itemCount).isEqualTo(imageCount);
+            // Select maxCount + 1 item
+            for (int i = 0; i < itemCount; i++) {
+                clickAndWait(sDevice, itemList.get(i));
+            }
+
+            UiObject snackbarTextView = sDevice.findObject(new UiSelector().text(
+                    "Select up to 2 items"));
+            assertWithMessage("Timed out while waiting for snackbar to appear").that(
+                    snackbarTextView.waitForExists(SHORT_TIMEOUT)).isTrue();
+
+            assertWithMessage("Timed out waiting for snackbar to disappear").that(
+                    snackbarTextView.waitUntilGone(SHORT_TIMEOUT)).isTrue();
+
+            clickAndWait(sDevice, findAddButton());
         }
-
-        UiObject snackbarTextView = sDevice.findObject(new UiSelector().text(
-                "Select up to 2 items"));
-        assertWithMessage("Timed out while waiting for snackbar to appear").that(
-                snackbarTextView.waitForExists(SHORT_TIMEOUT)).isTrue();
-
-        assertWithMessage("Timed out waiting for snackbar to disappear").that(
-                snackbarTextView.waitUntilGone(SHORT_TIMEOUT)).isTrue();
-
-        clickAndWait(sDevice, findAddButton());
 
         final ClipData clipData = mActivity.getResult().data.getClipData();
         final int count = clipData.getItemCount();
@@ -151,11 +177,19 @@ public class ActionPickImagesOnlyTest extends PhotoPickerBaseTest {
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         mActivity.startActivityForResult(intent, REQUEST_CODE);
 
-        final List<UiObject> itemList = findItemList(imageCount);
-        final int itemCount = itemList.size();
-        assertThat(itemCount).isEqualTo(imageCount);
-        // Select 1 item
-        clickAndWait(sDevice, itemList.get(0));
+        if (isVisibleBackgroundUser()) {
+            final List<UiObject2> itemList = findItemList(sDevice, imageCount, getMainDisplayId());
+            final int itemCount = itemList.size();
+            assertThat(itemCount).isEqualTo(imageCount);
+            // Select 1 item
+            clickAndWait(sDevice, itemList.get(0));
+        } else {
+            final List<UiObject> itemList = findItemList(imageCount);
+            final int itemCount = itemList.size();
+            assertThat(itemCount).isEqualTo(imageCount);
+            // Select 1 item
+            clickAndWait(sDevice, itemList.get(0));
+        }
 
         final Uri uri = mActivity.getResult().data.getData();
         assertPickerUriFormat(ACTION_PICK_IMAGES, uri, mContext.getUserId());
