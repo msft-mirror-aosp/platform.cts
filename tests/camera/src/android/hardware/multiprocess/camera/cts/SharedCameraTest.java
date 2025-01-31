@@ -41,7 +41,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
-import android.util.Size;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
@@ -370,6 +369,56 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             stopPreviewJavaClient();
             closeCameraJavaClient();
             closeNativeClient(nativeSharedTest);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
+    public void testSecondaryClientStreamingBeforePrimary() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (!mCameraManager.isCameraDeviceSharingSupported(mCameraId)) {
+                Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
+                continue;
+            }
+            SharedSessionConfiguration sharedSessionConfig =
+                    mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
+            assertNotNull("Shared session configuration is null", sharedSessionConfig);
+            int surfaceViewIdx = getSurfaceViewStreamIdx(sharedSessionConfig);
+            int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
+            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+            if (surfaceViewIdx != -1) {
+                sharedStreamArray.add(surfaceViewIdx);
+            }
+            int imgWidth = -1;
+            int imgHeight = -1;
+            int imgFormat = -1;
+            if (imageReaderIdx != -1) {
+                sharedStreamArray.add(imageReaderIdx);
+                SharedOutputConfiguration imgReaderConfig =
+                        sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
+                imgWidth = imgReaderConfig.getSize().getWidth();
+                imgHeight = imgReaderConfig.getSize().getHeight();
+                imgFormat = imgReaderConfig.getFormat();
+            }
+            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+            long nativeSharedTest = openSharedCameraNativeClient(mCameraId,
+                    /*isPrimaryClient*/false);
+            createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+            startSharedStreamingNative(nativeSharedTest);
+            SystemClock.sleep(PREVIEW_TIME_MS);
+            stopSharedStreamingNative(nativeSharedTest);
+            createSharedSessionJavaClient(sharedStreamArray);
+            startPreviewJavaClient();
+            startSharedStreamingNative(nativeSharedTest);
+            SystemClock.sleep(PREVIEW_TIME_MS);
+            stopSharedStreamingNative(nativeSharedTest);
+            closeSessionNative(nativeSharedTest);
+            closeNativeClient(nativeSharedTest);
+            stopPreviewJavaClient();
+            closeCameraJavaClient();
         }
     }
 
