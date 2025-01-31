@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.media.codec.cts;
+package android.mediav2.common.cts;
 
 import android.app.Activity;
 import android.os.Bundle;

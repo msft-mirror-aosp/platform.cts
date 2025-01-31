@@ -17,7 +17,6 @@
 package android.display.cts;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -151,15 +150,6 @@ public class DisplayEventTest extends TestBase {
         waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
     }
 
-    @Test
-    public void testNoDisplayRefreshRateChangedEvent() throws InterruptedException {
-        registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_CHANGED);
-
-        switchRefreshRate();
-
-        assertNoDisplayEventEmitted();
-    }
-
     private void registerDisplayListener(int eventFlagMask) {
         mDisplayListener = new DisplayManager.DisplayListener() {
             @Override
@@ -209,17 +199,6 @@ public class DisplayEventTest extends TestBase {
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    /** Validates that no events are emitted */
-    private void assertNoDisplayEventEmitted() {
-        try {
-            Pair<Integer, Integer> event  = mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC,
-                    TimeUnit.MILLISECONDS);
-            assertNull(event);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 

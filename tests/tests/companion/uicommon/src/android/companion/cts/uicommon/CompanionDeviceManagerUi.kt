@@ -114,23 +114,39 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
         "Positive button"
     )
 
-    fun scrollToBottom() {
-        ui.wait(Until.findObject(SCROLLABLE_PERMISSION_LIST), 2.seconds.inWholeMilliseconds)?.let {
-            // swipe up (or scroll down) until "Allow" button is enabled
-            val startTime = SystemClock.uptimeMillis()
-            var elapsedTime = 0L
-            var positiveButton: UiObject2
-            while (elapsedTime < 5.seconds.inWholeMilliseconds) {
-                it.swipe(Direction.UP, 1.0F)
-                // Try to find the button in each iteration
-                if (ui.hasObject(POSITIVE_BUTTON)) {
-                    positiveButton = waitUntilPositiveButtonAppeared()
-                    if (positiveButton.isEnabled == true) break
+    fun scrollToBottom(selector: BySelector = CONFIRMATION_UI) {
+        // Perform the swipe and check for the button.
+        fun scrollAndCheckButton(scrollableObject: UiObject2?, positiveButtonCheck: () -> Boolean) {
+            scrollableObject?.let {
+                val startTime = SystemClock.uptimeMillis()
+                var elapsedTime = 0L
+                while (elapsedTime < 5.seconds.inWholeMilliseconds) {
+                    it.swipe(Direction.UP, 1.0F)
+                    if (positiveButtonCheck()) {
+                        break
+                    }
+                    sleep(0.2.seconds.inWholeMilliseconds)
+                    elapsedTime = SystemClock.uptimeMillis() - startTime
                 }
-                // Wait before consecutive swipes
-                sleep(0.2.seconds.inWholeMilliseconds)
-                elapsedTime = SystemClock.uptimeMillis() - startTime
             }
+        }
+
+        // First, swipe the CDM dialog down to ensure reached the end.
+        scrollAndCheckButton(
+            ui.wait(Until.findObject(selector), 2.seconds.inWholeMilliseconds)
+        ) {
+            ui.hasObject(POSITIVE_BUTTON) && ui.hasObject(NEGATIVE_BUTTON)
+        }
+
+        // Can return here since no permission list in system transfer dialog.
+        if (selector == SYSTEM_DATA_TRANSFER_CONFIRMATION_UI) return
+
+        // Second, scroll the permission list until both the Allow and Deny buttons are enabled.
+        scrollAndCheckButton(
+            ui.wait(Until.findObject(SCROLLABLE_PERMISSION_LIST), 2.seconds.inWholeMilliseconds)
+        ) {
+            ui.hasObject(POSITIVE_BUTTON) &&
+                    ui.hasObject(NEGATIVE_BUTTON) && waitUntilPositiveButtonAppeared().isEnabled
         }
     }
 
@@ -144,7 +160,7 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
         private const val NOTIFICATION_PACKAGE_NAME = "com.android.settings"
         private const val NOTIFICATION_PACKAGE_NAME_AUTO = "com.android.car.settings"
 
-        private val CONFIRMATION_UI = By.pkg(PACKAGE_NAME)
+        val CONFIRMATION_UI = By.pkg(PACKAGE_NAME)
                 .res(PACKAGE_NAME, "activity_confirmation")
         private val ASSOCIATION_REVOKE_APP_UI = By.pkg(ASSOCIATION_REVOKE_APP_NAME).depth(0)
 
@@ -169,7 +185,7 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
         private val SCROLLABLE_PERMISSION_LIST = By.pkg(PACKAGE_NAME)
                 .res(PACKAGE_NAME, "permission_list")
 
-        private val SYSTEM_DATA_TRANSFER_CONFIRMATION_UI = By.pkg(PACKAGE_NAME)
+        val SYSTEM_DATA_TRANSFER_CONFIRMATION_UI = By.pkg(PACKAGE_NAME)
                 .res(PACKAGE_NAME, "data_transfer_confirmation")
     }
 

@@ -99,6 +99,7 @@ public class VirtualDeviceRule implements TestRule {
                     Manifest.permission.ADD_TRUSTED_DISPLAY,
                     Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY,
                     Manifest.permission.ADD_MIRROR_DISPLAY,
+                    Manifest.permission.ASSOCIATE_COMPANION_DEVICES,
                     Manifest.permission.MANAGE_ROLE_HOLDERS,
                     Manifest.permission.BYPASS_ROLE_QUALIFICATION,
                     "android.permission.MANAGE_COMPANION_DEVICES",
@@ -344,8 +345,8 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /** Creates a new CDM association. */
-    public AssociationInfo createManagedAssociation() {
-        return mFakeAssociationRule.createManagedAssociation();
+    public AssociationInfo createManagedAssociation(String deviceProfile) {
+        return mFakeAssociationRule.createManagedAssociation(deviceProfile);
     }
 
     /** Drops the current CDM association. */

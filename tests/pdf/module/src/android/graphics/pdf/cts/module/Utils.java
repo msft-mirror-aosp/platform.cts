@@ -67,6 +67,8 @@ class Utils {
     static final int SAMPLE_PDF = android.graphics.pdf.cts.module.R.raw.sample_test;
     static final int SAMPLE_IMAGE =
             android.graphics.pdf.cts.module.R.drawable.TextAnnotFlagSetOnly_golden;
+    static final int ONE_STAMP_ANNOTATION =
+            android.graphics.pdf.cts.module.R.raw.one_stamp_annotation;
     static final int ONE_IMAGE_PAGE_OBJECT =
             android.graphics.pdf.cts.module.R.raw.one_image_page_object;
     static final int ONE_PATH_PAGE_OBJECT =

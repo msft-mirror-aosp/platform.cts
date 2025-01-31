@@ -27,6 +27,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_A
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTSHIFT
 import com.android.cts.input.UinputKeyboard
 import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_STICKY_KEYS_FLAG
 import org.junit.After
@@ -44,8 +46,6 @@ import org.junit.runner.RunWith
 class A11yStickyKeysTest {
 
     companion object {
-        const val KEY_A = 30
-        const val KEY_LEFTSHIFT = 42
         const val A11Y_SETTINGS_PROPAGATE_TIME_MILLIS: Long = 100
         const val EPHEMERAL_MODIFIER_MASK: Int =
             KeyEvent.META_META_MASK or

@@ -165,7 +165,7 @@ public class ConnectionServiceCallController {
 
     public void setConnectionCapabilityNoHold() {
         int capabilities = mConnection.getConnectionCapabilities();
-        capabilities &= ~Connection.CAPABILITY_HOLD;
+        capabilities &= ~(Connection.CAPABILITY_HOLD | Connection.CAPABILITY_SUPPORT_HOLD);
         mConnection.setConnectionCapabilities(capabilities);
     }
 

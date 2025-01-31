@@ -83,24 +83,20 @@ public class OpenGlEsVersionTest {
     public void setup() {
         mActivity = mActivityRule.getActivity();
     }
-
-    @CddTest(requirement="7.1.4.1/C-0-1")
+    @CddTest(requirement="7.1.4.1/C-1-1")
     @Test
     public void testOpenGlEsVersion() throws InterruptedException {
-        int detectedMajorVersion = getDetectedMajorVersion();
         int reportedVersion = getVersionFromActivityManager(mActivity);
 
         assertEquals("Reported OpenGL ES version from ActivityManager differs from PackageManager",
                 reportedVersion, getVersionFromPackageManager(mActivity));
 
-        verifyGlVersionString(1, 1);
-        if (detectedMajorVersion == 2) {
-            restartActivityWithClientVersion(2);
-            verifyGlVersionString(2, getMinorVersion(reportedVersion));
-        } else if (detectedMajorVersion == 3) {
-            restartActivityWithClientVersion(3);
-            verifyGlVersionString(3, getMinorVersion(reportedVersion));
-        }
+        restartActivityWithClientVersion(3);
+        int major = getMajorVersion(reportedVersion);
+        int minor = getMinorVersion(reportedVersion);
+        assertTrue("OpenGL ES version 3.1 or higher is required but this device" +
+                "supports only version " + major + "." + minor,
+                major == 3 && minor >= 1);
     }
 
     @CddTest(requirement="7.1.4.1/C-2-2")
@@ -114,9 +110,6 @@ public class OpenGlEsVersionTest {
         restartActivityWithClientVersion(3);
 
         String extensions = mActivity.getExtensionsString();
-
-        if (getMajorVersion(reportedVersion) != 3 || getMinorVersion(reportedVersion) < 1)
-            return;
 
         final String es31RequiredList[] = {
             "EXT_texture_sRGB_decode",

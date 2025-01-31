@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -152,6 +153,7 @@ public abstract class CodecTestBase {
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
+    public static final int ANDROID_VENDOR_API_202504 = 202504;
     // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
     // so using a default of 0 when not defined is safe to detect devices launching with 202404.
     // These tests run on older versions where ro.vendor.api_level is not defined. So this
@@ -159,10 +161,15 @@ public abstract class CodecTestBase {
     // builds.
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202404 =
             SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202404;
+    public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202504 =
+            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202504;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
+    // Reduce the max concurrent codec instances on Low Ram devices to 8 to avoid getting into
+    // low memory issues.
+    private static final int LOW_RAM_DEVICE_MAX_INSTANCES = 8;
 
     public static final ArrayList<String> HDR_INFO_IN_BITSTREAM_CODECS = new ArrayList<>();
     public static final String HDR_STATIC_INFO =
@@ -861,6 +868,15 @@ public abstract class CodecTestBase {
         return caps != null ? caps.getMaxSupportedInstances() : 0;
     }
 
+    public static int getMaxCodecInstances(String codecName, String mediaType) {
+        int maxCodecLimit = 32;
+        boolean isLowRamDevice = CONTEXT.getSystemService(ActivityManager.class).isLowRamDevice();
+        if (isLowRamDevice) {
+            maxCodecLimit = LOW_RAM_DEVICE_MAX_INSTANCES;
+        }
+        return Math.min(getMaxSupportedInstances(codecName, mediaType), maxCodecLimit);
+    }
+
     public static boolean isFeatureRequired(String codecName, String mediaType, String feature) {
         CodecCapabilities caps = getCodecCapabilities(codecName, mediaType);
         return caps != null && caps.isFeatureRequired(feature);
@@ -1544,7 +1560,7 @@ public abstract class CodecTestBase {
         validateTestState();
     }
 
-    void validateTestState() {
+    protected void validateTestState() {
         assertFalse("Encountered error in async mode. \n" + mTestConfig + mTestEnv
                 + mAsyncHandle.getErrMsg(), mAsyncHandle.hasSeenError());
         if (mInputCount > 0) {

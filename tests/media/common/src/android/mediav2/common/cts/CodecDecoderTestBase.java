@@ -370,6 +370,7 @@ public class CodecDecoderTestBase extends CodecTestBase {
         }
     }
 
+    @Override
     protected void validateTestState() {
         super.validateTestState();
         if (!mOutputBuff.isPtsStrictlyIncreasing(mPrevOutputPts)) {

@@ -18,7 +18,11 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.cts.EncoderInput.getRawResource;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -102,6 +106,11 @@ public class EncoderLevelTest extends EncoderProfileLevelTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_VP9, 352, 288, 512000, 30},
                 {MediaFormat.MIMETYPE_VIDEO_AV1, 352, 288, 512000, 30},
         }));
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                    {MediaFormat.MIMETYPE_VIDEO_APV, 352, 288, 3000000, 30},
+            }));
+        }
         final List<Object[]> argsList = new ArrayList<>();
         for (Object[] arg : exhaustiveArgsList) {
             final String mediaType = (String) arg[0];

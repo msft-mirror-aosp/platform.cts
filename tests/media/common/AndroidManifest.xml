@@ -30,6 +30,7 @@
         <uses-library android:name="android.test.runner" />
         <uses-library android:name="org.apache.http.legacy" />
         <activity android:name="android.mediav2.common.cts.CodecTestActivity" />
+        <activity android:name="android.mediav2.common.cts.CodecDynamicTestActivity" />
     </application>
     <uses-sdk android:minSdkVersion="29"   android:targetSdkVersion="29" />
 

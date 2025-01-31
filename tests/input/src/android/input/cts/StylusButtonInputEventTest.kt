@@ -30,6 +30,14 @@ import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_STYLUS
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_STYLUS2
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_STYLUS3
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
+import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.VirtualDisplayActivityScenario
@@ -56,24 +64,18 @@ class StylusButtonInputEventTest {
         // The settings namespace and key for enabling stylus button interactions.
         const val SETTING_NAMESPACE_KEY = "secure stylus_buttons_enabled"
 
-        const val EV_SYN = 0
-        const val SYN_REPORT = 0
-        const val EV_KEY = 1
-        const val KEY_DOWN = 1
-        const val KEY_UP = 0
-
         val INITIAL_SYSTEM_KEY = KeyEvent.KEYCODE_UNKNOWN
         val LINUX_TO_ANDROID_KEYCODE_MAP =
             // map from Linux keycode to Android keycode
             mapOf<Int, Int>(
-                0x14b to KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY, // BTN_STYLUS
-                0x14c to KeyEvent.KEYCODE_STYLUS_BUTTON_SECONDARY, // BTN_STYLUS2
-                0x149 to KeyEvent.KEYCODE_STYLUS_BUTTON_TERTIARY, // BTN_STYLUS3
+                BTN_STYLUS to KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY, // BTN_STYLUS
+                BTN_STYLUS2 to KeyEvent.KEYCODE_STYLUS_BUTTON_SECONDARY, // BTN_STYLUS2
+                BTN_STYLUS3 to KeyEvent.KEYCODE_STYLUS_BUTTON_TERTIARY, // BTN_STYLUS3
             )
         val LINUX_KEYCODE_TO_MOTIONEVENT_BUTTON =
             mapOf<Int, Int>(
-                0x14b to MotionEvent.BUTTON_STYLUS_PRIMARY, // BTN_STYLUS
-                0x14c to MotionEvent.BUTTON_STYLUS_SECONDARY, // BTN_STYLUS2
+                BTN_STYLUS to MotionEvent.BUTTON_STYLUS_PRIMARY, // BTN_STYLUS
+                BTN_STYLUS2 to MotionEvent.BUTTON_STYLUS_SECONDARY, // BTN_STYLUS2
             )
     }
 
@@ -122,14 +124,14 @@ class StylusButtonInputEventTest {
         UinputBluetoothStylus(instrumentation).use { bluetoothStylus ->
             for (button in LINUX_TO_ANDROID_KEYCODE_MAP.entries.iterator()) {
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, KEY_DOWN, EV_SYN, SYN_REPORT, 0)
+                        makeEvents(EV_KEY, button.key, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
                 )
                 // The stylus button is expected to be sent to the status bar as a system key on
                 // the down press.
                 assertReceivedSystemKey(button.value)
 
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, KEY_UP, EV_SYN, SYN_REPORT, 0)
+                        makeEvents(EV_KEY, button.key, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
                 )
             }
         }
@@ -141,10 +143,10 @@ class StylusButtonInputEventTest {
         UinputBluetoothStylus(instrumentation).use { bluetoothStylus ->
             for (button in LINUX_TO_ANDROID_KEYCODE_MAP.entries.iterator()) {
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, KEY_DOWN, EV_SYN, SYN_REPORT, 0)
+                        makeEvents(EV_KEY, button.key, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
                 )
                 bluetoothStylus.injectEvents(
-                        makeEvents(EV_KEY, button.key, KEY_UP, EV_SYN, SYN_REPORT, 0)
+                        makeEvents(EV_KEY, button.key, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
                 )
 
                 // Stylus buttons should not be sent to the status bar as a system key when

@@ -38,7 +38,6 @@ _START_FRAME = 30  # Give 3A 1s to warm up.
 _VIDEO_DELAY_TIME = 3  # Seconds
 _VIDEO_DURATION = 5.5  # Seconds
 _VIDEO_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed.
-_VIDEO_STABILIZATION_MODE = 1
 
 
 def _collect_data(cam, dut, lens_facing, log_path,
@@ -67,7 +66,7 @@ def _collect_data(cam, dut, lens_facing, log_path,
       log_path,
       facing=lens_facing,
       aspect_ratio=aspect_ratio,
-      stabilization_mode=_VIDEO_STABILIZATION_MODE,
+      stabilization_mode=camera_properties_utils.STABILIZATION_MODE_ON,
   )
   # Start camera movement.
   movement = threading.Thread(
@@ -266,7 +265,8 @@ class VideoStabilizationJCATest(its_base_test.UiAutomatorItsBaseTest):
 
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID16_API_LEVEL and
-          _VIDEO_STABILIZATION_MODE in supported_stabilization_modes)
+          camera_properties_utils.STABILIZATION_MODE_ON
+          in supported_stabilization_modes)
 
       # Log ffmpeg version being used.
       video_processing_utils.log_ffmpeg_version()

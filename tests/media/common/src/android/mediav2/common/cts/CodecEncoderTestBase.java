@@ -568,6 +568,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
         return mMuxedOutputFile;
     }
 
+    @Override
     protected void validateTestState() {
         super.validateTestState();
         if ((mIsAudio || (mIsVideo && mActiveEncCfg.mMaxBFrames == 0))

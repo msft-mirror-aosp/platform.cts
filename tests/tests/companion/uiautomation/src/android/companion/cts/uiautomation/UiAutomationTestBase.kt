@@ -159,6 +159,7 @@ open class UiAutomationTestBase(
             } else {
                 // User "rejects" the association confirmation prompt
                 confirmationUi.scrollToBottom()
+                sleep(1.seconds.inWholeMilliseconds)
                 confirmationUi.clickNegativeButton()
             }
         }
@@ -272,6 +273,9 @@ open class UiAutomationTestBase(
                 }
             }
         } else {
+            if (singleDevice) {
+                confirmationUi.scrollToBottom()
+            }
             callback.assertInvokedByActions {
                 confirmationAction()
             }

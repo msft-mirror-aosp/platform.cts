@@ -26,10 +26,10 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DebugInputRule
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_LEFT
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_MOUSE
 import com.android.cts.input.UinputAbsoluteMouse
 import com.android.cts.input.UinputTouchDevice
-import com.android.cts.input.UinputTouchDevice.Companion.BTN_MOUSE
-import com.android.cts.input.UinputTouchDevice.Companion.BTN_TOOL_MOUSE
 import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withButtonState
 import com.android.cts.input.inputeventmatchers.withCoords
@@ -119,7 +119,7 @@ class AbsoluteMouseTest {
         )
 
         // Inject and verify mouse button click
-        absoluteMouse.sendBtn(BTN_MOUSE, true)
+        absoluteMouse.sendBtn(BTN_LEFT, true)
         absoluteMouse.sync()
 
         verifier.assertReceivedMotion(
@@ -160,7 +160,7 @@ class AbsoluteMouseTest {
         // Inject and verify mouse button release
         absoluteMouse.sendUp(pointerId)
         absoluteMouse.sendBtnTouch(false)
-        absoluteMouse.sendBtn(BTN_MOUSE, false)
+        absoluteMouse.sendBtn(BTN_LEFT, false)
         absoluteMouse.sync()
 
         if (com.android.input.flags.Flags.disableTouchInputMapperPointerUsage()) {

@@ -30,10 +30,10 @@ import multi_camera_switch_utils
 import preview_processing_utils
 
 
-_AE_ATOL = 15.0
-_AE_RTOL = 0.15  # 15%
-_AF_ATOL = 0.15
-_AF_RTOL = 0.15  # 15%
+_AE_ATOL = 7.0
+_AE_RTOL = 0.7  # 7%
+_AF_ATOL = 0.7
+_AF_RTOL = 0.7  # 7%
 _AWB_ATOL_AB = 10  # ATOL for A and B means in LAB color space
 _AWB_ATOL_L = 3  # ATOL for L means in LAB color space
 _COLORS = ('r', 'g', 'b', 'gray')
@@ -44,7 +44,7 @@ _MP4_FORMAT = '.mp4'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_MARGIN = 50  # Pixels
 _ZOOM_RANGE_W_TELE = (1.8, 5.0)  # W/Tele crossover range
-_ZOOM_STEP = 0.02
+_ZOOM_STEP = 0.05  # Empirically efficient for finding the crossover point
 
 
 class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):

@@ -16,6 +16,7 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_Format32bitABGR2101010;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
@@ -54,6 +55,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -257,21 +259,28 @@ public class EncodeDecodeAccuracyTest extends CodecDecoderTestBase {
         // Note: although vp8 and vp9 donot contain fields to signal color aspects properly, this
         // information can be muxed in to containers of mkv and mp4. So even those clips
         // should pass these tests
-        final String[] mediaTypes =
-                {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
-                        MediaFormat.MIMETYPE_VIDEO_VP8, MediaFormat.MIMETYPE_VIDEO_VP9,
-                        MediaFormat.MIMETYPE_VIDEO_AV1};
+        List<String> mediaTypes = new ArrayList<>(Arrays.asList(
+                MediaFormat.MIMETYPE_VIDEO_AV1,
+                MediaFormat.MIMETYPE_VIDEO_AVC,
+                MediaFormat.MIMETYPE_VIDEO_HEVC,
+                MediaFormat.MIMETYPE_VIDEO_VP8,
+                MediaFormat.MIMETYPE_VIDEO_VP9
+        ));
+        if (IS_AT_LEAST_B && apvSupport()) {
+            mediaTypes.add(MediaFormat.MIMETYPE_VIDEO_APV);
+        }
         final List<Object[]> exhaustiveArgsList = new ArrayList<>();
         for (Object[] obj : baseArgsList) {
             final int width = (int) obj[0];
             final int height = (int) obj[1];
             final int fps = (int) obj[2];
-            final int br = (int) obj[3];
+            int br = (int) obj[3];
             final int range = (int) obj[4];
             final int std = (int) obj[5];
             final int tfr = (int) obj[6];
             final int bd = (boolean) obj[7] ? 10 : 8;
             for (String mediaType : mediaTypes) {
+                if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) br *= 10;
                 // the vp8 spec only supports 8 bit
                 if (mediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP8) && bd == 10) continue;
                 Object[] testArgs = new Object[3];

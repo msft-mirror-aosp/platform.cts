@@ -29,6 +29,7 @@ java_defaults {
     static_libs: [
         "ctstestrunner-axt",
         "cts-media-common",
+        "ctsmediav2common",
         "testng",
     ],
     jni_libs: [

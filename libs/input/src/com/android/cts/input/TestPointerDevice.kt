@@ -23,6 +23,8 @@ import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
 import android.view.Display
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_PEN
 
 enum class TestPointerDevice {
 
@@ -77,7 +79,7 @@ enum class TestPointerDevice {
 
         override fun hoverMove(dx: Int, dy: Int) {
             pointer.offset(dx, dy)
-            drawingTablet.sendBtn(UinputTouchDevice.BTN_TOOL_PEN, isDown = true)
+            drawingTablet.sendBtn(BTN_TOOL_PEN, isDown = true)
             drawingTablet.sendDown(
                 id = 0,
                 physicalLocation = pointer,
@@ -110,7 +112,7 @@ enum class TestPointerDevice {
 
         override fun hoverMove(dx: Int, dy: Int) {
             val point = Point(20, 50)
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, isDown = true)
+            touchpad.sendBtn(BTN_TOOL_FINGER, isDown = true)
             touchpad.sendBtnTouch(isDown = true)
             touchpad.sendDown(id = 0, point)
             touchpad.sync()
@@ -123,7 +125,7 @@ enum class TestPointerDevice {
 
             touchpad.sendUp(id = 0)
             touchpad.sendBtnTouch(isDown = false)
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, isDown = false)
+            touchpad.sendBtn(BTN_TOOL_FINGER, isDown = false)
             touchpad.sync()
         }
 

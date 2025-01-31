@@ -16,13 +16,20 @@
 
 package android.jni.cts;
 
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.os.Build;
 import android.os.Process;
 
+import androidx.test.core.app.ApplicationProvider;
+
 import com.android.compatibility.common.util.PropertyUtil;
+
+import dalvik.system.DexClassLoader;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 /**
  * Basic static method tests. The "nonce" class being tested by this
@@ -580,5 +587,26 @@ public class JniStaticTest extends JniTestCase {
             assertNotNull("The native library file does not exist in the file system, "
                 + "but dlopen(" + f + ", RTLD_NOW) succeeds.", error);
         }
+    }
+
+    /**
+     * This is a reproducer for b/383622584 where native symbols are linked for
+     * a class loaded by a different classloader causes problems with detection
+     * of native bridge.
+     */
+    public void test_linkNativeSymbolsForDifferentClassloader() throws Exception {
+        final Context context = ApplicationProvider.getApplicationContext();
+        final String packageName = context.getPackageName();
+        final ApplicationInfo appInfo =
+                context.getPackageManager().getApplicationInfo(packageName, 0);
+        // Create effectively a copy of existing classloader
+        DexClassLoader classLoader = new DexClassLoader(
+                appInfo.sourceDir, context.getCodeCacheDir().toString(), null, null);
+        Class targetClass = classLoader.loadClass("android.jni.cts.ClassForDifferentClassLoader");
+        StaticNonce.delayedRegisterNatives(targetClass);
+
+        Method returnBooleanMethod = targetClass.getMethod("returnBoolean");
+        Boolean result = (Boolean) returnBooleanMethod.invoke(null);
+        assertTrue(result);
     }
 }

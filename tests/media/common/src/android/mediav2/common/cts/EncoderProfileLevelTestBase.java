@@ -69,6 +69,21 @@ public class EncoderProfileLevelTestBase extends CodecEncoderTestBase {
                     HEVCMainTierLevel52, HEVCHighTierLevel52, HEVCMainTierLevel6,
                     HEVCHighTierLevel6, HEVCHighTierLevel61, HEVCHighTierLevel62,
                     HEVCMainTierLevel61, HEVCMainTierLevel62};
+    private static final int[] APV_LEVELS =
+            new int[]{APVLevel1Band0, APVLevel1Band1, APVLevel1Band2, APVLevel1Band3,
+                    APVLevel11Band0, APVLevel11Band1, APVLevel11Band2, APVLevel11Band3,
+                    APVLevel2Band0, APVLevel2Band1, APVLevel2Band2, APVLevel2Band3,
+                    APVLevel21Band0, APVLevel21Band1, APVLevel21Band2, APVLevel21Band3,
+                    APVLevel3Band0, APVLevel3Band1, APVLevel3Band2, APVLevel3Band3,
+                    APVLevel31Band0, APVLevel31Band1, APVLevel31Band2, APVLevel31Band3,
+                    APVLevel4Band0, APVLevel4Band1, APVLevel4Band2, APVLevel4Band3,
+                    APVLevel41Band0, APVLevel41Band1, APVLevel41Band2, APVLevel41Band3,
+                    APVLevel5Band0, APVLevel5Band1, APVLevel5Band2, APVLevel5Band3,
+                    APVLevel51Band0, APVLevel51Band1, APVLevel51Band2, APVLevel51Band3,
+                    APVLevel6Band0, APVLevel6Band1, APVLevel6Band2, APVLevel6Band3,
+                    APVLevel61Band0, APVLevel61Band1, APVLevel61Band2, APVLevel61Band3,
+                    APVLevel7Band0, APVLevel7Band1, APVLevel7Band2, APVLevel7Band3,
+                    APVLevel71Band0, APVLevel71Band1, APVLevel71Band2, APVLevel71Band3};
 
     public static final HashMap<String, int[]> LEVEL_MAP = new HashMap<>();
 
@@ -80,6 +95,7 @@ public class EncoderProfileLevelTestBase extends CodecEncoderTestBase {
         LEVEL_MAP.put(MediaFormat.MIMETYPE_VIDEO_H263, H263_LEVELS);
         LEVEL_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_LEVELS);
         LEVEL_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_LEVELS);
+        LEVEL_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_LEVELS);
     }
 
     private static int divUp(int num, int den) {
@@ -103,6 +119,8 @@ public class EncoderProfileLevelTestBase extends CodecEncoderTestBase {
                 return getMinLevelVP9(width, height, frameRate, bitrate);
             case MediaFormat.MIMETYPE_VIDEO_AV1:
                 return getMinLevelAV1(width, height, frameRate, bitrate);
+            case MediaFormat.MIMETYPE_VIDEO_APV:
+                return getMinLevelAPV(width, height, frameRate, bitrate);
             default:
                 return -1;
         }
@@ -458,6 +476,87 @@ public class EncoderProfileLevelTestBase extends CodecEncoderTestBase {
         }
         // if none of the levels suffice or high profile, select the highest level
         return AV1Level63;
+    }
+
+    private static int getMinLevelAPV(int width, int height, int frameRate, int bitrate) {
+        class LevelLimitAPV {
+            private LevelLimitAPV(int level, long samplesPerSec, int bitrateKbps) {
+                this.mLevel = level;
+                this.mSamplesPerSec = samplesPerSec;
+                this.mBitrateKbps = bitrateKbps;
+            }
+
+            private final int mLevel;
+            private final long mSamplesPerSec;
+            private final int mBitrateKbps;
+        }
+        LevelLimitAPV[] limitsAPV = {
+                new LevelLimitAPV(APVLevel1Band0, 3041280L, 7000),
+                new LevelLimitAPV(APVLevel1Band1, 3041280L, 11000),
+                new LevelLimitAPV(APVLevel1Band2, 3041280L, 14000),
+                new LevelLimitAPV(APVLevel1Band3, 3041280L, 21000),
+                new LevelLimitAPV(APVLevel11Band0, 6082560L, 14000),
+                new LevelLimitAPV(APVLevel11Band1, 6082560L, 21000),
+                new LevelLimitAPV(APVLevel11Band2, 6082560L, 28000),
+                new LevelLimitAPV(APVLevel11Band3, 6082560L, 42000),
+                new LevelLimitAPV(APVLevel2Band0, 15667200L, 36000),
+                new LevelLimitAPV(APVLevel2Band1, 15667200L, 53000),
+                new LevelLimitAPV(APVLevel2Band2, 15667200L, 71000),
+                new LevelLimitAPV(APVLevel2Band3, 15667200L, 106000),
+                new LevelLimitAPV(APVLevel21Band0, 31334400L, 71000),
+                new LevelLimitAPV(APVLevel21Band1, 31334400L, 106000),
+                new LevelLimitAPV(APVLevel21Band2, 31334400L, 141000),
+                new LevelLimitAPV(APVLevel21Band3, 31334400L, 212000),
+                new LevelLimitAPV(APVLevel3Band0, 66846720L, 101000),
+                new LevelLimitAPV(APVLevel3Band1, 66846720L, 151000),
+                new LevelLimitAPV(APVLevel3Band2, 66846720L, 201000),
+                new LevelLimitAPV(APVLevel3Band3, 66846720L, 301000),
+                new LevelLimitAPV(APVLevel31Band0, 133693440L, 201000),
+                new LevelLimitAPV(APVLevel31Band1, 133693440L, 301000),
+                new LevelLimitAPV(APVLevel31Band2, 133693440L, 401000),
+                new LevelLimitAPV(APVLevel31Band3, 133693440L, 602000),
+                new LevelLimitAPV(APVLevel4Band0, 265420800L, 401000),
+                new LevelLimitAPV(APVLevel4Band1, 265420800L, 602000),
+                new LevelLimitAPV(APVLevel4Band2, 265420800L, 780000),
+                new LevelLimitAPV(APVLevel4Band3, 265420800L, 1170000),
+                new LevelLimitAPV(APVLevel41Band0, 530841600L, 780000),
+                new LevelLimitAPV(APVLevel41Band1, 530841600L, 1170000),
+                new LevelLimitAPV(APVLevel41Band2, 530841600L, 1560000),
+                new LevelLimitAPV(APVLevel41Band3, 530841600L, 2340000),
+                new LevelLimitAPV(APVLevel5Band0, 1061683200L, 1560000),
+                new LevelLimitAPV(APVLevel5Band1, 1061683200L, 2340000),
+                new LevelLimitAPV(APVLevel5Band2, 1061683200L, 3324000),
+                new LevelLimitAPV(APVLevel5Band3, 1061683200L, 4986000),
+                new LevelLimitAPV(APVLevel51Band0, 2123366400L, 3324000),
+                new LevelLimitAPV(APVLevel51Band1, 2123366400L, 4986000),
+                new LevelLimitAPV(APVLevel51Band2, 2123366400L, 6648000),
+                new LevelLimitAPV(APVLevel51Band3, 2123366400L, 9972000),
+                new LevelLimitAPV(APVLevel6Band0, 4777574400L, 6648000),
+                new LevelLimitAPV(APVLevel6Band1, 4777574400L, 9972000),
+                new LevelLimitAPV(APVLevel6Band2, 4777574400L, 13296000),
+                new LevelLimitAPV(APVLevel6Band3, 4777574400L, 19944000),
+                new LevelLimitAPV(APVLevel61Band0, 8493465600L, 13296000),
+                new LevelLimitAPV(APVLevel61Band1, 8493465600L, 19944000),
+                new LevelLimitAPV(APVLevel61Band2, 8493465600L, 26592000),
+                new LevelLimitAPV(APVLevel61Band3, 8493465600L, 39888000),
+                new LevelLimitAPV(APVLevel7Band0, 16986931200L, 26592000),
+                new LevelLimitAPV(APVLevel7Band1, 16986931200L, 39888000),
+                new LevelLimitAPV(APVLevel7Band2, 16986931200L, 53184000),
+                new LevelLimitAPV(APVLevel7Band3, 16986931200L, 79776000),
+                new LevelLimitAPV(APVLevel71Band0, 33973862400L, 53184000),
+                new LevelLimitAPV(APVLevel71Band1, 33973862400L, 79776000),
+                new LevelLimitAPV(APVLevel71Band2, 33973862400L, 106368000),
+                new LevelLimitAPV(APVLevel71Band3, 33973862400L, 159552000),
+        };
+        long samplesPerSec = (long) width * height * frameRate;
+        for (LevelLimitAPV levelLimitsAPV : limitsAPV) {
+            if (samplesPerSec <= levelLimitsAPV.mSamplesPerSec
+                    && bitrate <= levelLimitsAPV.mBitrateKbps * 1000) {
+                return levelLimitsAPV.mLevel;
+            }
+        }
+        // if none of the levels suffice, select the highest level
+        return APVLevel71Band3;
     }
 
     protected BitStreamUtils.ParserBase mParser;

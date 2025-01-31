@@ -99,7 +99,7 @@ class SidecarManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_platformAppFunctionService_success() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyLong("a", 1)
@@ -131,7 +131,7 @@ class SidecarManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_verifyCallingPackageFromRequest() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request = SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
             val response = sidecarExecuteFunction(context, request)
@@ -155,7 +155,7 @@ class SidecarManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_cancellationSignalReceived_unbind() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyLong("a", 1)
@@ -190,7 +190,7 @@ class SidecarManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyLong("a", 1)
@@ -221,7 +221,7 @@ class SidecarManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_platformManager_sidecarAppFunctionService_success() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyLong("a", 1)
@@ -277,8 +277,8 @@ class SidecarManagerTest {
         const val TEST_SIDECAR_HELPER_PKG: String = "android.app.appfunctions.cts.helper.sidecar"
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
-        const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
-            Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
+        const val EXECUTE_APP_FUNCTIONS_PERMISSION =
+            Manifest.permission.EXECUTE_APP_FUNCTIONS
         const val LONG_TIMEOUT_SECOND: Long = 5
 
         suspend fun sidecarExecuteFunction(

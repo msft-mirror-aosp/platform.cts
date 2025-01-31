@@ -38,7 +38,6 @@ _VIDEO_DURATION = 5.5  # seconds
 _VIDEO_QUALITIES_TESTED = ('CIF:3', '480P:4', '720P:5', '1080P:6', 'QVGA:7',
                            'VGA:9')
 _VIDEO_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
-_VIDEO_STABILIZATION_MODE = 1
 _SIZE_TO_PROFILE = {'176x144': 'QCIF:2', '352x288': 'CIF:3',
                     '320x240': 'QVGA:7'}
 
@@ -95,7 +94,8 @@ def _collect_data(cam, tablet_device, video_profile, video_quality, rot_rig):
   # Record video and return recording object
   time.sleep(_VIDEO_DELAY_TIME)  # allow time for rig to start moving
   recording_obj = cam.do_basic_recording(
-      video_profile, video_quality, _VIDEO_DURATION, _VIDEO_STABILIZATION_MODE)
+      video_profile, video_quality, _VIDEO_DURATION,
+      camera_properties_utils.STABILIZATION_MODE_ON)
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
 
@@ -135,7 +135,8 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
 
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID13_API_LEVEL and
-          _VIDEO_STABILIZATION_MODE in supported_stabilization_modes)
+          camera_properties_utils.STABILIZATION_MODE_ON
+          in supported_stabilization_modes)
 
       # Log ffmpeg version being used
       video_processing_utils.log_ffmpeg_version()

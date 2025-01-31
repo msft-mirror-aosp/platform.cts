@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -37,6 +38,8 @@ import android.annotation.Nullable;
 import android.annotation.RawRes;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
+import android.car.Car;
+import android.car.media.CarAudioManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -299,18 +302,27 @@ public class AudioFocusTest {
 
     @Test
     public void testAudioFocusRequestGainLoss() throws Exception {
+        // TODO(b/380497573): replace the skip directive with a verification that the focus
+        // policy is installed.
+        assumeOemServiceIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, false /*no handler*/);
     }
 
     @Test
     public void testAudioFocusRequestGainLossHandler() throws Exception {
+        // TODO(b/380497573): replace the skip directive with a verification that the focus
+        // policy is installed.
+        assumeOemServiceIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, true /*with handler*/);
     }
 
     @Test
     public void testAudioFocusRequestGainLossTransient() throws Exception {
+        // TODO(b/380497573): replace the skip directive with a verification that the focus
+        // policy is installed.
+        assumeOemServiceIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 false /*no handler*/);
@@ -318,6 +330,9 @@ public class AudioFocusTest {
 
     @Test
     public void testAudioFocusRequestGainLossTransientHandler() throws Exception {
+        // TODO(b/380497573): replace the skip directive with a verification that the focus
+        // policy is installed.
+        assumeOemServiceIsNotEnabled();
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 true /*with handler*/);
@@ -352,6 +367,9 @@ public class AudioFocusTest {
 
     @Test
     public void testAudioFocusRequestA11y() throws Exception {
+        // TODO(b/380497573): replace the skip directive with a verification that the focus
+        // policy is installed.
+        assumeOemServiceIsNotEnabled();
         final AudioAttributes[] attributes = {ATTR_DRIVE_DIR, ATTR_A11Y};
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE, attributes,
@@ -1266,6 +1284,27 @@ public class AudioFocusTest {
                 "MediaPlayer wasn't prepared in under " + MEDIAPLAYER_PREPARE_TIMEOUT_MS + " ms",
                 onPreparedCalled.isSignalled());
         return mp;
+    }
+
+    private void assumeOemServiceIsNotEnabled() {
+        boolean oemAudioServiceEnabled = false;
+        if (isCar()) {
+            final Car car = Car.createCar(mContext);
+            try {
+                final CarAudioManager carAudioManager = car.getCarManager(CarAudioManager.class);
+                oemAudioServiceEnabled = carAudioManager.isAudioFeatureEnabled(
+                            CarAudioManager.AUDIO_FEATURE_OEM_AUDIO_SERVICE);
+            } finally {
+                if (car != null) {
+                    car.disconnect();
+                }
+            }
+        }
+        assumeFalse("OEM audio service is enabled", oemAudioServiceEnabled);
+    }
+
+    protected boolean isCar() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private static class FocusChangeListener implements OnAudioFocusChangeListener {

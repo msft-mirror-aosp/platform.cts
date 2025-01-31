@@ -30,6 +30,7 @@ import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
 import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTALT
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.inputeventmatchers.withKeyAction
 import com.android.cts.input.inputeventmatchers.withKeyCode
@@ -50,11 +51,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class ModifierKeyRemappingTest {
-
-    companion object {
-        // Linux keycode defined in the "linux/input-event-codes.h" header.
-        val KEY_LEFTALT = 56
-    }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 

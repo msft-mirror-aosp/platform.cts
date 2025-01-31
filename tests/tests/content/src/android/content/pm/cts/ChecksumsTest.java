@@ -57,14 +57,11 @@ import android.content.pm.PackageInstaller.SessionParams;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -75,7 +72,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.CpuFeatures;
 import com.android.compatibility.common.util.FileUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.internal.util.HexDump;
@@ -123,8 +119,6 @@ public class ChecksumsTest {
     private static final String V2V3_PACKAGE_NAME = "android.content.cts";
     private static final String V4_PACKAGE_NAME = "com.example.helloworld";
     private static final String FIXED_PACKAGE_NAME = "android.appsecurity.cts.tinyapp";
-    private static final String FIXED_FSVERITY_PACKAGE_NAME =
-            "android.appsecurity.cts.apkveritytestapp";
 
     private static final String TEST_APK_PATH = "/data/local/tmp/cts/content/";
 
@@ -146,14 +140,6 @@ public class ChecksumsTest {
             "CtsPkgInstallTinyAppV2V3V4-Sha512withEC.apk";
     private static final String TEST_FIXED_APK_VERITY = "CtsPkgInstallTinyAppV2V3V4-Verity.apk";
 
-    private static final String TEST_FIXED_APK_FSVERITY = "CtsApkVerityTestAppPrebuilt.apk";
-    private static final String TEST_FIXED_APK_FSVERITY_FSVSIG =
-            "CtsApkVerityTestAppPrebuilt.apk.fsv_sig";
-    private static final String TEST_FIXED_APK_FSVERITY_SHA256_ARM64 =
-            "84c9974e74258a9c5abbc8a797358fe8ebf8918edf62383ea621e9e9e6461864";
-    private static final String TEST_FIXED_APK_FSVERITY_SHA256_X86_64 =
-            "5073070ee9e9a7821b4044b457d95a2bb81f349ba32d31acd0952e4a2617075a";
-
     private static final String TEST_FIXED_APK_V2_SHA256 =
             "1eec9e86e322b8d7e48e255fc3f2df2dbc91036e63982ff9850597c6a37bbeb3";
     private static final String TEST_FIXED_APK_SHA256 =
@@ -168,12 +154,6 @@ public class ChecksumsTest {
             new Checksum(TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256, hexStringToBytes("850597c6a37bbeb3")),
             new Checksum(TYPE_WHOLE_SHA256, hexStringToBytes(TEST_FIXED_APK_SHA256)),
             new Checksum(TYPE_WHOLE_MD5, hexStringToBytes(TEST_FIXED_APK_MD5))};
-
-    /** Default is to not use fs-verity since it depends on kernel support. */
-    private static final int FSVERITY_DISABLED = 0;
-
-    /** Standard fs-verity. */
-    private static final int FSVERITY_ENABLED = 2;
 
     private static final byte[] NO_SIGNATURE = null;
 
@@ -208,7 +188,6 @@ public class ChecksumsTest {
     public static void onAfterClass() throws Exception {
         uninstallPackageSilently(V4_PACKAGE_NAME);
         uninstallPackageSilently(FIXED_PACKAGE_NAME);
-        uninstallPackageSilently(FIXED_FSVERITY_PACKAGE_NAME);
     }
 
     @Test
@@ -327,67 +306,6 @@ public class ChecksumsTest {
                 "6b866e8a54a3e358dfc20007960fb96123845f6c6d6c45f5fddf88150d71677f"
                         + "4c3081a58921c88651f7376118aca312cf764b391cdfb8a18c6710f9f27916a0");
         assertNull(checksums[0].getInstallerCertificate());
-    }
-
-    @LargeTest
-    @Test
-    @RequiresFlagsDisabled(android.security.Flags.FLAG_DEPRECATE_FSV_SIG)
-    public void testFixedFSVerityDefaultChecksums() throws Exception {
-        assumeTrue(isApkVerityEnabled());
-        uninstallPackageSilently(FIXED_FSVERITY_PACKAGE_NAME);
-        installApkWithFSVerity(TEST_FIXED_APK_FSVERITY, TEST_FIXED_APK_FSVERITY_FSVSIG);
-        assertTrue(isAppInstalled(FIXED_FSVERITY_PACKAGE_NAME));
-
-        LocalListener receiver = new LocalListener();
-        PackageManager pm = getPackageManager();
-        pm.requestChecksums(FIXED_FSVERITY_PACKAGE_NAME, true, 0, TRUST_NONE, receiver);
-        ApkChecksum[] checksums = receiver.getResult();
-        assertNotNull(checksums);
-        assertEquals(checksums.length, 2, Arrays.toString(checksums));
-        assertEquals(checksums[0].getType(), TYPE_WHOLE_MERKLE_ROOT_4K_SHA256);
-        if (CpuFeatures.isArm64Cpu() || CpuFeatures.isArmCpu()) {
-            assertEquals(bytesToHexString(checksums[0].getValue()),
-                    TEST_FIXED_APK_FSVERITY_SHA256_ARM64);
-            assertEquals(bytesToHexString(checksums[1].getValue()),
-                    "8c61bc2548521aa0005276af68e42253957e1e24c122f7d8bf10f1832d4014e5");
-        } else if (CpuFeatures.isX86_64Cpu() || CpuFeatures.isX86Cpu()) {
-            assertEquals(bytesToHexString(checksums[0].getValue()),
-                    TEST_FIXED_APK_FSVERITY_SHA256_X86_64);
-            assertEquals(bytesToHexString(checksums[1].getValue()),
-                    "6f7cfa569c4a25d7241e26c1c8ff274badbdefd7854d91b842b1a97a985d5917");
-        } else {
-            Assert.fail("Unsupported CPU ABI");
-        }
-        assertEquals(checksums[1].getType(), TYPE_PARTIAL_MERKLE_ROOT_1M_SHA256);
-    }
-
-    @LargeTest
-    @Test
-    @RequiresFlagsDisabled(android.security.Flags.FLAG_DEPRECATE_FSV_SIG)
-    public void testFixedFSVerityDefaultChecksumsIncremental() throws Exception {
-        assumeTrue(checkIncrementalDeliveryFeature());
-
-        uninstallPackageSilently(FIXED_FSVERITY_PACKAGE_NAME);
-        installFilesIncrementally(
-                new String[]{TEST_FIXED_APK_FSVERITY, TEST_FIXED_APK_FSVERITY_FSVSIG});
-        assertTrue(isAppInstalled(FIXED_FSVERITY_PACKAGE_NAME));
-
-        LocalListener receiver = new LocalListener();
-        PackageManager pm = getPackageManager();
-        pm.requestChecksums(FIXED_FSVERITY_PACKAGE_NAME, true, 0, TRUST_NONE, receiver);
-        ApkChecksum[] checksums = receiver.getResult();
-        assertNotNull(checksums);
-        assertEquals(checksums.length, 1, Arrays.toString(checksums));
-        assertEquals(checksums[0].getType(), TYPE_WHOLE_MERKLE_ROOT_4K_SHA256);
-        if (CpuFeatures.isArm64Cpu() || CpuFeatures.isArmCpu()) {
-            assertEquals(bytesToHexString(checksums[0].getValue()),
-                    TEST_FIXED_APK_FSVERITY_SHA256_ARM64);
-        } else if (CpuFeatures.isX86_64Cpu() || CpuFeatures.isX86Cpu()) {
-            assertEquals(bytesToHexString(checksums[0].getValue()),
-                    TEST_FIXED_APK_FSVERITY_SHA256_X86_64);
-        } else {
-            Assert.fail("Unsupported CPU ABI");
-        }
     }
 
     @Test
@@ -1465,26 +1383,6 @@ public class ChecksumsTest {
         }
     }
 
-    private void installApkWithFSVerity(String apk, String fsv) throws Exception {
-        adoptShellPermissionIdentity();
-        try {
-            final PackageInstaller installer = getPackageInstaller();
-            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
-            params.installFlags |= PackageManager.INSTALL_BYPASS_LOW_TARGET_SDK_BLOCK;
-
-            final int sessionId = installer.createSession(params);
-            Session session = installer.openSession(sessionId);
-            writeFileToSession(session, "file", apk);
-            writeFileToSession(session, "file.fsv_sig", fsv);
-
-            CommitIntentReceiver receiver = new CommitIntentReceiver();
-            session.commit(receiver.getIntentSender());
-            CommitIntentReceiver.checkSuccess(receiver.getResult());
-        } finally {
-            dropShellPermissionIdentity();
-        }
-    }
-
     private void installApkWithChecksumsIncrementally(final String inPath) throws Exception {
         installApkWithChecksumsIncrementally(inPath, TEST_FIXED_APK, TEST_FIXED_APK_DIGESTS,
                 NO_SIGNATURE);
@@ -1587,15 +1485,6 @@ public class ChecksumsTest {
                                 splits)));
     }
 
-    private void installFilesIncrementally(String[] baseNames) throws IOException {
-        String[] splits = Arrays.stream(baseNames).map(
-                baseName -> createApkPath(baseName)).toArray(String[]::new);
-        Assert.assertEquals("Success\n",
-                executeShellCommand(
-                        "pm install-incremental -t -g --bypass-low-target-sdk-block " + String.join(
-                                " ", splits)));
-    }
-
     private static void writeFileToSession(PackageInstaller.Session session, String name,
             String apk) throws IOException {
         File file = new File(createApkPath(apk));
@@ -1657,13 +1546,6 @@ public class ChecksumsTest {
 
     private boolean checkIncrementalDeliveryFeature() {
         return getPackageManager().hasSystemFeature(PackageManager.FEATURE_INCREMENTAL_DELIVERY);
-    }
-
-    // From PackageManagerServiceUtils.
-    private static boolean isApkVerityEnabled() {
-        return Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.R
-                || SystemProperties.getInt("ro.apk_verity.mode", FSVERITY_DISABLED)
-                == FSVERITY_ENABLED;
     }
 
     private byte[] readSignature() throws IOException {

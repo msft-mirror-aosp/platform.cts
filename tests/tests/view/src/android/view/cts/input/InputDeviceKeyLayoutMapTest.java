@@ -18,6 +18,11 @@ package android.view.cts.input;
 
 import static android.view.InputDevice.SOURCE_KEYBOARD;
 
+import static com.android.cts.input.EvdevInputEventCodes.EV_KEY;
+import static com.android.cts.input.EvdevInputEventCodes.EV_KEY_PRESS;
+import static com.android.cts.input.EvdevInputEventCodes.EV_KEY_RELEASE;
+import static com.android.cts.input.EvdevInputEventCodes.EV_SYN;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -62,16 +67,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * CTS test case for generic.kl key layout mapping.
- * This test utilize uinput command line tool to create a test device, and configure the virtual
- * device to have all keys need to be tested. The JSON format input for device configuration
- * and EV_KEY injection will be created directly from this test for uinput command.
- * Keep res/raw/Generic.kl in sync with framework/base/data/keyboards/Generic.kl, this file
- * will be loaded and parsed in this test, looping through all key labels and the corresponding
- * EV_KEY code, injecting the KEY_UP and KEY_DOWN event to uinput, then verify the KeyEvent
- * delivered to test application view. Except meta control keys and special keys not delivered
- * to apps, all key codes in generic.kl will be verified.
- *
+ * CTS test case for generic.kl key layout mapping. This test utilize uinput command line tool to
+ * create a test device, and configure the virtual device to have all keys need to be tested. The
+ * JSON format input for device configuration and EV_KEY injection will be created directly from
+ * this test for uinput command. Keep res/raw/Generic.kl in sync with
+ * framework/base/data/keyboards/Generic.kl, this file will be loaded and parsed in this test,
+ * looping through all key labels and the corresponding EV_KEY code, injecting the EV_KEY_RELEASE
+ * and EV_KEY_PRESS event to uinput, then verify the KeyEvent delivered to test application view.
+ * Except meta control keys and special keys not delivered to apps, all key codes in generic.kl will
+ * be verified.
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -82,10 +86,6 @@ public class InputDeviceKeyLayoutMapTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     private static final String LABEL_PREFIX = "KEYCODE_";
     private static final int DEVICE_ID = 1;
-    private static final int EV_SYN = 0;
-    private static final int EV_KEY = 1;
-    private static final int EV_KEY_DOWN = 1;
-    private static final int EV_KEY_UP = 0;
     private static final int GOOGLE_VENDOR_ID = 0x18d1;
     private static final int GOOGLE_VIRTUAL_KEYBOARD_ID = 0x001f;
     private static final int POLL_EVENT_TIMEOUT_SECONDS = 5;
@@ -256,14 +256,10 @@ public class InputDeviceKeyLayoutMapTest {
      * @param evKeyCode The key scan code
      */
     private void pressKey(int evKeyCode) {
-        int[] evCodesDown = new int[] {
-                EV_KEY, evKeyCode, EV_KEY_DOWN,
-                EV_SYN, 0, 0};
+        int[] evCodesDown = new int[] {EV_KEY, evKeyCode, EV_KEY_PRESS, EV_SYN, 0, 0};
         mUinputDevice.injectEvents(Arrays.toString(evCodesDown));
 
-        int[] evCodesUp = new int[] {
-                EV_KEY, evKeyCode, EV_KEY_UP,
-                EV_SYN, 0, 0 };
+        int[] evCodesUp = new int[] {EV_KEY, evKeyCode, EV_KEY_RELEASE, EV_SYN, 0, 0};
         mUinputDevice.injectEvents(Arrays.toString(evCodesUp));
     }
 

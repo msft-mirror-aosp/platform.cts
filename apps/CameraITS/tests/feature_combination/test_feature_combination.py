@@ -78,11 +78,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     with concurrent.futures.ThreadPoolExecutor() as executor:
       self._test_feature_combination(executor)
 
-  def _create_feature_combo_proto(self):
+  def _create_feature_combo_proto(self, version):
     """Start logging feature combination info for camera in proto."""
     feature_combo_for_camera = (
         feature_combination_info_pb2.FeatureCombinationForCamera())
     feature_combo_for_camera.camera_id = self.camera_id
+    feature_combo_for_camera.feature_combination_query_version = version
 
     return feature_combo_for_camera
 
@@ -171,6 +172,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     return result
 
+  def _append_test_failure(self, failures, device_version, comb_version, msg):
+    if (device_version < comb_version):
+      failures['optional'].append(msg)
+    else:
+      failures['required'].append(msg)
+
   def _test_feature_combination(self, executor):
     """Tests features using an injected ThreadPoolExecutor for analysis.
 
@@ -213,17 +220,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       combinations_str, combinations = cam.get_queryable_stream_combinations()
       logging.debug('Queryable stream combinations: %s', combinations_str)
 
-      # Stabilization modes. Make sure to test ON first.
-      stabilization_params = []
+      # Stabilization: Make sure to test ON first in order to be able to skip
+      # OFF
+      stabilization_params = [True, False]
       stabilization_modes = props[
           'android.control.availableVideoStabilizationModes']
-      if (camera_properties_utils.STABILIZATION_MODE_PREVIEW in
-          stabilization_modes):
-        stabilization_params.append(
-            camera_properties_utils.STABILIZATION_MODE_PREVIEW)
-      stabilization_params.append(
-          camera_properties_utils.STABILIZATION_MODE_OFF
-      )
+
       logging.debug('stabilization modes: %s', stabilization_params)
 
       configs = props['android.scaler.streamConfigurationMap'][
@@ -233,19 +235,23 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           fps[1] in _FPS_30_60)]
       hlg10_params = [True, False]
 
-      test_failures = []
+      # 'required': failed combinations that are required to pass
+      # 'optional': failed combinations that are used for analytics only
+      test_failures = {'required': [], 'optional': []}
       feature_verification_futures = []
-      database = self._create_feature_combo_proto()
+      database = self._create_feature_combo_proto(
+          feature_combination_query_version)
       features_passed = {}
 
       for fps_range in fps_params:
         fps_range_tuple = tuple(fps_range)
         for hlg10 in hlg10_params:
-          for stabilize in stabilization_params:
+          for is_stabilized in stabilization_params:
             for stream_combination in combinations:
               streams_name = stream_combination['name']
+              combo_version = stream_combination['version']
               combination_name = (f'(streams: {streams_name}, hlg10: {hlg10}, '
-                                  f'stabilization: {stabilize}, fps_range: '
+                                  f'stabilization: {is_stabilized}, fps_range: '
                                   f'[{fps_range[0]}, {fps_range[1]}])')
 
               min_frame_duration = 0
@@ -254,16 +260,23 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   its_session_utils.PRIVATE_FORMAT):
                 raise AssertionError(
                     f'First stream for {streams_name} must be PRIV')
-              preview_size = stream_combination['combination'][0]['size']
-              for stream in stream_combination['combination']:
+              video_stream_index = 0
+              for index, stream in enumerate(stream_combination['combination']):
                 fmt = None
                 size = [int(e) for e in stream['size'].split('x')]
-                if stream['format'] == its_session_utils.PRIVATE_FORMAT:
-                  fmt = capture_request_utils.FMT_CODE_PRIV
-                elif stream['format'] == 'jpeg':
-                  fmt = capture_request_utils.FMT_CODE_JPEG
-                elif stream['format'] == its_session_utils.JPEG_R_FMT_STR:
-                  fmt = capture_request_utils.FMT_CODE_JPEG_R
+                match stream['format']:
+                  case its_session_utils.PRIVATE_FORMAT:
+                    fmt = capture_request_utils.FMT_CODE_PRIV
+                    video_stream_index = index
+                  case 'jpeg':
+                    fmt = capture_request_utils.FMT_CODE_JPEG
+                  case its_session_utils.JPEG_R_FMT_STR:
+                    fmt = capture_request_utils.FMT_CODE_JPEG_R
+                  case 'yuv':
+                    fmt = capture_request_utils.FMT_CODE_YUV
+                  case _:
+                    raise AssertionError(
+                        f'Unsupported stream format {stream["format"]}')
                 config = [x for x in configs if
                           x['format'] == fmt and
                           x['width'] == size[0] and
@@ -282,35 +295,47 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if max_achievable_fps < fps_range[1] - _FPS_SELECTION_ATOL:
                 continue
 
-              # Check if the hlg10 is supported for size and fps
+              # Check if the hlg10 is supported for the video size and fps
+              video_size = stream_combination['combination'][video_stream_index]['size']
               if (hlg10 and
                   not cam.is_hlg10_recording_supported_for_size_and_fps(
-                      preview_size, fps_range[1])
-                 ):
+                      video_size, fps_range[1])
+                  ):
+                continue
+
+              # Check if stabilization is supported: Use video stabilization
+              # if there is a dedicated video stream
+              if video_stream_index == 0:
+                stabilize_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+              else:
+                stabilize_mode = camera_properties_utils.STABILIZATION_MODE_ON
+              if not stabilize_mode in stabilization_modes:
                 continue
 
               logging.debug('combination name: %s', combination_name)
 
               # Construct output surfaces
               output_surfaces = []
-              for configured_stream in configured_streams:
+              for index, configured_stream in enumerate(configured_streams):
                 hlg10_stream = (configured_stream['formatStr'] ==
                                 its_session_utils.PRIVATE_FORMAT and hlg10)
+                is_video = index == video_stream_index
                 output_surfaces.append(
                     {'format': configured_stream['formatStr'],
                      'format_code': configured_stream['format'],
                      'width': configured_stream['width'],
                      'height': configured_stream['height'],
-                     'hlg10': hlg10_stream}
+                     'hlg10': hlg10_stream,
+                     'is_video': is_video}
                 )
 
               settings = {
-                  'android.control.videoStabilizationMode': stabilize,
+                  'android.control.videoStabilizationMode': stabilize_mode,
                   'android.control.aeTargetFpsRange': fps_range,
               }
 
               support_claimed = False
-              if support_query:
+              if feature_combination_query_version >= combo_version:
                 # Is the feature combination supported?
                 support_claimed = cam.is_stream_combination_supported(
                     output_surfaces, settings)
@@ -318,11 +343,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   logging.debug('%s not supported', combination_name)
 
               passed = True
-              is_stabilized = False
-              if (stabilize ==
-                  camera_properties_utils.STABILIZATION_MODE_PREVIEW):
-                is_stabilized = True
-
               # If a superset of features are already tested, skip and assuming
               # the subset of those features are supported. Do not skip [60, *]
               # even if its superset feature passes (b/385753212).
@@ -346,8 +366,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               try:
                 recording_obj = (
                     preview_processing_utils.collect_data_with_surfaces(
-                        cam, self.tablet_device, output_surfaces, is_stabilized,
-                        rot_rig=rot_rig, fps_range=fps_range))
+                        cam, self.tablet_device, output_surfaces, video_stream_index,
+                        stabilize_mode, rot_rig=rot_rig, fps_range=fps_range))
               except error_util.CameraItsError as e:
                 if support_query and support_claimed:
                   raise e
@@ -355,7 +375,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: collect_data_with_surfaces throws '
                     f'exception: {e}')
                 logging.debug(failure_msg)
-                test_failures.append(failure_msg)
+                self._append_test_failure(test_failures, feature_combination_query_version,
+                                          comb_version, failure_msg)
                 passed = False
                 self._add_feature_combo_entry_to_proto(
                     database, output_surfaces, passed,
@@ -390,7 +411,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{avg_frame_rate_codec} exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
-                test_failures.append(failure_msg)
+                self._append_test_failure(test_failures, feature_combination_query_version,
+                                          comb_version, failure_msg)
                 passed = False
 
               # Verify FPS by inspecting the result metadata
@@ -413,7 +435,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{avg_frame_rate_metadata} exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
                     f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
-                test_failures.append(failure_msg)
+                self._append_test_failure(test_failures, feature_combination_query_version,
+                                          comb_version, failure_msg)
                 passed = False
 
               # Verify color space
@@ -424,7 +447,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 failure_msg = (
                     f'{combination_name}: video color space {color_space} '
                     'is missing COLORSPACE_HDR')
-                test_failures.append(failure_msg)
+                self._append_test_failure(test_failures, feature_combination_query_version,
+                                          comb_version, failure_msg)
                 passed = False
 
               # Schedule finishing up of verification to run asynchronously
@@ -445,7 +469,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         logging.debug('Verification result: %s', result)
         if 'stabilization_failure' in result:
           failure_msg = f"{result['name']}: {result['stabilization_failure']}"
-          test_failures.append(failure_msg)
+          self._append_test_failure(test_failures, feature_combination_query_version,
+                                    comb_version, failure_msg)
 
         self._add_feature_combo_entry_to_proto(
             database, result['output_surfaces'], result['passed'],
@@ -458,8 +483,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       # Assert PASS/FAIL criteria
       if test_failures:
         logging.debug(test_failures)
-        if support_query:
-          raise AssertionError(test_failures)
+      if test_failures['required']:
+        raise AssertionError(test_failures['required'])
 
 if __name__ == '__main__':
   test_runner.main()

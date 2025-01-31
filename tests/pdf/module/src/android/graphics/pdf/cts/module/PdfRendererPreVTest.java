@@ -27,6 +27,7 @@ import static android.graphics.pdf.cts.module.Utils.LOAD_PARAMS;
 import static android.graphics.pdf.cts.module.Utils.ONE_IMAGE_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_ONE_IMAGE_PAGE_OBJECT;
 import static android.graphics.pdf.cts.module.Utils.ONE_PATH_PAGE_OBJECT;
+import static android.graphics.pdf.cts.module.Utils.ONE_STAMP_ANNOTATION;
 import static android.graphics.pdf.cts.module.Utils.PROTECTED_PDF;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_IMAGE;
 import static android.graphics.pdf.cts.module.Utils.SAMPLE_PDF;
@@ -50,10 +51,14 @@ import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
+import android.graphics.pdf.component.HighlightAnnotation;
+import android.graphics.pdf.component.PdfAnnotation;
+import android.graphics.pdf.component.PdfAnnotationType;
 import android.graphics.pdf.component.PdfPageImageObject;
 import android.graphics.pdf.component.PdfPageObject;
 import android.graphics.pdf.component.PdfPageObjectType;
 import android.graphics.pdf.component.PdfPagePathObject;
+import android.graphics.pdf.component.StampAnnotation;
 import android.graphics.pdf.content.PdfPageGotoLinkContent;
 import android.graphics.pdf.flags.Flags;
 import android.graphics.pdf.models.PageMatchBounds;
@@ -685,6 +690,150 @@ public class PdfRendererPreVTest {
     }
 
     @Test
+    public void testGetPdfPageAnnotations_pdfWithNoAnnotation() throws Exception {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            assertThat(firstPage.getPageAnnotations().size()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    public void testGetPdfPageAnnotations_pdfWithStampAnnotation() throws Exception {
+        try (PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            assertThat(annotations.get(0).second).isNotNull();
+            assertThat(annotations.get(0).second.getPdfAnnotationType())
+                    .isEqualTo(PdfAnnotationType.STAMP);
+            StampAnnotation stampAnnotation = (StampAnnotation) annotations.get(0).second;
+            List<PdfPageObject> pageObjects = stampAnnotation.getObjects();
+            assertThat(pageObjects.size()).isEqualTo(2);
+            assertThat(pageObjects.get(0).getPdfObjectType()).isEqualTo(PdfPageObjectType.IMAGE);
+            assertThat(pageObjects.get(1).getPdfObjectType()).isEqualTo(PdfPageObjectType.PATH);
+        }
+    }
+
+    @Test
+    public void testGetPdfPageAnnotations_pdfWithHighlightAnnotation() throws Exception {
+        try (PdfRendererPreV renderer =
+                        createPreVRenderer(R.raw.one_highlight_annotation, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            assertThat(annotations.get(0).second).isNotNull();
+            assertThat(annotations.get(0).second.getPdfAnnotationType())
+                    .isEqualTo(PdfAnnotationType.HIGHLIGHT);
+        }
+    }
+
+    @Test
+    public void testAddPdfHighlightAnnotation() throws Exception {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            RectF bounds = new RectF(10, 20, 30, 40);
+            HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
+            highlightAnnotation.setColor(Color.GREEN);
+
+            int id = firstPage.addPageAnnotation(highlightAnnotation);
+            assertThat(id).isEqualTo(0);
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            assertThat(annotations.get(0).second).isNotNull();
+            assertThat(annotations.get(0).second.getPdfAnnotationType())
+                    .isEqualTo(PdfAnnotationType.HIGHLIGHT);
+            HighlightAnnotation addedHighlightAnnotation =
+                    (HighlightAnnotation) annotations.get(0).second;
+            assertThat(addedHighlightAnnotation.getBounds()).isEqualTo(bounds);
+            assertThat(highlightAnnotation.getColor()).isEqualTo(Color.GREEN);
+        }
+    }
+
+    @Test
+    public void testRemoveHighlightAnnotation_oneHighlightAnnotation() throws IOException {
+        try (PdfRendererPreV renderer =
+                        createPreVRenderer(R.raw.one_highlight_annotation, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            firstPage.removePageAnnotation(annotations.get(0).first);
+            assertThat(firstPage.getPageAnnotations().size()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    public void testRemoveHighlightAnnotationAfterAdding() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            RectF bounds = new RectF(10, 20, 30, 40);
+            HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
+            highlightAnnotation.setColor(Color.GREEN);
+
+            int id = firstPage.addPageAnnotation(highlightAnnotation);
+            assertThat(id).isEqualTo(0);
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            assertThat(annotations.get(0).first).isEqualTo(0);
+
+            firstPage.removePageAnnotation(annotations.get(0).first);
+            assertThat(firstPage.getPageAnnotations().size()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    public void testAddStampAnnotation() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+
+            RectF bounds = new RectF(0, 0, 200, 200);
+            StampAnnotation stampAnnotation = new StampAnnotation(bounds);
+            // Create a ImagePageObject
+            Bitmap bitmap = Bitmap.createBitmap(200, 200, Bitmap.Config.ARGB_8888);
+            PdfPageImageObject imagePageObject = new PdfPageImageObject(bitmap);
+            stampAnnotation.addObject(imagePageObject);
+            stampAnnotation.addObject(createSamplePdfPagePathObject());
+
+            int id = firstPage.addPageAnnotation(stampAnnotation);
+            assertThat(id).isEqualTo(0);
+
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            assertThat(annotations.get(0).second.getPdfAnnotationType())
+                    .isEqualTo(PdfAnnotationType.STAMP);
+
+            StampAnnotation addedStampAnnotation = (StampAnnotation) annotations.get(0).second;
+            assertThat(addedStampAnnotation.getBounds()).isEqualTo(bounds);
+
+            List<PdfPageObject> stampAnnotationObjects = addedStampAnnotation.getObjects();
+            assertThat(stampAnnotationObjects.size()).isEqualTo(2);
+            assertThat(stampAnnotationObjects.get(0).getPdfObjectType())
+                    .isEqualTo(PdfPageObjectType.IMAGE);
+            assertThat(stampAnnotationObjects.get(1).getPdfObjectType())
+                    .isEqualTo(PdfPageObjectType.PATH);
+        }
+    }
+
+    @Test
+    public void testRemoveStampAnnotation() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            assertThat(annotations.size()).isEqualTo(1);
+            int stampAnnotationId = annotations.get(0).first;
+            firstPage.removePageAnnotation(stampAnnotationId);
+            assertThat(firstPage.getPageAnnotations().size()).isEqualTo(0);
+        }
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
     public void testGetPdfPageObject_pdfWithNoPageObject() throws IOException {
         try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
@@ -1017,6 +1166,18 @@ public class PdfRendererPreVTest {
     private PdfPageImageObject createSamplePdfPageImageObject() {
         Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), SAMPLE_IMAGE);
         return new PdfPageImageObject(bitmap);
+    }
+
+    private PdfPagePathObject createSamplePdfPagePathObject() {
+        Path path = new Path();
+        path.moveTo(0f, 800f);
+        path.lineTo(100f, 650f);
+        path.lineTo(150f, 650f);
+        path.lineTo(0f, 800f);
+        PdfPagePathObject pathObject = new PdfPagePathObject(path);
+        pathObject.setFillColor(Color.valueOf(Color.RED));
+        pathObject.setStrokeColor(Color.valueOf(Color.BLUE));
+        return pathObject;
     }
 
     private int getPageObjectTypeCount(

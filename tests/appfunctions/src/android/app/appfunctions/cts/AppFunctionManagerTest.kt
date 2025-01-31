@@ -227,7 +227,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_verifyPackageVisibilityFromRequest() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
 
             val response = executeAppFunctionAndWait(mManager, request)
@@ -900,71 +900,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    fun executeAppFunction_withExecuteAppFunctionTrustedPermission_restrictCallersWithExecuteAppFunctionsTrue_success() =
-        doBlocking {
-            runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-                val parameters: GenericDocument =
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyLong("a", 1)
-                        .setPropertyLong("b", 2)
-                        .build()
-                val request =
-                    ExecuteAppFunctionRequest.Builder(
-                            TEST_HELPER_PKG,
-                            "addWithRestrictCallersWithExecuteAppFunctionsTrue",
-                        )
-                        .setParameters(parameters)
-                        .build()
-
-                val response = executeAppFunctionAndWait(mManager, request)
-
-                assertThat(response.isSuccess).isTrue()
-                assertThat(
-                        response
-                            .getOrNull()!!
-                            .resultDocument
-                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-                    )
-                    .isEqualTo(3)
-            }
-        }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsTrue_resultDenied() =
-        doBlocking {
-            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val parameters: GenericDocument =
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyLong("a", 1)
-                        .setPropertyLong("b", 2)
-                        .build()
-                val request =
-                    ExecuteAppFunctionRequest.Builder(
-                            TEST_HELPER_PKG,
-                            "addWithRestrictCallersWithExecuteAppFunctionsTrue",
-                        )
-                        .setParameters(parameters)
-                        .build()
-
-                val response = executeAppFunctionAndWait(mManager, request)
-
-                assertThat(response.appFunctionException().errorCode)
-                    .isEqualTo(AppFunctionException.ERROR_DENIED)
-                assertThat(response.appFunctionException().errorMessage)
-                    .endsWith("does not have permission to execute the appfunction")
-                assertServiceWasNotCreated()
-            }
-        }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
     fun executeAppFunction_cancellationSignal_cancelled_unbind() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
@@ -1057,17 +992,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionPermission() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add")).isTrue()
-        }
-    }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionTrustedPermission() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add")).isTrue()
         }
     }
@@ -1219,8 +1143,6 @@ class AppFunctionManagerTest {
         const val INTERACT_ACROSS_USERS_PERMISSION = Manifest.permission.INTERACT_ACROSS_USERS
         const val INTERACT_ACROSS_USERS_FULL_PERMISSION =
             Manifest.permission.INTERACT_ACROSS_USERS_FULL
-        const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
-            Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
     }
 }
 

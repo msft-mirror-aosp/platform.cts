@@ -86,9 +86,19 @@ message FeatureCombinationEntry {
   bool is_supported = 2;
 }
 
+// Must match Build.VERSION_CODES
+enum FeatureCombinationQueryVersion {
+  VERSION_UNKNOWN = 0;
+  VERSION_UPSIDE_DOWN_CAKE = 34;
+  VERSION_VANILLA_ICE_CREAM = 35;
+  VERSION_BAKLAVA = 36;
+}
+
 message FeatureCombinationForCamera {
   string camera_id = 1;
   repeated FeatureCombinationEntry entries = 2;
+  // The feature combination query version claimed by the device
+  FeatureCombinationQueryVersion feature_combination_query_version = 3;
 }
 
 message FeatureCombinationDatabase {

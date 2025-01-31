@@ -18,7 +18,11 @@ package android.videocodec.cts;
 
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
+import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
+
+import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -40,6 +44,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This test is added to extend the testing coverage of dynamically changing bitrates during an
@@ -64,12 +70,15 @@ import java.util.List;
  */
 @RunWith(Parameterized.class)
 public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestBase {
-    private static final List<Object[]> exhaustiveArgsList = new ArrayList<>();
+    private static final List<Object[]> defaultArgsList = new ArrayList<>();
+    private static final List<Object[]> apvArgsList = new ArrayList<>();
     private static final int SEGMENT_DURATION = 3;
     private static final int[] SEGMENT_BITRATES_FULLHD =
             new int[]{5000000, 8000000, 12000000, 8000000, 5000000};
     private static final int[] SEGMENT_BITRATES_HD =
             new int[]{2000000, 3000000, 5000000, 3000000, 2000000};
+    private static final int[] SEGMENT_BITRATES_APV =
+            new int[]{7000000, 12000000, 16000000, 12000000, 7000000};
     private static final int KEY_FRAME_INTERVAL = 1;
 
     private final int[] mSegmentBitRates;
@@ -96,9 +105,20 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
                 // mediaType, cfg, segment bitrates, test label
                 String label = String.format("%dx%d_%s", width, height,
                         bitRateModeToString(bitRateMode));
-                exhaustiveArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
+                defaultArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType,
                         width, height, segmentBitRates[0], bitRateMode), segmentBitRates, label});
             }
+        }
+    }
+
+    private static void addParamsAPV(int width, int height, int[] segmentBitRates) {
+        final String mediaType = MediaFormat.MIMETYPE_VIDEO_APV;
+        final int[] bitRateModes = new int[]{BITRATE_MODE_CBR, BITRATE_MODE_VBR};
+        for (int bitRateMode : bitRateModes) {
+            String label = String.format("%dx%d_%s", width, height,
+                    bitRateModeToString(bitRateMode));
+            apvArgsList.add(new Object[]{mediaType, getVideoEncoderCfgParams(mediaType, width,
+                    height, segmentBitRates[0], bitRateMode), segmentBitRates, label});
         }
     }
 
@@ -107,7 +127,17 @@ public class VideoEncoderAdaptiveBitRateTest extends VideoEncoderValidationTestB
         addParams(1920, 1080, SEGMENT_BITRATES_FULLHD);
         addParams(1080, 1920, SEGMENT_BITRATES_FULLHD);
         addParams(1280, 720, SEGMENT_BITRATES_HD);
-        return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> defaultParams =
+                prepareParamList(defaultArgsList, true, false, true, false, HARDWARE);
+        List<Object[]> finalParams = defaultParams;
+        if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
+            addParamsAPV(640, 480, SEGMENT_BITRATES_APV);
+            List<Object[]> apvParams =
+                    prepareParamList(apvArgsList, true, false, true, false, HARDWARE);
+            finalParams = Stream.concat(apvParams.stream(), defaultParams.stream())
+                    .collect(Collectors.toList());
+        }
+        return finalParams;
     }
 
     public VideoEncoderAdaptiveBitRateTest(String encoder, String mediaType,

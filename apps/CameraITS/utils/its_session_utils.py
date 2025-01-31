@@ -993,8 +993,8 @@ class ItsSession(object):
     return data[_OBJ_VALUE_STR]
 
   def do_preview_recording_multiple_surfaces(
-      self, output_surfaces, duration, stabilize, ois=False,
-      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
+      self, output_surfaces, video_stream_index, duration, stabilize_mode,
+      ois=False, zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
       antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
@@ -1007,8 +1007,9 @@ class ItsSession(object):
       output_surfaces: list; The list of output surfaces used for creating
                              preview recording session. The first surface
                              is used for recording.
+      video_stream_index: int; The index of the output surface used for recording
       duration: int; The time in seconds for which the video will be recorded.
-      stabilize: boolean; Whether the preview should be stabilized or not
+      stabilize_mode: int; The video stabilization mode
       ois: boolean; Whether the preview should be optically stabilized or not
       zoom_ratio: float; static zoom ratio. None if default zoom
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
@@ -1025,8 +1026,9 @@ class ItsSession(object):
         _CMD_NAME_STR: 'doStaticPreviewRecording',
         _CAMERA_ID_STR: cam_id,
         'outputSurfaces': output_surfaces,
+        'recordSurfaceIndex': video_stream_index,
         'recordingDuration': duration,
-        'stabilize': stabilize,
+        'stabilizeMode': stabilize_mode,
         'ois': ois,
     }
     if zoom_ratio:
@@ -1070,8 +1072,12 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
+    if stabilize:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+    else:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     return self.do_preview_recording_multiple_surfaces(
-        output_surfaces, duration, stabilize, ois, zoom_ratio,
+        output_surfaces, duration, stabilization_mode, ois, zoom_ratio,
         ae_target_fps_min, ae_target_fps_max, antibanding_mode,
         face_detect_mode)
 
@@ -1104,11 +1110,15 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surface = self.preview_surface(video_size)
+    if stabilize:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+    else:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     cmd = {
         _CMD_NAME_STR: 'doDynamicZoomPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'outputSurfaces': output_surface,
-        'stabilize': stabilize,
+        'stabilizeMode': stabilization_mode,
         'ois': False
     }
     zoom_start, zoom_end, step_size, step_duration = sweep_zoom
@@ -1156,11 +1166,15 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService.
     """
     output_surface = self.preview_surface(video_size)
+    if stabilize:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+    else:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     cmd = {
         _CMD_NAME_STR: 'doDynamicMeteringRegionPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'outputSurfaces': output_surface,
-        'stabilize': stabilize,
+        'stabilizeMode': stabilization_mode,
         'ois': False,
         'aeAwbRegionDuration': ae_awb_region_duration
     }
@@ -1348,11 +1362,14 @@ class ItsSession(object):
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No queryable stream combinations')
 
-    # Parse the stream combination string
+    # Parse the stream combination string. Example:
+    # '34+priv:1920x1080+jpeg:4032x2268;35+priv:1280x720+priv:1280x720'
     combinations = [{
-        'name': c, 'combination': [
+        'name': c,
+        'version': int(c.split('+')[0]),
+        'combination': [
             {'format': s.split(':')[0],
-             'size': s.split(':')[1]} for s in c.split('+')]}
+             'size': s.split(':')[1]} for s in c.split('+')[1:]]}
                     for c in data[_STR_VALUE_STR].split(';')]
 
     return data[_STR_VALUE_STR], combinations
