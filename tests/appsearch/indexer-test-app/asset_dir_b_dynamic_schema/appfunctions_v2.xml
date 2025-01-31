@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <appfunctions>
     <AppFunctionStaticMetadata>
-        <id>com.android.cts.appsearch.indexertestapp.b/com.example.utils#print1</id>
+        <id>com.example.utils#print1</id>
         <functionId>com.example.utils#print1</functionId>
         <schemaName>print</schemaName>
         <schemaVersion>1</schemaVersion>

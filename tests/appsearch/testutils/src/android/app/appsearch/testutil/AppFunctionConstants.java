@@ -82,6 +82,39 @@ public final class AppFunctionConstants {
 
     /**
      * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
+     * with multiple root schemas A.
+     */
+    public static final GenericDocument
+            APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION =
+                    new GenericDocument.Builder<>(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION)
+                            .clearProperty("parameters")
+                            .clearProperty("response")
+                            .clearProperty("components")
+                            .clearProperty("schemaMetadata")
+                            .build();
+
+    /**
+     * Common schema metadata generic document as defined in the appfunctions_v2.xml at top level of
+     * dynamic schema with multiple root schemas A.
+     */
+    public static final GenericDocument
+            APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA =
+                    new GenericDocument.Builder<>(
+                                    NAMESPACE_APP_FUNCTIONS,
+                                    TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema",
+                                    "SchemaMetadata-" + TEST_APP_A_PKG)
+                            .setCreationTimestampMillis(0)
+                            .setPropertyString("packageName", TEST_APP_A_PKG)
+                            .setPropertyString(
+                                    "mobileApplicationQualifiedId",
+                                    "android$apps-db/apps#" + TEST_APP_A_PKG)
+                            .setPropertyString("schemaCategory", "common")
+                            .setPropertyString("schemaName", "commonSchema")
+                            .setPropertyLong("schemaVersion", 1)
+                            .build();
+
+    /**
+     * Print app function generic document as defined in the appfunctions_v2.xml of dynamic schema
      * test app B.
      */
     public static final GenericDocument APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION =
@@ -193,7 +226,7 @@ public final class AppFunctionConstants {
         GenericDocument schemaMetadata =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/schemaMetadata",
+                                packageName + "/com.example.utils#print/schemaMetadata",
                                 "SchemaMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyString("schemaCategory", "utils")
@@ -206,7 +239,7 @@ public final class AppFunctionConstants {
         GenericDocument parameterSchema =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/parameter0/message/schema",
+                                packageName + "/com.example.utils#print/parameter0/message/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
@@ -215,7 +248,7 @@ public final class AppFunctionConstants {
         GenericDocument parameter =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/parameter0/message",
+                                packageName + "/com.example.utils#print/parameter0/message",
                                 "AppFunctionValueParameterMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyString("name", "message")
@@ -226,7 +259,7 @@ public final class AppFunctionConstants {
         GenericDocument parameter1Schema =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/parameter1/message1/schema",
+                                packageName + "/com.example.utils#print/parameter1/message1/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
@@ -235,7 +268,7 @@ public final class AppFunctionConstants {
         GenericDocument parameter1 =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/parameter1/message1",
+                                packageName + "/com.example.utils#print/parameter1/message1",
                                 "AppFunctionValueParameterMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyString("name", "message1")
@@ -248,7 +281,8 @@ public final class AppFunctionConstants {
         GenericDocument responsePropertySchema =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/response/schema/properties0/schema",
+                                packageName
+                                        + "/com.example.utils#print/response/schema/properties0/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
@@ -257,7 +291,8 @@ public final class AppFunctionConstants {
         GenericDocument responseProperty =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/response/schema/properties0",
+                                packageName
+                                        + "/com.example.utils#print/response/schema/properties0",
                                 "AppFunctionValueParameterMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyString("name", "result")
@@ -268,7 +303,7 @@ public final class AppFunctionConstants {
         GenericDocument responseSchema =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/response/schema",
+                                packageName + "/com.example.utils#print/response/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 3)
@@ -278,7 +313,7 @@ public final class AppFunctionConstants {
         GenericDocument response =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/response",
+                                packageName + "/com.example.utils#print/response",
                                 "AppFunctionResponseMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyBoolean("isNullable", false)
@@ -290,7 +325,8 @@ public final class AppFunctionConstants {
         GenericDocument componentPropertySchema =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/components0/schema/properties0/schema",
+                                packageName
+                                        + "/com.example.utils#print/components0/schema/properties0/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
@@ -299,7 +335,8 @@ public final class AppFunctionConstants {
         GenericDocument componentProperty =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/components0/schema/properties0",
+                                packageName
+                                        + "/com.example.utils#print/components0/schema/properties0",
                                 "AppFunctionValueParameterMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyString("name", "email")
@@ -310,7 +347,7 @@ public final class AppFunctionConstants {
         GenericDocument componentSchema =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/components0/schema",
+                                packageName + "/com.example.utils#print/components0/schema",
                                 "AppFunctionSchema-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 3)
@@ -321,7 +358,7 @@ public final class AppFunctionConstants {
         GenericDocument components =
                 new GenericDocument.Builder<>(
                                 NAMESPACE_APP_FUNCTIONS,
-                                "com.example.utils#print/components0",
+                                packageName + "/com.example.utils#print/components0",
                                 "AppFunctionComponentMetadata-" + packageName)
                         .setCreationTimestampMillis(0)
                         .setPropertyDocument("schemas", componentSchema)
