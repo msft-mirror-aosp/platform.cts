@@ -7197,7 +7197,6 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
             "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MODEM_CIPHER_TRANSPARENCY)
     public void testsetNullCipherNotificationsEnabled() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
@@ -7228,7 +7227,6 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
             "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_MODEM_CIPHER_TRANSPARENCY)
     public void testNullCipherNotificationsPermissions() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
