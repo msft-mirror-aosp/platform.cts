@@ -238,6 +238,61 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
     @Test
     @RequiresFlagsEnabled({
         "android.service.autofill.multiple_fill_history",
+        "android.service.autofill.autofill_session_destroyed",
+        "android.service.autofill.autofill_w_metrics"
+    })
+    public void test_multipleEventHistoryFlagEnabled_oneSessionSave() throws Exception {
+        setMultipleSessionFillEventHistoryFeature(mContext, true);
+        enableService();
+
+        // Launch activity A
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "A"))
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .build());
+
+        // Trigger autofill and IME on activity A.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        waitUntilConnected();
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // No onSessionDestroyed() called yet
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(0);
+
+        // ...and trigger save
+        // Set credentials...
+        mActivity.onUsername((v) -> v.setText(",."));
+        mActivity.onPassword((v) -> v.setText("malkovich"));
+        mActivity.tapSave();
+        mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
+        sReplier.getNextSaveRequest();
+        mUiBot.pressHome();
+        mUiBot.waitForIdleSync();
+
+        // // Finally, make sure history is right for activity A
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+
+            // Verify events for Activity A
+            final FillEventHistory historyA = sReplier.getLastFillEventHistory();
+
+            final List<Event> events = historyA.getEvents();
+
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_SAVE_SHOWN,
+                    event -> {
+                        assertFillEventForSaveShown(event, NULL_DATASET_ID, "activity", "A");
+                        assertThat(event.getShownDatasetIds()).isEmpty();
+                    },
+                    events);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        "android.service.autofill.multiple_fill_history",
         "android.service.autofill.autofill_session_destroyed"
     })
     public void test_multipleEventHistory_switchTwoSessions() throws Exception {
