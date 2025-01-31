@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.os.Flags;
 import android.os.Handler;
@@ -34,6 +35,7 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -91,12 +93,14 @@ public class TestLooperManagerTest {
                 InstrumentationRegistry.getInstrumentation()
                         .acquireLooperManager(looper);
         try {
+            assertNull("Queue is expected to be empty", tlm.poll());
             long now = SystemClock.uptimeMillis();
             final Handler handler = new Handler(looper);
             handler.postDelayed(() -> {}, 10000);
 
             final Long when = tlm.peekWhen();
             assertNotNull(when);
+            Log.d(TAG, "when=" + when + " now=" + now + " now+10000=" + (now + 10000));
 
             assertTrue(when >= (now + 10000));
         } finally {
@@ -123,10 +127,11 @@ public class TestLooperManagerTest {
 
         final Long firstWhen = tlm.peekWhen();
         assertNotNull(firstWhen);
-        final Message first = tlm.next();
+        final Message first = tlm.poll();
         assertEquals(42, first.what);
-        assertNull(first.getCallback());
-        assertEquals((long) firstWhen, first.getWhen());
+        assertNull("Test expected a null callback: " + first, first.getCallback());
+        assertEquals("Test expected first.when=" + (long) firstWhen + " but first.when=" +
+                first.getWhen() + " message: " + first, (long) firstWhen, first.getWhen());
         tlm.execute(first);
         assertFalse(tlm.hasMessages(handler, null, 42));
         assertFalse(latch.await(100, TimeUnit.MILLISECONDS));
@@ -137,19 +142,28 @@ public class TestLooperManagerTest {
         final Message second = tlm.poll();
         assertNotNull(second);
         assertNotNull(second.getCallback());
-        assertEquals((long) secondWhen, second.getWhen());
+        assertEquals("Test expected second.when=" + (long) secondWhen + " but second.when="
+                + second.getWhen() + " message: " + second, (long) secondWhen, second.getWhen());
         tlm.execute(second);
         assertFalse(tlm.hasMessages(handler, null, 42));
         assertTrue(latch.await(100, TimeUnit.MILLISECONDS));
         tlm.recycle(second);
 
-        assertNull(tlm.poll());
+        assertNull("Test expected a null message", tlm.poll());
 
         MessageQueue mQueue = looper.getQueue();
         int token = mQueue.postSyncBarrier();
-        assertTrue(tlm.isBlockedOnSyncBarrier());
+        if (!tlm.isBlockedOnSyncBarrier()) {
+            Message tmp = tlm.poll();
+            fail("Expected to be blocked on sync barrier. Message: "
+                    + (tmp != null ? tmp : "null"));
+        }
         handler.sendEmptyMessage(42);
-        assertTrue(tlm.isBlockedOnSyncBarrier());
+        if (!tlm.isBlockedOnSyncBarrier()) {
+            Message tmp = tlm.poll();
+            fail("Expected to be blocked on sync barrier. Message: "
+                    + (tmp != null ? tmp : "null"));
+        }
         mQueue.removeSyncBarrier(token);
         assertFalse(tlm.isBlockedOnSyncBarrier());
 
