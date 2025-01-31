@@ -27,6 +27,9 @@ MAX_BRIGHTNESS_DIFF_ABSOLUTE_ERROR = 10.0
 MAX_BRIGHTNESS_DIFF_RELATIVE_ERROR = 8.0
 MAX_DELTA_AB_WHITE_BALANCE_ABSOLUTE_ERROR = 6.0
 MAX_DELTA_AB_WHITE_BALANCE_RELATIVE_ERROR = 3.0
+# This is the height of center QR code on feature chart in cm
+CENTER_QR_CODE_CM = 5
+FOV_REL_TOL = 0.1
 
 
 def check_if_qr_code_size_match(img1, img2):
@@ -338,3 +341,48 @@ def do_white_balance_check(default_patch_list, jca_patch_list):
       mean_neutral_delta_ab,
   )
   return round(float(mean_neutral_delta_ab), 2)
+
+
+def _get_non_transparent_pixels(img):
+  """Returns the non transparent pixels from BGRA image.
+  """
+  alpha_channel = img[:, :, 3]
+
+  # Find the non-zero (non-transparent) pixels
+  y_indices, x_indices = np.where(alpha_channel != 0)
+
+  # Get the bounding box of the non-transparent region
+  min_x = np.min(x_indices)
+  min_y = np.min(y_indices)
+  max_x = np.max(x_indices)
+  max_y = np.max(y_indices)
+
+  # Crop the image to the bounding box
+  non_tranpsarent_patch = img[min_y:max_y + 1, min_x:max_x + 1]
+  return non_tranpsarent_patch
+
+
+def get_fov_in_degrees(img_path, qr_code_img, chart_distance):
+  """Returns fov measurement in degrees.
+
+  Args:
+    img_path: captured img path
+    qr_code_img: Extracted center QR code img
+    chart_distance: distance between phone and chart in cm
+  Returns:
+    fov_degrees: FoV measurement in degrees
+  """
+  img = cv2.imread(img_path)
+  img_height, _ = img.shape[:2]
+  logging.debug('Height of captured img in pixels: %d', img_height)
+
+  nt_qr_code_img = _get_non_transparent_pixels(qr_code_img)
+  qr_code_height, _ = nt_qr_code_img.shape[:2]
+  logging.debug('Height of QR code in pixels: %d', qr_code_height)
+
+  # Get captured image height in cm
+  height_in_cm = (img_height / qr_code_height) * CENTER_QR_CODE_CM
+  logging.debug('Height of captured img in cm: %d', height_in_cm)
+  angle_radians = 2 * math.atan(height_in_cm / (2 * chart_distance))
+  fov_degrees = math.degrees(angle_radians)
+  return fov_degrees

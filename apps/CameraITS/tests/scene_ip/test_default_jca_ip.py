@@ -14,6 +14,7 @@
 """Ensure the captures from the default camera app and JCA are consistent."""
 
 import logging
+import math
 import os
 import pathlib
 import types
@@ -226,13 +227,27 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
           pd.TestChartFeature.CENTER_QR_CODE,
       )
 
-      logging.debug('Checking if FOV match between default and jca captures')
-      size_match = ip_metrics_utils.check_if_qr_code_size_match(
-          default_qr_code, jca_qr_code
+      logging.debug('Checking if FoV match between default and jca captures')
+      default_fov = ip_metrics_utils.get_fov_in_degrees(
+          default_capture_path, default_qr_code, self.chart_distance)
+      logging.debug('Default camera FoV: %.2f', default_fov)
+
+      jca_fov = ip_metrics_utils.get_fov_in_degrees(
+          jca_capture_path, jca_qr_code, self.chart_distance)
+      logging.debug('JCA camera FoV: %.2f', jca_fov)
+      fov_match = True
+      if not math.isclose(
+          default_fov, jca_fov, rel_tol=ip_metrics_utils.FOV_REL_TOL):
+        fov_match = False
+
+      logging.debug(
+          'Default and JCA FOV difference within tolerance: %s.\n '
+          'Expected: %s, Actual: %s', fov_match,
+          ip_metrics_utils.FOV_REL_TOL,
+          abs(default_fov - jca_fov) / max(abs(default_fov), abs(jca_fov))
       )
-      logging.debug('Default and JCA size matches: %s', size_match)
       # logging for data collection
-      print(f'{_NAME}_size_match: {size_match}')
+      print(f'{_NAME}_fov_match: {fov_match}')
 
       # Get cropped dynamic range patch cells
       default_dynamic_range_patch_cells = (
@@ -263,8 +278,8 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       logging.debug('mean_white_balance_diff: %f', mean_white_balance_diff)
       if abs(mean_white_balance_diff) > _AWB_DIFF_THRESHOLD:
         e_msg.append('Device fails the white balance difference criteria.')
-      if not size_match:
-        e_msg.append('Device fails the size match check.')
+      if not fov_match:
+        e_msg.append('Device fails the FOV match check.')
       if e_msg:
         raise AssertionError(
             f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}\n\n{e_msg}')
