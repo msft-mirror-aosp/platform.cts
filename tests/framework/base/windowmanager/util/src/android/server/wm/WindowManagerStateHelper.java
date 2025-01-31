@@ -522,8 +522,6 @@ public class WindowManagerStateHelper extends WindowManagerState {
                 waitForAppTransitionIdleOnDisplay(activity.getDisplayId()));
 
         waitForValidState(activity.getComponentName());
-        instrumentation.getUiAutomation().syncInputTransactions();
-        instrumentation.waitForIdleSync();
 
         assertTrue(
                 "Failed to wait for window geometry to stabilize",
@@ -533,6 +531,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
             fail("Activity window did not become visible: " + activity);
         }
+
+        // Sync input transactions to ensure that InputDispatcher knows that the window is on top.
+        instrumentation.getUiAutomation().syncInputTransactions();
+        instrumentation.waitForIdleSync();
     }
 
     /**
