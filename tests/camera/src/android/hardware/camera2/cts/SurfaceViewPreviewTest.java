@@ -43,6 +43,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -469,6 +470,13 @@ public class SurfaceViewPreviewTest extends Camera2SurfaceViewTestCase {
                 SurfaceHolder.class);
         OutputConfiguration surfaceTextureOutput = new OutputConfiguration(maxPreviewSize,
                 SurfaceTexture.class);
+
+        if (Flags.outputConfigurationGetter()) {
+            assertEquals(surfaceViewOutput.getConfiguredFormat(), ImageFormat.PRIVATE);
+            assertEquals(surfaceTextureOutput.getConfiguredFormat(), ImageFormat.PRIVATE);
+            assertEquals(surfaceViewOutput.getConfiguredSize(), maxPreviewSize);
+            assertEquals(surfaceTextureOutput.getConfiguredSize(), maxPreviewSize);
+        }
 
         List<OutputConfiguration> outputSurfaces = new ArrayList<>();
         outputSurfaces.add(surfaceViewOutput);
