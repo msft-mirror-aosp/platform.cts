@@ -45,6 +45,9 @@ public class UiAutomatorUtils2 {
 
     private static final String LOG_TAG = "UiAutomatorUtils2";
 
+    // A flaky test can enable logging of ui dump when searching the item on screen.
+    public static final boolean DEBUG_UI_DUMP = false;
+
     /** Default swipe deadzone percentage. See {@link UiScrollable}. */
     private static final double DEFAULT_SWIPE_DEADZONE_PCT_TV       = 0.1f;
     private static final double DEFAULT_SWIPE_DEADZONE_PCT_ALL      = 0.25f;
@@ -159,6 +162,12 @@ public class UiAutomatorUtils2 {
                 getUiDevice().waitForIdle();
                 continue;
             }
+            if (DEBUG_UI_DUMP) {
+                StringBuilder sb = new StringBuilder();
+                UiDumpUtils.dumpNodes(sb);
+                Log.d(LOG_TAG, selector + " " + (view == null ? "not found" : "found")
+                        + " on the screen. \n" + sb);
+            }
             if (view == null || viewHeight < minViewHeightPx) {
                 if (view == null) {
                     Log.v(LOG_TAG, selector + " not found on the screen, try scrolling.");
@@ -223,7 +232,7 @@ public class UiAutomatorUtils2 {
                     }
                 } else {
                     Log.v(LOG_TAG, "There might be a collapsing toolbar, but no scrollable view."
-                            + "Try to collapse");
+                            + " Try to collapse");
                     // There might be a collapsing toolbar, but no scrollable view. Try to collapse
                     scrollPastCollapsibleToolbar(null, deadZone);
                 }
