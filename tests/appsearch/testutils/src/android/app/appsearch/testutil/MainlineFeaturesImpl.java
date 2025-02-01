@@ -19,7 +19,9 @@ package android.app.appsearch.testutil;
 import android.annotation.NonNull;
 import android.app.appsearch.Features;
 import android.os.Build;
-import android.util.Log;
+import android.os.SystemProperties;
+
+import com.android.appsearch.flags.Flags;
 
 /**
  * An implementation of {@link Features}. It returns true for most of the features, as all features
@@ -103,6 +105,11 @@ public class MainlineFeaturesImpl implements Features {
             // Features which are supported on Baklava+ devices only.
             case Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG:
                 return isAtLeastBaklava();
+            case Features.ISOLATED_STORAGE:
+                return Flags.enableIsolatedStorage()
+                        && SystemProperties.getBoolean(
+                                "appsearch.feature.enable_isolated_storage", /* def= */ false)
+                        && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         }
         throw new IllegalArgumentException("Unhandled Features string: " + feature);
     }
