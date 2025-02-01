@@ -30,6 +30,7 @@ import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.support.test.uiautomator.UiDevice
 import android.view.Display
@@ -50,6 +51,7 @@ import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WindowUtil
 import com.google.common.truth.Truth.assertThat
 import java.lang.AutoCloseable
+import java.time.Duration
 import java.util.Arrays
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -328,6 +330,7 @@ class TouchModeTest {
     }
 
     private fun touchDownOnDefaultDisplay(): AutoCloseable {
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5))
         val downTime = SystemClock.uptimeMillis()
         val location = IntArray(2)
         activity.getWindow().getDecorView().getLocationOnScreen(location)
