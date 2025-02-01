@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *            http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,7 +31,8 @@ open class CtsContextualSearchActivity : Activity() {
         } else {
             WATCHER?.verifier = Mockito.mock(CtsContextualSearchActivity::class.java)
         }
-        Log.e(TAG, "onCreate called. Counting down WATCHER.created")
+        Log.d(TAG, "onCreate called. Counting down WATCHER.created")
+        WATCHER?.instance = this
         WATCHER?.created?.countDown()
         WATCHER?.launchExtras = intent.extras
     }
@@ -40,6 +41,7 @@ open class CtsContextualSearchActivity : Activity() {
         val created: CountDownLatch = CountDownLatch(1)
         var verifier: CtsContextualSearchActivity? = null
         var launchExtras: Bundle? = null
+        var instance: CtsContextualSearchActivity? = null
     }
 
     companion object {

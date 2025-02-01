@@ -24,6 +24,7 @@ import android.platform.helpers.exceptions.TestHelperException;
 import android.util.Log;
 
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.StaleObjectException;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObject2;
@@ -41,6 +42,7 @@ public class DefaultCtsPrintHelper implements ICtsPrintHelper {
 
     protected static final long OPERATION_TIMEOUT_MILLIS = 60000;
     private static final long GET_UIAUTOMATION_TIMEOUT_MS = 60000;
+    private static final int UI_RETRIES = 5;
 
     protected Instrumentation mInstrumentation;
     protected UiDevice mDevice;
@@ -157,28 +159,42 @@ public class DefaultCtsPrintHelper implements ICtsPrintHelper {
     public void selectPrinter(String printerName, long timeout) throws TestHelperException {
         Log.d(LOG_TAG, "Selecting printer " + printerName);
         try {
-            UiObject2 destinationSpinner =
-                    mDevice.wait(
-                            Until.findObject(
-                                    By.res("com.android.printspooler:id/destination_spinner")),
-                            timeout);
+            for (int i = 0; i < UI_RETRIES; i++) {
+                try {
+                    mDevice.waitForIdle();
 
-            if (destinationSpinner != null) {
-                destinationSpinner.click();
-                mDevice.waitForIdle();
+                    UiObject2 destinationSpinner =
+                            mDevice.wait(
+                                    Until.findObject(
+                                        By.res("com.android.printspooler:id/destination_spinner")),
+                                    timeout);
+
+                    if (destinationSpinner != null) {
+                        Log.d(LOG_TAG, "Opening destination spinner");
+                        destinationSpinner.click();
+                        mDevice.waitForIdle();
+                    }
+
+                    UiObject2 printerOption =
+                            mDevice.wait(Until.findObject(By.text(printerName)), timeout);
+                    if (printerOption == null) {
+                        throw new UiObjectNotFoundException(printerName + " not found");
+                    }
+
+                    Log.d(LOG_TAG, "Clicking printer " + printerName);
+                    printerOption.click();
+                    mDevice.waitForIdle();
+                    return;
+                } catch (StaleObjectException e) {
+                    Log.e(LOG_TAG, "Caught StaleObjectException, retrying");
+                }
             }
-
-            UiObject2 printerOption = mDevice.wait(Until.findObject(By.text(printerName)), timeout);
-            if (printerOption == null) {
-                throw new UiObjectNotFoundException(printerName + " not found");
-            }
-
-            printerOption.click();
-            mDevice.waitForIdle();
         } catch (Exception e) {
             dumpWindowHierarchy();
             throw new TestHelperException("Failed to select printer", e);
         }
+
+        throw new TestHelperException("Failed to select printer after " + UI_RETRIES + " tries");
     }
 
     @Override

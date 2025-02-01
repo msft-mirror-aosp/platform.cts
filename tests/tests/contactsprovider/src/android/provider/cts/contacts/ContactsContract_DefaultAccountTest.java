@@ -217,6 +217,10 @@ public class ContactsContract_DefaultAccountTest {
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupInsert_whenDefaultAccountIsCloud() throws Exception {
         assumeTrue(
+                "Skipped if the config_rawContactsAccountRestrictionEnabled is set to false",
+                configuredAccountRestrictionEnabled());
+
+        assumeTrue(
                 "Skipped for target SDK version < Android B",
                 mContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA
         );
@@ -382,6 +386,10 @@ public class ContactsContract_DefaultAccountTest {
     @Test
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testRawContactAndGroupAccountUpdate_whenDefaultAccountIsCloud() throws Exception {
+        assumeTrue(
+                "Skipped if the config_rawContactsAccountRestrictionEnabled is set to false",
+                configuredAccountRestrictionEnabled());
+
         assumeTrue(
                 "Skipped for target SDK version < Android B",
                 mContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA
@@ -639,6 +647,15 @@ public class ContactsContract_DefaultAccountTest {
         int resId = getContext().getResources().getIdentifier(
                 "config_rawContactsEligibleDefaultAccountTypes", "array", "android");
         return getContext().getResources().getStringArray(resId);
+    }
+
+    private boolean configuredAccountRestrictionEnabled() {
+        int resId =
+                getContext()
+                        .getResources()
+                        .getIdentifier(
+                                "config_rawContactsAccountRestrictionEnabled", "bool", "android");
+        return getContext().getResources().getBoolean(resId);
     }
 
     private List<Account> getEligibleCloudAccounts() {

@@ -160,6 +160,7 @@ filegroup {
     name: "CtsWindowManagerDeviceActivity-src",
     srcs: [
         "src/**/activity/*.java",
+        "src/**/activity/*.kt",
         "src/**/activity/lifecycle/*.java",
         "src/**/intent/*.java",
     ],

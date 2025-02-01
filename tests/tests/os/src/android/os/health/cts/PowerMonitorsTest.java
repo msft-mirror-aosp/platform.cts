@@ -32,10 +32,12 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.server.power.optimization.Flags;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,6 +60,7 @@ public class PowerMonitorsTest {
     @RequiresFlagsEnabled(Flags.FLAG_POWER_MONITOR_API)
     @Test
     public void getPowerMonitorsAsync() {
+        Assume.assumeTrue(obtainSupportedPowerMonitors());
         readPowerMonitors();
     }
 
@@ -65,8 +68,10 @@ public class PowerMonitorsTest {
         Flags.FLAG_POWER_MONITOR_API,
         android.permission.flags.Flags.FLAG_FINE_POWER_MONITOR_PERMISSION,
     })
+    @RequireNotInstantApp(reason = "uses withoutPermission")
     @Test
     public void getPowerMonitorsAsync_defaultGranularity() {
+        Assume.assumeTrue(obtainSupportedPowerMonitors());
         try (PermissionContext p =
                 TestApis.permissions()
                         .withoutPermission(
@@ -81,8 +86,11 @@ public class PowerMonitorsTest {
         Flags.FLAG_POWER_MONITOR_API,
         android.permission.flags.Flags.FLAG_FINE_POWER_MONITOR_PERMISSION,
     })
+    @RequireNotInstantApp(reason = "uses withPermission")
     @Test
     public void getPowerMonitorsAsync_fineGranularity() {
+        Assume.assumeTrue(obtainSupportedPowerMonitors());
+
         try (PermissionContext p =
                 TestApis.permissions()
                         .withPermission(android.Manifest.permission.ACCESS_FINE_POWER_MONITORS)) {
@@ -91,7 +99,7 @@ public class PowerMonitorsTest {
         }
     }
 
-    private void readPowerMonitors() {
+    private boolean obtainSupportedPowerMonitors() {
         SystemHealthManager shm = getContext().getSystemService(SystemHealthManager.class);
         ConditionVariable done = new ConditionVariable();
         shm.getSupportedPowerMonitors(null, pms -> {
@@ -100,11 +108,12 @@ public class PowerMonitorsTest {
         });
         done.block();
         assertThat(mPowerMonitorInfo).isNotNull();
-        if (mPowerMonitorInfo.isEmpty()) {
-            // This device does not support PowerStats HAL
-            return;
-        }
+        // If mPowerMonitorInfo is empty, this device does not support PowerStats HAL
+        return !mPowerMonitorInfo.isEmpty();
+    }
 
+    private void readPowerMonitors() {
+        SystemHealthManager shm = getContext().getSystemService(SystemHealthManager.class);
         PowerMonitor consumerMonitor = null;
         PowerMonitor measurementMonitor = null;
         for (PowerMonitor pmi : mPowerMonitorInfo) {
@@ -123,7 +132,7 @@ public class PowerMonitorsTest {
             selectedMonitors.add(measurementMonitor);
         }
 
-        done.close();
+        ConditionVariable done = new ConditionVariable();
         shm.getPowerMonitorReadings(selectedMonitors, null, new OutcomeReceiver<>() {
             @Override
             public void onResult(PowerMonitorReadings readings) {

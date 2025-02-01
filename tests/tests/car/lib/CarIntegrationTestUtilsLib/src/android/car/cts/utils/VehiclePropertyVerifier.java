@@ -307,6 +307,8 @@ public class VehiclePropertyVerifier<T> {
     private final boolean mRequireZeroToBeContainedInMinMaxRanges;
     private final boolean mPossiblyDependentOnHvacPowerOn;
     private final boolean mVerifyErrorStates;
+    // Delay to wait for power state to propagate to dependent properties.
+    private final int mPowerPropagationDelayMs;
     private final ImmutableSet<String> mReadPermissions;
     private final ImmutableList<ImmutableSet<String>> mWritePermissions;
     private final VerifierContext mVerifierContext;
@@ -340,6 +342,7 @@ public class VehiclePropertyVerifier<T> {
             boolean requireZeroToBeContainedInMinMaxRanges,
             boolean possiblyDependentOnHvacPowerOn,
             boolean verifyErrorStates,
+            int powerPropagationDelayMs,
             ImmutableSet<String> readPermissions,
             ImmutableList<ImmutableSet<String>> writePermissions) {
         assertWithMessage("Must set car property manager").that(carPropertyManager).isNotNull();
@@ -369,6 +372,7 @@ public class VehiclePropertyVerifier<T> {
         mRequireZeroToBeContainedInMinMaxRanges = requireZeroToBeContainedInMinMaxRanges;
         mPossiblyDependentOnHvacPowerOn = possiblyDependentOnHvacPowerOn;
         mVerifyErrorStates = verifyErrorStates;
+        mPowerPropagationDelayMs = powerPropagationDelayMs;
         mReadPermissions = readPermissions;
         mWritePermissions = writePermissions;
         mPropertyToAreaIdValues = new SparseArray<>();
@@ -1050,7 +1054,8 @@ public class VehiclePropertyVerifier<T> {
 
         storeCurrentValuesForProperty(hvacPowerOnCarPropertyConfig);
         // Turn the power on for all supported HVAC area IDs.
-        setBooleanPropertyInAllAreaIds(hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.TRUE);
+        setBooleanPowerPropertyInAllAreaIds(
+                hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.TRUE);
     }
 
     private boolean turnOffHvacPowerIfHvacPowerDependent() {
@@ -1062,7 +1067,8 @@ public class VehiclePropertyVerifier<T> {
         }
 
         // Turn the power off for all supported HVAC area IDs.
-        setBooleanPropertyInAllAreaIds(hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.FALSE);
+        setBooleanPowerPropertyInAllAreaIds(
+                hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.FALSE);
         return true;
     }
 
@@ -1074,26 +1080,34 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
 
-        runWithShellPermissionIdentity(() -> {
-            int adasEnabledPropertyId = mDependentOnPropertyId.get();
-            CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                    getCarPropertyConfig(adasEnabledPropertyId);
+        runWithShellPermissionIdentity(
+                () -> {
+                    int adasEnabledPropertyId = mDependentOnPropertyId.get();
+                    CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig =
+                            (CarPropertyConfig<Boolean>)
+                                    getCarPropertyConfig(adasEnabledPropertyId);
 
-            if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
-                    adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
-                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
-                Log.w(TAG, "Cannot enable " + VehiclePropertyIds.toString(adasEnabledPropertyId)
-                        + " for testing " + VehiclePropertyIds.toString(mPropertyId)
-                        + " because property is either not implemented or READ only."
-                        + " Manually enable if it's not already enabled.");
-                return;
-            }
+                    if (adasEnabledCarPropertyConfig == null
+                            || getAreaIdAccessOrElseGlobalAccess(
+                                            adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
+                                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+                        Log.w(
+                                TAG,
+                                "Cannot enable "
+                                        + VehiclePropertyIds.toString(adasEnabledPropertyId)
+                                        + " for testing "
+                                        + VehiclePropertyIds.toString(mPropertyId)
+                                        + " because property is either not implemented or READ"
+                                        + " only. Manually enable if it's not already enabled.");
+                        return;
+                    }
 
-            storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
-            // Enable ADAS feature in all supported area IDs.
-            setBooleanPropertyInAllAreaIds(adasEnabledCarPropertyConfig,
-                    /* setValue: */ Boolean.TRUE);
-        }, mDependentOnPropertyPermissions.toArray(new String[0]));
+                    storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
+                    // Enable ADAS feature in all supported area IDs.
+                    setBooleanPowerPropertyInAllAreaIds(
+                            adasEnabledCarPropertyConfig, /* setValue: */ Boolean.TRUE);
+                },
+                mDependentOnPropertyPermissions.toArray(new String[0]));
     }
 
     private void disableAdasFeatureIfAdasStatePropertyAndVerify(
@@ -1121,30 +1135,32 @@ public class VehiclePropertyVerifier<T> {
         }
 
         AtomicBoolean isDisabled = new AtomicBoolean(false);
-        runWithShellPermissionIdentity(() -> {
-            int adasEnabledPropertyId = mDependentOnPropertyId.get();
-            CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                    getCarPropertyConfig(adasEnabledPropertyId);
+        runWithShellPermissionIdentity(
+                () -> {
+                    int adasEnabledPropertyId = mDependentOnPropertyId.get();
+                    CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig =
+                            (CarPropertyConfig<Boolean>)
+                                    getCarPropertyConfig(adasEnabledPropertyId);
 
-            if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
-                    adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
-                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
-                return;
-            }
+                    if (adasEnabledCarPropertyConfig == null
+                            || getAreaIdAccessOrElseGlobalAccess(
+                                            adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
+                                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+                        return;
+                    }
 
-            storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
+                    storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
 
-            // Disable ADAS feature in all supported area IDs.
-            setBooleanPropertyInAllAreaIds(adasEnabledCarPropertyConfig,
-                    /* setValue: */ Boolean.FALSE);
-            isDisabled.set(true);
-        }, mDependentOnPropertyPermissions.toArray(new String[0]));
+                    // Disable ADAS feature in all supported area IDs.
+                    setBooleanPowerPropertyInAllAreaIds(
+                            adasEnabledCarPropertyConfig, /* setValue: */ Boolean.FALSE);
+                    isDisabled.set(true);
+                },
+                mDependentOnPropertyPermissions.toArray(new String[0]));
         return isDisabled.get();
     }
 
-    /**
-     * Stores the property's current values for all areas so that they can be restored later.
-     */
+    /** Stores the property's current values for all areas so that they can be restored later. */
     public void storeCurrentValues() {
         storeCurrentValuesForProperty(getCarPropertyConfig());
     }
@@ -1269,9 +1285,16 @@ public class VehiclePropertyVerifier<T> {
         return areaIdToInitialValue;
     }
 
-    /** Set boolean property to a desired value in all supported area IDs. */
-    private void setBooleanPropertyInAllAreaIds(
+    /**
+     * Set a boolean property that represents the power state to a desired value in all supported
+     * area IDs.
+     *
+     * <p>Power properties include {@code HVAC_POWER_ON} and all ADAS ENABLED properties such as
+     * {@code AUTOMATIC_EMERGENCY_BRAKING_ENABLED}.
+     */
+    private void setBooleanPowerPropertyInAllAreaIds(
             CarPropertyConfig<Boolean> booleanCarPropertyConfig, Boolean setValue) {
+        boolean updateSentToVhal = false;
         int propertyId = booleanCarPropertyConfig.getPropertyId();
         for (int areaId : booleanCarPropertyConfig.getAreaIds()) {
             if (mCarPropertyManager.getBooleanProperty(propertyId, areaId) == setValue) {
@@ -1279,6 +1302,20 @@ public class VehiclePropertyVerifier<T> {
             }
             setPropertyAndWaitForChange(
                     mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
+            updateSentToVhal = true;
+        }
+        if (updateSentToVhal && mPowerPropagationDelayMs != 0) {
+            Log.i(
+                    TAG,
+                    "Setting power property:"
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " to value: "
+                            + setValue
+                            + " and sleeping for: "
+                            + mPowerPropagationDelayMs);
+            // Wait for power status to propagate to dependent properties
+            SystemClock.sleep(mPowerPropagationDelayMs);
+            Log.i(TAG, "Completed sleeping for: " + mPowerPropagationDelayMs);
         }
     }
 
@@ -2774,6 +2811,7 @@ public class VehiclePropertyVerifier<T> {
         private boolean mRequireZeroToBeContainedInMinMaxRanges = false;
         private boolean mPossiblyDependentOnHvacPowerOn = false;
         private boolean mVerifyErrorStates = false;
+        private int mPowerPropagationDelayMs = 2000;
         private final ImmutableSet.Builder<String> mReadPermissionsBuilder = ImmutableSet.builder();
         private final ImmutableList.Builder<ImmutableSet<String>> mWritePermissionsBuilder =
                 ImmutableList.builder();
@@ -2911,51 +2949,45 @@ public class VehiclePropertyVerifier<T> {
             return this;
         }
 
-        /**
-         * Uses the config array values to set the property value.
-         */
+        /** Uses the config array values to set the property value. */
         public Builder<T> verifySetterWithConfigArrayValues() {
             mVerifySetterWithConfigArrayValues = true;
             return this;
         }
 
-        /**
-         * Requires minValue and maxValue to be set.
-         */
+        /** Requires minValue and maxValue to be set. */
         public Builder<T> requireMinMaxValues() {
             mRequireMinMaxValues = true;
             return this;
         }
 
-        /**
-         * Requires minValue to be 0.
-         */
+        /** Requires minValue to be 0. */
         public Builder<T> requireMinValuesToBeZero() {
             mRequireMinValuesToBeZero = true;
             return this;
         }
 
-        /**
-         * Requires 0 to be contains within minValue and maxValue.
-         */
+        /** Requires 0 to be contains within minValue and maxValue. */
         public Builder<T> requireZeroToBeContainedInMinMaxRanges() {
             mRequireZeroToBeContainedInMinMaxRanges = true;
             return this;
         }
 
-        /**
-         * Sets that the property might depend on HVAC_POEWR_ON.
-         */
+        /** Sets that the property might depend on HVAC_POWER_ON. */
         public Builder<T> setPossiblyDependentOnHvacPowerOn() {
             mPossiblyDependentOnHvacPowerOn = true;
             return this;
         }
 
-        /**
-         * Verifies if returning error state, the error state is expected.
-         */
+        /** Verifies if returning error state, the error state is expected. */
         public Builder<T> verifyErrorStates() {
             mVerifyErrorStates = true;
+            return this;
+        }
+
+        /** Sets the delay to wait for the power state to propagate to dependent properties. */
+        public Builder<T> setPowerPropagationDelayMs(int delayMs) {
+            mPowerPropagationDelayMs = delayMs;
             return this;
         }
 
@@ -3020,6 +3052,7 @@ public class VehiclePropertyVerifier<T> {
                     mRequireZeroToBeContainedInMinMaxRanges,
                     mPossiblyDependentOnHvacPowerOn,
                     mVerifyErrorStates,
+                    mPowerPropagationDelayMs,
                     mReadPermissionsBuilder.build(),
                     mWritePermissionsBuilder.build());
         }

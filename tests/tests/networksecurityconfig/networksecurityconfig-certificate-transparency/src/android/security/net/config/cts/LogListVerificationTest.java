@@ -98,7 +98,7 @@ public class LogListVerificationTest extends BaseTestCase {
                 /* ocspData */ null,
                 /* tlsSctData */ null,
                 "RSA",
-                "android.com");
+                url.getHost());
 
         urlConnection.disconnect();
     }

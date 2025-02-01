@@ -42,12 +42,14 @@ import android.media.quality.PictureProfileHandle;
 import android.mediav2.common.cts.CodecDecoderBlockModelTestBase;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.OutputManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -795,9 +797,11 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                         + mTestConfig + mTestEnv,
                 IntStream.of(defaultOutputColorFormatList).anyMatch(x -> x == outputColorFormat));
     }
+
     /**
      * Test setting PictureProfile instance as a parameter using MediaCodec.setParameter().
      */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
     @RequiresFlagsEnabled({FLAG_APPLY_PICTURE_PROFILES, FLAG_MEDIA_QUALITY_FW})
     @ApiTest(apis = {"android.media.MediaFormat#KEY_PICTURE_PROFILE_INSTANCE"})
     @Test

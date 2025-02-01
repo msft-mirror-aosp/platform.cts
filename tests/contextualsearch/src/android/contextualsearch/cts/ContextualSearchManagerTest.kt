@@ -21,6 +21,7 @@ import android.app.contextualsearch.ContextualSearchManager
 import android.app.contextualsearch.ContextualSearchState
 import android.app.contextualsearch.flags.Flags
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
 import android.os.SystemClock
@@ -64,6 +65,7 @@ class ContextualSearchManagerTest {
         setTemporaryPackage(TEMPORARY_PACKAGE)
         mWatcher = CtsContextualSearchActivity.Watcher()
         CtsContextualSearchActivity.WATCHER = mWatcher
+        OverlayActivity.WATCHER = OverlayActivity.Watcher()
     }
 
     @After
@@ -71,7 +73,12 @@ class ContextualSearchManagerTest {
         setTemporaryPackage()
         setTokenDuration()
         mWatcher = null
+
+        CtsContextualSearchActivity.WATCHER?.instance?.finish()
+        OverlayActivity.WATCHER?.instance?.finish()
+
         CtsContextualSearchActivity.WATCHER = null
+        OverlayActivity.WATCHER = null
     }
 
     @Test
@@ -114,6 +121,47 @@ class ContextualSearchManagerTest {
         assertThat(extras.getLong(EXTRA_INVOCATION_TIME_MS))
             .isIn(Range.closed(beforeMs, SystemClock.uptimeMillis()))
         assertThat(extras.containsKey(ContextualSearchManager.EXTRA_TOKEN)).isTrue()
+    }
+
+    @Test
+    fun testOwnSecureActivityCaptured() {
+        context.startActivity(
+            Intent(context, OverlayActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+        OverlayActivity.WATCHER!!.instance!!.addSecureFlag()
+        waitForIdle()
+
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity to be created.")
+
+        assertThat(
+            mWatcher!!.launchExtras!!
+                .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, false)
+        )
+                .isTrue()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CONTEXTUAL_SEARCH_WINDOW_LAYER)
+    fun testOwnSecureOverlayNotCaptured() {
+        context.startActivity(
+            Intent(context, OverlayActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+        OverlayActivity.WATCHER!!.instance!!.addSecureOverlay()
+        waitForIdle()
+
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity to be created.")
+
+        assertThat(
+            mWatcher!!.launchExtras!!
+                .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, true)
+        )
+                .isFalse()
     }
 
     @Test
@@ -263,6 +311,10 @@ class ContextualSearchManagerTest {
             } catch (e: Exception) {
                 throw RuntimeException("Command '$command' failed: ", e)
             }
+        }
+
+        private fun waitForIdle() {
+            InstrumentationRegistry.getInstrumentation().uiAutomation.syncInputTransactions()
         }
 
         private fun await(latch: CountDownLatch?, message: String) {

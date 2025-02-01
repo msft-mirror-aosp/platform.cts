@@ -63,6 +63,10 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
                         "CtsCompanionDeviceManagerMultiDeviceTestCases"),
         new HostTestCategory("NFC Tests")
                 .addTest("CtsNfcHceMultiDeviceTestCases", "CtsNfcHceMultiDeviceTestCases"),
+        new HostTestCategory("UWB Tests")
+                .addTest("CtsUwbMultiDeviceFiraRangingTests", "CtsUwbMultiDeviceFiraRangingTests")
+                .addTest("CtsUwbMultiDeviceRangingManagerTests", "CtsUwbMultiDeviceRangingManagerTests")
+                .addTest("CtsUwbMultiDeviceUwbManagerTests", "CtsUwbMultiDeviceUwbManagerTests"),
         new HostTestCategory("Wi-Fi Tests")
                 .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
                 .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
