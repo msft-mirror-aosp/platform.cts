@@ -27,6 +27,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.mediav2.common.cts.CodecDynamicTestActivity;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Surface;

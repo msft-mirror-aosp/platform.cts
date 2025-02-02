@@ -95,6 +95,7 @@ import org.junit.runner.RunWith;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -230,6 +231,7 @@ public class VcnManagerTest extends VcnTestBase {
         CarrierPrivilegeUtils.withCarrierPrivileges(mContext, dataSubId, () -> {
             SubscriptionGroupUtils.withEphemeralSubscriptionGroup(mContext, dataSubId, (subGrp) -> {
                 mVcnManager.setVcnConfig(subGrp, buildVcnConfig());
+                mVcnManager.clearVcnConfig(subGrp);
             });
         });
 
@@ -247,6 +249,19 @@ public class VcnManagerTest extends VcnTestBase {
 
         CarrierPrivilegeUtils.withCarrierPrivileges(mContext, dataSubId, () -> {
             SubscriptionGroupUtils.withEphemeralSubscriptionGroup(mContext, dataSubId, (subGrp) -> {
+                mVcnManager.clearVcnConfig(subGrp);
+            });
+        });
+    }
+
+    @Test
+    public void testGetConfiguredSubscriptionGroups() throws Exception {
+        final int dataSubId = verifyAndGetValidDataSubId();
+        CarrierPrivilegeUtils.withCarrierPrivileges(mContext, dataSubId, () -> {
+            SubscriptionGroupUtils.withEphemeralSubscriptionGroup(mContext, dataSubId, (subGrp) -> {
+                mVcnManager.setVcnConfig(subGrp, buildVcnConfig());
+                assertEquals(Arrays.asList(subGrp), mVcnManager.getConfiguredSubscriptionGroups());
+
                 mVcnManager.clearVcnConfig(subGrp);
             });
         });
@@ -750,6 +765,24 @@ public class VcnManagerTest extends VcnTestBase {
             verifyUnderlyingCellAndRunTest(subId, (subGrp, cellNetwork, cellNetworkCb) -> {
                 final VcnSetupResult vcnSetupResult =
                     setupAndGetVcnNetwork(subGrp, cellNetwork, cellNetworkCb, testNetworkWrapper);
+
+                clearVcnConfigsAndVerifyNetworkTeardown(
+                        subGrp, cellNetworkCb, vcnSetupResult.vcnNetwork);
+            });
+        }
+    }
+
+    @Test
+    public void testSetVcnConfigOnTestNetworkAndDumpsys() throws Exception {
+        final int subId = verifyAndGetValidDataSubId();
+
+        try (TestNetworkWrapper testNetworkWrapper =
+                createTestNetworkWrapper(true /* isMetered */, subId, LOCAL_ADDRESS)) {
+            verifyUnderlyingCellAndRunTest(subId, (subGrp, cellNetwork, cellNetworkCb) -> {
+                final VcnSetupResult vcnSetupResult =
+                    setupAndGetVcnNetwork(subGrp, cellNetwork, cellNetworkCb, testNetworkWrapper);
+
+                runShellCommand("dumpsys vcn_management");
 
                 clearVcnConfigsAndVerifyNetworkTeardown(
                         subGrp, cellNetworkCb, vcnSetupResult.vcnNetwork);
