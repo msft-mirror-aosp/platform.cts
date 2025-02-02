@@ -20,6 +20,7 @@ import static android.media.codec.Flags.apvSupport;
 import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
+import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_MOST_U;
 
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
@@ -31,12 +32,14 @@ import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
+import android.util.Pair;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.Assert;
 import org.junit.Assume;
@@ -71,8 +74,6 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
     private static final HashSet<String> MUST_SUPPORT_APB = new HashSet<>();
 
-    private long mMaxPts = 0;
-
     static {
         MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_VP8);
         MUST_SUPPORT_APB.add(MediaFormat.MIMETYPE_VIDEO_VP9);
@@ -83,7 +84,10 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
     public AdaptivePlaybackTest(String decoder, String mediaType, String[] srcFiles,
             SupportClass supportRequirements, String allTestParams) {
         super(decoder, mediaType, null, allTestParams);
-        mSrcFiles = srcFiles;
+        mSrcFiles = new String[srcFiles.length];
+        for (int i = 0; i < srcFiles.length; i++) {
+            mSrcFiles[i] = MEDIA_DIR + srcFiles[i];
+        }
         mSupportRequirements = supportRequirements;
     }
 
@@ -257,18 +261,38 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
         mCodec.releaseOutputBuffer(bufferIndex, mSurface != null);
     }
 
-    private ArrayList<String> getSupportedFiles(List<MediaFormat> formats) {
-        ArrayList<String> supportedClips = new ArrayList<>();
-        for (int i = 0; i < formats.size(); i++) {
-            if (isFormatSupported(mCodecName, mMediaType, formats.get(i))) {
-                supportedClips.add(mSrcFiles[i]);
+    static List<String> getSupportedFiles(String[] srcFiles, String codecName, String mediaType)
+            throws IOException {
+        List<String> supportedClips = new ArrayList<>();
+        for (String srcFile : srcFiles) {
+            MediaFormat format = getFormatInStream(mediaType, srcFile);
+            if (isFormatSupported(codecName, mediaType, format)) {
+                supportedClips.add(srcFile);
             }
         }
         return supportedClips;
     }
 
-    private MediaFormat createInputList(MediaFormat format, ByteBuffer buffer,
-            ArrayList<MediaCodec.BufferInfo> list, int offset, long ptsOffset) {
+    static Pair<MediaFormat, Long> createInputList(String srcFile, String mediaType,
+            ByteBuffer buffer, List<MediaCodec.BufferInfo> list, int offset, long ptsOffset)
+            throws IOException {
+        Preconditions.assertTestFileExists(srcFile);
+        MediaExtractor extractor = new MediaExtractor();
+        extractor.setDataSource(srcFile);
+        MediaFormat format = null;
+        for (int trackID = 0; trackID < extractor.getTrackCount(); trackID++) {
+            MediaFormat fmt = extractor.getTrackFormat(trackID);
+            if (mediaType.equalsIgnoreCase(fmt.getString(MediaFormat.KEY_MIME))) {
+                format = fmt;
+                extractor.selectTrack(trackID);
+                break;
+            }
+        }
+        if (format == null) {
+            extractor.release();
+            throw new IllegalArgumentException(
+                    "No track with mediaType: " + mediaType + " found in file: " + srcFile);
+        }
         if (hasCSD(format)) {
             MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
             bufferInfo.offset = offset;
@@ -291,25 +315,27 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
             list.add(bufferInfo);
             offset += bufferInfo.size;
         }
+        long maxPts = ptsOffset;
         while (true) {
             MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-            bufferInfo.size = mExtractor.readSampleData(buffer, offset);
+            bufferInfo.size = extractor.readSampleData(buffer, offset);
             if (bufferInfo.size < 0) break;
             bufferInfo.offset = offset;
-            bufferInfo.presentationTimeUs = ptsOffset + mExtractor.getSampleTime();
-            mMaxPts = Math.max(mMaxPts, bufferInfo.presentationTimeUs);
-            int flags = mExtractor.getSampleFlags();
+            bufferInfo.presentationTimeUs = ptsOffset + extractor.getSampleTime();
+            maxPts = Math.max(maxPts, bufferInfo.presentationTimeUs);
+            int flags = extractor.getSampleFlags();
             bufferInfo.flags = 0;
             if ((flags & MediaExtractor.SAMPLE_FLAG_SYNC) != 0) {
                 bufferInfo.flags |= MediaCodec.BUFFER_FLAG_KEY_FRAME;
             }
             list.add(bufferInfo);
-            mExtractor.advance();
+            extractor.advance();
             offset += bufferInfo.size;
         }
         buffer.clear();
         buffer.position(offset);
-        return format;
+        extractor.release();
+        return Pair.create(format, maxPts);
     }
 
     /**
@@ -330,24 +356,17 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
             Assume.assumeTrue("codec: " + mCodecName + " does not support FEATURE_AdaptivePlayback",
                     hasSupport);
         }
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        for (String file : mSrcFiles) {
-            formats.add(setUpSource(MEDIA_DIR + file));
-            mExtractor.release();
-        }
-        ArrayList<String> resFiles;
+        List<String> resFiles = getSupportedFiles(mSrcFiles, mCodecName, mMediaType);
         if (mSupportRequirements.equals(CODEC_ALL)) {
-            checkFormatSupport(mCodecName, mMediaType, false, formats, null, mSupportRequirements);
-            resFiles = new ArrayList<>(Arrays.asList(mSrcFiles));
-        } else {
-            resFiles = getSupportedFiles(formats);
+            Assert.assertEquals("codec: " + mCodecName + " does not support all files in the"
+                    + " input list", resFiles.size(), mSrcFiles.length);
         }
         Assume.assumeTrue("none of the given test clips are supported by the codec: "
                 + mCodecName, !resFiles.isEmpty());
-        formats.clear();
+        ArrayList<MediaFormat> formats = new ArrayList<>();
         int totalSize = 0;
         for (String resFile : resFiles) {
-            File file = new File(MEDIA_DIR + resFile);
+            File file = new File(resFile);
             totalSize += (int) file.length();
         }
         long ptsOffset = 0;
@@ -355,10 +374,10 @@ public class AdaptivePlaybackTest extends CodecDecoderTestBase {
         ArrayList<MediaCodec.BufferInfo> list = new ArrayList<>();
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
         for (String file : resFiles) {
-            formats.add(createInputList(setUpSource(MEDIA_DIR + file), buffer, list, buffOffset,
-                    ptsOffset));
-            mExtractor.release();
-            ptsOffset = mMaxPts + 1000000L;
+            Pair<MediaFormat, Long> metadata =
+                    createInputList(file, mMediaType, buffer, list, buffOffset, ptsOffset);
+            formats.add(metadata.first);
+            ptsOffset = metadata.second + 1000000L;
             buffOffset = (list.get(list.size() - 1).offset) + (list.get(list.size() - 1).size);
         }
         mOutputBuff = new OutputManager();

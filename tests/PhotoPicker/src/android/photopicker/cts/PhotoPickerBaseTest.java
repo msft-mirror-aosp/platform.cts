@@ -22,10 +22,13 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.view.Display;
 
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -40,7 +43,7 @@ public class PhotoPickerBaseTest {
     private static final String TAG = "PhotoPickerBaseTest";
     public static int REQUEST_CODE = 42;
     protected static final String INVALID_CLOUD_PROVIDER = "Invalid";
-    private static final Instrumentation sInstrumentation =
+    protected static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
     public static final String sTargetPackageName =
             sInstrumentation.getTargetContext().getPackageName();
@@ -48,6 +51,9 @@ public class PhotoPickerBaseTest {
 
     protected GetResultActivity mActivity;
     protected Context mContext;
+
+    private int mDisplayId = Display.DEFAULT_DISPLAY;
+    private boolean mIsVisibleBackgroundUser = false;
 
     // Do not use org.junit.BeforeClass (b/260380362) or
     // com.android.bedstead.harrier.annotations.BeforeClass (b/246986339#comment18)
@@ -76,6 +82,9 @@ public class PhotoPickerBaseTest {
         sInstrumentation.waitForIdleSync();
         mActivity.clearResult();
         sDevice.waitForIdle();
+        UserHelper userHelper = new UserHelper(mContext);
+        mDisplayId = userHelper.getMainDisplayId();
+        mIsVisibleBackgroundUser = userHelper.isVisibleBackgroundUser();
     }
 
     static boolean isHardwareSupported() {
@@ -93,6 +102,14 @@ public class PhotoPickerBaseTest {
 
     protected static String getCurrentCloudProvider() throws IOException {
         return PhotoPickerCloudUtils.getCurrentCloudProvider(sDevice);
+    }
+
+    protected int getMainDisplayId() {
+        return mDisplayId;
+    }
+
+    protected boolean isVisibleBackgroundUser() {
+        return mIsVisibleBackgroundUser;
     }
 }
 
