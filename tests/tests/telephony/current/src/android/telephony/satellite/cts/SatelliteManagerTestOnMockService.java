@@ -791,8 +791,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteModemStateChangedForNbIot() {
-        if (!Flags.oemEnabledSatelliteFlag()) return;
-
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
         enableNtnOnlySubscription();
 
@@ -973,8 +971,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSendKeepAliveDatagramInNotConnectedState() {
-        if (!Flags.oemEnabledSatelliteFlag()) return;
-
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -3553,7 +3549,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testNtnSignalStrength() {
         logd("testNtnSignalStrength: start");
         grantSatellitePermission();
@@ -3634,7 +3629,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Ignore("b/377926997 - This test is failing due to the recent change in capabilities.")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForCapabilitiesChanged() {
         logd("testRegisterForCapabilitiesChanged: start");
         grantSatellitePermission();
@@ -3738,7 +3732,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSendSatelliteDatagram_DemoMode_WithDeviceConfig() {
         logd("testSendSatelliteDatagram_DemoMode_WithDeviceConfig");
         grantSatellitePermission();
@@ -3833,7 +3826,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testSatelliteAccessControl() {
         grantSatellitePermission();
         assertTrue(sMockSatelliteServiceManager
@@ -5974,7 +5966,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSatelliteEnabled_ModemCrashDuringEnable() {
         /*
          * Test scenario:
@@ -6183,7 +6174,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSatelliteEnabled_DisableEnable() {
         /*
          * Test scenario:
@@ -6243,7 +6233,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSatelliteEnabled_DisableDisable() {
         /*
          * Test scenario:
@@ -6304,7 +6293,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForSupportedStateChanged() {
         logd("testRegisterForSupportedStateChanged: start");
         grantSatellitePermission();
@@ -6362,7 +6350,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testDemoSimulator() {
         logd("testDemoSimulator: start");
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
@@ -6441,7 +6428,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSessionStats() {
         logd("testRequestSessionStats: start");
         grantSatellitePermission();
