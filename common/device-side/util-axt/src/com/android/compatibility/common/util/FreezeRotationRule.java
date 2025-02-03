@@ -18,15 +18,22 @@ package com.android.compatibility.common.util;
 
 import android.app.UiAutomation;
 
-import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.time.Duration;
+
 public class FreezeRotationRule extends BeforeAfterRule {
+
+    private static final Duration TIMEOUT = Duration.ofSeconds(5);
+
     private final UiAutomation mUiAutomation = InstrumentationRegistry.getInstrumentation()
             .getUiAutomation();
+    private final UiDevice mUiDevice =
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
     private final int mRotation;
 
@@ -41,6 +48,10 @@ public class FreezeRotationRule extends BeforeAfterRule {
     @Override
     protected void onBefore(Statement base, Description description) throws Throwable {
         mUiAutomation.setRotation(mRotation);
+        // to make sure rotation is applied
+        mUiDevice.wait(
+                uiDevice -> uiDevice.getDisplayRotation() == UiAutomation.ROTATION_FREEZE_0,
+                TIMEOUT.toMillis());
     }
 
     @Override
