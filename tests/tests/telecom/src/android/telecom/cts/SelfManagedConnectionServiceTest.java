@@ -1148,21 +1148,27 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
                 TestUtils.TEST_SELF_MANAGED_HANDLE_1, TEST_ADDRESS_1);
         SelfManagedConnection connection = TestUtils.waitForAndGetConnection(TEST_ADDRESS_1);
         setActiveAndVerify(connection);
-        assertTrue(CtsSelfManagedConnectionService.getConnectionService().waitForUpdate(
-                CtsSelfManagedConnectionService.FOCUS_GAINED_LOCK));
+        assertTrue(
+                "Expected FOCUS_GAINED_LOCK for ongoing SM call",
+                CtsSelfManagedConnectionService.getConnectionService()
+                        .waitForUpdate(CtsSelfManagedConnectionService.FOCUS_GAINED_LOCK));
 
         // WHEN place a managed call
         mInCallCallbacks.resetLock();
         placeAndVerifyCall();
         verifyConnectionForOutgoingCall().setActive();
-        assertTrue(connectionService.waitForEvent(
-                MockConnectionService.EVENT_CONNECTION_SERVICE_FOCUS_GAINED));
+        assertTrue(
+                "Expected focus gain for managed call.",
+                connectionService.waitForEvent(
+                        MockConnectionService.EVENT_CONNECTION_SERVICE_FOCUS_GAINED));
 
         // THEN the self-managed ConnectionService lost the focus
 
         connection.disconnectAndDestroy();
-        assertTrue(CtsSelfManagedConnectionService.getConnectionService().waitForUpdate(
-                CtsSelfManagedConnectionService.FOCUS_LOST_LOCK));
+        assertTrue(
+                "Expected focus loss for self managed call at end of call.",
+                CtsSelfManagedConnectionService.getConnectionService()
+                        .waitForUpdate(CtsSelfManagedConnectionService.FOCUS_LOST_LOCK));
     }
 
     /**
