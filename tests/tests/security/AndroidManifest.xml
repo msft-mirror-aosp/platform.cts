@@ -322,6 +322,8 @@
 
         <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
 
+        <activity android:name="android.security.cts.bug_383328827.PocActivity" />
+
         <!-- CVE-2024-31316 -->
         <service android:name="android.security.cts.CVE_2024_31316.PocService"
             android:exported="true">
