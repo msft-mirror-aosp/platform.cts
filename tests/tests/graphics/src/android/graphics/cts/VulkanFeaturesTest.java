@@ -96,7 +96,7 @@ public class VulkanFeaturesTest {
 
     private static final int API_LEVEL_BEFORE_ANDROID_HARDWARE_BUFFER_REQ = 28;
 
-    private static final int DEQP_LEVEL_FOR_W = 0x7E80301;
+    private static final int DEQP_LEVEL_FOR_B = 0x7E90301;
     private static final int DEQP_LEVEL_FOR_V = 0x7E80301;
     private static final int DEQP_LEVEL_FOR_U = 0x7E70301;
     private static final int DEQP_LEVEL_FOR_T = 0x7E60301;
@@ -107,8 +107,13 @@ public class VulkanFeaturesTest {
     private static final Map<Integer, String[]> DEQP_EXTENSIONS_MAP = new ArrayMap<>();
     static {
         DEQP_EXTENSIONS_MAP.put(
-                DEQP_LEVEL_FOR_W,
-                new String[] {});        // TODO: fill this out when we actually roll deqp
+                DEQP_LEVEL_FOR_B,
+                new String[] {
+                  "VK_KHR_compute_shader_derivatives",
+                  "VK_KHR_maintenance7",
+                  "VK_KHR_pipeline_binary",
+                  "VK_KHR_pipeline_executable_properties",
+                });
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_V,
                 new String[] {
