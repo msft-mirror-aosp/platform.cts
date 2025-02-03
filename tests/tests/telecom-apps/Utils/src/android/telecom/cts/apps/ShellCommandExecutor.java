@@ -43,6 +43,9 @@ public class ShellCommandExecutor {
     public static final String COMMAND_SET_DEFAULT_PHONE_ACCOUNT =
             "cmd telecom set-user-selected-outgoing-phone-account ";
     public static final String COMMAND_DUMP_TELECOM = "dumpsys telecom";
+    public static final String COMMAND_WAIT_FOR_AUDIO_OPS_COMPLETE =
+            "cmd telecom wait-for-audio-ops-complete";
+    public static final String COMMAND_WAIT_FOR_AUDIO_ACTIVE = "cmd telecom wait-for-audio-active";
 
     /**
      * Executes the given shell command and returns the output in a string. Note that even
