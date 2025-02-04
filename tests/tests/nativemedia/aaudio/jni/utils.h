@@ -16,20 +16,21 @@
 #ifndef CTS_MEDIA_TEST_AAUDIO_UTILS_H
 #define CTS_MEDIA_TEST_AAUDIO_UTILS_H
 
-#include <dlfcn.h>
-#include <atomic>
-#include <map>
-#include <unordered_set>
-#include <gtest/gtest.h>
-#include <sys/system_properties.h>
-
+#include <aaudio/AAudio.h>
+#include <android-base/thread_annotations.h>
 #include <android/binder_auto_utils.h>
 #include <android/binder_ibinder.h>
-
-#include <aaudio/AAudio.h>
+#include <dlfcn.h>
+#include <gtest/gtest.h>
+#include <sys/system_properties.h>
 #include <system/audio.h> /* FCC_LIMIT */
 
-#include "test_aaudio.h"    // NANOS_PER_MILLISECOND
+#include <atomic>
+#include <map>
+#include <mutex>
+#include <unordered_set>
+
+#include "test_aaudio.h" // NANOS_PER_MILLISECOND
 
 int64_t getNanoseconds(clockid_t clockId = CLOCK_MONOTONIC);
 const char* performanceModeToString(aaudio_performance_mode_t mode);
@@ -243,21 +244,22 @@ public:
         static AudioServerCrashMonitor instance;
         return instance;
     }
-    ~AudioServerCrashMonitor();
 
     void linkToDeath();
 
-    bool isDeathRecipientLinked() const { return mDeathRecipientLinked; }
+    bool isDeathRecipientLinked();
     void onAudioServerCrash();
 
 private:
     AudioServerCrashMonitor();
 
-    ::ndk::SpAIBinder getAudioFlinger();
+    ::ndk::SpAIBinder getAudioFlinger_l() REQUIRES(mMutex);
 
-    ::ndk::SpAIBinder mAudioFlinger;
+    ::ndk::SpAIBinder mAudioFlinger GUARDED_BY(mMutex);
     ::ndk::ScopedAIBinder_DeathRecipient mDeathRecipient;
     bool mDeathRecipientLinked = false;
+
+    std::mutex mMutex;
 };
 
 class AAudioCtsBase : public ::testing::Test {
