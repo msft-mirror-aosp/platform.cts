@@ -172,13 +172,12 @@ public final class TelephonyFeatureFlagsTest {
         }
 
         if (hasFeatureSatellite) {
-            assertTrue("FEATURE_TELEPHONY_SATELLITE requires "
+            assertTrue(
+                    "FEATURE_TELEPHONY_SATELLITE requires "
                             + "FEATURE_TELEPHONY_DATA and "
-                            + "FEATURE_TELEPHONY_GSM and "
                             + "one of (FEATURE_TELEPHONY_MESSAGE, "
                             + "FEATURE_TELEPHONY_CALLING, FEATURE_TELEPHONY_IMS)",
-                    hasFeatureData && hasFeatureGsm
-                            && (hasFeatureCalling || hasFeatureMessaging || hasFeatureIms));
+                    hasFeatureData && (hasFeatureCalling || hasFeatureMessaging || hasFeatureIms));
         }
     }
 

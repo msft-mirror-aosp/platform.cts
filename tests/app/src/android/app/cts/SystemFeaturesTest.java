@@ -517,36 +517,6 @@ public class SystemFeaturesTest {
         assertEquals(message, hasSensorFeature, hasSensorType);
     }
 
-    /**
-     * Check that the {@link TelephonyManager#getPhoneType()} matches the reported features.
-     */
-    @Test
-    public void testTelephonyFeatures() {
-        if (!(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)
-                && mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELECOM)
-                && mTelephonyManager.isVoiceCapable())) {
-                return;
-        }
-
-        int phoneType = mTelephonyManager.getPhoneType();
-        switch (phoneType) {
-            case TelephonyManager.PHONE_TYPE_GSM:
-                assertAvailable(PackageManager.FEATURE_TELEPHONY_GSM);
-                break;
-
-            case TelephonyManager.PHONE_TYPE_CDMA:
-                assertAvailable(PackageManager.FEATURE_TELEPHONY_CDMA);
-                break;
-
-            case TelephonyManager.PHONE_TYPE_NONE:
-                fail("FEATURE_TELEPHONY is present; phone type should not be PHONE_TYPE_NONE");
-                break;
-
-            default:
-                throw new IllegalArgumentException("Did you add a new phone type? " + phoneType);
-        }
-    }
-
     @Test
     public void testTouchScreenFeatures() {
         // If device implementations include a touchscreen (single-touch or better), they:

@@ -1244,17 +1244,14 @@ public class TelephonyManagerTest {
                     (tm) -> tm.resetIms(tm.getSlotIndex()));
         }
 
-        //FEATURE_TELEPHONY_GSM required
-        if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.getImei());
-            if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
-                ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                        (tm) -> tm.getPrimaryImei());
-            }
-            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.getImei(mTelephonyManager.getSlotIndex()));
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.getImei());
+        if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
+            ShellIdentityUtils.invokeMethodWithShellPermissions(
+                    mTelephonyManager, (tm) -> tm.getPrimaryImei());
         }
+        ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, (tm) -> tm.getImei(mTelephonyManager.getSlotIndex()));
 
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
         PhoneAccountHandle defaultAccount = telecomManager
@@ -1319,11 +1316,9 @@ public class TelephonyManagerTest {
             try {
                 setAppOpsPermissionAllowed(true, OPSTR_USE_ICC_AUTH_WITH_DEVICE_IDENTIFIER);
 
-                if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
-                    mTelephonyManager.getImei();
-                    if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
-                        mTelephonyManager.getPrimaryImei();
-                    }
+                mTelephonyManager.getImei();
+                if (mModemHalVersion >= RADIO_HAL_VERSION_2_1) {
+                    mTelephonyManager.getPrimaryImei();
                 }
 
                 mTelephonyManager.getSubscriberId();
@@ -2376,10 +2371,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetTac() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         String tac = mTelephonyManager.getTypeAllocationCode();
         String imei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getImei());
@@ -2430,10 +2421,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetImei() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         String imei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getImei());
 
@@ -2449,10 +2436,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetPrimaryImei() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         // make sure the modem supports primaryImei feature
         assumeTrue(mModemHalVersion >= RADIO_HAL_VERSION_2_1);
         String primaryImei = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -2470,10 +2453,6 @@ public class TelephonyManagerTest {
      */
     @Test
     public void testGetImeiForSlot() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_GSM));
-        }
-
         for (int i = 0; i < mTelephonyManager.getPhoneCount(); i++) {
             // The compiler error 'local variables referenced from a lambda expression must be final
             // or effectively final' is reported when using i, so assign it to a final variable.
