@@ -403,28 +403,48 @@ public class TelephonyManagerTest {
     private boolean mIsAllowedNetworkTypeChanged;
     private Map<Integer, Long> mAllowedNetworkTypesList = new HashMap<>();
 
-    private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS = "{\"com.vzw.hss.myverizon\":"
-        + "{\"carrierIds\":[1839], \"callerSHA256Ids\":"
-        + "[\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},"
-        + "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
-        + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
-        + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},"
-        + "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},"
-        + "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},"
-        + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
-        + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
-        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
-        + "\"com.tmobile.tmte\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
-        + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:0F:68:33:3A:FA:CF:F5:62\"]},"
-        + "\"com.tmobile.tuesdays\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
-        + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:0F:68:33:3A:FA:CF:F5:62\","
-        + "\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]},"
-        + "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
-        + "[\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]}"
-        + "}";
+    private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS =
+            buildCarrierRestrictionOperatorDetails();
+
+    private static String buildCarrierRestrictionOperatorDetails() {
+        StringBuilder cr = new StringBuilder();
+        cr.append('{');
+        cr.append(
+                "\"com.vzw.hss.myverizon\":{\"carrierIds\":[1839], \"callerSHA256Ids\":"
+                    + "[\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},");
+        cr.append(
+                "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
+                    + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
+                    + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},");
+        cr.append(
+                "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+                    + "[\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},");
+        cr.append(
+                "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\""
+                    + ":[\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},");
+        cr.append(
+                "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],"
+                    + "\"callerSHA256Ids\":"
+                    + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},");
+        cr.append(
+                "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+                    + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},");
+        cr.append(
+                "\"com.tmobile.tmte\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+                    + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:"
+                    + "0F:68:33:3A:FA:CF:F5:62\"]},");
+        cr.append(
+                "\"com.tmobile.tuesdays\": {\"carrierIds\": [1],\"callerSHA256Ids\":"
+                    + "[\"3D:1A:4B:EF:6E:E7:AF:7D:34:D1:20:E7:B1:AA:C0:DD:24:55:85:DE:62:37:CF:10:"
+                    + "0F:68:33:3A:FA:CF:F5:62\",\"92:B5:F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:"
+                    + "E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:45:5B:A1:59:20\"]},");
+        cr.append(
+                "\"com.tmobile.pr.mytmobile\": {\"carrierIds\": [1],\"callerSHA256Ids\":[\"92:B5:"
+                    + "F8:11:7F:BD:9B:D5:73:8F:F1:68:A4:FA:12:CB:E2:84:BE:83:4E:DE:1A:7B:B4:4D:D8:"
+                    + "45:5B:A1:59:20\"]}");
+        cr.append('}');
+        return cr.toString();
+    }
 
     private class CarrierPrivilegeChangeMonitor implements AutoCloseable {
         // CarrierPrivilegesCallback will be triggered upon registration. Filter the first callback
@@ -7082,9 +7102,13 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
-            "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager"
+                        + "#isCellularIdentifierDisclosureNotificationsEnabled",
+                "android.telephony.TelephonyManager"
+                        + "#setEnableCellularIdentifierDisclosureNotifications"
+            })
     public void testSetEnableCellularIdentifierDisclosureNotifications() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
@@ -7100,10 +7124,13 @@ public class TelephonyManagerTest {
                     (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
             assertTrue(enabled);
 
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager,
                     (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
-            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            enabled =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager,
+                            (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
             assertFalse(enabled);
         } catch (UnsupportedOperationException e) {
             Log.d(TAG,
@@ -7113,14 +7140,17 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isCellularIdentifierDisclosureNotificationsEnabled",
-            "android.telephony.TelephonyManager#setEnableCellularIdentifierDisclosureNotifications"})
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager"
+                        + "#isCellularIdentifierDisclosureNotificationsEnabled",
+                "android.telephony.TelephonyManager"
+                        + "#setEnableCellularIdentifierDisclosureNotifications"
+            })
     public void testCellularIdentifierDisclosureNotificationsPermissions() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
 
@@ -7130,26 +7160,23 @@ public class TelephonyManagerTest {
                     }
             );
 
-            assertThrows(SecurityException.class, () -> {
+            assertThrows(
+                    SecurityException.class,
+                    () -> {
                         mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
-                    }
-            );
+                    });
         } catch (UnsupportedOperationException e) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            Log.d(TAG, "Skipping test since modem does not support optional IRadioNetwork APIs");
             return;
         }
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#getLastKnownCellIdentity"})
-    @RequiresFlagsEnabled(
-            com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
+    @ApiTest(apis = {"android.telephony.TelephonyManager#getLastKnownCellIdentity"})
+    @RequiresFlagsEnabled(com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
         grantLocationPermissions();
         mWasLocationEnabled = setLocationEnabled(true);
-
 
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
@@ -7157,33 +7184,43 @@ public class TelephonyManagerTest {
         // not granted.
         try {
             mTelephonyManager.getLastKnownCellIdentity();
-            fail("TelephonyManager#resetSettings requires the"
-                    + " permission.ACCESS_LAST_KNOWN_CELL_ID.");
+            fail(
+                    "TelephonyManager#resetSettings requires the"
+                            + " permission.ACCESS_LAST_KNOWN_CELL_ID.");
         } catch (SecurityException e) {
             //expected
         }
 
         // Obtain the primary cell identity from the NetworkRegistration info list.
         ServiceState ss = mTelephonyManager.getServiceState();
-        List<NetworkRegistrationInfo> regInfos = ss != null
-                ? ss.getNetworkRegistrationInfoList()
-                : new ArrayList();
+        List<NetworkRegistrationInfo> regInfos =
+                ss != null ? ss.getNetworkRegistrationInfoList() : new ArrayList();
 
-        Optional<CellIdentity> primaryCellIdentity = regInfos.stream()
-                .filter(nri -> nri.getCellIdentity() != null)
-                .filter(nri -> nri.getTransportType() == AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
-                .sorted(Comparator.comparing(NetworkRegistrationInfo::isRegistered)
-                        .thenComparing((nri) -> nri.getDomain() & NetworkRegistrationInfo.DOMAIN_CS)
-                        .reversed())
-                .map(nri -> nri.getCellIdentity())
-                .distinct()
-                .findFirst();
+        Optional<CellIdentity> primaryCellIdentity =
+                regInfos.stream()
+                        .filter(nri -> nri.getCellIdentity() != null)
+                        .filter(
+                                nri ->
+                                        nri.getTransportType()
+                                                == AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
+                        .sorted(
+                                Comparator.comparing(NetworkRegistrationInfo::isRegistered)
+                                        .thenComparing(
+                                                (nri) ->
+                                                        nri.getDomain()
+                                                                & NetworkRegistrationInfo.DOMAIN_CS)
+                                        .reversed())
+                        .map(nri -> nri.getCellIdentity())
+                        .distinct()
+                        .findFirst();
 
         try {
-            CellIdentity cellIdentity = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getLastKnownCellIdentity(),
-                    permission.ACCESS_LAST_KNOWN_CELL_ID,
-                    permission.ACCESS_FINE_LOCATION);
+            CellIdentity cellIdentity =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager,
+                            (tm) -> tm.getLastKnownCellIdentity(),
+                            permission.ACCESS_LAST_KNOWN_CELL_ID,
+                            permission.ACCESS_FINE_LOCATION);
             assertEquals(
                     cellIdentity,
                     primaryCellIdentity.isPresent() ? primaryCellIdentity.get() : null);
@@ -7194,14 +7231,15 @@ public class TelephonyManagerTest {
     }
 
     @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
-            "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"})
+    @ApiTest(
+            apis = {
+                "android.telephony.TelephonyManager#isNullCipherNotificationsEnabled",
+                "android.telephony.TelephonyManager#setNullCipherNotificationsEnabled"
+            })
     public void testsetNullCipherNotificationsEnabled() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
         try {
@@ -7211,14 +7249,14 @@ public class TelephonyManagerTest {
                     (tm) -> tm.isNullCipherNotificationsEnabled());
             assertTrue(enabled);
 
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                    (tm) -> tm.setNullCipherNotificationsEnabled(false));
-            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
+                    mTelephonyManager, (tm) -> tm.setNullCipherNotificationsEnabled(false));
+            enabled =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(
+                            mTelephonyManager, (tm) -> tm.isNullCipherNotificationsEnabled());
             assertFalse(enabled);
         } catch (UnsupportedOperationException e) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            Log.d(TAG, "Skipping test since modem does not support optional IRadioNetwork APIs");
             return;
         }
     }
@@ -7230,16 +7268,16 @@ public class TelephonyManagerTest {
     public void testNullCipherNotificationsPermissions() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         if (mNetworkHalVersion < RADIO_HAL_VERSION_2_2) {
-            Log.d(TAG,
-                    "Skipping test since modem does not support IRadioNetwork HAL v2.2");
+            Log.d(TAG, "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
 
         try {
-            assertThrows(SecurityException.class, () -> {
+            assertThrows(
+                    SecurityException.class,
+                    () -> {
                         mTelephonyManager.setNullCipherNotificationsEnabled(true);
-                    }
-            );
+                    });
             assertThrows(SecurityException.class, () -> {
                         mTelephonyManager.isNullCipherNotificationsEnabled();
                     }
@@ -7259,11 +7297,12 @@ public class TelephonyManagerTest {
         long startTime = SystemClock.elapsedRealtime();
         TelephonyManager.EmergencyCallDiagnosticData.Builder callDiagnosticBuilder =
                 new TelephonyManager.EmergencyCallDiagnosticData.Builder();
-        TelephonyManager.EmergencyCallDiagnosticData data = callDiagnosticBuilder
-                .setTelecomDumpsysCollectionEnabled(true)
-                .setTelephonyDumpsysCollectionEnabled(true)
-                .setLogcatCollectionStartTimeMillis(startTime)
-                .build();
+        TelephonyManager.EmergencyCallDiagnosticData data =
+                callDiagnosticBuilder
+                        .setTelecomDumpsysCollectionEnabled(true)
+                        .setTelephonyDumpsysCollectionEnabled(true)
+                        .setLogcatCollectionStartTimeMillis(startTime)
+                        .build();
         assertTrue(data.isTelecomDumpsysCollectionEnabled());
         assertTrue(data.isTelephonyDumpsysCollectionEnabled());
         assertTrue(data.isLogcatCollectionEnabled());
