@@ -18,6 +18,8 @@ package android.server.wm;
 
 import static junit.framework.Assert.assertTrue;
 
+import android.util.Log;
+
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.SystemUtil;
@@ -31,6 +33,7 @@ import java.util.regex.Pattern;
  * {@link android.app.Activity#setRequestedOrientation(int)}
  */
 public class IgnoreOrientationRequestSession implements AutoCloseable {
+    private static final String TAG = "IgnoreOrientationRequestSession";
     private static final String WM_SET_IGNORE_ORIENTATION_REQUEST =
             "wm set-ignore-orientation-request ";
     private static final String WM_GET_IGNORE_ORIENTATION_REQUEST =
@@ -43,6 +46,7 @@ public class IgnoreOrientationRequestSession implements AutoCloseable {
     public IgnoreOrientationRequestSession(boolean enable) {
         mInitialIgnoreOrientationRequest = getIgnoreOrientationRequest();
 
+        Log.i(TAG, "Set enable=" + enable + " initialState=" + mInitialIgnoreOrientationRequest);
         executeShellCommand(WM_SET_IGNORE_ORIENTATION_REQUEST + (enable ? "true" : "false"));
     }
 
@@ -57,6 +61,11 @@ public class IgnoreOrientationRequestSession implements AutoCloseable {
                 executeShellCommand(WM_GET_IGNORE_ORIENTATION_REQUEST));
         assertTrue("get-ignore-orientation-request should match pattern", matcher.find());
         return Boolean.parseBoolean(matcher.group(1));
+    }
+
+    /** Resets ignore-orientation-request to default behavior. */
+    public static void resetIgnoreOrientationRequest() {
+        Log.i(TAG, executeShellCommand(WM_SET_IGNORE_ORIENTATION_REQUEST + "reset"));
     }
 
     private static String executeShellCommand(String command) {
