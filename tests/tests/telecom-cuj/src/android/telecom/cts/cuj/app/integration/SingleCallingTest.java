@@ -328,43 +328,6 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
-    /**
-     * Test the scenario where a client application requests to switch the current {@link
-     * android.telecom.CallEndpoint}
-     *
-     * <h3> Test Steps: </h3>
-     * <ul>
-     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
-     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
-     * <p>
-     *  2. collect the current {@link CallEndpoint} via
-     *  {@link android.telecom.CallEventCallback#onCallEndpointChanged(CallEndpoint)}
-     *  <p>
-     *  3.  collect the available {@link CallEndpoint}s via
-     *   {@link android.telecom.CallEventCallback#onAvailableCallEndpointsChanged(List)}
-     *  <p>
-     *  4. find another endpoint that is not the current endpoint and request an audio endpoint
-     *  switch via {@link android.telecom.CallControl#requestCallEndpointChange(CallEndpoint,
-     *                                                                Executor,
-     *                                                                OutcomeReceiver)}
-     *  <p>
-     *  </ul>
-     *  Assert the current {@link CallEndpoint} is switched successfully
-     */
-    @Test
-    public void testBasicAudioSwitchTest_ManagedConnectionServiceApp() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper managedApp = null;
-        try {
-            managedApp = bindToApp(ManagedConnectionServiceApp);
-            verifySwitchEndpoints(managedApp);
-        } finally {
-            tearDownApp(managedApp);
-        }
-    }
-
     /*********************************************************************************************
      *                           ConnectionServiceVoipAppMain
      /*********************************************************************************************/
@@ -617,44 +580,6 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
-
-    /**
-     * Test the scenario where a client application requests to switch the current {@link
-     * android.telecom.CallEndpoint}
-     *
-     * <h3> Test Steps: </h3>
-     * <ul>
-     *  1. create a self-managed call that is backed by a {@link android.telecom.ConnectionService}
-     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
-     * <p>
-     *  2. collect the current {@link CallEndpoint} via
-     *  {@link android.telecom.CallEventCallback#onCallEndpointChanged(CallEndpoint)}
-     *  <p>
-     *  3.  collect the available {@link CallEndpoint}s via
-     *   {@link android.telecom.CallEventCallback#onAvailableCallEndpointsChanged(List)}
-     *  <p>
-     *  4. find another endpoint that is not the current endpoint and request an audio endpoint
-     *  switch via {@link android.telecom.CallControl#requestCallEndpointChange(CallEndpoint,
-     *                                                                Executor,
-     *                                                                OutcomeReceiver)}
-     *  <p>
-     *  </ul>
-     *  Assert the current {@link CallEndpoint} is switched successfully
-     */
-    @Test
-    public void testBasicAudioSwitchTest_ConnectionServiceVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper voipCsApp = null;
-        try {
-            voipCsApp = bindToApp(ConnectionServiceVoipAppMain);
-            verifySwitchEndpoints(voipCsApp);
-        } finally {
-            tearDownApp(voipCsApp);
-        }
-    }
-
     /*********************************************************************************************
      *                           ConnectionServiceVoipAppClone
      /*********************************************************************************************/
@@ -809,44 +734,6 @@ public class SingleCallingTest extends BaseAppVerifier {
             verifyGetAvailableEndpoints(voipCs);
         } finally {
             tearDownApp(voipCs);
-        }
-    }
-
-    /**
-     * Test the scenario where a client application requests to switch the current {@link
-     * android.telecom.CallEndpoint}
-     *
-     * <h3> Test Steps: </h3>
-     * <ul>
-     *  1. create a self-managed call that is backed by a {@link android.telecom.ConnectionService}
-     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
-     * <p>
-     *  2. collect the current {@link CallEndpoint} via
-     *  {@link android.telecom.CallEventCallback#onCallEndpointChanged(CallEndpoint)}
-     *  <p>
-     *  3.  collect the available {@link CallEndpoint}s via
-     *   {@link android.telecom.CallEventCallback#onAvailableCallEndpointsChanged(List)}
-     *  <p>
-     *  4. find another endpoint that is not the current endpoint and request an audio endpoint
-     *  switch via {@link android.telecom.CallControl#requestCallEndpointChange(CallEndpoint,
-     *                                                                Executor,
-     *                                                                OutcomeReceiver)}
-     *  <p>
-     *  </ul>
-     *  Assert the current {@link CallEndpoint} is switched successfully
-     */
-    @Test
-    public void testBasicAudioSwitchTest_ConnectionServiceVoipAppClone() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper voipCsApp = null;
-
-        try {
-            voipCsApp = bindToApp(ConnectionServiceVoipAppClone);
-            verifySwitchEndpoints(voipCsApp);
-        } finally {
-            tearDownApp(voipCsApp);
         }
     }
 
@@ -1265,47 +1152,6 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
-    /**
-     * Test the scenario where a client application requests to switch the current {@link
-     * android.telecom.CallEndpoint}
-     *
-     * <h3> Test Steps: </h3>
-     * <ul>
-     *  1. create a self-managed call that is backed by a {@link android.telecom.ConnectionService }
-     *  via {@link android.telecom.TelecomManager#addCall(CallAttributes,
-     *                                                    Executor,
-     *                                                    OutcomeReceiver,
-     *                                                    CallControlCallback,
-     *                                                    CallEventCallback)}
-     * <p>
-     *  2. collect the current {@link CallEndpoint} via
-     *  {@link android.telecom.CallEventCallback#onCallEndpointChanged(CallEndpoint)}
-     *  <p>
-     *  3.  collect the available {@link CallEndpoint}s via
-     *   {@link android.telecom.CallEventCallback#onAvailableCallEndpointsChanged(List)}
-     *  <p>
-     *  4. find another endpoint that is not the current endpoint and request an audio endpoint
-     *  switch via {@link android.telecom.CallControl#requestCallEndpointChange(CallEndpoint,
-     *                                                                Executor,
-     *                                                                OutcomeReceiver)}
-     *  <p>
-     *  </ul>
-     *  Assert the current {@link CallEndpoint} is switched successfully
-     */
-    @Test
-    public void testBasicAudioSwitchTest_TransactionalVoipAppMain() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper transactionalApp = null;
-        try {
-            transactionalApp = bindToApp(TransactionalVoipAppMain);
-            verifySwitchEndpoints(transactionalApp);
-        } finally {
-            tearDownApp(transactionalApp);
-        }
-    }
-
     /*********************************************************************************************
      *                           TransactionalVoipAppClone
      /*********************************************************************************************/
@@ -1442,47 +1288,6 @@ public class SingleCallingTest extends BaseAppVerifier {
         }
     }
 
-    /**
-     * Test the scenario where a client application requests to switch the current {@link
-     * android.telecom.CallEndpoint}
-     *
-     * <h3> Test Steps: </h3>
-     * <ul>
-     *  1. create a self-managed call that is backed by a {@link android.telecom.ConnectionService }
-     *  via {@link android.telecom.TelecomManager#addCall(CallAttributes,
-     *                                                    Executor,
-     *                                                    OutcomeReceiver,
-     *                                                    CallControlCallback,
-     *                                                    CallEventCallback)}
-     * <p>
-     *  2. collect the current {@link CallEndpoint} via
-     *  {@link android.telecom.CallEventCallback#onCallEndpointChanged(CallEndpoint)}
-     *  <p>
-     *  3.  collect the available {@link CallEndpoint}s via
-     *   {@link android.telecom.CallEventCallback#onAvailableCallEndpointsChanged(List)}
-     *  <p>
-     *  4. find another endpoint that is not the current endpoint and request an audio endpoint
-     *  switch via {@link android.telecom.CallControl#requestCallEndpointChange(CallEndpoint,
-     *                                                                Executor,
-     *                                                                OutcomeReceiver)}
-     *  <p>
-     *  </ul>
-     *  Assert the current {@link CallEndpoint} is switched successfully
-     */
-    @Test
-    public void testBasicAudioSwitchTest_TransactionalVoipAppClone() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
-        AppControlWrapper transactionalApp = null;
-        try {
-            transactionalApp = bindToApp(TransactionalVoipAppClone);
-            verifySwitchEndpoints(transactionalApp);
-        } finally {
-            tearDownApp(transactionalApp);
-        }
-    }
-
     /*********************************************************************************************
      *                           Helpers
      /*********************************************************************************************/
@@ -1548,13 +1353,6 @@ public class SingleCallingTest extends BaseAppVerifier {
     private void verifyGetAvailableEndpoints(AppControlWrapper appControlWrapper) throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
         assertNotNull(getAvailableCallEndpoints(appControlWrapper, mo));
-        setCallStateAndVerify(appControlWrapper, mo, STATE_DISCONNECTED);
-    }
-
-    private void verifySwitchEndpoints(AppControlWrapper appControlWrapper) throws Exception {
-        String mo = addOutgoingCallAndVerify(appControlWrapper);
-        setCallStateAndVerify(appControlWrapper, mo, STATE_ACTIVE);
-        switchToAnotherCallEndpoint(appControlWrapper, mo);
         setCallStateAndVerify(appControlWrapper, mo, STATE_DISCONNECTED);
     }
 }

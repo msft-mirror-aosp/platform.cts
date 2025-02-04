@@ -19,6 +19,7 @@ import numpy
 
 import camera_properties_utils
 import image_processing_utils
+import image_fov_utils
 import its_session_utils
 import opencv_processing_utils
 
@@ -225,13 +226,14 @@ def get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg):
 def check_lens_switch_conditions(props, first_api_level, zoom_range_lenses):
   """Check the camera properties for lens switch conditions.
 
+  Camera only switches if 3A converges
   Args:
     props: Camera properties dictionary.
     first_api_level: First API level.
     zoom_range_lenses: Tuple of two zoom ratio.
   Raises:
-      SkipTest: If the device doesn't support the required properties or API
-                level.
+    SkipTest: If the device doesn't support the required properties or API
+              level.
   """
   camera_properties_utils.skip_unless(
       first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
@@ -248,23 +250,27 @@ def check_lens_switch_conditions(props, first_api_level, zoom_range_lenses):
       (zoom_range[0] <= zoom_range_lenses[1] <= zoom_range[1]))
 
 
-def find_crossover_point(capture_results):
+def find_crossover_point(cam, capture_results):
   """Find the crossover point where the physical camera changes.
 
-  Args:
-    capture_results: List of capture results.
+  Analyze each frame extracted from the recording to detect the point
+  at which the camera's active physical ID changes alongside an
+  increasing zoom ratio.  A successful crossover is identified only
+  when the 3A algorithms have converged at the frame where the camera
+  switch occurs.
 
+  Args:
+    cam: An open device session.
+    capture_results: List of capture results.
   Returns:
-    A tuple of (lens_changed, converged_state_counter, physical_id_before)
+    A tuple of (lens_changed, counter)
     lens_changed: Boolean indicating if the lens changed.
-    converged_state_counter: Counter for the index of the converged frame.
-    physical_id_before: Physical camera ID before the crossover point.
+    counter: number of frame where the crossover occurred.
+    Raises: AssertionError if the 3A did not converge at crossover point.
   """
   physical_id_before = None
   counter = 0
   lens_changed = False
-  converged_state_counter = 0
-  converged_state = False
 
   for capture_result in capture_results:
     counter += 1
@@ -273,48 +279,37 @@ def find_crossover_point(capture_results):
     af_state = capture_result['android.control.afState']
     physical_id = capture_result[
         'android.logicalMultiCamera.activePhysicalId']
+    zoom_ratio = float(capture_result['android.control.zoomRatio'])
+    logging.debug('Active physical id %s frame %s', physical_id, counter)
     if not physical_id_before:
       physical_id_before = physical_id
-    zoom_ratio = float(capture_result['android.control.zoomRatio'])
     if physical_id_before == physical_id:
       continue
-    else:
-      logging.debug('Active physical id changed')
-      logging.debug('Crossover zoom ratio point: %f', zoom_ratio)
-      physical_id_before = physical_id
-      lens_changed = True
+    physical_props_id_before = cam.get_camera_properties_by_id(physical_id_before)
+    physical_props_id = cam.get_camera_properties_by_id(physical_id)
+    logging.debug('Active physical id %s changed to %s at frame %s and zoom ratio %f',
+                  physical_id_before, physical_id, counter, zoom_ratio)
+    # Avoid getting HAL-simulated camera by checking field of view change
+    camera_fov_before = image_fov_utils.calc_camera_fov_from_metadata(
+        capture_result, physical_props_id_before)
+    camera_fov = image_fov_utils.calc_camera_fov_from_metadata(
+        capture_result, physical_props_id)
+    physical_id_before = physical_id
+    if camera_fov_before != camera_fov:
+      logging.debug('Cameras with different field of view (%s != %s) crossed.',
+                    camera_fov_before, camera_fov)
       if ae_state == awb_state == af_state == _CONVERGED_STATE:
-        converged_state = True
-        converged_state_counter = counter
-        logging.debug('3A converged at the crossover point')
-      break
+        lens_changed = True
+        logging.debug('3A converged at crossover.')
+        break
+      else:
+        raise AssertionError('3A did not converge at crossover.')
 
-  # If the frame at crossover point was not converged, then
-  # traverse the list of capture results after crossover point
-  # to find the converged frame which will be used for AE,
-  # AWB and AF checks.
-  if not converged_state:
-    converged_state_counter = counter
-    for capture_result in capture_results[converged_state_counter-1:]:
-      converged_state_counter += 1
-      ae_state = capture_result['android.control.aeState']
-      awb_state = capture_result['android.control.awbState']
-      af_state = capture_result['android.control.afState']
-      if physical_id_before == capture_result[
-          'android.logicalMultiCamera.activePhysicalId']:
-        if ae_state == awb_state == af_state == _CONVERGED_STATE:
-          logging.debug('3A converged after crossover point.')
-          logging.debug('Zoom ratio at converged state after crossover'
-                        'point: %f', zoom_ratio)
-          converged_state = True
-          break
-
-  return converged_state_counter, lens_changed, converged_state, counter
+  return lens_changed, counter
 
 
 def get_camera_properties_and_log(cam, capture_results, file_list, counter,
-                                  converged_state_counter, lens_suffix1,
-                                  lens_suffix2):
+                                  lens_suffix1, lens_suffix2):
   """Get camera properties for the specific cameras and log the information.
 
   Args:
@@ -322,12 +317,12 @@ def get_camera_properties_and_log(cam, capture_results, file_list, counter,
     capture_results: List of capture results.
     file_list: List of captured image files.
     counter: Counter for the crossover point.
-    converged_state_counter: Counter for the converged state.
     lens_suffix1: Suffix for the first camera.
     lens_suffix2: Suffix for the second camera.
   Returns:
     Tuple of camera properties for both cameras.
   """
+  # Get data for the second to last frame before the switch happened
   img1_file = file_list[counter-2]
   capture_result_img1 = capture_results[counter-2]
   img1_phy_id = (
@@ -339,13 +334,14 @@ def get_camera_properties_and_log(cam, capture_results, file_list, counter,
   )
   logging.debug('Min focus distance for %s phy_id: %s is %f',
                 lens_suffix1, img1_phy_id, min_focus_distance_img1)
-
   logging.debug('Capture results %s crossover: %s',
                 lens_suffix1, capture_result_img1)
   logging.debug('Capture results %s crossover: %s',
                 lens_suffix2, capture_results[counter-1])
-  img2_file = file_list[converged_state_counter-1]
-  capture_result_img2 = capture_results[converged_state_counter-1]
+
+  # Get data for last frame where the switch happened
+  img2_file = file_list[counter-1]
+  capture_result_img2 = capture_results[counter-1]
   logging.debug('Capture results %s crossover converged: %s',
                 lens_suffix2, capture_result_img2)
   img2_phy_id = (

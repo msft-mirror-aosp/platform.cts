@@ -21,6 +21,7 @@ from mobly import test_runner
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
+import image_fov_utils
 import its_session_utils
 
 _HYPERFOCAL_MIN = 0.02
@@ -142,13 +143,7 @@ class MetadataTest(its_base_test.ItsBaseTest):
           raise AssertionError(
               f'Pixel pitch error! w: {pixel_pitch_w}, h: {pixel_pitch_h}')
 
-        diag = math.sqrt(sensor_size['height']**2 + sensor_size['width']**2)
-        fl = md['android.lens.focalLength']
-        logging.debug('Focal length: %.3f', fl)
-        fov = 2 * math.degrees(math.atan(diag / (2 * fl)))
-        logging.debug('Assert field of view: %.1f degrees', fov)
-        if not 10 <= fov <= 130:
-          raise AssertionError(f'FoV error: {fov:.1f}')
+        fov = image_fov_utils.calc_camera_fov_from_metadata(md, props)
 
         if camera_properties_utils.lens_approx_calibrated(props):
           diopter_hyperfocal = props['android.lens.info.hyperfocalDistance']

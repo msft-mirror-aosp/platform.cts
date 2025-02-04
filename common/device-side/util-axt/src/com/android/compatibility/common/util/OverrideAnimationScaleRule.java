@@ -16,6 +16,8 @@
 
 package com.android.compatibility.common.util;
 
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
+
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import android.animation.ValueAnimator;
@@ -26,7 +28,6 @@ import androidx.annotation.Nullable;
 
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
 
 public class OverrideAnimationScaleRule extends BeforeAfterRule {
 
@@ -45,24 +46,26 @@ public class OverrideAnimationScaleRule extends BeforeAfterRule {
 
     private final float mAnimationScale;
 
+    private float mOriginalAnimationScale;
+
     public OverrideAnimationScaleRule(float animationScale) {
         mAnimationScale = animationScale;
     }
 
     @Override
     protected void onBefore(Statement base, Description description) {
+        mOriginalAnimationScale = ValueAnimator.getDurationScale();
+        getInstrumentation().runOnMainSync(() -> ValueAnimator.setDurationScale(mAnimationScale));
         var value = Float.toString(mAnimationScale);
         mWindowAnimationScaleSetting.put(value);
         mTransitionAnimationScaleSetting.put(value);
         mAnimatorDurationScaleSetting.put(value);
-        if (mAnimationScale > 0) {
-            PollingCheck.waitFor(() ->
-                    Math.abs(ValueAnimator.getDurationScale() - mAnimationScale) < 0.001);
-        }
     }
 
     @Override
     protected void onAfter(Statement base, Description description) {
+        getInstrumentation()
+                .runOnMainSync(() -> ValueAnimator.setDurationScale(mOriginalAnimationScale));
         mWindowAnimationScaleSetting.restore();
         mTransitionAnimationScaleSetting.restore();
         mAnimatorDurationScaleSetting.restore();

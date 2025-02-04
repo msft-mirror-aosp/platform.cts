@@ -89,6 +89,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    compile_multilib: "both",
     jni_libs: [
         "libctsgraphicsgpuprofiling_jni",
     ],

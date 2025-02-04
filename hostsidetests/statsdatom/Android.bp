@@ -88,6 +88,7 @@ java_test_host {
         "android.app.appfunctions.flags-aconfig-java-host",
         "android.hardware.usb.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
+        "power_flags_lib_host",
         "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
         "stats_flags_lib_host",

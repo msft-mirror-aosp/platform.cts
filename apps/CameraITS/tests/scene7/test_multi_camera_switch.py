@@ -90,8 +90,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         )
 
         # Find the crossover point where the camera switches
-        converged_state_counter, lens_changed, converged_state, counter = (
-            multi_camera_switch_utils.find_crossover_point(capture_results))
+        lens_changed, counter = (
+            multi_camera_switch_utils.find_crossover_point(
+                cam, capture_results))
 
       except Exception as e:
         # Remove all the files except mp4 recording in case of any error
@@ -108,16 +109,11 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         e_msg = 'Crossover point not found. Try running the test again!'
         raise AssertionError(e_msg)
 
-      # Raise error is 3A does not converge after the lens change
-      if not converged_state:
-        e_msg = '3A not converged after the lens change.'
-        raise AssertionError(e_msg)
-
       # Process capture results and get camera properties
       img_uw_file, img_w_file, min_focus_distance_w = (
           multi_camera_switch_utils.get_camera_properties_and_log(
               cam, capture_results, file_list, counter,
-              converged_state_counter, _LENS_SUFFIX_UW, _LENS_SUFFIX_W)
+              _LENS_SUFFIX_UW, _LENS_SUFFIX_W)
       )
 
       # Remove unwanted frames and only save the UW and
