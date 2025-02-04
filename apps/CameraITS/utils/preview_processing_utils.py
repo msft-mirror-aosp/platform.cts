@@ -20,6 +20,7 @@ import os
 import threading
 import time
 
+import camera_properties_utils
 import its_session_utils
 import sensor_fusion_utils
 import video_processing_utils
