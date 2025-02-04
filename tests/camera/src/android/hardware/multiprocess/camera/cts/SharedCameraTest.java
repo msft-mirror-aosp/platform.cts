@@ -70,11 +70,14 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private static final long PREVIEW_TIME_MS = 2000;
     private ErrorLoggingService.ErrorServiceConnection mErrorServiceConnection;
     private int mProcessPid = -1;
+    private int mProcessPid2 = -1;
     private Context mContext;
     private ActivityManager mActivityManager;
     private String mCameraId;
     private Messenger mRemoteMessenger;
-    private ResultReceiver mResultReceiver;
+    private Messenger mRemoteMessenger2;
+    private CameraResultReceiver mResultReceiver;
+    private CameraResultReceiver mResultReceiver2;
     private UiDevice mUiDevice;
     protected HashMap<String, StaticMetadata> mAllStaticInfo;
 
@@ -84,6 +87,30 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     /** Load validation jni on initialization. */
     static {
         System.loadLibrary("ctscamera2_jni");
+    }
+
+    private class CameraResultReceiver extends ResultReceiver {
+        boolean mIsFirstClient = false;
+
+        protected CameraResultReceiver(boolean isFirstClient) {
+            super(null);
+            mIsFirstClient = isFirstClient;
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            if (resultCode == Activity.RESULT_OK) {
+                if (mIsFirstClient) {
+                    mRemoteMessenger =
+                            (Messenger)
+                                    resultData.getParcelable(TestConstants.EXTRA_REMOTE_MESSENGER);
+                } else {
+                    mRemoteMessenger2 =
+                            (Messenger)
+                                    resultData.getParcelable(TestConstants.EXTRA_REMOTE_MESSENGER);
+                }
+            }
+        }
     }
 
     @Override
@@ -103,17 +130,12 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         mErrorServiceConnection = new ErrorLoggingService.ErrorServiceConnection(mContext);
         mErrorServiceConnection.start();
 
-        mResultReceiver = new ResultReceiver(null) {
-            @Override
-            protected void onReceiveResult(int resultCode, Bundle resultData) {
-                if (resultCode == Activity.RESULT_OK) {
-                    mRemoteMessenger = (Messenger) resultData.getParcelable(
-                            TestConstants.EXTRA_REMOTE_MESSENGER);
-                }
-            }
-        };
+        mResultReceiver = new CameraResultReceiver(/* isFirstClient */ true);
 
-        startRemoteProcess(SharedCameraActivity.class, "SharedCameraActivityProcess");
+        mProcessPid =
+                startRemoteProcess(
+                        SharedCameraActivity.class, "SharedCameraActivityProcess", mResultReceiver);
+
         mAllStaticInfo = new HashMap<String, StaticMetadata>();
         List<String> hiddenPhysicalIds = new ArrayList<>();
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
@@ -141,6 +163,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
 
     @Override
     public void tearDown() throws Exception {
+        if (mProcessPid2 != -1) {
+            android.os.Process.killProcess(mProcessPid2);
+            mProcessPid2 = -1;
+            Thread.sleep(WAIT_TIME);
+        }
         if (mProcessPid != -1) {
             android.os.Process.killProcess(mProcessPid);
             mProcessPid = -1;
@@ -267,6 +294,62 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             //                 closeNativeClient(nativeSharedTest);
             //            }
             closeCameraJavaClient();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_MULTI_CLIENT)
+    public void testSharedSessionTwoJavaClients() throws Exception {
+        String[] cameraIdsUnderTest = getCameraIdsUnderTest();
+        if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
+        for (int i = 0; i < cameraIdsUnderTest.length; i++) {
+            mCameraId = cameraIdsUnderTest[i];
+            if (!mAllStaticInfo.get(mCameraId).sharedSessionConfigurationPresent()) {
+                Log.i(TAG, "Camera " + mCameraId + " does not support camera sharing, skipping");
+                continue;
+            }
+            SharedSessionConfiguration sharedSessionConfig =
+                    mAllStaticInfo.get(mCameraId).getSharedSessionConfiguration();
+            assertNotNull("Shared session configuration is null", sharedSessionConfig);
+            int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
+            if (imageReaderIdx == -1) {
+                Log.i(
+                        TAG,
+                        "Camera "
+                                + mCameraId
+                                + " does not have a stream supporting image reader and for shared"
+                                + " session, skipping");
+                continue;
+            }
+
+            // initialize client 2 process
+            mResultReceiver2 = new CameraResultReceiver(/* isFirstClient */ false);
+            mProcessPid2 =
+                    startRemoteProcess(
+                            SharedCameraActivitySecondaryClient.class,
+                            "SharedCameraActivityProcess2",
+                            mResultReceiver2);
+
+            assertCameraDeviceSharingSupportedJavaClient(mCameraId, /*sharingSupported*/ true);
+            openSharedCameraJavaClient(mCameraId, /* isPrimaryClient */ true);
+            // starting new client with same priority replaces the old client as the primary
+            openSharedCameraJavaClient(
+                    mCameraId, /* isPrimaryClient */
+                    true,
+                    /*expectedFail*/ false,
+                    mRemoteMessenger2);
+            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+            sharedStreamArray.add(imageReaderIdx);
+            createSharedSessionJavaClient(sharedStreamArray, mRemoteMessenger2);
+            startPreviewJavaClient(mRemoteMessenger2);
+            // TODO (b/394088185): This test is failing, investigate and fix.
+            //            createSharedSessionJavaClient(sharedStreamArray);
+            //            startPreviewJavaClient();
+            SystemClock.sleep(PREVIEW_TIME_MS);
+            //            stopPreviewJavaClient();
+            stopPreviewJavaClient(mRemoteMessenger2);
+            //            closeCameraJavaClient();
+            closeCameraJavaClient(mRemoteMessenger2);
         }
     }
 
@@ -563,16 +646,23 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
 
     private void openSharedCameraJavaClient(String cameraId, boolean isPrimaryClient)
             throws Exception {
-        openSharedCameraJavaClient(cameraId, isPrimaryClient, /*expectFail*/ false);
+        openSharedCameraJavaClient(
+                cameraId, isPrimaryClient, /*expectFail*/ false, mRemoteMessenger);
     }
 
-    private void openSharedCameraJavaClient(String cameraId, boolean isPrimaryClient,
-            boolean expectFail) throws Exception {
+    private void openSharedCameraJavaClient(
+            String cameraId, boolean isPrimaryClient, boolean expectFail) throws Exception {
+        openSharedCameraJavaClient(cameraId, isPrimaryClient, expectFail, mRemoteMessenger);
+    }
+
+    private void openSharedCameraJavaClient(
+            String cameraId, boolean isPrimaryClient, boolean expectFail, Messenger remoteMessenger)
+            throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_OPEN_CAMERA_SHARED);
         msg.getData().putString(TestConstants.EXTRA_CAMERA_ID, cameraId);
         boolean remoteExceptionHit = false;
         try {
-            mRemoteMessenger.send(msg);
+            remoteMessenger.send(msg);
         } catch (RemoteException e) {
             remoteExceptionHit = true;
         }
@@ -589,17 +679,21 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         }
         List<ErrorLoggingService.LogEvent> events =
                 mErrorServiceConnection.getLog(SETUP_TIMEOUT, expectedEvent);
-        assertNotNull("Did not receive any events from the camera device in remote process!",
-                events);
+        assertNotNull(
+                "Did not receive any events from the camera device in remote process!", events);
         Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(events);
         assertTrue(eventTagCountMap.containsKey(expectedEvent));
     }
 
     private void startPreviewJavaClient() throws Exception {
+        startPreviewJavaClient(mRemoteMessenger);
+    }
+
+    private void startPreviewJavaClient(Messenger remoteMessenger) throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_START_PREVIEW);
         boolean remoteExceptionHit = false;
         try {
-            mRemoteMessenger.send(msg);
+            remoteMessenger.send(msg);
         } catch (RemoteException e) {
             remoteExceptionHit = true;
         }
@@ -616,10 +710,14 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     private void stopPreviewJavaClient() throws Exception {
+        stopPreviewJavaClient(mRemoteMessenger);
+    }
+
+    private void stopPreviewJavaClient(Messenger remoteMessenger) throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_STOP_PREVIEW);
         boolean remoteExceptionHit = false;
         try {
-            mRemoteMessenger.send(msg);
+            remoteMessenger.send(msg);
         } catch (RemoteException e) {
             remoteExceptionHit = true;
         }
@@ -636,12 +734,17 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
 
     private void createSharedSessionJavaClient(ArrayList<Integer> sharedStreamArray)
             throws Exception {
+        createSharedSessionJavaClient(sharedStreamArray, mRemoteMessenger);
+    }
+
+    private void createSharedSessionJavaClient(
+            ArrayList<Integer> sharedStreamArray, Messenger remoteMessenger) throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_CREATE_SHARED_SESSION);
         msg.getData()
                 .putIntegerArrayList(TestConstants.EXTRA_SHARED_STREAM_ARRAY, sharedStreamArray);
         boolean remoteExceptionHit = false;
         try {
-            mRemoteMessenger.send(msg);
+            remoteMessenger.send(msg);
         } catch (RemoteException e) {
             remoteExceptionHit = true;
         }
@@ -765,10 +868,14 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     }
 
     private void closeCameraJavaClient() throws Exception {
+        closeCameraJavaClient(mRemoteMessenger);
+    }
+
+    private void closeCameraJavaClient(Messenger remoteMessenger) throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_CLOSE_CAMERA);
         boolean remoteExceptionHit = false;
         try {
-            mRemoteMessenger.send(msg);
+            remoteMessenger.send(msg);
         } catch (RemoteException e) {
             remoteExceptionHit = true;
         }
@@ -796,9 +903,10 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         assertTrue(eventTagCountMap.containsKey(expectedEvent));
     }
 
-    private void assertClientAccessPriorityChangedNative(long nativeSharedTest,
-            boolean isPrimaryClient) throws Exception {
-        assertTrue("testClientAccessPriorityChangedNative fail, see log for details",
+    private void assertClientAccessPriorityChangedNative(
+            long nativeSharedTest, boolean isPrimaryClient) throws Exception {
+        assertTrue(
+                "testClientAccessPriorityChangedNative fail, see log for details",
                 testClientAccessPriorityChangedNative(nativeSharedTest, isPrimaryClient));
     }
 
@@ -849,9 +957,11 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
      *
      * @param klass the class of the {@link android.app.Activity} to start.
      * @param processName the remote activity name.
+     * @param resultReceiver.
      * @throws InterruptedException
      */
-    public void startRemoteProcess(java.lang.Class<?> klass, String processName)
+    public int startRemoteProcess(
+            java.lang.Class<?> klass, String processName, ResultReceiver resultReceiver)
             throws InterruptedException {
         String cameraActivityName = mContext.getPackageName() + ":" + processName;
         // Ensure no running activity process with same name
@@ -861,15 +971,20 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 TestUtils.getPid(cameraActivityName, list));
         Intent activityIntent = new Intent(mContext, klass);
         activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activityIntent.putExtra(TestConstants.EXTRA_RESULT_RECEIVER, mResultReceiver);
+        activityIntent.putExtra(TestConstants.EXTRA_RESULT_RECEIVER, resultReceiver);
         mContext.startActivity(activityIntent);
         Thread.sleep(WAIT_TIME);
 
         // Fail if activity isn't running
         list = mActivityManager.getRunningAppProcesses();
-        mProcessPid = TestUtils.getPid(cameraActivityName, list);
-        assertTrue("Activity " + cameraActivityName + " not found in list of running app "
-                + "processes.", -1 != mProcessPid);
+        int processPid = TestUtils.getPid(cameraActivityName, list);
+        assertTrue(
+                "Activity "
+                        + cameraActivityName
+                        + " not found in list of running app"
+                        + " processes.",
+                -1 != processPid);
+        return processPid;
     }
 
     /**

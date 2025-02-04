@@ -93,6 +93,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
     Surface mReaderSurface;
     boolean mIsSurfaceViewPresent = false;
     boolean mIsImageReaderPresent = false;
+    boolean mIsPrimary = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -158,6 +159,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
         @Override
         public void onOpenedInSharedMode(CameraDevice cameraDevice, boolean isPrimary) {
             mCameraDevice = cameraDevice;
+            mIsPrimary = isPrimary;
             if (isPrimary) {
                 mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_CONNECT_SHARED_PRIMARY,
                         mChosenCameraId);
@@ -193,6 +195,7 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
 
         @Override
         public void onClientSharedAccessPriorityChanged(CameraDevice camera, boolean isPrimary) {
+            mIsPrimary = isPrimary;
             if (isPrimary) {
                 mErrorServiceConnection.logAsync(
                         TestConstants.EVENT_CLIENT_ACCESS_PRIORITIES_CHANGED_TO_PRIMARY,
@@ -434,11 +437,15 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         checkValidSurfaceIsPresent();
                         if (mIsSurfaceViewPresent) {
                             outputs.add(new OutputConfiguration(mPreviewSurface));
-                            mCaptureRequestBuilder.addTarget(mPreviewSurface);
+                            if (mIsPrimary) {
+                                mCaptureRequestBuilder.addTarget(mPreviewSurface);
+                            }
                         }
                         if (mIsImageReaderPresent) {
                             outputs.add(new OutputConfiguration(mReaderSurface));
-                            mCaptureRequestBuilder.addTarget(mReaderSurface);
+                            if (mIsPrimary) {
+                                mCaptureRequestBuilder.addTarget(mReaderSurface);
+                            }
                         }
 
                         if (outputs.isEmpty()) {
@@ -460,7 +467,9 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                         outputs,
                                         executor,
                                         mSessionMockListener);
-                        sessionConfig.setSessionParameters(mCaptureRequestBuilder.build());
+                        if (mIsPrimary) {
+                            sessionConfig.setSessionParameters(mCaptureRequestBuilder.build());
+                        }
                         mCameraDevice.createCaptureSession(sessionConfig);
                         sessionWaiter.waitForState(
                                 BlockingSessionCallback.SESSION_CONFIGURED,
@@ -925,8 +934,22 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                     }
                     try {
                         mCaptureListener = new SimpleCaptureCallback();
-                        mCaptureSequenceId = mSession.setRepeatingRequest(
-                                mCaptureRequestBuilder.build(), mCaptureListener, mCameraHandler);
+                        if (mIsPrimary) {
+                            mCaptureSequenceId =
+                                    mSession.setRepeatingRequest(
+                                            mCaptureRequestBuilder.build(),
+                                            mCaptureListener,
+                                            mCameraHandler);
+                        } else {
+                            List<Surface> surfaces = new ArrayList<>();
+                            if (mReaderSurface != null) {
+                                surfaces.add(mReaderSurface);
+                            } else if (mPreviewSurface != null) {
+                                surfaces.add(mPreviewSurface);
+                            }
+                            mCaptureSequenceId =
+                                    mSession.startStreaming(surfaces, executor, mCaptureListener);
+                        }
                         mCaptureListener.getCaptureResult(CAPTURE_RESULT_TIMEOUT_MS);
                         if ((mReader != null) && (mImageListener.getImageCount() <= 0)) {
                             mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
