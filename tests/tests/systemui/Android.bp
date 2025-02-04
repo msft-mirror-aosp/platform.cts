@@ -44,6 +44,7 @@ android_test {
         "permission-test-util-lib",
         "androidx.test.uiautomator_uiautomator",
         "aconfig_settingslib_flags_java_lib",
+        "com_android_systemui_flags_lib",
     ],
     srcs: [
         "src/**/*.java",
