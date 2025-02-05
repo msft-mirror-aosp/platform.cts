@@ -93,8 +93,6 @@ class FakeAssociationRule extends ExternalResource {
             throw new IllegalArgumentException("At most 99 associations supported");
         }
 
-        mCompanionDeviceManager.addOnAssociationsChangedListener(
-                mCallbackExecutor, mOnAssociationsChangedListener);
         Log.d(TAG, "Associations before shell cmd: "
                 + mCompanionDeviceManager.getMyAssociations().size());
         reset(mOnAssociationsChangedListener);
@@ -105,14 +103,8 @@ class FakeAssociationRule extends ExternalResource {
                 mContext.getPackageName(),
                 deviceAddress,
                 DEVICE_PROFILE));
-        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)
-                .description(TAG
-                        + ": Association changed listener did not call back. Total associations: "
-                        + mCompanionDeviceManager.getMyAssociations().size()))
-                .onAssociationsChanged(any());
+        verifyAssociationsChanged();
         mRoleManager.setBypassingRoleQualification(false);
-        mCompanionDeviceManager.removeOnAssociationsChangedListener(
-                mOnAssociationsChangedListener);
 
         // Immediately drop the role and rely on Shell
         Consumer<Boolean> callback = mock(Consumer.class);
@@ -154,6 +146,7 @@ class FakeAssociationRule extends ExternalResource {
                 fail(error == null ? "Failed to create CDM association" : error.toString());
             }
         };
+        reset(mOnAssociationsChangedListener);
         mCompanionDeviceManager.associate(request, Runnable::run, callback);
 
         try {
@@ -161,6 +154,8 @@ class FakeAssociationRule extends ExternalResource {
         } catch (InterruptedException e) {
             fail("Interrupted while waiting for CDM association: " + e);
         }
+
+        verifyAssociationsChanged();
         return managedAssociation[0];
     }
 
@@ -169,6 +164,8 @@ class FakeAssociationRule extends ExternalResource {
         super.before();
         MockitoAnnotations.initMocks(this);
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
+        mCompanionDeviceManager.addOnAssociationsChangedListener(
+                mCallbackExecutor, mOnAssociationsChangedListener);
         clearExistingAssociations();
         if (isAtLeastB()) {
             mAssociationInfo = createManagedAssociation(DEVICE_PROFILE);
@@ -181,6 +178,8 @@ class FakeAssociationRule extends ExternalResource {
     protected void after() {
         super.after();
         clearExistingAssociations();
+        mCompanionDeviceManager.removeOnAssociationsChangedListener(
+                mOnAssociationsChangedListener);
     }
 
     private void clearExistingAssociations() {
@@ -201,7 +200,16 @@ class FakeAssociationRule extends ExternalResource {
     }
 
     private void disassociate(int associationId) {
+        reset(mOnAssociationsChangedListener);
         mCompanionDeviceManager.disassociate(associationId);
+        verifyAssociationsChanged();
+    }
+
+    private void verifyAssociationsChanged() {
+        verify(mOnAssociationsChangedListener, timeout(TIMEOUT_MS)
+                .description(TAG + ": onAssociationChanged not called, total associations: "
+                        + mCompanionDeviceManager.getMyAssociations().size()))
+                .onAssociationsChanged(any());
     }
 
     @ChecksSdkIntAtLeast(api = 36 /* BUILD_VERSION_CODES.Baklava */)
