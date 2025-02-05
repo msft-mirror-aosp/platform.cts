@@ -266,4 +266,5 @@ public class StaticNonce {
             double v6, double v7, double v8, double v9, double v10,
             double v11, double v12, double v13, double v14);
 
+    public static native boolean delayedRegisterNatives(Class targetClass);
 }

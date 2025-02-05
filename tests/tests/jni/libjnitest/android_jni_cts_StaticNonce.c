@@ -767,6 +767,20 @@ static jboolean StaticNonce_takeCoolHandLukeWithFloatsCritical(
         (v14 == 14.0);
 }
 
+static JNINativeMethod methods_linked_in_different_classloader[] = {
+    // name, signature, function
+    {"returnBoolean", "()Z", StaticNonce_returnBoolean},
+};
+
+static jboolean StaticNonce_delayedRegisterNatives(JNIEnv* env, jclass, jclass target_class) {
+  jint result = (*env)->RegisterNatives(
+      env,
+      target_class,
+      methods_linked_in_different_classloader,
+      sizeof(methods_linked_in_different_classloader) / sizeof(JNINativeMethod));
+  return (result == JNI_OK) ? JNI_TRUE : JNI_FALSE;
+}
+
 static JNINativeMethod methods[] = {
     // name, signature, function
     { "nop",               "()V", StaticNonce_nop },
@@ -872,6 +886,7 @@ static JNINativeMethod methods[] = {
     { "takeCoolHandLukeWithFloatsCritical",
       "(IIIIIDDDDDDDDD)Z",
       StaticNonce_takeCoolHandLukeWithFloatsCritical },
+    { "delayedRegisterNatives", "(Ljava/lang/Class;)Z", StaticNonce_delayedRegisterNatives },
 };
 
 int register_StaticNonce(JNIEnv *env) {
