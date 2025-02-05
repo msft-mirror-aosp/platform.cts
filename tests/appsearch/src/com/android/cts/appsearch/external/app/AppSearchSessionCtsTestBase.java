@@ -11866,6 +11866,76 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SEARCH_SPEC_SEARCH_STRING_PARAMETERS)
+    public void testSuggestionSearchSpecStringParameters_simple() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.LIST_FILTER_QUERY_LANGUAGE));
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SEARCH_SUGGESTION));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo bar")
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(doc0).build()));
+
+        // Get a suggestion for 'foo b'. This should be expanded to 'foo bar'. Using search string
+        // parameters to replace a token other than the last one, should work exactly the same as if
+        // the parameter were written in the string itself.
+        SearchSuggestionSpec spec =
+                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 1)
+                        .addSearchStringParameters("foo")
+                        .build();
+        List<SearchSuggestionResult> suggestions =
+                mDb1.searchSuggestionAsync("getSearchStringParameter(0) b", spec).get();
+        assertThat(suggestions).hasSize(1);
+        assertThat(suggestions.get(0).getSuggestedResult())
+                .isEqualTo("getSearchStringParameter(0) bar");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SEARCH_SPEC_SEARCH_STRING_PARAMETERS)
+    public void testSearchSuggestionSpecStringParameters_notSupported() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SEARCH_SUGGESTION));
+        assumeFalse(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS));
+
+        SearchSuggestionSpec spec =
+                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 1)
+                        .addSearchStringParameters("foo")
+                        .build();
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () ->
+                                mDb1.searchSuggestionAsync("getSearchStringParameter(0) b", spec)
+                                        .get());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
     @RequiresFlagsEnabled({
         Flags.FLAG_ENABLE_INFORMATIONAL_RANKING_EXPRESSIONS,
         Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG
