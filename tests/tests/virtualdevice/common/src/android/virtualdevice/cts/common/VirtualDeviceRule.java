@@ -139,7 +139,6 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     private VirtualDeviceRule(String... permissions) {
-        assumeNotNull(mVirtualDeviceManager);
         mPermissions =
                 Stream.concat(Arrays.stream(REQUIRED_PERMISSIONS), Arrays.stream(permissions))
                         .toArray(String[]::new);
@@ -147,6 +146,7 @@ public class VirtualDeviceRule implements TestRule {
 
     @Override
     public Statement apply(final Statement base, final Description description) {
+        assumeNotNull(mVirtualDeviceManager);
         return RuleChain
                 .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
                 .around(new AdoptShellPermissionsRule(
