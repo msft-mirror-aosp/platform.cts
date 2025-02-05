@@ -156,6 +156,9 @@
         <activity android:name="android.server.wm.window.HideOverlayWindowsTest$SystemApplicationOverlayActivity"
                   android:process=":saoa"
                   android:exported="true"/>
+        <activity android:name="android.server.wm.window.HideOverlayWindowsTest$SameUidActivity"
+            android:process=":sua"
+            android:exported="true"/>
 
         <activity android:name="android.server.wm.keyguard.KeyguardLockedTests$ShowImeAfterLockscreenActivity"
                   android:configChanges="keyboard|keyboardHidden|navigation"/>
