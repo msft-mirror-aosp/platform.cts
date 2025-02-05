@@ -79,6 +79,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -125,8 +126,12 @@ public class MediaRouter2Test {
     private static final int SAMPLE_CURRENT_VOLUME = 10;
     private static final int SAMPLE_MAX_VOLUME = 12;
 
-    @Rule
+    @Rule(order = 0)
     public final ResourceReleaser mResourceReleaser = new ResourceReleaser(/* useStack= */ true);
+
+    @Rule(order = 1)
+    public final ActivityScenarioRule<MediaRouter2TestActivity> activityScenarioRule =
+            new ActivityScenarioRule<>(MediaRouter2TestActivity.class);
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -160,7 +165,7 @@ public class MediaRouter2Test {
         mExecutor = Executors.newSingleThreadExecutor();
         mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
         mRouter2 = MediaRouter2.getInstance(mContext);
-        MediaRouter2TestActivity.startActivity(mContext);
+        activityScenarioRule.getScenario();
 
         if (isAutomotive()) {
             mUiAutomation.adoptShellPermissionIdentity(
@@ -198,7 +203,6 @@ public class MediaRouter2Test {
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
-        MediaRouter2TestActivity.finishActivity();
         if (mService != null) {
             mService.clear();
             mService = null;
