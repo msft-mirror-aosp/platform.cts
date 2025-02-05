@@ -16,6 +16,9 @@
 
 package com.android.cts.ctsprofiles;
 
+import com.android.cts.apicommon.ApiCoverage;
+import com.android.cts.apicommon.ApiMethod;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +49,13 @@ public class ClassProfile {
 
     // A map of test methods defined in this class with the method signature as the key.
     private Map<String, MethodProfile> mTestMethods = null;
+
+    // A map of API classes extended/implemented by this class with the API class signature as
+    // the key.
+    private Map<String, ClassProfile> mInheritedApiClasses = null;
+
+    // A map between the method and abstract API methods it overrides.
+    private Map<String, Map<String, MethodProfile>> mOverriddenAbstractApiMethods = null;
 
     private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
             List.of(
@@ -122,6 +132,43 @@ public class ClassProfile {
     }
 
     /**
+     * @return The methods that are overriding abstract API methods.
+     * @throws RuntimeException if the abstract API methods overridden case is not solved.
+     */
+    public Map<String, Map<String, MethodProfile>> getOverriddenAbstractApiMethods() {
+        if (mOverriddenAbstractApiMethods == null) {
+            throw new RuntimeException(
+                    String.format(
+                            "Methods that override abstract APIs are not collected in class %s",
+                            getClassSignature()));
+        }
+        return mOverriddenAbstractApiMethods;
+    }
+
+    /** Gets API classes inherited by the class. */
+    public Map<String, ClassProfile> getInheritedApiClasses() {
+        if (mInheritedApiClasses != null) {
+            return mInheritedApiClasses;
+        }
+        mInheritedApiClasses = new HashMap<>();
+        if (mSuperClass != null) {
+            if (mSuperClass.isApiClass()) {
+                mInheritedApiClasses.put(mSuperClass.getClassSignature(), mSuperClass);
+            } else {
+                mInheritedApiClasses.putAll(mSuperClass.getInheritedApiClasses());
+            }
+        }
+        for (ClassProfile interfaceClass : mInterfaces) {
+            if (interfaceClass.isApiClass()) {
+                mInheritedApiClasses.put(interfaceClass.getClassSignature(), interfaceClass);
+            } else {
+                mInheritedApiClasses.putAll(interfaceClass.getInheritedApiClasses());
+            }
+        }
+        return mInheritedApiClasses;
+    }
+
+    /**
      * Adds a supper method call when the method is extended from super classes. If the "super"
      * keyword is not explicitly added, the java bytecode will not show which super class is called.
      * In this case, find the nearest method along the super class chain and add an additionally
@@ -136,6 +183,52 @@ public class ClassProfile {
                     method.getMethodName(), method.getMethodParams());
             if (superMethod != null) {
                 method.addMethodCall(superMethod);
+            }
+        }
+    }
+
+    /**
+     * Filters out methods that are overriding abstract API methods defined in extended API classes
+     * or implemented API interfaces. An additional method call to corresponding abstract API
+     * methods will be recorded to ensure they will be included in the API coverage measurement.
+     */
+    public void resolveOverriddenAbstractApiMethods(ApiCoverage apiCoverage) {
+        if (mOverriddenAbstractApiMethods != null) {
+            return;
+        }
+        mOverriddenAbstractApiMethods = new HashMap<>();
+        if (isApiClass()) {
+            return;
+        }
+        for (MethodProfile method : mMethods.values()) {
+            if (method.isAbstract() || !method.isDirectMember()) {
+                continue;
+            }
+            for (ClassProfile inheritedApiClass : getInheritedApiClasses().values()) {
+                // Skip java.lang.Object, which can make the runtime very long.
+                if (inheritedApiClass.getClassSignature().startsWith("java.lang.Object")) {
+                    continue;
+                }
+                ApiMethod apiMethod =
+                        apiCoverage.getMethod(
+                                inheritedApiClass.getPackageName(),
+                                inheritedApiClass.getClassName(),
+                                method.getMethodName(),
+                                method.getMethodParams());
+                if (apiMethod == null || !apiMethod.isAbstractMethod()) {
+                    continue;
+                }
+                MethodProfile overriddenApiMethod =
+                        inheritedApiClass.getOrCreateMethod(
+                                method.getMethodName(), method.getMethodParams());
+                String apiMethodSignature = overriddenApiMethod.getMethodSignatureWithClass();
+                // The corresponding abstract API method should be regarded as covered.
+                method.addMethodCall(overriddenApiMethod);
+                mOverriddenAbstractApiMethods.putIfAbsent(
+                        method.getMethodSignatureWithClass(), new HashMap<>());
+                mOverriddenAbstractApiMethods
+                        .get(method.getMethodSignatureWithClass())
+                        .put(apiMethodSignature, overriddenApiMethod);
             }
         }
     }
