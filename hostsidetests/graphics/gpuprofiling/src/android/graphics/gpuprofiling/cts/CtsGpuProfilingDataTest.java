@@ -17,6 +17,7 @@
 package android.graphics.gpuprofiling.cts;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeFalse;
 
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -94,6 +95,13 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     private static final String TRACE_FILE_PATH = "/data/misc/perfetto-traces/cts-trace";
     private static final int MAX_TRACE_RETRIES = 3;
 
+    // Copied from PackageManager
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
+    private static final String FEATURE_EMBEDDED = "android.hardware.type.embedded";
+    private static final String FEATURE_LEANBACK_ONLY = "android.software.leanback_only";
+    private static final String FEATURE_WATCH = "android.hardware.type.watch";
+    private static final String FEATURE_TELEVISION = "android.hardware.type.television";
+
     private String initialDebugPropertyValue = null;
 
     @Rule public ErrorCollector errorCollector = new ErrorCollector();
@@ -120,18 +128,28 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
     /** Kill the native process and remove the layer related settings after each test */
     @After
     public void cleanup() throws Exception {
-        getDevice().executeShellV2Command("killall " + BIN_NAME);
-        getDevice().executeShellV2Command("am force-stop " + APP);
-        getDevice().executeShellV2Command("settings delete global gpu_debug_layers");
-        getDevice().executeShellV2Command("settings delete global enable_gpu_debug_layers");
-        getDevice().executeShellV2Command("settings delete global gpu_debug_app");
-        getDevice().executeShellV2Command("settings delete global gpu_debug_layer_app");
-        getDevice().setProperty(DEBUG_PROPERTY, initialDebugPropertyValue);
+        if (initialDebugPropertyValue != null) {
+            getDevice().executeShellV2Command("killall " + BIN_NAME);
+            getDevice().executeShellV2Command("am force-stop " + APP);
+            getDevice().executeShellV2Command("settings delete global gpu_debug_layers");
+            getDevice().executeShellV2Command("settings delete global enable_gpu_debug_layers");
+            getDevice().executeShellV2Command("settings delete global gpu_debug_app");
+            getDevice().executeShellV2Command("settings delete global gpu_debug_layer_app");
+            getDevice().setProperty(DEBUG_PROPERTY, initialDebugPropertyValue);
+        }
     }
 
     /** Clean up before starting any tests. Apply the necessary layer settings if we need them */
     @Before
     public void init() throws Exception {
+        // We do not care about non-handheld devices
+        bypassTestForFeatures(
+                FEATURE_AUTOMOTIVE,
+                FEATURE_EMBEDDED,
+                FEATURE_LEANBACK_ONLY,
+                FEATURE_WATCH,
+                FEATURE_TELEVISION);
+
         initialDebugPropertyValue = getDevice().getProperty(DEBUG_PROPERTY);
         if (initialDebugPropertyValue == null) {
             initialDebugPropertyValue = "";
@@ -329,5 +347,11 @@ public class CtsGpuProfilingDataTest extends BaseHostJUnit4Test {
             }
         }
         return false;
+    }
+
+    private void bypassTestForFeatures(String... features) throws Exception {
+        for (String feature : features) {
+            assumeFalse(hasDeviceFeature(feature));
+        }
     }
 }

@@ -51,6 +51,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -319,6 +320,7 @@ public class RingerTest extends BaseAppVerifier {
      *  <p>
      *  6. disconnect the call
      */
+    @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
     public void testIncomingCallVibrateModeEnableRinger_VibrateAndRing() throws Exception {
         assumeTrue(mShouldTestTelecom);

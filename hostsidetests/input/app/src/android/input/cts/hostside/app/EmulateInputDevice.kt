@@ -206,8 +206,8 @@ class EmulateInputDevice {
         multiFingerSwipe(4)
     }
 
-    // Perform a multi-finger swipe in one direction and return to the starting location to
-    // minimize the size effects of the gesture to the rest of the system.
+    // Perform a multi-finger swipe in the positive x direction and return to the starting location
+    // to minimize the size effects of the gesture to the rest of the system.
     private fun multiFingerSwipe(numFingers: Int) {
         UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
@@ -222,7 +222,7 @@ class EmulateInputDevice {
             for (rep in 0 until 20) {
                 val direction = if (rep < 10) 1 else -1
                 for (i in pointers.indices) {
-                    pointers[i].offset(0, direction * 40)
+                    pointers[i].offset(direction * 40, 0)
                     touchpad.sendMove(i, pointers[i])
                 }
                 touchpad.sync()

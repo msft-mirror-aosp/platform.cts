@@ -20,6 +20,7 @@ import static android.app.StatusBarManager.NAV_BAR_MODE_DEFAULT;
 import static android.app.StatusBarManager.NAV_BAR_MODE_KIDS;
 import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
 import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
@@ -40,6 +41,7 @@ import android.server.wm.cts.R;
 import android.view.View;
 import android.view.Window;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.window.flags.Flags;
 
 import org.junit.Test;
@@ -52,6 +54,8 @@ import org.junit.Test;
  */
 @Presubmit
 public class WindowPolicyTests extends WindowPolicyTestBase {
+
+    private static final long TIMEOUT_NAV_BAR_MODE_CHANGED = 2000L;
 
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_EDGE_TO_EDGE)
     @Test
@@ -223,44 +227,48 @@ public class WindowPolicyTests extends WindowPolicyTestBase {
     @Test
     public void testOrientationInKidsMode_portrait() {
         assumeTrue(hasDeviceFeature(FEATURE_SCREEN_PORTRAIT));
-        final StatusBarManager statusBarManager = mContext.getSystemService(StatusBarManager.class);
-        assumeNotNull(statusBarManager);
 
-        try {
-            NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_KIDS));
-
-            final TestActivity activity = startActivitySync(PortraitTestActivity.class);
-
-            runOnMainSync(
-                    () ->
-                            assertEquals(
-                                    "Activity must be launched in portrait mode.",
-                                    activity.getResources().getConfiguration().orientation,
-                                    Configuration.ORIENTATION_PORTRAIT));
-        } finally {
-            NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_DEFAULT));
-        }
+        runInKidsModeSync(
+                () -> {
+                    final TestActivity activity = startActivitySync(PortraitTestActivity.class);
+                    PollingCheck.waitFor(
+                            TIMEOUT_NAV_BAR_MODE_CHANGED,
+                            () ->
+                                    activity.getResources().getConfiguration().orientation
+                                            == Configuration.ORIENTATION_PORTRAIT,
+                            "Activity must be launched in portrait mode.");
+                });
     }
 
     @Test
     public void testOrientationInKidsMode_landscape() {
         assumeTrue(hasDeviceFeature(FEATURE_SCREEN_LANDSCAPE));
+
+        runInKidsModeSync(
+                () -> {
+                    final TestActivity activity = startActivitySync(LandscapeTestActivity.class);
+                    PollingCheck.waitFor(
+                            TIMEOUT_NAV_BAR_MODE_CHANGED,
+                            () ->
+                                    activity.getResources().getConfiguration().orientation
+                                            == Configuration.ORIENTATION_LANDSCAPE,
+                            "Activity must be launched in landscape mode.");
+                });
+    }
+
+    private void runInKidsModeSync(Runnable runnable) {
         final StatusBarManager statusBarManager = mContext.getSystemService(StatusBarManager.class);
         assumeNotNull(statusBarManager);
 
         try {
             NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_KIDS));
-
-            final TestActivity activity = startActivitySync(LandscapeTestActivity.class);
-
-            runOnMainSync(
-                    () ->
-                            assertEquals(
-                                    "Activity must be launched in landscape mode.",
-                                    activity.getResources().getConfiguration().orientation,
-                                    Configuration.ORIENTATION_LANDSCAPE));
+            runnable.run();
         } finally {
             NestedShellPermission.run(() -> statusBarManager.setNavBarMode(NAV_BAR_MODE_DEFAULT));
+
+            // Wait for restoring nav bar mode before leaving. It is to prevent the next test from
+            // getting affected by unexpected configuration changes.
+            executeShellCommand("am wait-for-broadcast-barrier");
         }
     }
 

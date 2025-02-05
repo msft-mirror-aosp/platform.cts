@@ -47,6 +47,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
     public static int FOCUS_LOST_LOCK = 5;
 
     private static int NUM_LOCKS = FOCUS_LOST_LOCK + 1;
+    private static final String TAG = "CtsSelfManagedConnectionService";
 
     private static CtsSelfManagedConnectionService sConnectionService;
 
@@ -138,11 +139,13 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
 
     @Override
     public void onConnectionServiceFocusGained() {
+        Log.i(TAG, "onConnectionServiceFocusGained");
         mLocks[FOCUS_GAINED_LOCK].countDown();
     }
 
     @Override
     public void onConnectionServiceFocusLost() {
+        Log.i(TAG, "onConnectionServiceFocusLost");
         mLocks[FOCUS_LOST_LOCK].countDown();
         connectionServiceFocusReleased();
     }
