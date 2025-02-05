@@ -44,6 +44,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +60,7 @@ public class TestLooperManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void testMainThread() throws Exception {
-        doTest(Looper.getMainLooper());
+        doTestSharedMessageQueue(Looper.getMainLooper());
     }
 
     @Test
@@ -76,7 +78,7 @@ public class TestLooperManagerTest {
                 .runOnMainSync(
                         () -> {
                             try {
-                                doTest(Looper.myLooper());
+                                doTestSharedMessageQueue(Looper.myLooper());
                             } catch (Exception e) {
                                 throw new RuntimeException("Unhandled exception", e);
                             }
@@ -167,6 +169,35 @@ public class TestLooperManagerTest {
         mQueue.removeSyncBarrier(token);
         assertFalse(tlm.isBlockedOnSyncBarrier());
 
+        tlm.release();
+    }
+
+    private void doTestSharedMessageQueue(Looper looper) throws Exception {
+        final TestLooperManager tlm =
+                InstrumentationRegistry.getInstrumentation().acquireLooperManager(looper);
+        final Handler handler = new Handler(looper);
+
+        Message first = Message.obtain(handler);
+        first.what = 42;
+        handler.sendMessageDelayed(first, 10000);
+
+        boolean found = false;
+        List<Message> otherMessages = new ArrayList<>();
+        while (true) {
+            Message m = tlm.poll();
+            if (m == null) {
+                break;
+            }
+            /* if an outside task has queued up a message, simply execute it and move on */
+            tlm.execute(m);
+            tlm.recycle(m);
+            otherMessages.add(m);
+            if (m == first) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue("Expected message not found but saw " + otherMessages, found);
         tlm.release();
     }
 }
