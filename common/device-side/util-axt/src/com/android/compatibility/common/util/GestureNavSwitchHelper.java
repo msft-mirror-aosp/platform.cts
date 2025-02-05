@@ -18,11 +18,11 @@ package com.android.compatibility.common.util;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Insets;
 import android.graphics.Rect;
+import android.os.Build;
 import android.util.Log;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -54,9 +54,10 @@ public final class GestureNavSwitchHelper {
 
     private static final long OVERLAY_WAIT_TIMEOUT = 10000;
 
-    private final Instrumentation mInstrumentation;
     private final UiDevice mDevice;
     private final WindowManager mWindowManager;
+    /** Whether the device supports the navigation bar. */
+    private final boolean mHasNavigationBar;
     /** Failed to enable gesture navigation. */
     private boolean mEnableGestureNavFailed;
     /** Failed to enable three button navigation. */
@@ -66,27 +67,27 @@ public final class GestureNavSwitchHelper {
      * Initialize all options in System Gesture.
      */
     public GestureNavSwitchHelper() {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mDevice = UiDevice.getInstance(mInstrumentation);
-        final Context context = mInstrumentation.getTargetContext();
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        mDevice = UiDevice.getInstance(instrumentation);
+        final Context context = instrumentation.getTargetContext();
 
         mWindowManager = context.getSystemService(WindowManager.class);
-    }
 
-    /** Whether the device supports gesture navigation bar. */
-    public boolean hasSystemGestureFeature() {
-        if (!containsNavigationBar()) {
-            return false;
-        }
-        final Context context = mInstrumentation.getTargetContext();
-        final PackageManager pm = context.getPackageManager();
-
+        final var pm = context.getPackageManager();
         // No bars on embedded devices.
         // No bars on TVs and watches.
-        return !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
+        // No bars on PCs.
+        mHasNavigationBar = !(pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
                 || pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
                 || pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+                || pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
+                    && pm.hasSystemFeature(PackageManager.FEATURE_PC)));
+    }
+
+    /** Whether the device supports the navigation bar. */
+    public boolean hasNavigationBar() {
+        return mHasNavigationBar && containsNavigationBar();
     }
 
     private void insetsToRect(Insets insets, Rect outRect) {
@@ -126,7 +127,7 @@ public final class GestureNavSwitchHelper {
         if (mEnableGestureNavFailed) {
             return false;
         }
-        if (!hasSystemGestureFeature()) {
+        if (!hasNavigationBar()) {
             return false;
         }
         if (isGestureMode()) {
@@ -148,7 +149,7 @@ public final class GestureNavSwitchHelper {
         if (mEnableThreeButtonNavFailed) {
             return false;
         }
-        if (!hasSystemGestureFeature()) {
+        if (!hasNavigationBar()) {
             return true;
         }
         if (isThreeButtonMode()) {
@@ -166,7 +167,7 @@ public final class GestureNavSwitchHelper {
      */
     @NonNull
     public AutoCloseable withGestureNavigationMode() {
-        if (isGestureMode() || !hasSystemGestureFeature()) {
+        if (isGestureMode() || !hasNavigationBar()) {
             return () -> {};
         }
 
@@ -183,7 +184,7 @@ public final class GestureNavSwitchHelper {
      */
     @NonNull
     public AutoCloseable withThreeButtonNavigationMode() {
-        if (isThreeButtonMode() || !hasSystemGestureFeature()) {
+        if (isThreeButtonMode() || !hasNavigationBar()) {
             return () -> {};
         }
 
