@@ -16,8 +16,8 @@
 
 package android.telephonyprovider.cts;
 
-import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
 import static android.telephony.cts.util.DefaultSmsAppHelper.assumeMessaging;
+import static android.telephony.cts.util.DefaultSmsAppHelper.assumeTelephony;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -38,6 +38,7 @@ import android.provider.Telephony.Mms.Outbox;
 import android.provider.Telephony.Mms.Sent;
 import android.provider.Telephony.Sms;
 import android.telephony.cts.util.DefaultSmsAppHelper;
+import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 
@@ -50,6 +51,7 @@ import javax.annotation.Nullable;
 
 @SmallTest
 public class MmsTest {
+    private static final String TAG = "MmsTest";
 
     private static final String[] MMS_ADDRESSES = new String[]{"+1223", "+43234234"};
     private static final String MMS_SUBJECT_ONE = "MMS Subject CTS One";
@@ -533,13 +535,18 @@ public class MmsTest {
      */
     @Test
     public void testSubqueryNotAllowed()  throws Throwable  {
+        Log.d(TAG, "testSubqueryNotAllowed");
         int messageType = PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND;
         String expectedSubject = "testMmsQuery_canViewNotificationIndMessages";
+        Log.d(TAG, "testSubqueryNotAllowed: insertTestMms");
         Uri uri = insertTestMms(expectedSubject, messageType);
         assertThat(uri).isNotNull();
 
+        Log.d(TAG, "testSubqueryNotAllowed: call stopBeingDefaultSmsApp");
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        waitFor(500);
         {
+            Log.d(TAG, "testSubqueryNotAllowed: query selection");
             // selection
             assertThrows(IllegalArgumentException.class, () -> mContentResolver.query(
                     Telephony.Mms.CONTENT_URI, null,
@@ -547,6 +554,7 @@ public class MmsTest {
         }
 
         {
+            Log.d(TAG, "testSubqueryNotAllowed: query projection");
             // projection
             assertThrows(IllegalArgumentException.class, () -> mContentResolver.query(
                     Telephony.Mms.CONTENT_URI,
@@ -555,14 +563,18 @@ public class MmsTest {
         }
 
         {
+            Log.d(TAG, "testSubqueryNotAllowed: query sort order");
             // sort order
             assertThrows(IllegalArgumentException.class, () -> mContentResolver.query(
                     Telephony.Mms.CONTENT_URI, null, null, null,
                     "CASE (SELECT count(seen) FROM sms) WHEN 0 THEN 1 ELSE 0 END DESC"));
         }
 
+        Log.d(TAG, "testSubqueryNotAllowed: call ensureDefaultSmsApp");
         DefaultSmsAppHelper.ensureDefaultSmsApp();
+        waitFor(500);
         {
+            Log.d(TAG, "testSubqueryNotAllowed: query selection");
             // selection
             Cursor cursor1 = mContentResolver.query(Telephony.Mms.CONTENT_URI,
                     null, "seen=(SELECT seen FROM sms LIMIT 1)", null, null);
@@ -570,6 +582,7 @@ public class MmsTest {
         }
 
         {
+            Log.d(TAG, "testSubqueryNotAllowed: query projection");
             // projection
             Cursor cursor1 = mContentResolver.query(Telephony.Mms.CONTENT_URI,
                     new String[] {"(SELECT seen from sms LIMIT 1) AS d"}, null, null, null);
@@ -577,11 +590,26 @@ public class MmsTest {
         }
 
         {
+            Log.d(TAG, "testSubqueryNotAllowed: query sort order");
             // sort order
             Cursor cursor1 = mContentResolver.query(Telephony.Mms.CONTENT_URI,
                     null, null, null,
                     "CASE (SELECT count(seen) FROM sms) WHEN 0 THEN 1 ELSE 0 END DESC");
             assertNotNull(cursor1);
+        }
+
+        Log.d(TAG, "testSubqueryNotAllowed: test end");
+    }
+
+    protected static void waitFor(long timeoutMillis) {
+        Object delayTimeout = new Object();
+        synchronized (delayTimeout) {
+            try {
+                delayTimeout.wait(timeoutMillis);
+            } catch (InterruptedException ex) {
+                // Ignore the exception
+                Log.d(TAG, "waitFor: delayTimeout ex=" + ex);
+            }
         }
     }
 }
