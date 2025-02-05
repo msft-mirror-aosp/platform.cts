@@ -38,6 +38,7 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VI
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
 import static org.junit.Assert.assertFalse;
@@ -471,7 +472,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         final ShowImeAfterLockscreenActivity activity = imeTestActivitySession.getActivity();
         final View rootView = activity.getWindow().getDecorView();
 
-        mCtsTouchUtils.emulateTapOnViewCenter(getInstrumentation(), null, activity.mEditor);
+        clickOnViewCenter(activity.mEditor);
         PollingCheck.waitFor(
                 TIMEOUT_IME,
                 () -> rootView.getRootWindowInsets().isVisible(ime()));
@@ -488,7 +489,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
         final ImeEventStream stream = mockImeSession.openEventStream();
 
-        mCtsTouchUtils.emulateTapOnViewCenter(getInstrumentation(), null, activity.mEditor);
+        clickOnViewCenter(activity.mEditor);
 
         // Make sure the activity has been called showSoftInput & IME window is visible.
         expectEvent(stream, event -> "showSoftInput".equals(event.getEventName()),
