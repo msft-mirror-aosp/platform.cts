@@ -170,6 +170,7 @@ public class DisplayTests extends MultiDisplayTestBase {
     public void testLargeScreenEnableIgnoreOrientationRequest() {
         assumeTrue("Skipping test: not large screen", isTablet());
 
+        IgnoreOrientationRequestSession.resetIgnoreOrientationRequest();
         assertTrue(IgnoreOrientationRequestSession.getIgnoreOrientationRequest());
     }
 
