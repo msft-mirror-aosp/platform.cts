@@ -102,8 +102,6 @@ public class IpcDataCacheTest {
         IpcDataCache.setTestMode(false);
     }
 
-    // This test is disabled pending an sepolicy change that allows any app to set the
-    // test property.
     @Test
     public void testBasicCache() {
 
@@ -321,13 +319,14 @@ public class IpcDataCacheTest {
         cache.forgetDisableLocal();
     }
 
-    // Validate the static method disableForCurrentProcess(String).
+    // Validate the static method disableForCurrentProcess(String) and the static invalidateCache
+    // method.
     @Test
     public void testLocalProcessDisable2() {
         final String api = "testLocalProcessDisable2";
         TestCache cache = new TestCache(MODULE, api);
         assertEquals(cache.isDisabled(), false);
-        cache.invalidateCache();
+        IpcDataCache.invalidateCache(MODULE, api);
         assertEquals("foo5", cache.query(5));
         assertEquals(1, cache.getRecomputeCount());
         assertEquals("foo5", cache.query(5));
