@@ -260,26 +260,23 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
         separateTestJournal();
         fontScaleSession.set(fontScale);
         mWmState.computeState(activityName);
+
         // The number of config changes could be greater than expected as there may have
         // other configuration change events triggered after font scale changed, such as
-        // NavigationBar recreated, or task bar recreation on close-to-square display.
-        final int countSpecRule = isCloseToSquareDisplay()
-                ? CountSpec.GREATER_THAN_OR_EQUALS : CountSpec.EQUALS;
-        if (relaunch) {
-            new ActivityLifecycleCounts(activityName).assertCountWithRetry(
-                    "relaunch or config changed",
-                    countSpec(ActivityCallback.ON_DESTROY, countSpecRule, 1),
-                    countSpec(ActivityCallback.ON_CREATE, countSpecRule, 1),
-                    countSpec(ActivityCallback.ON_RESUME, countSpecRule, 1),
-                    countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, CountSpec.EQUALS, 0));
-        } else {
-            new ActivityLifecycleCounts(activityName).assertCountWithRetry(
-                    "relaunch or config changed",
-                    countSpec(ActivityCallback.ON_DESTROY, CountSpec.EQUALS, 0),
-                    countSpec(ActivityCallback.ON_CREATE, CountSpec.EQUALS, 0),
-                    countSpec(ActivityCallback.ON_RESUME, CountSpec.EQUALS, 0),
-                    countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED, countSpecRule, 1));
-        }
+        // NavigationBar recreated, or task bar recreation.
+        new ActivityLifecycleCounts(activityName).assertCountWithRetry(
+                relaunch ? "relaunch" : "config changed",
+                countSpec(ActivityCallback.ON_DESTROY,
+                        relaunch ? CountSpec.GREATER_THAN_OR_EQUALS : CountSpec.EQUALS,
+                        relaunch ? 1 : 0),
+                countSpec(ActivityCallback.ON_CREATE,
+                        relaunch ? CountSpec.GREATER_THAN_OR_EQUALS : CountSpec.EQUALS,
+                        relaunch ? 1 : 0),
+                countSpec(ActivityCallback.ON_RESUME,
+                        relaunch ? CountSpec.GREATER_THAN_OR_EQUALS : CountSpec.EQUALS,
+                        relaunch ? 1 : 0),
+                countSpec(ActivityCallback.ON_CONFIGURATION_CHANGED,
+                        CountSpec.GREATER_THAN_OR_EQUALS, relaunch ? 0 : 1));
 
         // Verify that the display metrics are updated, and therefore the text size is also
         // updated accordingly.

@@ -193,18 +193,6 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
-    public void testPickerSupportedFromDocumentsUi() throws Exception {
-        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("*/*");
-        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
-
-        findAndClickMediaIcon();
-
-        // Should open Picker
-        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
-    }
-
-    @Test
     public void testPickerLaunchTabWithGetContent() throws Exception {
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");

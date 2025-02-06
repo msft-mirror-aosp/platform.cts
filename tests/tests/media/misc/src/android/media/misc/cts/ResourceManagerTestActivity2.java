@@ -17,6 +17,7 @@
 package android.media.misc.cts;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.util.Log;
 
 public class ResourceManagerTestActivity2 extends ResourceManagerTestActivityBase {
@@ -32,6 +33,13 @@ public class ResourceManagerTestActivity2 extends ResourceManagerTestActivityBas
         // and eventually reclaim a codec from the background activity.
         Context context = getApplicationContext();
         int maxCodecInstances = ResourceManagerStubActivity.getMaxCodecInstances(context);
+
+        // Check whether the test is overriding the max-codec-instances.
+        Bundle extras = getIntent().getExtras();
+        if (extras != null) {
+            maxCodecInstances = extras.getInt("max-codec-instances", maxCodecInstances);
+        }
+
         int codecCount = allocateCodecs(maxCodecInstances);
         int result = RESULT_OK;
         // See if we have failed to create at least one codec.

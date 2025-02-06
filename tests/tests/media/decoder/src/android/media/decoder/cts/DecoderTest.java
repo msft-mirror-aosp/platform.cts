@@ -3449,6 +3449,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoFlushHevc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoFlush(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -3460,6 +3464,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoFlushAvc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoFlush(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -3471,6 +3479,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledVideoFlushVp9() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledVideoFlush(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }
@@ -3755,6 +3767,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithPtsGapsHevc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithPtsGaps(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -3766,6 +3782,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithPtsGapsAvc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithPtsGaps(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -3777,6 +3797,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithPtsGapsVp9() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithPtsGaps(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }
@@ -3883,6 +3907,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithUnderrunHevc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithUnderrun(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -3894,6 +3922,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithUnderrunAvc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithUnderrun(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -3905,6 +3937,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithUnderrunVp9() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithUnderrun(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }
@@ -4073,7 +4109,8 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushHevc() throws Exception {
-        // Requires vendor changes to support this.
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
         Assume.assumeTrue("Vendor API level is not Android 12 or later.",
                 IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -4087,7 +4124,8 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushAvc() throws Exception {
-        // Requires vendor changes to support this.
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
         Assume.assumeTrue("Vendor API level is not Android 12 or later.",
                 IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_AVC,
@@ -4101,7 +4139,8 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAccurateVideoFlushVp9() throws Exception {
-        // Requires vendor changes to support this.
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
         Assume.assumeTrue("Vendor API level is not Android 12 or later.",
                 IS_VENDOR_AT_LEAST_S);
         testTunneledAccurateVideoFlush(MediaFormat.MIMETYPE_VIDEO_VP9,
@@ -4168,6 +4207,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithPauseHevc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithPause(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -4179,6 +4222,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithPauseAvc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithPause(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -4190,6 +4237,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioProgressWithPauseVp9() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         testTunneledAudioProgressWithPause(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }
@@ -4363,6 +4414,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioUnderrunHevc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         tunneledAudioUnderrun(MediaFormat.MIMETYPE_VIDEO_HEVC,
                 "video_1280x720_mkv_h265_500kbps_25fps_aac_stereo_128kbps_44100hz.mkv");
     }
@@ -4374,6 +4429,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioUnderrunAvc() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         tunneledAudioUnderrun(MediaFormat.MIMETYPE_VIDEO_AVC,
                 "video_480x360_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
     }
@@ -4385,6 +4444,10 @@ public class DecoderTest extends MediaTestBase {
     @ApiTest(apis={"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testTunneledAudioUnderrunVp9() throws Exception {
+        // New requirements and tests were added in Android 12, but upgrading devices are not
+        // required to adhere to them.
+        Assume.assumeTrue("Vendor API level is not Android 12 or later.",
+                IS_VENDOR_AT_LEAST_S);
         tunneledAudioUnderrun(MediaFormat.MIMETYPE_VIDEO_VP9,
                 "bbb_s1_640x360_webm_vp9_0p21_1600kbps_30fps_vorbis_stereo_128kbps_48000hz.webm");
     }
