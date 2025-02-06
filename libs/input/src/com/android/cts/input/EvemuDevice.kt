@@ -19,6 +19,7 @@ import android.app.Instrumentation
 import android.view.Display
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.util.Objects
 
 /**
  * Represents a virtual input device created from an EVEMU file using the 'uinput' shell command.
@@ -105,8 +106,11 @@ private fun parseEvemuFile(
             line = reader.readLine()
         }
         // Use a no-op event to mark the end of the device registration descriptors, which
-        // will prompt the uinput command to create the uinput device.
-        registerCommand.appendLine("E: 0.00 0 0 0")
+        // will prompt the uinput command to create the uinput device. Ensure it has the same
+        // timestamp as the first event.
+        val timestamp = """E: ([0-9\\.]+) .*""".toRegex().find(line)?.groups[1]?.value
+        Objects.requireNonNull(timestamp, "Failed to parse the first event's timestamp: '$line'")
+        registerCommand.appendLine("E: $timestamp 0 0 0")
 
         while (line != null) {
             events.appendLine(line)
