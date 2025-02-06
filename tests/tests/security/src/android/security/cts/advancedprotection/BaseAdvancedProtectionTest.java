@@ -23,9 +23,12 @@ import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.DisableFlags;
 import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.SetFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.advancedprotection.AdvancedProtectionManager;
+import android.security.Flags;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -44,6 +47,9 @@ public abstract class BaseAdvancedProtectionTest {
     private boolean mInitialApmState;
 
     @Rule
+    public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
+
+    @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
@@ -57,6 +63,9 @@ public abstract class BaseAdvancedProtectionTest {
                 Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
+        /* Disabling USB AAPM feature to avoid interference with non-related test as this
+         * function will be sever the tether connection. */
+        mSetFlagsRule.disableFlags(Flags.FLAG_AAPM_FEATURE_USB_DATA_PROTECTION);
     }
 
     private static boolean shouldTestAdvancedProtection(Context context) {
