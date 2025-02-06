@@ -276,6 +276,7 @@ public class ResourceManagerMultiTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CODEC_IMPORTANCE)
     public void testCodecImportanceReclaimResource() throws Exception {
+        assumeTrue("The Device should be on at least VNDK U", VNDK_IS_AT_LEAST_U);
         assumeTrue("Codec Importance Feature is OFF", codecImportance());
         // Skip testing image codecs on gsi builds: (b/354075153, b/369105914).
         if (isGsiImage() && mMimeType.startsWith("image/")) {
