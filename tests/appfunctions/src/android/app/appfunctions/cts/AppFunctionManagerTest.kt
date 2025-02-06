@@ -141,7 +141,8 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod() = executeAppFunction_failed_noSuchMethod_nonParam()
+    fun executeAppFunction_failed_uncaughtClientExceptionMethod() =
+        executeAppFunction_failed_uncaughtClientException_nonParam()
 
     /**
      * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
@@ -149,8 +150,11 @@ class AppFunctionManagerTest {
      */
     @Test
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod_nonParam() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noSuchMethod").build()
+    fun executeAppFunction_failed_uncaughtClientException_nonParam() = doBlocking {
+        val request = ExecuteAppFunctionRequest.Builder(
+            CURRENT_PKG,
+            "uncaughtClientException"
+        ).build()
 
         val response = executeAppFunctionAndWait(mManager, request)
 
