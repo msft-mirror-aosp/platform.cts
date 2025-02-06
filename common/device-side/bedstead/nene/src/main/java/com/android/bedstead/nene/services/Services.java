@@ -114,7 +114,8 @@ public final class Services {
                     entry(Context.BUGREPORT_SERVICE, "android.os.BugreportManager"),
                     entry(Context.CREDENTIAL_SERVICE, "android.credentials.CredentialManager"),
                     entry(Context.MUSIC_RECOGNITION_SERVICE, "android.media.musicrecognition.MusicRecognitionManager"),
-                    entry(Context.CONTENT_CAPTURE_MANAGER_SERVICE, "android.view.contentcapture.ContentCaptureManager"),
+                    // TODO: b/400899590 - Make service present in G3
+                    //entry(Context.CONTENT_CAPTURE_MANAGER_SERVICE, "android.view.contentcapture.ContentCaptureManager"),
                     entry(Context.TRANSLATION_MANAGER_SERVICE, "android.view.translation.TranslationManager"),
                     entry(Context.UI_TRANSLATION_SERVICE, "android.view.translation.UiTranslationManager"),
                     entry(Context.SEARCH_UI_SERVICE, "android.app.search.SearchUiManager"),
@@ -130,7 +131,8 @@ public final class Services {
                     entry(Context.FILE_INTEGRITY_SERVICE, "android.security.FileIntegrityManager"),
                     entry(Context.APP_INTEGRITY_SERVICE, "android.content.integrity.AppIntegrityManager"),
                     entry(Context.APP_HIBERNATION_SERVICE, "android.apphibernation.AppHibernationManager"),
-                    entry(Context.DREAM_SERVICE, "android.app.DreamManager"),
+                    // TODO: b/400899590 - Make service present in G3
+                    //entry(Context.DREAM_SERVICE, "android.app.DreamManager"),
                     entry(Context.MEDIA_METRICS_SERVICE, "android.media.metrics.MediaMetricsManager"),
                     entry(Context.GAME_SERVICE, "android.app.GameManager"),
                     entry(Context.DOMAIN_VERIFICATION_SERVICE, "android.content.pm.verify.domain.DomainVerificationManager"),

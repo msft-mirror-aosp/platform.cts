@@ -26,6 +26,7 @@ import com.android.bedstead.remotedpc.RemoteDeviceAdmin
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.remotedpc.RemotePolicyManager
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 
 private fun DeviceState.enterpriseComponent(): EnterpriseComponent =
     getDependency(EnterpriseComponent::class.java)
@@ -40,6 +41,7 @@ private fun DeviceState.enterpriseComponent(): EnterpriseComponent =
  *
  * @throws IllegalStateException if there is no harrier-managed work profile
  */
+@CanIgnoreReturnValue
 fun DeviceState.workProfile(): UserReference = enterpriseComponent().workProfile()
 
 /**
@@ -104,6 +106,7 @@ fun DeviceState.dpmRoleHolder(): RemoteDevicePolicyManagerRoleHolder =
  *
  * If the device owner is not a RemoteDPC then an exception will be thrown
  */
+@CanIgnoreReturnValue
 fun DeviceState.deviceOwner(): RemoteDpc =
     getDependency(DeviceOwnerComponent::class.java).deviceOwner()
 
@@ -114,6 +117,7 @@ fun DeviceState.deviceOwner(): RemoteDpc =
  *
  * If the profile owner is not a RemoteDPC then an exception will be thrown.
  */
+@CanIgnoreReturnValue
 fun DeviceState.profileOwner(): RemoteDpc = profileOwner(UserType.INSTRUMENTED_USER)
 
 /**
@@ -142,6 +146,7 @@ fun DeviceState.profileOwner(onUser: UserReference): RemoteDpc =
  *
  * If no Harrier-managed device admin exists, an exception will be thrown.
  */
+@CanIgnoreReturnValue
 fun DeviceState.deviceAdmin(): RemoteDeviceAdmin =
     getDependency(DeviceAdminComponent::class.java).deviceAdmin()
 

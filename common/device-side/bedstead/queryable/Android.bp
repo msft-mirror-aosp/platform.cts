@@ -30,6 +30,7 @@ android_library {
         "androidx.test.ext.junit",
         "NeneCommonAndroid",
         "QueryableCommonAndroid",
+        "compatibility-device-util-axt", // for "@CanIgnoreReturnValue"
     ],
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",

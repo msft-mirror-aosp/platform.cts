@@ -65,6 +65,7 @@ import com.android.queryable.annotations.Query;
 import com.google.auto.value.AutoAnnotation;
 import com.google.common.collect.ImmutableMap;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -797,6 +798,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
      *
      * @param methodAnnotations the array of annotations of test method
      */
+    @CanIgnoreReturnValue
     public static Set<Annotation> getParameterizedAnnotations(Annotation[] methodAnnotations) {
         Set<Annotation> parameterizedAnnotations = new HashSet<>();
         List<Annotation> annotations = new ArrayList<>(Arrays.asList(methodAnnotations));

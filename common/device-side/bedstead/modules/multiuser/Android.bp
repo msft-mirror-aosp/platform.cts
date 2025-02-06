@@ -37,7 +37,7 @@ android_test {
     static_libs: [
         "bedstead-multiuser",
         "truth",
-        "testng", // used for assertThrows
+        "TestApisReflection",
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
