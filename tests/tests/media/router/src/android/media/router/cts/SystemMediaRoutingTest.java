@@ -19,6 +19,7 @@ package android.media.router.cts;
 import static android.media.router.cts.SystemMediaRoutingProviderService.INITIAL_VOLUME;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_BOTH_SYSTEM_AND_REMOTE;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_REMOTE;
+import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_1;
 import static android.media.router.cts.SystemMediaRoutingProviderService.ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2;
 
@@ -262,6 +263,59 @@ public class SystemMediaRoutingTest {
         waitForCondition(() -> systemController.getVolume() == newVolume);
     }
 
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void selectAndUnselect_updateRoutingSession() {
+        // We select a system media route from the service (any will do).
+        var targetRoute = waitForTransferableRouteWithName(ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
+        transferAndWaitForSessionUpdate(targetRoute);
+
+        // We verify the service is in the expected state.
+        assertThat(mService.getSelectedRouteOriginalId())
+                .isEqualTo(ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
+
+        // We verify that the selectable route id is in the list of selectable routes of the
+        // controller.
+        var systemController = mSelfProxyRoute.getSystemController();
+        var selectableRouteNames =
+                systemController.getSelectableRoutes().stream()
+                        .map(MediaRoute2Info::getName)
+                        .toList();
+        assertThat(selectableRouteNames).containsExactly(ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE);
+
+        // And we select it.
+        var selectableRoute = waitForSelectableRouteWithName(ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE);
+        systemController.selectRoute(selectableRoute);
+
+        // Now we verify that the selected routes are both (that is, we are "playing" on both
+        // devices at the same time).
+        var expectedSelectedRoutes =
+                Set.of(ROUTE_ID_BOTH_SYSTEM_AND_REMOTE, ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE);
+        waitForCondition(
+                () ->
+                        getNamesOfRoutesInController(
+                                        MediaRouter2.RoutingController::getSelectedRoutes)
+                                .containsAll(expectedSelectedRoutes));
+
+        // We verify that the selectable route is also de-selectable, but the other selected one is
+        // not de-selectable.
+        assertThat(
+                        getNamesOfRoutesInController(
+                                MediaRouter2.RoutingController::getDeselectableRoutes))
+                .containsExactly(ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE);
+
+        // And we deselect it and verify the original route is the only selected one.
+        systemController.deselectRoute(selectableRoute);
+        waitForCondition(
+                () ->
+                        getNamesOfRoutesInController(
+                                                MediaRouter2.RoutingController::getSelectedRoutes)
+                                        .size()
+                                == 1);
+        assertThat(getSelectedRoute().getName().toString())
+                .isEqualTo(ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
+    }
+
     /** Retrieves the selected routes, asserts it contains one entry, and returns it. */
     private MediaRoute2Info getSelectedRoute() {
         var selectedRoutes = mSelfProxyRoute.getSystemController().getSelectedRoutes();
@@ -287,12 +341,20 @@ public class SystemMediaRoutingTest {
         assertWithMessage("Did not find selected route: " + name).that(result).isPresent();
     }
 
-    /** Waits for the selected system route to have the given {@code name}. */
+    /** Waits for a transferable route to have the given {@code name}, and returns it. */
     private MediaRoute2Info waitForTransferableRouteWithName(String name) {
         var result =
                 waitForRouteInController(
                         name, MediaRouter2.RoutingController::getTransferableRoutes);
         assertWithMessage("Did not find transferable route: " + name).that(result).isPresent();
+        return result.get();
+    }
+
+    /** Waits for a selectable system route to have the given {@code name}, and returns it. */
+    private MediaRoute2Info waitForSelectableRouteWithName(String name) {
+        var result =
+                waitForRouteInController(name, MediaRouter2.RoutingController::getSelectableRoutes);
+        assertWithMessage("Did not find selectable route: " + name).that(result).isPresent();
         return result.get();
     }
 
@@ -305,6 +367,14 @@ public class SystemMediaRoutingTest {
         Supplier<Optional<MediaRoute2Info>> supplier =
                 () -> getSystemControllerRouteWithName(name, routeRetriever);
         return PollingCheck.waitFor(TIMEOUT_MS, supplier, /* condition= */ Optional::isPresent);
+    }
+
+    /**
+     * Returns the names of routes retrieved from the system controller using the given retriever.
+     */
+    private List<String> getNamesOfRoutesInController(RouteRetriever routeRetriever) {
+        var routes = routeRetriever.getRoutesFrom(mSelfProxyRoute.getSystemController());
+        return routes.stream().map(MediaRoute2Info::getName).map(CharSequence::toString).toList();
     }
 
     /**
