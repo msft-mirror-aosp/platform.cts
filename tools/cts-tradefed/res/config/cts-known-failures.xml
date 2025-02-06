@@ -326,4 +326,8 @@
 
     <!-- b/378992956 -->
     <option name="compatibility:exclude-filter" value="CtsHiddenApiBlocklistApi27TestCases" />
+
+    <!-- b/379021510 -->
+    <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases[run-on-work-profile]" />
 </configuration>
