@@ -27,6 +27,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Context;
 import android.content.Intent;
@@ -1185,5 +1186,23 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                         getContext().getMainExecutor(), null));
 
         revokeSatellitePermission();
+    }
+
+    @Test
+    public void testGetSatelliteDataOptimizedApps() {
+        if (!shouldTestSatellite()) return;
+        grantSatellitePermission();
+
+        String ctsPackageName = "android.telephony.cts";
+        boolean containsCtsApp = false;
+        List<String> resApps =
+            sSatelliteManager.getSatelliteDataOptimizedApps();
+        assertFalse(resApps.isEmpty());
+        for(String packageName : resApps) {
+            if(packageName.equals(ctsPackageName) ) {
+                containsCtsApp = true;
+            }
+        }
+        assertTrue(containsCtsApp);
     }
 }

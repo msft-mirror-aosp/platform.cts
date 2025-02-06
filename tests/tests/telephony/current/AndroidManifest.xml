@@ -324,6 +324,9 @@
              android:value="android.telephony.cts.embmstestapp/.CtsGroupCallService"/>
         <meta-data android:name="mbms-file-provider-authority"
              android:value="android.telephony.mbms.cts"/>
+        <meta-data
+            android:name="android.telephony.PROPERTY_SATELLITE_DATA_OPTIMIZED"
+            android:value="true"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
