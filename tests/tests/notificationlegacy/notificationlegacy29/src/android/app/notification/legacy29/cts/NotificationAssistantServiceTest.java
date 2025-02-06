@@ -35,6 +35,7 @@ import static com.android.compatibility.common.preconditions.SystemUiHelper.hasN
 import static com.google.common.truth.Truth.assertThat;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertNotNull;
@@ -1161,6 +1162,7 @@ public class NotificationAssistantServiceTest {
         StatusBarNotification sbn = mHelper.findPostedNotification(
                 null, 1, NotificationHelper.SEARCH_TYPE.POSTED);
 
+        // validate a summary can be sent and received
         Bundle signals = new Bundle();
         signals.putString(KEY_SUMMARIZATION, SUMMARIZATION);
         Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
@@ -1173,5 +1175,15 @@ public class NotificationAssistantServiceTest {
         mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
         assertEquals(SUMMARIZATION, out.getSummarization());
 
+        // validate that a summary can be cleared
+        signals.putString(KEY_SUMMARIZATION, null);
+        adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
+                sbn.getUser());
+        rankingUpdateLatch = mNotificationListenerService.setRankingUpdateCountDown(1);
+        mAssistant.adjustNotification(adjustment);
+        rankingUpdateLatch.await(SLEEP_TIME, TimeUnit.MILLISECONDS);
+        out = new NotificationListenerService.Ranking();
+        mNotificationListenerService.mRankingMap.getRanking(sbn.getKey(), out);
+        assertNull(out.getSummarization());
     }
 }
