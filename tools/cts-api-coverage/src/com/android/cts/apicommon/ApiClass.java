@@ -91,7 +91,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public void addInterface(String interfaceName) {
-        mInterfaceMap.put(interfaceName, null);
+        mInterfaceMap.putIfAbsent(interfaceName, null);
     }
 
     public void resolveInterface(String interfaceName, ApiClass apiInterface) {
@@ -103,7 +103,9 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public void addConstructor(ApiConstructor constructor) {
-        mApiConstructors.add(constructor);
+        if (getConstructor(constructor.getParameterTypes()).isEmpty()) {
+            mApiConstructors.add(constructor);
+        }
     }
 
     public Collection<ApiConstructor> getConstructors() {
@@ -111,7 +113,9 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     }
 
     public void addMethod(ApiMethod method) {
-        mApiMethods.add(method);
+        if (getMethod(method.getName(), method.getParameterTypes()).isEmpty()) {
+            mApiMethods.add(method);
+        }
     }
 
     /** Look for a matching constructor and mark it as covered by the given test method */
