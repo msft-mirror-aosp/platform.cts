@@ -880,6 +880,29 @@ class AppFunctionManagerTest {
         doBlocking {
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                 val request =
+                    ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "random_function").build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+                assertThat(response.appFunctionException().errorMessage)
+                    .contains(
+                        "App function not found."
+                    )
+            }
+        }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithAppSearchException() =
+        doBlocking {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val request =
                     ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
 
                 val response = executeAppFunctionAndWait(mManager, request)
