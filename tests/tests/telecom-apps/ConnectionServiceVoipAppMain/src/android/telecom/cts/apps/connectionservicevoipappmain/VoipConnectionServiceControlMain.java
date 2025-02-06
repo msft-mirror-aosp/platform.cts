@@ -105,8 +105,9 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
-                public CountDownLatch getCreateOutgoingConnectionLatch() {
-                    return VoipConnectionServiceMain.sCreateOutgoingConnectionLatch;
+                public CountDownLatch getCreateConnectionLatch(boolean isOutgoing) {
+                    // Not supported for self-managed
+                    return null;
                 }
             };
 
@@ -177,12 +178,12 @@ public class VoipConnectionServiceControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                public NoDataTransaction addFailedCallWithCreateConnectionVerify(
                         CallAttributes callAttributes) {
                     List<String> stackTrace =
                             createStackTraceList(
                                     mClassName
-                                            + ".addFailedCallWithCreateOutgoingConnectionVerify("
+                                            + ".addFailedCallWithCreateConnectionVerify("
                                             + callAttributes
                                             + ")");
                     return new NoDataTransaction(

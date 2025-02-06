@@ -62,8 +62,7 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
             // different account results in an early failure in Telecom. We should've never
             // attempted to create the connection.
             CallAttributes mmiAttributes = getDefaultMmiAttributes(ManagedConnectionServiceApp);
-            addFailedCallWithCreateOutgoingConnectionVerify(
-                    managedApp, mmiAttributes);
+            addFailedCallWithCreateConnectionVerify(managedApp, mmiAttributes);
 
             // Verify that the states of the ongoing calls are unchanged.
             verifyCallIsInState(mo1, STATE_HOLDING);

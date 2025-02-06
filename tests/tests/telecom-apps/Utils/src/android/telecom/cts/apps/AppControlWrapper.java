@@ -136,13 +136,12 @@ public class AppControlWrapper {
      * callback is invoked. Note: This method is purely being used to verify MMI code deflection
      * behavior for DSDA cases and verifies that the callback wasn't invoked.
      */
-    public void addFailedCallWithCreateOutgoingConnectionVerify(
-            CallAttributes callAttributes) throws Exception {
-        Log.i(TAG, "addFailedCallWithCreateOutgoingConnectionVerify");
+    public void addFailedCallWithCreateConnectionVerify(CallAttributes callAttributes)
+            throws Exception {
+        Log.i(TAG, "addFailedCallWithCreateConnectionVerify");
         try {
             NoDataTransaction transactionResult =
-                    mBinder.addFailedCallWithCreateOutgoingConnectionVerify(
-                            callAttributes);
+                    mBinder.addFailedCallWithCreateConnectionVerify(callAttributes);
             maybeFailTest(transactionResult);
         } catch (RemoteException re) {
             handleRemoteException(re, "addCall");

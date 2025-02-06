@@ -33,7 +33,7 @@ import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionFails;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
 import static android.telecom.cts.apps.WaitUntil.waitUntilIdIsSet;
-import static android.telecom.cts.apps.WaitUntil.waitUntilManagedCreateOutgoingConnectionInvoked;
+import static android.telecom.cts.apps.WaitUntil.waitUntilManagedCreateConnectionInvoked;
 
 import android.app.Service;
 import android.content.Intent;
@@ -92,8 +92,10 @@ public class ManagedAppControl extends Service {
                 }
 
                 @Override
-                public CountDownLatch getCreateOutgoingConnectionLatch() {
-                    return ManagedConnectionService.sCreateOutgoingConnectionLatch;
+                public CountDownLatch getCreateConnectionLatch(boolean isOutgoing) {
+                    return isOutgoing
+                            ? ManagedConnectionService.sCreateOutgoingConnectionLatch
+                            : ManagedConnectionService.sCreateIncomingConnectionLatch;
                 }
             };
 
@@ -144,8 +146,7 @@ public class ManagedAppControl extends Service {
                                         PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
                         // clear out the last failed connection since it has been noted
                         ManagedConnectionService.sLastFailedRequest = null;
-                        ManagedConnectionService.sCreateOutgoingConnectionLatch =
-                                new CountDownLatch(1);
+                        resetCreateConnectionLatches();
                         if (callAttributes.getAddress().equals(request.getAddress())) {
                             return new NoDataTransaction(TestAppTransaction.Success);
                         } else {
@@ -165,9 +166,9 @@ public class ManagedAppControl extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                public NoDataTransaction addFailedCallWithCreateConnectionVerify(
                         CallAttributes callAttributes) {
-                    Log.i(TAG, "addCallWithCreateOutgoingConnectionVerify: enter");
+                    Log.i(TAG, "addFailedCallWithCreateConnectionVerify: enter");
                     try {
                         List<String> stackTrace =
                                 createStackTraceList(
@@ -182,14 +183,13 @@ public class ManagedAppControl extends Service {
                                     callAttributes.getPhoneAccountHandle(),
                                     getExtrasWithPhoneAccount(callAttributes));
                         }
-                        boolean onCreateOutgoingConnectionInvoked =
-                                waitUntilManagedCreateOutgoingConnectionInvoked(
-                                        mConnectionServiceImpl);
-                        ManagedConnectionService.sCreateOutgoingConnectionLatch =
-                                new CountDownLatch(1);
+                        boolean onCreateConnectionInvoked =
+                                waitUntilManagedCreateConnectionInvoked(
+                                        mConnectionServiceImpl, isOutgoing(callAttributes));
+                        resetCreateConnectionLatches();
                         // signal to the test process the onCreateOutgoingConnection callback was
                         // not fired.
-                        if (!onCreateOutgoingConnectionInvoked) {
+                        if (!onCreateConnectionInvoked) {
                             return new NoDataTransaction(TestAppTransaction.Success);
                         } else {
                             throw new TestAppException(
@@ -277,9 +277,9 @@ public class ManagedAppControl extends Service {
                     mIdToConnection.put(id, connection);
                     // clear out the last connection since it has been added to tracking
                     ManagedConnectionService.sLastConnection = null;
-                    // also reset the onCreateOutgoingConnection latch so that it can properly be
+                    // also reset the create connection latches so that they can properly be
                     // tested when referenced
-                    ManagedConnectionService.sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+                    resetCreateConnectionLatches();
                 }
 
                 private void maybeClearHoldCapabilities(
@@ -603,5 +603,10 @@ public class ManagedAppControl extends Service {
         if (mTelecomManager == null) {
             mTelecomManager = getSystemService(TelecomManager.class);
         }
+    }
+
+    private void resetCreateConnectionLatches() {
+        ManagedConnectionService.sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+        ManagedConnectionService.sCreateIncomingConnectionLatch = new CountDownLatch(1);
     }
 }

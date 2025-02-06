@@ -99,7 +99,7 @@ public class WaitUntil {
 
         ConnectionRequest getLastFailedRequest();
 
-        CountDownLatch getCreateOutgoingConnectionLatch();
+        CountDownLatch getCreateConnectionLatch(boolean isOutgoing);
     }
 
     public static String waitUntilIdIsSet(
@@ -262,7 +262,8 @@ public class WaitUntil {
         return getLastFailedRequest(s);
     }
 
-    public static boolean waitUntilManagedCreateOutgoingConnectionInvoked(ConnectionServiceImpl s) {
+    public static boolean waitUntilManagedCreateConnectionInvoked(
+            ConnectionServiceImpl s, boolean isOutgoing) {
 
         return waitUntilConditionIsTrueOrReturnFalse(
                 new Condition() {
@@ -273,7 +274,7 @@ public class WaitUntil {
 
                     @Override
                     public Object actual() {
-                        return getCreateOutgoingConnectionLatch(s).getCount() == 0;
+                        return getCreateConnectionLatch(s, isOutgoing).getCount() == 0;
                     }
                 });
     }
@@ -291,8 +292,9 @@ public class WaitUntil {
         return s.getLastFailedRequest();
     }
 
-    private static CountDownLatch getCreateOutgoingConnectionLatch(ConnectionServiceImpl s) {
-        return s.getCreateOutgoingConnectionLatch();
+    private static CountDownLatch getCreateConnectionLatch(
+            ConnectionServiceImpl s, boolean isOutgoing) {
+        return s.getCreateConnectionLatch(isOutgoing);
     }
 
     public static void waitUntilCurrentCallEndpointIsSet(
