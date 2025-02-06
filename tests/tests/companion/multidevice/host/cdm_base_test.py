@@ -23,10 +23,6 @@ class BaseTestClass(base_test.BaseTestClass):
 
         def _setup_device(device):
             device.load_snippet('cdm', CDM_SNIPPET_PACKAGE)
-            device.adb.shell('input keyevent KEYCODE_WAKEUP')
-            device.adb.shell('input keyevent KEYCODE_MENU')
-            device.adb.shell('input keyevent KEYCODE_HOME')
-
             # Enable bluetooth and enable receivers
             device.cdm.btEnable()
 
@@ -36,13 +32,17 @@ class BaseTestClass(base_test.BaseTestClass):
             # Clear bluetooth bonds
             self.clear_bonded_devices(device)
 
+        self._execute_on_devices(_setup_device)
 
-        # Sets up devices in parallel to save time.
-        utils.concurrent_exec(
-            _setup_device,
-            ((self.primary,), (self.secondary,)),
-            max_workers=2,
-            raise_on_exception=True)
+    def setup_test(self):
+
+        def _setup_device(device):
+            # Touch the screen to make sure the device is wake up for each test run.
+            device.adb.shell('input keyevent KEYCODE_WAKEUP')
+            device.adb.shell('input keyevent KEYCODE_MENU')
+            device.adb.shell('input keyevent KEYCODE_HOME')
+
+        self._execute_on_devices(_setup_device)
 
     def teardown_test(self):
         """Clean up tests"""
@@ -58,3 +58,11 @@ class BaseTestClass(base_test.BaseTestClass):
         for device in paired_devices:
             ad.cdm.btUnpairDevice(device['Address'])
             sleep(OPERATION_DELAY_TIME)
+
+    def _execute_on_devices(self, func, raise_on_exception=True):
+        # Executes a function on both primary and secondary devices concurrently to same time
+        utils.concurrent_exec(
+            func,
+            ((self.primary,), (self.secondary,)),
+            max_workers=2,
+            raise_on_exception=raise_on_exception)

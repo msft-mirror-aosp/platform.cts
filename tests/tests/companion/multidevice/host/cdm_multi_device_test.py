@@ -106,6 +106,26 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_false(secondary_address in paired_devices, 'Devices should not be paired.')
 
 
+    def test_association_persistence_after_reboot(self):
+        """Test that association persisting after the device is reboot"""
+
+        # Skip if device is a watch
+        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
+
+        secondary_address = self.secondary.cdm.btGetAddress()
+
+        # Create association
+        self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        secondary_id = self.primary.cdm.associate(secondary_address)
+
+        # Reboot the primary device
+        with (self.primary.handle_reboot()):
+            self.primary.reboot()
+
+        # The association should be remaining.
+        associations = self.primary.cdm.getMyAssociations()
+        asserts.assert_true(secondary_id in associations, 'Association not found.')
+
 if __name__ == '__main__':
     # Take test args
     if '--' in sys.argv:
