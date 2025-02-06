@@ -53,6 +53,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.MediaUtils;
 
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -215,6 +216,10 @@ public class MediaStore_Video_ThumbnailsTest {
 
     @Test
     public void testInsertUpdateDelete() throws Exception {
+        Assume.assumeTrue(
+                MediaUtils.hasCodecForResourceAndDomain(mContext, R.raw.testvideo, "video/")
+                && MediaUtils.hasCodecForResourceAndDomain(mContext, R.raw.testvideo2, "video/"));
+
         final Uri finalUri = ProviderTestUtils.stageMedia(R.raw.testvideo,
                 mExternalVideo, "video/mp4");
 
