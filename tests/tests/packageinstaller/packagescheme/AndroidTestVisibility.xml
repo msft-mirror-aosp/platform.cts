@@ -44,6 +44,10 @@
         <!-- dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
     </target_preparer>
+    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
+        <option name="cleanup" value="true" />
+        <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/packagescheme/CtsEmptyTestApp.apk" />
+    </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
         <option name="package" value="android.packageinstaller.packagescheme.cts.withvisibility" />

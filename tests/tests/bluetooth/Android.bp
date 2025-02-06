@@ -35,7 +35,10 @@ android_test {
         "android.test.runner.stubs.system",
         "framework-bluetooth.stubs.module_lib",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     // Allows access to system apis
     platform_apis: true,
     // Tag this module as a cts test artifact
@@ -43,9 +46,7 @@ android_test {
         "cts",
         "dts",
         "general-tests",
-        "mcts-bluetooth",
         "mcts-bt",
-        "mts-bluetooth",
         "mts-bt",
     ],
     min_sdk_version: "Tiramisu",
