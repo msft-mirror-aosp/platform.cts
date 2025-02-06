@@ -101,10 +101,8 @@ public class ExtensionsUtil {
     public static boolean isExtensionVersionLatest() {
         if (Flags.wlinfoOncreate()) {
             return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V9);
-        } else if (Flags.aeBackStackRestore()) {
-            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V8);
         } else {
-            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V7);
+            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V8);
         }
     }
 

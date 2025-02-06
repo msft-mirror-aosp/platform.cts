@@ -21,6 +21,7 @@ import static android.server.wm.app.Components.HideOverlayWindowsActivity.ACTION
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.MOTION_EVENT_EXTRA;
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.PONG;
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.REPORT_TOUCH;
+import static android.server.wm.app.Components.HideOverlayWindowsActivity.SHOULD_HIDE;
 import static android.view.Gravity.LEFT;
 import static android.view.Gravity.TOP;
 import static android.view.WindowManager.LayoutParams.FIRST_SUB_WINDOW;
@@ -41,6 +42,9 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
 import android.server.wm.app.Components;
@@ -52,9 +56,11 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -69,6 +75,9 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     private static final String SYSTEM_APPLICATION_OVERLAY_EXTRA = "system_application_overlay";
     private PongReceiver mPongReceiver;
     private TouchReceiver mTouchReceiver;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -163,6 +172,39 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
 
         launchActivity(HIDE_OVERLAY_WINDOWS_ACTIVITY);
         setHideOverlayWindowsAndWaitForPong(true);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_FIX_HIDE_OVERLAY_API)
+    public void testHideOverlayWindowsFromSameUidNotHidden() {
+        String windowName = "SELF_APPLICATION_OVERLAY";
+        ComponentName overlayComponent =
+                new ComponentName(mContext, SystemApplicationOverlayActivity.class);
+        ComponentName baseComponent = new ComponentName(mContext, SameUidActivity.class);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    launchActivity(
+                            overlayComponent,
+                            CliIntentExtra.extraString(WINDOW_NAME_EXTRA, windowName));
+                    mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+                },
+                Manifest.permission.SYSTEM_ALERT_WINDOW);
+
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    launchActivity(baseComponent);
+                    // Set hide overlay window and wait for PONG.
+                    Intent intent = new Intent(ACTION);
+                    intent.putExtra(
+                            Components.HideOverlayWindowsActivity.SHOULD_HIDE,
+                            /* shouldHide= */ true);
+                    mContext.sendBroadcast(intent);
+                    mPongReceiver.waitForPong();
+                },
+                Manifest.permission.HIDE_OVERLAY_WINDOWS);
+
         mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
     }
 
@@ -270,6 +312,27 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
         intent.putExtra(Components.HideOverlayWindowsActivity.SHOULD_HIDE, hide);
         mContext.sendBroadcast(intent);
         mPongReceiver.waitForPong();
+    }
+
+    public static class SameUidActivity extends Activity {
+        @Override
+        protected void onCreate(@Nullable Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            registerReceiver(
+                    mBroadcastReceiver, new IntentFilter(ACTION), Context.RECEIVER_EXPORTED);
+        }
+
+        BroadcastReceiver mBroadcastReceiver =
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        if (ACTION.equals(intent.getAction())) {
+                            boolean shouldHide = intent.getBooleanExtra(SHOULD_HIDE, false);
+                            getWindow().setHideOverlayWindows(shouldHide);
+                            sendBroadcast(new Intent(PONG));
+                        }
+                    }
+                };
     }
 
     public static class BaseSystemWindowActivity extends Activity {

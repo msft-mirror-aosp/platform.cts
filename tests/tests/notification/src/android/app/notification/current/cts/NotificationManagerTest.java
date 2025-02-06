@@ -26,10 +26,6 @@ import static android.app.AppOpsManager.MODE_ERRORED;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
-import static android.app.NotificationChannel.NEWS_ID;
-import static android.app.NotificationChannel.PROMOTIONS_ID;
-import static android.app.NotificationChannel.RECS_ID;
-import static android.app.NotificationChannel.SOCIAL_MEDIA_ID;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static android.app.NotificationManager.IMPORTANCE_LOW;
@@ -48,6 +44,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -137,10 +134,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -606,6 +601,36 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    public void testGetChannelGroup_groupUpdate() {
+        final NotificationChannelGroup ncg = new NotificationChannelGroup("a group", "a label");
+        ncg.setDescription("first description");
+        mNotificationManager.createNotificationChannelGroup(ncg);
+
+        final NotificationChannel channel =
+                new NotificationChannel(mId, "name", IMPORTANCE_DEFAULT);
+        channel.setGroup(ncg.getId());
+        mNotificationManager.createNotificationChannel(channel);
+
+        NotificationChannelGroup actual =
+                mNotificationManager.getNotificationChannelGroup(ncg.getId());
+        assertThat(actual.getId()).isEqualTo(ncg.getId());
+        assertThat(actual.getName().toString()).isEqualTo(ncg.getName().toString());
+        assertThat(actual.getDescription()).isEqualTo(ncg.getDescription());
+        compareChannels(channel, actual.getChannels().get(0));
+
+        // Update group description
+        ncg.setDescription("new description");
+        mNotificationManager.createNotificationChannelGroup(ncg);
+
+        NotificationChannelGroup updated =
+                mNotificationManager.getNotificationChannelGroup(ncg.getId());
+        assertThat(updated.getId()).isEqualTo(ncg.getId());
+        assertThat(updated.getName().toString()).isEqualTo(ncg.getName().toString());
+        assertThat(updated.getDescription()).isEqualTo(ncg.getDescription());
+        compareChannels(channel, updated.getChannels().get(0));
+    }
+
+    @Test
     public void testGetChannelGroups() throws Exception {
         final NotificationChannelGroup ncg = new NotificationChannelGroup("a group", "a label");
         ncg.setDescription("bananas");
@@ -703,6 +728,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         channel.setGroup(oldGroup);
         mNotificationManager.createNotificationChannel(channel);
 
+        // Check that newGroup has no channels so far
+        NotificationChannelGroup foundGroup =
+                mNotificationManager.getNotificationChannelGroup(newGroup);
+        assertThat(foundGroup.getChannels()).hasSize(0);
+
         channel.setGroup(newGroup);
         mNotificationManager.createNotificationChannel(channel);
 
@@ -710,6 +740,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 mNotificationManager.getNotificationChannel(mId);
         assertEquals("Failed to add non-grouped channel to a group on update ",
                 newGroup, updatedChannel.getGroup());
+
+        // The resulting group should have the channel in it now
+        foundGroup = mNotificationManager.getNotificationChannelGroup(newGroup);
+        assertThat(foundGroup.getChannels()).hasSize(1);
     }
 
     @Test
@@ -885,6 +919,74 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    public void testGetChannel_updatesWithChannelData() throws Exception {
+        NotificationChannel channel =
+                new NotificationChannel(UUID.randomUUID().toString(), "name", IMPORTANCE_DEFAULT);
+
+        // Not yet created
+        assertThat(mNotificationManager.getNotificationChannel(channel.getId())).isNull();
+
+        // After it's created, we should get an equivalent channel back
+        mNotificationManager.createNotificationChannel(channel);
+        compareChannels(channel, mNotificationManager.getNotificationChannel(channel.getId()));
+
+        // Update channel information
+        channel.setShowBadge(false);
+        channel.setDescription("new description");
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.updateNotificationChannel(
+                            mContext.getPackageName(), android.os.Process.myUid(), channel);
+                });
+
+        // now the value should match the updated channel
+        compareChannels(channel, mNotificationManager.getNotificationChannel(channel.getId()));
+    }
+
+    @Test
+    public void testGetChannel_updatesWhenChangedToAndFromImportantConversation() {
+        NotificationChannel parent =
+                new NotificationChannel(UUID.randomUUID().toString(), "parent", IMPORTANCE_DEFAULT);
+        NotificationChannel channel =
+                new NotificationChannel(UUID.randomUUID().toString(), "name", IMPORTANCE_DEFAULT);
+        channel.setConversationId(parent.getId(), UUID.randomUUID().toString());
+
+        // Not yet created
+        assertThat(mNotificationManager.getNotificationChannel(channel.getId())).isNull();
+
+        // After it's created, we should get an equivalent channel back
+        mNotificationManager.createNotificationChannel(parent);
+        mNotificationManager.createNotificationChannel(channel);
+        compareChannels(channel, mNotificationManager.getNotificationChannel(channel.getId()));
+
+        // Update channel to be an important conversation
+        channel.setImportantConversation(true);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.updateNotificationChannel(
+                            mContext.getPackageName(), android.os.Process.myUid(), channel);
+                });
+
+        // Expect that it matches the updated channel returned by looking for its conversation info
+        compareChannels(
+                channel,
+                mNotificationManager.getNotificationChannel(
+                        parent.getId(), channel.getConversationId()));
+
+        // Demote the channel. Confirm that getNotificationChannel reflects that change as well.
+        channel.setDemoted(true);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mNotificationManager.updateNotificationChannel(
+                            mContext.getPackageName(), android.os.Process.myUid(), channel);
+                });
+        compareChannels(
+                channel,
+                mNotificationManager.getNotificationChannel(
+                        parent.getId(), channel.getConversationId()));
+    }
+
+    @Test
     public void testRecreateDeletedChannel() throws Exception {
         NotificationChannel channel =
                 new NotificationChannel(mId, "name", IMPORTANCE_DEFAULT);
@@ -939,6 +1041,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     public void testSuspendPackage_withoutShellPermission() throws Exception {
         if (mActivityManager.isLowRamDevice() && !mPackageManager.hasSystemFeature(FEATURE_WATCH)) {
+
             return;
         }
 
@@ -2156,7 +2259,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    public void testNotificationDelegate_grantAndReadChannel() throws Exception {
+    public void testNotificationDelegate_grantAndReadChannelAndRevoke() throws Exception {
         final Intent intent = new Intent(mContext, GetResultActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         GetResultActivity activity = (GetResultActivity) mInstrumentation.startActivitySync(intent);
@@ -2183,6 +2286,15 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         revokeIntent.setClassName(TEST_APP, REVOKE_CLASS);
         activity.startActivityForResult(revokeIntent, REQUEST_CODE);
         assertEquals(RESULT_OK, activity.getResult().resultCode);
+
+        // Verify that the delegate can no longer get channel information
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        mContext.createPackageContextAsUser(
+                                        TEST_APP, /* flags= */ 0, mContext.getUser())
+                                .getSystemService(NotificationManager.class)
+                                .getNotificationChannel("channel"));
     }
 
     @Test

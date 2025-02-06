@@ -1072,13 +1072,14 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
+    video_stream_index = 0
     if stabilize:
       stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
     else:
       stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     return self.do_preview_recording_multiple_surfaces(
-        output_surfaces, duration, stabilization_mode, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max, antibanding_mode,
+        output_surfaces, video_stream_index, duration, stabilization_mode,
+        ois, zoom_ratio, ae_target_fps_min, ae_target_fps_max, antibanding_mode,
         face_detect_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,

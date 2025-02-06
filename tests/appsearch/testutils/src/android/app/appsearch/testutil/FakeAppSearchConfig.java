@@ -22,6 +22,9 @@ import com.android.server.appsearch.AppSearchRateLimitConfig;
 import com.android.server.appsearch.Denylist;
 import com.android.server.appsearch.ServiceAppSearchConfig;
 import com.android.server.appsearch.external.localstorage.IcingOptionsConfig;
+import com.android.server.appsearch.icing.proto.PersistType;
+
+import org.jspecify.annotations.NonNull;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -297,6 +300,11 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     public String getIcuDataFileAbsolutePath() {
         throwIfClosed();
         return DEFAULT_ICU_DATA_FILE_ABSOLUTE_PATH;
+    }
+
+    @Override
+    public PersistType.@NonNull Code getLightweightPersistType() {
+        return PersistType.Code.LITE;
     }
 
     private void throwIfClosed() {

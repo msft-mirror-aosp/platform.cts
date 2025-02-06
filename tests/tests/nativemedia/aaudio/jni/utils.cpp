@@ -289,14 +289,14 @@ AudioServerCrashMonitor::AudioServerCrashMonitor()
     linkToDeath();
 }
 
-AudioServerCrashMonitor::~AudioServerCrashMonitor() {
-    if (mDeathRecipientLinked) {
-        AIBinder_unlinkToDeath(mAudioFlinger.get(), mDeathRecipient.get(), nullptr /* cookie */);
-    }
+bool AudioServerCrashMonitor::isDeathRecipientLinked() {
+    std::lock_guard<std::mutex> guard(mMutex);
+    return mDeathRecipientLinked;
 }
 
 void AudioServerCrashMonitor::linkToDeath() {
-    if (getAudioFlinger().get() == nullptr) {
+    std::lock_guard<std::mutex> guard(mMutex);
+    if (getAudioFlinger_l().get() == nullptr) {
         __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, "Failed to get audio flinger");
     } else {
         auto ret = AIBinder_linkToDeath(mAudioFlinger.get(), mDeathRecipient.get(),
@@ -310,6 +310,7 @@ void AudioServerCrashMonitor::linkToDeath() {
 }
 
 void AudioServerCrashMonitor::onAudioServerCrash() {
+    std::lock_guard<std::mutex> guard(mMutex);
     mDeathRecipientLinked = false;
     mAudioFlinger.set(nullptr);
 }
@@ -366,7 +367,7 @@ void callJavaStaticVoidFunction(
 
 } // namespace
 
-SpAIBinder AudioServerCrashMonitor::getAudioFlinger() {
+SpAIBinder AudioServerCrashMonitor::getAudioFlinger_l() {
     if (mAudioFlinger.get() != nullptr) {
         return mAudioFlinger;
     }

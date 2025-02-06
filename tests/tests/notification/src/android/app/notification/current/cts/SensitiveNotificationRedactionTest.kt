@@ -460,6 +460,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             mPreviousEnabledAssistant != null
         )
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
+        val existingSmsApp = callWithShellPermissionIdentity {
+            Telephony.Sms.getDefaultSmsPackage(mContext)
+        }
+        assumeNotNull(existingSmsApp)
+        setSmsApp(mContext.packageName)
         mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
         // We just re-enabled the NAS. send one notification in order to start its process
         sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
@@ -483,11 +488,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             "you code is (G-345821)")
         var notifNum = 0
         val notRedactedFailures = StringBuilder("")
-        val existingSmsApp = callWithShellPermissionIdentity {
-            Telephony.Sms.getDefaultSmsPackage(mContext)
-        }
-        assumeNotNull(existingSmsApp)
-        setSmsApp(mContext.packageName)
         try {
             // Newly enabled NAS can sometimes take a short while to start properly responding
             for (i in 0..20) {
@@ -536,6 +536,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             mPreviousEnabledAssistant != null
         )
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
+        val existingSmsApp = callWithShellPermissionIdentity {
+            Telephony.Sms.getDefaultSmsPackage(mContext)
+        }
+        assumeNotNull(existingSmsApp)
+        setSmsApp(mContext.packageName)
         mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
         // We just re-enabled the NAS. send one notification in order to start its process
         sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
@@ -558,11 +563,6 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             )
         var notifNum = 0
         val redactedFailures = StringBuilder("")
-        val existingSmsApp = callWithShellPermissionIdentity {
-            Telephony.Sms.getDefaultSmsPackage(mContext)
-        }
-        assumeNotNull(existingSmsApp)
-        setSmsApp(mContext.packageName)
         try {
             // Newly enabled NAS can sometimes take a short while to start properly responding
             for (i in 0..20) {

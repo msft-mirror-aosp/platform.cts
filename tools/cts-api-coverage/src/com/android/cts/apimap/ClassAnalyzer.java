@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-
 /** A class for collecting class methods and annotations. */
 public class ClassAnalyzer extends ClassVisitor {
 
@@ -104,6 +103,9 @@ public class ClassAnalyzer extends ClassVisitor {
                 || !returnType.getClassName().equals("void")
                 || !params.isEmpty()) {
             method.addMethodType(MethodType.COMMON);
+        }
+        if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+            method.addMethodType(MethodType.ABSTRACT);
         }
         return new MethodAnalyzer(method, mModule, mApiCoverage);
     }

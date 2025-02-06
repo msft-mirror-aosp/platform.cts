@@ -17,6 +17,7 @@
 package android.app.cts;
 
 import static android.app.stubs.LocalForegroundServiceMedia.ACTION_START_FGSM_RESULT;
+import static android.os.SystemClock.sleep;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -66,6 +67,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     private static final int USER_ENGAGED_TIMEOUT_MSEC = 2000;
     private static final String USER_ENGAGED_TIMEOUT_KEY =
             "media_session_temp_user_engaged_duration_ms";
+    private static final long PLAY_TIMEOUT_MS = 1000;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -261,7 +263,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         uid1Watcher.finish();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
     public void testAppInBgWithUserEngagedMediaSessionIsInBg() throws Exception {
@@ -294,7 +296,223 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 PACKAGE_NAME_APP1,
                 0,
                 extras);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void
+            testAppInBgWithActivePlayingMediaSessionWithMediaControllerAndNoNotificationIsStillInBg()
+                    throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        setupMediaService();
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActivePlayingMediaSessionAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        setupMediaService();
+        // Put APP1 in TOP state.
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_ACTIVITY,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                null);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+        // Post media style notification.
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_POST_MEDIA_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Move media session to user engaged state.
+        extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_PLAY_MEDIA);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Make sure we are in Home screen.
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void
+            testAppInFgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToFgs()
+                    throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        setupMediaForegroundService();
+        // Put APP1 in TOP state.
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_ACTIVITY,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                null);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
+        // Make sure we are in Home screen.
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActiveStoppedMediaSessionAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        setupMediaService();
+        // Put APP1 in TOP state.
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_ACTIVITY,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                null);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+        // Post media style notification.
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_POST_MEDIA_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Move media session to user engaged state.
+        extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_PLAY_MEDIA);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Stop media session.
+        extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_STOP_MEDIA);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Make sure we are in Home screen.
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void
+            testAppInFgWithActiveStoppedMediaSessionWithMediaControllerAndNotificationGoesToBgIsStillInBg()
+                    throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+
+        setupMediaService();
+        // Put APP1 in TOP state.
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_ACTIVITY,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                null);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
+        // Post media style notification.
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_POST_MEDIA_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+
+        // Move media session to user engaged state.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
+
+        // Stop media session.
+        controller.getTransportControls().stop();
+
+        // Make sure we are in Home screen.
+        mInstrumentation
+                .getUiAutomation()
+                .performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME);
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
 
     @Test
@@ -323,6 +541,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
         // Check if service moves to fgs.
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
@@ -344,6 +563,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
         // Configure temp user engaged timeout.
         mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
                 Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
@@ -375,6 +595,7 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         // Get the controller and press play.
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
         // Configure temp user engaged timeout.
         mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
                 Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
@@ -387,6 +608,110 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 dumpLines.contains(expectedLine));
         // Transition session to user disengaged.
         controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithNonActiveMediaSessionAndNotificationGoesToBg() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller and press play.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        // Play media for some time and then deactivate the media session.
+        sleep(PLAY_TIMEOUT_MS);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_DEACTIVATE_MEDIA_SESSION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActivePlayingMediaSessionAndNotificationReleaseItsSessionGoesToBg()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller and press play.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        // Play media for some time and then release the media session.
+        sleep(PLAY_TIMEOUT_MS);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_RELEASE_MEDIA_SESSION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void
+            testAppInBgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationIsStillInBg()
+                    throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller for active session before deactivating.
+        MediaController controller = getMediaControllerForActiveSession();
+        // Wait for some time and deactivate the media session.
+        sleep(PLAY_TIMEOUT_MS);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_DEACTIVATE_MEDIA_SESSION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        // Press play for deactivated media session.
+        controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
     }
 }

@@ -79,6 +79,7 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.WindowManagerState;
 import android.text.TextUtils;
 import android.util.Log;
@@ -136,6 +137,7 @@ import org.junit.Test;
 import org.junit.function.ThrowingRunnable;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -1953,6 +1955,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             // First back event should hide the IME, the second should be ignored by the IME and
             // close the activity.
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
+            CtsWindowInfoUtils.waitForStableWindowGeometry(
+                    Duration.ofMillis(LAYOUT_STABLE_THRESHOLD));
             mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
             mInstrumentation.waitForIdleSync();
 

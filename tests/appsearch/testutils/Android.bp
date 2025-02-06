@@ -21,6 +21,7 @@ java_library {
     srcs: ["src/**/*.java"],
     static_libs: [
         "flag-junit",
+        "icing-java-proto-lite",
     ],
     libs: [
         "androidx.test.ext.junit",

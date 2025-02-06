@@ -16,6 +16,7 @@
 
 package com.android.server.appsearch.external.localstorage;
 
+import com.android.server.appsearch.icing.proto.PersistType;
 
 import org.jspecify.annotations.NonNull;
 
@@ -28,6 +29,7 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     private final IcingOptionsConfig mIcingOptionsConfig;
     private final boolean mStoreParentInfoAsSyntheticProperty;
     private final boolean mShouldRetrieveParentInfo;
+    private final boolean mPersistToDiskRecoveryProof;
 
     public AppSearchConfigImpl(
             @NonNull LimitConfig limitConfig, @NonNull IcingOptionsConfig icingOptionsConfig) {
@@ -35,18 +37,21 @@ public class AppSearchConfigImpl implements AppSearchConfig {
                 limitConfig,
                 icingOptionsConfig,
                 /* storeParentInfoAsSyntheticProperty= */ false,
-                /* shouldRetrieveParentInfo= */ false);
+                /* shouldRetrieveParentInfo= */ false,
+                /* persistToDiskRecoveryProof= */ false);
     }
 
     public AppSearchConfigImpl(
             @NonNull LimitConfig limitConfig,
             @NonNull IcingOptionsConfig icingOptionsConfig,
             boolean storeParentInfoAsSyntheticProperty,
-            boolean shouldRetrieveParentInfo) {
+            boolean shouldRetrieveParentInfo,
+            boolean persistToDiskRecoveryProof) {
         mLimitConfig = limitConfig;
         mIcingOptionsConfig = icingOptionsConfig;
         mStoreParentInfoAsSyntheticProperty = storeParentInfoAsSyntheticProperty;
         mShouldRetrieveParentInfo = shouldRetrieveParentInfo;
+        mPersistToDiskRecoveryProof = persistToDiskRecoveryProof;
     }
 
     @Override
@@ -164,10 +169,15 @@ public class AppSearchConfigImpl implements AppSearchConfig {
         return mIcingOptionsConfig.getOrphanBlobTimeToLiveMs();
     }
 
-    // The absolute path for the ICU data file is not available in Framework.
-    // This method is functionally no-op and returns an empty string.
     @Override
     public String getIcuDataFileAbsolutePath() {
         return mIcingOptionsConfig.getIcuDataFileAbsolutePath();
+    }
+
+    @Override
+    public PersistType.@NonNull Code getLightweightPersistType() {
+        return mPersistToDiskRecoveryProof
+                ? PersistType.Code.RECOVERY_PROOF
+                : PersistType.Code.LITE;
     }
 }
