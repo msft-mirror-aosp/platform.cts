@@ -35,6 +35,7 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class AppControlWrapper {
     private static final String TAG = AppControlWrapper.class.getSimpleName();
@@ -42,6 +43,7 @@ public class AppControlWrapper {
     private final IAppControl mBinder;
     private final TelecomTestApp mTelecomApps;
     private final boolean mIsManagedAppControl;
+    private final boolean mIsManagedAppControlClone;
 
     public TelecomTestApp getTelecomApps() {
         return mTelecomApps;
@@ -49,6 +51,10 @@ public class AppControlWrapper {
 
     public boolean isManagedAppControl() {
         return mIsManagedAppControl;
+    }
+
+    public boolean isManagedAppControlClone() {
+        return mIsManagedAppControlClone;
     }
 
     public boolean isTransactionalControl() {
@@ -61,8 +67,13 @@ public class AppControlWrapper {
         mTelecomApps = name;
         if (mTelecomApps.equals(TelecomTestApp.ManagedConnectionServiceApp)) {
             mIsManagedAppControl = true;
+            mIsManagedAppControlClone = false;
+        } else if (mTelecomApps.equals(TelecomTestApp.ManagedConnectionServiceAppClone)) {
+            mIsManagedAppControlClone = true;
+            mIsManagedAppControl = false;
         } else {
             mIsManagedAppControl = false;
+            mIsManagedAppControlClone = false;
         }
     }
 
@@ -113,6 +124,61 @@ public class AppControlWrapper {
         Log.i(TAG, "addCall");
         try {
             NoDataTransaction transactionResult = mBinder.addCall(callAttributes);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
+     * This method requests the app that is bound to add a new call with the given callAttributes
+     * that is expected to fail. Instead, it verifies whether the onCreateOutgoingConnection
+     * callback is invoked. Note: This method is purely being used to verify MMI code deflection
+     * behavior for DSDA cases and verifies that the callback wasn't invoked.
+     */
+    public void addFailedCallWithCreateOutgoingConnectionVerify(
+            CallAttributes callAttributes) throws Exception {
+        Log.i(TAG, "addFailedCallWithCreateOutgoingConnectionVerify");
+        try {
+            NoDataTransaction transactionResult =
+                    mBinder.addFailedCallWithCreateOutgoingConnectionVerify(
+                            callAttributes);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
+     * This method requests the app that is bound to add a new call with the given callAttributes
+     * that is expected to fail.
+     */
+    public void addFailedCall(CallAttributes callAttributes) throws Exception {
+        Log.i(TAG, "addFailedCall");
+        try {
+            NoDataTransaction transactionResult = mBinder.addFailedCall(callAttributes);
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
+     * This method requests the app that is bound to add a new call with the given callAttributes.
+     * Note: This method does not verify the call is added for ConnectionService implementations
+     * and that job should be left for the InCallService to verify.
+     */
+    public void addCall(CallAttributes callAttributes,
+            Consumer<CallStateTransitionOperation> consumer) throws Exception {
+        Log.i(TAG, "addCall");
+        try {
+            NoDataTransaction transactionResult = mBinder.addCallWithConsumer(callAttributes,
+                    new IRemoteOperationConsumer.Stub() {
+                        @Override
+                        public void complete(CallStateTransitionOperation op) {
+                            consumer.accept(op);
+                        }
+                    });
             maybeFailTest(transactionResult);
         } catch (RemoteException re) {
             handleRemoteException(re, "addCall");
@@ -355,5 +421,19 @@ public class AppControlWrapper {
         } catch (RemoteException e) {
            handleRemoteException(e, "removeNotificationForCall");
         }
+    }
+
+    /** fetches the foreground service delegation state for a particular (app, handle) combo */
+    public boolean isForegroundServiceDelegationActive(PhoneAccountHandle handle)
+            throws RemoteException {
+        try {
+            BooleanTransaction transactionResult =
+                    mBinder.isForegroundServiceDelegationActive(handle);
+            maybeFailTest(transactionResult);
+            return transactionResult.getBoolResult();
+        } catch (RemoteException e) {
+            handleRemoteException(e, "isForegroundServiceDelegationActive");
+        }
+        return false;
     }
 }

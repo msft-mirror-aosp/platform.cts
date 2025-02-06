@@ -826,8 +826,11 @@ public class DragDropTest extends WindowManagerTestBase {
         v.getLocationOnScreen(viewLoc);
         int scaledX = (int) (viewLoc[0] * mInvCompatScale);
         int scaledY = (int) (viewLoc[1] * mInvCompatScale);
-        for (int x = scaledX; x < scaledX + v.getWidth(); x++) {
-            for (int y = scaledY; y < scaledY + v.getHeight(); y++) {
+        // Don't check past the dimensions of the screenshot.
+        int clippedWidth = Math.min(scaledX + v.getWidth(), screenshot.getWidth());
+        int clippedHeight = Math.min(scaledY + v.getHeight(), screenshot.getHeight());
+        for (int x = scaledX; x < clippedWidth; x++) {
+            for (int y = scaledY; y < clippedHeight; y++) {
                 final Color color = screenshot.getColor(x, y);
                 assertTrue("Should show drag shadow", color.toArgb() == Color.RED);
             }

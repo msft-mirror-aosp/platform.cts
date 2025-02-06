@@ -141,7 +141,15 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod() = doBlocking {
+    fun executeAppFunction_failed_noSuchMethod() = executeAppFunction_failed_noSuchMethod_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @Throws(Exception::class)
+    fun executeAppFunction_failed_noSuchMethod_nonParam() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noSuchMethod").build()
 
         val response = executeAppFunctionAndWait(mManager, request)
@@ -197,13 +205,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_verifyCallingPackageFromRequest() = doBlocking {
-        val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build()
-        val request =
-            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
+        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
         val response = executeAppFunctionAndWait(mManager, request)
 
@@ -225,43 +227,25 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_verifyPackageVisibilityFromRequest() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(
-                    TEST_HELPER_PKG,
-                    "add",
-                )
-                    .setParameters(parameters)
-                    .build()
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "noOp").build()
 
             val response = executeAppFunctionAndWait(mManager, request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-            )
-                .isEqualTo(3)
-            assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-            )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
+                )
                 .isEqualTo(CURRENT_PKG)
             assertThat(
-                response
-                    .getOrNull()!!
-                    .resultDocument
-                    .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
-            )
+                    response
+                        .getOrNull()!!
+                        .resultDocument
+                        .getPropertyBoolean("TEST_PROPERTY_HAS_CALLER_VISIBILITY")
+                )
                 .isEqualTo(true)
         }
     }
@@ -272,7 +256,17 @@ class AppFunctionManagerTest {
     @EnsureHasSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_crossUser_success() = doBlocking {
+    fun executeAppFunction_crossUser_success() = executeAppFunction_crossUser_success_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @EnsureHasNoDeviceOwner
+    @EnsureHasSecondaryUser
+    @Throws(Exception::class)
+    fun executeAppFunction_crossUser_success_nonParam() = doBlocking {
         runWithShellPermission(
             INTERACT_ACROSS_USERS_FULL_PERMISSION,
             EXECUTE_APP_FUNCTIONS_PERMISSION,
@@ -310,13 +304,6 @@ class AppFunctionManagerTest {
             val response = executeAppFunctionAndWait(mManager, request)
 
             assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response
-                        .getOrNull()!!
-                        .resultDocument
-                        .getPropertyString("TEST_PROPERTY_CALLING_PACKAGE")
-                )
-                .isEqualTo(CURRENT_PKG)
         }
     }
 
@@ -359,7 +346,18 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_platformManager_platformAppFunctionService_success() = doBlocking {
+    fun executeAppFunction_platformManager_platformAppFunctionService_success() =
+        executeAppFunction_platformManager_platformAppFunctionService_success_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_platformManager_platformAppFunctionService_success_nonParam() =
+        doBlocking {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyLong("a", 1)
@@ -429,7 +427,16 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_throwsException() = doBlocking {
+    fun executeAppFunction_throwsException() = executeAppFunction_throwsException_nonParam()
+
+    /**
+     * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
+     * host-side tests). Invoked by the host-side logging tests.
+     */
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_throwsException_nonParam() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "throwException").build()
 
         val response = executeAppFunctionAndWait(mManager, request)
@@ -543,7 +550,7 @@ class AppFunctionManagerTest {
     fun executeAppFunction_runInManagedProfileRestricted_fail() = doBlocking {
         runWithShellPermission(
             // Permission required to create context as user.
-            INTERACT_ACROSS_USERS_FULL_PERMISSION,
+            INTERACT_ACROSS_USERS_FULL_PERMISSION
         ) {
             val workProfileUser = sDeviceState.workProfile()
             val remoteDpm = sDeviceState.dpc().devicePolicyManager()
@@ -893,71 +900,6 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
-    fun executeAppFunction_withExecuteAppFunctionTrustedPermission_restrictCallersWithExecuteAppFunctionsTrue_success() =
-        doBlocking {
-            runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-                val parameters: GenericDocument =
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyLong("a", 1)
-                        .setPropertyLong("b", 2)
-                        .build()
-                val request =
-                    ExecuteAppFunctionRequest.Builder(
-                            TEST_HELPER_PKG,
-                            "addWithRestrictCallersWithExecuteAppFunctionsTrue",
-                        )
-                        .setParameters(parameters)
-                        .build()
-
-                val response = executeAppFunctionAndWait(mManager, request)
-
-                assertThat(response.isSuccess).isTrue()
-                assertThat(
-                        response
-                            .getOrNull()!!
-                            .resultDocument
-                            .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-                    )
-                    .isEqualTo(3)
-            }
-        }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsTrue_resultDenied() =
-        doBlocking {
-            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-                val parameters: GenericDocument =
-                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                        .setPropertyLong("a", 1)
-                        .setPropertyLong("b", 2)
-                        .build()
-                val request =
-                    ExecuteAppFunctionRequest.Builder(
-                            TEST_HELPER_PKG,
-                            "addWithRestrictCallersWithExecuteAppFunctionsTrue",
-                        )
-                        .setParameters(parameters)
-                        .build()
-
-                val response = executeAppFunctionAndWait(mManager, request)
-
-                assertThat(response.appFunctionException().errorCode)
-                    .isEqualTo(AppFunctionException.ERROR_DENIED)
-                assertThat(response.appFunctionException().errorMessage)
-                    .endsWith("does not have permission to execute the appfunction")
-                assertServiceWasNotCreated()
-            }
-        }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
     fun executeAppFunction_cancellationSignal_cancelled_unbind() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
@@ -1050,17 +992,6 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionPermission() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add")).isTrue()
-        }
-    }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @EnsureHasNoDeviceOwner
-    fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionTrustedPermission() = doBlocking {
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add")).isTrue()
         }
     }
@@ -1212,8 +1143,6 @@ class AppFunctionManagerTest {
         const val INTERACT_ACROSS_USERS_PERMISSION = Manifest.permission.INTERACT_ACROSS_USERS
         const val INTERACT_ACROSS_USERS_FULL_PERMISSION =
             Manifest.permission.INTERACT_ACROSS_USERS_FULL
-        const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
-            Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
     }
 }
 

@@ -89,7 +89,7 @@ def _capture_and_analyze(cam, file_stem, camera_id, preview_size, extension,
     luminance_thresh = _AVG_LUMINANCE_THRESH_METERED_REGION
     delta_luminance_thresh = _AVG_DELTA_LUMINANCE_THRESH_METERED_REGION
 
-  frame_bytes = cam.do_capture_preview_frame(
+  _, frame_bytes = cam.do_capture_preview_frame(
       camera_id, preview_size, _NUM_FRAMES_TO_WAIT, extension, capture_request
   )
   np_array = np.frombuffer(frame_bytes, dtype=np.uint8)

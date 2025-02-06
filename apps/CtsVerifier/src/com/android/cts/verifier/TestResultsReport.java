@@ -65,7 +65,7 @@ class TestResultsReport {
     private static final String TEST_DETAILS_TAG = "details";
 
     private static final String TEST_CASE_NAME = "manualTests";
-    private static final String INTERACTIVE_TEST_CASE_NAME = "interactiveTests";
+    private static final String HOST_TEST_CASE_NAME = "hostTests";
 
     private final Context mContext;
 
@@ -124,7 +124,7 @@ class TestResultsReport {
 
         // Get test result, including test name, result, report log, details and histories.
         getCaseResult(moduleResult);
-        getInteractiveCaseResult(moduleResult);
+        getHostCaseResult(moduleResult);
 
         return result;
     }
@@ -141,8 +141,7 @@ class TestResultsReport {
      */
     private void getCaseResult(IModuleResult moduleResult) {
         ICaseResult caseResult = moduleResult.getOrCreateResult(TEST_CASE_NAME);
-        String interactiveTestTitle =
-                mContext.getResources().getString(R.string.interactive_tests_title);
+        String hostTestTitle = mContext.getResources().getString(R.string.host_tests_title);
         int notExecutedCount = 0;
         for (DisplayMode mode: DisplayMode.values()) {
             String displayMode = mode.toString();
@@ -150,7 +149,7 @@ class TestResultsReport {
             for (int i = 0; i < count; i++) {
                 TestListItem item = mAdapter.getItem(displayMode, i);
                 String testName = item.testName;
-                if (item.isTest() && !item.title.equals(interactiveTestTitle)) {
+                if (item.isTest() && !item.title.equals(hostTestTitle)) {
                     createTestResult(caseResult, testName, testName);
                     if (mAdapter.getTestResult(testName) == TestResult.TEST_RESULT_NOT_EXECUTED) {
                         ++notExecutedCount;
@@ -163,13 +162,13 @@ class TestResultsReport {
     }
 
     /**
-     * Get case results per interactive test, including result, report log, details and histories.
+     * Get case results per host test, including result, report log, details and histories.
      *
      * @param moduleResult The module result bound with {@link IInvocationResult}.
      */
-    private void getInteractiveCaseResult(IModuleResult moduleResult) {
-        ICaseResult caseResult = moduleResult.getOrCreateResult(INTERACTIVE_TEST_CASE_NAME);
-        for (String module : mContext.getResources().getStringArray(R.array.interactive_modules)) {
+    private void getHostCaseResult(IModuleResult moduleResult) {
+        ICaseResult caseResult = moduleResult.getOrCreateResult(HOST_TEST_CASE_NAME);
+        for (String module : mContext.getResources().getStringArray(R.array.host_modules)) {
             for (String testName : mAdapter.getTestResultNames()) {
                 if (!testName.startsWith(module)) {
                     continue;

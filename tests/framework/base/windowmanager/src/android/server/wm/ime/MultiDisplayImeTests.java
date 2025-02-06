@@ -33,6 +33,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -101,14 +102,20 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     @Before
     @Override
     public void setUp() throws Exception {
-        assumeRunNotOnVisibleBackgroundNonProfileUser("On visible background users, having the"
-                + "keyboard in one display and the app that consumes the key events in another "
-                + "virtual display, is not supported");
-
         super.setUp();
 
         assumeTrue(supportsMultiDisplay());
         assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+    }
+
+    // TODO(b/383228193): Remove this method once fallbackDisplayForSecondaryUserOnSecondaryDisplay
+    //     flag is promoted.
+    @Override
+    protected int getMainDisplayId() {
+        if (!android.view.inputmethod.Flags.fallbackDisplayForSecondaryUserOnSecondaryDisplay()) {
+            return DEFAULT_DISPLAY;
+        }
+        return super.getMainDisplayId();
     }
 
     @Test
@@ -239,12 +246,12 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 .setSimulateDisplay(true)
                 .setDisplayImePolicy(DISPLAY_IME_POLICY_LOCAL)
                 .createDisplay();
-        imeTestActivitySession.launchTestActivityOnDisplaySync(ImeTestActivity.class,
-                DEFAULT_DISPLAY);
+        imeTestActivitySession.launchTestActivityOnDisplaySync(
+                ImeTestActivity.class, getMainDisplayId());
         imeTestActivitySession2.launchTestActivityOnDisplaySync(ImeTestActivity2.class,
                 newDisplay.mId);
 
-        final DisplayContent defDisplay = mWmState.getDisplay(DEFAULT_DISPLAY);
+        final DisplayContent defDisplay = mWmState.getDisplay(getMainDisplayId());
         final ImeEventStream stream = mockImeSession.openEventStream();
 
         // Tap on the imeTestActivity task center instead of the display center because
@@ -306,7 +313,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 imeTestActivitySession.getActivity().mEditText.getPrivateImeOptions()), TIMEOUT);
 
         // Verify the activity to show soft input on the default display.
-        showSoftInputAndAssertImeShownOnDisplay(DEFAULT_DISPLAY, imeTestActivitySession, stream);
+        showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), imeTestActivitySession, stream);
 
         // Commit text & make sure the input texts should be delivered to focused EditText on
         // virtual display.
@@ -385,7 +392,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
         // Expect soft-keyboard becomes visible after requesting show IME.
-        showSoftInputAndAssertImeShownOnDisplay(DEFAULT_DISPLAY, imeActivitySession, stream);
+        showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), imeActivitySession, stream);
         expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
                 View.VISIBLE, TIMEOUT);
         expectImeVisible(TIMEOUT);
@@ -408,8 +415,8 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         // may mis-touch the launcher icon that breaks the test expectation.
         final TestActivitySession<Activities.RegularActivity> testActivitySession =
                 createManagedTestActivitySession();
-        testActivitySession.launchTestActivityOnDisplaySync(Activities.RegularActivity.class,
-                DEFAULT_DISPLAY);
+        testActivitySession.launchTestActivityOnDisplaySync(
+                Activities.RegularActivity.class, getMainDisplayId());
 
         // Create a virtual display and launch an activity on virtual display.
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
@@ -432,9 +439,9 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
 
         // Tap default display, assume a pointer-out-side event will happened to change the top
         // display.
-        final DisplayContent defDisplay = mWmState.getDisplay(DEFAULT_DISPLAY);
+        final DisplayContent defDisplay = mWmState.getDisplay(getMainDisplayId());
         tapOnDisplayCenter(defDisplay.mId);
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
         mWmState.assertValidity();
 
         // Reparent ImeTestActivity from virtual display to default display.
@@ -443,9 +450,11 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 .setTargetActivity(imeTestActivitySession.getActivity().getComponentName())
                 .setIntentFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .allowMultipleInstances(false)
-                .setDisplayId(DEFAULT_DISPLAY).execute();
+                .setDisplayId(getMainDisplayId())
+                .execute();
         waitAndAssertResumedAndFocusedActivityOnDisplay(
-                imeTestActivitySession.getActivity().getComponentName(), DEFAULT_DISPLAY,
+                imeTestActivitySession.getActivity().getComponentName(),
+                getMainDisplayId(),
                 "Activity launched on default display and on top");
 
         // Activity is no longer on the secondary display
@@ -461,10 +470,12 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
                 imeTestActivitySession.getActivity().mEditText.getPrivateImeOptions()), TIMEOUT);
 
         // Verify the activity shows soft input on the default display.
-        showSoftInputAndAssertImeShownOnDisplay(DEFAULT_DISPLAY, imeTestActivitySession, stream);
+        showSoftInputAndAssertImeShownOnDisplay(getMainDisplayId(), imeTestActivitySession, stream);
     }
 
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testNoConfigurationChangedWhenSwitchBetweenTwoIdenticalDisplays() throws Exception {
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
@@ -626,7 +637,7 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
         }
     }
 
-    public static class ImeTestActivity2 extends ImeTestActivity { }
+    public static class ImeTestActivity2 extends ImeTestActivity {}
 
     public static final class ImeTestActivityWithBrokenContextWrapper extends Activity {
         private EditText mEditText;
@@ -636,7 +647,6 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
          *
          * <p> Certain {@link ContextWrapper} subclass in the wild delegate method calls to
          * ApplicationContext except for {@link #getSystemService(String)}.</p>
-         *
          **/
         private static final class Bug118341760ContextWrapper extends ContextWrapper {
             private final Context mOriginalContext;

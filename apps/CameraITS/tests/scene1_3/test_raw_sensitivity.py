@@ -37,18 +37,6 @@ _NUM_SENS_STEPS = 5
 _VAR_THRESH = 1.01  # Each shot must be 1% noisier than previous
 
 
-def define_raw_stats_fmt(props):
-  """Define format with active array width and height."""
-  aaw = (props['android.sensor.info.preCorrectionActiveArraySize']['right'] -
-         props['android.sensor.info.preCorrectionActiveArraySize']['left'])
-  aah = (props['android.sensor.info.preCorrectionActiveArraySize']['bottom'] -
-         props['android.sensor.info.preCorrectionActiveArraySize']['top'])
-  logging.debug('Active array W,H: %d,%d', aaw, aah)
-  return {'format': 'rawStats',
-          'gridWidth': aaw // _IMG_STATS_GRID,
-          'gridHeight': aah // _IMG_STATS_GRID}
-
-
 class RawSensitivityTest(its_base_test.ItsBaseTest):
   """Capture a set of raw images with increasing gains and measure the noise."""
 
@@ -95,7 +83,9 @@ class RawSensitivityTest(its_base_test.ItsBaseTest):
         req = capture_request_utils.manual_capture_request(s, e, 0)
 
         # Capture in rawStats to reduce test run time
-        fmt = define_raw_stats_fmt(props)
+        fmt = its_session_utils.define_raw_stats_fmt_exposure(
+            props, _IMG_STATS_GRID
+        )
         caps = cam.do_capture([req]*_NUM_FRAMES, fmt)
         image_processing_utils.assert_capture_width_and_height(
             caps[0], _IMG_STATS_GRID, _IMG_STATS_GRID

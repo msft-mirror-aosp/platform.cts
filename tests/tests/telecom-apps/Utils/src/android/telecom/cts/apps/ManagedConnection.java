@@ -19,11 +19,13 @@ package android.telecom.cts.apps;
 import android.content.Context;
 import android.telecom.CallEndpoint;
 import android.telecom.Connection;
+import android.telecom.ConnectionService;
 import android.telecom.DisconnectCause;
 import android.telecom.VideoProfile;
 import android.util.Log;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ManagedConnection extends Connection {
     private static final String TAG = ManagedConnection.class.getSimpleName();
@@ -31,12 +33,14 @@ public class ManagedConnection extends Connection {
     private boolean mIsMuted = false;
     private CallEndpoint mCallEndpoint = null;
     private List<CallEndpoint> mCallEndpoints = null;
-    private final Context mContext;
-    private final boolean mIsOutgoingCall;
+    private final ConnectionService mConnectionService;
 
-    public ManagedConnection(Context context, boolean isOutgoingCall) {
-        mContext = context;
-        mIsOutgoingCall = isOutgoingCall;
+    // Delegates the completion of call state transition operations to potentially another entity
+    // to control the completion.
+    private Consumer<CallStateTransitionOperation> mOperationConsumer;
+
+    public ManagedConnection(ConnectionService service) {
+        mConnectionService = service;
     }
 
     public boolean isMuted() {
@@ -72,11 +76,20 @@ public class ManagedConnection extends Connection {
     }
 
     public void setCallToDisconnected(Context context) {
-        this.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
+        setCallToDisconnected(context, new DisconnectCause(DisconnectCause.LOCAL));
     }
 
     public void setCallToDisconnected(Context context, DisconnectCause cause) {
         this.setDisconnected(cause);
+        this.destroy();
+    }
+
+    /**
+     * Delegate operation completion to the test process so that it can control completion of the
+     * request.
+     */
+    public void setOperationConsumer(Consumer<CallStateTransitionOperation> consumer) {
+        mOperationConsumer = consumer;
     }
 
     @Override
@@ -99,19 +112,39 @@ public class ManagedConnection extends Connection {
     public void onHold() {
         setOnHold();
         super.onHold();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_HOLD, System.currentTimeMillis()));
+        }
     }
 
     @Override
     public void onUnhold() {
         setActive();
         super.onUnhold();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_UNHOLD, System.currentTimeMillis()));
+        }
     }
 
     @Override
     public void onAnswer(int videoState) {
         setVideoState(videoState);
+        // Special case - we expect the ConnectionService to handle holding an existing call if the
+        // new call is on the same PhoneAccount
+        for (Connection c : mConnectionService.getAllConnections()) {
+            if (c.getState() == STATE_ACTIVE) {
+                c.onHold();
+            }
+        }
+
         setActive();
         super.onAnswer(videoState);
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_ANSWER, System.currentTimeMillis()));
+        }
     }
 
     @Override
@@ -121,7 +154,13 @@ public class ManagedConnection extends Connection {
 
     @Override
     public void onDisconnect() {
+        this.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
+        this.destroy();
         super.onDisconnect();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(new CallStateTransitionOperation(
+                    CallStateTransitionOperation.OPERATION_DISCONNECT, System.currentTimeMillis()));
+        }
     }
 
     @Override

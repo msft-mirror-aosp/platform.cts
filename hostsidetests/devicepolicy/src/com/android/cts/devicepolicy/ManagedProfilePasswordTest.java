@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 
 public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
     private static final String USER_STATE_LOCKED = "RUNNING_LOCKED";
-    private static final long TIMEOUT_USER_LOCKED_MILLIS = TimeUnit.MINUTES.toMillis(3);
     // Password needs to be in sync with ResetPasswordWithTokenTest.PASSWORD1
     private static final String RESET_PASSWORD_TEST_DEFAULT_PASSWORD = "123456";
 
@@ -149,6 +148,11 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
         changeUserCredential(TEST_PASSWORD, /* oldCredential= */ null, mPrimaryUserId);
         try {
             rebootAndWaitUntilReady();
+
+            // If the profile isn't running when the parent is unlocked, the profile won't be
+            // unlocked.
+            waitUntilProfileRunning();
+
             verifyUserCredential(TEST_PASSWORD, mPrimaryUserId);
             waitForUserUnlock(mProfileUserId);
             installAppAsUser(SIMPLE_APP_APK, mProfileUserId);
@@ -232,6 +236,13 @@ public final class ManagedProfilePasswordTest extends BaseManagedProfileTest {
                 () -> getDevice().executeShellCommand(cmd).startsWith(USER_STATE_LOCKED),
                 "The managed profile has not been locked after calling "
                         + "lockNow(FLAG_SECURE_USER_DATA)",
-                TIMEOUT_USER_LOCKED_MILLIS);
+                TimeUnit.MINUTES.toMillis(3));
+    }
+
+    private void waitUntilProfileRunning() throws Exception {
+        tryWaitForSuccess(
+                () -> listRunningUsers().contains(mProfileUserId),
+                "The managed profile has not been started",
+                TimeUnit.MINUTES.toMillis(1));
     }
 }

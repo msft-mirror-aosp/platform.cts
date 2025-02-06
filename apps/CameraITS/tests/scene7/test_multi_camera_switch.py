@@ -47,31 +47,6 @@ _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
 
 
-def _do_af_check(uw_img, w_img):
-  """Checks the AF behavior between the uw and w img.
-
-  Args:
-    uw_img: image captured using UW lens.
-    w_img: image captured using W lens.
-
-  Returns:
-    failed_af_msg: Failed AF check messages if any. None otherwise.
-    sharpness_uw: sharpness value for UW lens
-    sharpness_w: sharpness value for W lens
-  """
-  failed_af_msg = []
-  sharpness_uw = image_processing_utils.compute_image_sharpness(uw_img)
-  logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
-  sharpness_w = image_processing_utils.compute_image_sharpness(w_img)
-  logging.debug('Sharpness for W patch: %.2f', sharpness_w)
-
-  if sharpness_w < sharpness_uw:
-    failed_af_msg.append('Sharpness should be higher for W lens.'
-                         f'sharpness_w: {sharpness_w:.4f} '
-                         f'sharpness_uw: {sharpness_uw:.4f}')
-  return failed_af_msg, sharpness_uw, sharpness_w
-
-
 class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
   """Test that the switch between cameras has similar RGB values.
 
@@ -115,8 +90,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         )
 
         # Find the crossover point where the camera switches
-        converged_state_counter, lens_changed, converged_state, counter = (
-            multi_camera_switch_utils.find_crossover_point(capture_results))
+        lens_changed, counter = (
+            multi_camera_switch_utils.find_crossover_point(
+                cam, capture_results))
 
       except Exception as e:
         # Remove all the files except mp4 recording in case of any error
@@ -133,16 +109,11 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         e_msg = 'Crossover point not found. Try running the test again!'
         raise AssertionError(e_msg)
 
-      # Raise error is 3A does not converge after the lens change
-      if not converged_state:
-        e_msg = '3A not converged after the lens change.'
-        raise AssertionError(e_msg)
-
       # Process capture results and get camera properties
       img_uw_file, img_w_file, min_focus_distance_w = (
           multi_camera_switch_utils.get_camera_properties_and_log(
               cam, capture_results, file_list, counter,
-              converged_state_counter, _LENS_SUFFIX_UW, _LENS_SUFFIX_W)
+              _LENS_SUFFIX_UW, _LENS_SUFFIX_W)
       )
 
       # Remove unwanted frames and only save the UW and
@@ -205,9 +176,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
         # AE Check: Extract the Y component from rectangle patch
         file_stem = f'{os.path.join(self.log_path, _NAME)}_{patch_color}'
-        ae_msg, uw_y_avg, w_y_avg = image_processing_utils.do_ae_check(
-            uw_patch, w_patch, file_stem, _LENS_SUFFIX_UW, _LENS_SUFFIX_W,
-            _AE_RTOL, _AE_ATOL)
+        ae_msg, uw_y_avg, w_y_avg = multi_camera_switch_utils.do_ae_check(
+            uw_patch, w_patch, file_stem, patch_color, _LENS_SUFFIX_UW,
+            _LENS_SUFFIX_W, _AE_RTOL, _AE_ATOL)
         if ae_msg:
           failed_ae_msg.append(f'{ae_msg}\n')
         ae_uw_y_avgs.update({patch_color: f'{uw_y_avg:.4f}'})
@@ -216,7 +187,7 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         # AWB Check : Verify that delta Cab are within the limits
         if camera_properties_utils.awb_regions(props):
           cab_atol = _AWB_ATOL_L if patch_color == _COLOR_GRAY else _AWB_ATOL_AB
-          awb_msg = image_processing_utils.do_awb_check(
+          awb_msg = multi_camera_switch_utils.do_awb_check(
               uw_patch, w_patch, cab_atol, patch_color, _LENS_SUFFIX_UW,
               _LENS_SUFFIX_W)
           if awb_msg:
@@ -236,8 +207,10 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
             uw_chart_patch, uw_path, _LENS_SUFFIX_UW, _PATCH_MARGIN)
         w_slanted_edge_patch = image_processing_utils.get_slanted_edge_patch(
             w_chart_patch, w_path, _LENS_SUFFIX_W, _PATCH_MARGIN)
-        failed_af_msg, sharpness_uw, sharpness_w = _do_af_check(
-            uw_slanted_edge_patch, w_slanted_edge_patch)
+        failed_af_msg, sharpness_uw, sharpness_w = (
+            multi_camera_switch_utils.do_af_check(
+                uw_slanted_edge_patch, w_slanted_edge_patch, _LENS_SUFFIX_UW,
+                _LENS_SUFFIX_W))
         print(f'{_NAME}_uw_sharpness: {sharpness_uw:.4f}')
         print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
 

@@ -42,24 +42,24 @@ import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 import android.util.Log;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.ApplicationHidden;
 import com.android.bedstead.harrier.policies.ApplicationHiddenSystemOnly;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.Package;
-import com.android.compatibility.common.util.ApiTest;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -79,7 +79,7 @@ public class ApplicationHiddenTest {
     private static final String LOG_TAG = ApplicationHiddenTest.class.getName();
 
     private static final Package SYSTEM_PACKAGE =
-            TestApis.packages().find("com.android.keychain");
+            TestApis.packages().find("com.android.cts.ctsshim");
     private static final Package NON_EXISTING_PACKAGE =
             TestApis.packages().find("non.existing.package");
 

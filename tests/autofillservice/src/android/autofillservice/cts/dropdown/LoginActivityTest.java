@@ -398,9 +398,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mUiBot.assertDatasets("THE DUDE");
     }
 
-    @FlakyTest(
-            bugId = 292280793,
-            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillOneDataset() throws Exception {
@@ -419,9 +416,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         autofillOneDatasetTest(BorderType.FOOTER_ONLY);
     }
 
-    @FlakyTest(
-            bugId = 292285138,
-            detail = "Meet July-31-23 trunk stable no flaky SLO. Deflake asap")
     @Presubmit
     @Test
     public void testAutoFillOneDataset_withHeaderAndFooter() throws Exception {
@@ -505,6 +499,43 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         sReplier.setIdMode(IdMode.RESOURCE_ID);
     }
 
+    @Test
+    public void testSanitization_dynamicallySetValueIsSanitized() throws Exception {
+        // Dynamically set password to make sure it's sanitized.
+        mActivity.onPassword((v) -> v.setText("I AM GROOT"));
+
+        // Set service.
+        enableService();
+
+        final CannedFillResponse.Builder builder =
+                new CannedFillResponse.Builder()
+                        .addDataset(
+                                new CannedDataset.Builder()
+                                        .setField(ID_USERNAME, "dude")
+                                        .setField(ID_PASSWORD, "sweet")
+                                        .setPresentation(createPresentation("The Dude"))
+                                        .build());
+
+        sReplier.addResponse(builder.build());
+        mActivity.expectAutoFill("dude", "sweet");
+
+        // Trigger auto-fill.
+        requestFocusOnUsername();
+
+        mUiBot.selectDatasetSync("The Dude");
+
+        // Check the results.
+        mActivity.assertAutoFilled();
+
+        // Make sure input was sanitized.
+        final FillRequest request = sReplier.getNextFillRequest();
+        assertWithMessage("CancelationSignal is null").that(request.cancellationSignal).isNotNull();
+        assertTextIsSanitized(request.structure, ID_PASSWORD);
+        final FillContext fillContext = request.contexts.get(request.contexts.size() - 1);
+        assertThat(fillContext.getFocusedId())
+                .isEqualTo(findAutofillIdByResourceId(fillContext, ID_USERNAME));
+    }
+
     private void autofillOneDatasetTest(BorderType borderType) throws Exception {
         // Set service.
         enableService();
@@ -529,9 +560,6 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         sReplier.addResponse(builder.build());
         mActivity.expectAutoFill("dude", "sweet");
 
-        // Dynamically set password to make sure it's sanitized.
-        mActivity.onPassword((v) -> v.setText("I AM GROOT"));
-
         // Trigger auto-fill.
         requestFocusOnUsername();
 
@@ -545,16 +573,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
 
         // Validation checks.
-
-        // Make sure input was sanitized.
-        final FillRequest request = sReplier.getNextFillRequest();
-        assertWithMessage("CancelationSignal is null").that(request.cancellationSignal).isNotNull();
-        assertTextIsSanitized(request.structure, ID_PASSWORD);
-        final FillContext fillContext = request.contexts.get(request.contexts.size() - 1);
-        assertThat(fillContext.getFocusedId())
-                .isEqualTo(findAutofillIdByResourceId(fillContext, ID_USERNAME));
-
         // Make sure initial focus was properly set.
+        final FillRequest request = sReplier.getNextFillRequest();
+
         assertWithMessage("Username node is not focused").that(
                 findNodeByResourceId(request.structure, ID_USERNAME).isFocused()).isTrue();
         assertWithMessage("Password node is focused").that(
@@ -2698,7 +2719,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 mActivity.assertAutoFilled();
 
                 // Change focus to prepare for next step - must do it before session is gone
-                requestFocusOnPassword();
+                mActivity.onPassword(View::requestFocus);
 
                 // Rinse and repeat...
                 mActivity.tapClear();

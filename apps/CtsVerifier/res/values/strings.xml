@@ -84,8 +84,7 @@
     <string name="test_category_display_cutout">DisplayCutout</string>
     <string name="test_category_other">Other</string>
     <string name="test_category_device_controls">Device controls</string>
-    <string name="test_category_multidevice">Multi Device</string>
-    <string name="test_category_interactive">Interactive</string>
+    <string name="test_category_host">Host-side</string>
     <string name="clear">Clear</string>
     <string name="test_results_clear_title">Remove all test results?</string>
     <string name="test_results_clear_yes">Yes</string>
@@ -1543,7 +1542,7 @@
     <string name="snsr_baro_fridge_wait">Please wait while the device gets to expected starting temperature, this will take 20 minutes.</string>
     <string name="snsr_baro_date_time_instruction">Take the device out of the fridge and put it on a flat surface with the screen side up next to the reference device. After clicking the "Next" button, you will be redirected to the date and time settings screen. Open the date and time settings screen on the reference device, and set the date and time on this device and the reference device to an hour from now in your local timezone, and click save/done/OK simultaneously on both devices.\nAfter that has been done, use the back button on the test device to return back to the CTS Verifier app.</string>
     <string name="snsr_baro_bluetooth_instruction">Please open the CTS Verifier app on the reference device, and click the "Barometer reference" menu item, you should see a list of bluetooth devices near you. Read these instructions carefully before continuing:\nAfter clicking the Next button here, you will be redirected to the Bluetooth pairing screen. Find this device on the reference device\'s list - if not found, click the "scan for devices" button on the reference device - and click it, wait up to 10 seconds for the pairing prompt to appear on the reference device, and click "Pair" on both devices. Return to the CTS Verifier app on this device after connection is established.</string>
-    <string name="snsr_baro_temp_test_instruction"> After clicking the Next button on both devices simultaneously, the two devices will start collecting readings. Please wait while the device collects readings.</string>
+    <string name="snsr_baro_temp_test_instruction"> After clicking the Next button on both devices simultaneously, the two devices will start collecting readings. This will take 10 minutes. Please wait while the device collects readings.</string>
     <string name="snsr_baro_squeeze_test_prep_instruction"> Hold the device steady in your hand with the screen facing up, do not change the elevation of the device or rotate it during the test. When you hear a sound, squezze the device quickly and release as you would to crumple a soda can. The sound will be played twice.</string>
     <string name="snsr_baro_test_in_progress">Test in progress. </string>
     <string name="snsr_baro_turn_off_airplane_mode"> You will be redirected to the airplane mode settings screen. Please turn off airplane mode on this device.</string>
@@ -1622,6 +1621,8 @@
     <string name="ci_directory_creation_error">CTS Verifier debug directory could not be created, please try again</string>
     <string name="ci_instruction_text_photo_label">READ BEFORE STARTING TEST</string>
     <string name="ci_instruction_text_passfail_label">Choose \"Pass\" if the right intent is fired after taking a photo from the camera app. Otherwise, choose \"Fail\".</string>
+    <string name="ci_verify_capture_title">Verify capture</string>
+    <string name="ci_dismiss_result_dialog">Dismiss</string>
     <string name="ci_instruction_text_app_picture_label">\n
 
     1. Click Open Settings and deny location permissions to CTS Verifier and return. \n
@@ -1656,11 +1657,45 @@
     4. Pass button will light up if intent and URI trigger were NOT received.\n
     5. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
     </string>
+    <string name="ci_instruction_text_intent_motion_photo_label">\n
+    Note: If this intent is not supported by the device, the Start Test button will not be enabled.
+    If this is expected, press the pass button to continue. Otherwise open the settings app, allow
+    location permissions and click "Fail."\n\n
+
+    1. Click Start Test.\n
+    2. Camera app will launch, prompting to take motion photo.\n
+    3. Capture/confirm motion photo using camera app controls within 1 minute.\n
+    4. A dialog will open with the video embedded in the motion photo.\n
+    5. Pass button will light up if intent and URI trigger were NOT received.\n
+    6. Click "Pass" if possible and the video embedded in the motion photo displayed correctly,
+    otherwise open settings app, allow location again and click "Fail".
+    </string>
+    <string name="ci_instruction_text_intent_motion_photo_secure_label">\n
+    Note: If this intent is not supported by the device, the Start Test button will not be enabled.
+    If this is expected, press the pass button to continue. Otherwise open the settings app, allow
+    location permissions and click "Fail."\n\n
+
+    1. Click Start Test.\n
+    2. Camera app will launch, prompting to take motion photo.\n
+    3. Capture/confirm motion photo using camera app controls within 1 minute.\n
+    4. A dialog will open with the video embedded in the motion photo.\n
+    5. Pass button will light up if intent and URI trigger were NOT received.\n
+    6. Click "Pass" if possible and the video embedded in the motion photo displayed correctly,
+    otherwise open settings app, allow location again and click "Fail".
+    </string>
+    <string name="ci_instruction_test_intent_picture_location_attack_label">\n
+    1. Click Start Test.\n
+    2. Settings app will launch. Go to \"Storage &amp; Cache\" and click \"Clear Storage\".\n
+    3. Capture/confirm photo using camera app controls within 1 minute.\n
+    4. Navigate back to CtsVerifier.\n
+    5. Pass button will light up if location info was not found.\n
+    6. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
+    </string>
     <string name="ci_instruction_text_intent_video_label">\n
     1. Click Start Test.\n
     2. Camera app will launch, prompting to take video.\n
     3. Capture/confirm video using camera app controls within 1 minute.\n
-    4. Return to the CTS Verifier app. Click Open Settings and give back CTS Verifier location permissions \n
+    4. Return to the CTS Verifier app. Click Open Settings and ensure CTS Verifier has location permissions \n
     (Note this must be done before clicking on Pass / Fail).\n
     5. Click "Pass" if possible.
     </string>
@@ -2925,6 +2960,14 @@ You should be prompted to select credentials; choose the ones you just installed
         2. Verify that the captured picture is shown.\n
         3. Click on the close button.
     </string>
+    <string name="provisioning_byod_capture_motion_photo_support">Camera support cross profile motion photo capture</string>
+    <string name="provisioning_byod_capture_motion_photo_support_info">
+        This test verifies that motion photos can be captured from the managed profile using the primary profile camera.\n
+        If prompted, accept the camera permission after pressing go.\n
+        1. Capture a motion photo using the camera.\n
+        2. Verify that the motion photo\'s still image preview is shown.\n
+        3. Click on the close button.
+    </string>
     <string name="provisioning_byod_capture_video_support_with_extra_output">Camera support cross profile video capture (with extra output path)</string>
     <string name="provisioning_byod_capture_video_support_info">
         This test verifies that videos can be captured from the managed profile using the primary profile camera.\n
@@ -2951,6 +2994,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="provisioning_byod_verify_audio_title">Verify captured audio</string>
     <string name="provisioning_byod_no_image_capture_resolver">No image capture app present. Skip test.</string>
     <string name="provisioning_byod_no_video_capture_resolver">No video capture app present. Skip test.</string>
+    <string name="provisioning_byod_no_motion_photo_capture_resolver">No motion photo capture app present. Skip test.</string>
     <string name="provisioning_byod_no_audio_capture_resolver">No audio capture app present. Skip test.</string>
     <string name="provisioning_byod_capture_media_error">Error while capturing media from managed profile.</string>
     <string name="provisioning_byod_capture_image_error">Error while capturing image from managed profile.</string>
@@ -2967,9 +3011,10 @@ You should be prompted to select credentials; choose the ones you just installed
         1. Press "Set up" to open Security settings. (If this device has a separate app for work
         settings, ignore this button and open that app manually from the launcher.) Create a
         lockscreen password and if available, enroll a fingerprint under "Work profile security".\n
-        2. Go through the list of tests.\n
-        3. Mark the overall test pass or fail.\n
-        4. Once the set of tests are completed, remove the lockscreen challenge.
+        2. Ensure that work profile and device entry password and fingerprint are separate by disabling "One Lock".\n
+        3. Go through the list of tests.\n
+        4. Mark the overall test pass or fail.\n
+        5. Once the set of tests are completed, remove the lockscreen challenge.
     </string>
     <string name="provisioning_byod_auth_bound_key_set_up">Set up</string>
     <string name="provisioning_byod_lockscreen_bound_key">Lockscreen-bound key test</string>
@@ -3279,18 +3324,6 @@ You should be prompted to select credentials; choose the ones you just installed
         This test verifies that the user is prompted for the current keyguard password before prompting for a new password.\n
         \nClick the \"Set password\" button if you currently don\'t have a password set.\n
         \nThen click the \"Change password\" button to change it. You should be prompted for the current password first. If you are not, then mark the test as failed.
-    </string>
-
-    <!-- Strings for NFC Tests. -->
-    <string name="nfc_tests_title">NFC Tests</string>
-    <string name="nfc_tests_dialog_title">NFC Tests Dialog</string>
-    <string name="nfc_tests_dialog_content">
-        The NFC tests.\n
-        The DUT \"must\" be connected to a host to run these tests.\n
-        Please follow the detailed instruction of the tests to execute scripts and get results.\n
-        The tests will be set as passing if the DUT is not supported with NFC.\n
-        See the instruction in the following link.\n
-        https://source.android.com/docs/compatibility/cts/ctsv-multidevice
     </string>
 
     <!-- String for Projection Tests -->
@@ -5083,6 +5116,20 @@ You should be prompted to select credentials; choose the ones you just installed
         \n
         Use the Back button to return to this page.
     </string>
+    <string name="device_owner_disallow_user_switch_info" product="automotive">
+        Press \'Create uninitialized user\' to create a user that is not setup.
+        Then press \'Set restriction\' button to set the user restriction.
+        Then press \'Go\' to open \'Users\' settings.
+        In Quick Settings, confirm that user switcher is hidden or disabled.\n
+        \n
+        The following steps apply only if the created user is visible on Users page. Confirm that:\n
+        \n
+        - Pressing on managed user opens user details page.\n
+        - \"Switch to managed user\" is disabled\n
+        - Tapping \"Switch to managed user\" shows a \"Blocked by work policy\" dialog.\n
+        \n
+        Use the Back button to return to this page.
+    </string>
     <string name="device_owner_disallow_user_switch_create_user">Create uninitialized user</string>
 
     <string name="device_owner_user_switcher_message">User switcher message</string>
@@ -5495,13 +5542,17 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="uapButtonTestInstructions">Connect the USB Audio headset with buttons
         and press each button on the headset to verify recognition.</string>
 
+
+    <string name="uapNotificationsTest_Status">Test Status:</string>
      <string name="uapNotificationsTestInfo">
          This test verifies that the correct notifications and Intents are sent when a USB audio
-         peripheral is connected to the Android device. First USB headset peripheral should be
-         connected and the test will acknowledge the USB headset device notifications and plug intent.
-         Next a non-headset / headphones USB peripheral should be connected and the test will
-         acknowlege the USB device notifications. If all notifications and Intents are received
-         the test passes.
+         peripheral is connected to the Android device.
+         \n\nTest Process:
+         \n\nFirst connect a USB Headset peripheral. The test will acknowledge the USB headset device
+         notifications and plug intent.
+         \n\nNext connect a USB Interface peripheral with both input and output. The test will
+         acknowledge the USB peripheral notifications.
+         \n\nIf all notifications and Intents are received the test passes.
      </string>
 
     <string name="audio_usb_restrict_record_test">USB Audio Restrict Record Access Test</string>
@@ -5957,6 +6008,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_basiclatency">Basic Latency:</string>
     <string name="audio_loopback_mpclatency">MPC Latency</string>
     <string name="audio_loopback_proaudiolatency">"Pro Audio Latency"</string>
+    <string name="audio_loopback_noproaudiosupport">No Pro Audio Support (PASS)</string>
+    <string name="audio_loopback_nopmpcsupport">No MPC Support (PASS)</string>
     <string name="audio_loopback_wavcapturefolder">WAV Capture Folder:</string>
     <string name="audio_loopback_wavcapturefile">Capture File:</string>
     <string name="audio_loopback_nocapture">No Capture</string>
@@ -7236,7 +7289,6 @@ You should be prompted to select credentials; choose the ones you just installed
         Please connect an HDMI peripheral to validate AudioDescriptor.
     </string>
 
-    <string name="uwb">Uwb</string>
     <string name="presence_test">Presence Test</string>
     <string name="presence_test_info">
         The Presence tests check whether or not a device is properly calibrated for BLE, NAN and UWB based on Presence requirements.
@@ -7304,7 +7356,6 @@ You should be prompted to select credentials; choose the ones you just installed
         \nReference device instructions
         \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Advertising"
     </string>
-
     <!-- Strings for NAN Accuracy Test -->
     <string name="nan_accuracy_test_instructions">
         Place the device under test (DUT) at the test distance (either 10cm, 1m, 3m, or 5m) away from the reference device, in a line of sight environment. On the reference device, ensure that the "Is reference device" checkbox is checked, then click "Start Publishing"
@@ -7327,6 +7378,37 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="distance_5m_presence">5m</string>
     <string name="service_id_info_presence">Your unique service ID is: %1$d</string>
     <string name="service_id_input_presence">Enter the service ID displayed on the publishing device</string>
+
+    <!-- String for BLE channel sounding Accuracy test -->
+    <string name="ble_cs_accuracy_test_instructions">
+        Pair and bond the device under test(DUT) and the reference device from the bluetooth settings. Place the DUT at 1 meter away from the reference device, in a line of sight environment. On the reference device, ensure that the "Is reference device" checkbox is checked, then click "Start Advertising"
+        \n\nDUT instructions
+        \n1. Ensure that the reference device is already advertising.
+        \n2. Click "Start Test". The display would be updated to show status "IN_PROGRESS" for the corresponding test distance.
+        \n3. When all the required data is collected at the test distance, the display would be updated to show the status of the test, either PASSED or FAILED.
+        \n4. The test is passed if more than 90% of the results are in the required range in [0.5, 1.5].
+    </string>
+    <string name="cs_accuracy_test_name">BLE Channel Sounding Accuracy Test</string>
+    <string name="ble_cs">BLE Channel Sounding</string>
+
+    <!-- String for UWB sounding Accuracy test -->
+    <string name="uwb_accuracy_test_instructions">
+        Two devices with UWB hardware are required, one as the DUT and one as the reference device.
+        Two tripods to hold the devices are required.
+        The DUT and the reference device must be placed 1 meter apart in a line of sight environment in a nonreflective chamber. Both devices must be positioned in a portrait orientation with the screen facing away from each other.
+        \nDUT instructions
+        \n1. Ensure that the test is already started on the reference device, then click "Start Test".
+        \n2. The test is automatically stopped and passed (or failed) when all the required data is collected.
+        \n3. The test is passed if:
+        \n  3.a Sort the 1000 measurements in ascending order.
+        \n  3.b Compute the range as [range = 975th measurement - 25th measurement].
+        \n  3.c Report the range in the multi-device CTS test. To pass, the range must be less than 30 cm.
+        \n  3.d Report the median value (500th) in the CTS test. To pass, the value must be within [0.75 m, 1.25 m].
+        \nReference device instructions
+        \n1. Ensure that the "Is reference device" checkbox is checked, then click, "Start Test"
+    </string>
+    <string name="uwb_accuracy_test_name">UWB Accuracy Test</string>
+    <string name="uwb">UWB</string>
 
     <!-- Strings for AudioMicrophoneMuteToggleActivity -->
     <string name="audio_mic_toggle_test">Audio Microphone Hardware Toggle Mute Test</string>
@@ -7754,17 +7836,24 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="notif_hiding_success">No failures found, please press the green check mark</string>
     <string name="notif_hiding_failure">%1$d out of %2$d tests failed, please press the red \"!\"</string>
 
-    <!-- Strings for Interactive Tests. -->
-    <string name="interactive_tests_title">Interactive Tests</string>
-    <string name="interactive_tests_dialog_title">Interactive Tests</string>
-    <string name="interactive_tests_dialog_content">
-        Host side interactive CTS-V tests.
-        Connect DUTs to a host and use cts-interactive-tradefed in the android-cts-verifier.zip to run these tests.
-        Use \"cts-interactive-console > run cts-v-interactive\" to trigger the full interactive test plan.
+    <!-- Strings for host-side Tests. -->
+    <string name="host_tests_title">Host-side Tests</string>
+    <string name="host_tests_dialog_title">Host-side Tests</string>
+    <string name="host_tests_dialog_content">
+        Host-side CTS-V tests.
+        Connect DUTs to a host and use cts-v-host-tradefed in the android-cts-verifier.zip to run these tests.
+        Use \"cts-v-host-console > run cts-v-host\" to trigger the full host test plan.
     </string>
-    <!-- Register interactive modules. -->
-    <!-- Also add test categories for these modules in .interactive.InteractiveTestsActivity -->
-    <string-array name="interactive_modules">
+    <!-- Register host-side modules. -->
+    <!-- Also add test categories for these modules in .HostTestsActivity -->
+    <string-array name="host_modules">
+        <item>CtsCompanionDeviceManagerMultiDeviceTestCases</item>
         <item>CtsNfcHceMultiDeviceTestCases</item>
+        <item>CtsUwbMultiDeviceFiraRangingTests</item>
+        <item>CtsUwbMultiDeviceRangingManagerTests</item>
+        <item>CtsUwbMultiDeviceUwbManagerTests</item>
+        <item>CtsWifiAwareTests</item>
+        <item>CtsWifiDirectTests</item>
+        <item>CtsWifiSoftApTestCases</item>
     </string-array>
 </resources>

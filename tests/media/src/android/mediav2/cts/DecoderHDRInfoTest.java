@@ -16,6 +16,10 @@
 
 package android.mediav2.cts;
 
+import static android.media.codec.Flags.apvSupport;
+
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+
 import android.media.MediaFormat;
 import android.mediav2.common.cts.HDRDecoderTestBase;
 import android.os.Build;
@@ -30,6 +34,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -55,6 +60,7 @@ public class DecoderHDRInfoTest extends HDRDecoderTestBase {
     public static final HashMap<Long, String> HDR_DYNAMIC_INFO_HEVC = new HashMap<>();
     public static final HashMap<Long, String> HDR_DYNAMIC_INCORRECT_INFO_HEVC = new HashMap<>();
     public static final HashMap<Long, String> HDR_DYNAMIC_INFO_AV1 = new HashMap<>();
+    public static final HashMap<Long, String> HDR_DYNAMIC_INFO_APV = new HashMap<>();
     public static final HashMap<Long, String> HDR_DYNAMIC_INCORRECT_INFO_AV1 = new HashMap<>();
     public static final HashMap<Long, String> HDR_DYNAMIC_INFO_VP9 = new HashMap<>();
 
@@ -78,6 +84,10 @@ public class DecoderHDRInfoTest extends HDRDecoderTestBase {
         HDR_DYNAMIC_INFO_AV1.put(133000L, HDR10_INFO_SCENE_B);
         HDR_DYNAMIC_INFO_AV1.put(400000L, HDR10_INFO_SCENE_C);
         HDR_DYNAMIC_INFO_AV1.put(733000L, HDR10_INFO_SCENE_D);
+
+        HDR_DYNAMIC_INFO_APV.put(0L, HDR10_ALTERNATE_INFO_SCENE_A);
+        HDR_DYNAMIC_INFO_APV.put(1333322L, HDR10_ALTERNATE_INFO_SCENE_B);
+        HDR_DYNAMIC_INFO_APV.put(2666644L, HDR10_ALTERNATE_INFO_SCENE_C);
 
         HDR_DYNAMIC_INCORRECT_INFO_AV1.put(0L, HDR10_INCORRECT_INFO_SCENE_A);
         HDR_DYNAMIC_INCORRECT_INFO_AV1.put(133000L, HDR10_INCORRECT_INFO_SCENE_B);
@@ -106,7 +116,7 @@ public class DecoderHDRInfoTest extends HDRDecoderTestBase {
         final boolean isEncoder = false;
         final boolean needAudio = false;
         final boolean needVideo = true;
-        final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
+        final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 // codecMediaType, testFile, hdrStaticInfo in stream, hdrStaticInfo in container,
                 // hdrDynamicInfo in stream, hdrDynamicInfo in container
                 {MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -142,7 +152,17 @@ public class DecoderHDRInfoTest extends HDRDecoderTestBase {
                 {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_352x288_hdr10_only_container_vp9.mkv",
                         null, null, null, HDR_DYNAMIC_INFO_VP9},
 
-        });
+        }));
+        if (IS_AT_LEAST_B && apvSupport() && extractorMp4EnableApv()) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
+                {MediaFormat.MIMETYPE_VIDEO_APV,
+                        "pattern_hdr10plus_1280x720_30fps_30mbps_apv_10bit.mp4",
+                        null, HDR_STATIC_ALTERNATE_INFO, null, null},
+                {MediaFormat.MIMETYPE_VIDEO_APV,
+                        "pattern_hdr10plus_1280x720_30fps_30mbps_apv_10bit.mp4",
+                        null, null, HDR_DYNAMIC_INFO_APV, null}
+            }));
+        }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
     }
 

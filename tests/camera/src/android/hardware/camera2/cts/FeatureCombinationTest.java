@@ -30,6 +30,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithPa
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -78,6 +79,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -101,42 +103,99 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
 
     /**
      * Test for making sure that all expected stream combinations are consistent in that
-     * if isSessionConfigWithParamsSupported returns true, session creation and
-     * streaming works.
+     * if isSessionConfigWithParamsSupported returns true, the basic functionalities such
+     * as preview, image capture, frame rate, and stabilization should work.
      *
-     * Max JPEG size is 1080p due to the Media Performance Class would filter all JPEG
-     * resolutions smaller than 1080P.
+     * This test case is for rear primary camera.
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
-    public void testIsSessionConfigurationSupported() throws Exception {
+    public void testIsSessionConfigurationSupportedForPrimaryRear() throws Exception {
+        String primaryRearCamera = null;
         for (String id : getCameraIdsUnderTest()) {
-            StaticMetadata staticInfo = mAllStaticInfo.get(id);
-            if (!staticInfo.isColorOutputSupported()) {
-                Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+            if (CameraTestUtils.isPrimaryRearFacingCamera(mCameraManager, id)) {
+                primaryRearCamera = id;
+                break;
+            }
+        }
+
+        if (primaryRearCamera != null) {
+            testIsSessionConfigurationSupported(primaryRearCamera);
+        }
+    }
+
+    /**
+     * Test for making sure that all expected stream combinations are consistent in that
+     * if isSessionConfigWithParamsSupported returns true, the basic functionalities such
+     * as preview, image capture, frame rate, and stabilization should work.
+     *
+     * This test case is for front primary camera.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
+    public void testIsSessionConfigurationSupportedForPrimaryFront() throws Exception {
+        String primaryFrontCamera = null;
+        for (String id : getCameraIdsUnderTest()) {
+            if (CameraTestUtils.isPrimaryFrontFacingCamera(mCameraManager, id)) {
+                primaryFrontCamera = id;
+                break;
+            }
+        }
+
+        if (primaryFrontCamera != null) {
+            testIsSessionConfigurationSupported(primaryFrontCamera);
+        }
+    }
+
+    /**
+     * Test for making sure that all expected stream combinations are consistent in that
+     * if isSessionConfigWithParamsSupported returns true, the basic functionalities such
+     * as preview, image capture, frame rate, and stabilization should work.
+     *
+     * This test case is for non-primary cameras.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
+    public void testIsSessionConfigurationSupportedForNonPrimary() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            if (CameraTestUtils.isPrimaryRearFacingCamera(mCameraManager, id)) {
                 continue;
             }
-            CameraCharacteristics characteristics = staticInfo.getCharacteristics();
-            boolean supportSessionConfigurationQuery = characteristics.get(
-                    CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION)
-                    > Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-            if (!supportSessionConfigurationQuery) {
-                Log.i(TAG, "Camera " + id + " doesn't support session configuration query");
+            if (CameraTestUtils.isPrimaryFrontFacingCamera(mCameraManager, id)) {
                 continue;
             }
 
-            openDevice(id);
-            CameraDeviceSetup cameraDeviceSetup = mCameraManager.getCameraDeviceSetup(id);
-            MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
-                    cameraDeviceSetup.getId(), mContext, /*matchSize*/true);
+            testIsSessionConfigurationSupported(id);
+        }
+    }
 
-            try {
-                for (int[] c : maxStreamSizes.getQueryableCombinations()) {
-                    testIsSessionConfigurationSupported(cameraDeviceSetup, maxStreamSizes, c);
-                }
-            } finally {
-                closeDevice(id);
+    private void testIsSessionConfigurationSupported(String id) throws Exception {
+        StaticMetadata staticInfo = mAllStaticInfo.get(id);
+        if (!staticInfo.isColorOutputSupported()) {
+            Log.i(TAG, "Camera " + id + " does not support color outputs, skipping");
+            return;
+        }
+        CameraCharacteristics characteristics = staticInfo.getCharacteristics();
+        int featureCombinationQueryVersion = characteristics.get(
+                CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION);
+        if (featureCombinationQueryVersion <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "Camera " + id + " doesn't support session configuration query");
+            return;
+        }
+
+        openDevice(id);
+        CameraDeviceSetup cameraDeviceSetup = mCameraManager.getCameraDeviceSetup(id);
+        MaxStreamSizes maxStreamSizes = new MaxStreamSizes(mStaticInfo,
+                cameraDeviceSetup.getId(), mContext, /*matchSize*/true);
+
+        try {
+            for (int[] c : maxStreamSizes.getQueryableCombinations()) {
+                if (featureCombinationQueryVersion < c[0]) continue;
+                int[] comb = Arrays.copyOfRange(c, 1, c.length);
+                testIsSessionConfigurationSupported(cameraDeviceSetup, maxStreamSizes, comb);
             }
+        } finally {
+            closeDevice(id);
         }
     }
 
@@ -167,10 +226,9 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
             long minFrameDuration = setupConfigurationTargets(combination, maxStreamSizes,
                     privTargets, jpegTargets, yuvTargets, outputConfigs, outputConfigs2Steps,
                     NUM_BUFFERS_BURST, dynamicProfile, /*hasUseCase*/ false, jpegListeners);
-            if (minFrameDuration == -1) {
-                // Stream combination isn't valid.
-                continue;
-            }
+            assertTrue(
+                    MaxStreamSizes.combinationToString(combination) + " is not supported!",
+                    minFrameDuration > 0);
 
             for (int stabilizationMode : videoStabilizationModes) {
                 if (stabilizationMode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON) {

@@ -24,6 +24,8 @@ import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.systemui.Flags.FLAG_STATUS_BAR_NOTIFICATION_CHIPS;
+
 import static org.junit.Assert.assertTrue;
 
 import android.app.Notification;
@@ -41,6 +43,9 @@ import android.permission.PermissionManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.PlatinumTest;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.IgnoreOrientationRequestSession;
 import android.view.Gravity;
 import android.view.InputDevice;
@@ -66,10 +71,14 @@ import org.junit.runner.RunWith;
 /**
  * Test for light status bar.
  *
- * atest CtsSystemUiTestCases:LightBarTests
+ * <p>atest CtsSystemUiTestCases:LightBarTests
  */
 @RunWith(AndroidJUnit4.class)
+@RequiresFlagsDisabled(FLAG_STATUS_BAR_NOTIFICATION_CHIPS)
 public class LightBarTests extends LightBarTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     public static final String TAG = "LightStatusBarTests";
 

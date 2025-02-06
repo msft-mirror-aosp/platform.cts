@@ -82,6 +82,7 @@ android_test {
         "hamcrest-library",
         "junit",
         "junit-params",
+        "keystore2_flags_java",
         "platformprotosnano",
         "testng",
     ],

@@ -67,10 +67,17 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       # Determine test zoom range
       z_range = props['android.control.zoomRatioRange']
       debug = self.debug_mode
+      camera_facing = props['android.lens.facing']
       z_min, z_max = float(z_range[0]), float(z_range[1])
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
-      z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
+      tele_camera_found = cam.has_tele_camera(
+          facing=camera_facing)
+      # Truncate zoom range if test_zoom_tele will be run
+      if tele_camera_found:
+        logging.debug('Tele camera found, truncating zoom range max to %.2f',
+                      _WIDE_ZOOM_RATIO_MAX)
+        z_max = min(z_max, _WIDE_ZOOM_RATIO_MAX)
       z_list = np.arange(z_min, z_max, (z_max - z_min) / (_NUM_STEPS - 1))
       z_list = np.append(z_list, z_max)
       logging.debug('Testing zoom range: %s', str(z_list))
@@ -79,7 +86,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
       ultrawide_camera_found = cam.has_ultrawide_camera(
-          facing=props['android.lens.facing'])
+          facing=camera_facing)
       if (media_performance_class >= _TEST_REQUIRED_MPC and
           cam.is_primary_camera() and
           ultrawide_camera_found and
@@ -94,7 +101,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
 
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
-        test_tols, size = zoom_capture_utils.get_test_tols_and_cap_size(
+        test_tols, _ = zoom_capture_utils.get_test_tols_and_cap_size(
             cam, props, self.chart_distance, debug)
       else:
         test_tols = {}
@@ -102,9 +109,6 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-        yuv_size = capture_request_utils.get_largest_format('yuv', props)
-        size = [yuv_size['width'], yuv_size['height']]
-      logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
       # do captures over zoom range and find ArUco markers with cv2
@@ -116,17 +120,23 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       all_aruco_corners = []
       images = []
       physical_ids = set()
+      size = None
       captures = cam.do_jca_captures_across_zoom_ratios(
           self.dut,
           self.log_path,
-          flash_mode='OFF',
-          lens_facing=props['android.lens.facing'],
+          flash_mode_desc=ui_interaction_utils.FLASH_MODE_OFF_CONTENT_DESC,
+          lens_facing=camera_facing,
           zoom_ratios=z_list
       )
       for zoom_ratio, capture in zip(z_list, captures):
         physical_ids.add(capture.physical_id)
         logging.debug('Physical IDs: %s', physical_ids)
         bgr_img = cv2.imread(capture.capture_path)
+        # Use first image size for all captures
+        if not size:
+          height, width, _ = bgr_img.shape
+          size = (width, height)
+          logging.debug('Size: %s', size)
         radius_tol, offset_tol = (
             zoom_capture_utils.RADIUS_RTOL, zoom_capture_utils.OFFSET_RTOL
         )
@@ -136,7 +146,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
           corners, ids, _ = opencv_processing_utils.find_aruco_markers(
               bgr_img,
               (f'{img_name_stem}_{zoom_ratio:.2f}_'
-                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
+               f'ArUco.{zoom_capture_utils.JPEG_STR}'),
               aruco_marker_count=1,
               force_greyscale=True  # Maximize number of markers detected
           )

@@ -27,6 +27,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_SOUTH
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
+import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import com.android.cts.input.UinputGamepad
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.junit.After
@@ -96,20 +103,14 @@ class GamepadWithAccessibilityTest {
     fun testDeviceId() {
         val uinputDevice = UinputGamepad(instrumentation)
 
-        val EV_SYN = 0
-        val SYN_REPORT = 0
-        val EV_KEY = 1
-        val EV_KEY_DOWN = 1
-        val EV_KEY_UP = 0
-        val BTN_GAMEPAD = 0x130
-        val evdevEventsDown = intArrayOf(EV_KEY, BTN_GAMEPAD, EV_KEY_DOWN, EV_SYN, SYN_REPORT, 0)
+        val evdevEventsDown = intArrayOf(EV_KEY, BTN_SOUTH, EV_KEY_PRESS, EV_SYN, SYN_REPORT, 0)
         uinputDevice.injectEvents(evdevEventsDown.joinToString(
             prefix = "[",
             postfix = "]",
             separator = ","
         ))
 
-        val evdevEventsUp = intArrayOf(EV_KEY, BTN_GAMEPAD, EV_KEY_UP, EV_SYN, SYN_REPORT, 0)
+        val evdevEventsUp = intArrayOf(EV_KEY, BTN_SOUTH, EV_KEY_RELEASE, EV_SYN, SYN_REPORT, 0)
         uinputDevice.injectEvents(evdevEventsUp.joinToString(
             prefix = "[",
             postfix = "]",

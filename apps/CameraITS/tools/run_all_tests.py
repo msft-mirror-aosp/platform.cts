@@ -64,7 +64,7 @@ TIME_KEY_END = 'end'
 VALID_CONTROLLERS = ('arduino', 'canakit')
 _FRONT_CAMERA_ID = '1'
 # recover replaced '_' in scene def
-_INT_STR_DICT = types.MappingProxyType({'11': '1_1', '12': '1_2'})
+_INT_STR_DICT = types.MappingProxyType({'11': '1_1', '12': '1_2', '13': '1_3'})
 _MAIN_TESTBED = 0
 _PROPERTIES_TO_MATCH = (
     'ro.product.model', 'ro.product.name', 'ro.build.display.id', 'ro.revision'
@@ -77,9 +77,11 @@ _PROPERTIES_TO_MATCH = (
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
     'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
-    'scene4', 'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
+    'scene4', 'scene6', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
+    os.path.join('scene_tele', 'scene6_tele'),
+    os.path.join('scene_tele', 'scene7_tele'),
     'scene_video',
 )
 
@@ -99,6 +101,10 @@ _MANUAL_SCENES = ('scene5',)
 _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
                       os.path.join('scene_extensions', 'scene_low_light'),
                       )
+# Scene tele
+_TELE_SCENES = (os.path.join('scene_tele', 'scene6_tele'),
+                os.path.join('scene_tele', 'scene7_tele'),
+                )
 _GEN2_RIG_SCENES = ('scene_ip',)
 # All possible scenes
 _ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
@@ -135,9 +141,6 @@ _SCENE_REQ = types.MappingProxyType({
               'for more details',
     'scene6': 'A grid of ArUco markers on a white background. '
               'See tests/scene6/scene6.png',
-    'scene6_tele': 'A grid of ArUco markers on a white background. Identical '
-                   'to scene6, but for tele cameras. '
-                   'See tests/scene6_tele/scene6_tele.png',
     'scene7': 'The picture with 4 different colors, slanted edge and'
               '4 ArUco markers. See tests/scene7/scene7.png',
     'scene8': 'The picture with 4 faces in 4 different colors overlay.'
@@ -154,6 +157,14 @@ _SCENE_REQ = types.MappingProxyType({
         'A tablet displayed scene with a grid of squares of varying '
         'brightness. See '
         'tests/scene_extensions/scene_low_light/scene_low_light.png'
+    ),
+    os.path.join('scene_tele', 'scene6_tele'): (
+        'Identical to scene6, but for tele cameras. '
+        'See tests/scene_tele/scene6_tele/scene6_tele.png'
+    ),
+    os.path.join('scene_tele', 'scene7_tele'): (
+        'Identical to scene7, but for tele cameras. '
+        'See tests/scene_tele/scene7_tele/scene7_tele.png'
     ),
     'sensor_fusion': 'A checkerboard pattern for phone to rotate in front of '
                      'in tests/sensor_fusion/checkerboard.pdf\n'
@@ -203,6 +214,10 @@ SUB_CAMERA_TESTS = {
     ),
     'scene6_tele': (
         'test_zoom_tele',
+        'test_preview_zoom_tele',
+    ),
+    'scene7_tele': (
+        'test_multi_camera_switch_tele',
     ),
     'scene_video': (
         'test_preview_frame_drop',
@@ -619,19 +634,20 @@ def main():
   # Read config file and extract relevant TestBed
   config_file_contents = get_config_file_contents()
   if testbed_index is None:
+    testbed_to_remove = []
     for i in config_file_contents['TestBeds']:
-      if scenes in (['scene_ip'],):
-        if TEST_KEY_GEN2 not in i['Name'].lower():
-          config_file_contents['TestBeds'].remove(i)
-      if scenes in (
-          ['sensor_fusion'], ['checkerboard'], ['scene_flash'],
-          ['feature_combination']
-      ):
-        if TEST_KEY_SENSOR_FUSION not in i['Name'].lower():
-          config_file_contents['TestBeds'].remove(i)
+      name = i['Name'].lower()
+      if scenes == ['scene_ip']:
+        if TEST_KEY_GEN2 not in name:
+          testbed_to_remove.append(i)
+      elif set(scenes).intersection(set(_CHECKERBOARD_SCENES)):
+        if TEST_KEY_SENSOR_FUSION not in name:
+          testbed_to_remove.append(i)
       else:
-        if TEST_KEY_SENSOR_FUSION in i['Name'].lower():
-          config_file_contents['TestBeds'].remove(i)
+        if TEST_KEY_SENSOR_FUSION in name or TEST_KEY_GEN2 in name:
+          testbed_to_remove.append(i)
+    for i in testbed_to_remove:
+      config_file_contents['TestBeds'].remove(i)
   else:
     config_file_contents = {
         'TestBeds': [config_file_contents['TestBeds'][testbed_index]]
@@ -761,24 +777,24 @@ def main():
 
     # Run through all scenes if user does not supply one and config file doesn't
     # have specific scene name listed.
-    if its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
+    if TEST_KEY_SENSOR_FUSION in config_file_test_key:
+      possible_scenes = _CHECKERBOARD_SCENES
+    elif its_session_utils.SUB_CAMERA_SEPARATOR in camera_id:
       possible_scenes = list(SUB_CAMERA_TESTS.keys())
       if auto_scene_switch:
         possible_scenes.remove('sensor_fusion')
     else:
-      if 'checkerboard' in scenes:
-        possible_scenes = _CHECKERBOARD_SCENES
-      elif 'scene_flash' in scenes:
-        possible_scenes = _FLASH_SCENES
-      elif 'scene_extensions' in scenes:
+      if 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
+      elif 'scene_tele' in scenes:
+        possible_scenes = _TELE_SCENES
       elif 'scene_ip' in scenes:
         possible_scenes = _GEN2_RIG_SCENES
       else:
         possible_scenes = _TABLET_SCENES if auto_scene_switch else _ALL_SCENES
-
     if ('<scene-name>' in scenes or 'checkerboard' in scenes or
-        'scene_extensions' in scenes or 'scene_ip' in scenes):
+        'scene_extensions' in scenes or 'scene_tele' in scenes
+        or 'scene_ip' in scenes):
       per_camera_scenes = possible_scenes
     else:
       # Validate user input scene names

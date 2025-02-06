@@ -22,15 +22,6 @@ import org.junit.AssumptionViolatedException
 
 /** Contains testing utilities related to AppFunction's Sidecar library. */
 object CtsTestUtil {
-    /** Assumes sidecar library is available. */
-    fun assumeSidecarAvailable() {
-        try {
-            Class.forName("com.android.extensions.appfunctions.AppFunctionManager")
-        } catch (e: ClassNotFoundException) {
-            throw AssumptionViolatedException("AppFunctions Sidecar library does not exist")
-        }
-    }
-
     /** Runs a block with shell permissions. */
     suspend fun runWithShellPermission(vararg permissions: String, block: suspend () -> Unit) {
         permissions().withPermission(*permissions).use { block() }

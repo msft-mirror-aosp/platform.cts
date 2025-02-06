@@ -28,6 +28,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNoException;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -253,7 +255,9 @@ public class StrictModeTest {
                 info -> {
                     assertThat(info.getViolationDetails())
                             .isEqualTo(
-                                    "A resource was acquired at attached stack trace but never released. See java.io.Closeable for information on avoiding resource leaks.");
+                                    "A resource was acquired at attached stack trace but never"
+                                            + " released. See java.io.Closeable for information on"
+                                            + " avoiding resource leaks.");
                     assertThat(info.getStackTrace())
                             .contains("Explicit termination method 'close' not called");
                     assertThat(info.getStackTrace()).contains("leakCloseable");
@@ -660,8 +664,7 @@ public class StrictModeTest {
                                             .isAssignableTo(DiskWriteViolation.class);
                                     assertThat(info.getViolationDetails())
                                             .isNull(); // Disk write has no message.
-                                    assertThat(info.getStackTrace())
-                                            .contains("DiskWriteViolation");
+                                    assertThat(info.getStackTrace()).contains("DiskWriteViolation");
                                     assertThat(info.getStackTrace())
                                             .contains(
                                                     "at android.os.StrictMode$AndroidBlockGuardPolicy.onWriteToDisk");
@@ -1464,6 +1467,7 @@ public class StrictModeTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
     public void testBackgroundBalAborted_ThrowsViolation() throws Exception {
+        assumeNotHeadlessSystemUserMode();
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder()
                         .detectBlockedBackgroundActivityLaunch()
@@ -1473,18 +1477,38 @@ public class StrictModeTest {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setPendingIntentBackgroundActivityStartMode(
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
-        Intent intent = new Intent(SIMPLE_ACTIVITY_LAUNCH);
-        intent.setComponent(new ComponentName(context, SimpleTestActivity.class));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
         PendingIntent pi = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        assertViolation(BACKGROUND_ACTIVITY_LAUNCH, () ->
-                pi.send(options.toBundle()));
+        assertViolation(
+                BACKGROUND_ACTIVITY_LAUNCH, () -> sendPendingIntentIgnoringErrors(options, pi));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
+    public void testBackgroundBalAborted_IgnoresViolation() throws Exception {
+        assumeNotHeadlessSystemUserMode();
+        StrictMode.setVmPolicy(
+                new StrictMode.VmPolicy.Builder()
+                        .detectAll()
+                        .ignoreBlockedBackgroundActivityLaunch()
+                        .penaltyLog()
+                        .build());
+        Context context = getContext();
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setPendingIntentBackgroundActivityStartMode(
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
+        PendingIntent pi =
+                PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        assertThat(pi).isNotNull();
+        assertNoViolation(() -> sendPendingIntentIgnoringErrors(options, pi));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
     public void testBackgroundBalAborted_NoViolation() throws Exception {
+        assumeNotHeadlessSystemUserMode();
         StrictMode.setVmPolicy(
                 new StrictMode.VmPolicy.Builder()
                         .detectBlockedBackgroundActivityLaunch()
@@ -1494,13 +1518,27 @@ public class StrictModeTest {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setPendingIntentBackgroundActivityStartMode(
                 ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-        Intent intent = new Intent(SIMPLE_ACTIVITY_LAUNCH);
-        intent.setComponent(new ComponentName(context, SimpleTestActivity.class));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
         PendingIntent pi = PendingIntent.getActivity(
                 context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         assertThat(pi).isNotNull();
-        assertNoViolation(() -> pi.send(options.toBundle()));
+        assertNoViolation(() -> sendPendingIntentIgnoringErrors(options, pi));
+    }
+
+    private static void sendPendingIntentIgnoringErrors(ActivityOptions options, PendingIntent pi)
+            throws PendingIntent.CanceledException {
+        try {
+            pi.send(options.toBundle());
+        } catch (PendingIntent.CanceledException e) {
+            // This typically happens when the Activity for the PendingIntent cannot be resolved.
+            assumeNoException("PendingIntent was cancelled", e);
+        }
+    }
+
+    private static void assumeNotHeadlessSystemUserMode() {
+        assumeFalse(
+                "Skipping test not supported on HSUM devices.",
+                UserManager.isHeadlessSystemUserMode());
     }
 
     private Context createWindowContext() {

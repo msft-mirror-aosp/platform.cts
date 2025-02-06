@@ -22,9 +22,9 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.grantCameraPermission;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.FRONT_CAMERA_ID;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.grantCameraPermission;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -50,16 +50,13 @@ import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
-import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -75,9 +72,6 @@ import java.util.concurrent.Executor;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualCameraPermissionTest {
 
-    @ClassRule
-    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
-
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final String CAMERA_NAME = "Virtual camera";
     private static final int CAMERA_WIDTH = 640;
@@ -86,8 +80,8 @@ public class VirtualCameraPermissionTest {
     private static final int CAMERA_MAX_FPS = 30;
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            GRANT_RUNTIME_PERMISSIONS).withVirtualCameraSupportCheck();
+    public VirtualDeviceRule mRule =
+            VirtualDeviceRule.withAdditionalPermissions(GRANT_RUNTIME_PERMISSIONS);
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;
@@ -130,7 +124,7 @@ public class VirtualCameraPermissionTest {
 
     @Test
     public void openCamera_withPermission_succeeds() throws Exception {
-        VirtualCameraUtils.grantCameraPermission(mVirtualDevice.getDeviceId());
+        grantCameraPermission(mVirtualDevice.getDeviceId());
 
         mCameraManager.openCamera(FRONT_CAMERA_ID, directExecutor(),
                 mCameraStateCallback);

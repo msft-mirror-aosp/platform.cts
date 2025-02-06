@@ -32,9 +32,7 @@ java_test_host {
         "compatibility-host-util",
     ],
     static_libs: [
-        "android.sdk.flags-aconfig-java-host",
         "cts-host-utils",
-        "flag-junit-host",
         "CtsPackageManagerParsingAnnotationProcessorApi",
     ],
     device_common_java_resources: [

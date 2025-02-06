@@ -27,13 +27,13 @@ import android.telecom.TelecomManager;
 
 import java.util.Random;
 
-
 public class AttributesUtil {
     private static final Random sRandom = new Random(0);
     private static final Uri TEST_URI_OUT = Uri.parse("tel:123-TEST");
     private static final String TEST_NAME_OUT = "Mike Tyson";
     private static final Uri TEST_URI_IN = Uri.parse("tel:456-TEST");
     private static final String TEST_NAME_IN = "Alan Turing";
+    private static final Uri TEST_MMI_URI = Uri.parse("tel:0");
 
     /**
      * @return true if the call is holdable according to the CallAttributes
@@ -91,6 +91,21 @@ public class AttributesUtil {
     }
 
     /**
+     * @return a CallAttributes object for verifying MMI codes.
+     */
+    public static CallAttributes getDefaultMmiAttributesForApp(
+            TelecomTestApp name, PhoneAccountHandle handle) throws Exception {
+        if (handle == null) {
+            handle = getPhoneAccountHandleForApp(name);
+        }
+        return new CallAttributes.Builder(
+                        handle, DIRECTION_OUTGOING, TEST_NAME_OUT, getDefaultMmiAddress())
+                .setCallType(CallAttributes.AUDIO_CALL)
+                .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
+                .build();
+    }
+
+    /**
      * @return a CallAttributes object for the MANAGED_APP. The Name and Address are
      * randomized!
      */
@@ -137,6 +152,10 @@ public class AttributesUtil {
                 throw new Exception("The PhoneAccount for ManagedConnectionServiceApp is not"
                         + " is kept in BaseAppVerifier");
             }
+            case ManagedConnectionServiceAppClone -> {
+                throw new Exception("The PhoneAccount for ManagedConnectionServiceAppClone is not"
+                        + " is kept in BaseAppVerifier");
+            }
         }
         throw new Exception(String.format("%s does not have a PhoneAccount mapping", name));
     }
@@ -173,19 +192,27 @@ public class AttributesUtil {
         return isOutgoing ? TEST_URI_OUT : TEST_URI_IN;
     }
 
+    private static Uri getDefaultMmiAddress() {
+        return TEST_MMI_URI;
+    }
+
     private static String getDefaultName(boolean isOutgoing) {
         return isOutgoing ? TEST_NAME_IN : TEST_NAME_OUT;
     }
 
     private static String getRandomName() {
-        byte[] array = new byte[16];
-        sRandom.nextBytes(array);
-        return sRandom.toString();
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            builder.append((char) sRandom.nextInt('a', 'z'));
+        }
+        return builder.toString();
     }
 
     private static Uri getRandomAddress() {
-        byte[] array = new byte[11];
-        sRandom.nextBytes(array);
-        return Uri.parse("tel:" + sRandom);
+        StringBuilder builder = new StringBuilder("tel:");
+        for (int i = 0; i < 11; i++) {
+            builder.append(sRandom.nextInt(10));
+        }
+        return Uri.parse(builder.toString());
     }
 }

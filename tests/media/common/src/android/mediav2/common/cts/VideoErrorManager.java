@@ -101,9 +101,10 @@ public class VideoErrorManager {
                     for (int q = 0; q < bSize; q++) {
                         int sample;
                         if (luma instanceof byte[]) {
-                            sample = ((byte[]) luma)[offset + p * width + q];
+                            sample = Byte.toUnsignedInt(((byte[]) luma)[offset + p * width + q]);
                         } else if (luma instanceof short[]) {
-                            sample = ((short[]) luma)[offset + p * width + q];
+                            sample = Short.toUnsignedInt(((short[]) luma)[offset + p * width + q]);
+                            sample >>= 6;
                         } else {
                             throw new IllegalArgumentException("Unsupported data type");
                         }

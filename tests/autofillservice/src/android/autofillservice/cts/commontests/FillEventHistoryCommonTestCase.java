@@ -36,6 +36,7 @@ import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClie
 import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveDifferentFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertShownAndSelectedHaveSameFocusedId;
 import static android.autofillservice.cts.testcore.Helper.assertShownAndViewEnteredHaveSameFocusedId;
+import static android.autofillservice.cts.testcore.Helper.setMultipleSessionFillEventHistoryFeature;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
 import static android.service.autofill.FillEventHistory.Event.NO_SAVE_UI_REASON_DATASET_MATCH;
@@ -237,10 +238,65 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
     @Test
     @RequiresFlagsEnabled({
         "android.service.autofill.multiple_fill_history",
+        "android.service.autofill.autofill_session_destroyed",
+        "android.service.autofill.autofill_w_metrics"
+    })
+    public void test_multipleEventHistoryFlagEnabled_oneSessionSave() throws Exception {
+        setMultipleSessionFillEventHistoryFeature(mContext, true);
+        enableService();
+
+        // Launch activity A
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setExtras(getBundle("activity", "A"))
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
+                        .build());
+
+        // Trigger autofill and IME on activity A.
+        mUiBot.focusByRelativeId(ID_USERNAME);
+        waitUntilConnected();
+        sReplier.getNextFillRequest();
+        mUiBot.waitForIdleSync();
+
+        // No onSessionDestroyed() called yet
+        assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(0);
+
+        // ...and trigger save
+        // Set credentials...
+        mActivity.onUsername((v) -> v.setText(",."));
+        mActivity.onPassword((v) -> v.setText("malkovich"));
+        mActivity.tapSave();
+        mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
+        sReplier.getNextSaveRequest();
+        mUiBot.pressHome();
+        mUiBot.waitForIdleSync();
+
+        // // Finally, make sure history is right for activity A
+        {
+            assertThat(sReplier.getSessionDestroyedCount()).isEqualTo(1);
+
+            // Verify events for Activity A
+            final FillEventHistory historyA = sReplier.getLastFillEventHistory();
+
+            final List<Event> events = historyA.getEvents();
+
+            assertHasEventMatchingTypeAndFilter(
+                    Event.TYPE_SAVE_SHOWN,
+                    event -> {
+                        assertFillEventForSaveShown(event, NULL_DATASET_ID, "activity", "A");
+                        assertThat(event.getShownDatasetIds()).isEmpty();
+                    },
+                    events);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        "android.service.autofill.multiple_fill_history",
         "android.service.autofill.autofill_session_destroyed"
     })
     public void test_multipleEventHistory_switchTwoSessions() throws Exception {
-
+        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Launch activity A
@@ -274,7 +330,8 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
                         .build());
         mUiBot.focusByRelativeId(ID_CC_NUMBER);
         sReplier.getNextFillRequest();
-        mUiBot.selectByText("Buy it");
+        // Trigger "buy" button
+        mUiBot.selectByRelativeId("buy");
 
         // Now switch back to A...
         final AtomicBoolean focusOnA = new AtomicBoolean();
@@ -321,9 +378,11 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         // Set credentials...
         mActivity.onUsername((v) -> v.setText(",."));
         mActivity.onPassword((v) -> v.setText("malkovich"));
-        final String actualMessage = mActivity.tapLogin();
-        mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
-        sReplier.getNextSaveRequest();
+        mActivity.tapLogin();
+        mUiBot.waitForIdleSync();
+        mActivity.finish();
+        mUiBot.waitForIdleSync();
+        // Closes everything, makes sure that the Session is destroyed
         mUiBot.pressHome();
         mUiBot.waitForIdleSync();
 
@@ -359,6 +418,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         "android.service.autofill.autofill_session_destroyed"
     })
     public void test_multipleEventHistory_oneSession() throws Exception {
+        setMultipleSessionFillEventHistoryFeature(mContext, true);
         enableService();
 
         // Set up first partition with an anonymous dataset

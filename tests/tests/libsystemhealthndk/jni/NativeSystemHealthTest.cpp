@@ -140,6 +140,22 @@ static std::vector<std::thread> createThreads(int threadCount, std::atomic<bool>
     return threads;
 }
 
+static std::optional<std::string> testGetMaxCpuHeadroomTidsSize() {
+    size_t size;
+    auto res = ASystemHealth_getMaxCpuHeadroomTidsSize(&size);
+    if (res == ENOTSUP) {
+        return returnUnsupported();
+    }
+    if (size <= 0) {
+        return StringPrintf("Expected positive max CPU headroom TID size but got %zu", size);
+    }
+    return std::nullopt;
+}
+
+static jstring nativeTestGetMaxCpuHeadroomTidsSize(JNIEnv* env, jclass) {
+    return returnJString(env, testGetMaxCpuHeadroomTidsSize()).value_or(nullptr);
+}
+
 static std::optional<std::string> testGetCpuHeadroomDefault() {
     auto res = getCpuHeadroomMinIntervalMillis();
     if (res.second < 0) {
@@ -205,28 +221,53 @@ static jstring nativeTestGetGpuHeadroomAverage(JNIEnv* env, jclass) {
 }
 
 static std::optional<std::string> testGetCpuHeadroomCustomWindow() {
-    auto res = getCpuHeadroomMinIntervalMillis();
-    if (res.second < 0) {
-        return res.first;
+    auto intervalRes = getCpuHeadroomMinIntervalMillis();
+    if (intervalRes.second < 0) {
+        return intervalRes.first;
     }
+    int32_t minMillis = 0;
+    int32_t maxMillis = 0;
+    int rangeRes = ASystemHealth_getCpuHeadroomCalculationWindowRange(&minMillis, &maxMillis);
+    if (rangeRes != OK) {
+        if (rangeRes == ENOTSUP) {
+            return returnUnsupported();
+        }
+        return StringPrintf("Failed to get CPU headroom calculation window range: %d", rangeRes);
+    }
+    const int expectedMinMillis = 1000;
+    if (minMillis > expectedMinMillis) {
+        return StringPrintf("Min CPU headroom calculation window should be less or equal to %d but "
+                            "got %d",
+                            expectedMinMillis, minMillis);
+    }
+    const int expectedMaxMillis = 10000;
+    if (maxMillis < expectedMaxMillis) {
+        return StringPrintf("Max CPU headroom calculation window should be greater or equal to "
+                            "%d but got %d",
+                            expectedMaxMillis, maxMillis);
+    }
+
     auto params = ACpuHeadroomParams_create();
-    ACpuHeadroomParams_setCalculationWindowMillis(params, 50);
-    if (ACpuHeadroomParams_getCalculationWindowMillis(params) != 50) {
+    ACpuHeadroomParams_setCalculationWindowMillis(params, expectedMinMillis);
+    if (ACpuHeadroomParams_getCalculationWindowMillis(params) != expectedMinMillis) {
         return StringPrintf("ACpuHeadroomParams_getCalculationWindowMillis return different value "
-                            "from 50: %d",
+                            "from %d: %d",
+                            expectedMinMillis,
                             ACpuHeadroomParams_getCalculationWindowMillis(params));
     }
-    auto ret = checkCpuHeadroom(params, res.second);
-    if (ret.has_value()) {
-        return ret;
+    auto headroomRes = checkCpuHeadroom(params, intervalRes.second);
+    if (headroomRes.has_value()) {
+        return headroomRes;
     }
-    ACpuHeadroomParams_setCalculationWindowMillis(params, 10000);
-    if (ACpuHeadroomParams_getCalculationWindowMillis(params) != 10000) {
+
+    ACpuHeadroomParams_setCalculationWindowMillis(params, expectedMaxMillis);
+    if (ACpuHeadroomParams_getCalculationWindowMillis(params) != expectedMaxMillis) {
         return StringPrintf("ACpuHeadroomParams_getCalculationWindowMillis return different value "
-                            "from 10000: %d",
+                            "from %d: %d",
+                            expectedMaxMillis,
                             ACpuHeadroomParams_getCalculationWindowMillis(params));
     }
-    return checkCpuHeadroom(params, res.second);
+    return checkCpuHeadroom(params, intervalRes.second);
 }
 
 static jstring nativeTestGetCpuHeadroomCustomWindow(JNIEnv* env, jclass) {
@@ -234,28 +275,51 @@ static jstring nativeTestGetCpuHeadroomCustomWindow(JNIEnv* env, jclass) {
 }
 
 static std::optional<std::string> testGetGpuHeadroomCustomWindow() {
-    auto res = getGpuHeadroomMinIntervalMillis();
-    if (res.second < 0) {
-        return res.first;
+    auto intervalRes = getGpuHeadroomMinIntervalMillis();
+    if (intervalRes.second < 0) {
+        return intervalRes.first;
+    }
+    int32_t minMillis = 0;
+    int32_t maxMillis = 0;
+    int rangeRes = ASystemHealth_getGpuHeadroomCalculationWindowRange(&minMillis, &maxMillis);
+    if (rangeRes != OK) {
+        if (rangeRes == ENOTSUP) {
+            return returnUnsupported();
+        }
+        return StringPrintf("Failed to get GPU headroom calculation window range: %d", rangeRes);
+    }
+    const int expectedMinMillis = 1000;
+    if (minMillis > expectedMinMillis) {
+        return StringPrintf("Min GPU headroom calculation window should be less or equal to %d but "
+                            "got %d",
+                            expectedMinMillis, minMillis);
+    }
+    const int expectedMaxMillis = 10000;
+    if (maxMillis < expectedMaxMillis) {
+        return StringPrintf("Max GPU headroom calculation window should be greater or equal to "
+                            "%d but got %d",
+                            expectedMaxMillis, maxMillis);
     }
     auto params = AGpuHeadroomParams_create();
-    AGpuHeadroomParams_setCalculationWindowMillis(params, 50);
-    if (AGpuHeadroomParams_getCalculationWindowMillis(params) != 50) {
+    AGpuHeadroomParams_setCalculationWindowMillis(params, expectedMinMillis);
+    if (AGpuHeadroomParams_getCalculationWindowMillis(params) != expectedMinMillis) {
         return StringPrintf("AGpuHeadroomParams_getCalculationWindowMillis return different value "
-                            "from 50: %d",
+                            "from %d: %d",
+                            expectedMinMillis,
                             AGpuHeadroomParams_getCalculationWindowMillis(params));
     }
-    auto ret = checkGpuHeadroom(params, res.second);
-    if (ret.has_value()) {
-        return ret;
+    auto headroomRes = checkGpuHeadroom(params, intervalRes.second);
+    if (headroomRes.has_value()) {
+        return headroomRes;
     }
-    AGpuHeadroomParams_setCalculationWindowMillis(params, 10000);
-    if (AGpuHeadroomParams_getCalculationWindowMillis(params) != 10000) {
+    AGpuHeadroomParams_setCalculationWindowMillis(params, expectedMaxMillis);
+    if (AGpuHeadroomParams_getCalculationWindowMillis(params) != expectedMaxMillis) {
         return StringPrintf("AGpuHeadroomParams_getCalculationWindowMillis return different value "
-                            "from 10000: %d",
+                            "from %d: %d",
+                            expectedMaxMillis,
                             AGpuHeadroomParams_getCalculationWindowMillis(params));
     }
-    return checkGpuHeadroom(params, res.second);
+    return checkGpuHeadroom(params, intervalRes.second);
 }
 
 static jstring nativeTestGetGpuHeadroomCustomWindow(JNIEnv* env, jclass) {
@@ -271,7 +335,9 @@ static std::optional<std::string> testGetCpuHeadroomCustomTids() {
     std::atomic<bool> stop(false);
     std::vector<int32_t> tids;
     std::mutex tids_mutex;
-    auto threads = createThreads(5, stop, tids, tids_mutex);
+    size_t maxTidsSize;
+    ASystemHealth_getMaxCpuHeadroomTidsSize(&maxTidsSize);
+    auto threads = createThreads(maxTidsSize, stop, tids, tids_mutex);
     ACpuHeadroomParams_setTids(params, tids.data(), tids.size());
     auto ret = checkCpuHeadroom(params, res.second);
     stop.store(true);
@@ -289,22 +355,23 @@ static jclass gNativeSystemHealthTest_class;
 
 extern "C" JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
     JNIEnv* env;
-    const JNINativeMethod methodTable[] = {
-            {"nativeTestGetCpuHeadroomDefault", "()Ljava/lang/String;",
-             (void*)nativeTestGetCpuHeadroomDefault},
-            {"nativeTestGetGpuHeadroomDefault", "()Ljava/lang/String;",
-             (void*)nativeTestGetGpuHeadroomDefault},
-            {"nativeTestGetCpuHeadroomAverage", "()Ljava/lang/String;",
-             (void*)nativeTestGetCpuHeadroomAverage},
-            {"nativeTestGetGpuHeadroomAverage", "()Ljava/lang/String;",
-             (void*)nativeTestGetGpuHeadroomAverage},
-            {"nativeTestGetCpuHeadroomCustomWindow", "()Ljava/lang/String;",
-             (void*)nativeTestGetCpuHeadroomCustomWindow},
-            {"nativeTestGetGpuHeadroomCustomWindow", "()Ljava/lang/String;",
-             (void*)nativeTestGetGpuHeadroomCustomWindow},
-            {"nativeTestGetCpuHeadroomCustomTids", "()Ljava/lang/String;",
-             (void*)nativeTestGetCpuHeadroomCustomTids},
-    };
+    const JNINativeMethod methodTable[] =
+            {{"nativeTestGetCpuHeadroomDefault", "()Ljava/lang/String;",
+              (void*)nativeTestGetCpuHeadroomDefault},
+             {"nativeTestGetGpuHeadroomDefault", "()Ljava/lang/String;",
+              (void*)nativeTestGetGpuHeadroomDefault},
+             {"nativeTestGetCpuHeadroomAverage", "()Ljava/lang/String;",
+              (void*)nativeTestGetCpuHeadroomAverage},
+             {"nativeTestGetGpuHeadroomAverage", "()Ljava/lang/String;",
+              (void*)nativeTestGetGpuHeadroomAverage},
+             {"nativeTestGetCpuHeadroomCustomWindow", "()Ljava/lang/String;",
+              (void*)nativeTestGetCpuHeadroomCustomWindow},
+             {"nativeTestGetGpuHeadroomCustomWindow", "()Ljava/lang/String;",
+              (void*)nativeTestGetGpuHeadroomCustomWindow},
+             {"nativeTestGetCpuHeadroomCustomTids", "()Ljava/lang/String;",
+              (void*)nativeTestGetCpuHeadroomCustomTids},
+             {"nativeTestGetMaxCpuHeadroomTidsSize", "()Ljava/lang/String;",
+              (void*)nativeTestGetMaxCpuHeadroomTidsSize}};
     if (vm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6) != JNI_OK) {
         return JNI_ERR;
     }

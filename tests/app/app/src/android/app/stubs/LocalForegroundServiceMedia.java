@@ -38,6 +38,9 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
     public static final int COMMAND_START_FOREGROUND_WITH_TYPE = 1;
     public static final int COMMAND_PLAY_MEDIA = 100;
     public static final int COMMAND_POST_MEDIA_NOTIFICATION = 101;
+    public static final int COMMAND_DEACTIVATE_MEDIA_SESSION = 102;
+    public static final int COMMAND_RELEASE_MEDIA_SESSION = 103;
+    public static final int COMMAND_STOP_MEDIA = 104;
     public static String ACTION_START_FGSM_RESULT =
             "android.app.stubs.LocalForegroundServiceMedia.RESULT";
     public static String FGSM_NOTIFICATION_ID =
@@ -51,10 +54,52 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
         return NOTIFICATION_CHANNEL_ID;
     }
 
+    private static long sAllPlayStateActions =
+            PlaybackState.ACTION_PLAY
+                    | PlaybackState.ACTION_PAUSE
+                    | PlaybackState.ACTION_PLAY_PAUSE
+                    | PlaybackState.ACTION_STOP
+                    | PlaybackState.ACTION_SKIP_TO_NEXT
+                    | PlaybackState.ACTION_SKIP_TO_PREVIOUS
+                    | PlaybackState.ACTION_FAST_FORWARD
+                    | PlaybackState.ACTION_REWIND;
+
+    private void setPlaybackState(int state, MediaSession mediaSession) {
+        PlaybackState playbackState =
+                new PlaybackState.Builder()
+                        .setActions(sAllPlayStateActions)
+                        .setState(state, 0L, 0.0f)
+                        .build();
+        mediaSession.setPlaybackState(playbackState);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
         mMediaSession = new MediaSession(this, TAG);
+        mMediaSession.setCallback(
+                new MediaSession.Callback() {
+                    @Override
+                    public void onPlay() {
+                        Log.d(TAG, "received onPlay");
+                        super.onPlay();
+                        setPlaybackState(PlaybackState.STATE_PLAYING, mMediaSession);
+                    }
+
+                    @Override
+                    public void onPause() {
+                        Log.d(TAG, "received onPause");
+                        super.onPause();
+                        setPlaybackState(PlaybackState.STATE_PAUSED, mMediaSession);
+                    }
+
+                    @Override
+                    public void onStop() {
+                        Log.d(TAG, "received onStop");
+                        super.onStop();
+                        setPlaybackState(PlaybackState.STATE_PAUSED, mMediaSession);
+                    }
+                });
         mMediaSession.setActive(true);
         Log.d(
                 getTag(),
@@ -128,21 +173,19 @@ public class LocalForegroundServiceMedia extends LocalForegroundService {
 
             case COMMAND_PLAY_MEDIA:
                 Log.d(TAG, "Setting media session state to playing");
-                final long allActions =
-                        PlaybackState.ACTION_PLAY
-                                | PlaybackState.ACTION_PAUSE
-                                | PlaybackState.ACTION_PLAY_PAUSE
-                                | PlaybackState.ACTION_STOP
-                                | PlaybackState.ACTION_SKIP_TO_NEXT
-                                | PlaybackState.ACTION_SKIP_TO_PREVIOUS
-                                | PlaybackState.ACTION_FAST_FORWARD
-                                | PlaybackState.ACTION_REWIND;
-                PlaybackState playbackState =
-                        new PlaybackState.Builder()
-                                .setActions(allActions)
-                                .setState(PlaybackState.STATE_PLAYING, 0L, 0.0f)
-                                .build();
-                mMediaSession.setPlaybackState(playbackState);
+                setPlaybackState(PlaybackState.STATE_PLAYING, mMediaSession);
+                break;
+            case COMMAND_STOP_MEDIA:
+                Log.d(TAG, "Setting media session state to stopped");
+                setPlaybackState(PlaybackState.STATE_STOPPED, mMediaSession);
+                break;
+            case COMMAND_DEACTIVATE_MEDIA_SESSION:
+                Log.d(TAG, "Deactivating media session");
+                mMediaSession.setActive(false);
+                break;
+            case COMMAND_RELEASE_MEDIA_SESSION:
+                Log.d(TAG, "Release media session");
+                mMediaSession.release();
                 break;
             default:
                 Log.e(TAG, "Unknown command: " + command);

@@ -27,6 +27,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.hardware.Camera;
 import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
@@ -34,6 +35,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.View;
@@ -54,6 +56,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.TreeSet;
 
 /**
@@ -78,7 +81,10 @@ import java.util.TreeSet;
  *  rely on this functionality present and correctly working.
  */
 public class CameraIntentsActivity extends PassFailButtons.Activity
-implements OnClickListener, SurfaceHolder.Callback {
+        implements OnClickListener, SurfaceHolder.Callback,
+        CameraPresentMediaDialog.DialogCallback {
+
+    public static Uri targetUri = null;
 
     private static final String TAG = "CameraIntents";
     private static final int STATE_OFF = 0;
@@ -90,17 +96,18 @@ implements OnClickListener, SurfaceHolder.Callback {
     private static final int STAGE_APP_VIDEO = 1;
     private static final int STAGE_INTENT_PICTURE = 2;
     private static final int STAGE_INTENT_PICTURE_SECURE = 3;
-    private static final int STAGE_INTENT_VIDEO = 4;
-    private static final int NUM_STAGES = 5;
+    private static final int STAGE_INTENT_MOTION_PHOTO = 4;
+    private static final int STAGE_INTENT_MOTION_PHOTO_SECURE = 5;
+    private static final int STAGE_INTENT_PICTURE_LOCATION_ATTACK = 6;
+    private static final int STAGE_INTENT_VIDEO = 7;
+    private static final int NUM_STAGES = 8;
     private static final String STAGE_INDEX_EXTRA = "stageIndex";
 
-    private static String[]  EXPECTED_INTENTS = new String[] {
-        Camera.ACTION_NEW_PICTURE,
-        Camera.ACTION_NEW_VIDEO,
-        null,
-        null,
-        null
-    };
+    private static String[] EXPECTED_INTENTS =
+            new String[] {
+                Camera.ACTION_NEW_PICTURE, Camera.ACTION_NEW_VIDEO, null, null, null, null, null,
+                null
+            };
 
     private ImageButton mPassButton;
     private ImageButton mFailButton;
@@ -132,13 +139,17 @@ implements OnClickListener, SurfaceHolder.Callback {
     private static final int JOB_TYPE_IMAGE = 0;
     private static final int JOB_TYPE_VIDEO = 1;
 
-    private static int[] TEST_JOB_TYPES = new int[] {
-        JOB_TYPE_IMAGE,
-        JOB_TYPE_VIDEO,
-        JOB_TYPE_IMAGE,
-        JOB_TYPE_IMAGE,
-        JOB_TYPE_VIDEO
-    };
+    private static int[] TEST_JOB_TYPES =
+            new int[] {
+                JOB_TYPE_IMAGE,
+                JOB_TYPE_VIDEO,
+                JOB_TYPE_IMAGE,
+                JOB_TYPE_IMAGE,
+                JOB_TYPE_IMAGE,
+                JOB_TYPE_IMAGE,
+                JOB_TYPE_IMAGE,
+                JOB_TYPE_VIDEO,
+            };
 
     private JobInfo makeJobInfo(int jobType) {
         JobInfo.Builder builder = new JobInfo.Builder(CAMERA_JOB_ID,
@@ -163,6 +174,18 @@ implements OnClickListener, SurfaceHolder.Callback {
         builder.setTriggerContentUpdateDelay(100);
         builder.setTriggerContentMaxDelay(100);
         return builder.build();
+    }
+
+    /**
+     * Check target intent can be handled by the pre-installed camera app.
+     *
+     * @param action - the action to be handled.
+     */
+    private boolean canHandleIntent(String action) {
+        Intent intent = new Intent(action);
+        List<ResolveInfo> resolveInfoList = getPackageManager().queryIntentActivities(intent, 0);
+        // one or more activity can handle this intent.
+        return resolveInfoList.size() > 0;
     }
 
     /* Callback from mReceiver#onReceive */
@@ -235,6 +258,15 @@ implements OnClickListener, SurfaceHolder.Callback {
         if (stageIndex == STAGE_INTENT_PICTURE_SECURE) {
             return "Intent Picture Secure";
         }
+        if (stageIndex == STAGE_INTENT_MOTION_PHOTO) {
+            return "Intent Motion Photo";
+        }
+        if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
+            return "Intent Motion Photo Secure";
+        }
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return "Intent Picture (Location Attack)";
+        }
         if (stageIndex == STAGE_INTENT_VIDEO) {
             return "Intent Video";
         }
@@ -255,6 +287,15 @@ implements OnClickListener, SurfaceHolder.Callback {
         }
         if (stageIndex == STAGE_INTENT_PICTURE_SECURE) {
             return android.hardware.Camera.ACTION_NEW_PICTURE + " (Secure)";
+        }
+        if (stageIndex == STAGE_INTENT_MOTION_PHOTO) {
+            return MediaStore.ACTION_MOTION_PHOTO_CAPTURE;
+        }
+        if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
+            return MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE;
+        }
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return MediaStore.ACTION_IMAGE_CAPTURE + " (Location Attack)";
         }
         if (stageIndex == STAGE_INTENT_VIDEO) {
             return android.hardware.Camera.ACTION_NEW_VIDEO;
@@ -277,6 +318,15 @@ implements OnClickListener, SurfaceHolder.Callback {
         if (stageIndex == STAGE_INTENT_PICTURE_SECURE) {
             return getString(R.string.ci_instruction_text_intent_picture_secure_label);
         }
+        if (stageIndex == STAGE_INTENT_MOTION_PHOTO) {
+            return getString(R.string.ci_instruction_text_intent_motion_photo_label);
+        }
+        if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
+            return getString(R.string.ci_instruction_text_intent_motion_photo_secure_label);
+        }
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return getString(R.string.ci_instruction_test_intent_picture_location_attack_label);
+        }
         if (stageIndex == STAGE_INTENT_VIDEO) {
             return getString(R.string.ci_instruction_text_intent_video_label);
         }
@@ -288,6 +338,17 @@ implements OnClickListener, SurfaceHolder.Callback {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // This activity is reused multiple times
+        // to test each camera/intents combination
+        final int stageIndex = getIntent().getIntExtra(STAGE_INDEX_EXTRA, 0);
+
+        if (!com.android.providers.media.flags.Flags.motionPhotoIntent()
+                && (stageIndex == STAGE_INTENT_MOTION_PHOTO
+                        || stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE)) {
+            // Skip the motion photo stages if the flag is off.
+            navigateToNextStage(stageIndex);
+        }
+
         setContentView(R.layout.ci_main);
         setPassFailButtonClickListeners();
         setInfoResources(R.string.camera_intents, R.string.ci_info, -1);
@@ -298,10 +359,6 @@ implements OnClickListener, SurfaceHolder.Callback {
         mSettingsButton  = (Button) findViewById(R.id.settings_button);
         mStartTestButton.setOnClickListener(this);
         mSettingsButton.setOnClickListener(this);
-
-        // This activity is reused multiple times
-        // to test each camera/intents combination
-        final int stageIndex = getIntent().getIntExtra(STAGE_INDEX_EXTRA, 0);
 
         // Hitting the pass button goes to the next test activity.
         // Only the last one uses the PassFailButtons click callback function,
@@ -334,7 +391,13 @@ implements OnClickListener, SurfaceHolder.Callback {
                 (TextView) findViewById(R.id.instruction_extra_text);
         cameraExtraLabel.setText(getStageInstructionLabel(getStageIndex()));
 
-        mStartTestButton.setEnabled(true);
+        String intentAction = getLaunchAction(stageIndex);
+        if (intentAction == null || canHandleIntent(intentAction)) {
+            mStartTestButton.setEnabled(true);
+        } else {
+            mPassButton.setEnabled(true);
+        }
+
         mSettingsButton.setEnabled(true);
 
         mReceiver = new BroadcastReceiver() {
@@ -378,7 +441,8 @@ implements OnClickListener, SurfaceHolder.Callback {
         Boolean locationEnabled = (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED);
 
-        if (getStageIndex() == NUM_STAGES - 1) {
+        int stageIndex = getStageIndex();
+        if (stageIndex == NUM_STAGES - 1) {
                 /**
                  * Don't enable the pass /fail button till the user grants CTS verifier location
                  * access again.
@@ -405,6 +469,16 @@ implements OnClickListener, SurfaceHolder.Callback {
                     Toast.LENGTH_SHORT).show();
             }
         }
+
+        if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK
+                && mState == STATE_STARTED) {
+            if (mImageTarget.exists()) {
+                handleIntentPictureResult(stageIndex);
+                updateSuccessState();
+            } else {
+                Log.v(TAG, "Image does not exist yet");
+            }
+        }
     }
 
     @Override
@@ -413,25 +487,31 @@ implements OnClickListener, SurfaceHolder.Callback {
         /*
         When testing INTENT_PICTURE, INTENT_PICTURE_SECURE, INTENT_VIDEO,
         do not allow user to cheat by going to camera app and re-firing
-        the intents by taking a photo/video
+        the intents by taking a photo/video/motion photo
         */
-        if (getStageIndex() == STAGE_INTENT_PICTURE ||
-            getStageIndex() == STAGE_INTENT_PICTURE_SECURE ||
-            getStageIndex() == STAGE_INTENT_VIDEO) {
+        if (getStageIndex() == STAGE_INTENT_PICTURE
+                || getStageIndex() == STAGE_INTENT_PICTURE_SECURE
+                || getStageIndex() == STAGE_INTENT_MOTION_PHOTO
+                || getStageIndex() == STAGE_INTENT_MOTION_PHOTO_SECURE
+                || getStageIndex() == STAGE_INTENT_PICTURE_LOCATION_ATTACK
+                || getStageIndex() == STAGE_INTENT_VIDEO) {
 
             if (mActivityResult && mState == STATE_STARTED) {
                 mDetectCheating = true;
                 Log.w(TAG, "Potential cheating detected");
             }
         }
-
     }
 
     @Override
     protected void onActivityResult(
         int requestCode, int resultCode, Intent data) {
         int stageIndex = getStageIndex();
-        if (requestCode == 1337 + stageIndex) {
+
+        // The location attack stage launches an activity as a new task. Check for pass/fail in
+        // onResume instead.
+        if (requestCode == 1337 + stageIndex
+                && stageIndex != STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
             Log.v(TAG, "Activity we launched was finished");
             mActivityResult = true;
             synchronized(mLock) {
@@ -439,7 +519,9 @@ implements OnClickListener, SurfaceHolder.Callback {
                     switch (stageIndex) {
                         case STAGE_INTENT_PICTURE:
                         case STAGE_INTENT_PICTURE_SECURE:
-                            handleIntentPictureResult();
+                        case STAGE_INTENT_MOTION_PHOTO:
+                        case STAGE_INTENT_MOTION_PHOTO_SECURE:
+                            handleIntentPictureResult(stageIndex);
                             // No broadcast should be received. Proceed to update test result
                             updateSuccessState();
                             break;
@@ -457,7 +539,7 @@ implements OnClickListener, SurfaceHolder.Callback {
         }
     }
 
-    private void handleIntentPictureResult() {
+    private void handleIntentPictureResult(int stageIndex) {
         if (mImageTarget == null) {
             Log.d(TAG, "Image target was not set");
             return;
@@ -485,14 +567,27 @@ implements OnClickListener, SurfaceHolder.Callback {
                     mState = STATE_FAILED;
                     return;
                 }
-                mActionSuccess = true;
+
+                if (stageIndex == STAGE_INTENT_MOTION_PHOTO
+                        || stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
+                    Uri photoUri = FileProvider.getUriForFile(this,
+                            "com.android.cts.verifier.managedprovisioning.fileprovider",
+                            mImageTarget);
+                    CameraPresentMediaDialog.newInstance(photoUri)
+                            .show(getSupportFragmentManager(), "CameraPresentMediaDialogFragment");
+                } else {
+                    mActionSuccess = true;
+                }
             } catch (IOException ex) {
                 Log.e(TAG, "Failed to verify Exif", ex);
                 mState = STATE_FAILED;
                 return;
             }
         } finally {
-            mImageTarget.delete();
+            if (stageIndex != STAGE_INTENT_MOTION_PHOTO
+                    && stageIndex != STAGE_INTENT_MOTION_PHOTO_SECURE) {
+                mImageTarget.delete();
+            }
         }
     }
 
@@ -609,9 +704,12 @@ implements OnClickListener, SurfaceHolder.Callback {
              * Intent stages do not need to wait on a ContentProvider broadcast since we're starting
              * the intent activity with EXTRA_OUTPUT set
              */
-            if (stageIndex != STAGE_INTENT_VIDEO &&
-                stageIndex != STAGE_INTENT_PICTURE &&
-                stageIndex != STAGE_INTENT_PICTURE_SECURE) {
+            if (stageIndex != STAGE_INTENT_VIDEO
+                    && stageIndex != STAGE_INTENT_PICTURE
+                    && stageIndex != STAGE_INTENT_MOTION_PHOTO
+                    && stageIndex != STAGE_INTENT_MOTION_PHOTO_SECURE
+                    && stageIndex != STAGE_INTENT_PICTURE_SECURE
+                    && stageIndex != STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
                 JobInfo job = makeJobInfo(TEST_JOB_TYPES[stageIndex]);
                 jobScheduler.schedule(job);
                 new WaitForTriggerTask().execute();
@@ -624,22 +722,22 @@ implements OnClickListener, SurfaceHolder.Callback {
                 mFailButton.setEnabled(true);
             }
 
-            /* trigger an ACTION_IMAGE_CAPTURE intent
-                which will run the camera app itself */
-            String intentStr = null;
+            /* Trigger the appropriate intent, opening the camera app */
+            String intentStr = getLaunchAction(stageIndex);
             Intent cameraIntent = null;
-            if (stageIndex == STAGE_INTENT_PICTURE) {
-                intentStr = android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
-            }
-            else if (stageIndex == STAGE_INTENT_PICTURE_SECURE) {
-                intentStr = android.provider.MediaStore.ACTION_IMAGE_CAPTURE_SECURE;
-            }
-            else if (stageIndex == STAGE_INTENT_VIDEO) {
-                intentStr = android.provider.MediaStore.ACTION_VIDEO_CAPTURE;
-            }
 
             if (intentStr != null) {
-                cameraIntent = new Intent(intentStr);
+                if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+                    Uri packageUri = Uri.fromParts("package",
+                            getApplicationContext().getPackageName(), null);
+                    int intentFlags =
+                            Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK;
+                    cameraIntent =
+                            new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri)
+                            .addFlags(intentFlags);
+                } else {
+                    cameraIntent = new Intent(intentStr);
+                }
                 mDebugFolder = new File(this.getFilesDir(), "debug");
                 mDebugFolder.mkdirs();
                 if (!mDebugFolder.exists()) {
@@ -654,6 +752,9 @@ implements OnClickListener, SurfaceHolder.Callback {
                 switch (stageIndex) {
                     case STAGE_INTENT_PICTURE:
                     case STAGE_INTENT_PICTURE_SECURE:
+                    case STAGE_INTENT_MOTION_PHOTO:
+                    case STAGE_INTENT_MOTION_PHOTO_SECURE:
+                    case STAGE_INTENT_PICTURE_LOCATION_ATTACK:
                         mImageTarget = new File(mDebugFolder, timeStamp + "capture.jpg");
                         targetFile = mImageTarget;
                         break;
@@ -665,9 +766,13 @@ implements OnClickListener, SurfaceHolder.Callback {
                         Log.wtf(TAG, "Unexpected stage index to send intent with extras");
                         return;
                 }
-                cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, FileProvider.getUriForFile(this,
-                              "com.android.cts.verifier.managedprovisioning.fileprovider",
-                              targetFile));
+                Uri fileUri = FileProvider.getUriForFile(this,
+                        "com.android.cts.verifier.managedprovisioning.fileprovider", targetFile);
+                if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+                    CameraIntentsActivity.targetUri = fileUri;
+                } else {
+                    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri);
+                }
                 startActivityForResult(cameraIntent, 1337 + getStageIndex());
             }
 
@@ -676,7 +781,9 @@ implements OnClickListener, SurfaceHolder.Callback {
 
         if(view == mPassButton || view == mFailButton) {
             // Stop any running wait
-            mTestEnv.cancelWait();
+            if (mTestEnv != null) {
+                mTestEnv.cancelWait();
+            }
 
             for (int counter = 0; counter < NUM_STAGES; counter++) {
                 String combination = getStageString(counter) + "\n";
@@ -725,13 +832,7 @@ implements OnClickListener, SurfaceHolder.Callback {
                         getTestDetails());
             }
 
-            // restart activity to test next intents
-            Intent intent = new Intent(CameraIntentsActivity.this,
-                    CameraIntentsActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    | Intent.FLAG_ACTIVITY_FORWARD_RESULT);
-            intent.putExtra(STAGE_INDEX_EXTRA, stageIndex + 1);
-            startActivity(intent);
+            navigateToNextStage(stageIndex);
         }
     }
 
@@ -742,6 +843,23 @@ implements OnClickListener, SurfaceHolder.Callback {
     private void enablePassFailButtons(boolean enable) {
         mPassButton.setEnabled(enable);
         mFailButton.setEnabled(enable);
+    }
+
+    private String getLaunchAction(int stageIndex) {
+        if (stageIndex == STAGE_INTENT_PICTURE) {
+            return android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
+        } else if (stageIndex == STAGE_INTENT_PICTURE_SECURE) {
+            return android.provider.MediaStore.ACTION_IMAGE_CAPTURE_SECURE;
+        } else if (stageIndex == STAGE_INTENT_MOTION_PHOTO) {
+            return android.provider.MediaStore.ACTION_MOTION_PHOTO_CAPTURE;
+        } else if (stageIndex == STAGE_INTENT_MOTION_PHOTO_SECURE) {
+            return android.provider.MediaStore.ACTION_MOTION_PHOTO_CAPTURE_SECURE;
+        } else if (stageIndex == STAGE_INTENT_PICTURE_LOCATION_ATTACK) {
+            return android.provider.MediaStore.ACTION_IMAGE_CAPTURE;
+        } else if (stageIndex == STAGE_INTENT_VIDEO) {
+            return android.provider.MediaStore.ACTION_VIDEO_CAPTURE;
+        }
+        return null;
     }
 
     @Override
@@ -763,4 +881,20 @@ implements OnClickListener, SurfaceHolder.Callback {
         findViewById(R.id.pass_button).setOnClickListener(this);
     }
 
+    private void navigateToNextStage(int stageIndex) {
+        // restart activity to test next intents
+        Intent intent = new Intent(CameraIntentsActivity.this, CameraIntentsActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_FORWARD_RESULT);
+        intent.putExtra(STAGE_INDEX_EXTRA, stageIndex + 1);
+        startActivity(intent);
+    }
+
+    @Override
+    public void onDialogClose(boolean containsMotionPhotoMetadata) {
+        if (mImageTarget != null) {
+            mImageTarget.delete();
+        }
+
+        mActionSuccess = containsMotionPhotoMetadata;
+    }
 }

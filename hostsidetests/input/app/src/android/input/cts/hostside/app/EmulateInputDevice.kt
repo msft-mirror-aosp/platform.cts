@@ -24,6 +24,15 @@ import android.view.MotionEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.DebugInputRule
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_DOUBLETAP
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_PRESS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY_RELEASE
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_CAPSLOCK
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
 import com.android.cts.input.UinputDevice
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
@@ -49,6 +58,9 @@ class EmulateInputDevice {
     private lateinit var verifier: EventVerifier
 
     @get:Rule
+    val debugInputRule = DebugInputRule()
+
+    @get:Rule
     val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
     @Suppress("DEPRECATION")
@@ -72,6 +84,7 @@ class EmulateInputDevice {
      * Registers a USB touchscreen through uinput, interacts with it for at least
      * five seconds, and disconnects the device.
      */
+    @DebugInputRule.DebugInput(bug = 385015451)
     @Test
     fun useTouchscreenForFiveSeconds() {
         UinputTouchScreen(instrumentation, activity.display).use { touchscreen ->
@@ -114,25 +127,25 @@ class EmulateInputDevice {
             for (i in 0 until 3) {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
-                touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
+                touchpad.sendBtn(BTN_TOOL_FINGER, true)
                 touchpad.sendDown(0, pointer)
                 touchpad.sync()
 
                 touchpad.sendBtnTouch(false)
-                touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, false)
+                touchpad.sendBtn(BTN_TOOL_FINGER, false)
                 touchpad.sendUp(0)
                 touchpad.sync()
             }
             for (i in 0 until 2) {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
-                touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
+                touchpad.sendBtn(BTN_TOOL_FINGER, true)
                 touchpad.sendDown(0, pointer)
-                touchpad.sendToolType(0, UinputTouchDevice.MT_TOOL_PALM)
+                touchpad.sendToolType(0, MT_TOOL_PALM)
                 touchpad.sync()
 
                 touchpad.sendBtnTouch(false)
-                touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, false)
+                touchpad.sendBtn(BTN_TOOL_FINGER, false)
                 touchpad.sendUp(0)
                 touchpad.sync()
             }
@@ -146,12 +159,12 @@ class EmulateInputDevice {
             val pointer0 = Point(500, 500)
             val pointer1 = Point(700, 700)
             touchpad.sendBtnTouch(true)
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
+            touchpad.sendBtn(BTN_TOOL_FINGER, true)
             touchpad.sendDown(0, pointer0)
             touchpad.sync()
 
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, false)
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_DOUBLETAP, true)
+            touchpad.sendBtn(BTN_TOOL_FINGER, false)
+            touchpad.sendBtn(BTN_TOOL_DOUBLETAP, true)
             touchpad.sendDown(1, pointer1)
             touchpad.sync()
             Thread.sleep(TOUCHPAD_SCAN_DELAY_MILLIS)
@@ -165,12 +178,12 @@ class EmulateInputDevice {
                 Thread.sleep(TOUCHPAD_SCAN_DELAY_MILLIS)
             }
 
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_DOUBLETAP, false)
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
+            touchpad.sendBtn(BTN_TOOL_DOUBLETAP, false)
+            touchpad.sendBtn(BTN_TOOL_FINGER, true)
             touchpad.sendUp(0)
             touchpad.sync()
 
-            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, false)
+            touchpad.sendBtn(BTN_TOOL_FINGER, false)
             touchpad.sendBtnTouch(false)
             touchpad.sendUp(1)
             touchpad.sync()
@@ -193,8 +206,8 @@ class EmulateInputDevice {
         multiFingerSwipe(4)
     }
 
-    // Perform a multi-finger swipe in one direction and return to the starting location to
-    // minimize the size effects of the gesture to the rest of the system.
+    // Perform a multi-finger swipe in the positive x direction and return to the starting location
+    // to minimize the size effects of the gesture to the rest of the system.
     private fun multiFingerSwipe(numFingers: Int) {
         UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
@@ -209,7 +222,7 @@ class EmulateInputDevice {
             for (rep in 0 until 20) {
                 val direction = if (rep < 10) 1 else -1
                 for (i in pointers.indices) {
-                    pointers[i].offset(0, direction * 40)
+                    pointers[i].offset(direction * 40, 0)
                     touchpad.sendMove(i, pointers[i])
                 }
                 touchpad.sync()
@@ -240,8 +253,8 @@ class EmulateInputDevice {
     fun createKeyboardDeviceAndSendCapsLockKey() {
         UinputKeyboard(instrumentation).use { keyboard ->
             // Wait for device to be added
-            injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_PRESS, 0, 0, 0))
-            injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, KEY_RELEASE, 0, 0, 0))
+            injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, EV_KEY_PRESS, 0, 0, 0))
+            injectEvents(keyboard, intArrayOf(EV_KEY, KEY_CAPSLOCK, EV_KEY_RELEASE, 0, 0, 0))
             Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
@@ -252,10 +265,6 @@ class EmulateInputDevice {
 
     companion object {
         const val TOUCHPAD_SCAN_DELAY_MILLIS: Long = 5
-        const val KEY_CAPSLOCK: Int = 58
-        const val EV_KEY: Int = 1
-        const val KEY_PRESS: Int = 1
-        const val KEY_RELEASE: Int = 0
 
         // When a uinput device is closed, there's a race between InputReader picking up the final
         // events from the device's buffer (specifically, the buffer in struct evdev_client in the

@@ -23,6 +23,24 @@ import android.server.wm.CtsWindowInfoUtils
 import android.view.Display
 import android.view.Surface
 import android.view.View
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_POSITION_X
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_POSITION_Y
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_PRESSURE
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_SLOT
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_TOOL_TYPE
+import com.android.cts.input.EvdevInputEventCodes.Companion.ABS_MT_TRACKING_ID
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_DOUBLETAP
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_FINGER
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_QUADTAP
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_QUINTTAP
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOOL_TRIPLETAP
+import com.android.cts.input.EvdevInputEventCodes.Companion.BTN_TOUCH
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_ABS
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_KEY
+import com.android.cts.input.EvdevInputEventCodes.Companion.EV_SYN
+import com.android.cts.input.EvdevInputEventCodes.Companion.INVALID_MT_TRACKING_ID
+import com.android.cts.input.EvdevInputEventCodes.Companion.MT_TOOL_PALM
+import com.android.cts.input.EvdevInputEventCodes.Companion.SYN_REPORT
 import kotlin.math.round
 
 private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
@@ -123,7 +141,7 @@ open class UinputTouchDevice(
 
     fun sendUp(id: Int) {
         injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, INVALID_TRACKING_ID))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, INVALID_MT_TRACKING_ID))
     }
 
     fun sendToolType(id: Int, toolType: Int) {
@@ -253,28 +271,6 @@ open class UinputTouchDevice(
     }
 
     companion object {
-        const val EV_SYN = 0
-        const val EV_KEY = 1
-        const val EV_ABS = 3
-        const val ABS_MT_SLOT = 0x2f
-        const val ABS_MT_POSITION_X = 0x35
-        const val ABS_MT_POSITION_Y = 0x36
-        const val ABS_MT_TOOL_TYPE = 0x37
-        const val ABS_MT_TRACKING_ID = 0x39
-        const val ABS_MT_PRESSURE = 0x3a
-        const val BTN_TOUCH = 0x14a
-        const val BTN_TOOL_PEN = 0x140
-        const val BTN_TOOL_FINGER = 0x145
-        const val BTN_TOOL_DOUBLETAP = 0x14d
-        const val BTN_TOOL_TRIPLETAP = 0x14e
-        const val BTN_TOOL_QUADTAP = 0x14f
-        const val BTN_TOOL_QUINTTAP = 0x148
-        const val SYN_REPORT = 0
-        const val MT_TOOL_FINGER = 0
-        const val MT_TOOL_PEN = 1
-        const val MT_TOOL_PALM = 2
-        const val INVALID_TRACKING_ID = -1
-
         /**
          * The allowed error when making assertions on touch coordinates.
          *

@@ -59,7 +59,13 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
                 });
         switch (request.getFunctionIdentifier()) {
             case "add": {
-                ExecuteAppFunctionResponse result = add(request, callingPackage);
+                    ExecuteAppFunctionResponse result = add(request);
+                    callback.onResult(result);
+                    break;
+                }
+            case "noOp":
+                {
+                    ExecuteAppFunctionResponse result = noop(callingPackage);
                 callback.onResult(result);
                 break;
             }
@@ -100,13 +106,19 @@ public class TestSidecarAppFunctionService extends AppFunctionService {
         }
     }
 
-    private ExecuteAppFunctionResponse add(
-            ExecuteAppFunctionRequest request, String callingPackage) {
+    private ExecuteAppFunctionResponse add(ExecuteAppFunctionRequest request) {
         long a = request.getParameters().getPropertyLong("a");
         long b = request.getParameters().getPropertyLong("b");
         GenericDocument result =
                 new GenericDocument.Builder<>("", "", "")
                         .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
+                        .build();
+        return new ExecuteAppFunctionResponse(result);
+    }
+
+    private ExecuteAppFunctionResponse noop(String callingPackage) {
+        GenericDocument result =
+                new GenericDocument.Builder<>("", "", "")
                         .setPropertyString("TEST_PROPERTY_CALLING_PACKAGE", callingPackage)
                         .build();
         return new ExecuteAppFunctionResponse(result);

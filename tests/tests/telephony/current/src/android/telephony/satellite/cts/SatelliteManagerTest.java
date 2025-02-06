@@ -988,6 +988,29 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testUnregisterForCommunicationAccessStateChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteCommunicationAccessStateCallbackTest satelliteCommunicationAllowedStateCallback =
+                new SatelliteCommunicationAccessStateCallbackTest();
+
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.registerForCommunicationAccessStateChanged(
+                                getContext().getMainExecutor(),
+                                satelliteCommunicationAllowedStateCallback));
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        sSatelliteManager.unregisterForCommunicationAccessStateChanged(
+                                satelliteCommunicationAllowedStateCallback));
+    }
+
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteSubscriberProvisionStatus() {
         if (!shouldTestSatellite()) return;
@@ -1064,12 +1087,12 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                                                 SubscriptionManager.getSubscriptionId(slotId0))
                                         .setSubscriberIdType(idType)
                                         .build()));
-        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<Void, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(Boolean result) {
-                        Log.d(TAG, "onResult: result=" + result);
-                        enabled.set(result);
+                    public void onResult(Void result) {
+                        Log.d(TAG, "onResult");
+                        enabled.set(true);
                     }
 
                     @Override

@@ -27,12 +27,10 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
-import android.annotation.TargetApi;
+import android.Manifest;
 import android.app.Activity;
 import android.app.ActivityOptions;
-import android.app.UiAutomation;
 import android.companion.AssociationInfo;
-import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
@@ -43,6 +41,7 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
 import android.media.ImageReader;
+import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.Condition;
@@ -54,6 +53,7 @@ import android.view.Surface;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.BuildCompat;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -65,15 +65,45 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * A test rule that allows for testing VDM and virtual device features.
+ *
+ * <p>The interaction with VDM / CDM requires the test to execute a lot of statements with specific
+ * permissions held by Shell. Running logic in the individual tests with the Shell permission
+ * identity may interfere with the rule setup and teardown.</p>
+ *
+ * <p>Do not use this rule alongside {@link AdoptShellPermissionsRule} or any other method to adopt
+ * the Shell permission identity, like
+ * {@link com.android.compatibility.common.util.SystemUtil#runWithShellPermissionIdentity}. Use
+ * the utilities provided here (e.g. {@link VirtualDeviceRule#runWithTemporaryPermission}, which
+ * will re-acquire the necessary permissions after the execution of the statement.</p>
+ *
+ * <p>Similarly, {@link android.platform.test.flag.junit.CheckFlagsRule} may interfere with the
+ * permissions depending on the rule order because it also adopts the Shell identity and drops it
+ * during teardown. Do not use this rule alongside the {@link VirtualDeviceRule}, it already
+ * incorporates the flag rule in the correct order and the flag values can be accessed in the tests.
+ * </p>
  */
-@TargetApi(34)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 public class VirtualDeviceRule implements TestRule {
+
+    /** General permissions needed for creating virtual devices and displays. */
+    private static final String[] REQUIRED_PERMISSIONS =
+            new String[] {
+                    Manifest.permission.CREATE_VIRTUAL_DEVICE,
+                    Manifest.permission.ADD_TRUSTED_DISPLAY,
+                    Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY,
+                    Manifest.permission.ADD_MIRROR_DISPLAY,
+                    Manifest.permission.ASSOCIATE_COMPANION_DEVICES,
+                    Manifest.permission.MANAGE_ROLE_HOLDERS,
+                    Manifest.permission.BYPASS_ROLE_QUALIFICATION,
+                    "android.permission.MANAGE_COMPANION_DEVICES",
+            };
 
     public static final VirtualDeviceParams DEFAULT_VIRTUAL_DEVICE_PARAMS =
             new VirtualDeviceParams.Builder().build();
@@ -86,8 +116,8 @@ public class VirtualDeviceRule implements TestRule {
     public static final ComponentName BLOCKED_ACTIVITY_COMPONENT =
             new ComponentName("android", "com.android.internal.app.BlockedAppStreamingActivity");
 
-    private RuleChain mRuleChain;
-    private final FakeAssociationRule mFakeAssociationRule;
+    private final String[] mPermissions;
+    private final FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
     private final Context mContext = getInstrumentation().getTargetContext();
@@ -100,40 +130,30 @@ public class VirtualDeviceRule implements TestRule {
 
     /** Creates a rule with the required permissions for creating virtual devices and displays. */
     public static VirtualDeviceRule createDefault() {
-        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING);
-    }
-
-    /** Creates a rule with an explicit device profile. */
-    public static VirtualDeviceRule withDeviceProfile(String deviceProfile) {
-        return new VirtualDeviceRule(deviceProfile);
+        return new VirtualDeviceRule();
     }
 
     /** Creates a rule with any additional permission needed for the specific test. */
     public static VirtualDeviceRule withAdditionalPermissions(String... additionalPermissions) {
-        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING,
-                additionalPermissions);
+        return new VirtualDeviceRule(additionalPermissions);
     }
 
-    private VirtualDeviceRule(String deviceProfile, String... permissions) {
-        mFakeAssociationRule = new FakeAssociationRule(deviceProfile);
-        mRuleChain = RuleChain
-                .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
-                .around(mFakeAssociationRule)
-                .around(new AdoptShellPermissionsRule(
-                        getInstrumentation().getUiAutomation(), permissions))
-                .around(mTrackerRule);
-    }
-
-    /** Creates a rule with virtual camera support check before test execution. */
-    public VirtualDeviceRule withVirtualCameraSupportCheck() {
-        mRuleChain = mRuleChain.around(new VirtualCameraSupportRule(this));
-        return this;
+    private VirtualDeviceRule(String... permissions) {
+        mPermissions =
+                Stream.concat(Arrays.stream(REQUIRED_PERMISSIONS), Arrays.stream(permissions))
+                        .toArray(String[]::new);
     }
 
     @Override
     public Statement apply(final Statement base, final Description description) {
         assumeNotNull(mVirtualDeviceManager);
-        return mRuleChain.apply(base, description);
+        return RuleChain
+                .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
+                .around(new AdoptShellPermissionsRule(
+                        getInstrumentation().getUiAutomation(), mPermissions))
+                .around(mFakeAssociationRule)
+                .around(mTrackerRule)
+                .apply(base, description);
     }
 
     /**
@@ -289,8 +309,8 @@ public class VirtualDeviceRule implements TestRule {
     public static VirtualDisplayConfig.Builder createTrustedVirtualDisplayConfigBuilder() {
         return createDefaultVirtualDisplayConfigBuilder().setFlags(
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
     }
 
     /**
@@ -325,8 +345,8 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /** Creates a new CDM association. */
-    public AssociationInfo createManagedAssociation() {
-        return mFakeAssociationRule.createManagedAssociation();
+    public AssociationInfo createManagedAssociation(String deviceProfile) {
+        return mFakeAssociationRule.createManagedAssociation(deviceProfile);
     }
 
     /** Drops the current CDM association. */
@@ -334,20 +354,36 @@ public class VirtualDeviceRule implements TestRule {
         mFakeAssociationRule.disassociate();
     }
 
+    /** Acquires all permissions needed for the VDM test setup and teardown. */
+    public void acquireNecessaryPermissions() {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(mPermissions);
+    }
+
     /**
      * Temporarily assumes the given permissions and executes the given supplier. Reverts any
      * permissions currently held after the execution.
      */
     public <T> T runWithTemporaryPermission(Supplier<T> supplier, String... permissions) {
-        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
-        final Set<String> currentPermissions = uiAutomation.getAdoptedShellPermissions();
-        uiAutomation.adoptShellPermissionIdentity(permissions);
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(permissions);
         try {
             return supplier.get();
         } finally {
             // Revert the permissions needed for the test again.
-            uiAutomation.adoptShellPermissionIdentity(
-                    currentPermissions.toArray(new String[0]));
+            acquireNecessaryPermissions();
+        }
+    }
+
+    /**
+     * Temporarily assumes the given permissions and executes the given runnable. Reverts any
+     * permissions currently held after the execution.
+     */
+    public void runWithTemporaryPermission(Runnable runnable, String... permissions) {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(permissions);
+        try {
+            runnable.run();
+        } finally {
+            // Revert the permissions needed for the test again.
+            acquireNecessaryPermissions();
         }
     }
 
@@ -356,15 +392,26 @@ public class VirtualDeviceRule implements TestRule {
      * currently held after the execution.
      */
     public <T> T runWithoutPermissions(Supplier<T> supplier) {
-        UiAutomation uiAutomation = getInstrumentation().getUiAutomation();
-        final Set<String> currentPermissions = uiAutomation.getAdoptedShellPermissions();
-        uiAutomation.dropShellPermissionIdentity();
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         try {
             return supplier.get();
         } finally {
             // Revert the permissions needed for the test again.
-            uiAutomation.adoptShellPermissionIdentity(
-                    currentPermissions.toArray(new String[0]));
+            acquireNecessaryPermissions();
+        }
+    }
+
+    /**
+     * Temporarily drops any permissions and executes the given runnable. Reverts any permissions
+     * currently held after the execution.
+     */
+    public void runWithoutPermissions(Runnable runnable) {
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        try {
+            runnable.run();
+        } finally {
+            // Revert the permissions needed for the test again.
+            acquireNecessaryPermissions();
         }
     }
 
@@ -528,5 +575,4 @@ public class VirtualDeviceRule implements TestRule {
             super.after();
         }
     }
-
 }

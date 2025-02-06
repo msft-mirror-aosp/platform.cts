@@ -30,6 +30,7 @@ import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.DynamicRangeProfiles;
+import android.hardware.camera2.params.SharedSessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.util.ArraySet;
 import android.util.Log;
@@ -2866,6 +2867,14 @@ public class StaticMetadata {
     }
 
     /**
+     * Check if HEIC_ULTRAHDR format is supported
+     */
+    public boolean isHeicUltraHdrSupported() {
+        int[] formats = getAvailableFormats(StaticMetadata.StreamDirection.Output);
+        return CameraTestUtils.contains(formats, ImageFormat.HEIC_ULTRAHDR);
+    }
+
+    /**
      * Check if the dynamic black level is supported.
      *
      * <p>
@@ -3023,6 +3032,21 @@ public class StaticMetadata {
                     (poseReference == CameraMetadata.LENS_POSE_REFERENCE_UNDEFINED);
         }
         return isPoseReferenceUndefined;
+    }
+
+    /**
+     * Check if camera characteristic for shared session configuration is present.
+     */
+    public boolean sharedSessionConfigurationPresent() {
+        SharedSessionConfiguration sharedSessionConfiguration = mCharacteristics.get(
+                CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
+        return (sharedSessionConfiguration != null);
+    }
+
+    public SharedSessionConfiguration getSharedSessionConfiguration() {
+        SharedSessionConfiguration sharedSessionConfiguration =
+                mCharacteristics.get(CameraCharacteristics.SHARED_SESSION_CONFIGURATION);
+        return sharedSessionConfiguration;
     }
 
     /**

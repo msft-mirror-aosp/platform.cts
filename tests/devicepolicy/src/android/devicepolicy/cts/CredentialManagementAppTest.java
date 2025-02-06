@@ -298,9 +298,14 @@ public final class CredentialManagementAppTest {
             assertThat(callback.await(KEYCHAIN_CALLBACK_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                     .isEqualTo(ALIAS);
         } finally {
-            // Remove keypair as credential management app
-            sDevicePolicyManager.removeKeyPair(/* admin = */ null, ALIAS);
-            removeCredentialManagementApp();
+            try { // Wrapping whole `finally` block to possibly uncover real source of b/333230523
+                // Remove keypair as credential management app
+                sDevicePolicyManager.removeKeyPair(/* admin = */ null, ALIAS);
+                removeCredentialManagementApp();
+            } catch (SecurityException exception) {
+                Log.e(LOG_TAG, "Error while trying to removeKeyPair, probably overshadowing real issue hiding somewhere in the main try block of the test.", exception);
+            }
+
         }
     }
 
@@ -384,10 +389,11 @@ public final class CredentialManagementAppTest {
                                     + "app: " + appOpsModeAfterSetting);
                     return appOpsModeAfterSetting;
                 })
-                .toMeet(appOps -> appOps.equals(ALLOWED))
+                .toBeEqualTo(ALLOWED)
                 // Fail the test if AppOps was not set within 5 seconds, because otherwise we have
                 // a performance issue.
                 .timeout(Duration.ofSeconds(5))
+                .errorOnFail()
                 .await();
     }
 

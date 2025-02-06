@@ -65,6 +65,10 @@ import android.app.AutomaticZenRule;
 import android.app.Instrumentation;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothCodecConfig;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothLeAudioCodecConfig;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -80,6 +84,7 @@ import android.media.AudioManager;
 import android.media.AudioMixerAttributes;
 import android.media.AudioProfile;
 import android.media.AudioTrack;
+import android.media.BluetoothProfileConnectionInfo;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.media.MicrophoneInfo;
@@ -1588,8 +1593,10 @@ public class AudioManagerTest {
 
         final int testRingerVol = getTestRingerVol();
 
-        // disallow all sounds in priority only, turn on priority only DND
-        mNm.setNotificationPolicy(new NotificationManager.Policy(0, 0 , 0));
+        // allow only system sounds in priority only, turn on priority only DND
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        NotificationManager.Policy.PRIORITY_CATEGORY_SYSTEM, 0, 0));
         setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY);
 
         // attempt to change volume
@@ -1623,10 +1630,11 @@ public class AudioManagerTest {
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
 
-        // disallow all sounds in priority only, turn on priority only DND, try to change volume
-        mNm.setNotificationPolicy(new NotificationManager.Policy(0, 0, 0));
+        // allow only system sounds in priority only, turn on priority only DND
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        NotificationManager.Policy.PRIORITY_CATEGORY_SYSTEM, 0, 0));
         setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY);
-
 
         int volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(STREAM_RING));
         assertCallDoesNotChangeStreamVolume(
@@ -2959,6 +2967,104 @@ public class AudioManagerTest {
             mAudioManager.unregisterAudioDeviceCallback(callbackHelper);
             workerThread.quit();
 
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @AppModeFull(reason = "Test for system APIs reserved to the Bluetooth stack")
+    @Test
+    public void testBluetoothtHwOffloadFormatsSupported() {
+        try {
+            getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(Manifest.permission.BLUETOOTH_STACK);
+
+            List<BluetoothCodecConfig> a2dpConfigs =
+                    mAudioManager.getHwOffloadFormatsSupportedForA2dp();
+            assertNotNull(a2dpConfigs);
+
+            List<BluetoothLeAudioCodecConfig> leConfigs =
+                    mAudioManager.getHwOffloadFormatsSupportedForLeAudio();
+            assertNotNull(leConfigs);
+
+            leConfigs = mAudioManager.getHwOffloadFormatsSupportedForLeBroadcast();
+            assertNotNull(leConfigs);
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @AppModeFull(reason = "Test for system APIs reserved to the Bluetooth stack")
+    @Test
+    public void testHandleBluetoothActiveDeviceChanged() {
+        try {
+            getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(Manifest.permission.BLUETOOTH_STACK);
+            // given it is not possible to control actual Bluetooth device connection for this test
+            // we only verify that  no exception is reported
+            final BluetoothProfileConnectionInfo info =
+                    BluetoothProfileConnectionInfo.createA2dpInfo(false, -1);
+            mAudioManager.handleBluetoothActiveDeviceChanged(null, null, info);
+
+            final BluetoothDevice device =
+                    BluetoothAdapter.getDefaultAdapter().getRemoteDevice("00:11:22:33:AA:BB");
+            mAudioManager.handleBluetoothActiveDeviceChanged(device, null, info);
+            mAudioManager.handleBluetoothActiveDeviceChanged(null, device, info);
+        } catch (Exception e) {
+            fail("Unexpected exception thrown by handleBluetoothActiveDeviceChanged: " + e);
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @AppModeFull(reason = "Test for system APIs reserved to the Bluetooth stack")
+    @Test
+    public void testBluetoothConfiguration() {
+        try {
+            getInstrumentation()
+                    .getUiAutomation()
+                    .adoptShellPermissionIdentity(Manifest.permission.BLUETOOTH_STACK);
+
+            // given it is not possible to control actual Bluetooth device connection for this test
+            // we only verify that  no exception is reported
+            try {
+                mAudioManager.setA2dpSuspended(true);
+            } catch (Exception e) {
+                fail("Unexpected exception thrown by setA2dpSuspended: " + e);
+            }
+            try {
+                mAudioManager.setLeAudioSuspended(true);
+            } catch (Exception e) {
+                fail("Unexpected exception thrown by setLeAudioSuspended: " + e);
+            }
+            try {
+                mAudioManager.setHfpEnabled(true);
+            } catch (Exception e) {
+                fail("Unexpected exception thrown by setHfpEnabled: " + e);
+            }
+
+            try {
+                mAudioManager.setHfpSamplingRate(16000);
+            } catch (Exception e) {
+                fail("Unexpected exception thrown by setHfpSamplingRate: " + e);
+            }
+
+            try {
+                mAudioManager.setHfpVolume(0);
+            } catch (Exception e) {
+                fail("Unexpected exception thrown by setHfpVolume: " + e);
+            }
+
+            try {
+                mAudioManager.setBluetoothHeadsetProperties("name", false, false);
+            } catch (Exception e) {
+                fail("Unexpected exception thrown by setBluetoothHeadsetProperties: " + e);
+            }
+        } finally {
+            mAudioManager.setA2dpSuspended(false);
+            mAudioManager.setLeAudioSuspended(false);
+            mAudioManager.setHfpEnabled(false);
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }

@@ -47,6 +47,7 @@ ANDROID16_API_LEVEL = 36
 CHART_DISTANCE_NO_SCALING = 0
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
+JCA_VIDEO_PATH_TAG = 'JCA_VIDEO_CAPTURE_PATH'
 JCA_CAPTURE_PATHS_TAG = 'JCA_CAPTURE_PATHS'
 JCA_CAPTURE_STATUS_TAG = 'JCA_CAPTURE_STATUS'
 LOAD_SCENE_DELAY_SEC = 3
@@ -134,6 +135,7 @@ _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
 _BIT_HLG10 = 0x01  # bit 1 for feature mask
 _BIT_STABILIZATION = 0x02  # bit 2 for feature mask
+_CAMERA_RESTART_DELAY_SEC = 10
 
 
 def validate_tablet(tablet_name, brightness, device_id):
@@ -264,14 +266,14 @@ class ItsSession(object):
 
   IMAGE_FORMAT_LIST_1 = [
       'jpegImage', 'rawImage', 'raw10Image', 'raw12Image', 'rawStatsImage',
-      'dngImage', 'y8Image', 'jpeg_rImage',
+      'dngImage', 'y8Image', 'jpeg_rImage', 'heic_ultrahdrImage',
       'rawQuadBayerImage', 'rawQuadBayerStatsImage',
       'raw10StatsImage', 'raw10QuadBayerStatsImage', 'raw10QuadBayerImage'
   ]
 
   IMAGE_FORMAT_LIST_2 = [
       'jpegImage', 'rawImage', 'raw10Image', 'raw12Image', 'rawStatsImage',
-      'yuvImage', 'jpeg_rImage',
+      'yuvImage', 'jpeg_rImage', 'heic_ultrahdrImage',
       'rawQuadBayerImage', 'rawQuadBayerStatsImage',
       'raw10StatsImage', 'raw10QuadBayerStatsImage', 'raw10QuadBayerImage'
   ]
@@ -338,6 +340,8 @@ class ItsSession(object):
     if port is None:
       raise error_util.CameraItsError(self._device_id,
                                       ' cannot find an available ' + 'port')
+
+    self._sock_port = port
 
     # Release the socket as mutex unlock
     socket_lock.close()
@@ -435,6 +439,26 @@ class ItsSession(object):
       self.close_camera()
       self.sock.close()
     return False
+
+  def reset_socket_and_camera(self):
+    """Reset by reconnecting socket and opening camera.
+
+    Returns: None
+    """
+    if hasattr(self, 'sock') and self.sock:
+      self.sock.close()
+
+    # Give more time for camera device to enumerate and initialize
+    # after crash.
+    time.sleep(_CAMERA_RESTART_DELAY_SEC)
+
+    # Reconnect to the socket
+    self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.sock.connect((self.IPADDR, self._sock_port))
+    self.sock.settimeout(self.SOCK_TIMEOUT)
+
+    # Reopen camera
+    self.__open_camera()
 
   def override_with_hidden_physical_camera_props(self, props):
     """Check that it is a valid sub-camera backing the logical camera.
@@ -969,8 +993,8 @@ class ItsSession(object):
     return data[_OBJ_VALUE_STR]
 
   def do_preview_recording_multiple_surfaces(
-      self, output_surfaces, duration, stabilize, ois=False,
-      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
+      self, output_surfaces, video_stream_index, duration, stabilize_mode,
+      ois=False, zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
       antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
@@ -983,8 +1007,9 @@ class ItsSession(object):
       output_surfaces: list; The list of output surfaces used for creating
                              preview recording session. The first surface
                              is used for recording.
+      video_stream_index: int; The index of the output surface used for recording
       duration: int; The time in seconds for which the video will be recorded.
-      stabilize: boolean; Whether the preview should be stabilized or not
+      stabilize_mode: int; The video stabilization mode
       ois: boolean; Whether the preview should be optically stabilized or not
       zoom_ratio: float; static zoom ratio. None if default zoom
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
@@ -1001,8 +1026,9 @@ class ItsSession(object):
         _CMD_NAME_STR: 'doStaticPreviewRecording',
         _CAMERA_ID_STR: cam_id,
         'outputSurfaces': output_surfaces,
+        'recordSurfaceIndex': video_stream_index,
         'recordingDuration': duration,
-        'stabilize': stabilize,
+        'stabilizeMode': stabilize_mode,
         'ois': ois,
     }
     if zoom_ratio:
@@ -1046,9 +1072,14 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
+    video_stream_index = 0
+    if stabilize:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+    else:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     return self.do_preview_recording_multiple_surfaces(
-        output_surfaces, duration, stabilize, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max, antibanding_mode,
+        output_surfaces, video_stream_index, duration, stabilization_mode,
+        ois, zoom_ratio, ae_target_fps_min, ae_target_fps_max, antibanding_mode,
         face_detect_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
@@ -1080,11 +1111,15 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surface = self.preview_surface(video_size)
+    if stabilize:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+    else:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     cmd = {
         _CMD_NAME_STR: 'doDynamicZoomPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'outputSurfaces': output_surface,
-        'stabilize': stabilize,
+        'stabilizeMode': stabilization_mode,
         'ois': False
     }
     zoom_start, zoom_end, step_size, step_duration = sweep_zoom
@@ -1132,11 +1167,15 @@ class ItsSession(object):
       video_recorded_object: The recorded object returned from ItsService.
     """
     output_surface = self.preview_surface(video_size)
+    if stabilize:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+    else:
+      stabilization_mode = camera_properties_utils.STABILIZATION_MODE_OFF
     cmd = {
         _CMD_NAME_STR: 'doDynamicMeteringRegionPreviewRecording',
         _CAMERA_ID_STR: self._camera_id,
         'outputSurfaces': output_surface,
-        'stabilize': stabilize,
+        'stabilizeMode': stabilization_mode,
         'ois': False,
         'aeAwbRegionDuration': ae_awb_region_duration
     }
@@ -1324,11 +1363,14 @@ class ItsSession(object):
     if not data[_STR_VALUE_STR]:
       raise error_util.CameraItsError('No queryable stream combinations')
 
-    # Parse the stream combination string
+    # Parse the stream combination string. Example:
+    # '34+priv:1920x1080+jpeg:4032x2268;35+priv:1280x720+priv:1280x720'
     combinations = [{
-        'name': c, 'combination': [
+        'name': c,
+        'version': int(c.split('+')[0]),
+        'combination': [
             {'format': s.split(':')[0],
-             'size': s.split(':')[1]} for s in c.split('+')]}
+             'size': s.split(':')[1]} for s in c.split('+')[1:]]}
                     for c in data[_STR_VALUE_STR].split(';')]
 
     return data[_STR_VALUE_STR], combinations
@@ -1640,17 +1682,20 @@ class ItsSession(object):
     for zoom_ratio in zoom_ratios:
       ui_interaction_utils.jca_ui_zoom(dut, zoom_ratio, log_path)
       # Get physical ID
-      physical_camera_id = int(
-          dut.ui(
-              res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
-      )
-      logging.debug('Physical camera ID: %d', physical_camera_id)
+      try:
+        physical_camera_id = int(
+            dut.ui(
+                res=ui_interaction_utils.UI_PHYSICAL_CAMERA_RESOURCE_ID).text
+        )
+        logging.debug('Physical camera ID: %d', physical_camera_id)
+      except ValueError:
+        physical_camera_id = None
       physical_camera_ids.append(physical_camera_id)
       # Take capture
       dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
       dut.ui(
           text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.exists(
-          ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+              ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
       dut.ui(text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.gone(
           ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
     dut.ui.press.back()
@@ -1690,7 +1735,37 @@ class ItsSession(object):
                            'open_jca_viewfinder() or do_jca_video_setup()'
                            'in ui_interaction_utils.py to start JCA.')
     dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click(duration)
-    return self.get_and_pull_jca_capture(dut, log_path)
+    return self.get_and_pull_jca_video_capture(dut, log_path)
+
+  def _get_jca_capture_paths(self):
+    """Handle JCA capture result paths from the socket.
+
+    Returns:
+      A capture result path or a list of capture results paths.
+    """
+    capture_paths, capture_status = None, None
+    while not capture_paths or not capture_status:
+      data, _ = self.__read_response_from_socket()
+      if data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
+        capture_status = data[_STR_VALUE_STR]
+      elif data[_TAG_STR] == JCA_CAPTURE_PATHS_TAG:
+        if capture_paths is not None:
+          raise error_util.CameraItsError(
+              f'Invalid response {data[_TAG_STR]} for JCA capture')
+        capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
+      elif data[_TAG_STR] == JCA_VIDEO_PATH_TAG:
+        if capture_paths is not None:
+          raise error_util.CameraItsError(
+              f'Invalid response {data[_TAG_STR]} for JCA capture')
+        capture_paths = data[_STR_VALUE_STR]
+      else:
+        raise error_util.CameraItsError(
+            f'Invalid response {data[_TAG_STR]} for JCA capture')
+    if capture_status != RESULT_OK_STATUS:
+      logging.error('Capture failed! Expected status %d, received %d',
+                    RESULT_OK_STATUS, capture_status)
+    logging.debug('capture paths: %s', capture_paths)
+    return capture_paths
 
   def get_and_pull_jca_capture(self, dut, log_path):
     """Retrieve a capture path from the socket and pulls capture to host.
@@ -1703,25 +1778,28 @@ class ItsSession(object):
     Raises:
       CameraItsError: If unexpected data is retrieved from the socket.
     """
-    capture_paths, capture_status = None, None
-    while not capture_paths or not capture_status:
-      data, _ = self.__read_response_from_socket()
-      if data[_TAG_STR] == JCA_CAPTURE_PATHS_TAG:
-        capture_paths = data[_OBJ_VALUE_STR][JCA_CAPTURE_PATHS_TAG]
-      elif data[_TAG_STR] == JCA_CAPTURE_STATUS_TAG:
-        capture_status = data[_STR_VALUE_STR]
-      else:
-        raise error_util.CameraItsError(
-            f'Invalid response {data[_TAG_STR]} for JCA capture')
-    if capture_status != RESULT_OK_STATUS:
-      logging.error('Capture failed! Expected status %d, received %d',
-                    RESULT_OK_STATUS, capture_status)
-    logging.debug('capture paths: %s', capture_paths)
+    capture_paths = self._get_jca_capture_paths()
     for capture_path in capture_paths:
       _, capture_name = os.path.split(capture_path)
       its_device_utils.run(
           f'adb -s {dut.serial} pull {capture_path} {log_path}')
       yield os.path.join(log_path, capture_name)
+
+  def get_and_pull_jca_video_capture(self, dut, log_path):
+    """Retrieve a capture path from the socket and pulls capture to host.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+    Returns:
+      The host-side path of the capture.
+    Raises:
+      CameraItsError: If unexpected data is retrieved from the socket.
+    """
+    capture_path = self._get_jca_capture_paths()
+    _, capture_name = os.path.split(capture_path)
+    its_device_utils.run(f'adb -s {dut.serial} pull {capture_path} {log_path}')
+    return os.path.join(log_path, capture_name)
 
   def do_capture_with_flash(self,
                             preview_request_start,
@@ -2031,6 +2109,7 @@ class ItsSession(object):
             'dng': [],
             'jpeg': [],
             'jpeg_r': [],
+            'heic_ultrahdr': [],
             'y8': [],
             'rawQuadBayer': [],
             'rawQuadBayerStats': [],
@@ -2441,31 +2520,8 @@ class ItsSession(object):
     """
     chart_scaling = opencv_processing_utils.calc_chart_scaling(
         chart_distance, camera_fov)
-    if math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_WIDE_IN_22CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_WIDE_IN_22CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE_IN_22CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE_IN_22CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE25_IN_31CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE25_IN_31CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE40_IN_31CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE40_IN_31CM_RIG}x_scaled.png'
-    elif math.isclose(
-        chart_scaling,
-        opencv_processing_utils.SCALE_TELE_IN_31CM_RIG,
-        abs_tol=SCALING_TO_FILE_ATOL):
-      file_name = f'{scene}_{opencv_processing_utils.SCALE_TELE_IN_31CM_RIG}x_scaled.png'
+    if chart_scaling:
+      file_name = f'{scene}_{chart_scaling}x_scaled.png'
     else:
       file_name = f'{scene}.png'
     logging.debug('Scene to load: %s', file_name)
@@ -2631,25 +2687,26 @@ class ItsSession(object):
       raise AssertionError('No camera IDs were found.')
     return id_to_props
 
-  def has_ultrawide_camera(self, facing):
-    """Return if device has an ultrawide camera facing the same direction.
-
-    Args:
-      facing: constant describing the direction the camera device lens faces.
-
-    Returns:
-      True if the device has an ultrawide camera facing in that direction.
-    """
+  def get_primary_camera_id(self, facing):
+    """Return the primary camera ID facing the given direction."""
     camera_ids = self.get_camera_ids()
     primary_rear_camera_id = camera_ids.get('primaryRearCameraId', '')
     primary_front_camera_id = camera_ids.get('primaryFrontCameraId', '')
     if facing == camera_properties_utils.LENS_FACING['BACK']:
-      primary_camera_id = primary_rear_camera_id
+      return primary_rear_camera_id
     elif facing == camera_properties_utils.LENS_FACING['FRONT']:
-      primary_camera_id = primary_front_camera_id
+      return primary_front_camera_id
     else:
       raise NotImplementedError('Cameras not facing either front or back '
                                 'are currently unsupported.')
+
+  def _get_id_to_fov_facing(self):
+    """Return the FoV and facing of each camera ID.
+
+    Returns:
+      A dictionary mapping camera IDs to a namedtuple containing the camera's
+      field of view and facing.
+    """
     id_to_props = self._camera_id_to_props()
     fov_and_facing = collections.namedtuple('FovAndFacing', ['fov', 'facing'])
     id_to_fov_facing = {
@@ -2659,18 +2716,61 @@ class ItsSession(object):
         for unparsed_id, props in id_to_props.items()
     }
     logging.debug('IDs to (FOVs, facing): %s', id_to_fov_facing)
+    return id_to_fov_facing
+
+  def _has_physical_camera_with_different_fov(
+      self, facing, is_fov_beyond_threshold, camera_type='physical'):
+    """Return if device has a physical camera with different FoV than primary.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+      is_fov_beyond_threshold: Callable that compares the FoV of a physical
+        camera against an FoV threshold.
+      camera_type: Optional[string]; description of the FoV of the camera.
+    Returns:
+      True if the device has a physical camera with different FoV than primary.
+    """
+    primary_camera_id = self.get_primary_camera_id(facing)
+    id_to_fov_facing = self._get_id_to_fov_facing()
     primary_camera_fov, primary_camera_facing = id_to_fov_facing[
         primary_camera_id]
     for unparsed_id, fov_facing_combo in id_to_fov_facing.items():
-      if (float(fov_facing_combo.fov) > float(primary_camera_fov) and
+      if (is_fov_beyond_threshold(float(fov_facing_combo.fov)) and
           fov_facing_combo.facing == primary_camera_facing and
           unparsed_id != primary_camera_id):
-        logging.debug('Ultrawide camera found with ID %s and FoV %.3f. '
+        logging.debug('Found %s camera with ID %s and FoV %.3f. '
                       'Primary camera has ID %s and FoV: %.3f.',
+                      camera_type,
                       unparsed_id, float(fov_facing_combo.fov),
                       primary_camera_id, float(primary_camera_fov))
         return True
     return False
+
+  def has_ultrawide_camera(self, facing):
+    """Return if device has an ultrawide camera facing the same direction.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+    Returns:
+      True if the device has an ultrawide camera facing in that direction.
+    """
+    return self._has_physical_camera_with_different_fov(
+        facing,
+        lambda fov: fov >= opencv_processing_utils.FOV_THRESH_UW,
+        camera_type='ultrawide')
+
+  def has_tele_camera(self, facing):
+    """Return if device has a telephoto camera facing the same direction.
+
+    Args:
+      facing: constant describing the direction the camera device lens faces.
+    Returns:
+      True if the device has a telephoto camera facing in that direction.
+    """
+    return self._has_physical_camera_with_different_fov(
+        facing,
+        lambda fov: fov <= opencv_processing_utils.FOV_THRESH_TELE,
+        camera_type='telephoto')
 
   def get_facing_to_ids(self):
     """Returns mapping from lens facing to list of corresponding camera IDs."""
@@ -2708,6 +2808,30 @@ class ItsSession(object):
       raise error_util.CameraItsError('Invalid command response')
     return data[_STR_VALUE_STR] == 'true'
 
+  def is_night_mode_indicator_supported(self, camera_id):
+    """Checks if night mode indicator is supported for camera id.
+
+    If night mode camera extension is supported by the device and the device
+    supports the night mode indicator for both Camera2 and CameraExtension, then
+    this function returns True.
+
+    Args:
+      camera_id: int; device ID
+    Returns:
+      True if night mode indicator is supported and false otherwise.
+    """
+    cmd = {
+        'cmdName': 'isNightModeIndicatorSupported',
+        'cameraId': camera_id,
+    }
+    self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
+    timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
+    self.sock.settimeout(timeout)
+    data, _ = self.__read_response_from_socket()
+    if data['tag'] != 'isNightModeIndicatorSupported':
+      raise error_util.CameraItsError('Invalid command response')
+    return data[_STR_VALUE_STR] == 'true'
+
   def do_capture_preview_frame(self,
                                camera_id,
                                preview_size,
@@ -2727,7 +2851,8 @@ class ItsSession(object):
       cap_request: dict; python dict specifying the key/value pair of capture
         request keys, which will be converted to JSON and sent to the device.
     Returns:
-      Single JPEG frame capture as numpy array of bytes
+      Tuple of capture result camera metadata and single JPEG frame capture as
+      numpy array of bytes
     """
     cmd = {
         'cmdName': 'doCapturePreviewFrame',
@@ -2740,10 +2865,16 @@ class ItsSession(object):
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
+    capture_result_metadata = None
+    jpeg_image = None
+    data, _ = self.__read_response_from_socket()
+    if data[_TAG_STR] == 'captureResults':
+      capture_result_metadata = data[_OBJ_VALUE_STR]['captureResult']
+
     data, buf = self.__read_response_from_socket()
-    if data[_TAG_STR] != 'jpegImage':
-      raise error_util.CameraItsError('Invalid command response')
-    return buf
+    if data[_TAG_STR] == 'jpegImage':
+      jpeg_image = buf
+    return capture_result_metadata, jpeg_image
 
   def preview_surface(self, size, hlg10_enabled=False):
     """Create a surface dictionary based on size and hdr-ness.
@@ -3112,12 +3243,14 @@ def remove_mp4_file(file_name_with_path):
 
 
 def check_features_passed(
-    features_passed, hlg10, is_stabilized):
-  """Check if the [hlg10, is_stabilized] combination is already tested
-  to be supported.
+    features_passed, streams_name, fps_range_tuple,
+    hlg10, is_stabilized):
+  """Check if [hlg10, is_stabilized] combo is already tested to be supported.
 
   Args:
-    features_passed: The list of feature combinations already supported
+    features_passed: The 2d dictionary of feature combinations already passed
+    streams_name: The first key for features_passed dictionary
+    fps_range_tuple: The second key for features_passed dictionary
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
 
@@ -3128,25 +3261,57 @@ def check_features_passed(
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
   tested = False
-  for tested_feature in features_passed:
-    # Only test a combination if they aren't already a subset
-    # of another tested combination.
-    if (tested_feature | feature_mask) == tested_feature:
-      tested = True
-      break
+  if streams_name in features_passed:
+    if fps_range_tuple in features_passed[streams_name]:
+      for tested_feature in features_passed[streams_name][fps_range_tuple]:
+        # Only test a combination if they aren't already a subset
+        # of another tested combination.
+        if (tested_feature | feature_mask) == tested_feature:
+          tested = True
+          break
   return tested
 
 
 def mark_features_passed(
-    features_passed, hlg10, is_stabilized):
+    features_passed, streams_name, fps_range_tuple,
+    hlg10, is_stabilized):
   """Mark the [hlg10, is_stabilized] combination as tested to pass.
 
   Args:
-    features_passed: The list of feature combinations already tested
+    features_passed: The 2d dictionary of feature combinations already passed
+    streams_name: The first key for features_passed dictionary
+    fps_range_tuple: The second key for feature_passed dictionary
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
   """
   feature_mask = 0
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
-  features_passed.append(feature_mask)
+  if (streams_name in features_passed and
+      fps_range_tuple in features_passed[streams_name]):
+    features_passed[streams_name][fps_range_tuple].append(feature_mask)
+  else:
+    features_passed.setdefault(streams_name, {}).setdefault(fps_range_tuple, [feature_mask])
+
+
+def define_raw_stats_fmt_sensor_sensitivity(props, img_stats_grid):
+  """Define format with active array width and height for sensor sensitivity testing."""
+  aa_width = (props['android.sensor.info.preCorrectionActiveArraySize']['right'] -
+              props['android.sensor.info.preCorrectionActiveArraySize']['left'])
+  aa_height = (props['android.sensor.info.preCorrectionActiveArraySize']['bottom'] -
+               props['android.sensor.info.preCorrectionActiveArraySize']['top'])
+  logging.debug('Active array W,H: %d,%d', aa_width, aa_height)
+  return {'format': 'rawStats',
+          'gridWidth': aa_width // img_stats_grid,
+          'gridHeight': aa_height // img_stats_grid}
+
+
+def define_raw_stats_fmt_exposure(props, img_stats_grid):
+  """Define format with active array width and height for exposure testing."""
+  aax = props['android.sensor.info.preCorrectionActiveArraySize']['left']
+  aay = props['android.sensor.info.preCorrectionActiveArraySize']['top']
+  aa_width = props['android.sensor.info.preCorrectionActiveArraySize']['right']-aax
+  aa_height = props['android.sensor.info.preCorrectionActiveArraySize']['bottom']-aay
+  return {'format': 'rawStats',
+          'gridWidth': aa_width // img_stats_grid,
+          'gridHeight': aa_height // img_stats_grid}

@@ -37,6 +37,7 @@ android_test {
         "android.crashrecovery.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "truth",
     ],
     srcs: [

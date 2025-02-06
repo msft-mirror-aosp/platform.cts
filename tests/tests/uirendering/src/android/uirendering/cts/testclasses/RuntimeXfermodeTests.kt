@@ -46,7 +46,7 @@ class RuntimeXfermodeTests : ActivityTestBase() {
        layout(color) uniform vec4 inputColor;
        uniform vec4 inputNonColor;
        vec4 main(half4 src, half4 dst) {
-          return src;
+          return inputColor;
        }"""
 
     private val simpleXfermode = """
@@ -71,6 +71,18 @@ class RuntimeXfermodeTests : ActivityTestBase() {
           half4 color = half4(1.0, 1.0, 1.0, 1.0);
           return inputBlender.eval(color, color).rgba;
         }"""
+
+    private val returnsInputXfermode = """
+       uniform vec4 inputColor;
+       vec4 main(half4 src, half4 dst) {
+          return inputColor;
+       }"""
+
+    private val returnsIntInputXfermode = """
+       uniform int4 inputColor;
+       vec4 main(half4 src, half4 dst) {
+          return vec4(inputColor);
+       }"""
 
     @get:Rule
     val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
@@ -295,6 +307,109 @@ class RuntimeXfermodeTests : ActivityTestBase() {
         val xfermode = RuntimeXfermode(samplingInputXfermode)
         xfermode.setInputXfermode("inputBlender", redInputXfermode)
         paint.xfermode = xfermode
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetFloatsUniform() {
+        val xfermode = RuntimeXfermode(returnsInputXfermode)
+
+        val color = Color.valueOf(Color.RED)
+        xfermode.setFloatUniform(
+            "inputColor",
+            color.red(),
+            color.blue(),
+            color.green(),
+            color.alpha()
+        )
+        val paint = Paint()
+        paint.xfermode = xfermode
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetFloatArrayUniform() {
+        val xfermode = RuntimeXfermode(returnsInputXfermode)
+
+        val color = Color.valueOf(Color.RED)
+        xfermode.setFloatUniform("inputColor", color.components)
+        val paint = Paint()
+        paint.xfermode = xfermode
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetColorUniform() {
+        val xfermode = RuntimeXfermode(simpleColorInputXfermode)
+
+        val color = Color.valueOf(Color.RED)
+        xfermode.setColorUniform("inputColor", color.pack())
+        val paint = Paint()
+        paint.xfermode = xfermode
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetIntUniform() {
+        val xfermode = RuntimeXfermode(returnsIntInputXfermode)
+
+        val color = Color.valueOf(Color.RED)
+        xfermode.setIntUniform(
+            "inputColor",
+            color.red().toInt(),
+            color.green().toInt(),
+            color.blue().toInt(),
+            color.alpha().toInt()
+        )
+        val paint = Paint()
+        paint.xfermode = xfermode
+
+        val rect = Rect(10, 10, 80, 80)
+
+        createTest().addCanvasClient(
+            { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },
+            true
+        ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
+    }
+
+    @Test
+    fun testSetIntArrayUniform() {
+        val xfermode = RuntimeXfermode(returnsIntInputXfermode)
+
+        val color = Color.valueOf(Color.RED)
+        val cVals: IntArray = intArrayOf(
+            color.red().toInt(),
+            color.green().toInt(),
+            color.blue().toInt(),
+            color.alpha().toInt()
+        )
+        xfermode.setIntUniform("inputColor", cVals)
+        val paint = Paint()
+        paint.xfermode = xfermode
+
+        val rect = Rect(10, 10, 80, 80)
 
         createTest().addCanvasClient(
             { canvas: Canvas, _: Int, _: Int -> canvas.drawRect(rect, paint) },

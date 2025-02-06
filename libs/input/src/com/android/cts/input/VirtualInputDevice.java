@@ -119,8 +119,9 @@ public abstract class VirtualInputDevice implements
         registerInputDevice(registerCommand.toString());
 
         if (display != null) {
-            mDisplayAssociation = new InputDeviceAssociationByDescriptor.Associator(
-                    mInstrumentation).associate(mDeviceId, display);
+            mDisplayAssociation =
+                    new InputDeviceAssociationByDescriptor.Associator(mInstrumentation)
+                            .associate(mDeviceId, display);
         }
     }
 

@@ -24,16 +24,22 @@ import android.telecom.TelecomManager;
 import android.telecom.cts.apps.VoipConnection;
 import android.util.Log;
 
+import java.util.concurrent.CountDownLatch;
+
 public class VoipConnectionServiceMain extends ConnectionService {
     private static final String TAG = VoipConnectionServiceMain.class.getSimpleName();
     public static VoipConnectionServiceMain sConnectionService;
     public static VoipConnection sLastConnection = null;
+    public static ConnectionRequest sLastFailedRequest = null;
+    public static CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
 
     @Override
     public void onBindClient(Intent intent) {
         Log.i(TAG, String.format("onBindClient: intent=[%s]", intent));
         sConnectionService = this;
         sLastConnection = null;
+        sLastFailedRequest = null;
+        sCreateOutgoingConnectionLatch = new CountDownLatch(1);
     }
 
     @Override
@@ -41,6 +47,8 @@ public class VoipConnectionServiceMain extends ConnectionService {
         Log.i(TAG, String.format("onUnbind: intent=[%s]", intent));
         sConnectionService = null;
         sLastConnection = null;
+        sLastFailedRequest = null;
+        sCreateOutgoingConnectionLatch = new CountDownLatch(1);
         return super.onUnbind(intent);
     }
 
@@ -57,6 +65,7 @@ public class VoipConnectionServiceMain extends ConnectionService {
             ConnectionRequest request) {
         Log.i(TAG, String.format("onCreateOutgoingConnectionFailed: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        sLastFailedRequest = request;
         super.onCreateOutgoingConnectionFailed(connectionManagerPhoneAccount, request);
     }
 
@@ -73,6 +82,7 @@ public class VoipConnectionServiceMain extends ConnectionService {
             ConnectionRequest request) {
         Log.i(TAG, String.format("onCreateIncomingConnectionFailed: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        sLastFailedRequest = request;
         super.onCreateIncomingConnectionFailed(connectionManagerPhoneAccount, request);
     }
 

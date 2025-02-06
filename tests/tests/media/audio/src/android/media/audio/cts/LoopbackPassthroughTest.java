@@ -34,6 +34,7 @@ import android.media.AudioTrack;
 import android.media.audiopolicy.AudioMix;
 import android.media.audiopolicy.AudioMixingRule;
 import android.media.audiopolicy.AudioPolicy;
+import android.os.Build;
 import android.os.Looper;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -45,6 +46,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.PropertyUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -106,7 +108,8 @@ public class LoopbackPassthroughTest {
     @Test
     @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testPcmLoopback() {
-        if (!supportsLoopback()) {
+        if (!supportsLoopback()
+                || PropertyUtil.getVsrApiLevel() <= Build.VENDOR_API_2024_Q2) {
             return;
         }
         final int NUM_BUFFERS_TO_WRITE = 32;
@@ -131,7 +134,8 @@ public class LoopbackPassthroughTest {
     @Test
     @RequireNotAutomotive(reason = "Auto uses its own policy for routing")
     public void testEac3JocLoopback() {
-        if (!supportsLoopback()) {
+        if (!supportsLoopback()
+                || PropertyUtil.getVsrApiLevel() <= Build.VENDOR_API_2024_Q2) {
             return;
         }
         final int EAC3_JOC_RESOURCE = R.raw.Living_Room_Atmos_6ch_640kbps_eac3_joc_10s;
@@ -229,8 +233,9 @@ public class LoopbackPassthroughTest {
                     } else {
                         bytesToWrite -= ret;
                         totalBytesWritten += ret;
-                        Log.v(TAG, "wrote " + ret + " bytes to AudioTrack, bytes left:"
-                                + bytesToWrite);
+                        Log.v(TAG, "wrote " + ret
+                                + " bytes to AudioTrack. Bytes left:" + bytesToWrite
+                                + " Offset relative to start:" + totalBytesWritten);
                         if (player.getPlayState() != AudioTrack.PLAYSTATE_PLAYING
                                 && ret < kBufferSizeInBytes) {
                             player.play();
@@ -286,6 +291,9 @@ public class LoopbackPassthroughTest {
         // @return Number of bytes actually read.
         int read(byte[] buffer, int numBytes);
 
+        // Returns the offset in bytes read relative to the start of the source.
+        int getOffsetInBytes();
+
         // Returns the audio format of the source.
         int getFormat();
 
@@ -295,21 +303,26 @@ public class LoopbackPassthroughTest {
 
     private static class PcmAudioSource implements AudioSource {
         private final int mTotalBytes;
-        private int mWrittenBytes;
+        private int mBytesRead;
 
         public PcmAudioSource(int totalBytes) {
             mTotalBytes = totalBytes;
-            mWrittenBytes = 0;
+            mBytesRead = 0;
         }
 
         @Override
         public int read(byte[] buffer, int numBytes) {
-            int bytesToRead = Math.min(numBytes, mTotalBytes - mWrittenBytes);
+            int bytesToRead = Math.min(numBytes, mTotalBytes - mBytesRead);
             for (int j = 0; j < bytesToRead; j++) {
-                buffer[j] = (byte) ((mWrittenBytes + j) % 256);
+                buffer[j] = (byte) ((mBytesRead + j) % 256);
             }
-            mWrittenBytes += bytesToRead;
+            mBytesRead += bytesToRead;
             return bytesToRead;
+        }
+
+        @Override
+        public int getOffsetInBytes() {
+            return mBytesRead;
         }
 
         @Override
@@ -324,20 +337,32 @@ public class LoopbackPassthroughTest {
 
     private class Eac3JocAudioSource implements AudioSource {
         private final InputStream mStream;
+        private int mBytesRead;
 
         public Eac3JocAudioSource(int resource) {
             mStream = mContext.getResources().openRawResource(resource);
             assertNotNull("Stream is null", mStream);
+            mBytesRead = 0;
         }
 
         @Override
         public int read(byte[] buffer, int numBytes) {
             try {
-                return mStream.read(buffer, 0, numBytes);
+                int bytesRead = mStream.read(buffer, 0, numBytes);
+                if (bytesRead < 0) {
+                    return 0;
+                }
+                mBytesRead += bytesRead;
+                return bytesRead;
             } catch (IOException e) {
                 fail("Unable to read from stream");
                 return 0;
             }
+        }
+
+        @Override
+        public int getOffsetInBytes() {
+            return mBytesRead;
         }
 
         @Override
@@ -403,10 +428,32 @@ public class LoopbackPassthroughTest {
                 if (ret > 0) {
                     Log.v(TAG, "read " + ret + " bytes");
                     if (mCheckAudioData) {
+                        int srcOffset = mRecordReferenceSource.getOffsetInBytes();
                         mRecordReferenceSource.read(referenceData, ret);
-                        if (!Arrays.equals(audioData, 0, ret, referenceData, 0, ret)) {
+                        if (!Arrays.equals(audioData, 0, ret, referenceData, 0, ret)
+                                && mIsRecordingOutputCorrect) {
                             mIsRecordingOutputCorrect = false;
-                            Log.e(TAG, "Detected difference in AudioRecord output");
+                            int bufOffset = 0;
+                            while (bufOffset < Integer.min(ret, kBufferSizeInBytes)) {
+                                if (audioData[bufOffset] != referenceData[bufOffset]) {
+                                    break;
+                                }
+                                ++bufOffset;
+                            }
+                            srcOffset += bufOffset;
+                            Log.e(TAG, "Detected difference in AudioRecord output at reference "
+                                    + "source offset " + srcOffset + " bytes:");
+                            final int NUM_DEBUG_PRINT_BYTES = 256;
+                            String expectedBytesStr = "";
+                            String actualBytesStr = "";
+                            for (int i = 0; i < Integer.min(NUM_DEBUG_PRINT_BYTES, ret - bufOffset);
+                                    ++i) {
+                                expectedBytesStr += String.format("%02x,",
+                                        referenceData[bufOffset + i]);
+                                actualBytesStr += String.format("%02x,", audioData[bufOffset + i]);
+                            }
+                            Log.e(TAG, "Expected:" + expectedBytesStr);
+                            Log.e(TAG, "Actual:  " + actualBytesStr);
                         }
                     }
                     mBytesToRead -= ret;

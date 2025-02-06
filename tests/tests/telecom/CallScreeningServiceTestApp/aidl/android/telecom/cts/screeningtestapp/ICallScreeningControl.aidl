@@ -32,4 +32,6 @@ interface ICallScreeningControl {
     String getCachedHandle();
 
     int getCachedDisconnectCause();
+
+    boolean isBound();
 }

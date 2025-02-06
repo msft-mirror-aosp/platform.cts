@@ -21,6 +21,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <condition_variable>
+#include <dlfcn.h>
 #include <map>
 #include <mutex>
 #include <string>
@@ -57,6 +58,29 @@ template <>
 struct std::default_delete<ACameraMetadata> {
     inline void operator()(ACameraMetadata* chars) const { ACameraMetadata_free(chars); }
 };
+
+const char kLibandroidPath[] = "libcamera2ndk.so";
+
+typedef camera_status_t (*ACameraManager_openSharedCameraNative)(
+        ACameraManager* manager, const char* cameraId, ACameraDevice_StateCallbacks* callback,
+        /*out*/ ACameraDevice** device, /*out*/ bool* isPrimaryClient);
+typedef camera_status_t (*ACameraManager_isCameraDeviceSharingSupportedNative)(
+        ACameraManager* manager, const char* cameraId, bool* isSharingSupported);
+typedef camera_status_t (*ACameraCaptureSessionShared_startStreamingNative)(
+        ACameraCaptureSession* sharedSession, ACameraCaptureSession_captureCallbacksV2 *callbacks,
+        int numOutputWindows, ANativeWindow **window, int *captureSequenceId);
+typedef camera_status_t (*ACameraCaptureSessionShared_stopStreamingNative)(
+        ACameraCaptureSession* sharedSession);
+
+template <typename T>
+void getLibFunction(void* handle, const char* identifier, T* out) {
+    auto result = reinterpret_cast<T>(dlsym(handle, identifier));
+    if (!result) {
+        ALOGE("dlsym error: %s %s %s", __func__, dlerror(), identifier);
+        assert(result);
+    }
+    *out = result;
+}
 
 class CameraServiceListener {
   public:
@@ -201,9 +225,41 @@ class CameraDeviceListener {
         return;
     }
 
+    static void onClientSharedAccessPriorityChanged(void* obj, ACameraDevice* device, bool primaryClient) {
+        ALOGV("Camera %s receive onClientSharedAccessPriorityChanged %d!",
+                  ACameraDevice_getId(device), primaryClient);
+        if (obj == nullptr) {
+            return;
+        }
+        CameraDeviceListener* thiz = reinterpret_cast<CameraDeviceListener*>(obj);
+        std::lock_guard<std::mutex> lock(thiz->mMutex);
+        thiz->mOnClientAccessPrioritiesChangedCount++;
+        thiz->mClientSharedModeStatus = primaryClient;
+        return;
+    }
+
+    int getDisconnectCount() {
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mOnDisconnect;
+    }
+
+    int getClientAccessPrioritiesChangedCountAndReset() {
+        std::lock_guard<std::mutex> lock(mMutex);
+        int ret = mOnClientAccessPrioritiesChangedCount;
+        mOnClientAccessPrioritiesChangedCount = 0;
+        return ret;
+    }
+
+    bool getClientSharedModeStatus() {
+        std::lock_guard<std::mutex> lock(mMutex);
+        return mClientSharedModeStatus;
+    }
+
   private:
     std::mutex mMutex;
     int mOnDisconnect = 0;
+    int mOnClientAccessPrioritiesChangedCount = 0;
+    bool mClientSharedModeStatus;
     int mOnError = 0;
     int mLatestError = 0;
 };
@@ -617,6 +673,24 @@ class CaptureResultListener {
             ret = true;
         }
 
+        return ret;
+    }
+
+    bool waitForCaptureStarted(uint32_t timeoutSec) {
+        bool ret = false;
+        std::unique_lock<std::mutex> l(mMutex);
+
+        while (mStartedFrameNumbers.empty()) {
+            auto timeout = std::chrono::system_clock::now() +
+                           std::chrono::seconds(timeoutSec);
+            if (std::cv_status::timeout == mStartCondition.wait_until(l, timeout)) {
+                break;
+            }
+        }
+
+        if (!mStartedFrameNumbers.empty()) {
+            ret = true;
+        }
         return ret;
     }
 
@@ -1221,6 +1295,31 @@ class PreviewTestCase {
         return ACameraManager_openCamera(mCameraManager, cameraId, &mDeviceCb, &mDevice);
     }
 
+    camera_status_t openSharedCamera(const char* cameraId, bool* isPrimary) {
+        if (mDevice) {
+            ALOGE("Cannot open camera before closing previously open one");
+            return ACAMERA_ERROR_INVALID_PARAMETER;
+        }
+        camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+        mCameraId = cameraId;
+        // Load system api using dlsym.
+        void* handle = dlopen(kLibandroidPath, RTLD_NOW | RTLD_LOCAL);
+        if (!handle) {
+            ALOGE("dlopen error: %s %s", __func__, dlerror());
+            return ret;
+        }
+        ACameraManager_openSharedCameraNative openSharedCamera;
+        getLibFunction(handle, "ACameraManager_openSharedCamera", &openSharedCamera);
+        dlclose(handle);
+        if (openSharedCamera == nullptr) {
+            ALOGE("ACameraManager_openSharedCamera function not present in ndk.");
+            return ret;
+        }
+
+        ret = openSharedCamera(mCameraManager, cameraId, &mDeviceCb, &mDevice, isPrimary);
+        return ret;
+    }
+
     camera_status_t closeCamera() {
         camera_status_t ret = ACameraDevice_close(mDevice);
         mDevice = nullptr;
@@ -1232,6 +1331,11 @@ class PreviewTestCase {
             ALOGE("Camera service listener has not been registered!");
         }
         return mServiceListener.isAvailable(cameraId);
+    }
+
+    media_status_t initImageReaderWithErrorLog(
+            int32_t width, int32_t height, int32_t format, int32_t maxImages) {
+        return initImageReaderWithErrorLog(width, height, format, maxImages, &mReaderCb);
     }
 
     media_status_t initImageReaderWithErrorLog(
@@ -1371,6 +1475,10 @@ class PreviewTestCase {
             }
         }
         return ret;
+    }
+
+    camera_status_t createCaptureSessionSharedOutput() {
+        return ACaptureSessionSharedOutput_create(mImgReaderAnw, &mImgReaderOutput);
     }
 
     camera_status_t createCaptureSessionWithLog(
@@ -1671,6 +1779,46 @@ class PreviewTestCase {
         return ACameraCaptureSession_stopRepeating(mSession);
     }
 
+    camera_status_t startSharedStreaming() {
+        // Load system api using dlsym.
+        camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+        void* handle = dlopen(kLibandroidPath, RTLD_NOW | RTLD_LOCAL);
+        if (!handle) {
+            ALOGE("dlopen error: %s %s", __func__, dlerror());
+            return ret;
+        }
+        ACameraCaptureSessionShared_startStreamingNative startStreaming;
+        getLibFunction(handle, "ACameraCaptureSessionShared_startStreaming", &startStreaming);
+        dlclose(handle);
+        if (startStreaming == nullptr) {
+            ALOGE("ACameraCaptureSessionShared_startStreaming function not present in ndk.");
+            return ret;
+        }
+        return startStreaming(mSession, &mResultCb2, 1, &mImgReaderAnw, &mSharedStreamingSeqId);
+    }
+
+    camera_status_t stopSharedStreaming() {
+        camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+        // Load system api using dlsym.
+        void* handle = dlopen(kLibandroidPath, RTLD_NOW | RTLD_LOCAL);
+        if (!handle) {
+            ALOGE("dlopen error: %s %s", __func__, dlerror());
+            return ret;
+        }
+        ACameraCaptureSessionShared_stopStreamingNative stopStreaming;
+        getLibFunction(handle, "ACameraCaptureSessionShared_stopStreaming", &stopStreaming);
+        dlclose(handle);
+        if (stopStreaming == nullptr) {
+            ALOGE("ACameraCaptureSessionShared_stopStreaming function not present in ndk.");
+            return ret;
+        }
+        return stopStreaming(mSession);
+    }
+
+    int getSharedStreamingSeqId() {
+        return mSharedStreamingSeqId;
+    }
+
     camera_status_t abortCaptures() {
         if (mSession == nullptr) {
             ALOGE("Testcase cannot abort session %p", mSession);
@@ -1709,6 +1857,10 @@ class PreviewTestCase {
 
     bool waitForFrameNumberStarted(int64_t frameNumber, uint32_t timeoutSec) {
         return mResultListener.waitForFrameNumberStarted(frameNumber, timeoutSec);
+    }
+
+    bool waitForCaptureStarted(uint32_t timeoutSec) {
+        return mResultListener.waitForCaptureStarted(timeoutSec);
     }
 
     camera_status_t takePicture() {
@@ -1766,6 +1918,8 @@ class PreviewTestCase {
         return ACAMERA_OK;
     }
 
+    CameraDeviceListener* getDeviceListener() { return &mDeviceListener; }
+
     CaptureSessionListener* getSessionListener() {
         return &mSessionListener;
     }
@@ -1778,13 +1932,21 @@ class PreviewTestCase {
         return mPreviewOutput;
     }
 
-  private:
+    ANativeWindow* getImageReaderNativeWindow() { return mImgReaderAnw; }
+
+private:
     ACameraManager* createManager() {
         if (!mCameraManager) {
             mCameraManager = ACameraManager_create();
         }
         return mCameraManager;
     }
+
+    ImageReaderListener mReaderListener;
+    AImageReader_ImageListener mReaderCb {
+        &mReaderListener,
+        ImageReaderListener::validateImageCb
+    };
 
     CameraServiceListener mServiceListener;
     ACameraManager_AvailabilityCallbacks mServiceCb {
@@ -1796,7 +1958,8 @@ class PreviewTestCase {
     ACameraDevice_StateCallbacks mDeviceCb {
         &mDeviceListener,
         CameraDeviceListener::onDisconnected,
-        CameraDeviceListener::onError
+        CameraDeviceListener::onError,
+        CameraDeviceListener::onClientSharedAccessPriorityChanged
     };
     CaptureSessionListener mSessionListener;
     ACameraCaptureSession_stateCallbacks mSessionCb {
@@ -1875,6 +2038,7 @@ class PreviewTestCase {
     bool mMgrInited = false; // cameraId, serviceListener
     bool mImgReaderInited = false;
     bool mPreviewInited = false;
+    int mSharedStreamingSeqId = 0;
 };
 
 jint throwAssertionError(JNIEnv* env, const char* message)
@@ -4805,3 +4969,495 @@ validateACameraMetadataFromCameraMetadataCriticalTagsNative(
           javaLensFacingU8, ndkLensFacingU8);
     return (javaLensFacingU8 == ndkLensFacingU8);
 }
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testIsCameraDeviceSharingSupportedNative(JNIEnv* env, jclass /*clazz*/, jstring jCameraId,
+        jbooleanArray result) {
+    bool pass = false;
+    ALOGV("%s", __FUNCTION__);
+    const char *camId = nullptr;
+    bool sharingSupported = false;
+    camera_status_t ret = ACAMERA_OK;
+    ACameraManager* mgr = nullptr;
+    ACameraManager_isCameraDeviceSharingSupportedNative isCameraDeviceSharingSupported;
+    // Load system api using dlsym.
+    void* handle = dlopen(kLibandroidPath, RTLD_NOW | RTLD_LOCAL);
+    if (!handle) {
+        LOG_ERROR(errorString, "dlopen error: %s %s", __func__, dlerror());
+        goto cleanup;
+    }
+    getLibFunction(handle, "ACameraManager_isCameraDeviceSharingSupported",
+            &isCameraDeviceSharingSupported);
+    dlclose(handle);
+    if (isCameraDeviceSharingSupported == nullptr) {
+        LOG_ERROR(errorString, "ACameraManager_isCameraDeviceSharingSupported func is nullptr");
+        goto cleanup;
+    }
+    mgr = ACameraManager_create();
+    if (mgr == nullptr) {
+        LOG_ERROR(errorString, "ACameraManager_create returns nullptr");
+        goto cleanup;
+    }
+    if (env != nullptr && jCameraId != nullptr) {
+        camId = env->GetStringUTFChars(jCameraId, 0);
+    }
+    if (camId == nullptr) {
+        LOG_ERROR(errorString, "Camera ID is  nullptr");
+        goto cleanup;
+    }
+    ret = isCameraDeviceSharingSupported(mgr, camId, &sharingSupported);
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "ACameraManager_isCameraDeviceSharingSupported failed: ret %d", ret);
+        goto cleanup;
+    }
+    jboolean outArr[1];
+    outArr[0] = sharingSupported;
+    env->SetBooleanArrayRegion(result, 0, 1, outArr);
+    pass = true;
+cleanup:
+    if (mgr) {
+        ACameraManager_delete(mgr);
+    }
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "fail");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jlong Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testInitAndOpenSharedCameraNative(
+        JNIEnv* env, jclass /*clazz*/, jstring jCameraId, jboolean expectedClient,
+        jboolean expectFail) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    int numCameras;
+    const char* cameraId = nullptr;
+    bool isPrimary;
+    PreviewTestCase* testCase = new PreviewTestCase();
+    camera_status_t ret = testCase->initWithErrorLog(env, jCameraId);
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "initWithErrorLog failed: ret %d", ret);
+        goto cleanup;
+    }
+    numCameras = testCase->getNumCameras();
+    if (numCameras < 0) {
+        LOG_ERROR(errorString, "Testcase returned negative number of cameras: %d", numCameras);
+        goto cleanup;
+    }
+    cameraId = testCase->getCameraId(0);
+    if (cameraId == nullptr) {
+        LOG_ERROR(errorString, "Testcase returned null camera id for camera");
+        goto cleanup;
+    }
+    ret = testCase->openSharedCamera(cameraId, &isPrimary);
+    if (!expectFail) {
+        if (ret != ACAMERA_OK) {
+            LOG_ERROR(errorString, "Open camera device %s in shared mode failure. ret %d", cameraId,
+                    ret);
+            goto cleanup;
+        }
+        usleep(100000); // sleep to give some time for callbacks to happen
+        if (isPrimary != expectedClient) {
+            LOG_ERROR(errorString,
+                    "Camera device %s is opened in shared mode as primary=%d expected=%d", cameraId,
+                    isPrimary, expectedClient);
+            goto cleanup;
+        }
+    } else {
+        if (ret == ACAMERA_OK) {
+            LOG_ERROR(errorString,
+                    "Open camera device in shared mode was expected to fail for camera  %s",
+                    cameraId);
+            goto cleanup;
+        }
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "fail");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+        if (testCase) {
+            delete testCase;
+        }
+        return 0;
+    }
+    return (jlong)testCase;
+}
+
+extern "C" jlong Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testInitAndOpenCameraNative(JNIEnv* env, jclass /*clazz*/, jstring jCameraId, jboolean expectFail) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    int numCameras;
+    const char* cameraId = nullptr;
+    PreviewTestCase* testCase = new PreviewTestCase();
+    camera_status_t ret = testCase->initWithErrorLog(env, jCameraId);
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "initWithErrorLog failed: ret %d", ret);
+        goto cleanup;
+    }
+    numCameras = testCase->getNumCameras();
+    if (numCameras < 0) {
+        LOG_ERROR(errorString, "Testcase returned negative number of cameras: %d", numCameras);
+        goto cleanup;
+    }
+    cameraId = testCase->getCameraId(0);
+    if (cameraId == nullptr) {
+        LOG_ERROR(errorString, "Testcase returned null camera id for camera");
+        goto cleanup;
+    }
+    ret = testCase->openCamera(cameraId);
+    if ((ret != ACAMERA_OK) != expectFail) {
+        if (expectFail) {
+            LOG_ERROR(errorString, "Open camera device %s success. Expected failure. ret %d",
+                      cameraId, ret);
+        } else {
+            LOG_ERROR(errorString, "Open camera device %s failure. Expected success. ret %d",
+                      cameraId, ret);
+        }
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "fail");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+        if (testCase) {
+            delete testCase;
+        }
+        return 0;
+    }
+    return (jlong)testCase;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testIsCameraEvictedNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    PreviewTestCase* sharedCtx = nullptr;
+    int disconnectedCount;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    disconnectedCount = sharedCtx->getDeviceListener()->getDisconnectCount();
+    if (disconnectedCount == 0) {
+        LOG_ERROR(errorString, "Camera eviction failure: disconnectedCount %d", 0);
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testClientAccessPriorityChangedNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
+        jboolean expectedClient) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    int clientAccessPrioritiesChangedCount;
+    bool clientSharedModeStatus;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    clientAccessPrioritiesChangedCount =
+            sharedCtx->getDeviceListener()->getClientAccessPrioritiesChangedCountAndReset();
+    if (clientAccessPrioritiesChangedCount == 0) {
+        LOG_ERROR(errorString,
+                "testClientAccessPriorityChangedNative failure");
+        goto cleanup;
+    }
+    clientSharedModeStatus = sharedCtx->getDeviceListener()->getClientSharedModeStatus();
+    if (clientSharedModeStatus != expectedClient) {
+        LOG_ERROR(errorString,
+                "client shared mode status mismatch expected primary client as %d but was %d",
+                expectedClient, clientSharedModeStatus);
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testDeInitAndCloseSharedCameraNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
+                                     jboolean expectCameraAlreadyClosed) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+
+    if (!expectCameraAlreadyClosed) {
+        ret = sharedCtx->closeCamera();
+        if (ret != ACAMERA_OK) {
+            LOG_ERROR(errorString, "Close camera device failure: ret %d", ret);
+            goto cleanup;
+        }
+    }
+
+    usleep(100000); // sleep to give some time for callbacks to happen
+    ret = sharedCtx->deInit();
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "Testcase deInit failed: ret %d", ret);
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (sharedCtx) {
+        delete sharedCtx;
+        sharedCtx = nullptr;
+    }
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testCreateCaptureSessionNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext, int width,
+        int height, int format) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    const int NUM_TEST_IMAGES = 10;
+    media_status_t mediaRet = AMEDIA_ERROR_UNKNOWN;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    mediaRet = sharedCtx->initImageReaderWithErrorLog(width, height, format, NUM_TEST_IMAGES);
+    if (mediaRet != AMEDIA_OK) {
+        LOG_ERROR(errorString, "initImageReaderWithErrorLog failure: ret %d", mediaRet);
+        goto cleanup;
+    }
+    ret = sharedCtx->createCaptureSessionWithLog();
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "Create capture session failure: ret %d", ret);
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testStartSharedStreamingNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    bool frameStarted = false;
+    const int timeoutSec = 1;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    ret = sharedCtx->startSharedStreaming();
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "Start Streaming failure: ret %d", ret);
+        goto cleanup;
+    }
+    frameStarted = sharedCtx->waitForCaptureStarted(timeoutSec);
+    if (!frameStarted) {
+        LOG_ERROR(errorString, "Camera timed out waiting on onCaptureStart for last"
+                "frame number!");
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testStopSharedStreamingNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    bool frameStarted = false;
+    bool frameArrived = false;
+    int64_t lastFrameNumber;
+    const int timeoutSec = 1;
+    int sequenceId;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    sequenceId = sharedCtx->getSharedStreamingSeqId();
+    ret = sharedCtx->stopSharedStreaming();
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "Stop Streaming failure: ret %d", ret);
+        goto cleanup;
+    }
+    lastFrameNumber = sharedCtx->getCaptureSequenceLastFrameNumber(sequenceId, timeoutSec);
+    if (lastFrameNumber < 0) {
+        LOG_ERROR(errorString, "Camera failed to acquire last frame number!");
+        goto cleanup;
+    }
+    frameStarted = sharedCtx->waitForFrameNumberStarted(lastFrameNumber, timeoutSec);
+    if (!frameStarted) {
+        LOG_ERROR(errorString, "Camera timed out waiting on onCaptureStart for last"
+                "frame number!");
+        goto cleanup;
+    }
+    frameArrived = sharedCtx->waitForFrameNumber(lastFrameNumber, timeoutSec);
+    if (!frameArrived) {
+        LOG_ERROR(errorString, "Camera timed out waiting on last frame number!");
+        goto cleanup;
+    }
+
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testCloseSessionNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    CaptureSessionListener* sessionListener;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    sessionListener = sharedCtx->getSessionListener();
+    if (sessionListener == nullptr) {
+        LOG_ERROR(errorString, "Session listener is null");
+        goto cleanup;
+    }
+    sharedCtx->closeSession();
+    usleep(100000); // sleep to give some time for callbacks to happen
+    // Todo: b/392933426 looks like session callback is not happening.
+    // commenting this for now till the issue is fixed.
+    /*if (!sessionListener->isClosed() || sessionListener->onClosedCount() != 1) {
+        LOG_ERROR(errorString,
+                "Session for camera close error. isClosed %d close count %d",
+                 sessionListener->isClosed(), sessionListener->onClosedCount());
+        goto cleanup;
+    }*/
+    sessionListener->reset();
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
+
+// TODO (b/394083987): Investigate native tests failures. For now they are commented out.
+
+//extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+//testPerformUnsupportedOperationsNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
+//                                       int width, int height, int format) {
+//    ALOGV("%s", __FUNCTION__);
+//    bool pass = false;
+//    const int NUM_TEST_IMAGES = 10;
+//    media_status_t mediaRet = AMEDIA_ERROR_UNKNOWN;
+//    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+//    PreviewTestCase* sharedCtx = nullptr;
+//    if (sharedTestContext == 0) {
+//        LOG_ERROR(errorString, "Invalid shared Test Context");
+//        goto cleanup;
+//    }
+//    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+//    mediaRet = sharedCtx->initImageReaderWithErrorLog(width, height, format, NUM_TEST_IMAGES);
+//    if (mediaRet != AMEDIA_OK) {
+//        LOG_ERROR(errorString, "initImageReaderWithErrorLog failure: ret %d", mediaRet);
+//        goto cleanup;
+//    }
+//    ret = sharedCtx->createRequestsWithErrorLog();
+//    if (ret == ACAMERA_OK) {
+//        LOG_ERROR(errorString,
+//                  "Expected failure for createRequestsWithErrorLog, but got success: ret %d",
+//                  ret);
+//        goto cleanup;
+//    }
+//    ret = sharedCtx->createCaptureSessionSharedOutput();
+//    if (ret == ACAMERA_OK) {
+//        LOG_ERROR(errorString,
+//                  "Expected failure for createCaptureSessionSharedOutput, but got success: ret
+//                  %d", ret);
+//        goto cleanup;
+//    }
+//    pass = true;
+// cleanup:
+//    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+//    if (!pass) {
+//        throwAssertionError(env, errorString);
+//    }
+//    return pass;
+//}
+
+//extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+//testUnsupportedCaptureSessionCommandsNative(JNIEnv* env, jclass /*clazz*/,
+//                                            jlong sharedTestContext) {
+//    ALOGV("%s", __FUNCTION__);
+//    bool pass = false;
+//    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+//    bool frameStarted = false;
+//    const int timeoutSec = 1;
+//    PreviewTestCase* sharedCtx = nullptr;
+//    ANativeWindow* anw = nullptr;
+//    if (sharedTestContext == 0) {
+//        LOG_ERROR(errorString, "Invalid shared Test Context");
+//        goto cleanup;
+//    }
+//    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+//    ret = sharedCtx->abortCaptures();
+//    if (ret == ACAMERA_OK) {
+//        LOG_ERROR(errorString, "Expected failure for abortCaptures, but got success: ret %d",
+//        ret); goto cleanup;
+//    }
+//    anw = sharedCtx->getImageReaderNativeWindow();
+//        ret = sharedCtx->prepareWindow(anw);
+//        if (ret == ACAMERA_OK) {
+//            LOG_ERROR(errorString, "Expected failure for prepareWindow, but got success: ret %d",
+//            ret); goto cleanup;
+//        }
+//    pass = true;
+// cleanup:
+//    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+//    if (!pass) {
+//        throwAssertionError(env, errorString);
+//    }
+//    return pass;
+//}

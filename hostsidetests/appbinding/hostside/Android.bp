@@ -32,14 +32,14 @@ java_test_host {
         "cts",
         "general-tests",
     ],
-    target_required: [
-        "CtsAppBindingService1",
-        "CtsAppBindingService2",
-        "CtsAppBindingService3",
-        "CtsAppBindingService4",
-        "CtsAppBindingService5",
-        "CtsAppBindingService6",
-        "CtsAppBindingService7",
-        "CtsAppBindingServiceB",
+    device_common_data: [
+        ":CtsAppBindingService1",
+        ":CtsAppBindingService2",
+        ":CtsAppBindingService3",
+        ":CtsAppBindingService4",
+        ":CtsAppBindingService5",
+        ":CtsAppBindingService6",
+        ":CtsAppBindingService7",
+        ":CtsAppBindingServiceB",
     ],
 }

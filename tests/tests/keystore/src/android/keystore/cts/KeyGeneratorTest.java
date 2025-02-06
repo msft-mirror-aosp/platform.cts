@@ -19,7 +19,7 @@ package android.keystore.cts;
 import static android.keystore.cts.util.TestUtils.KmType;
 import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
-import static android.keystore.cts.util.TestUtils.checkDeviceCompatibility;
+import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -682,7 +682,7 @@ public class KeyGeneratorTest {
                     new String[] {KeyProperties.ENCRYPTION_PADDING_PKCS7,
                             KeyProperties.ENCRYPTION_PADDING_NONE};
             String[] digests;
-            int purposes;
+            @KeyProperties.PurposeEnum int purposes;
             if (TestUtils.isHmacAlgorithm(algorithm)) {
                 // HMAC key can only be authorized for one digest, the one implied by the key's
                 // JCA algorithm name.
@@ -748,7 +748,7 @@ public class KeyGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm)
             throws Exception {
-        checkDeviceCompatibility();
+        assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
@@ -768,7 +768,7 @@ public class KeyGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
             throws Exception {
-        checkDeviceCompatibility();
+        assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
@@ -894,7 +894,8 @@ public class KeyGeneratorTest {
         return getWorkingSpec(0);
     }
 
-    private static KeyGenParameterSpec.Builder getWorkingSpec(int purposes) {
+    private static KeyGenParameterSpec.Builder getWorkingSpec(
+            @KeyProperties.PurposeEnum int purposes) {
         return new KeyGenParameterSpec.Builder("test1", purposes);
     }
 

@@ -159,6 +159,12 @@ public class IntentRedirectionAppTest {
                 // camera implicit intent and only clone->owner redirection is allowed
                 intent.setPackage(OWNER_APP_PACKAGE);
                 break;
+            case MediaStore.ACTION_MOTION_PHOTO_CAPTURE:
+                intent = new Intent(MediaStore.ACTION_MOTION_PHOTO_CAPTURE);
+                // specifying owner package as only system specified apps can serve
+                // motion photo implicit intent and only clone->owner redirection is allowed
+                intent.setPackage(OWNER_APP_PACKAGE);
+                break;
             case MediaStore.ACTION_VIDEO_CAPTURE :
                 intent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
                 // specifying owner package as Android 11+ only system specified apps can serve

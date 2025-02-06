@@ -146,7 +146,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
-                mCurrentDeviceState.hasProperty(
+                !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -178,7 +178,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
-                mCurrentDeviceState.hasProperty(
+                !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -209,7 +209,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
                 presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         assertNotEquals(DEFAULT_DISPLAY, presentationView.getDisplay().getDisplayId());
-        assertNotEquals(Display.STATE_OFF, presentationView.getDisplay().getState());
+        waitAndAssert(() -> (presentationView.getDisplay().getState() != Display.STATE_OFF));
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
     }
 
@@ -226,7 +226,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
-                mCurrentDeviceState.hasProperty(
+                !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -258,7 +258,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         final int presentationDisplayId = presentationView.getDisplay().getDisplayId();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplayId);
-        assertNotEquals(Display.STATE_OFF, presentationView.getDisplay().getState());
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(presentationDisplayId);
@@ -277,7 +277,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
-                mCurrentDeviceState.hasProperty(
+                !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -309,7 +309,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         final int presentationDisplayId = presentationView.getDisplay().getDisplayId();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplayId);
-        assertNotEquals(Display.STATE_OFF, presentationView.getDisplay().getState());
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(presentationDisplayId);
@@ -333,7 +333,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
-                mCurrentDeviceState.hasProperty(
+                !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -365,7 +365,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         final int presentationDisplayId = presentationView.getDisplay().getDisplayId();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplayId);
-        assertNotEquals(Display.STATE_OFF, presentationView.getDisplay().getState());
+        waitAndAssert(() -> presentationView.getDisplay().getState() != Display.STATE_OFF);
         assertEquals(SESSION_STATE_CONTENT_VISIBLE, mWindowAreaSessionState);
 
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(presentationDisplayId);
@@ -390,7 +390,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         assumeTrue(mWindowAreaPresentationStatus.getWindowAreaStatus()
                 == WindowAreaComponent.STATUS_AVAILABLE);
         assumeTrue(
-                mCurrentDeviceState.hasProperty(
+                !mCurrentDeviceState.hasProperty(
                         DeviceState.PROPERTY_FEATURE_DUAL_DISPLAY_INTERNAL_DEFAULT));
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -423,7 +423,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         waitAndAssert(() -> presentationView.mAttachedToWindow);
         final Display presentationDisplay = presentationView.getDisplay();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplay.getDisplayId());
-        assertNotEquals(Display.STATE_OFF, presentationDisplay.getState());
+        waitAndAssert(() -> presentationDisplay.getState() != Display.STATE_OFF);
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         lockScreenSession.sleepDevice();

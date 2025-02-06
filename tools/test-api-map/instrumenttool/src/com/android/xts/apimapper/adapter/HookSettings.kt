@@ -120,7 +120,7 @@ class AndroidApiInjectionSettings : HookSettings {
         apiMethod: String,
         apiDesc: String,
     ): Boolean {
-        if (classNodes.hasClass(apiClass)) {
+        if (classNodes.findMethod(apiClass, apiMethod, apiDesc) != null) {
             return false
         }
         if (!callerClass.mayAndroidApiCallerClass()) {

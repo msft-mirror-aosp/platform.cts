@@ -304,19 +304,29 @@ public class AudioTap2ToneActivity
             mDuplexAudioManager.setNumRecorderChannels(NUM_RECORD_CHANNELS);
         }
 
-        if (mDuplexAudioManager.buildStreams(mApi, BuilderBase.TYPE_JAVA) == StreamBase.OK) {
+        int buildStatus = mDuplexAudioManager.buildStreams(mApi, BuilderBase.TYPE_JAVA);
+        if (buildStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
+            Log.e(TAG, "Couldn't Build duplex stream buildStatus:0x"
+                    + Integer.toHexString(buildStatus));
+            mDuplexAudioManager.unwind();
+        } else {
             mBuffSizeView.setText(
                     getString(R.string.audio_general_play_colon)
                             + mDuplexAudioManager.getNumPlayerBufferFrames()
                             + getString(R.string.audio_general_record_colon)
                             + mDuplexAudioManager.getNumRecorderBufferFrames());
-            mDuplexAudioManager.start();
+            int startStatus = mDuplexAudioManager.start();
+            if (startStatus != DuplexAudioManager.DUPLEX_SUCCESS) {
+                Log.e(TAG, "Couldn't Start duplex stream startStatus:0x"
+                        + Integer.toHexString(startStatus));
+                mDuplexAudioManager.unwind();
+            } else {
+                mBlipSource = (AudioSource) mDuplexAudioManager.getAudioSource();
+                mIsRecording = true;
+            }
+        }
 
-            mBlipSource = (AudioSource) mDuplexAudioManager.getAudioSource();
-
-            mIsRecording = true;
-        } else {
-            mIsRecording = false;
+        if (!mIsRecording) {
             mResultsView.setText(getString(R.string.audio_tap2tone_bad_streams));
         }
         enableAudioButtons(!mIsRecording, mIsRecording);
@@ -324,7 +334,7 @@ public class AudioTap2ToneActivity
 
     private void stopAudio() {
         if (mIsRecording) {
-            mDuplexAudioManager.stop();
+            mDuplexAudioManager.unwind();
             // is there a teardown method here?
             mIsRecording = false;
         }

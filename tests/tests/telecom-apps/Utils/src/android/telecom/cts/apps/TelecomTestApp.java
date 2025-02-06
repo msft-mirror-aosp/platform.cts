@@ -31,7 +31,8 @@ public enum TelecomTestApp implements Parcelable {
     TransactionalVoipAppClone,
     ConnectionServiceVoipAppMain,
     ConnectionServiceVoipAppClone,
-    ManagedConnectionServiceApp;
+    ManagedConnectionServiceApp,
+    ManagedConnectionServiceAppClone;
 
     /**
      * General TestApp info
@@ -40,18 +41,28 @@ public enum TelecomTestApp implements Parcelable {
     public static final String CUSTOM_ID = "2";
 
     /**
-     * ManagedConnectionServiceApp
+     * ManagedConnectionServiceApp + ManagedConnectionServiceAppClone
      */
     public static final String MANAGED_APP_ID = "ManagedApp_1";
+    public static final String MANAGED_CLONE_APP_ID = "ManagedAppClone_1";
     public static final String MANAGED_PACKAGE_NAME = "android.telecom.cts.apps.managedapp";
+    public static final String MANAGED_CLONE_PACKAGE_NAME =
+            "android.telecom.cts.apps.managedappclone";
     public static final String MANAGED_CONNECTION_SERVICE_NAME =
             MANAGED_PACKAGE_NAME + ".ManagedConnectionService";
+    public static final String MANAGED_CLONE_CONNECTION_SERVICE_NAME =
+            MANAGED_CLONE_PACKAGE_NAME + ".ManagedConnectionServiceClone";
     public static final ComponentName MANAGED_APP_CN = new ComponentName(
             MANAGED_PACKAGE_NAME, MANAGED_CONNECTION_SERVICE_NAME
+    );
+    public static final ComponentName MANAGED_CLONE_APP_CN = new ComponentName(
+            MANAGED_CLONE_PACKAGE_NAME, MANAGED_CLONE_CONNECTION_SERVICE_NAME
     );
     public static final String CONTROL_INTERFACE_ACTION = MANAGED_PACKAGE_NAME + ".BIND";
     public static final String MANAGED_ADDRESS = "tel:555-TEST-sim2";
     public static final String MANAGED_APP_LABEL = "test label";
+    public static final String MANAGED_CLONE_ADDRESS = "tel:555-TEST-sim2";
+    public static final String MANAGED_APP_CLONE_LABEL = "test label";
 
 
     /**

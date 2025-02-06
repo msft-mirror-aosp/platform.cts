@@ -16,7 +16,6 @@
 
 package android.security.cts.advancedprotection;
 
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -42,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_API)
 public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
-    private static final int TIMEOUT_S = 1;
+    private static final int TIMEOUT_S = 3;
 
     @Test
     public void testEnableProtection() {
@@ -71,17 +70,13 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
             }
         };
 
-        mManager.setAdvancedProtectionEnabled(true);
-        // TODO(b/369361373): Remove temporary sleep in AdvancedProtectionManagerTest to ensure
-        //  protections are enabled.
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(true);
 
         mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
         }
-        mManager.setAdvancedProtectionEnabled(false);
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(false);
 
         if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on set");
@@ -105,18 +100,17 @@ public class AdvancedProtectionManagerTest extends BaseAdvancedProtectionTest {
             }
         };
 
-        mManager.setAdvancedProtectionEnabled(true);
-        Thread.sleep(TIMEOUT_S * 1000);
+        setAdvancedProtectionEnabled(true);
 
         mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
         if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback not called on register");
         }
         mManager.unregisterAdvancedProtectionCallback(callback);
+        // Wait for the callback to be removed. This happens async, and we can't check the state
+        // of the callback directly.
         Thread.sleep(TIMEOUT_S * 1000);
-        mManager.setAdvancedProtectionEnabled(false);
-        Thread.sleep(TIMEOUT_S * 1000);
-
+        setAdvancedProtectionEnabled(false);
 
         if (onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
             fail("Callback called on set after unregister");

@@ -42,7 +42,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.provider.DeviceConfig
 import android.provider.DeviceConfig.NAMESPACE_PRIVACY
 import android.provider.Settings
@@ -400,7 +399,6 @@ class DiscreteAppopsTest {
         assertThat(discrete.getLastDuration(OP_FLAGS_ALL)).isEqualTo(-1)
         assertThat(discrete.getLastAccessTime(OP_FLAGS_ALL))
             .isEqualTo(timeStamp - DEFAULT_TIME_QUANT_MILLIS)
-
     }
 
     @Test
@@ -446,7 +444,6 @@ class DiscreteAppopsTest {
     }
 
     @Test
-    @FlakyTest
     fun testDeduplicationUidState() {
         makeTop() // pre-warm application uid state change to make it faster during test run
         makeBackground()
@@ -459,12 +456,16 @@ class DiscreteAppopsTest {
 
         makeTop()
 
+        // Wait 2 seconds to avoid the next noteOp call batched with the previous call
         Thread.sleep(2000)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         makeBackground()
 
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
+
+        // Wait 2 seconds to avoid the next noteOp call batched with the previous call
+        Thread.sleep(2000)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME)
 
         var allOps = getHistoricalOps()
@@ -611,7 +612,6 @@ class DiscreteAppopsTest {
     }
 
     @Test
-    @FlakyTest
     fun testMixedDeduplication() {
         setQuantization(SHORT_TIME_QUANT_MILLIS)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
@@ -625,6 +625,7 @@ class DiscreteAppopsTest {
         // first quant - foreground access in tag1, background in tag2
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG2)
         makeTop()
+        Thread.sleep(500)
         noteOp(OPSTR_RESERVED_FOR_TESTING, uid, PACKAGE_NAME, TAG1)
         waitUntilNextQuantStarts(SHORT_TIME_QUANT_MILLIS)
 
@@ -997,6 +998,7 @@ class DiscreteAppopsTest {
         makeTop()
         runWithShellPermissionIdentity {
             DeviceConfig.setProperty(NAMESPACE_PRIVACY, PROPERTY_OPS_LIST, "1", false)
+            appOpsManager.clearHistory()
         }
         var allOps: HistoricalOps? = null
         for (i in 1..3) {

@@ -29,11 +29,11 @@ import android.graphics.ImageFormat
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraMetadata
 import android.view.Surface
-import android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
-import android.virtualdevice.cts.camera.VirtualCameraUtils.INFO_DEVICE_ID
-import android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar
-import android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw
-import android.virtualdevice.cts.common.VirtualCameraSupportRule
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.BACK_CAMERA_ID
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.INFO_DEVICE_ID
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.assertImagesSimilar
+import android.virtualdevice.cts.camera.util.VirtualCameraUtils.loadBitmapFromRaw
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.camera2.Camera2Config
@@ -64,7 +64,6 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assume
 import org.junit.Before
-import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -74,12 +73,6 @@ private const val VIRTUAL_CAMERA_HEIGHT = 260
 
 @RunWith(AndroidJUnit4::class)
 class VirtualCameraCameraXTest {
-
-    companion object {
-        @ClassRule
-        @JvmField
-        val VIRTUAL_CAMERA_SUPPORTED_RULE = VirtualCameraSupportRule()
-    }
 
     private var activity: AppCompatActivity? = null
     private var cameraProvider: ProcessCameraProvider? = null
@@ -91,7 +84,7 @@ class VirtualCameraCameraXTest {
     @get:Rule
     val virtualDeviceRule: VirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
         Manifest.permission.GRANT_RUNTIME_PERMISSIONS
-    ).withVirtualCameraSupportCheck()
+    )
 
     @Before
     fun setUp() {

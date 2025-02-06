@@ -16,6 +16,17 @@
 
 package android.view.cts.input;
 
+import static com.android.cts.input.EvdevInputEventCodes.ABS_RX;
+import static com.android.cts.input.EvdevInputEventCodes.ABS_RY;
+import static com.android.cts.input.EvdevInputEventCodes.ABS_RZ;
+import static com.android.cts.input.EvdevInputEventCodes.ABS_X;
+import static com.android.cts.input.EvdevInputEventCodes.ABS_Y;
+import static com.android.cts.input.EvdevInputEventCodes.ABS_Z;
+import static com.android.cts.input.EvdevInputEventCodes.EV_ABS;
+import static com.android.cts.input.EvdevInputEventCodes.EV_MSC;
+import static com.android.cts.input.EvdevInputEventCodes.EV_SYN;
+import static com.android.cts.input.EvdevInputEventCodes.MSC_TIMESTAMP;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -71,16 +82,6 @@ import java.util.concurrent.TimeUnit;
 public class InputDeviceSensorManagerTest {
     private static final String TAG = "InputDeviceSensorManagerTest";
     private static final int SENSOR_VEC_LENGTH = 3;
-    private static final int EV_SYN = 0;
-    private static final int EV_ABS = 3;
-    private static final int EV_MSC = 4;
-    private static final int ABS_X = 0;
-    private static final int ABS_Y = 1;
-    private static final int ABS_Z = 2;
-    private static final int ABS_RX = 3;
-    private static final int ABS_RY = 4;
-    private static final int ABS_RZ = 5;
-    private static final int MSC_TIMESTAMP = 5;
     // The time interval for between sensor time events, in unit of micro seconds.
     private static final int TIME_INTERVAL_US = 10000;
     // Requested sensor listening interval, to pass to registerListener API,

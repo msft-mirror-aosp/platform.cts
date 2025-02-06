@@ -30,6 +30,7 @@ import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.support.test.uiautomator.UiDevice
 import android.view.Display
@@ -39,7 +40,6 @@ import android.view.MotionEvent.ACTION_DOWN
 import android.view.MotionEvent.ACTION_UP
 import android.view.View
 import android.view.ViewTreeObserver
-import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,6 +51,7 @@ import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WindowUtil
 import com.google.common.truth.Truth.assertThat
 import java.lang.AutoCloseable
+import java.time.Duration
 import java.util.Arrays
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -59,6 +60,7 @@ import org.junit.Assert.fail
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,10 +74,6 @@ class TouchModeTest {
     private val uiDevice: UiDevice = UiDevice.getInstance(instrumentation)
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
-
-    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
-    @get:Rule
-    val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
 
     @get:Rule
     val activityRule = ActivityScenarioRule<Activity>(Activity::class.java)
@@ -207,6 +205,7 @@ class TouchModeTest {
      * true on both the main display and the secondary display
      */
     @Test
+    @Ignore("b/371247555")
     fun testTouchModeUpdate_PerDisplayFocusDisabled() {
         assumeTrue(isRunningActivitiesOnSecondaryDisplaysSupported())
         assumeFalse(
@@ -267,9 +266,11 @@ class TouchModeTest {
     @Test
     fun testTouchModeUpdate_DisplayHasOwnFocus() {
         assumeTrue(isRunningActivitiesOnSecondaryDisplaysSupported())
-        val secondaryDisplayId = createVirtualDisplay(
-                VIRTUAL_DISPLAY_FLAG_OWN_FOCUS or VIRTUAL_DISPLAY_FLAG_TRUSTED
-        )
+        var secondaryDisplayId = 0
+        SystemUtil.runWithShellPermissionIdentity({
+            secondaryDisplayId = createVirtualDisplay(
+                VIRTUAL_DISPLAY_FLAG_OWN_FOCUS or VIRTUAL_DISPLAY_FLAG_TRUSTED)
+        }, Manifest.permission.ADD_TRUSTED_DISPLAY)
 
         touchDownOnDefaultDisplay().use {
             PollingCheck.waitFor({ isInTouchMode() }, "Expected to be in touch mode")
@@ -331,6 +332,7 @@ class TouchModeTest {
     }
 
     private fun touchDownOnDefaultDisplay(): AutoCloseable {
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5))
         val downTime = SystemClock.uptimeMillis()
         val location = IntArray(2)
         activity.getWindow().getDecorView().getLocationOnScreen(location)

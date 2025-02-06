@@ -46,6 +46,7 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Rect;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.OperationCanceledException;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.HelperActivities;
@@ -858,7 +859,8 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
                 wct, TASK_FRAGMENT_TRANSIT_OPEN, false /* shouldApplyIndependently */);
         mTaskFragmentOrganizer.waitForTaskFragmentError();
 
-        assertThat(mTaskFragmentOrganizer.getThrowable()).isInstanceOf(SecurityException.class);
+        assertThat(mTaskFragmentOrganizer.getThrowable())
+                .isInstanceOf(OperationCanceledException.class);
         assertThat(mTaskFragmentOrganizer.getErrorCallbackToken()).isEqualTo(errorCallbackToken);
 
         // Activity must be launched on a new task instead.

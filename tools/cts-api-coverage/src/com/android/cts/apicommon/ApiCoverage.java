@@ -18,7 +18,9 @@ package com.android.cts.apicommon;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** Representation of the entire API containing packages. */
@@ -27,11 +29,28 @@ public class ApiCoverage {
     private final Map<String, ApiPackage> mPackages = new ConcurrentHashMap<>();
 
     public void addPackage(ApiPackage pkg) {
-        mPackages.put(pkg.getName(), pkg);
+        mPackages.putIfAbsent(pkg.getName(), pkg);
     }
 
     public ApiPackage getPackage(String name) {
-        return name == null ? null : mPackages.get(name);
+        return mPackages.getOrDefault(name, null);
+    }
+
+    /** Finds the given API class. */
+    public ApiClass getClass(String packageName, String className) {
+        ApiPackage apiPackage = getPackage(packageName);
+        return apiPackage == null ? null : apiPackage.getClass(className);
+    }
+
+    /** Finds the given API method. */
+    public ApiMethod getMethod(
+            String packageName, String className, String methodName, List<String> methodParams) {
+        ApiClass apiClass = getClass(packageName, className);
+        if (apiClass == null) {
+            return null;
+        }
+        Optional<ApiMethod> apiMethod = apiClass.getMethod(methodName, methodParams);
+        return apiMethod.orElse(null);
     }
 
     public Collection<ApiPackage> getPackages() {

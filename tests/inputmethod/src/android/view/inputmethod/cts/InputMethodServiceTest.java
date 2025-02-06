@@ -1243,10 +1243,13 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_gestureNav() throws Exception {
-        assumeFalse("Skip PC devices, as they do not support navigation bar overlays",
-                mInstrumentation.getContext().getPackageManager().hasSystemFeature(
-                        PackageManager.FEATURE_PC));
-        assumeTrue(mGestureNavSwitchHelper.hasSystemGestureFeature());
+        assumeTrue("Device must support the navigation bar",
+                mGestureNavSwitchHelper.hasNavigationBar());
+
+        assertTrue("Gesture navigation mode overlay should be installed",
+                mGestureNavSwitchHelper.hasGestureNavOverlay());
+        assertTrue("Three button navigation mode overlay should be installed",
+                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
 
         try (var ignored = mGestureNavSwitchHelper.withGestureNavigationMode();
                 var imeSession = MockImeSession.create(
@@ -1302,9 +1305,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
     @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testOnCustomImeSwitcherButtonRequestedVisible_threeButtonNav() throws Exception {
-        assumeFalse("Skip PC devices, as they do not support navigation bar overlays",
-                mInstrumentation.getContext().getPackageManager().hasSystemFeature(
-                        PackageManager.FEATURE_PC));
+        assumeTrue("Device must support the navigation bar",
+                mGestureNavSwitchHelper.hasNavigationBar());
+
+        assertTrue("Three button navigation mode overlay should be installed",
+                mGestureNavSwitchHelper.hasThreeButtonNavOverlay());
 
         try (var ignored = mGestureNavSwitchHelper.withThreeButtonNavigationMode();
                 var imeSession = MockImeSession.create(

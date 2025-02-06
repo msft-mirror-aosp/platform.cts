@@ -19,7 +19,7 @@ package android.keystore.cts;
 import static android.keystore.cts.util.TestUtils.KmType;
 import static android.keystore.cts.util.TestUtils.assumeKmSupport;
 import static android.keystore.cts.util.TestUtils.isStrongboxKeyMint;
-import static android.keystore.cts.util.TestUtils.checkDeviceCompatibility;
+import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -394,7 +394,8 @@ public class KeyPairGeneratorTest {
                         KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1};
         String[] digests =
                 new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
-        int purposes = KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_ENCRYPT;
+        @KeyProperties.PurposeEnum int purposes =
+                KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_ENCRYPT;
         KeyPairGenerator generator = getGenerator(algorithm);
         generator.initialize(getWorkingSpec(purposes)
                 .setBlockModes(blockModes)
@@ -459,7 +460,7 @@ public class KeyPairGeneratorTest {
     @Parameters(method = "kmTypes_x_algorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm) throws Exception {
-        checkDeviceCompatibility();
+        assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyPairGenerator generator = getGenerator(algorithm);
@@ -479,7 +480,7 @@ public class KeyPairGeneratorTest {
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
             throws Exception {
-        checkDeviceCompatibility();
+        assumeLockScreenSupport();
         assumeKmSupport(kmType);
         try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
             KeyPairGenerator generator = getGenerator(algorithm);
@@ -2159,7 +2160,7 @@ public class KeyPairGeneratorTest {
         return getWorkingSpec(0);
     }
 
-    private KeyGenParameterSpec.Builder getWorkingSpec(int purposes) {
+    private KeyGenParameterSpec.Builder getWorkingSpec(@KeyProperties.PurposeEnum int purposes) {
         return new KeyGenParameterSpec.Builder(TEST_ALIAS_1, purposes);
     }
 

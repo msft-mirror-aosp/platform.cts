@@ -73,8 +73,6 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
                 R.string.audio_input_routingnotification_instructions, -1);
 
         mRouteChangeListener = new AudioRecordRoutingChangeListener();
-
-        startAudio();
     }
 
     //
@@ -82,14 +80,17 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
     //
     @Override
     void startAudio() {
-        // Setup Recorder
-        int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
+        if (mIsRecording) {
+            return;
+        }
 
         int buildResult = StreamBase.ERROR_UNKNOWN;
         int openResult = StreamBase.ERROR_UNKNOWN;
         int startResult = StreamBase.ERROR_UNKNOWN;
 
         try {
+            int numExchangeFrames = StreamBase.getNumBurstFrames(BuilderBase.TYPE_NONE);
+
             RecorderBuilder builder = new RecorderBuilder();
             builder.setRecorderType(RecorderBuilder.TYPE_JAVA)
                     .setAudioSinkProvider(new NopAudioSinkProvider())
@@ -98,7 +99,8 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
                     .setNumExchangeFrames(numExchangeFrames);
             mAudioRecorder = (JavaRecorder) builder.allocStream();
 
-            if ((buildResult = mAudioRecorder.build(builder)) == StreamBase.OK
+            if (mAudioRecorder != null
+                    && (buildResult = mAudioRecorder.build(builder)) == StreamBase.OK
                     && (openResult = mAudioRecorder.open()) == StreamBase.OK
                     && (startResult = mAudioRecorder.start()) == StreamBase.OK) {
                 mNumRoutingNotifications = 0;
@@ -110,7 +112,7 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
                 mIsRecording = true;
             }
         } catch (BuilderBase.BadStateException ex) {
-            Log.e(TAG, "Failed MegaRecorder build.");
+            Log.e(TAG, "Failed MegaRecorder build. ex:" + ex);
         }
 
         if (!mIsRecording) {
@@ -118,19 +120,22 @@ public class AudioInputRoutingNotificationsActivity extends AudioNotificationsBa
             showStartupError("Recorder", buildResult, openResult, startResult);
 
             // Unwind
-            mAudioRecorder.unwind();
+            if (mAudioRecorder != null) {
+                mAudioRecorder.unwind();
+                mAudioRecorder = null;
+            }
         }
     }
 
     @Override
     void stopAudio() {
         if (mIsRecording) {
-            // unwind() will call stop()
-            mAudioRecorder.unwind();
-
             AudioRecord audioRecord = mAudioRecorder.getAudioRecord();
             audioRecord.removeOnRoutingChangedListener(mRouteChangeListener);
 
+            // unwind() will call stop()
+            mAudioRecorder.unwind();
+            mAudioRecorder = null;
             mIsRecording = false;
         }
     }

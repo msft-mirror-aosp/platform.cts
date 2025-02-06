@@ -30,8 +30,10 @@ import static android.telecom.cts.apps.StackTraceUtil.createStackTraceList;
 import static android.telecom.cts.apps.TelecomTestApp.CONTROL_INTERFACE_ACTION;
 import static android.telecom.cts.apps.WaitUntil.waitUntilAvailableEndpointsIsSet;
 import static android.telecom.cts.apps.WaitUntil.waitUntilCallAudioStateIsSet;
+import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionFails;
 import static android.telecom.cts.apps.WaitUntil.waitUntilConnectionIsNonNull;
 import static android.telecom.cts.apps.WaitUntil.waitUntilIdIsSet;
+import static android.telecom.cts.apps.WaitUntil.waitUntilManagedCreateOutgoingConnectionInvoked;
 
 import android.app.Service;
 import android.content.Intent;
@@ -42,6 +44,8 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.telecom.CallAttributes;
 import android.telecom.CallEndpoint;
+import android.telecom.Connection;
+import android.telecom.ConnectionRequest;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
@@ -51,6 +55,7 @@ import android.telecom.cts.apps.BooleanTransaction;
 import android.telecom.cts.apps.CallEndpointTransaction;
 import android.telecom.cts.apps.CallExceptionTransaction;
 import android.telecom.cts.apps.IAppControl;
+import android.telecom.cts.apps.IRemoteOperationConsumer;
 import android.telecom.cts.apps.LatchedEndpointOutcomeReceiver;
 import android.telecom.cts.apps.ManagedConnection;
 import android.telecom.cts.apps.NoDataTransaction;
@@ -74,302 +79,490 @@ public class ManagedAppControl extends Service {
     private boolean mIsBound = false;
     private TelecomManager mTelecomManager = null;
 
-    private final WaitUntil.ConnectionServiceImpl
-            mConnectionServiceImpl = () -> ManagedConnectionService.sLastConnection;
-
-    private final IBinder mBinder = new IAppControl.Stub() {
-
-        @Override
-        public boolean isBound() {
-            Log.i(TAG, String.format("isBound: [%b]", mIsBound));
-            return mIsBound;
-        }
-
-        @Override
-        public UserHandle getProcessUserHandle() {
-            return Process.myUserHandle();
-        }
-
-        @Override
-        public int getProcessUid() {
-            return Process.myUid();
-        }
-
-        @Override
-        public NoDataTransaction addCall(CallAttributes callAttributes) {
-            Log.i(TAG, "addCall: enter");
-            try {
-                List<String> stackTrace = createStackTraceList(CLASS_NAME
-                        + ".addCall(" + callAttributes + ")");
-                maybeInitTelecomManager();
-                if (isOutgoing(callAttributes)) {
-                    mTelecomManager.placeCall(callAttributes.getAddress(),
-                            getExtrasWithPhoneAccount(callAttributes));
-                } else {
-                    mTelecomManager.addNewIncomingCall(callAttributes.getPhoneAccountHandle(),
-                            getExtrasWithPhoneAccount(callAttributes));
+    private final WaitUntil.ConnectionServiceImpl mConnectionServiceImpl =
+            new WaitUntil.ConnectionServiceImpl() {
+                @Override
+                public Connection getLastConnection() {
+                    return ManagedConnectionService.sLastConnection;
                 }
-                // TelecomManager#placeCall and TelecomManager#addNewIncomingCall do not
-                // return the call object directly! Instead, a ConnectionService callback will
-                // populate a new connection.  The app process will wait via a while loop until
-                // a new connection is populated. If a connection is not added in the given time
-                // window, a TestAppException will be thrown!
-                ManagedConnection connection = (ManagedConnection) waitUntilConnectionIsNonNull(
-                        PACKAGE_NAME,
-                        stackTrace,
-                        mConnectionServiceImpl);
-                // track the connection so it can be manipulated later in the test stage
-                trackConnection(connection, callAttributes, stackTrace);
-                // signal to the test process the call has been added successfully
-                return new NoDataTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new NoDataTransaction(TestAppTransaction.Failure, e);
-            }
-        }
 
-        private void trackConnection(
-                ManagedConnection connection,
-                CallAttributes callAttributes,
-                List<String> stackTrace) {
-            String id = waitUntilIdIsSet(PACKAGE_NAME,
-                    appendStackTraceList(stackTrace, CLASS_NAME + ".trackConnection"),
-                    connection);
-            maybeClearHoldCapabilities(connection, callAttributes);
-            Log.i(TAG, String.format("trackConnection: id=[%s], connection=[%s]", id, connection));
-            mIdToConnection.put(id, connection);
-            // clear out the last connection since it has been added to tracking
-            ManagedConnectionService.sLastConnection = null;
-        }
+                @Override
+                public ConnectionRequest getLastFailedRequest() {
+                    return ManagedConnectionService.sLastFailedRequest;
+                }
 
-        private void maybeClearHoldCapabilities(ManagedConnection c,
-                CallAttributes callAttributes) {
-            if (!hasSetInactiveCapabilities(callAttributes)) {
-                c.clearHoldCapabilities();
-            }
-        }
+                @Override
+                public CountDownLatch getCreateOutgoingConnectionLatch() {
+                    return ManagedConnectionService.sCreateOutgoingConnectionLatch;
+                }
+            };
 
-        @Override
-        public CallExceptionTransaction transitionCallStateTo(String id,
-                int state,
-                boolean expectSuccess,
-                Bundle extras) {
-            Log.i(TAG, "transitionCallStateTo: attempting to transition callId=" + id);
-            try {
-                List<String> stackTrace =
-                        createStackTraceList(CLASS_NAME + ".transitionCallStateTo(" + (id) + ")");
+    private final IBinder mBinder =
+            new IAppControl.Stub() {
 
-                ManagedConnection connection = getConnectionOrThrow(id, stackTrace);
+                @Override
+                public boolean isBound() {
+                    Log.i(TAG, String.format("isBound: [%b]", mIsBound));
+                    return mIsBound;
+                }
 
-                switch (state) {
-                    case STATE_DIALING -> {
-                        connection.setCallToDialing();
-                        Log.i(TAG, "transitionCallStateTo: setDialing");
-                    }
-                    case STATE_RINGING -> {
-                        connection.setCallToRinging();
-                        Log.i(TAG, "transitionCallStateTo: setRinging");
-                    }
-                    case STATE_ACTIVE -> {
-                        connection.setCallToActive();
-                        Log.i(TAG, "transitionCallStateTo: setActive");
-                    }
-                    case STATE_HOLDING -> {
-                        connection.setCallToInactive();
-                        Log.i(TAG, "transitionCallStateTo: setOnHold");
-                    }
-                    case STATE_DISCONNECTED -> {
-                        connection.setCallToDisconnected(getApplicationContext());
-                        Log.i(TAG, "transitionCallStateTo: setDisconnected");
-                        mIdToConnection.remove(id);
+                @Override
+                public UserHandle getProcessUserHandle() {
+                    return Process.myUserHandle();
+                }
+
+                @Override
+                public int getProcessUid() {
+                    return Process.myUid();
+                }
+
+                @Override
+                public NoDataTransaction addCall(CallAttributes callAttributes) {
+                    Log.i(TAG, "addCall: enter");
+                    return addCallWithConsumer(callAttributes, null);
+                }
+
+                @Override
+                public NoDataTransaction addFailedCall(CallAttributes callAttributes) {
+                    Log.i(TAG, "addFailedCall: enter");
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        if (isOutgoing(callAttributes)) {
+                            mTelecomManager.placeCall(
+                                    callAttributes.getAddress(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        } else {
+                            mTelecomManager.addNewIncomingCall(
+                                    callAttributes.getPhoneAccountHandle(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        }
+                        ConnectionRequest request =
+                                waitUntilConnectionFails(
+                                        PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
+                        // clear out the last failed connection since it has been noted
+                        ManagedConnectionService.sLastFailedRequest = null;
+                        ManagedConnectionService.sCreateOutgoingConnectionLatch =
+                                new CountDownLatch(1);
+                        if (callAttributes.getAddress().equals(request.getAddress())) {
+                            return new NoDataTransaction(TestAppTransaction.Success);
+                        } else {
+                            throw new TestAppException(
+                                    PACKAGE_NAME,
+                                    appendStackTraceList(stackTrace, CLASS_NAME + ".addFailedCall"),
+                                    "expected:<Failed call address uri("
+                                            + callAttributes.getAddress()
+                                            + ")> "
+                                            + "matches request uri("
+                                            + request.getAddress()
+                                            + ") actual:<Failed Connection doesn't match URI>");
+                        }
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
                     }
                 }
-                Log.i(TAG, "transitionCallStateTo: done");
-                return new CallExceptionTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new CallExceptionTransaction(TestAppTransaction.Failure, e);
-            }
-        }
 
-        @Override
-        public BooleanTransaction isMuted(String id) {
-            Log.i(TAG, String.format("isMuted: id=[%s]", id));
-            try {
-                ManagedConnection connection = getConnectionOrThrow(id,
-                        createStackTraceList(CLASS_NAME + ".transitionCallStateTo(" + (id) + ")"));
-                return new BooleanTransaction(TestAppTransaction.Success,
-                        connection.isMuted());
-            } catch (TestAppException e) {
-                return new BooleanTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                @Override
+                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                        CallAttributes callAttributes) {
+                    Log.i(TAG, "addCallWithCreateOutgoingConnectionVerify: enter");
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        if (isOutgoing(callAttributes)) {
+                            mTelecomManager.placeCall(
+                                    callAttributes.getAddress(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        } else {
+                            mTelecomManager.addNewIncomingCall(
+                                    callAttributes.getPhoneAccountHandle(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        }
+                        boolean onCreateOutgoingConnectionInvoked =
+                                waitUntilManagedCreateOutgoingConnectionInvoked(
+                                        mConnectionServiceImpl);
+                        ManagedConnectionService.sCreateOutgoingConnectionLatch =
+                                new CountDownLatch(1);
+                        // signal to the test process the onCreateOutgoingConnection callback was
+                        // not fired.
+                        if (!onCreateOutgoingConnectionInvoked) {
+                            return new NoDataTransaction(TestAppTransaction.Success);
+                        } else {
+                            throw new TestAppException(
+                                    PACKAGE_NAME,
+                                    appendStackTraceList(
+                                            stackTrace,
+                                            CLASS_NAME
+                                                    + ".addFailedCallWithCreateOutgoing"
+                                                    + "ConnectionVerify"),
+                                    "expected:<onCreateOutgoingConnection should not be "
+                                            + "invoked> "
+                                            + "actual:<onCreateOutgoingConnection "
+                                            + "was invoked>");
+                        }
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public NoDataTransaction setMuteState(String id, boolean isMuted) {
-            Log.i(TAG, String.format("setMuteState: id=[%s]", id));
-            try {
-                ManagedConnection connection = getConnectionOrThrow(id,
-                        createStackTraceList(CLASS_NAME + ".transitionCallStateTo(" + (id) + ")"));
-                connection.onMuteStateChanged(isMuted);
-                return new NoDataTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new NoDataTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                @Override
+                public NoDataTransaction addCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer c) {
+                    Log.i(TAG, "addCallWithConsumer: enter");
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".addCall(" + callAttributes + ")");
+                        maybeInitTelecomManager();
+                        if (isOutgoing(callAttributes)) {
+                            mTelecomManager.placeCall(
+                                    callAttributes.getAddress(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        } else {
+                            mTelecomManager.addNewIncomingCall(
+                                    callAttributes.getPhoneAccountHandle(),
+                                    getExtrasWithPhoneAccount(callAttributes));
+                        }
+                        // TelecomManager#placeCall and TelecomManager#addNewIncomingCall do not
+                        // return the call object directly! Instead, a ConnectionService callback
+                        // will
+                        // populate a new connection.  The app process will wait via a while loop
+                        // until
+                        // a new connection is populated. If a connection is not added in the given
+                        // time
+                        // window, a TestAppException will be thrown!
+                        ManagedConnection connection =
+                                (ManagedConnection)
+                                        waitUntilConnectionIsNonNull(
+                                                PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
+                        // track the connection so it can be manipulated later in the test stage
+                        trackConnection(connection, callAttributes, stackTrace, c);
+                        // signal to the test process the call has been added successfully
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public CallEndpointTransaction getCurrentCallEndpoint(String id) {
-            Log.i(TAG, String.format("getCurrentCallEndpoint: id=[%s]", id));
-            try {
-                ManagedConnection connection = getConnectionOrThrow(id,
-                        createStackTraceList(CLASS_NAME + ".transitionCallStateTo(" + (id) + ")"));
+                private void trackConnection(
+                        ManagedConnection connection,
+                        CallAttributes callAttributes,
+                        List<String> stackTrace,
+                        IRemoteOperationConsumer consumer) {
+                    String id =
+                            waitUntilIdIsSet(
+                                    PACKAGE_NAME,
+                                    appendStackTraceList(
+                                            stackTrace, CLASS_NAME + ".trackConnection"),
+                                    connection);
+                    maybeClearHoldCapabilities(connection, callAttributes);
+                    Log.i(
+                            TAG,
+                            String.format(
+                                    "trackConnection: id=[%s], connection=[%s]", id, connection));
+                    if (consumer != null) {
+                        connection.setOperationConsumer(
+                                c -> {
+                                    try {
+                                        consumer.complete(c);
+                                    } catch (RemoteException e) {
+                                        Log.e(TAG, "trackConnection: Failed to set consumer.", e);
+                                    }
+                                });
+                    }
+                    mIdToConnection.put(id, connection);
+                    // clear out the last connection since it has been added to tracking
+                    ManagedConnectionService.sLastConnection = null;
+                    // also reset the onCreateOutgoingConnection latch so that it can properly be
+                    // tested when referenced
+                    ManagedConnectionService.sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+                }
 
-                waitUntilCallAudioStateIsSet(PACKAGE_NAME,
-                        createStackTraceList(CLASS_NAME + ".getCurrentCallEndpoint(id=" + id + ")"),
-                        true /*isManagedConnection */,
-                        connection);
+                private void maybeClearHoldCapabilities(
+                        ManagedConnection c, CallAttributes callAttributes) {
+                    if (!hasSetInactiveCapabilities(callAttributes)) {
+                        c.clearHoldCapabilities();
+                    }
+                }
 
-                return new CallEndpointTransaction(
-                        TestAppTransaction.Success,
-                        connection.getCurrentCallEndpoint());
-            } catch (TestAppException e) {
-                return new CallEndpointTransaction(
-                        TestAppTransaction.Failure,
-                        e);
-            }
-        }
+                @Override
+                public CallExceptionTransaction transitionCallStateTo(
+                        String id, int state, boolean expectSuccess, Bundle extras) {
+                    Log.i(TAG, "transitionCallStateTo: attempting to transition callId=" + id);
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".transitionCallStateTo(" + (id) + ")");
 
-        @Override
-        public AvailableEndpointsTransaction getAvailableCallEndpoints(String id) {
-            Log.i(TAG, String.format("getAvailableCallEndpoints: id=[%s]", id));
-            try {
-                ManagedConnection connection = getConnectionOrThrow(id,
-                        createStackTraceList(CLASS_NAME + ".transitionCallStateTo(" + (id) + ")"));
+                        ManagedConnection connection = getConnectionOrThrow(id, stackTrace);
 
-                waitUntilAvailableEndpointsIsSet(PACKAGE_NAME,
-                        createStackTraceList(CLASS_NAME
-                                + ".getAvailableCallEndpoints(id=" + id + ")"),
-                        true /*isManagedConnection */,
-                        connection);
+                        switch (state) {
+                            case STATE_DIALING -> {
+                                connection.setCallToDialing();
+                                Log.i(TAG, "transitionCallStateTo: setDialing");
+                            }
+                            case STATE_RINGING -> {
+                                connection.setCallToRinging();
+                                Log.i(TAG, "transitionCallStateTo: setRinging");
+                            }
+                            case STATE_ACTIVE -> {
+                                connection.setCallToActive();
+                                Log.i(TAG, "transitionCallStateTo: setActive");
+                            }
+                            case STATE_HOLDING -> {
+                                connection.setCallToInactive();
+                                Log.i(TAG, "transitionCallStateTo: setOnHold");
+                            }
+                            case STATE_DISCONNECTED -> {
+                                connection.setCallToDisconnected(getApplicationContext());
+                                Log.i(TAG, "transitionCallStateTo: setDisconnected");
+                                mIdToConnection.remove(id);
+                            }
+                        }
+                        Log.i(TAG, "transitionCallStateTo: done");
+                        return new CallExceptionTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new CallExceptionTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-                return new AvailableEndpointsTransaction(
-                        TestAppTransaction.Success,
-                        connection.getCallEndpoints()
-                );
-            } catch (TestAppException e) {
-                return new AvailableEndpointsTransaction(
-                        TestAppTransaction.Failure,
-                        e);
-            }
-        }
+                @Override
+                public BooleanTransaction isMuted(String id) {
+                    Log.i(TAG, String.format("isMuted: id=[%s]", id));
+                    try {
+                        ManagedConnection connection =
+                                getConnectionOrThrow(
+                                        id,
+                                        createStackTraceList(
+                                                CLASS_NAME
+                                                        + ".transitionCallStateTo("
+                                                        + (id)
+                                                        + ")"));
+                        return new BooleanTransaction(
+                                TestAppTransaction.Success, connection.isMuted());
+                    } catch (TestAppException e) {
+                        return new BooleanTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public NoDataTransaction requestCallEndpointChange(String id,
-                CallEndpoint callEndpoint) throws RemoteException {
-            Log.i(TAG, String.format("requestCallEndpointChange: id=[%s]", id));
-            try {
-                List<String> stackTrace = createStackTraceList(CLASS_NAME
-                        + ".requestCallEndpointChange(" + (id) + ")");
+                @Override
+                public NoDataTransaction setMuteState(String id, boolean isMuted) {
+                    Log.i(TAG, String.format("setMuteState: id=[%s]", id));
+                    try {
+                        ManagedConnection connection =
+                                getConnectionOrThrow(
+                                        id,
+                                        createStackTraceList(
+                                                CLASS_NAME
+                                                        + ".transitionCallStateTo("
+                                                        + (id)
+                                                        + ")"));
+                        connection.onMuteStateChanged(isMuted);
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-                ManagedConnection connection = getConnectionOrThrow(id, stackTrace);
-                final CountDownLatch latch = new CountDownLatch(1);
-                final LatchedEndpointOutcomeReceiver outcome = new LatchedEndpointOutcomeReceiver(
-                        latch);
+                @Override
+                public CallEndpointTransaction getCurrentCallEndpoint(String id) {
+                    Log.i(TAG, String.format("getCurrentCallEndpoint: id=[%s]", id));
+                    try {
+                        ManagedConnection connection =
+                                getConnectionOrThrow(
+                                        id,
+                                        createStackTraceList(
+                                                CLASS_NAME
+                                                        + ".transitionCallStateTo("
+                                                        + (id)
+                                                        + ")"));
 
-                // send the call control request
-                connection.requestCallEndpointChange(callEndpoint, Runnable::run, outcome);
-                // await a count down in the CountDownLatch to signify success
-                assertCountDownLatchWasCalled(
-                        PACKAGE_NAME,
-                        stackTrace,
-                        "expected:<CallControl#requestCallEndpointChange to complete via"
-                                + " onResult or onError>  "
-                                + "actual<Timeout waiting for the CountDownLatch to complete.>",
-                        latch);
+                        waitUntilCallAudioStateIsSet(
+                                PACKAGE_NAME,
+                                createStackTraceList(
+                                        CLASS_NAME + ".getCurrentCallEndpoint(id=" + id + ")"),
+                                true /*isManagedConnection */,
+                                connection);
 
-                return new NoDataTransaction(TestAppTransaction.Success);
-            } catch (TestAppException e) {
-                return new NoDataTransaction(TestAppTransaction.Failure, e);
-            }
-        }
+                        return new CallEndpointTransaction(
+                                TestAppTransaction.Success, connection.getCurrentCallEndpoint());
+                    } catch (TestAppException e) {
+                        return new CallEndpointTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public NoDataTransaction registerDefaultPhoneAccount() {
-            return new NoDataTransaction(TestAppTransaction.Failure, new TestAppException(
-                    PACKAGE_NAME,
-                    createStackTraceList(CLASS_NAME + "registerDefaultPhoneAccount"),
-                    "ManagedAppControl does not implement registerDefaultPhoneAccount b/c the"
-                            + " the account must be registered from the Test Process "
-                            + " (ex. android.telecom.cts) or a security exception will occur."));
-        }
+                @Override
+                public AvailableEndpointsTransaction getAvailableCallEndpoints(String id) {
+                    Log.i(TAG, String.format("getAvailableCallEndpoints: id=[%s]", id));
+                    try {
+                        ManagedConnection connection =
+                                getConnectionOrThrow(
+                                        id,
+                                        createStackTraceList(
+                                                CLASS_NAME
+                                                        + ".transitionCallStateTo("
+                                                        + (id)
+                                                        + ")"));
 
-        @Override
-        public PhoneAccountTransaction getDefaultPhoneAccount() {
-            return new PhoneAccountTransaction(TestAppTransaction.Failure, new TestAppException(
-                    PACKAGE_NAME,
-                    createStackTraceList(CLASS_NAME + "getDefaultPhoneAccount"),
-                    "ManagedAppControl does not implement getDefaultPhoneAccount b/c the"
-                            + " the account must be registered from the Test Process "
-                            + " (ex. android.telecom.cts) or a security exception will occur."));
-        }
+                        waitUntilAvailableEndpointsIsSet(
+                                PACKAGE_NAME,
+                                createStackTraceList(
+                                        CLASS_NAME + ".getAvailableCallEndpoints(id=" + id + ")"),
+                                true /*isManagedConnection */,
+                                connection);
 
-        @Override
-        public void registerCustomPhoneAccount(PhoneAccount account) {
-            Log.i(TAG, String.format("registerCustomPhoneAccount: acct=[%s]", account));
-            mTelecomManager.registerPhoneAccount(account);
-        }
+                        return new AvailableEndpointsTransaction(
+                                TestAppTransaction.Success, connection.getCallEndpoints());
+                    } catch (TestAppException e) {
+                        return new AvailableEndpointsTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public void unregisterPhoneAccountWithHandle(PhoneAccountHandle handle) {
-            Log.i(TAG, String.format("unregisterPhoneAccountWithHandle: handle=[%s]", handle));
-            mTelecomManager.unregisterPhoneAccount(handle);
-        }
+                @Override
+                public NoDataTransaction requestCallEndpointChange(
+                        String id, CallEndpoint callEndpoint) throws RemoteException {
+                    Log.i(TAG, String.format("requestCallEndpointChange: id=[%s]", id));
+                    try {
+                        List<String> stackTrace =
+                                createStackTraceList(
+                                        CLASS_NAME + ".requestCallEndpointChange(" + (id) + ")");
 
-        @Override
-        public List<PhoneAccountHandle> getOwnAccountHandlesForApp() {
-            Log.i(TAG, "getOwnAccountHandlesForApp");
-            return mTelecomManager.getOwnSelfManagedPhoneAccounts();
-        }
+                        ManagedConnection connection = getConnectionOrThrow(id, stackTrace);
+                        final CountDownLatch latch = new CountDownLatch(1);
+                        final LatchedEndpointOutcomeReceiver outcome =
+                                new LatchedEndpointOutcomeReceiver(latch);
 
-        @Override
-        public List<PhoneAccount> getRegisteredPhoneAccounts() {
-            Log.i(TAG, "getRegisteredPhoneAccounts");
-            return mTelecomManager.getRegisteredPhoneAccounts();
-        }
+                        // send the call control request
+                        connection.requestCallEndpointChange(callEndpoint, Runnable::run, outcome);
+                        // await a count down in the CountDownLatch to signify success
+                        assertCountDownLatchWasCalled(
+                                PACKAGE_NAME,
+                                stackTrace,
+                                "expected:<CallControl#requestCallEndpointChange to complete via"
+                                        + " onResult or onError>  actual<Timeout waiting for the"
+                                        + " CountDownLatch to complete.>",
+                                latch);
 
-        public BooleanTransaction isNotificationPostedForCall(String callId) {
-            List<String> stackTrace = createStackTraceList(CLASS_NAME
-                    + ".isNotificationPostedForCall(" + (callId) + ")");
-            return new BooleanTransaction(TestAppTransaction.Failure,
-                    new TestAppException(PACKAGE_NAME, stackTrace,
-                            "CallStyle notification functionality is not supported by the Managed"
-                                    + " App"));
-        }
+                        return new NoDataTransaction(TestAppTransaction.Success);
+                    } catch (TestAppException e) {
+                        return new NoDataTransaction(TestAppTransaction.Failure, e);
+                    }
+                }
 
-        @Override
-        public NoDataTransaction removeNotificationForCall(String callId) {
-            List<String> stackTrace = createStackTraceList(CLASS_NAME
-                    + ".removeNotificationForCall(" + (callId) + ")");
-            return new NoDataTransaction(TestAppTransaction.Failure,
-                    new TestAppException(PACKAGE_NAME, stackTrace,
-                            "CallStyle notification functionality is not supported by the Managed"
-                                    + " App"));
-        }
+                @Override
+                public NoDataTransaction registerDefaultPhoneAccount() {
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    PACKAGE_NAME,
+                                    createStackTraceList(
+                                            CLASS_NAME + "registerDefaultPhoneAccount"),
+                                    "ManagedAppControl does not implement"
+                                            + " registerDefaultPhoneAccount b/c the account must be"
+                                            + " registered from the Test Process  (ex."
+                                            + " android.telecom.cts) or a security exception will"
+                                            + " occur."));
+                }
 
-        private ManagedConnection getConnectionOrThrow(String id, List<String> stackTrace) {
-            if (!mIdToConnection.containsKey(id)) {
-                throw new TestAppException(PACKAGE_NAME,
-                        appendStackTraceList(stackTrace, CLASS_NAME + ".getConnectionOrThrow"),
-                        "expect:<A Connection object in the mIdToConnection map>"
-                                + "actual:<Missing Connection object for key=" + id + ">");
-            }
-            return mIdToConnection.get(id);
-        }
+                @Override
+                public PhoneAccountTransaction getDefaultPhoneAccount() {
+                    return new PhoneAccountTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    PACKAGE_NAME,
+                                    createStackTraceList(CLASS_NAME + "getDefaultPhoneAccount"),
+                                    "ManagedAppControl does not implement getDefaultPhoneAccount"
+                                            + " b/c the account must be registered from the Test"
+                                            + " Process  (ex. android.telecom.cts) or a security"
+                                            + " exception will occur."));
+                }
 
-        @Override
-        public void cleanup() {
-            cleanupImplementation();
-        }
-    };
+                @Override
+                public void registerCustomPhoneAccount(PhoneAccount account) {
+                    Log.i(TAG, String.format("registerCustomPhoneAccount: acct=[%s]", account));
+                    mTelecomManager.registerPhoneAccount(account);
+                }
+
+                @Override
+                public void unregisterPhoneAccountWithHandle(PhoneAccountHandle handle) {
+                    Log.i(
+                            TAG,
+                            String.format("unregisterPhoneAccountWithHandle: handle=[%s]", handle));
+                    mTelecomManager.unregisterPhoneAccount(handle);
+                }
+
+                @Override
+                public List<PhoneAccountHandle> getOwnAccountHandlesForApp() {
+                    Log.i(TAG, "getOwnAccountHandlesForApp");
+                    return mTelecomManager.getOwnSelfManagedPhoneAccounts();
+                }
+
+                @Override
+                public List<PhoneAccount> getRegisteredPhoneAccounts() {
+                    Log.i(TAG, "getRegisteredPhoneAccounts");
+                    return mTelecomManager.getRegisteredPhoneAccounts();
+                }
+
+                public BooleanTransaction isNotificationPostedForCall(String callId) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    CLASS_NAME + ".isNotificationPostedForCall(" + (callId) + ")");
+                    return new BooleanTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    PACKAGE_NAME,
+                                    stackTrace,
+                                    "CallStyle notification functionality is not supported by the"
+                                            + " Managed App"));
+                }
+
+                @Override
+                public NoDataTransaction removeNotificationForCall(String callId) {
+                    List<String> stackTrace =
+                            createStackTraceList(
+                                    CLASS_NAME + ".removeNotificationForCall(" + (callId) + ")");
+                    return new NoDataTransaction(
+                            TestAppTransaction.Failure,
+                            new TestAppException(
+                                    PACKAGE_NAME,
+                                    stackTrace,
+                                    "CallStyle notification functionality is not supported by the"
+                                            + " Managed App"));
+                }
+
+                @Override
+                public BooleanTransaction isForegroundServiceDelegationActive(
+                        PhoneAccountHandle handle) {
+                    Log.i(
+                            TAG,
+                            String.format(
+                                    "isForegroundServiceDelegationActive: handle=[%s]", handle));
+                    return new BooleanTransaction(TestAppTransaction.Success, false);
+                }
+
+                private ManagedConnection getConnectionOrThrow(String id, List<String> stackTrace) {
+                    if (!mIdToConnection.containsKey(id)) {
+                        throw new TestAppException(
+                                PACKAGE_NAME,
+                                appendStackTraceList(
+                                        stackTrace, CLASS_NAME + ".getConnectionOrThrow"),
+                                "expect:<A Connection object in the mIdToConnection map>"
+                                        + "actual:<Missing Connection object for key="
+                                        + id
+                                        + ">");
+                    }
+                    return mIdToConnection.get(id);
+                }
+
+                @Override
+                public void cleanup() {
+                    cleanupImplementation();
+                }
+            };
 
     @Nullable
     @Override

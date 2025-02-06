@@ -77,6 +77,7 @@ import com.google.common.collect.Sets;
 import org.hamcrest.Matchers;
 import org.junit.AssumptionViolatedException;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -202,6 +203,8 @@ public class VehiclePropertyVerifier<T> {
     private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
     private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
     private static final int SET_PROPERTY_CALLBACK_TIMEOUT_SEC = 5;
+    private static final long CPM_ACTION_DELAY_MS = 20;
+    private static final Object sLock = new Object();
     private static final ImmutableSet<Integer> WHEEL_AREAS = ImmutableSet.of(
             VehicleAreaWheel.WHEEL_LEFT_FRONT, VehicleAreaWheel.WHEEL_LEFT_REAR,
             VehicleAreaWheel.WHEEL_RIGHT_FRONT, VehicleAreaWheel.WHEEL_RIGHT_REAR);
@@ -245,9 +248,20 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
     private static final boolean AREA_ID_CONFIG_ACCESS_FLAG =
             isAtLeastV() && Flags.areaIdConfigAccess();
-    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
-            CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
-            CarPropertyValue.STATUS_ERROR);
+    private static final boolean CAR_PROPERTY_SUPPORTED_VALUE_FLAG =
+            isAtLeastB() && Flags.carPropertySupportedValue();
+    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES =
+            Arrays.asList(
+                    CarPropertyValue.STATUS_AVAILABLE,
+                    CarPropertyValue.STATUS_UNAVAILABLE,
+                    CarPropertyValue.STATUS_ERROR);
+    private static final List<Integer> VALID_SET_ERROR_CODES =
+            Arrays.asList(
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_TRY_AGAIN,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_INVALID_ARG,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_PROPERTY_NOT_AVAILABLE,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_ACCESS_DENIED,
+                    CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_UNKNOWN);
 
     private static final CarPropertyValueCallback FAKE_CALLBACK = new CarPropertyValueCallback(
             /* propertyName= */ "", new int[]{}, /* totalCarPropertyValuesPerAreaId= */ 0,
@@ -255,6 +269,9 @@ public class VehiclePropertyVerifier<T> {
 
     private static Class<?> sExceptionClassOnGet;
     private static Class<?> sExceptionClassOnSet;
+
+    @GuardedBy("sLock")
+    private static long sLastActionElapsedRealtimeNanos = 0;
 
     private static boolean sIsCarPropertyConfigsCached;
     // A static cache to store all property configs. This will be reused across multiple test cases
@@ -290,6 +307,8 @@ public class VehiclePropertyVerifier<T> {
     private final boolean mRequireZeroToBeContainedInMinMaxRanges;
     private final boolean mPossiblyDependentOnHvacPowerOn;
     private final boolean mVerifyErrorStates;
+    // Delay to wait for power state to propagate to dependent properties.
+    private final int mPowerPropagationDelayMs;
     private final ImmutableSet<String> mReadPermissions;
     private final ImmutableList<ImmutableSet<String>> mWritePermissions;
     private final VerifierContext mVerifierContext;
@@ -323,6 +342,7 @@ public class VehiclePropertyVerifier<T> {
             boolean requireZeroToBeContainedInMinMaxRanges,
             boolean possiblyDependentOnHvacPowerOn,
             boolean verifyErrorStates,
+            int powerPropagationDelayMs,
             ImmutableSet<String> readPermissions,
             ImmutableList<ImmutableSet<String>> writePermissions) {
         assertWithMessage("Must set car property manager").that(carPropertyManager).isNotNull();
@@ -352,6 +372,7 @@ public class VehiclePropertyVerifier<T> {
         mRequireZeroToBeContainedInMinMaxRanges = requireZeroToBeContainedInMinMaxRanges;
         mPossiblyDependentOnHvacPowerOn = possiblyDependentOnHvacPowerOn;
         mVerifyErrorStates = verifyErrorStates;
+        mPowerPropagationDelayMs = powerPropagationDelayMs;
         mReadPermissions = readPermissions;
         mWritePermissions = writePermissions;
         mPropertyToAreaIdValues = new SparseArray<>();
@@ -811,17 +832,17 @@ public class VehiclePropertyVerifier<T> {
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_MIN_MAX_SUPPORTED_VALUE)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyGetMinMaxSupportedValue();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyGetSupportedValuesList();
                         }
 
                         if (step.equals(STEP_VERIFY_READ_APIS_REG_UNREG_SUPPORTED_VALUES_CHANGE)
-                                && Flags.carPropertySupportedValue()) {
+                                && CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                             verifyRegisterUnregisterSupportedValuesChangeCallback();
                         }
 
@@ -1033,7 +1054,8 @@ public class VehiclePropertyVerifier<T> {
 
         storeCurrentValuesForProperty(hvacPowerOnCarPropertyConfig);
         // Turn the power on for all supported HVAC area IDs.
-        setBooleanPropertyInAllAreaIds(hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.TRUE);
+        setBooleanPowerPropertyInAllAreaIds(
+                hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.TRUE);
     }
 
     private boolean turnOffHvacPowerIfHvacPowerDependent() {
@@ -1045,7 +1067,8 @@ public class VehiclePropertyVerifier<T> {
         }
 
         // Turn the power off for all supported HVAC area IDs.
-        setBooleanPropertyInAllAreaIds(hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.FALSE);
+        setBooleanPowerPropertyInAllAreaIds(
+                hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.FALSE);
         return true;
     }
 
@@ -1057,26 +1080,34 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
 
-        runWithShellPermissionIdentity(() -> {
-            int adasEnabledPropertyId = mDependentOnPropertyId.get();
-            CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                    getCarPropertyConfig(adasEnabledPropertyId);
+        runWithShellPermissionIdentity(
+                () -> {
+                    int adasEnabledPropertyId = mDependentOnPropertyId.get();
+                    CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig =
+                            (CarPropertyConfig<Boolean>)
+                                    getCarPropertyConfig(adasEnabledPropertyId);
 
-            if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
-                    adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
-                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
-                Log.w(TAG, "Cannot enable " + VehiclePropertyIds.toString(adasEnabledPropertyId)
-                        + " for testing " + VehiclePropertyIds.toString(mPropertyId)
-                        + " because property is either not implemented or READ only."
-                        + " Manually enable if it's not already enabled.");
-                return;
-            }
+                    if (adasEnabledCarPropertyConfig == null
+                            || getAreaIdAccessOrElseGlobalAccess(
+                                            adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
+                                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+                        Log.w(
+                                TAG,
+                                "Cannot enable "
+                                        + VehiclePropertyIds.toString(adasEnabledPropertyId)
+                                        + " for testing "
+                                        + VehiclePropertyIds.toString(mPropertyId)
+                                        + " because property is either not implemented or READ"
+                                        + " only. Manually enable if it's not already enabled.");
+                        return;
+                    }
 
-            storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
-            // Enable ADAS feature in all supported area IDs.
-            setBooleanPropertyInAllAreaIds(adasEnabledCarPropertyConfig,
-                    /* setValue: */ Boolean.TRUE);
-        }, mDependentOnPropertyPermissions.toArray(new String[0]));
+                    storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
+                    // Enable ADAS feature in all supported area IDs.
+                    setBooleanPowerPropertyInAllAreaIds(
+                            adasEnabledCarPropertyConfig, /* setValue: */ Boolean.TRUE);
+                },
+                mDependentOnPropertyPermissions.toArray(new String[0]));
     }
 
     private void disableAdasFeatureIfAdasStatePropertyAndVerify(
@@ -1104,30 +1135,32 @@ public class VehiclePropertyVerifier<T> {
         }
 
         AtomicBoolean isDisabled = new AtomicBoolean(false);
-        runWithShellPermissionIdentity(() -> {
-            int adasEnabledPropertyId = mDependentOnPropertyId.get();
-            CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
-                    getCarPropertyConfig(adasEnabledPropertyId);
+        runWithShellPermissionIdentity(
+                () -> {
+                    int adasEnabledPropertyId = mDependentOnPropertyId.get();
+                    CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig =
+                            (CarPropertyConfig<Boolean>)
+                                    getCarPropertyConfig(adasEnabledPropertyId);
 
-            if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
-                    adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
-                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
-                return;
-            }
+                    if (adasEnabledCarPropertyConfig == null
+                            || getAreaIdAccessOrElseGlobalAccess(
+                                            adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
+                                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+                        return;
+                    }
 
-            storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
+                    storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
 
-            // Disable ADAS feature in all supported area IDs.
-            setBooleanPropertyInAllAreaIds(adasEnabledCarPropertyConfig,
-                    /* setValue: */ Boolean.FALSE);
-            isDisabled.set(true);
-        }, mDependentOnPropertyPermissions.toArray(new String[0]));
+                    // Disable ADAS feature in all supported area IDs.
+                    setBooleanPowerPropertyInAllAreaIds(
+                            adasEnabledCarPropertyConfig, /* setValue: */ Boolean.FALSE);
+                    isDisabled.set(true);
+                },
+                mDependentOnPropertyPermissions.toArray(new String[0]));
         return isDisabled.get();
     }
 
-    /**
-     * Stores the property's current values for all areas so that they can be restored later.
-     */
+    /** Stores the property's current values for all areas so that they can be restored later. */
     public void storeCurrentValues() {
         storeCurrentValuesForProperty(getCarPropertyConfig());
     }
@@ -1140,15 +1173,21 @@ public class VehiclePropertyVerifier<T> {
         }
         var propertyId = carPropertyConfig.getPropertyId();
         if (mPropertyToAreaIdValues.contains(propertyId)) {
-            throw new IllegalStateException("The property: "
-                    + VehiclePropertyIds.toString(propertyId) + " already has a stored value");
+            throw new IllegalStateException(
+                    "The property: "
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " already has a stored value");
         }
         mStoredProperties.add(propertyId);
         for (int i = 0; i < areaIdToInitialValue.size(); i++) {
-            Log.i(TAG, "Storing initial value for property:"
-                    + VehiclePropertyIds.toString(propertyId) + " at area ID: "
-                    + areaIdToInitialValue.keyAt(i)
-                    + " to " + areaIdToInitialValue.valueAt(i));
+            Log.i(
+                    TAG,
+                    "Storing initial value for property:"
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " at area ID: "
+                            + areaIdToInitialValue.keyAt(i)
+                            + " to "
+                            + areaIdToInitialValue.valueAt(i));
         }
         mPropertyToAreaIdValues.put(propertyId, areaIdToInitialValue);
     }
@@ -1158,22 +1197,24 @@ public class VehiclePropertyVerifier<T> {
         SparseArray<?> areaIdToInitialValue = mPropertyToAreaIdValues.get(propertyId);
 
         if (areaIdToInitialValue == null || carPropertyConfig == null) {
-            Log.w(TAG, "No stored values for " + VehiclePropertyIds.toString(propertyId)
-                    + " to restore to, ignore");
+            Log.w(
+                    TAG,
+                    "No stored values for "
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " to restore to, ignore");
             return;
         }
 
-        restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager,
-                areaIdToInitialValue);
+        restoreInitialValuesByAreaId(carPropertyConfig, mCarPropertyManager, areaIdToInitialValue);
     }
 
     /**
      * Restore the property's and dependent properties values to original values stored by previous
      * {@link #storeCurrentValues}.
      *
-     * Do nothing if no stored current values are available.
+     * <p>Do nothing if no stored current values are available.
      *
-     * The properties values are restored in the reverse-order as they are stored.
+     * <p>The properties values are restored in the reverse-order as they are stored.
      */
     public void restoreInitialValues() {
         for (int i = mStoredProperties.size() - 1; i >= 0; i--) {
@@ -1187,30 +1228,56 @@ public class VehiclePropertyVerifier<T> {
     @Nullable
     private static <U> SparseArray<U> getInitialValuesByAreaId(
             CarPropertyConfig<U> carPropertyConfig, CarPropertyManager carPropertyManager) {
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && carPropertyConfig.getAccess()
-                != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+        if (!AREA_ID_CONFIG_ACCESS_FLAG
+                && carPropertyConfig.getAccess()
+                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
             return null;
         }
         SparseArray<U> areaIdToInitialValue = new SparseArray<U>();
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
         for (int areaId : carPropertyConfig.getAreaIds()) {
-            if (doesAreaIdAccessNotMatch(carPropertyConfig, areaId,
+            if (doesAreaIdAccessNotMatch(
+                    carPropertyConfig,
+                    areaId,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
                 continue;
             }
-            CarPropertyValue<U> carPropertyValue = null;
+            CarPropertyValue<U> carPropertyValue;
             try {
                 carPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
-            } catch (PropertyNotAvailableAndRetryException | PropertyNotAvailableException
+            } catch (PropertyNotAvailableAndRetryException
+                    | PropertyNotAvailableException
                     | CarInternalErrorException e) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to save initial car property value. Error: " + e);
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to save initial car property value. Error: "
+                                + e);
                 continue;
             }
             if (carPropertyValue == null) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to save initial car property value.");
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to save initial car property value.");
+                continue;
+            }
+            if (carPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                Log.w(
+                        TAG,
+                        "Cannot save initial value for property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " because status: "
+                                + carPropertyValue.getStatus());
                 continue;
             }
             areaIdToInitialValue.put(areaId, (U) carPropertyValue.getValue());
@@ -1219,59 +1286,99 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
-     * Set boolean property to a desired value in all supported area IDs.
+     * Set a boolean property that represents the power state to a desired value in all supported
+     * area IDs.
+     *
+     * <p>Power properties include {@code HVAC_POWER_ON} and all ADAS ENABLED properties such as
+     * {@code AUTOMATIC_EMERGENCY_BRAKING_ENABLED}.
      */
-    private void setBooleanPropertyInAllAreaIds(CarPropertyConfig<Boolean> booleanCarPropertyConfig,
-            Boolean setValue) {
+    private void setBooleanPowerPropertyInAllAreaIds(
+            CarPropertyConfig<Boolean> booleanCarPropertyConfig, Boolean setValue) {
+        boolean updateSentToVhal = false;
         int propertyId = booleanCarPropertyConfig.getPropertyId();
         for (int areaId : booleanCarPropertyConfig.getAreaIds()) {
             if (mCarPropertyManager.getBooleanProperty(propertyId, areaId) == setValue) {
                 continue;
             }
-            CarPropertyValue<Boolean> carPropertyValue = setPropertyAndWaitForChange(
+            setPropertyAndWaitForChange(
                     mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
-            assertWithMessage(
-                    VehiclePropertyIds.toString(propertyId)
-                            + " carPropertyValue is null for area id: " + areaId)
-                    .that(carPropertyValue).isNotNull();
+            updateSentToVhal = true;
+        }
+        if (updateSentToVhal && mPowerPropagationDelayMs != 0) {
+            Log.i(
+                    TAG,
+                    "Setting power property:"
+                            + VehiclePropertyIds.toString(propertyId)
+                            + " to value: "
+                            + setValue
+                            + " and sleeping for: "
+                            + mPowerPropagationDelayMs);
+            // Wait for power status to propagate to dependent properties
+            SystemClock.sleep(mPowerPropagationDelayMs);
+            Log.i(TAG, "Completed sleeping for: " + mPowerPropagationDelayMs);
         }
     }
 
     // Restore the initial values of the property provided by {@code areaIdToInitialValue}.
-    private static void restoreInitialValuesByAreaId(CarPropertyConfig<?> carPropertyConfig,
-            CarPropertyManager carPropertyManager, SparseArray<?> areaIdToInitialValue) {
+    private static void restoreInitialValuesByAreaId(
+            CarPropertyConfig<?> carPropertyConfig,
+            CarPropertyManager carPropertyManager,
+            SparseArray<?> areaIdToInitialValue) {
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
         for (int i = 0; i < areaIdToInitialValue.size(); i++) {
             int areaId = areaIdToInitialValue.keyAt(i);
             Object originalValue = areaIdToInitialValue.valueAt(i);
-            CarPropertyValue<?> currentCarPropertyValue = null;
+            CarPropertyValue<?> currentCarPropertyValue;
             try {
                 currentCarPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
-            } catch (PropertyNotAvailableAndRetryException | PropertyNotAvailableException
+            } catch (PropertyNotAvailableAndRetryException
+                    | PropertyNotAvailableException
                     | CarInternalErrorException e) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to restore initial car property value. Error: " + e);
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to restore initial car property value. Error: "
+                                + e);
                 continue;
             }
             if (currentCarPropertyValue == null) {
-                Log.w(TAG, "Failed to get property:" + propertyName + " at area ID: " + areaId
-                        + " to restore initial car property value.");
+                Log.w(
+                        TAG,
+                        "Failed to get property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " to restore initial car property value.");
                 continue;
             }
-            Log.i(TAG, "Restoring value for: " + propertyName + " at area ID: " + areaId + " to "
-                    + originalValue);
-            Object currentValue = currentCarPropertyValue.getValue();
-            if (valueEquals(originalValue, currentValue)) {
+            if (currentCarPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                Log.w(
+                        TAG,
+                        "Cannot restore initial value for property:"
+                                + propertyName
+                                + " at area ID: "
+                                + areaId
+                                + " because status: "
+                                + currentCarPropertyValue.getStatus());
                 continue;
             }
-            CarPropertyValue<Object> carPropertyValue = setPropertyAndWaitForChange(
+            if (valueEquals(originalValue, currentCarPropertyValue.getValue())) {
+                continue;
+            }
+            Log.i(
+                    TAG,
+                    "Restoring value for: "
+                            + propertyName
+                            + " at area ID: "
+                            + areaId
+                            + " to "
+                            + originalValue);
+            setPropertyAndWaitForChange(
                     carPropertyManager, propertyId, Object.class, areaId, originalValue);
-            assertWithMessage(
-                    "Failed to restore car property value for property: " + propertyName
-                            + " at area ID: " + areaId + " to its original value: " + originalValue
-                            + ", current value: " + currentValue)
-                    .that(carPropertyValue).isNotNull();
         }
     }
 
@@ -1300,6 +1407,10 @@ public class VehiclePropertyVerifier<T> {
 
     private static boolean isAtLeastV() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
+    private static boolean isAtLeastB() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA;
     }
 
     /**
@@ -1420,6 +1531,12 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private void verifySetPropertyFails(int areaId) {
+        if (!isAtLeastU()) {
+            // The precondition check in CarPropertyService that throws an IllegalArgumentException
+            // when a client tries to write a property that is implemented as read_only was added in
+            // Android U. API behavior prior to Android U is undefined so skipping this check.
+            return;
+        }
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         assertThrows(
                 mPropertyName
@@ -1444,7 +1561,6 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-
     private void verifyIntegerPropertySetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (int areaId : carPropertyConfig.getAreaIds()) {
@@ -1459,21 +1575,27 @@ public class VehiclePropertyVerifier<T> {
         }
         if (!mAllPossibleEnumValues.isEmpty() && isAtLeastU()) {
             for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-                if (doesAreaIdAccessMatch(carPropertyConfig, areaIdConfig.getAreaId(),
+                if (doesAreaIdAccessMatch(
+                        carPropertyConfig,
+                        areaIdConfig.getAreaId(),
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
                     continue;
                 }
                 for (T valueToSet : (List<T>) areaIdConfig.getSupportedEnumValues()) {
                     if (!mAllPossibleUnwritableValues.isEmpty()
                             && mAllPossibleUnwritableValues.contains(valueToSet)) {
-                        assertThrows("Trying to set an unwritable value: " + valueToSet
-                                + " to property: " + mPropertyId + " should throw an "
-                                + "IllegalArgumentException",
+                        assertThrows(
+                                "Trying to set an unwritable value: "
+                                        + valueToSet
+                                        + " to property: "
+                                        + mPropertyId
+                                        + " should throw an "
+                                        + "IllegalArgumentException",
                                 IllegalArgumentException.class,
-                                () -> setPropertyAndWaitForChange(
-                                        mCarPropertyManager, mPropertyId,
-                                        carPropertyConfig.getPropertyType(),
-                                        areaIdConfig.getAreaId(), valueToSet));
+                                () ->
+                                        mCarPropertyManager.setProperty(
+                                                carPropertyConfig.getPropertyType(), mPropertyId,
+                                                areaIdConfig.getAreaId(), valueToSet));
                     }
                     if (!mAllPossibleUnavailableValues.isEmpty()
                             && mAllPossibleUnavailableValues.contains(valueToSet)) {
@@ -1500,8 +1622,8 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifySetProperty(int areaId, T valueToSet) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
-                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
+        if (doesAreaIdAccessMatch(
+                carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
             return;
         }
 
@@ -1509,30 +1631,65 @@ public class VehiclePropertyVerifier<T> {
 
         if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
-            Log.w(TAG, "Property: " + mPropertyName + " will be altered during the test and it is"
-                    + " not possible to restore.");
+            Log.w(
+                    TAG,
+                    "Property: "
+                            + mPropertyName
+                            + " will be altered during the test and it is"
+                            + " not possible to restore.");
             verifySetPropertyOkayOrThrowExpectedExceptions(areaId, valueToSet);
             return;
         }
         try {
             CarPropertyValue<T> currentCarPropertyValue =
                     mCarPropertyManager.getProperty(mPropertyId, areaId);
-            verifyCarPropertyValue(currentCarPropertyValue, areaId,
-                    CAR_PROPERTY_VALUE_SOURCE_GETTER);
+            verifyCarPropertyValue(
+                    currentCarPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
+            if (currentCarPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                Log.w(
+                        TAG,
+                        "Skipping SET verification for propertyId: "
+                                + mPropertyId
+                                + " areaId: "
+                                + areaId
+                                + " valueToSet:"
+                                + valueToSet
+                                + " because getProperty did not have an AVAILABLE status - "
+                                + currentCarPropertyValue);
+                return;
+            }
             if (valueEquals(valueToSet, currentCarPropertyValue.getValue())) {
                 return;
             }
+        } catch (PropertyNotAvailableAndRetryException e) {
+            Log.w(
+                    TAG,
+                    "Skipping SET verification for propertyId: "
+                            + mPropertyName
+                            + " areaId: "
+                            + areaId
+                            + " valueToSet:"
+                            + valueToSet
+                            + " because getProperty threw PropertyNotAvailableAndRetryException - "
+                            + e);
+            return;
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
+            return;
         } catch (CarInternalErrorException e) {
             verifyInternalErrorException(e);
+            return;
         }
-        CarPropertyValue<T> updatedCarPropertyValue = setPropertyAndWaitForChange(
-                mCarPropertyManager, mPropertyId, carPropertyConfig.getPropertyType(), areaId,
-                valueToSet);
-        if (sExceptionClassOnSet == null) {
-            verifyCarPropertyValue(updatedCarPropertyValue, areaId,
-                    CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
+        CarPropertyValue<T> updatedCarPropertyValue =
+                setPropertyAndWaitForChange(
+                        mCarPropertyManager,
+                        mPropertyId,
+                        carPropertyConfig.getPropertyType(),
+                        areaId,
+                        valueToSet);
+        if (updatedCarPropertyValue != null) {
+            verifyCarPropertyValue(
+                    updatedCarPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
         }
     }
 
@@ -1557,29 +1714,38 @@ public class VehiclePropertyVerifier<T> {
         float minTempInCelsius = hvacTemperatureSetConfigArray.get(0).floatValue() / 10f;
         float minTempInFahrenheit = hvacTemperatureSetConfigArray.get(3).floatValue() / 10f;
 
-        Float[] temperatureRequest = new Float[] {
-            /* requestedValue = */ minTempInCelsius,
-            /* units = */ (float) 0x30, // VehicleUnit#CELSIUS
-            /* suggestedValueInCelsius = */ 0f,
-            /* suggestedValueInFahrenheit = */ 0f
-        };
-        Float[] expectedTemperatureResponse = new Float[] {
-            /* requestedValue = */ minTempInCelsius,
-            /* units = */ (float) 0x30, // VehicleUnit#CELSIUS
-            /* suggestedValueInCelsius = */ minTempInCelsius,
-            /* suggestedValueInFahrenheit = */ minTempInFahrenheit
-        };
-        for (int areaId: carPropertyConfig.getAreaIds()) {
-            CarPropertyValue<Float[]> updatedCarPropertyValue = setPropertyAndWaitForChange(
-                    mCarPropertyManager, mPropertyId, Float[].class, areaId,
-                    temperatureRequest, expectedTemperatureResponse);
-            verifyCarPropertyValue(updatedCarPropertyValue, areaId,
-                    CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            verifyHvacTemperatureValueSuggestionResponse(updatedCarPropertyValue.getValue());
+        Float[] temperatureRequest =
+                new Float[] {
+                    /* requestedValue= */ minTempInCelsius,
+                    /* units= */ (float) 0x30, // VehicleUnit#CELSIUS
+                    /* suggestedValueInCelsius= */ 0f,
+                    /* suggestedValueInFahrenheit= */ 0f
+                };
+        Float[] expectedTemperatureResponse =
+                new Float[] {
+                    /* requestedValue= */ minTempInCelsius,
+                    /* units= */ (float) 0x30, // VehicleUnit#CELSIUS
+                    /* suggestedValueInCelsius= */ minTempInCelsius,
+                    /* suggestedValueInFahrenheit= */ minTempInFahrenheit
+                };
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            CarPropertyValue<Float[]> updatedCarPropertyValue =
+                    setPropertyAndWaitForChange(
+                            mCarPropertyManager,
+                            mPropertyId,
+                            Float[].class,
+                            areaId,
+                            temperatureRequest,
+                            expectedTemperatureResponse);
+            if (updatedCarPropertyValue != null) {
+                verifyCarPropertyValue(
+                        updatedCarPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
+            }
         }
     }
 
     private void verifySetPropertyOkayOrThrowExpectedExceptions(int areaId, T valueToSet) {
+        spaceOutCarPropertyManagerActions();
         try {
             mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
         } catch (PropertyNotAvailableAndRetryException e) {
@@ -1624,8 +1790,9 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifySetNotAvailable() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (!AREA_ID_CONFIG_ACCESS_FLAG && carPropertyConfig.getAccess()
-                != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+        if (!AREA_ID_CONFIG_ACCESS_FLAG
+                && carPropertyConfig.getAccess()
+                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
             return;
         }
 
@@ -1634,16 +1801,25 @@ public class VehiclePropertyVerifier<T> {
             assertWithMessage("Testing mixed type property is not supported").fail();
         }
         for (int areaId : carPropertyConfig.getAreaIds()) {
-            if (doesAreaIdAccessNotMatch(carPropertyConfig, areaId,
+            if (doesAreaIdAccessNotMatch(
+                    carPropertyConfig,
+                    areaId,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
                 continue;
             }
 
+            spaceOutCarPropertyManagerActions();
             SetterCallback setterCallback = new SetterCallback(mPropertyId, areaId, valueToSet);
-            assertWithMessage("Failed to register no change setter callback for "
-                            + VehiclePropertyIds.toString(mPropertyId))
-                    .that(subscribePropertyEvents(mCarPropertyManager, setterCallback, mPropertyId,
-                            CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
+            assertWithMessage(
+                            "Failed to register no change setter callback for "
+                                    + VehiclePropertyIds.toString(mPropertyId))
+                    .that(
+                            subscribePropertyEvents(
+                                    mCarPropertyManager,
+                                    setterCallback,
+                                    mPropertyId,
+                                    CarPropertyManager.SENSOR_RATE_FASTEST))
+                    .isTrue();
 
             try {
                 mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
@@ -1654,11 +1830,14 @@ public class VehiclePropertyVerifier<T> {
                     // If the callback receives a new event with the value set before the timeout,
                     // then this check will fail.
                     assertWithMessage(
-                            "Received onChangeEvent(s) for " + mPropertyName
-                                    + " with updated value: " + valueToSet + " before 5s timeout."
-                                    + " When the power is turned off, this property must not be"
-                                    + " available to set.")
-                            .that(updatedValue.getValue()).isNotEqualTo(valueToSet);
+                                    "Received onChangeEvent(s) for "
+                                            + mPropertyName
+                                            + " with updated value: "
+                                            + valueToSet
+                                            + " before 5s timeout. When the power is turned off,"
+                                            + " this property must not be available to set.")
+                            .that(updatedValue.getValue())
+                            .isNotEqualTo(valueToSet);
                 }
             } catch (Exception e) {
                 // In normal cases, this should throw PropertyNotAvailableException.
@@ -1668,11 +1847,14 @@ public class VehiclePropertyVerifier<T> {
                 // It is also possible that this may throw IllegalArgumentException if the value to
                 // set is not valid.
                 assertWithMessage(
-                                "Setting property " + mPropertyName + " when it's not available"
-                                    + " should throw either PropertyNotAvailableException or"
-                                    + " IllegalArgumentException.")
+                                "Setting property "
+                                        + mPropertyName
+                                        + " when it's not available"
+                                        + " should throw either PropertyNotAvailableException or"
+                                        + " IllegalArgumentException.")
                         .that(e.getClass())
-                        .isAnyOf(PropertyNotAvailableException.class,
+                        .isAnyOf(
+                                PropertyNotAvailableException.class,
                                 IllegalArgumentException.class);
             } finally {
                 unsubscribePropertyEvents(mCarPropertyManager, setterCallback, mPropertyId);
@@ -1797,10 +1979,6 @@ public class VehiclePropertyVerifier<T> {
             for (CarPropertyValue<?> carPropertyValue : carPropertyValues) {
                 verifyCarPropertyValue(carPropertyValue, carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             }
         }
     }
@@ -1942,7 +2120,7 @@ public class VehiclePropertyVerifier<T> {
                 assertWithMessage(mPropertyName + " - area ID: " + areaId
                         + " must have max value defined").that(areaIdMaxValue).isNotNull();
 
-                if (Flags.carPropertySupportedValue()) {
+                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                     assertWithMessage(mPropertyName + " - area ID: " + areaId
                             + " config must set hasMaxSupportedValue to true")
                             .that(carPropertyConfig.getAreaIdConfig(areaId).hasMaxSupportedValue())
@@ -1976,21 +2154,29 @@ public class VehiclePropertyVerifier<T> {
             }
 
             if (mRequirePropertyValueToBeInConfigArray && isAtLeastU()) {
-                List<?> supportedEnumValues = carPropertyConfig.getAreaIdConfig(
-                        areaId).getSupportedEnumValues();
-                assertWithMessage(mPropertyName + " - areaId: " + areaId
-                        + "'s supported enum values must match the values in the config array.")
+                List<?> supportedEnumValues =
+                        carPropertyConfig.getAreaIdConfig(areaId).getSupportedEnumValues();
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + "'s supported enum values must match the values in the"
+                                        + " config array.")
                         .that(carPropertyConfig.getConfigArray())
                         .containsExactlyElementsIn(supportedEnumValues);
             }
 
             if (mChangeMode == CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE
                     && !mAllPossibleEnumValues.isEmpty() && isAtLeastU()) {
-                List<?> supportedEnumValues = carPropertyConfig.getAreaIdConfig(
-                        areaId).getSupportedEnumValues();
-                assertWithMessage(mPropertyName + " - areaId: " + areaId
-                        + "'s supported enum values must be defined").that(
-                        supportedEnumValues).isNotEmpty();
+                List<?> supportedEnumValues =
+                        carPropertyConfig.getAreaIdConfig(areaId).getSupportedEnumValues();
+                assertWithMessage(
+                                mPropertyName
+                                        + " - areaId: "
+                                        + areaId
+                                        + "'s supported enum values must be defined")
+                        .that(supportedEnumValues)
+                        .isNotEmpty();
                 assertWithMessage(mPropertyName + " - areaId: " + areaId
                         + "'s supported enum values must not contain any duplicates").that(
                         supportedEnumValues).containsNoDuplicates();
@@ -1999,7 +2185,7 @@ public class VehiclePropertyVerifier<T> {
                                 + supportedEnumValues + " must all exist in all possible enum set "
                                 + mAllPossibleEnumValues).that(
                         mAllPossibleEnumValues.containsAll(supportedEnumValues)).isTrue();
-                if (Flags.carPropertySupportedValue()) {
+                if (CAR_PROPERTY_SUPPORTED_VALUE_FLAG) {
                     assertWithMessage(
                             mPropertyName + " - areaId: " + areaId
                             + " config must set hasSupportedValuesList to true")
@@ -2133,10 +2319,6 @@ public class VehiclePropertyVerifier<T> {
             try {
                 carPropertyValue = mCarPropertyManager.getProperty(mPropertyId, areaId);
                 verifyCarPropertyValue(carPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             } catch (PropertyNotAvailableException | CarInternalErrorException e) {
                 handleGetPropertyExceptions(e);
             }
@@ -2216,10 +2398,6 @@ public class VehiclePropertyVerifier<T> {
             int propertyId, int areaId, int status, long timestampNanos, T value,
             int expectedAreaId, String source) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        mCarPropertyValueVerifier.ifPresent(
-                propertyValueVerifier -> propertyValueVerifier.verify(
-                        mVerifierContext, carPropertyConfig, propertyId,
-                        areaId, timestampNanos, value));
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -2284,6 +2462,21 @@ public class VehiclePropertyVerifier<T> {
                                 + " type value")
                 .that(value.getClass())
                 .isEqualTo(mPropertyType);
+
+        // Only validate value if STATUS_AVAILABLE
+        if (status != CarPropertyValue.STATUS_AVAILABLE) {
+            return;
+        }
+
+        mCarPropertyValueVerifier.ifPresent(
+                propertyValueVerifier ->
+                        propertyValueVerifier.verify(
+                                mVerifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                value));
 
         if (mRequirePropertyValueToBeInConfigArray) {
             assertWithMessage(
@@ -2484,53 +2677,6 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    private void verifyHvacTemperatureValueSuggestionResponse(Float[] temperatureSuggestion) {
-        Float suggestedTempInCelsius = temperatureSuggestion[2];
-        Float suggestedTempInFahrenheit = temperatureSuggestion[3];
-        CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
-                getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
-        if (hvacTemperatureSetCarPropertyConfig == null) {
-            return;
-        }
-        List<Integer> hvacTemperatureSetConfigArray =
-                hvacTemperatureSetCarPropertyConfig.getConfigArray();
-        if (hvacTemperatureSetConfigArray.isEmpty()) {
-            return;
-        }
-        Integer minTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(0);
-        Integer maxTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(1);
-        Integer incrementInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(2);
-        verifyHvacTemperatureIsValid(suggestedTempInCelsius, minTempInCelsiusTimesTen,
-                maxTempInCelsiusTimesTen, incrementInCelsiusTimesTen);
-
-        Integer minTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(3);
-        Integer maxTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(4);
-        Integer incrementInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(5);
-        verifyHvacTemperatureIsValid(suggestedTempInFahrenheit, minTempInFahrenheitTimesTen,
-                maxTempInFahrenheitTimesTen, incrementInFahrenheitTimesTen);
-
-        int suggestedTempInCelsiusTimesTen = (int) (suggestedTempInCelsius * 10f);
-        int suggestedTempInFahrenheitTimesTen = (int) (suggestedTempInFahrenheit * 10f);
-        int numIncrementsCelsius =
-                Math.round((suggestedTempInCelsiusTimesTen - minTempInCelsiusTimesTen)
-                        / incrementInCelsiusTimesTen.floatValue());
-        int numIncrementsFahrenheit =
-                Math.round((suggestedTempInFahrenheitTimesTen - minTempInFahrenheitTimesTen)
-                        / incrementInFahrenheitTimesTen.floatValue());
-        assertWithMessage(
-                        "The temperature in celsius must map to the same temperature in fahrenheit"
-                            + " using the HVAC_TEMPERATURE_SET config array: "
-                            + hvacTemperatureSetConfigArray)
-                .that(numIncrementsFahrenheit)
-                .isEqualTo(numIncrementsCelsius);
-    }
-
     private static Optional<Integer> getAreaIdAccess(CarPropertyConfig<?> carPropertyConfig,
             int areaId) {
         return AREA_ID_CONFIG_ACCESS_FLAG
@@ -2665,6 +2811,7 @@ public class VehiclePropertyVerifier<T> {
         private boolean mRequireZeroToBeContainedInMinMaxRanges = false;
         private boolean mPossiblyDependentOnHvacPowerOn = false;
         private boolean mVerifyErrorStates = false;
+        private int mPowerPropagationDelayMs = 2000;
         private final ImmutableSet.Builder<String> mReadPermissionsBuilder = ImmutableSet.builder();
         private final ImmutableList.Builder<ImmutableSet<String>> mWritePermissionsBuilder =
                 ImmutableList.builder();
@@ -2802,51 +2949,45 @@ public class VehiclePropertyVerifier<T> {
             return this;
         }
 
-        /**
-         * Uses the config array values to set the property value.
-         */
+        /** Uses the config array values to set the property value. */
         public Builder<T> verifySetterWithConfigArrayValues() {
             mVerifySetterWithConfigArrayValues = true;
             return this;
         }
 
-        /**
-         * Requires minValue and maxValue to be set.
-         */
+        /** Requires minValue and maxValue to be set. */
         public Builder<T> requireMinMaxValues() {
             mRequireMinMaxValues = true;
             return this;
         }
 
-        /**
-         * Requires minValue to be 0.
-         */
+        /** Requires minValue to be 0. */
         public Builder<T> requireMinValuesToBeZero() {
             mRequireMinValuesToBeZero = true;
             return this;
         }
 
-        /**
-         * Requires 0 to be contains within minValue and maxValue.
-         */
+        /** Requires 0 to be contains within minValue and maxValue. */
         public Builder<T> requireZeroToBeContainedInMinMaxRanges() {
             mRequireZeroToBeContainedInMinMaxRanges = true;
             return this;
         }
 
-        /**
-         * Sets that the property might depend on HVAC_POEWR_ON.
-         */
+        /** Sets that the property might depend on HVAC_POWER_ON. */
         public Builder<T> setPossiblyDependentOnHvacPowerOn() {
             mPossiblyDependentOnHvacPowerOn = true;
             return this;
         }
 
-        /**
-         * Verifies if returning error state, the error state is expected.
-         */
+        /** Verifies if returning error state, the error state is expected. */
         public Builder<T> verifyErrorStates() {
             mVerifyErrorStates = true;
+            return this;
+        }
+
+        /** Sets the delay to wait for the power state to propagate to dependent properties. */
+        public Builder<T> setPowerPropagationDelayMs(int delayMs) {
+            mPowerPropagationDelayMs = delayMs;
             return this;
         }
 
@@ -2911,6 +3052,7 @@ public class VehiclePropertyVerifier<T> {
                     mRequireZeroToBeContainedInMinMaxRanges,
                     mPossiblyDependentOnHvacPowerOn,
                     mVerifyErrorStates,
+                    mPowerPropagationDelayMs,
                     mReadPermissionsBuilder.build(),
                     mWritePermissionsBuilder.build());
         }
@@ -2985,14 +3127,11 @@ public class VehiclePropertyVerifier<T> {
         }
 
         @Override
-        public void onErrorEvent(int propId, int zone) {
-        }
+        public void onErrorEvent(int propId, int zone) {}
 
         @Override
-        public void onErrorEvent(int propId, int areaId, int errorCode) {
-        }
+        public void onErrorEvent(int propId, int areaId, int errorCode) {}
     }
-
 
     private static class SetterCallback<T> implements CarPropertyManager.CarPropertyEventCallback {
         private final int mPropertyId;
@@ -3003,6 +3142,7 @@ public class VehiclePropertyVerifier<T> {
         private final long mCreationTimeNanos = SystemClock.elapsedRealtimeNanos();
         private CarPropertyValue<?> mUpdatedCarPropertyValue = null;
         private T mReceivedValue = null;
+        private Integer mSetErrorCode = null;
 
         SetterCallback(int propertyId, int areaId, T expectedSetValue) {
             mPropertyId = propertyId;
@@ -3019,61 +3159,86 @@ public class VehiclePropertyVerifier<T> {
         }
 
         /**
-         * Waits at most {@code timeoutInSec} for a property event that is the result of a
-         * {@code setProperty} request.
+         * Waits at most {@code timeoutInSec} for a property event that is the result of a {@code
+         * setProperty} request.
          *
          * <p>If {@link #onChangeEvent(CarPropertyValue)} is called, then this method will return
          * the {@link CarPropertyValue} if:
+         *
          * <ul>
-         *  <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
-         *  <li>The event is timestamped after {@link #mCreationTimeNanos} but before
-         *  {@link SystemClock#elapsedRealtimeNanos()}
-         *  <li>One of the following is true:
-         *    <ul>
-         *      <li>{@link CarPropertyValue#getStatus()} is NOT
-         *      {@link CarPropertyValue#STATUS_AVAILABLE}
-         *      <li>{@link CarPropertyValue#getStatus()} is
-         *      {@link CarPropertyValue#STATUS_AVAILABLE} and {@link CarPropertyValue#getValue()}
-         *      equals {@link #mExpectedSetValue}.
-         *    </ul>
+         *   <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
+         *   <li>The event is timestamped after {@link #mCreationTimeNanos} but before {@link
+         *       SystemClock#elapsedRealtimeNanos()}
+         *   <li>One of the following is true:
+         *       <ul>
+         *         <li>{@link CarPropertyValue#getStatus()} is NOT {@link
+         *             CarPropertyValue#STATUS_AVAILABLE}
+         *         <li>{@link CarPropertyValue#getStatus()} is {@link
+         *             CarPropertyValue#STATUS_AVAILABLE} and {@link CarPropertyValue#getValue()}
+         *             equals {@link #mExpectedSetValue}.
+         *       </ul>
          * </ul>
          *
-         * <p>If {@link #onErrorEvent(int, int)} is called, then this method will return
-         * {@code null} if:
+         * <p>If {@link #onErrorEvent(int, int)} is called, then this method will return {@code
+         * null} if:
+         *
          * <ul>
-         *  <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
+         *   <li>The property ID and area ID match {@link #mPropertyId} and {@link #mAreaId}
          * </ul>
          *
          * <p>If {@code timeoutInSec} is reached before any of the above conditions are met or if
-         * {@link InterruptedException} is thrown, then this method will throw an
-         * {@code AssertionError} and fail the test.
+         * {@link InterruptedException} is thrown, then this method will throw an {@code
+         * AssertionError} and fail the test.
+         *
+         * <p>If the callback receives a valid CarPropertyValue and a valid set property error code,
+         * then an {@code AssertionError} will be thrown and the test will fail.
          *
          * @param timeoutInSec maximum time in seconds to wait for an expected event
          * @return a valid {@link CarPropertyValue} if all {@link #onChangeEvent(CarPropertyValue)}
-         * conditions are met, or {@code null} if all {@link #onErrorEvent(int, int)} conditions
-         * are met.
+         *     conditions are met, or {@code null} if all {@link #onErrorEvent(int, int)} conditions
+         *     are met.
          */
         public CarPropertyValue<?> waitForPropertyEvent(int timeoutInSec) {
             try {
                 assertWithMessage(
-                        "Never received onChangeEvent(s) or onErrorEvent(s) for " + mPropertyName
-                                + " new value: " + valueToString(mExpectedSetValue) + " before"
-                                + " timeout. Received: "
-                                + (mReceivedValue == null
-                                    ? "No value"
-                                    : valueToString(mReceivedValue)))
-                        .that(mCountDownLatch.await(timeoutInSec, TimeUnit.SECONDS)).isTrue();
+                                "Never received onChangeEvent(s) or onErrorEvent(s) for "
+                                        + mPropertyName
+                                        + " new value: "
+                                        + valueToString(mExpectedSetValue)
+                                        + " before"
+                                        + " timeout. Received: "
+                                        + (mReceivedValue == null
+                                                ? "No value"
+                                                : valueToString(mReceivedValue)))
+                        .that(mCountDownLatch.await(timeoutInSec, TimeUnit.SECONDS))
+                        .isTrue();
             } catch (InterruptedException e) {
-                assertWithMessage("Waiting for onChangeEvent set callback for "
-                        + mPropertyName + " threw an exception: " + e).fail();
+                assertWithMessage(
+                                "Waiting for onChangeEvent set callback for "
+                                        + mPropertyName
+                                        + " threw an exception: "
+                                        + e)
+                        .fail();
             }
+            assertWithMessage(
+                            "Received both a set error code"
+                                    + mSetErrorCode
+                                    + " and a new value: "
+                                    + mUpdatedCarPropertyValue
+                                    + " for propertyId: "
+                                    + mPropertyName
+                                    + " areaId: "
+                                    + mAreaId)
+                    .that(mUpdatedCarPropertyValue != null && mSetErrorCode != null)
+                    .isFalse();
             return mUpdatedCarPropertyValue;
         }
 
         @Override
         public void onChangeEvent(CarPropertyValue carPropertyValue) {
             // Checking whether the updated carPropertyValue is caused by the setProperty request.
-            if (mUpdatedCarPropertyValue != null || carPropertyValue.getPropertyId() != mPropertyId
+            if (mUpdatedCarPropertyValue != null
+                    || carPropertyValue.getPropertyId() != mPropertyId
                     || carPropertyValue.getAreaId() != mAreaId
                     || carPropertyValue.getTimestamp() <= mCreationTimeNanos
                     || carPropertyValue.getTimestamp() >= SystemClock.elapsedRealtimeNanos()) {
@@ -3093,16 +3258,80 @@ public class VehiclePropertyVerifier<T> {
             onErrorEvent(propId, areaId, CarPropertyManager.CAR_SET_PROPERTY_ERROR_CODE_UNKNOWN);
         }
 
-
         @Override
-        public void onErrorEvent(int propId, int areaId, int errorCode) {
-            if (propId != mPropertyId || areaId != mAreaId) {
-                Log.d(TAG, "SetterCallback - Received unexpected setProperty error code: "
-                        + errorCode + " - propertyId: " + mPropertyName + " - areaId: " + areaId);
+        public void onErrorEvent(int propertyId, int areaId, int errorCode) {
+            if (mCountDownLatch.getCount() == 0) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Received an onErrorEvent call "
+                                + " after the CountDownLatch finished - "
+                                + "propertyId: "
+                                + VehiclePropertyIds.toString(propertyId)
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (propertyId != mPropertyId) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Property ID does not match"
+                                + " expected property ID: "
+                                + mPropertyName
+                                + " - propertyId: "
+                                + VehiclePropertyIds.toString(propertyId)
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (areaId != mAreaId) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Area ID does not match expected"
+                                + " area ID: "
+                                + mAreaId
+                                + " - propertyId: "
+                                + mPropertyName
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (!VALID_SET_ERROR_CODES.contains(errorCode)) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. errorCode is not a valid error"
+                                + " code: "
+                                + VALID_SET_ERROR_CODES
+                                + " - propertyId: "
+                                + mPropertyName
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
+                return;
+            }
+            if (mSetErrorCode != null) {
+                Log.w(
+                        TAG,
+                        "SetterCallback - Dropping onErrorEvent. Already received a valid"
+                                + " errorCode: "
+                                + mSetErrorCode
+                                + " - propertyId: "
+                                + mPropertyName
+                                + " areaId: "
+                                + areaId
+                                + " errorCode: "
+                                + errorCode);
                 return;
             }
             Log.w(TAG, "SetterCallback - Received setProperty error code: " + errorCode
                     + " - propertyId: " + mPropertyName + " - areaId: " + areaId);
+            mSetErrorCode = Integer.valueOf(errorCode);
             mCountDownLatch.countDown();
         }
     }
@@ -3253,8 +3482,8 @@ public class VehiclePropertyVerifier<T> {
         SparseIntArray requestIdToAreaIdMap = new SparseIntArray();
         for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
             int areaId = areaIdConfig.getAreaId();
-            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
-                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
+            if (doesAreaIdAccessMatch(
+                    carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
                 verifyGetPropertiesAsyncFails(areaId);
                 continue;
             }
@@ -3277,30 +3506,27 @@ public class VehiclePropertyVerifier<T> {
             int propertyId = getPropertyResult.getPropertyId();
             if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                 assertWithMessage(
-                        "getPropertiesAsync received GetPropertyResult with unknown requestId: "
-                                + getPropertyResult).fail();
+                                "getPropertiesAsync received GetPropertyResult with unknown"
+                                        + " requestId: "
+                                        + getPropertyResult)
+                        .fail();
             }
             Integer expectedAreaId = requestIdToAreaIdMap.get(requestId);
             verifyCarPropertyValue(propertyId, getPropertyResult.getAreaId(),
                     CarPropertyValue.STATUS_AVAILABLE, getPropertyResult.getTimestampNanos(),
                     (T) getPropertyResult.getValue(), expectedAreaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                verifyHvacTemperatureValueSuggestionResponse(
-                        (Float[]) getPropertyResult.getValue());
-            }
         }
 
         for (PropertyAsyncError propertyAsyncError :
                 testGetPropertyCallback.getPropertyAsyncErrors()) {
             int requestId = propertyAsyncError.getRequestId();
+            // Async errors are ok as long the requestId is valid
             if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                 assertWithMessage(
                         "getPropertiesAsync received PropertyAsyncError with unknown requestId: "
                                 + propertyAsyncError).fail();
             }
-            assertWithMessage("Received PropertyAsyncError when testing getPropertiesAsync: "
-                    + propertyAsyncError).fail();
         }
     }
 
@@ -3375,8 +3601,8 @@ public class VehiclePropertyVerifier<T> {
                 // Always use the last possible value if we run out of possible values.
                 int index = Math.min(i, possibleValues.size() - 1);
                 SetPropertyRequest setPropertyRequest =
-                        mCarPropertyManager.generateSetPropertyRequest(mPropertyId, areaId,
-                                possibleValues.get(index));
+                        mCarPropertyManager.generateSetPropertyRequest(
+                                mPropertyId, areaId, possibleValues.get(index));
                 if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                         == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
                     setPropertyRequest.setWaitForPropertyUpdate(false);
@@ -3404,19 +3630,18 @@ public class VehiclePropertyVerifier<T> {
                 assertThat(setPropertyResult.getAreaId()).isEqualTo(
                         requestIdToAreaIdMap.get(requestId));
                 assertThat(setPropertyResult.getUpdateTimestampNanos()).isAtLeast(0);
-                assertThat(setPropertyResult.getUpdateTimestampNanos()).isLessThan(
-                        SystemClock.elapsedRealtimeNanos());
+                assertThat(setPropertyResult.getUpdateTimestampNanos())
+                        .isLessThan(SystemClock.elapsedRealtimeNanos());
             }
 
             for (PropertyAsyncError propertyAsyncError :
                     testSetPropertyCallback.getPropertyAsyncErrors()) {
                 int requestId = propertyAsyncError.getRequestId();
+                // Async errors are ok as long the requestId is valid
                 if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                     assertWithMessage("setPropertiesAsync received PropertyAsyncError with unknown "
                             + "requestId: " + propertyAsyncError).fail();
                 }
-                assertWithMessage("Received PropertyAsyncError when testing setPropertiesAsync: "
-                        + propertyAsyncError).fail();
             }
         }
     }
@@ -3587,21 +3812,38 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private static <U> CarPropertyValue<U> setPropertyAndWaitForChange(
-            CarPropertyManager carPropertyManager, int propertyId, Class<U> propertyType,
-            int areaId, U valueToSet) {
-        return setPropertyAndWaitForChange(carPropertyManager, propertyId, propertyType, areaId,
-                valueToSet, valueToSet);
+            CarPropertyManager carPropertyManager,
+            int propertyId,
+            Class<U> propertyType,
+            int areaId,
+            U valueToSet) {
+        return setPropertyAndWaitForChange(
+                carPropertyManager, propertyId, propertyType, areaId, valueToSet, valueToSet);
     }
 
     private static <U> CarPropertyValue<U> setPropertyAndWaitForChange(
-            CarPropertyManager carPropertyManager, int propertyId, Class<U> propertyType,
-            int areaId, U valueToSet, U expectedValueToGet) {
+            CarPropertyManager carPropertyManager,
+            int propertyId,
+            Class<U> propertyType,
+            int areaId,
+            U valueToSet,
+            U expectedValueToGet) {
+        spaceOutCarPropertyManagerActions();
         SetterCallback setterCallback = new SetterCallback(propertyId, areaId, expectedValueToGet);
-        assertWithMessage("Failed to register setter callback for " + VehiclePropertyIds.toString(
-                propertyId)).that(subscribePropertyEvents(carPropertyManager, setterCallback,
-                propertyId, CarPropertyManager.SENSOR_RATE_FASTEST)).isTrue();
+        assertWithMessage(
+                        "Failed to register setter callback for "
+                                + VehiclePropertyIds.toString(propertyId))
+                .that(
+                        subscribePropertyEvents(
+                                carPropertyManager,
+                                setterCallback,
+                                propertyId,
+                                CarPropertyManager.SENSOR_RATE_FASTEST))
+                .isTrue();
         try {
             carPropertyManager.setProperty(propertyType, propertyId, areaId, valueToSet);
+        } catch (PropertyNotAvailableAndRetryException e) {
+            return null;
         } catch (PropertyNotAvailableException e) {
             verifyPropertyNotAvailableException(e);
             sExceptionClassOnSet = e.getClass();
@@ -3616,5 +3858,17 @@ public class VehiclePropertyVerifier<T> {
                 setterCallback.waitForPropertyEvent(SET_PROPERTY_CALLBACK_TIMEOUT_SEC);
         unsubscribePropertyEvents(carPropertyManager, setterCallback, propertyId);
         return carPropertyValue;
+    }
+
+    private static void spaceOutCarPropertyManagerActions() {
+        synchronized (sLock) {
+            long currentElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
+            while (currentElapsedRealtimeNanos - sLastActionElapsedRealtimeNanos
+                    < Duration.ofMillis(CPM_ACTION_DELAY_MS).toNanos()) {
+                SystemClock.sleep(CPM_ACTION_DELAY_MS);
+                currentElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
+            }
+            sLastActionElapsedRealtimeNanos = currentElapsedRealtimeNanos;
+        }
     }
 }

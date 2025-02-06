@@ -754,6 +754,8 @@ public abstract class AudioDataPathsBaseActivity
                                 (status & DuplexAudioManager.DUPLEX_STREAM_ID
                                         & DuplexAudioManager.DUPLEX_PLAYER) != 0;
 
+                        mDuplexAudioManager.unwind();
+
                         return setTestState(api,
                                 (processStep & DuplexAudioManager.DUPLEX_ERR_BUILD)
                                         != DuplexAudioManager.DUPLEX_ERROR_NONE
@@ -817,6 +819,8 @@ public abstract class AudioDataPathsBaseActivity
                 if ((status & DuplexAudioManager.DUPLEX_ERROR_CODE)
                         !=  DuplexAudioManager.DUPLEX_ERROR_NONE)  {
                     Log.e(TAG, "  Couldn't start duplex streams - " + getDescription());
+                    mDuplexAudioManager.unwind();
+
                     return setTestState(api, TESTSTATUS_BAD_START,
                             new TestStateData(this, playerFailed, recorderFailed));
                 }
@@ -1245,7 +1249,7 @@ public abstract class AudioDataPathsBaseActivity
                 // Expand out to PerformanceMode.None & PerformanceMode.LowLatency
                 TestModule clonedModule = module.clone();
                 // Test Performance Mode LowLatency for both Output and Input
-                clonedModule.mOutPerformanceMode = module.mInPerformanceMode =
+                clonedModule.mOutPerformanceMode = clonedModule.mInPerformanceMode =
                         BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                 clonedModule.mSectionTitle = null;
                 addIndexedTestModule(clonedModule);
@@ -1262,7 +1266,7 @@ public abstract class AudioDataPathsBaseActivity
                     TestModule moduleMMAP = module.clone();
                     moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
                     // Test Performance Mode LowLatency for both Output and Input
-                    moduleMMAP.mOutPerformanceMode = module.mInPerformanceMode =
+                    moduleMMAP.mOutPerformanceMode = moduleMMAP.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     addIndexedTestModule(moduleMMAP);
                     moduleMMAP.mSectionTitle = null;
@@ -1277,7 +1281,7 @@ public abstract class AudioDataPathsBaseActivity
                     TestModule moduleExclusive = module.clone();
                     moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
                     // Test Performance Mode LowLatency for both Output and Input
-                    moduleExclusive.mOutPerformanceMode = module.mInPerformanceMode =
+                    moduleExclusive.mOutPerformanceMode = moduleExclusive.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     addIndexedTestModule(moduleExclusive);
                     moduleExclusive.mSectionTitle = null;
@@ -1476,7 +1480,7 @@ public abstract class AudioDataPathsBaseActivity
                     mTimer.cancel();
                     mTimer = null;
                 }
-                mDuplexAudioManager.stop();
+                mDuplexAudioManager.unwind();
             }
         }
 
@@ -1576,7 +1580,7 @@ public abstract class AudioDataPathsBaseActivity
 
         public void completeTestStep() {
             if (mTestStep != TESTSTEP_NONE) {
-                mDuplexAudioManager.stop();
+                mDuplexAudioManager.unwind();
                 // Give the audio system a chance to settle from the previous state
                 // It is often the case that the Java API will not route to the specified
                 // device if we teardown/startup too quickly. This sleep cirmumvents that.

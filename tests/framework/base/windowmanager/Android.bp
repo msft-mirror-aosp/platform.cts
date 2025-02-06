@@ -74,7 +74,6 @@ java_defaults {
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",
         "CtsAccessibilityCommon",
-        "CtsVirtualDeviceCommonLib",
         "metrics-helper-lib",
         "truth",
         "cts-wm-overlayapp-base",
@@ -90,6 +89,7 @@ java_defaults {
         "flag-junit",
         "com_android_wm_shell_flags_lib",
         "surfaceflinger_flags_java_lib",
+        "display_flags_lib",
     ],
 
     test_suites: [
@@ -161,6 +161,7 @@ filegroup {
     name: "CtsWindowManagerDeviceActivity-src",
     srcs: [
         "src/**/activity/*.java",
+        "src/**/activity/*.kt",
         "src/**/activity/lifecycle/*.java",
         "src/**/intent/*.java",
     ],

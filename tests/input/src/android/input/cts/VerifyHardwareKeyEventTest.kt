@@ -23,6 +23,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_A
 import com.android.cts.input.UinputKeyboard
 import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.junit.Assert.assertNotNull
@@ -39,10 +41,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class VerifyHardwareKeyEventTest {
-
-    companion object {
-        const val KEY_A = 30
-    }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 

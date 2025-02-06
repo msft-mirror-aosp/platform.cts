@@ -24,8 +24,6 @@ import os
 import sys
 
 import capture_request_utils
-import opencv_processing_utils
-import preview_processing_utils
 import error_util
 import noise_model_constants
 import numpy
@@ -39,6 +37,7 @@ _CMAP_BLUE = ('black', 'blue', 'lightblue')
 _CMAP_GREEN = ('black', 'green', 'lightgreen')
 _CMAP_RED = ('black', 'red', 'lightcoral')
 _CMAP_SIZE = 6  # 6 inches
+_NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_RAW_CHANNELS = 4  # R, Gr, Gb, B
 
 LENS_SHADING_MAP_ON = 1
@@ -323,7 +322,8 @@ def convert_capture_to_rgb_image(cap,
     u = cap['data'][w * h: w * h * 5//4]
     v = cap['data'][w * h * 5//4: w * h * 6//4]
     return convert_yuv420_planar_to_rgb_image(y, u, v, w, h)
-  elif cap['format'] == 'jpeg' or cap['format'] == 'jpeg_r':
+  elif (cap['format'] == 'jpeg' or cap['format'] == 'jpeg_r' or
+        cap['format'] == 'heic_ultrahdr'):
     return decompress_jpeg_to_rgb_image(cap['data'])
   elif (cap['format'] in ('raw', 'rawQuadBayer') or
         cap['format'] in noise_model_constants.VALID_RAW_STATS_FORMATS):
@@ -1640,6 +1640,34 @@ def convert_sensor_coords_to_image_coords(
   return image_coords
 
 
+def mirror_preview_image_by_sensor_orientation(
+    sensor_orientation, input_preview_img):
+  """If testing front camera, mirror preview image to match camera capture.
+
+  Preview are flipped on device's natural orientation, so for sensor
+  orientation 90 or 270, it is up or down. Sensor orientation 0 or 180
+  is left or right.
+
+  Args:
+    sensor_orientation: integer; display orientation in natural position.
+    input_preview_img: numpy array; image extracted from preview recording.
+  Returns:
+    output_preview_img: numpy array; flipped according to natural orientation.
+  """
+  if sensor_orientation in _NATURAL_ORIENTATION_PORTRAIT:
+    # Opencv expects a numpy array but np.flip generates a 'view' which
+    # doesn't work with opencv. ndarray.copy forces copy instead of view.
+    output_preview_img = numpy.ndarray.copy(numpy.flipud(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping up down', sensor_orientation)
+  else:
+    output_preview_img = numpy.ndarray.copy(numpy.fliplr(input_preview_img))
+    logging.debug(
+        'Found sensor orientation %d, flipping left right', sensor_orientation)
+
+  return output_preview_img
+
+
 def check_orientation_and_flip(props, img, img_name_stem):
   """Checks the sensor orientation and flips image.
 
@@ -1654,84 +1682,10 @@ def check_orientation_and_flip(props, img, img_name_stem):
   Returns:
     numpy array of the two images.
   """
-  img = preview_processing_utils.mirror_preview_image_by_sensor_orientation(
+  img = mirror_preview_image_by_sensor_orientation(
       props['android.sensor.orientation'], img)
   write_image(img / _CH_FULL_SCALE, f'{img_name_stem}.png')
   return img
-
-
-def do_ae_check(
-    img1, img2, file_stem, suffix1, suffix2, rel_tol, abs_tol):
-  """Check two images' luma change is within specified tolerance.
-
-  Args:
-    img1: first image.
-    img2: second image.
-    file_stem: str; path to file.
-    suffix1: str; suffix for the first image file name.
-    suffix2: str; suffix for the second image file name.
-    rel_tol: float; relative threshold for delta between brightness.
-    abs_tol: float; absolute threshold for delta between brightness.
-  Returns:
-    failed_ae_msg: str; failed AE check messages if any. None otherwise.
-    y1_avg: float; y_avg value for the first image.
-    y2_avg: float; y_avg value for the second image.
-  """
-  failed_ae_msg = []
-  y1 = opencv_processing_utils.extract_y(
-      img1, f'{file_stem}_{suffix1}_y.png')
-  y1_avg = numpy.average(y1)
-  logging.debug('%s y avg: %.4f', suffix1, y1_avg)
-
-  y2 = opencv_processing_utils.extract_y(
-      img2, f'{file_stem}_{suffix2}_y.png')
-  y2_avg = numpy.average(y2)
-  logging.debug('%s y avg: %.4f', suffix2, y2_avg)
-  y_avg_change_percent = (abs(y2_avg - y1_avg) / y1_avg) * 100
-  logging.debug('Y avg change percentage: %.4f', y_avg_change_percent)
-
-  if not math.isclose(y1_avg, y2_avg, rel_tol=rel_tol, abs_tol=abs_tol):
-    failed_ae_msg.append('Y avg change is greater than threshold value for '
-                         f'patches: {suffix1} and {suffix2} '
-                         f'diff: {abs(y2_avg - y1_avg):.4f} '
-                         f'ATOL: {abs_tol} '
-                         f'RTOL: {rel_tol} '
-                         f'{suffix1} y avg: {y1_avg:.4f} '
-                         f'{suffix2} y avg: {y2_avg:.4f} ')
-  return failed_ae_msg, y1_avg, y2_avg
-
-
-def do_awb_check(img1, img2, c_atol, patch_color, suffix1, suffix2):
-  """Checks total chroma (saturation) difference between two images.
-
-  Args:
-    img1: first image.
-    img2: second image.
-    c_atol: float; threshold for delta C.
-    patch_color: str; color of the patch to be tested.
-    suffix1: str; suffix for the first image.
-    suffix2: str; suffix for the second image.
-  Returns:
-    failed_awb_msg: failed AWB check messages or None.
-  """
-  failed_awb_msg = []
-  l1, a1, b1 = get_lab_means(img1, suffix1)
-  l2, a2, b2 = get_lab_means(img2, suffix2)
-
-  # Calculate Delta C
-  delta_c = numpy.sqrt(abs(a1 - a2)**2 + abs(b1 - b2)**2)
-  logging.debug('Delta C: %.4f', delta_c)
-
-  if delta_c > c_atol:
-    failed_awb_msg.append('Delta C is greater than the threshold value for '
-                          f'patch: {patch_color} '
-                          f'Delta C ATOL: {c_atol} '
-                          f'Delta C: {delta_c:.4f} '
-                          f'{suffix1} L, a, b means: {l1:.4f}, '
-                          f'{a1:.4f}, {b1:.4f}'
-                          f'{suffix2} L, a, b means: {l2:.4f}, '
-                          f'{a2:.4f}, {b2:.4f}')
-  return failed_awb_msg
 
 
 def get_four_quadrant_patches(img, img_path, suffix, patch_margin):

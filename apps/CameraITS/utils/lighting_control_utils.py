@@ -64,6 +64,7 @@ def set_light_brightness(ch, brightness, serial_port, delay=0):
 
   cmd = [struct.pack('B', i) for i in [
       ARDUINO_LIGHT_START_BYTE, int(ch), brightness]]
+  logging.debug('cmd: %s', cmd)
   sensor_fusion_utils.arduino_send_cmd(serial_port, cmd)
   time.sleep(delay)
 

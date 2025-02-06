@@ -73,7 +73,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -258,21 +257,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                 + "<" + CUSTOM_ANIMATION_DURATION_RANGE.getLower() + ", "
                 + CUSTOM_ANIMATION_DURATION_RANGE.getUpper() + "> ms, "
                 + "actual=" + totalTime, !CUSTOM_ANIMATION_DURATION_RANGE.contains(totalTime));
-    }
-
-    /**
-     * Checks that the activity's theme's background color is used as the default animation's
-     * background color when no override is specified.
-     */
-    @Ignore
-    @Test
-    public void testThemeBackgroundColorShowsDuringActivityTransition() {
-        final int backgroundColor = Color.WHITE;
-        final TestBounds testBounds = getTestBounds();
-
-        getTestBuilder().setClass(TransitionActivityWithWhiteBackground.class)
-                .setTestFunction(createAssertAppRegionOfScreenIsColor(backgroundColor, testBounds))
-                .run();
     }
 
     /**
@@ -831,17 +815,17 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
-            getWindow().getAttributes().layoutInDisplayCutoutMode =
-                    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
-            // Ensure the activity is edge-to-edge
-            // In tests we rely on the activity's content filling the entire window
-            getWindow().setDecorFitsSystemWindows(false);
-
             View view = new View(this);
             view.setLayoutParams(new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
             view.setOnApplyWindowInsetsListener((v, insets) -> mInsets = insets);
             view.setBackgroundColor(Color.CYAN);
             setContentView(view);
+
+            getWindow().getAttributes().layoutInDisplayCutoutMode =
+                    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+            // Ensure the activity is edge-to-edge
+            // In tests we rely on the activity's content filling the entire window
+            getWindow().setDecorFitsSystemWindows(false);
         }
 
         private Rect getActivityTestableRegion() {

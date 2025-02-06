@@ -37,6 +37,7 @@ android_test {
         "sts-device-util",
         "com.android.window.flags.window-aconfig-java",
         "androidx.test.rules",
+        "androidx.test.espresso.core",
         "com_android_systemui_flags_lib",
     ],
     libs: [

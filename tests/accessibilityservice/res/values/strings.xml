@@ -139,6 +139,9 @@
     <!-- String title of the accessibility text traversal test activity. -->
     <string name="accessibility_text_traversal_test_activity">Accessibility text traversal test</string>
 
+    <!-- String title of the accessibility text view test activity. -->
+    <string name="accessibility_text_view_test_activity">Accessibility text view test</string>
+
     <string name="android_wiki_short">
         Android is a\nLinux-based\noperating</string>
 

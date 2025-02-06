@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -152,6 +153,7 @@ public abstract class CodecTestBase {
             SystemProperties.getInt("ro.board.api_level", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final int ANDROID_VENDOR_API_202404 = 202404;
+    public static final int ANDROID_VENDOR_API_202504 = 202504;
     // ro.vendor.api_level is guaranteed to be set on devices running in Android T and above,
     // so using a default of 0 when not defined is safe to detect devices launching with 202404.
     // These tests run on older versions where ro.vendor.api_level is not defined. So this
@@ -159,14 +161,21 @@ public abstract class CodecTestBase {
     // builds.
     public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202404 =
             SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202404;
+    public static final boolean BOARD_FIRST_SDK_IS_AT_LEAST_202504 =
+            SystemProperties.getInt("ro.vendor.api_level", 0) >= ANDROID_VENDOR_API_202504;
     public static final boolean IS_HDR_EDITING_SUPPORTED;
     public static final boolean IS_HLG_EDITING_SUPPORTED;
     public static final boolean IS_HDR_CAPTURE_SUPPORTED;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
+    // Reduce the max concurrent codec instances on Low Ram devices to 8 to avoid getting into
+    // low memory issues.
+    private static final int LOW_RAM_DEVICE_MAX_INSTANCES = 8;
 
     public static final ArrayList<String> HDR_INFO_IN_BITSTREAM_CODECS = new ArrayList<>();
     public static final String HDR_STATIC_INFO =
             "00 d0 84 80 3e c2 33 c4 86 4c 1d b8 0b 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
+    public static final String HDR_STATIC_ALTERNATE_INFO =
+            "00 d0 84 80 3e c2 33 c4 86 4c 1d b8 0b 13 3d 42 40 e8 03 32 00 00 00 00 00";
     public static final String HDR_STATIC_INCORRECT_INFO =
             "00 d0 84 80 3e c2 33 c4 86 10 27 d0 07 13 3d 42 40 a0 0f 32 00 10 27 df 0d";
     public static final String CODEC_PREFIX_KEY = "codec-prefix";
@@ -231,9 +240,13 @@ public abstract class CodecTestBase {
     static final int[] AV1_HLG_PROFILES = new int[]{AV1ProfileMain10};
     static final int[] APV_HLG_PROFILES = new int[]{APVProfile422_10};
     static final int[] AV1_HDR10_PROFILES = new int[]{AV1ProfileMain10HDR10};
+    static final int[] APV_HDR10_PROFILES = new int[]{APVProfile422_10HDR10};
     static final int[] AV1_HDR10_PLUS_PROFILES = new int[]{AV1ProfileMain10HDR10Plus};
+    static final int[] APV_HDR10_PLUS_PROFILES = new int[]{APVProfile422_10HDR10Plus};
     static final int[] AV1_HDR_PROFILES =
             combine(AV1_HLG_PROFILES, combine(AV1_HDR10_PROFILES, AV1_HDR10_PLUS_PROFILES));
+    static final int[] APV_HDR_PROFILES =
+            combine(APV_HLG_PROFILES, combine(APV_HDR10_PROFILES, APV_HDR10_PLUS_PROFILES));
     static final int[] AV1_PROFILES = combine(AV1_SDR_PROFILES, AV1_HDR_PROFILES);
     static final int[] DOLBY_VISION_HDR_PROFILES = new int[]{DolbyVisionProfileDvavPer,
             DolbyVisionProfileDvavPen, DolbyVisionProfileDvheDer, DolbyVisionProfileDvheDen,
@@ -270,16 +283,34 @@ public abstract class CodecTestBase {
                     + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
                     + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
                     + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_ALTERNATE_INFO_SCENE_A =
+            "b5 00 3c 00 01 04 01 40  00 0c 80 00 00 03 00 00"
+                    + "03 00 00 03 00 00 24 08  00 00 28 00 00 50 03 fc"
+                    + "c8 00 01 90 00 02 58 00  02 d0 00 02 f8 00 03 18"
+                    + "00 00 03 00 40 00 00 24  66 33 53 36 6a 00 99 ac"
+                    + "dc cf 9a 00";
     public static final String HDR10_INFO_SCENE_B =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
                     + "0a 00 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
                     + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
                     + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_ALTERNATE_INFO_SCENE_B =
+            "b5 00 3c 00 01 04 01 40  00 0c 80 00 00 03 00 00"
+                    + "03 00 00 03 00 00 24 08  00 00 28 00 00 50 90 00"
+                    + "02 58 00 03 fc c8 00 01  02 d0 00 02 f8 00 03 18"
+                    + "00 00 03 00 40 00 00 24  66 33 53 36 6a 00 99 ac"
+                    + "dc cf 9a 00";
     public static final String HDR10_INFO_SCENE_C =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
                     + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
                     + "90 02 aa 58 05 ca d0 0c  0a f8 16 83 18 9c 18 00"
                     + "40 78 13 64 d5 7c 2e 2c  c3 59 de 79 6e c3 c2 00";
+    public static final String HDR10_ALTERNATE_INFO_SCENE_C =
+            "b5 00 3c 00 01 04 01 40  00 0c 80 00 00 03 00 00"
+                    + "00 24 08 00 00 03 00 00  03 00 28 00 00 50 90 00"
+                    + "02 58 00 03 fc c8 00 01  02 d0 00 02 f8 00 03 18"
+                    + "00 00 03 00 40 00 00 24  66 33 53 36 6a 00 99 ac"
+                    + "dc cf 9a 00";
     public static final String HDR10_INFO_SCENE_D =
             "b5 00 3c 00 01 04 00 40  00 0c 80 4e 20 27 10 00"
                     + "0e 80 00 24 08 00 00 28  00 00 50 00 28 c8 00 c9"
@@ -415,6 +446,7 @@ public abstract class CodecTestBase {
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp8", MediaFormat.MIMETYPE_VIDEO_VP8);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("vp9", MediaFormat.MIMETYPE_VIDEO_VP9);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("av1", MediaFormat.MIMETYPE_VIDEO_AV1);
+        CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("apv", MediaFormat.MIMETYPE_VIDEO_APV);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("avc", MediaFormat.MIMETYPE_VIDEO_AVC);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("hevc", MediaFormat.MIMETYPE_VIDEO_HEVC);
         CODEC_SEL_KEY_MEDIA_TYPE_MAP.put("mpeg4", MediaFormat.MIMETYPE_VIDEO_MPEG4);
@@ -461,15 +493,18 @@ public abstract class CodecTestBase {
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PROFILES);
         PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PROFILES);
+        PROFILE_HDR10_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PROFILES);
 
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10_PLUS_PROFILES);
         PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR10_PLUS_PROFILES);
+        PROFILE_HDR10_PLUS_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR10_PLUS_PROFILES);
 
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HDR_PROFILES);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION, DOLBY_VISION_HDR_PROFILES);
 
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AVC, AVC_PROFILES);
@@ -480,6 +515,7 @@ public abstract class CodecTestBase {
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP8, VP8_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILES);
+        PROFILE_MAP.put(MediaFormat.MIMETYPE_VIDEO_APV, APV_HDR_PROFILES);
         PROFILE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC, AAC_PROFILES);
 
         HDR_INFO_IN_BITSTREAM_CODECS.add(MediaFormat.MIMETYPE_VIDEO_AV1);
@@ -818,6 +854,34 @@ public abstract class CodecTestBase {
         return isFormatSimilar(refFormat, testFormat);
     }
 
+    public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+            if (codecName.equals(codecInfo.getName())) {
+                return codecInfo.getCapabilitiesForType(mediaType);
+            }
+        }
+        return null;
+    }
+
+    public static int getMaxSupportedInstances(String codecName, String mediaType) {
+        CodecCapabilities caps = getCodecCapabilities(codecName, mediaType);
+        return caps != null ? caps.getMaxSupportedInstances() : 0;
+    }
+
+    public static int getMaxCodecInstances(String codecName, String mediaType) {
+        int maxCodecLimit = 32;
+        boolean isLowRamDevice = CONTEXT.getSystemService(ActivityManager.class).isLowRamDevice();
+        if (isLowRamDevice) {
+            maxCodecLimit = LOW_RAM_DEVICE_MAX_INSTANCES;
+        }
+        return Math.min(getMaxSupportedInstances(codecName, mediaType), maxCodecLimit);
+    }
+
+    public static boolean isFeatureRequired(String codecName, String mediaType, String feature) {
+        CodecCapabilities caps = getCodecCapabilities(codecName, mediaType);
+        return caps != null && caps.isFeatureRequired(feature);
+    }
+
     /**
      * Stop the current codec session and transfer component to uninitialized state.
      * <p>
@@ -1045,7 +1109,7 @@ public abstract class CodecTestBase {
                 mustTestAllCodecs, selectSwitch, features, false);
     }
 
-    private static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+    public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch, String[] features, boolean ignoreModeDuringSelection) {
         ArrayList<String> mediaTypes = compileCompleteTestMediaTypesList(isEncoder,
@@ -1496,7 +1560,7 @@ public abstract class CodecTestBase {
         validateTestState();
     }
 
-    void validateTestState() {
+    protected void validateTestState() {
         assertFalse("Encountered error in async mode. \n" + mTestConfig + mTestEnv
                 + mAsyncHandle.getErrMsg(), mAsyncHandle.hasSeenError());
         if (mInputCount > 0) {

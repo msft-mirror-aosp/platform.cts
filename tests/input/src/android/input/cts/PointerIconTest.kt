@@ -28,6 +28,7 @@ import android.view.PointerIcon
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.TestPointerDevice
 import com.android.cts.input.VirtualDisplayActivityScenario
@@ -120,6 +121,10 @@ class PointerIconTest {
     @After
     fun tearDown() {
         device.tearDown()
+        // Have the virtual device rule re-acquire the permissions needed for its tear-down logic.
+        // VirtualDisplayActivityScenario.Rule drops the shell identity, which makes the virtual
+        // device rule lose its required permissions.
+        virtualDeviceRule.acquireNecessaryPermissions()
     }
 
     @Test

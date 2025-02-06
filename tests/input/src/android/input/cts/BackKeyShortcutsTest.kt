@@ -23,6 +23,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.CaptureEventActivity
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_BACKSPACE
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_ESC
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFT
+import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTMETA
 import com.android.cts.input.UinputKeyboard
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -38,14 +43,6 @@ import org.junit.runner.RunWith
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class BackKeyShortcutsTest {
-
-    companion object {
-        // Linux keycodes defined in the "linux/input-event-codes.h" header.
-        const val KEY_LEFTMETA = 125
-        const val KEY_ESC = 1
-        const val KEY_BACKSPACE = 14
-        const val KEY_LEFT = 105
-    }
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 

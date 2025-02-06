@@ -67,7 +67,8 @@
   <option name="compatibility:include-filter" value="CtsHardwareTestCases"/>
   <option name="compatibility:include-filter" value="CtsGpuToolsHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsNativeMediaAAudioTestCases"/>
-  <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMediaRouterTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMediaSessionTestCases"/>
   <option name="compatibility:include-filter" value="CtsSignedConfigHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsEdiHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsRenderscriptTestCases"/>
@@ -388,10 +389,7 @@
   <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnCheckedChangePendingIntent"/>
   <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnClickPendingIntent"/>
   <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testShowNextPrevious"/>
-  <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.DarkTextThemeTest#testCollection_dark"/>
-  <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.DarkTextThemeTest#testCollection_light"/>
   <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.RequestPinAppWidgetTest#testPinWidget_launcher1"/>
-  <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.WidgetTransitionTest#testCollection_sendBroadcast"/>
   <option name="compatibility:include-filter" value="CtsAssistTestCases android.assist.cts.LifecycleTest#testNoUiLayerDoesNotTriggerLifecycleMethods"/>
   <option name="compatibility:include-filter" value="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testTracingIsDisabled"/>
   <option name="compatibility:include-filter" value="CtsAtraceHostTestCases android.atrace.cts.AtraceHostTest#testTracingIsEnabled"/>

@@ -20,6 +20,7 @@ import static android.text.TextUtils.isEmpty;
 
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
@@ -133,14 +134,13 @@ public class UiDumpUtils {
     private static Instrumentation sInstrumentation = InstrumentationRegistry.getInstrumentation();
     private static UiAutomation sUiAutomation = sInstrumentation.getUiAutomation();
 
-    private static int sScreenArea;
+    private static Point sDisplaySize = new Point();
+
     static {
-        Point displaySize = new Point();
         sInstrumentation.getContext()
                 .getSystemService(WindowManager.class)
                 .getDefaultDisplay()
-                .getRealSize(displaySize);
-        sScreenArea = displaySize.x * displaySize.y;
+                .getRealSize(sDisplaySize);
     }
 
 
@@ -163,6 +163,13 @@ public class UiDumpUtils {
     }
 
     /**
+     * Dumps UI hierarchy into {@code out}.
+     */
+    public static void dumpNodes(StringBuilder out) {
+        dumpNodes(sUiAutomation.getRootInActiveWindow(), out);
+    }
+
+    /**
      * Dumps UI hierarchy with a given {@code root} as indented text tree into {@code out}.
      */
     public static void dumpNodes(AccessibilityNodeInfo root, StringBuilder out) {
@@ -170,6 +177,16 @@ public class UiDumpUtils {
             appendNode(out, root);
             return;
         }
+        // Refresh display size if changed during the test run
+        sInstrumentation.getContext().getSystemService(WindowManager.class)
+                .getDefaultDisplay().getRealSize(sDisplaySize);
+        out.append("Display size: ");
+        out.append(sDisplaySize.x).append("x").append(sDisplaySize.y).append(" ");
+        int dpi = sInstrumentation.getContext().getResources().getDisplayMetrics().densityDpi;
+        out.append("dpi: ").append(dpi).append(" ");
+        int orientation =
+                sInstrumentation.getContext().getResources().getConfiguration().orientation;
+        out.append("orientation: ").append(getOrientation(orientation)).append("\n");
 
         out.append("--- ").append(root.getPackageName()).append(" ---\n|");
 
@@ -205,20 +222,19 @@ public class UiDumpUtils {
             out.append("<null window>");
         } else {
             if (!isEmpty(window.getTitle())) {
+                out.append("Window title: ");
                 out.append(window.getTitle());
                 if (CONCISE) return out;
                 out.append(" ");
             }
+            out.append("Window type: ");
             out.append(valueToString(
                     AccessibilityWindowInfo.class, "TYPE_", window.getType())).append(" ");
             if (CONCISE) return out;
             appendArea(out, window::getBoundsInScreen);
-
-            Rect bounds = new Rect();
-            window.getBoundsInScreen(bounds);
-            out.append(bounds.width()).append("x").append(bounds.height()).append(" ");
             if (window.isInPictureInPictureMode()) out.append("#PIP ");
         }
+        out.append("\n|");
         return out;
     }
 
@@ -226,7 +242,9 @@ public class UiDumpUtils {
         Rect rect = new Rect();
         getBoundsInScreen.accept(rect);
         out.append("size:");
-        out.append(toStringRounding((float) area(rect) * 100 / sScreenArea)).append("% ");
+        int screenArea = sDisplaySize.x * sDisplaySize.y;
+        out.append(toStringRounding((float) area(rect) * 100 / screenArea)).append("% ");
+        out.append(rect.toString()).append(" ");
     }
 
     private static boolean appendNode(StringBuilder out, AccessibilityNodeInfo node) {
@@ -382,6 +400,17 @@ public class UiDumpUtils {
 
         appendArea(out, node::getBoundsInScreen);
         return false;
+    }
+
+    private static String getOrientation(int orientation) {
+        switch (orientation) {
+            case Configuration.ORIENTATION_PORTRAIT:
+                return "Portrait";
+            case Configuration.ORIENTATION_LANDSCAPE:
+                return "Landscape";
+            default:
+                return "Unknown";
+        }
     }
 
     private static <T> String valueToString(Class<?> clazz, String prefix, T value) {

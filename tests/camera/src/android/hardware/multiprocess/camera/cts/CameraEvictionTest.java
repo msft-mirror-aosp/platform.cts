@@ -42,7 +42,6 @@ import android.server.wm.NestedShellPermission;
 import android.server.wm.TestTaskOrganizer;
 import android.server.wm.WindowManagerStateHelper;
 import android.test.ActivityInstrumentationTestCase2;
-import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
 import android.view.InputDevice;
@@ -315,7 +314,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             timeoutExceptionHit = true;
         }
 
-        assertNone("Remote camera service received invalid events: ", eventList2);
+        TestUtils.assertNone("Remote camera service received invalid events: ", eventList2);
         assertTrue("Remote camera service exited early", timeoutExceptionHit);
         android.os.Process.killProcess(mProcessPid);
         mProcessPid = -1;
@@ -385,22 +384,6 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     }
 
     /**
-     * Return a Map of eventTag -> number of times encountered
-     */
-    private Map<Integer, Integer> getEventTagCountMap(List<ErrorLoggingService.LogEvent> events) {
-        ArrayMap<Integer, Integer> eventTagCountMap = new ArrayMap<>();
-        for (ErrorLoggingService.LogEvent e : events) {
-            int eventTag = e.getEvent();
-            if (!eventTagCountMap.containsKey(eventTag)) {
-                eventTagCountMap.put(eventTag, 1);
-            } else {
-                eventTagCountMap.put(eventTag, eventTagCountMap.get(eventTag) + 1);
-            }
-        }
-        return eventTagCountMap;
-    }
-
-    /**
      * Test camera availability access callback in split window mode.
      */
     @AppModeFull(reason = "TestTaskOrganizer.putTaskInSplitPrimary, .putTaskInSplitSecondary")
@@ -431,7 +414,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         boolean cameraConnected = false;
         boolean activityPaused = false;
 
-        Map<Integer, Integer> eventTagCountMap = getEventTagCountMap(allEvents);
+        Map<Integer, Integer> eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
         for (int eventTag : eventTagCountMap.keySet()) {
             if (eventTag == TestConstants.EVENT_ACTIVITY_RESUMED) {
                 activityResumed += eventTagCountMap.get(eventTag);
@@ -457,7 +440,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(SETUP_TIMEOUT,
                     TestConstants.EVENT_ACTIVITY_PAUSED);
             assertNotNull("Remote activity not paused!", allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             for (int eventTag : eventTagCountMap.keySet()) {
                 if (eventTag == TestConstants.EVENT_ACTIVITY_RESUMED) {
                     activityResumed += eventTagCountMap.get(eventTag);
@@ -472,7 +455,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(SETUP_TIMEOUT,
                     TestConstants.EVENT_ACTIVITY_RESUMED);
             assertNotNull("Remote activity not resumed after pause!", allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             for (int eventTag : eventTagCountMap.keySet()) {
                 if (eventTag == TestConstants.EVENT_ACTIVITY_RESUMED) {
                     activityResumed += eventTagCountMap.get(eventTag);
@@ -505,7 +488,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(CAMERA_ACCESS_TIMEOUT,
                     expectedEventsSecondary);
             assertNotNull(allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             assertTrue(eventTagCountMap.containsKey(
                     TestConstants.EVENT_CAMERA_ACCESS_PRIORITIES_CHANGED));
             assertTrue(eventTagCountMap.containsKey(
@@ -517,7 +500,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             allEvents = mErrorServiceConnection.getLog(CAMERA_ACCESS_TIMEOUT,
                     expectedEventsPrimary);
             assertNotNull(allEvents);
-            eventTagCountMap = getEventTagCountMap(allEvents);
+            eventTagCountMap = TestUtils.getEventTagCountMap(allEvents);
             assertTrue(eventTagCountMap.containsKey(
                     TestConstants.EVENT_CAMERA_ACCESS_PRIORITIES_CHANGED));
             assertTrue(eventTagCountMap.containsKey(
@@ -657,7 +640,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             events = mErrorServiceConnection.getLog(SETUP_TIMEOUT,
                     TestConstants.EVENT_CAMERA_CONNECT);
         } finally {
-            if (events != null) assertOnly(TestConstants.EVENT_CAMERA_CONNECT, events);
+            if (events != null) TestUtils.assertOnly(TestConstants.EVENT_CAMERA_CONNECT, events);
         }
 
         Thread.sleep(WAIT_TIME);
@@ -705,7 +688,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             timeoutExceptionHit = true;
         }
 
-        assertNone("Remote camera service received invalid events: ", eventList2);
+        TestUtils.assertNone("Remote camera service received invalid events: ", eventList2);
         assertTrue("Remote camera service exited early", timeoutExceptionHit);
         android.os.Process.killProcess(mProcessPid);
         mProcessPid = -1;
@@ -749,22 +732,6 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     }
 
     /**
-     * Return the PID for the process with the given name in the given list of process info.
-     *
-     * @param processName the name of the process who's PID to return.
-     * @param list a list of {@link ActivityManager.RunningAppProcessInfo} to check.
-     * @return the PID of the given process, or -1 if it was not included in the list.
-     */
-    private static int getPid(String processName,
-                              List<ActivityManager.RunningAppProcessInfo> list) {
-        for (ActivityManager.RunningAppProcessInfo rai : list) {
-            if (processName.equals(rai.processName))
-                return rai.pid;
-        }
-        return -1;
-    }
-
-    /**
      * Start an activity of the given class running in a remote process with the given name.
      *
      * @param klass the class of the {@link android.app.Activity} to start.
@@ -792,7 +759,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         List<ActivityManager.RunningAppProcessInfo> list =
                 mActivityManager.getRunningAppProcesses();
         assertEquals("Activity " + cameraActivityName + " already running.",
-                -1, getPid(cameraActivityName, list));
+                -1, TestUtils.getPid(cameraActivityName, list));
 
         // Start activity in a new top foreground process
         if (splitScreen) {
@@ -828,42 +795,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
 
         // Fail if activity isn't running
         list = mActivityManager.getRunningAppProcesses();
-        mProcessPid = getPid(cameraActivityName, list);
+        mProcessPid = TestUtils.getPid(cameraActivityName, list);
         assertTrue("Activity " + cameraActivityName + " not found in list of running app "
                 + "processes.", -1 != mProcessPid);
-    }
-
-    /**
-     * Assert that there is only one event of the given type in the event list.
-     *
-     * @param event event type to check for.
-     * @param events {@link List} of events.
-     */
-    public static void assertOnly(int event, List<ErrorLoggingService.LogEvent> events) {
-        assertTrue("Remote camera activity never received event: " + event, events != null);
-        for (ErrorLoggingService.LogEvent e : events) {
-            assertFalse("Remote camera activity received invalid event (" + e +
-                    ") while waiting for event: " + event,
-                    e.getEvent() < 0 || e.getEvent() != event);
-        }
-        assertTrue("Remote camera activity never received event: " + event, events.size() >= 1);
-        assertTrue("Remote camera activity received too many " + event + " events, received: " +
-                events.size(), events.size() == 1);
-    }
-
-    /**
-     * Assert there were no logEvents in the given list.
-     *
-     * @param msg message to show on assertion failure.
-     * @param events {@link List} of events.
-     */
-    public static void assertNone(String msg, List<ErrorLoggingService.LogEvent> events) {
-        if (events == null) return;
-        StringBuilder builder = new StringBuilder(msg + "\n");
-        for (ErrorLoggingService.LogEvent e : events) {
-            builder.append(e).append("\n");
-        }
-        assertTrue(builder.toString(), events.isEmpty());
     }
 
     /**

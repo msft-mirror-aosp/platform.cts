@@ -31,6 +31,7 @@ android_test {
         "compatibility-device-preconditions",
         "CtsAppTestStubsShared",
         "android.service.notification.flags-aconfig-java",
+        "android.app.flags-aconfig-java",
     ],
     libs: [
         "android.test.runner.stubs.test",

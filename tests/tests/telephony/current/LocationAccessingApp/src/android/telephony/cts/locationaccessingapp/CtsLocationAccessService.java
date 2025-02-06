@@ -120,6 +120,7 @@ public class CtsLocationAccessService extends Service {
             throw new RuntimeException("interrupted");
         } finally {
             handlerThread.quit();
+            mTelephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
         }
     }
 
@@ -144,6 +145,7 @@ public class CtsLocationAccessService extends Service {
             throw new RuntimeException("interrupted");
         } finally {
             handlerThread.quit();
+            mTelephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
         }
     }
 
@@ -172,6 +174,7 @@ public class CtsLocationAccessService extends Service {
             throw new RuntimeException("interrupted");
         } finally {
             handlerThread.quit();
+            telephonyManager.listen(listener, PhoneStateListener.LISTEN_NONE);
         }
     }
 

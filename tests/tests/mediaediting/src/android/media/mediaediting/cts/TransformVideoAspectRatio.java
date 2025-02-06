@@ -29,7 +29,6 @@ import androidx.media3.common.MimeTypes;
 import androidx.media3.effect.Presentation;
 import androidx.media3.transformer.EditedMediaItem;
 import androidx.media3.transformer.Effects;
-import androidx.media3.transformer.TransformationRequest;
 import androidx.media3.transformer.Transformer;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -186,8 +185,7 @@ public final class TransformVideoAspectRatio {
   }
 
   private static Transformer createTransformer(Context context, String toMediaType) {
-    return new Transformer.Builder(context).setTransformationRequest(
-        new TransformationRequest.Builder().setVideoMimeType(toMediaType).build()).build();
+    return new Transformer.Builder(context).setVideoMimeType(toMediaType).build();
   }
 
   @Test

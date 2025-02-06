@@ -19,8 +19,8 @@ package android.telephony.ims.cts;
 import static junit.framework.TestCase.assertEquals;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
@@ -53,6 +53,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -120,10 +121,13 @@ public class ImsMmTelManagerTest {
             implements TelephonyCallback.ServiceStateListener {
 
         private final Semaphore mNonTerrestrialNetworkSemaphore = new Semaphore(0);
+        private final Semaphore mSemaphore = new Semaphore(0);
+        private ServiceState mServiceState;
 
         @Override
         public void onServiceStateChanged(ServiceState serviceState) {
             logd("onServiceStateChanged: serviceState=" + serviceState);
+            mServiceState = serviceState;
 
             try {
                 if (serviceState.isUsingNonTerrestrialNetwork()) {
@@ -132,6 +136,26 @@ public class ImsMmTelManagerTest {
             } catch (Exception e) {
                 loge("onServiceStateChanged: Got exception=" + e);
             }
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onServiceStateChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilServiceStateUpdate() {
+            try {
+                if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    loge("Timeout to receive onServiceStateChanged");
+                    return false;
+                }
+            } catch (Exception ex) {
+                loge("onServiceStateChanged: Got exception=" + ex);
+                return false;
+            }
+
+            return true;
         }
 
         public boolean waitForNonTerrestrialNetworkConnection() {
@@ -148,6 +172,10 @@ public class ImsMmTelManagerTest {
             return true;
         }
 
+        public ServiceState getServiceState() {
+            return mServiceState;
+        }
+
         public void clearServiceStateChanges() {
             logd("clearServiceStateChanges()");
             mNonTerrestrialNetworkSemaphore.drainPermits();
@@ -162,17 +190,10 @@ public class ImsMmTelManagerTest {
             return;
         }
 
-        sTestSub = ImsUtils.getPreferredActiveSubId();
-
         if (Looper.getMainLooper() == null) {
             Looper.prepareMainLooper();
         }
         sHandler = new Handler(Looper.getMainLooper());
-
-        sReceiver = new CarrierConfigReceiver(sTestSub);
-        IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
-        // ACTION_CARRIER_CONFIG_CHANGED is sticky, so we will get a callback right away.
-        getContext().registerReceiver(sReceiver, filter, Context.RECEIVER_EXPORTED_UNAUDITED);
 
         sTelephonyManager = InstrumentationRegistry.getInstrumentation().getContext()
                 .getSystemService(TelephonyManager.class);
@@ -186,18 +207,36 @@ public class ImsMmTelManagerTest {
             return;
         }
 
-        if (sReceiver != null) {
-            getContext().unregisterReceiver(sReceiver);
-            sReceiver = null;
-        }
+        sHandler = null;
+        sTelephonyManager = null;
     }
 
     @Before
     public void beforeTest() {
         assumeTrue(ImsUtils.shouldTestImsService());
 
+        sTestSub = ImsUtils.getPreferredActiveSubId();
         if (!SubscriptionManager.isValidSubscriptionId(sTestSub)) {
             fail("This test requires that there is a SIM in the device!");
+        }
+
+        sReceiver = new CarrierConfigReceiver(sTestSub);
+        IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
+        // ACTION_CARRIER_CONFIG_CHANGED is sticky, so we will get a callback right away.
+        getContext().registerReceiver(sReceiver, filter, Context.RECEIVER_EXPORTED_UNAUDITED);
+    }
+
+    @After
+    public void afterTest() {
+        // assumeTrue() in @After is not supported by our test runner.
+        // Resort to the early exit.
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
+        if (sReceiver != null) {
+            getContext().unregisterReceiver(sReceiver);
+            sReceiver = null;
         }
     }
 
@@ -523,6 +562,13 @@ public class ImsMmTelManagerTest {
         serviceStateListener.clearServiceStateChanges();
         sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
                 serviceStateListener);
+        serviceStateListener.waitUntilServiceStateUpdate();
+        ServiceState serviceState = serviceStateListener.getServiceState();
+        if (serviceState != null) {
+            assumeTrue(
+                    "skip test as subscription is not in service",
+                    serviceState.getState() == ServiceState.STATE_IN_SERVICE);
+        }
 
         // Override carrier config
         PersistableBundle bundle = new PersistableBundle();

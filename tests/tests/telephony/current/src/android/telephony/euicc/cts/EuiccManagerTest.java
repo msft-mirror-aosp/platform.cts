@@ -723,6 +723,8 @@ public class EuiccManagerTest {
         assertThrows(SecurityException.class, () -> getContext().startActivity(testActionIntent));
     }
 
+    // Skip tests using the TestEuiccUiComponent on 25Q1 due to flag failures
+    @Ignore
     @Test
     public void testEuiccProvisionAction() {
         // Only test it when EuiccManager is enabled.
@@ -759,6 +761,8 @@ public class EuiccManagerTest {
         }
     }
 
+    // Skip tests using the TestEuiccUiComponent on 25Q1 due to flag failures
+    @Ignore
     @Test
     public void testEuiccManageAction() {
         // Only test it when EuiccManager is enabled.
@@ -795,6 +799,8 @@ public class EuiccManagerTest {
         }
     }
 
+    // Skip tests using the TestEuiccUiComponent on 25Q1 due to flag failures
+    @Ignore
     @Test
     public void testEuiccTransferAction() {
         // Only test it when EuiccManager is enabled.
@@ -831,6 +837,8 @@ public class EuiccManagerTest {
         }
     }
 
+    // Skip tests using the TestEuiccUiComponent on 25Q1 due to flag failures
+    @Ignore
     @Test
     public void testEuiccConvertAction() {
         // Only test it when EuiccManager is enabled.

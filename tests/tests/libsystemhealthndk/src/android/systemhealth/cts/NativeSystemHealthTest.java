@@ -36,6 +36,8 @@ import org.junit.runner.RunWith;
 public class NativeSystemHealthTest {
     private static final String TAG = "NativeSystemHealthTest";
 
+    private static native String nativeTestGetMaxCpuHeadroomTidsSize();
+
     private static native String nativeTestGetCpuHeadroomDefault();
 
     private static native String nativeTestGetCpuHeadroomAverage();
@@ -71,6 +73,12 @@ public class NativeSystemHealthTest {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .dropShellPermissionIdentity();
+    }
+
+    @Test
+    public void testGetMaxCpuHeadroomTidsSize() throws Exception {
+        String res = nativeTestGetMaxCpuHeadroomTidsSize();
+        checkResult(res, "GetMaxCpuHeadroomTidsSize");
     }
 
     @Test

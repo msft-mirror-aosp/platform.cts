@@ -124,6 +124,7 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
         if (shouldSucceed) {
             assertWithMessage("uninstallPackage(%s) failed: %s", packageName, result)
                 .that(result).isNull();
+            assertFalse(getDevice().isPackageInstalled(packageName));
         }
     }
 

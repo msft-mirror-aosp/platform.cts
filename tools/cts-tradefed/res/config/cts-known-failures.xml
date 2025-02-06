@@ -139,10 +139,6 @@
     <!-- b/62481870 -->
     <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioOutputStreamCallbackTest#testPlayback" />
 
-    <!-- b/192313064 , b/192984235 , b/274369142 -->
-    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases android.nativemedia.aaudio.AAudioTests#AAudioTestMMap_testBasicMmapOutput" />
-    <option name="compatibility:exclude-filter" value="CtsNativeMediaAAudioTestCases[instant] android.nativemedia.aaudio.AAudioTests#AAudioTestMMap_testBasicMmapOutput" />
-
     <!-- b/62976713 -->
     <option name="compatibility:exclude-filter" value="arm64-v8a CtsMediaBitstreamsTestCases" />
     <option name="compatibility:exclude-filter" value="x86_64 CtsMediaBitstreamsTestCases" />
@@ -329,6 +325,8 @@
     <!-- b/330018295 -->
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <!-- b/380538323 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[foldable:5:OPENED] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
 
     <!-- b/341195751 -->
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication032" />
@@ -344,15 +342,6 @@
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier_usingGetMethodToCreateManager" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier" />
-
-    <!-- b/355285596 -->
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[instant] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:1:TENT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:2:HALF_FOLDED] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:3:OPEN] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
-    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:5:REAR_DUAL] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
 
     <!-- b/355597917 -->
     <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases android.view.inputmethod.cts.StylusHandwritingTest#testHandwriting_fingerTouchIsIgnored" />
@@ -383,34 +372,9 @@
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testMode" />
     <option name="compatibility:exclude-filter" value="CtsDisplayTestCases[instant] android.display.cts.DisplayTest#testRefreshRateSwitchOnSecondaryDisplay" />
 
-    <!-- b/382231688 -->
-    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases" />
-
     <!-- b/381409777-->
     <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.dailyjob.DailyDeleteAccessLogTest#testAccessLogsAreDeleted" />
 
     <!-- b/378989105 -->
     <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
-
-    <!-- b/383123499 -->
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrParcelV6Flag" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsA2dpChoppyParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrRfStats" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrMonitor" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrConnectFailParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrConnectFail" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsA2dpChoppyParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrCommonParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsScoChoppyParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#defaultNameAddress" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrApproachLsto" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrScoChoppy" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrEnergyMonitor" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#invalidRawData" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#bqrA2dpChoppy" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#rawDataNull" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsApproachLstoParcel" />
-    <option name="compatibility:exclude-filter" value="armeabi-v7a CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#invalidQualityReportId" />
-
 </configuration>

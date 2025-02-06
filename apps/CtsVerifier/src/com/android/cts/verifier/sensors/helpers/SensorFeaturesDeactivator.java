@@ -116,8 +116,9 @@ public class SensorFeaturesDeactivator {
         @Override
         protected boolean isSettingAvailable() {
             // call base first, lean back UI device does not have airplane mode
-            return super.isSettingAvailable() &&
-                    !(mStateContainer.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
+            return super.isSettingAvailable()
+                    && !mStateContainer.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                    && !mStateContainer.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         }
     }
 
@@ -176,6 +177,13 @@ public class SensorFeaturesDeactivator {
                     mStateContainer.getContentResolver(),
                     Settings.Global.STAY_ON_WHILE_PLUGGED_IN,
                     defaultValue);
+        }
+
+        @Override
+        protected boolean isSettingAvailable() {
+            // STAY_ON_WHILE_PLUGGED_In is not supported in Automotive Settings.
+            return super.isSettingAvailable()
+                    && !mStateContainer.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         }
     }
 

@@ -155,7 +155,7 @@ public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBa
 
     @Test
     public void testOverlappingActivitySandwich_BlocksTouches() {
-        Intent intent = new Intent();
+        final Intent intent = new Intent();
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setComponent(TRAMPOLINE_DIFFERENT_UID);
         intent.replaceExtras(Components.TrampolineActivity.buildTrampolineExtra(mTestActivity,
@@ -173,7 +173,7 @@ public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBa
 
     @Test
     public void testOverlappingActivitySandwichDuringAnimation_DoesNotBlockTouches() {
-        Intent intent = new Intent();
+        final Intent intent = new Intent();
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setComponent(TRAMPOLINE_DIFFERENT_UID);
         intent.replaceExtras(Components.TrampolineActivity.buildTrampolineExtra(mTestActivity,
@@ -182,11 +182,12 @@ public class ActivityRecordInputSinkTests extends ActivityRecordInputSinkTestsBa
 
         mWmState.waitAndAssertActivityState(mTestActivity, STATE_PAUSED);
         mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
-        touchButtonsAndAssert(false);
+        touchButtonsAndAssert(false /* expectTouchesToReachActivity */);
 
-        int displayId = mWmState.getTaskByActivity(OVERLAY_IN_DIFFERENT_UID).mDisplayId;
+        final int displayId = mWmState.getTaskByActivity(OVERLAY_IN_DIFFERENT_UID).mDisplayId;
         mContext.sendBroadcast(new Intent(ACTION_FINISH).putExtra(EXTRA_FADE_EXIT, true));
         assertThat(mWmState.waitForAppTransitionRunningOnDisplay(displayId)).isTrue();
-        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/, false /*waitForAnimation*/);
+        assertThat(mWmState.waitForAppTransitionIdleOnDisplay(displayId)).isTrue();
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/, false /* waitForAnimation */);
     }
 }

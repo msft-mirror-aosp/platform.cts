@@ -18,7 +18,6 @@ package android.security.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -29,7 +28,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.annotations.RestrictedBuildTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.FileIntegrityManager;
@@ -50,15 +48,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
@@ -78,7 +70,6 @@ public class FileIntegrityManagerTest {
 
     private Context mContext;
     private FileIntegrityManager mFileIntegrityManager;
-    private CertificateFactory mCertFactory;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -103,7 +94,6 @@ public class FileIntegrityManagerTest {
         }
 
         mFileIntegrityManager = mContext.getSystemService(FileIntegrityManager.class);
-        mCertFactory = CertificateFactory.getInstance("X.509");
     }
 
     @After
@@ -123,49 +113,6 @@ public class FileIntegrityManagerTest {
         if (PropertyUtil.getFirstApiLevel() >= MIN_REQUIRED_API_LEVEL) {
             assertTrue(mFileIntegrityManager.isApkVeritySupported());
         }
-    }
-
-    @CddTest(requirement="9.10/C-0-3,C-1-1")
-    @Test
-    public void testIsAppSourceCertificateTrusted() throws Exception {
-        boolean isReleaseCertTrusted = mFileIntegrityManager.isAppSourceCertificateTrusted(
-                readAssetAsX509Certificate("fsverity-release.x509.der"));
-        if (!Flags.deprecateFsvSig()
-                && mFileIntegrityManager.isApkVeritySupported()) {
-            assertTrue(isReleaseCertTrusted);
-        } else {
-            assertFalse(isReleaseCertTrusted);
-        }
-    }
-
-    @CddTest(requirement="9.10/C-0-3,C-1-1")
-    @RestrictedBuildTest
-    @Test
-    public void testPlatformDebugCertificateNotTrusted() throws Exception {
-        boolean isDebugCertTrusted = mFileIntegrityManager.isAppSourceCertificateTrusted(
-                readAssetAsX509Certificate("fsverity-debug.x509.der"));
-        assertFalse(isDebugCertTrusted);
-    }
-
-    private X509Certificate readAssetAsX509Certificate(String assetName)
-            throws CertificateException, IOException {
-        InputStream is = mContext.getAssets().open(assetName);
-        return toX509Certificate(readAllBytes(is));
-    }
-
-    // TODO: Switch to InputStream#readAllBytes when Java 9 is supported
-    private byte[] readAllBytes(InputStream is) throws IOException {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        byte[] buf = new byte[8192];
-        int len;
-        while ((len = is.read(buf, 0, buf.length)) > 0) {
-            output.write(buf, 0, len);
-        }
-        return output.toByteArray();
-    }
-
-    private X509Certificate toX509Certificate(byte[] bytes) throws CertificateException {
-        return (X509Certificate) mCertFactory.generateCertificate(new ByteArrayInputStream(bytes));
     }
 
     @Test

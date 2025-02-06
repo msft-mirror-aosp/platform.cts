@@ -236,6 +236,10 @@ public class DisplayEventTest extends TestBase {
                 continue;
             }
 
+            if (mode.isSynthetic()) {
+                continue;
+            }
+
             if (!floatEquals(mode.getRefreshRate(), mDisplay.getMode().getRefreshRate(),
                     RR_FLOAT_DELTA)) {
                 supportsMultipleRefreshRates = true;

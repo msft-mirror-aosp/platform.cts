@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 /**
  * An Image writer which queue buffer into the provided Surface at a fixed rate.
  */
-public class FixedRateImageWriter implements Consumer<Surface>, AutoCloseable{
+public class FixedRateImageWriter implements Consumer<Surface>, AutoCloseable {
     private final AtomicReference<ImageWriter> mImageWriter;
     private final Timer mTimer;
     private final long mInitialRenderedTimestampNanos;
@@ -43,7 +43,8 @@ public class FixedRateImageWriter implements Consumer<Surface>, AutoCloseable{
      *
      * @param initialRenderedTimestampNanos The initial timestamp that will be associated with the
      *                                      first queued buffer.
-     * @param fps The rate a which the buffer will be queued in Frame Per Second.
+     * @param fps                           The rate a which the buffer will be queued in Frame Per
+     *                                      Second.
      */
     public FixedRateImageWriter(long initialRenderedTimestampNanos, int fps) {
         mImageWriter = new AtomicReference<>(null);

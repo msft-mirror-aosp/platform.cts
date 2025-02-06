@@ -16,8 +16,6 @@
 
 package android.server.wm.window;
 
-import static android.content.res.Resources.ID_NULL;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertTrue;
@@ -29,6 +27,7 @@ import android.server.wm.WindowManagerTestBase;
 import android.view.View;
 import android.view.WindowInsets;
 
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -37,7 +36,7 @@ public class WindowPolicyTestBase extends WindowManagerTestBase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        TestActivity.sStyleId = ID_NULL;
+        TestActivity.sStyleIdList.clear();
         TestActivity.sLayoutInDisplayCutoutMode =
                 TestActivity.LAYOUT_IN_DISPLAY_CUTOUT_MODE_UNSPECIFIED;
     }
@@ -56,7 +55,7 @@ public class WindowPolicyTestBase extends WindowManagerTestBase {
 
         private static final int LAYOUT_IN_DISPLAY_CUTOUT_MODE_UNSPECIFIED = -1;
 
-        static int sStyleId = ID_NULL;
+        static ArrayList<Integer> sStyleIdList = new ArrayList<>();
         static int sLayoutInDisplayCutoutMode = -1;
 
         private ContentView mContentView;
@@ -65,8 +64,8 @@ public class WindowPolicyTestBase extends WindowManagerTestBase {
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            if (sStyleId != ID_NULL) {
-                getTheme().applyStyle(sStyleId, true /* force */);
+            for (int i = sStyleIdList.size() - 1; i >= 0; i--) {
+                getTheme().applyStyle(sStyleIdList.get(i), true /* force */);
             }
             if (sLayoutInDisplayCutoutMode != LAYOUT_IN_DISPLAY_CUTOUT_MODE_UNSPECIFIED) {
                 getWindow().getAttributes().layoutInDisplayCutoutMode = sLayoutInDisplayCutoutMode;

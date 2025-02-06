@@ -29,6 +29,7 @@ android_test {
 
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "android.permission.flags-aconfig-java",
     ],
 
     srcs: [
@@ -40,7 +41,9 @@ android_test {
         "cts",
         "general-tests",
     ],
-
+    data: [
+        ":CtsVirtualDeviceStreamedTestApp",
+    ],
     per_testcase_directory: true,
 }
 

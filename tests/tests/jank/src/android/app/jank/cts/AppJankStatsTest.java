@@ -50,6 +50,7 @@ public class AppJankStatsTest {
     private int mJankyFrameCount = 25;
     private int mTotalFrameCount = 100;
     private RelativeFrameTimeHistogram mFrameTimeHistogram = new RelativeFrameTimeHistogram();
+    private String mNavigationComponent = "Navigation Destination Name";
 
     private UiDevice mDevice;
     private Instrumentation mInstrumentation;
@@ -71,6 +72,7 @@ public class AppJankStatsTest {
                 new AppJankStats(
                         mAppUid,
                         mWidgetId,
+                        mNavigationComponent,
                         mWidgetCategory,
                         mWidgetState,
                         mTotalFrameCount,
@@ -84,6 +86,7 @@ public class AppJankStatsTest {
         assertEquals(appJankStats.getTotalFrameCount(), mTotalFrameCount);
         assertEquals(appJankStats.getJankyFrameCount(), mJankyFrameCount);
         assertTrue(appJankStats.getRelativeFrameTimeHistogram() == mFrameTimeHistogram);
+        assertEquals(appJankStats.getNavigationComponent(), mNavigationComponent);
     }
 
     /**
@@ -101,11 +104,13 @@ public class AppJankStatsTest {
                 new AppJankStats(
                         mAppUid,
                         mWidgetId,
+                        mNavigationComponent,
                         mWidgetCategory,
                         mWidgetState,
                         mTotalFrameCount,
                         mJankyFrameCount,
                         mFrameTimeHistogram);
+
         basicActivity.reportAppJankStats(appJankStats, successMsg);
 
         UiObject2 result = mDevice.wait(Until.findObject(By.text(successMsg)), WAIT_FOR_TIMEOUT_MS);

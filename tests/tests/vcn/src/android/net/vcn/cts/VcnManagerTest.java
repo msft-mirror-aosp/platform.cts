@@ -95,6 +95,7 @@ import org.junit.runner.RunWith;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +111,7 @@ import java.util.concurrent.TimeUnit;
 public class VcnManagerTest extends VcnTestBase {
     private static final String TAG = VcnManagerTest.class.getSimpleName();
 
-    private static final int TIMEOUT_MS = 500;
+    private static final int CALLBACK_TIMEOUT_MS = 5000;
     private static final long SAFEMODE_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(35);
 
     private static final int ACTIVE_SUB_ID_TIMEOUT_SECONDS = 60;
@@ -230,6 +231,7 @@ public class VcnManagerTest extends VcnTestBase {
         CarrierPrivilegeUtils.withCarrierPrivileges(mContext, dataSubId, () -> {
             SubscriptionGroupUtils.withEphemeralSubscriptionGroup(mContext, dataSubId, (subGrp) -> {
                 mVcnManager.setVcnConfig(subGrp, buildVcnConfig());
+                mVcnManager.clearVcnConfig(subGrp);
             });
         });
 
@@ -252,6 +254,19 @@ public class VcnManagerTest extends VcnTestBase {
         });
     }
 
+    @Test
+    public void testGetConfiguredSubscriptionGroups() throws Exception {
+        final int dataSubId = verifyAndGetValidDataSubId();
+        CarrierPrivilegeUtils.withCarrierPrivileges(mContext, dataSubId, () -> {
+            SubscriptionGroupUtils.withEphemeralSubscriptionGroup(mContext, dataSubId, (subGrp) -> {
+                mVcnManager.setVcnConfig(subGrp, buildVcnConfig());
+                assertEquals(Arrays.asList(subGrp), mVcnManager.getConfiguredSubscriptionGroups());
+
+                mVcnManager.clearVcnConfig(subGrp);
+            });
+        });
+    }
+
     /** Test implementation of VcnNetworkPolicyChangeListener for verification purposes. */
     private static class TestVcnNetworkPolicyChangeListener
             implements VcnManager.VcnNetworkPolicyChangeListener {
@@ -263,7 +278,7 @@ public class VcnManagerTest extends VcnTestBase {
         }
 
         public void awaitOnPolicyChanged() throws Exception {
-            mFutureOnPolicyChanged.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            mFutureOnPolicyChanged.get(CALLBACK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -523,14 +538,16 @@ public class VcnManagerTest extends VcnTestBase {
         }
 
         public int awaitOnStatusChanged() throws Exception {
-            final Integer status = mOnStatusChangedHistory.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            final Integer status =
+                    mOnStatusChangedHistory.poll(CALLBACK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
             // Null means timeout
             return status == null ? VCN_STATUS_CODE_AWAIT_TIMEOUT : status;
         }
 
         public GatewayConnectionError awaitOnGatewayConnectionError() throws Exception {
-            return mOnGatewayConnectionErrorHistory.poll(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            return mOnGatewayConnectionErrorHistory.poll(
+                    CALLBACK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -748,6 +765,24 @@ public class VcnManagerTest extends VcnTestBase {
             verifyUnderlyingCellAndRunTest(subId, (subGrp, cellNetwork, cellNetworkCb) -> {
                 final VcnSetupResult vcnSetupResult =
                     setupAndGetVcnNetwork(subGrp, cellNetwork, cellNetworkCb, testNetworkWrapper);
+
+                clearVcnConfigsAndVerifyNetworkTeardown(
+                        subGrp, cellNetworkCb, vcnSetupResult.vcnNetwork);
+            });
+        }
+    }
+
+    @Test
+    public void testSetVcnConfigOnTestNetworkAndDumpsys() throws Exception {
+        final int subId = verifyAndGetValidDataSubId();
+
+        try (TestNetworkWrapper testNetworkWrapper =
+                createTestNetworkWrapper(true /* isMetered */, subId, LOCAL_ADDRESS)) {
+            verifyUnderlyingCellAndRunTest(subId, (subGrp, cellNetwork, cellNetworkCb) -> {
+                final VcnSetupResult vcnSetupResult =
+                    setupAndGetVcnNetwork(subGrp, cellNetwork, cellNetworkCb, testNetworkWrapper);
+
+                runShellCommand("dumpsys vcn_management");
 
                 clearVcnConfigsAndVerifyNetworkTeardown(
                         subGrp, cellNetworkCb, vcnSetupResult.vcnNetwork);

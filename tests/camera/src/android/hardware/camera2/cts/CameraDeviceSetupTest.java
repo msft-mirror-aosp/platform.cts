@@ -491,12 +491,17 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
         Set<Long> dynamicRangeProfiles = staticInfo.getAvailableDynamicRangeProfilesChecked();
         int[] videoStabilizationModes = staticInfo.getAvailableVideoStabilizationModesChecked();
         Range<Integer>[] fpsRanges = staticInfo.getAeAvailableTargetFpsRangesChecked();
+        int featureCombinationQueryVersion = staticInfo.getCharacteristics().get(
+                CameraCharacteristics.INFO_SESSION_CONFIGURATION_QUERY_VERSION);
         final int kPreviewStabilization =
                 CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION;
         boolean supportPreviewStab = CameraTestUtils.contains(videoStabilizationModes,
                 kPreviewStabilization);
         Map<CameraFeatureWrapper, Boolean> featureCombinationSupport = new HashMap<>();
         for (int[] c : maxStreamSizes.getQueryableCombinations()) {
+            // Skip combinations not supported by the camera device
+            if (featureCombinationQueryVersion < c[0]) continue;
+            int[] comb = Arrays.copyOfRange(c, 1, c.length);
             for (Long dynamicProfile : dynamicRangeProfiles) {
                 if (dynamicProfile != DynamicRangeProfiles.STANDARD
                         && dynamicProfile != DynamicRangeProfiles.HLG10) {
@@ -505,14 +510,11 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                 }
                 // Setup outputs
                 List<OutputConfiguration> outputConfigs = new ArrayList<>();
-                long minFrameDuration = setupConfigurations(staticInfo, c, maxStreamSizes,
+                long minFrameDuration = setupConfigurations(staticInfo, comb, maxStreamSizes,
                         outputConfigs, dynamicProfile);
-                if (minFrameDuration  == -1) {
-                    // Stream combination is not valid. For example, if the stream sizes are not
-                    // supported, or if the device doesn't support JPEG_R, minFrameDuration will
-                    // be -1.
-                    continue;
-                }
+                assertTrue(
+                        MaxStreamSizes.combinationToString(comb) + " should be supported!",
+                        minFrameDuration > 0);
 
                 for (Range<Integer> fpsRange : fpsRanges) {
                     if ((fpsRange.getUpper() != 60) && (fpsRange.getUpper() != 30)) {
@@ -525,7 +527,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                         continue;
                     }
 
-                    String combinationStr = MaxStreamSizes.combinationToString(c)
+                    String combinationStr = MaxStreamSizes.combinationToString(comb)
                             + ", dynamicRangeProfile " + dynamicProfile
                             + ", fpsRange " + fpsRange.toString();
                     try {
@@ -591,7 +593,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
                         }
 
                         featureCombinationSupport.put(
-                                new CameraFeatureWrapper(c, fpsRange, dynamicProfile),
+                                new CameraFeatureWrapper(comb, fpsRange, dynamicProfile),
                                 isSupported);
                     } catch (Throwable e) {
                         mCollector.addMessage(String.format(

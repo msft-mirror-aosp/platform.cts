@@ -16,20 +16,21 @@
 #ifndef CTS_MEDIA_TEST_AAUDIO_UTILS_H
 #define CTS_MEDIA_TEST_AAUDIO_UTILS_H
 
-#include <dlfcn.h>
-#include <atomic>
-#include <map>
-#include <unordered_set>
-#include <gtest/gtest.h>
-#include <sys/system_properties.h>
-
+#include <aaudio/AAudio.h>
+#include <android-base/thread_annotations.h>
 #include <android/binder_auto_utils.h>
 #include <android/binder_ibinder.h>
-
-#include <aaudio/AAudio.h>
+#include <dlfcn.h>
+#include <gtest/gtest.h>
+#include <sys/system_properties.h>
 #include <system/audio.h> /* FCC_LIMIT */
 
-#include "test_aaudio.h"    // NANOS_PER_MILLISECOND
+#include <atomic>
+#include <map>
+#include <mutex>
+#include <unordered_set>
+
+#include "test_aaudio.h" // NANOS_PER_MILLISECOND
 
 int64_t getNanoseconds(clockid_t clockId = CLOCK_MONOTONIC);
 const char* performanceModeToString(aaudio_performance_mode_t mode);
@@ -39,6 +40,48 @@ static constexpr const char* FEATURE_PLAYBACK = "android.hardware.audio.output";
 static constexpr const char* FEATURE_RECORDING = "android.hardware.microphone";
 static constexpr const char* FEATURE_LOW_LATENCY = "android.hardware.audio.low_latency";
 bool deviceSupportsFeature(const char* feature);
+
+const static std::set<aaudio_policy_t> ALL_VALID_POLICIES = {AAUDIO_POLICY_NEVER,
+                                                             AAUDIO_POLICY_AUTO,
+                                                             AAUDIO_POLICY_ALWAYS};
+const static std::set<AAudio_DeviceType> ALL_VALID_OUTPUT_DEVICES = {
+        AAUDIO_DEVICE_BUILTIN_EARPIECE,
+        AAUDIO_DEVICE_BUILTIN_SPEAKER,
+        AAUDIO_DEVICE_WIRED_HEADSET,
+        AAUDIO_DEVICE_WIRED_HEADPHONES,
+        AAUDIO_DEVICE_LINE_ANALOG,
+        AAUDIO_DEVICE_LINE_DIGITAL,
+        AAUDIO_DEVICE_BLUETOOTH_SCO,
+        AAUDIO_DEVICE_BLUETOOTH_A2DP,
+        AAUDIO_DEVICE_HDMI,
+        AAUDIO_DEVICE_HDMI_ARC,
+        AAUDIO_DEVICE_HDMI_EARC,
+        AAUDIO_DEVICE_USB_DEVICE,
+        AAUDIO_DEVICE_USB_HEADSET,
+        AAUDIO_DEVICE_USB_ACCESSORY,
+        AAUDIO_DEVICE_DOCK,
+        AAUDIO_DEVICE_DOCK_ANALOG,
+        AAUDIO_DEVICE_FM,
+        AAUDIO_DEVICE_TELEPHONY,
+        AAUDIO_DEVICE_AUX_LINE,
+        AAUDIO_DEVICE_IP,
+        AAUDIO_DEVICE_BUS,
+        AAUDIO_DEVICE_HEARING_AID,
+        AAUDIO_DEVICE_BUILTIN_SPEAKER_SAFE,
+        AAUDIO_DEVICE_REMOTE_SUBMIX,
+        AAUDIO_DEVICE_BLE_HEADSET,
+        AAUDIO_DEVICE_BLE_SPEAKER,
+        AAUDIO_DEVICE_BLE_BROADCAST,
+};
+const static std::set<AAudio_DeviceType> ALL_VALID_INPUT_DEVICES = {
+        AAUDIO_DEVICE_BUILTIN_MIC, AAUDIO_DEVICE_BLUETOOTH_SCO, AAUDIO_DEVICE_WIRED_HEADSET,
+        AAUDIO_DEVICE_HDMI,        AAUDIO_DEVICE_TELEPHONY,     AAUDIO_DEVICE_DOCK,
+        AAUDIO_DEVICE_DOCK_ANALOG, AAUDIO_DEVICE_USB_ACCESSORY, AAUDIO_DEVICE_USB_DEVICE,
+        AAUDIO_DEVICE_USB_HEADSET, AAUDIO_DEVICE_FM_TUNER,      AAUDIO_DEVICE_TV_TUNER,
+        AAUDIO_DEVICE_LINE_ANALOG, AAUDIO_DEVICE_LINE_DIGITAL,  AAUDIO_DEVICE_BLUETOOTH_A2DP,
+        AAUDIO_DEVICE_IP,          AAUDIO_DEVICE_BUS,           AAUDIO_DEVICE_REMOTE_SUBMIX,
+        AAUDIO_DEVICE_BLE_HEADSET, AAUDIO_DEVICE_HDMI_ARC,      AAUDIO_DEVICE_HDMI_EARC,
+};
 
 class StreamBuilderHelper {
   public:
@@ -183,12 +226,16 @@ public:
         return AAudio_getPlatformMMapExclusivePolicy(device, direction);
     }
 
+    bool isMMapSupportedFor(AAudio_DeviceType deviceType, aaudio_direction_t direction) const {
+        return isPolicyEnabled(getPlatformMMapPolicy(deviceType, direction));
+    }
+
 private:
 
     static int getIntegerProperty(const char *name, int defaultValue);
 
-    const bool   mMMapSupported;
-    const bool   mMMapExclusiveSupported;
+    bool mMMapSupported;
+    bool mMMapExclusiveSupported;
 };
 
 class AudioServerCrashMonitor {
@@ -197,21 +244,22 @@ public:
         static AudioServerCrashMonitor instance;
         return instance;
     }
-    ~AudioServerCrashMonitor();
 
     void linkToDeath();
 
-    bool isDeathRecipientLinked() const { return mDeathRecipientLinked; }
+    bool isDeathRecipientLinked();
     void onAudioServerCrash();
 
 private:
     AudioServerCrashMonitor();
 
-    ::ndk::SpAIBinder getAudioFlinger();
+    ::ndk::SpAIBinder getAudioFlinger_l() REQUIRES(mMutex);
 
-    ::ndk::SpAIBinder mAudioFlinger;
+    ::ndk::SpAIBinder mAudioFlinger GUARDED_BY(mMutex);
     ::ndk::ScopedAIBinder_DeathRecipient mDeathRecipient;
     bool mDeathRecipientLinked = false;
+
+    std::mutex mMutex;
 };
 
 class AAudioCtsBase : public ::testing::Test {
@@ -234,5 +282,7 @@ void enableAudioHotwordPermission();
 void disablePermissions();
 
 bool isCompressedFormat(aaudio_format_t format);
+
+int getDeviceTypeFromId(int32_t deviceId);
 
 #endif  // CTS_MEDIA_TEST_AAUDIO_UTILS_H

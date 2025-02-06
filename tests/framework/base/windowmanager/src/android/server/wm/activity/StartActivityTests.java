@@ -22,10 +22,12 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
+import static android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP;
 import static android.server.wm.WindowManagerState.STATE_INITIALIZING;
 import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.server.wm.app.Components.BROADCAST_RECEIVER_ACTIVITY;
@@ -45,6 +47,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -52,8 +55,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession;
 import android.server.wm.CommandSession.ActivitySession;
@@ -63,6 +70,7 @@ import android.server.wm.intent.Activities;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -85,6 +93,16 @@ public class StartActivityTests extends ActivityManagerTestBase {
             ACTIVITY_TYPE_ASSISTANT,
             ACTIVITY_TYPE_DREAM,
     };
+    private static final int[] ALL_ACTIVITY_TYPES_BUT_HOME = {
+            ACTIVITY_TYPE_UNDEFINED,
+            ACTIVITY_TYPE_STANDARD,
+            ACTIVITY_TYPE_RECENTS,
+            ACTIVITY_TYPE_ASSISTANT,
+            ACTIVITY_TYPE_DREAM,
+    };
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @After
     public void tearDown() {
@@ -94,8 +112,8 @@ public class StartActivityTests extends ActivityManagerTestBase {
     @Test
     public void testStartHomeIfNoActivities() {
         if (!hasHomeScreen()) {
-	    return;
-	}
+            return;
+        }
 
         final ComponentName defaultHome = getDefaultHomeComponent();
         removeRootTasksWithAllActivityTypes();
@@ -104,6 +122,11 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 "Home activity should be restarted after force-finish");
 
         stopTestPackage(defaultHome.getPackageName());
+        // On automotive, where home might be = fn(MULTI_WINDOW root tasks containing specified
+        // app tasks), there will be multiple tasks visible in the system right now.
+        // Killing home alone might not bring it back. So kill all the activity types but home to
+        // test the correct policy behavior from core.
+        removeRootTasksWithAllActivityTypesButHome();
 
         waitAndAssertResumedActivity(defaultHome,
                 "Home activity should be restarted after force-stop");
@@ -365,6 +388,73 @@ public class StartActivityTests extends ActivityManagerTestBase {
     }
 
     /**
+     * Test the activity launched with ActivityOptions#setLaunchBounds should be launched with the
+     * requested bounds.
+     */
+    @Test
+    @ApiTest(apis = {"android.app.ActivityOptions#setLaunchBounds"})
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_FIX_LAYOUT_EXISTING_TASK)
+    public void testStartActivityWithLaunchBounds() {
+        assumeTrue("Device doesn't support pip or freeform", supportsPip() || supportsFreeform());
+
+        // Launch an Activity
+        getLaunchActivityBuilder()
+                .setTargetActivity(TEST_ACTIVITY)
+                .setUseInstrumentation()
+                .execute();
+
+        // Get the current activity bounds.
+        final WindowManagerState.Activity testActivity = mWmState.getActivity(TEST_ACTIVITY);
+        final Rect bounds = testActivity.getBounds();
+
+        // Start home
+        launchHomeActivity();
+
+        // Launch the Activity again to bring up the existing instance with different bounds.
+        final Rect newBounds;
+        if (bounds.width() > bounds.height()) {
+            newBounds = new Rect(bounds.left, bounds.top, bounds.right / 2, bounds.bottom);
+        } else {
+            newBounds = new Rect(bounds.left, bounds.top, bounds.right, bounds.bottom / 2);
+        }
+
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchBounds(newBounds);
+        options.setLaunchWindowingMode(WINDOWING_MODE_MULTI_WINDOW);
+        final Intent intent =
+                new Intent()
+                        .addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_SINGLE_TOP)
+                        .setComponent(TEST_ACTIVITY);
+        mContext.startActivity(intent, options.toBundle());
+        waitAndAssertResumedActivity(TEST_ACTIVITY);
+
+        // Ensure the bounds are updated.
+        assertEquals(
+                "Activity bounds should be updated.",
+                newBounds,
+                mWmState.getActivity(TEST_ACTIVITY).getBounds());
+
+        // Start home
+        launchHomeActivity();
+
+        // Launch the Activity again with different bounds, which adds a new Activity instance
+        // and removes the existing Activity instance (FLAG_ACTIVITY_CLEAR_TASK).
+        newBounds.right -= 1;
+        newBounds.bottom -= 1;
+        options.setLaunchBounds(newBounds);
+        intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK)
+                .setComponent(TEST_ACTIVITY);
+        mContext.startActivity(intent, options.toBundle());
+        waitAndAssertResumedActivity(TEST_ACTIVITY);
+
+        // Ensure the bounds are updated.
+        assertEquals(
+                "Activity bounds should be updated.",
+                newBounds,
+                mWmState.getActivity(TEST_ACTIVITY).getBounds());
+    }
+
+    /**
      * Assume there are 3 activities (A1, A2, B1) with default launch mode. The uid of B1 is
      * different from A1 and A2. After A1 called {@link Activity#startActivities} to start B1 and
      * A2, the result should be 3 tasks.
@@ -378,9 +468,12 @@ public class StartActivityTests extends ActivityManagerTestBase {
 
         assertNotEquals("The activity in a different application (uid) started by flag NEW_TASK"
                 + " should be in a different task", taskIds[0], taskIds[1]);
-        assertWithMessage("The last started activity should be in a different task because "
-                + SECOND_ACTIVITY + " has a different uid from the source caller")
-                        .that(taskIds[2]).isNotIn(Arrays.asList(taskIds[0], taskIds[1]));
+        assertWithMessage(
+                        "The last started activity should be in a different task because "
+                                + SECOND_ACTIVITY
+                                + " has a different uid from the source caller")
+                .that(taskIds[2])
+                .isNotIn(Arrays.asList(taskIds[0], taskIds[1]));
     }
 
     /**
@@ -421,15 +514,14 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 .map(WindowManagerState.Activity::getName)
                 .collect(Collectors.toList());
 
-        final List<String> expectedOrder = Stream.of(
-                SECOND_ACTIVITY,
-                TEST_ACTIVITY,
-                baseIntent.getComponent())
-                .map(c -> c.flattenToShortString())
-                .collect(Collectors.toList());
+        final List<String> expectedOrder =
+                Stream.of(SECOND_ACTIVITY, TEST_ACTIVITY, baseIntent.getComponent())
+                        .map(c -> c.flattenToShortString())
+                        .collect(Collectors.toList());
         assertEquals(activitiesOrder, expectedOrder);
-        mWmState.assertResumedActivity("TaskOverlay activity should be remained on top and "
-                        + "resumed", taskOverlay.getComponent());
+        mWmState.assertResumedActivity(
+                "TaskOverlay activity should be remained on top and " + "resumed",
+                taskOverlay.getComponent());
     }
 
     /**
@@ -514,6 +606,14 @@ public class StartActivityTests extends ActivityManagerTestBase {
         runWithShellPermission(() -> {
             mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES);
         });
+        waitForIdle();
+    }
+
+    private void removeRootTasksWithAllActivityTypesButHome() {
+        runWithShellPermission(
+                () -> {
+                    mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES_BUT_HOME);
+                });
         waitForIdle();
     }
 }

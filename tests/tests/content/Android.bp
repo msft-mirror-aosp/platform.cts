@@ -121,6 +121,8 @@ android_test {
         "android.service.chooser.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "flag-junit",
+        "mediaprovider_flags_java_lib",
+        "NeneInternal",
         "TestParameterInjector",
     ],
     srcs: [
@@ -131,6 +133,9 @@ android_test {
     exclude_srcs: [
         "src/android/content/cts/AvailableDocumentIntentsTest.java",
         "src/android/content/cts/DocumentsUIUsedContentApiTest.java",
+    ],
+    java_resources: [
+        ":CtsMotionPhotoCaptureApp",
     ],
     data: [
         ":CtsSyncAccountAccessStubs",
@@ -234,7 +239,6 @@ android_test {
         ":CtsIntentResolutionTestApp",
         ":CtsContentNoApplicationTestApp",
         ":CtsContentShellTestApp",
-        ":CtsApkVerityTestPrebuiltFiles",
         ":CtsTargetSdk23TestApp",
         ":CtsTargetSdk24TestApp",
         ":CtsQueryPackagesTestApp",
@@ -247,7 +251,6 @@ android_test {
         "data/CtsPkgInstallTinyAppV2V3V4-Sha512withEC.apk",
         "data/CtsPkgInstallTinyAppV2V3V4-Sha512withEC.apk.idsig",
         "data/CtsPkgInstallTinyAppV2V3V4-Verity.apk",
-        "data/CtsPkgInstallTinyAppV2V3V4-Verity.apk.idsig",
         "data/HelloWorld5.digests",
         "data/HelloWorld5.digests.signature",
         "data/HelloWorld5_hdpi-v4.digests",

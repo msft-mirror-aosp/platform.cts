@@ -22,6 +22,9 @@ import com.android.server.appsearch.AppSearchRateLimitConfig;
 import com.android.server.appsearch.Denylist;
 import com.android.server.appsearch.ServiceAppSearchConfig;
 import com.android.server.appsearch.external.localstorage.IcingOptionsConfig;
+import com.android.server.appsearch.icing.proto.PersistType;
+
+import org.jspecify.annotations.NonNull;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -289,6 +292,19 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     public int getMaxOpenBlobCount() {
         throwIfClosed();
         return DEFAULT_MAX_OPEN_BLOB_COUNT;
+    }
+
+    // The absolute path for the ICU data file is not available in Framework.
+    // This method is functionally no-op and returns an empty string.
+    @Override
+    public String getIcuDataFileAbsolutePath() {
+        throwIfClosed();
+        return DEFAULT_ICU_DATA_FILE_ABSOLUTE_PATH;
+    }
+
+    @Override
+    public PersistType.@NonNull Code getLightweightPersistType() {
+        return PersistType.Code.LITE;
     }
 
     private void throwIfClosed() {

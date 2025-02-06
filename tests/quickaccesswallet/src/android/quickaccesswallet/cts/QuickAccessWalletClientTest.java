@@ -15,6 +15,7 @@
  */
 package android.quickaccesswallet.cts;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.MANAGE_DEFAULT_APPLICATIONS;
 import static android.Manifest.permission.MANAGE_ROLE_HOLDERS;
 
@@ -63,6 +64,7 @@ import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.UserSettings;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -216,6 +218,8 @@ public class QuickAccessWalletClientTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.service.quickaccesswallet.QuickAccessWalletService"
+            + "#getGestureTargetActivityPendingIntent"})
     @RequiresFlagsEnabled(Flags.FLAG_LAUNCH_WALLET_OPTION_ON_POWER_DOUBLE_TAP)
     public void testGetGestureTargetActivityPendingIntent_serviceWithOverride_notNull_ableToSend()
             throws Exception {
@@ -252,6 +256,8 @@ public class QuickAccessWalletClientTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.service.quickaccesswallet.QuickAccessWalletService"
+            + "#getGestureTargetActivityPendingIntent"})
     @RequiresFlagsEnabled(Flags.FLAG_LAUNCH_WALLET_OPTION_ON_POWER_DOUBLE_TAP)
     public void testGetGestureTargetActivityPendingIntent_serviceWithNoOverride_isNull()
             throws Exception {
@@ -699,7 +705,9 @@ public class QuickAccessWalletClientTest {
     private static boolean setDefaultWalletRoleHolder(Context context, String packageName)
             throws InterruptedException {
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation().adoptShellPermissionIdentity(MANAGE_DEFAULT_APPLICATIONS);
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        MANAGE_DEFAULT_APPLICATIONS, INTERACT_ACROSS_USERS_FULL);
         try {
             RoleManager roleManager = context.getSystemService(RoleManager.class);
             if (!roleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {

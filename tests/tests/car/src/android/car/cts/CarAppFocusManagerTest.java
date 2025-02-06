@@ -24,8 +24,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import android.car.Car;
 import android.car.CarAppFocusManager;
@@ -81,26 +81,26 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(apis = {"android.car.CarAppFocusManager#requestAppFocus"})
     public void testSetActiveNullListener() throws Exception {
-        try {
-            mManager.requestAppFocus(CarAppFocusManager.APP_FOCUS_TYPE_NAVIGATION, null);
-            fail();
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mManager.requestAppFocus(APP_FOCUS_TYPE_NAVIGATION, null));
     }
 
     @Test
+    @ApiTest(apis = {"android.car.CarAppFocusManager#addFocusListener"})
     public void testRegisterNull() throws Exception {
-        try {
-            mManager.addFocusListener(null, 0);
-            fail();
-        } catch (IllegalArgumentException e) {
-            // expected
-        }
+        assertThrows(IllegalArgumentException.class, () -> mManager.addFocusListener(null, 0));
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#requestAppFocus",
+                "android.car.CarAppFocusManager#isOwningFocus",
+                "android.car.CarAppFocusManager#abandonAppFocus"
+            })
     public void testRequestAbandon() throws Exception {
         FocusOwnershipCallback owner = new FocusOwnershipCallback();
         int r = mManager.requestAppFocus(APP_FOCUS_TYPE_NAVIGATION, owner);
@@ -111,6 +111,12 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#requestAppFocus",
+                "android.car.CarAppFocusManager#isOwningFocus",
+                "android.car.CarAppFocusManager#abandonAppFocus"
+            })
     public void testRequestAbandon2() throws Exception {
         FocusOwnershipCallback owner = new FocusOwnershipCallback();
         int r = mManager.requestAppFocus(APP_FOCUS_TYPE_NAVIGATION, owner);
@@ -140,6 +146,12 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#addFocusListener",
+                "android.car.CarAppFocusManager#removeFocusListener",
+                "android.car.CarAppFocusManager#requestAppFocus"
+            })
     public void testRegisterUnregister() throws Exception {
         FocusChangedListener listener1 = new FocusChangedListener();
         FocusChangedListener listener2 = new FocusChangedListener();
@@ -175,6 +187,12 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#addFocusListener",
+                "android.car.CarAppFocusManager#removeFocusListener",
+                "android.car.CarAppFocusManager#requestAppFocus"
+            })
     public void testRegisterUnregisterSpecificApp() throws Exception {
         FocusChangedListener listener1 = new FocusChangedListener();
         FocusChangedListener listener2 = new FocusChangedListener();
@@ -210,6 +228,15 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#addFocusListener",
+                "android.car.CarAppFocusManager#removeFocusListener",
+                "android.car.CarAppFocusManager#requestAppFocus",
+                "android.car.CarAppFocusManager#getActiveAppTypes",
+                "android.car.CarAppFocusManager#isOwningFocus",
+                "android.car.CarAppFocusManager#abandonAppFocus"
+            })
     public void testFocusChange() throws Exception {
         DefaultServiceConnectionListener connectionListener =
                 new DefaultServiceConnectionListener();
@@ -323,6 +350,13 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#addFocusListener",
+                "android.car.CarAppFocusManager#requestAppFocus",
+                "android.car.CarAppFocusManager#getActiveAppTypes",
+                "android.car.CarAppFocusManager#abandonAppFocus"
+            })
     public void testFilter() throws Exception {
         DefaultServiceConnectionListener connectionListener =
                 new DefaultServiceConnectionListener();
@@ -361,6 +395,12 @@ public final class CarAppFocusManagerTest extends AbstractCarTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.car.CarAppFocusManager#addFocusListener",
+                "android.car.CarAppFocusManager#requestAppFocus",
+                "android.car.CarAppFocusManager#abandonAppFocus"
+            })
     public void testMultipleChangeListenersPerManager() throws Exception {
         FocusChangedListener listener = new FocusChangedListener();
         FocusChangedListener listener2 = new FocusChangedListener();

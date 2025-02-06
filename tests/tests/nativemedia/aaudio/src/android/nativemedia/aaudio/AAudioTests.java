@@ -88,6 +88,16 @@ public class AAudioTests {
         permissionBarrier();
     }
 
+    static int getDeviceTypeFromId(int deviceId) {
+        AudioDeviceInfo[] devices = AudioManager.getDevicesStatic(AudioManager.GET_DEVICES_ALL);
+        for (AudioDeviceInfo device : devices) {
+            if (device.getId() == deviceId) {
+                return device.getType();
+            }
+        }
+        return AudioDeviceInfo.TYPE_UNKNOWN;
+    }
+
     private static void permissionBarrier() {
         InstrumentationRegistry.getInstrumentation()
                                .getContext()

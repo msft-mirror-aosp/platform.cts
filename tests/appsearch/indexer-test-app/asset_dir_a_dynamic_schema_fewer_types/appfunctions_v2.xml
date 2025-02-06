@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<appfunctions>
+    <AppFunctionStaticMetadata>
+        <id>com.android.cts.appsearch.indexertestapp.a/com.example.utils#print1</id>
+        <functionId>com.example.utils#print1</functionId>
+        <schemaName>print</schemaName>
+        <schemaVersion>1</schemaVersion>
+        <schemaCategory>utils</schemaCategory>
+        <enabledByDefault>true</enabledByDefault>
+        <restrictCallersWithExecuteAppFunctions>false
+        </restrictCallersWithExecuteAppFunctions>
+        <displayNameStringRes>12</displayNameStringRes>
+        <schemaMetadata>
+            <id>com.example.utils#print/schemaMetadata</id>
+            <schemaName>print</schemaName>
+            <schemaVersion>1</schemaVersion>
+            <schemaCategory>utils</schemaCategory>
+        </schemaMetadata>
+    </AppFunctionStaticMetadata>
+</appfunctions>

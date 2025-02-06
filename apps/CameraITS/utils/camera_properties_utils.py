@@ -44,6 +44,7 @@ COLOR_SPACES = [
 ]
 SETTINGS_OVERRIDE_ZOOM = 1
 STABILIZATION_MODE_OFF = 0
+STABILIZATION_MODE_ON = 1
 STABILIZATION_MODE_PREVIEW = 2
 LENS_OPTICAL_STABILIZATION_MODE_ON = 1
 
@@ -1148,3 +1149,36 @@ def optical_stabilization_supported(props):
                    LENS_OPTICAL_STABILIZATION_MODE_ON in
                    optical_stabilization_modes)
   return ois_supported
+
+
+def ae_priority_mode(props):
+  """Returns list of AE priority modes supported by the device.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    List of available AE priority modes.
+  """
+  available_priority_modes = []
+  if 'android.control.aeAvailablePriorityModes' in props:
+    available_priority_modes = props['android.control.aeAvailablePriorityModes']
+
+  return available_priority_modes
+
+
+def color_correction_aberration_modes(props):
+  """Returns list of available color correction aberration
+  modes supported by the device.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    List of available color correction aberration modes.
+  """
+  available_aberration_modes = []
+  if 'android.colorCorrection.availableAberrationModes' in props:
+    available_aberration_modes = props['android.colorCorrection.availableAberrationModes']
+
+  return available_aberration_modes

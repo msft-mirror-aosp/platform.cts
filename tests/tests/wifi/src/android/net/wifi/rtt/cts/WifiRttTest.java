@@ -1099,30 +1099,42 @@ public class WifiRttTest extends TestBase {
         }
     }
 
-    /**
-     * Test Secure RangingResult.Builder
-     */
+    /** Test Secure RangingResult.Builder */
     @RequiresFlagsEnabled(Flags.FLAG_SECURE_RANGING)
     @Test
-    @ApiTest(apis = { "android.net.wifi.rtt.RangingResult.Builder#setRangingFrameProtected",
-            "android.net.wifi.rtt.RangingResult.Builder#setRangingAuthenticated",
-            "android.net.wifi.rtt.RangingResult#isRangingFrameProtected",
-            "android.net.wifi.rtt.RangingResult#isRangingAuthenticated",
-            "android.net.wifi.rtt.RangingResult#isSecureHeLtfEnabled"})
+    @ApiTest(
+            apis = {
+                "android.net.wifi.rtt.RangingResult.Builder#setRangingFrameProtected",
+                "android.net.wifi.rtt.RangingResult.Builder#setRangingAuthenticated",
+                "android.net.wifi.rtt.RangingResult.Builder#setSecureHeLtfEnabled",
+                "android.net.wifi.rtt.RangingResult.Builder#setSecureHeLtfProtocolVersion",
+                "android.net.wifi.rtt.RangingResult.Builder#setPasnComebackCookie",
+                "android.net.wifi.rtt.RangingResult.Builder#setPasnComebackAfterMillis",
+                "android.net.wifi.rtt.RangingResult#isRangingFrameProtected",
+                "android.net.wifi.rtt.RangingResult#isRangingAuthenticated",
+                "android.net.wifi.rtt.RangingResult#isSecureHeLtfEnabled",
+                "android.net.wifi.rtt.RangingResult#getPasnComebackCookie",
+                "android.net.wifi.rtt.RangingResult#getPasnComebackAfterMillis"
+            })
     public void testSecureRangingResultBuilder() {
-        RangingResult rangingResult = new RangingResult.Builder()
-                .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
-                .setRangingFrameProtected(true)
-                .setRangingAuthenticated(true)
-                .setSecureHeLtfEnabled(true)
-                .setSecureHeLtfProtocolVersion(1)
-                .build();
+        RangingResult rangingResult =
+                new RangingResult.Builder()
+                        .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
+                        .setRangingFrameProtected(true)
+                        .setRangingAuthenticated(true)
+                        .setSecureHeLtfEnabled(true)
+                        .setSecureHeLtfProtocolVersion(1)
+                        .setPasnComebackCookie(TEST_PASN_COMEBACK_COOKIE)
+                        .setPasnComebackAfterMillis(INTERVAL_MS)
+                        .build();
 
         assertEquals(MacAddress.fromString("00:11:22:33:44:55"), rangingResult.getMacAddress());
         assertTrue(rangingResult.isRangingFrameProtected());
         assertTrue(rangingResult.isRangingAuthenticated());
         assertTrue(rangingResult.isSecureHeLtfEnabled());
         assertEquals(1, rangingResult.getSecureHeLtfProtocolVersion());
+        assertArrayEquals(TEST_PASN_COMEBACK_COOKIE, rangingResult.getPasnComebackCookie());
+        assertEquals(INTERVAL_MS, rangingResult.getPasnComebackAfterMillis());
     }
 
     /**
@@ -1253,6 +1265,7 @@ public class WifiRttTest extends TestBase {
             apis = {
                 "android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
                 "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported",
+                "android.net.wifi.rtt.ResponderConfig#getSecureRangingConfig",
                 "android.net.wifi.rtt.PasnConfig#Builder",
                 "android.net.wifi.rtt.PasnConfig.Builder#setWifiSsid",
                 "android.net.wifi.rtt.PasnConfig.Builder#setPassword",
@@ -1260,7 +1273,8 @@ public class WifiRttTest extends TestBase {
                 "android.net.wifi.rtt.SecureRangingConfig#Builder",
                 "android.net.wifi.rtt.SecureRangingConfig.Builder#setSecureHeLtfEnabled",
                 "android.net.wifi.rtt.SecureRangingConfig.Builder#setRangingFrameProtectionEnabled",
-                "android.net.wifi.rtt.SecureRangingConfig.Builder#build"
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#build",
+                "android.net.wifi.rtt.SecureRangingConfig.Builder#setSecureRangingConfig"
             })
     public void testSecureRangingToTest11azApUsingScanResult() throws InterruptedException {
         // Check Device capabilities
@@ -1344,7 +1358,7 @@ public class WifiRttTest extends TestBase {
         assertEquals(TEST_PASSWORD, pasnConfig.getPassword());
         assertEquals(CIPHER_GCMP_256, pasnConfig.getCiphers());
         assertEquals(AKM_SAE | AKM_PASN, pasnConfig.getBaseAkms());
-        assertEquals(TEST_PASN_COMEBACK_COOKIE, pasnConfig.getPasnComebackCookie());
+        assertArrayEquals(TEST_PASN_COMEBACK_COOKIE, pasnConfig.getPasnComebackCookie());
     }
 }
 

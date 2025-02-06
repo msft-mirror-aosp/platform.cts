@@ -18,7 +18,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.verifier"
           android:versionCode="5"
-          android:versionName="15_r1">
+          android:versionName="16_r1">
 
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="35"/>
 
@@ -131,6 +131,9 @@
     <!-- Needed for Notification Hiding tests -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
 
+    <!-- Needed for BLE channel sounding and UWB test -->
+    <uses-permission android:name="android.permission.RANGING" />
+
     <application android:debuggable="true"
                  android:networkSecurityConfig="@xml/network_security_config"
                  android:label="@string/app_name"
@@ -138,7 +141,8 @@
                  android:largeHeap="true"
                  android:requestLegacyExternalStorage="true"
                  android:allowBackup="false"
-                 android:theme="@android:style/Theme.DeviceDefault">
+                 android:theme="@android:style/Theme.DeviceDefault"
+                 android:manageSpaceActivity=".ManageSpaceActivity">
 
         <meta-data android:name="android.telephony.HIDE_VOICEMAIL_SETTINGS_MENU"
                    android:value="true"/>
@@ -4333,6 +4337,70 @@
                 android:value="7.4.2.5/H-1-1" />
         </activity>
 
+        <!--
+           CTS Verifier Channel Sounding Precision Test Screen
+               test category : Channel Sounding
+               test parent : PresenceTestActivity
+       -->
+        <activity
+            android:name=".presence.BleCsAccuracyActivity"
+            android:exported="true"
+            android:label="@string/cs_accuracy_test_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/ble_cs" />
+            <meta-data
+                android:name="test_parent"
+                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
+            <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.bluetooth_le.channel_sounding:android.hardware.bluetooth_le" />
+            <meta-data
+                android:name="display_mode"
+                android:value="single_display_mode" />
+            <meta-data
+                android:name="CddTest"
+                android:value="7.4.3/C-11-2" />
+        </activity>
+
+        <!--
+           CTS Verifier UWB Precision Test Screen
+               test category : UWB
+               test parent : PresenceTestActivity
+       -->
+        <activity
+            android:name=".presence.UwbAccuracyActivity"
+            android:exported="true"
+            android:label="@string/uwb_accuracy_test_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/uwb" />
+            <meta-data
+                android:name="test_parent"
+                android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
+            <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.uwb" />
+            <meta-data
+                android:name="display_mode"
+                android:value="single_display_mode" />
+            <meta-data
+                android:name="CddTest"
+                android:value="7.4.9/C-1-6,C-1-7" />
+        </activity>
+
         <activity-alias android:name=".CtsVerifierActivity"
                         android:targetActivity=".TestListActivity"
                         android:exported="true"
@@ -4405,47 +4473,31 @@
                        android:value="android.provider.AlarmClock#ACTION_SHOW_ALARMS|android.provider.AlarmClock#ACTION_SET_ALARM|android.provider.AlarmClock#ACTION_SET_TIMER" />
         </activity>
 
-        <activity android:name=".multidevice.MultiDeviceTestsActivity"
-                android:exported="true"
-                android:label="@string/nfc_tests_title">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_multidevice" />
-            <meta-data android:name="test_applicable_features"
-                       android:value="android.hardware.nfc:android.hardware.nfc.hce" />
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="CddTest"
-                       android:value="7.4.4/C-1-2,C-2-2|9.1/C-0-1" />
-        </activity>
-
         <activity
-            android:name=".InteractiveTestsActivity"
+            android:name=".HostTestsActivity"
             android:exported="true"
-            android:label="@string/interactive_tests_title">
+            android:label="@string/host_tests_title">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data
                 android:name="test_category"
-                android:value="@string/test_category_interactive" />
+                android:value="@string/test_category_host" />
             <meta-data
                 android:name="display_mode"
                 android:value="single_display_mode" />
             <meta-data
                 android:name="NonApiTest"
-                android:value="Helper class. List interactive modules." />
+                android:value="Helper class. List host-side modules." />
         </activity>
 
         <activity
-            android:name=".InteractiveTestListActivity"
-            android:label="@string/interactive_tests_title">
+            android:name=".HostTestListActivity"
+            android:label="@string/host_tests_title">
             <meta-data
                 android:name="NonApiTest"
-                android:value="Helper class. List interactive testcases." />
+                android:value="Helper class. List host-side testcases." />
         </activity>
 
 <!-- TODO: enable when not requiring to tap the screen and timeouts are tuned -->
@@ -7030,6 +7082,11 @@
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/generated_previews_widget_info" />
         </receiver>
+
+        <activity android:name=".ManageSpaceActivity">
+            <meta-data android:name="NonApiTest"
+                android:value="Helper class. Used to test location attack on camera intents." />
+        </activity>
     </application>
 
     <queries>

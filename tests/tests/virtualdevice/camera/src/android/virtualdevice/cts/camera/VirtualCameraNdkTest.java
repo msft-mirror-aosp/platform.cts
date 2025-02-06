@@ -20,8 +20,8 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.FRONT_CAMERA_ID;
+import static android.virtualdevice.cts.camera.util.VirtualCameraUtils.createVirtualCameraConfig;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -46,7 +46,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.view.Display;
 import android.virtualdevice.cts.camera.util.NativeCameraManager;
 import android.virtualdevice.cts.camera.util.NativeCameraTestActivity;
-import android.virtualdevice.cts.common.VirtualCameraSupportRule;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -55,10 +54,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.google.common.collect.Iterables;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -70,8 +67,6 @@ import java.util.concurrent.Executor;
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 @RunWith(AndroidJUnit4.class)
 public class VirtualCameraNdkTest {
-    @ClassRule
-    public static final TestRule VIRTUAL_CAMERA_SUPPORTED_RULE = new VirtualCameraSupportRule();
 
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final String CAMERA_NAME = "Virtual camera";
@@ -80,9 +75,7 @@ public class VirtualCameraNdkTest {
     private static final int CAMERA_INPUT_FORMAT = PixelFormat.RGBA_8888;
     private static final int CAMERA_MAX_FPS = 30;
 
-    @Rule
-    public VirtualDeviceRule mRule =
-            VirtualDeviceRule.createDefault().withVirtualCameraSupportCheck();
+    @Rule public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
     @Mock
     private VirtualCameraCallback mVirtualCameraCallback;

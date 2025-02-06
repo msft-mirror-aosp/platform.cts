@@ -45,6 +45,7 @@ java_defaults {
         "libctsmediav2codecencsurface_jni",
         "libctsmediav2codecapiunit_jni",
         "libctsmediav2utils_jni",
+        "libctsmediav2codecinfo_jni",
     ],
     srcs: ["src/**/*.java"],
     min_sdk_version: "29",

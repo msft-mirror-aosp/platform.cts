@@ -16,12 +16,14 @@
 
 package android.display.cts;
 
+import static android.hardware.display.DisplayManager.DISPLAY_CATEGORY_ALL_INCLUDING_DISABLED;
+import static android.hardware.display.DisplayManager.DISPLAY_CATEGORY_BUILT_IN_DISPLAYS;
 import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.WindowInsets.Type.systemBars;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -43,6 +45,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
+import android.view.Display;
 import android.view.SurfaceControl;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
@@ -64,6 +67,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -193,6 +200,29 @@ public class DisplayManagerTest {
         DisplayManager displayManager = mActivity.getSystemService(DisplayManager.class);
         assertEquals(ambientDisplayConfiguration.alwaysOnAvailableForUser(mActivity.getUserId()),
                 displayManager.isAlwaysOnDisplayCurrentlyAvailable());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_CATEGORY_BUILT_IN)
+    public void testDisplayCategoryBuiltIn() {
+        final DisplayManager displayManager =
+                Objects.requireNonNull(mActivity.getSystemService(DisplayManager.class));
+
+        final Display[] allDisplays =
+                displayManager.getDisplays(DISPLAY_CATEGORY_ALL_INCLUDING_DISABLED);
+        final Set<Display> expectedDisplays = new HashSet<>();
+        for (Display display : allDisplays) {
+            if (display.getType() == Display.TYPE_INTERNAL) {
+                expectedDisplays.add(display);
+            }
+        }
+
+        final Set<Display> builtInDisplays =
+                new HashSet<>(
+                        Arrays.asList(
+                                displayManager.getDisplays(DISPLAY_CATEGORY_BUILT_IN_DISPLAYS)));
+
+        assertEquals(expectedDisplays, builtInDisplays);
     }
 
     private static class OnImageAvailableListener implements ImageReader.OnImageAvailableListener {

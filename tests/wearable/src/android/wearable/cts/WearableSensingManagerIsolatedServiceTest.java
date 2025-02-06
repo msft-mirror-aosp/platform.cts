@@ -84,6 +84,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
 
 import junitparams.JUnitParamsRunner;
@@ -274,6 +275,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @Parameters({"true", "false"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_canReceiveStatusFromWss(boolean isForConcurrentApi)
@@ -294,6 +300,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @Parameters({"true", "false"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_otherEndAttachedToCdm_canReceiveDataInWss(
@@ -320,6 +331,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @Parameters({"true", "false"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_otherEndAttachedToCdm_canReceiveDataFromWss(
@@ -343,6 +359,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @Parameters({"true", "false"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_wearableStreamClosedThenSendDataFromWss_channelErrorStatus(
@@ -378,6 +399,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     public void provideConnection_wearableStreamClosedThenSendDataFromWss_restartWssProcess()
             throws Exception {
         getInstrumentation()
@@ -406,6 +432,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @Parameters({"true", "false"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_wssStreamClosed_channelErrorStatus(boolean isForConcurrentApi)
@@ -440,6 +471,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.app.wearable.WearableSensingManager#provideConnection"})
     public void provideConnection_restartsWssProcess() throws Exception {
         // The first call of provideConnection may not restart the process,
         // so we call once first, then set up and call it again
@@ -475,6 +507,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_allowConcurrent_allConnectionsReceiveSuccessStatus()
             throws Exception {
@@ -492,6 +529,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_allowConcurrent_canReceiveDataInWss() throws Exception {
         getInstrumentation()
@@ -524,6 +566,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_allowConcurrent_canReceiveDataFromWss() throws Exception {
         getInstrumentation()
@@ -550,6 +597,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideMultipleConcurrentConnections_closeOne_othersCanStillBeUsed()
             throws Exception {
@@ -598,6 +650,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_canProvideAvailableNumberOfConnections() throws Exception {
         int availableConnectionCount = mWearableSensingManager.getAvailableConnectionCount();
@@ -609,6 +666,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_cannotProvideConnectionAfterReachingLimit() throws Exception {
         int availableConnectionCount = mWearableSensingManager.getAvailableConnectionCount();
@@ -630,6 +692,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_reachedConnectionLimit_canProvideAfterRemovingConnection()
             throws Exception {
@@ -651,6 +719,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeAllConnections",
+                "android.service.wearable.WearableSensingService#onSecureConnectionProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void provideConnection_reachedConnectionLimit_canProvideAfterRemovingAllConnections()
             throws Exception {
@@ -685,6 +759,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeConnection_connectionPreviouslyProvidedAndNotYetRemoved_noException() {
         mWearableSensingManager.provideConnection(mWearableConnection0, EXECUTOR);
@@ -695,6 +774,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.app.wearable.WearableSensingManager#removeConnection"})
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeConnection_connectionNotPreviouslyProvided_throwsNoSuchElementException() {
         assertThrows(
@@ -703,6 +783,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeConnection_connectionAlreadyRemoved_throwsNoSuchElementException() {
         mWearableSensingManager.provideConnection(mWearableConnection0, EXECUTOR);
@@ -715,6 +800,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection",
+                "android.app.wearable.WearableSensingManager#removeAllConnections"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void
             removeConnection_connectionAlreadyRemovedFromRemoveAll_throwsNoSuchElementException() {
@@ -728,6 +819,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeConnection_cannotSendMessageFromWss() throws Exception {
         mWearableSensingManager.provideConnection(mWearableConnection0, EXECUTOR);
@@ -739,6 +835,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeConnection_otherConnectionsCanStillBeUsed() throws Exception {
         getInstrumentation()
@@ -776,6 +877,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeAllConnections"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void removeAllConnections_cannotSendMessageFromWss() throws Exception {
         provideThreeConcurrentConnectionsAndVerifySuccess();
@@ -788,6 +894,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#getAvailableConnectionCount"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void getAvailableConnectionCount_returnsReducedQuotaAfterProvidingConnections() {
         int initialCount = mWearableSensingManager.getAvailableConnectionCount();
@@ -807,6 +918,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideConnection",
+                "android.app.wearable.WearableSensingManager#removeConnection",
+                "android.app.wearable.WearableSensingManager#getAvailableConnectionCount"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void getAvailableConnectionCount_returnsUpdatedQuotaAfterRemovingConnections() {
         assumeTrue(mWearableSensingManager.getAvailableConnectionCount() >= 3);
@@ -835,6 +952,11 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#removeAllConnections",
+                "android.app.wearable.WearableSensingManager#getAvailableConnectionCount"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
     public void getAvailableConnectionCount_returnsInitialQuotaAfterRemovingAllConnections() {
         // We know that initialCount is the max count because we called #removeAllConnection in
@@ -1036,6 +1158,10 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
     public void provideReadOnlyParcelFileDescriptor_fromSocketPair_throwsException()
             throws Exception {
@@ -1053,6 +1179,10 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
     public void provideReadOnlyParcelFileDescriptor_writeEndOfPipe_throwsException()
             throws Exception {
@@ -1072,6 +1202,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor",
+                "android.service.wearable.WearableSensingService"
+                        + "#onReadOnlyParcelFileDescriptorProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
     public void provideReadOnlyParcelFileDescriptor_readEndOfPipe_canReadFromWss()
             throws Exception {
@@ -1093,6 +1229,10 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
     public void provideReadOnlyParcelFileDescriptor_writableFileHandle_throwsException()
             throws Exception {
@@ -1117,6 +1257,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor",
+                "android.service.wearable.WearableSensingService"
+                        + "#onReadOnlyParcelFileDescriptorProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
     public void provideReadOnlyParcelFileDescriptor_readOnlyFile_canReadFromWss() throws Exception {
         String filename = "provideReadOnlyParcelFileDescriptor2";
@@ -1134,6 +1280,12 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.app.wearable.WearableSensingManager#provideReadOnlyParcelFileDescriptor",
+                "android.service.wearable.WearableSensingService"
+                        + "#onReadOnlyParcelFileDescriptorProvided"
+            })
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_READ_ONLY_PFD)
     public void provideReadOnlyParcelFileDescriptor_providesCorrectMetadata() throws Exception {
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();

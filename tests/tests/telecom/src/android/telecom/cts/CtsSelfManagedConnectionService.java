@@ -24,6 +24,9 @@ import android.telecom.ConnectionService;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +37,7 @@ import java.util.concurrent.CountDownLatch;
  * CTS test self-managed {@link ConnectionService} implementation.
  */
 public class CtsSelfManagedConnectionService extends ConnectionService {
+    public static final String LOG_TAG = "CtsSMConnectionService";
     // Constants used to address into the mLocks array.
     public static int CONNECTION_CREATED_LOCK = 0;
     public static int CREATE_INCOMING_CONNECTION_FAILED_LOCK = 1;
@@ -43,6 +47,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
     public static int FOCUS_LOST_LOCK = 5;
 
     private static int NUM_LOCKS = FOCUS_LOST_LOCK + 1;
+    private static final String TAG = "CtsSelfManagedConnectionService";
 
     private static CtsSelfManagedConnectionService sConnectionService;
 
@@ -59,7 +64,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
 
     private CountDownLatch[] mLocks = new CountDownLatch[NUM_LOCKS];
 
-    private Object mLock = new Object();
+    private final Object mLock = new Object();
     private List<SelfManagedConnection> mConnections = new ArrayList<>();
     private TestUtils.InvokeCounter mOnCreateIncomingHandoverConnectionCounter =
             new TestUtils.InvokeCounter("incomingHandoverConnection");
@@ -70,8 +75,9 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
         return sConnectionService;
     }
 
-    public CtsSelfManagedConnectionService() throws Exception {
-        super();
+    @Override
+    public void onBindClient(@Nullable Intent intent) {
+        Log.i(LOG_TAG, "onBindClient with intent: " + intent);
         sConnectionService = this;
         Arrays.setAll(mLocks, i -> new CountDownLatch(1));
 
@@ -81,6 +87,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
 
     @Override
     public boolean onUnbind(Intent intent) {
+        Log.i(LOG_TAG, "onUnbind with intent: " + intent);
         sBindingLock = new CountDownLatch(1);
         return super.onUnbind(intent);
     }
@@ -132,11 +139,13 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
 
     @Override
     public void onConnectionServiceFocusGained() {
+        Log.i(TAG, "onConnectionServiceFocusGained");
         mLocks[FOCUS_GAINED_LOCK].countDown();
     }
 
     @Override
     public void onConnectionServiceFocusLost() {
+        Log.i(TAG, "onConnectionServiceFocusLost");
         mLocks[FOCUS_LOST_LOCK].countDown();
         connectionServiceFocusReleased();
     }
@@ -144,6 +153,7 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
     public void tearDown() {
         synchronized(mLock) {
             if (mConnections != null && mConnections.size() > 0) {
+                Log.w(LOG_TAG, "disconnecting non-disconnected calls: " + mConnections);
                 mConnections.forEach(connection -> {
                             connection.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
                             connection.destroy();
@@ -152,7 +162,6 @@ public class CtsSelfManagedConnectionService extends ConnectionService {
                 mConnections.clear();
             }
         }
-        sBindingLock = new CountDownLatch(1);
     }
 
     private Connection createSelfManagedConnection(ConnectionRequest request, boolean isIncoming) {

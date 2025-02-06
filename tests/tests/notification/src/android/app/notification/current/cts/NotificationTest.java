@@ -1306,6 +1306,82 @@ public class NotificationTest {
         ));
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void progressStyle_setProgressSegments() {
+        final List<Notification.ProgressStyle.Segment> segments =
+                List.of(
+                        new Notification.ProgressStyle.Segment(100).setColor(Color.WHITE),
+                        new Notification.ProgressStyle.Segment(50).setColor(Color.RED),
+                        new Notification.ProgressStyle.Segment(50).setColor(Color.BLUE));
+
+        final Notification.ProgressStyle progressStyle1 = new Notification.ProgressStyle();
+        progressStyle1.setProgressSegments(segments);
+
+        assertThat(progressStyle1.getProgressSegments()).isEqualTo(segments);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void progressStyle_setProgressPoints() {
+        final List<Notification.ProgressStyle.Point> points =
+                List.of(
+                        new Notification.ProgressStyle.Point(0).setColor(Color.WHITE),
+                        new Notification.ProgressStyle.Point(50).setColor(Color.RED),
+                        new Notification.ProgressStyle.Point(100).setColor(Color.BLUE));
+
+        final Notification.ProgressStyle progressStyle1 = new Notification.ProgressStyle();
+        progressStyle1.setProgressPoints(points);
+
+        assertThat(progressStyle1.getProgressPoints()).isEqualTo(points);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void progressStyle_setProgressIndeterminate() {
+        final Notification.ProgressStyle progressStyle1 = new Notification.ProgressStyle();
+        progressStyle1.setProgressIndeterminate(true);
+        assertThat(progressStyle1.isProgressIndeterminate()).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void progressStyle_setStyledByProgress() {
+        final Notification.ProgressStyle progressStyle1 = new Notification.ProgressStyle();
+        progressStyle1.setStyledByProgress(false);
+        assertThat(progressStyle1.isStyledByProgress()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void progressStyle_point() {
+        final int id = 1;
+        final int position = 10;
+        final int color = Color.RED;
+
+        final Notification.ProgressStyle.Point point =
+                new Notification.ProgressStyle.Point(position).setId(id).setColor(color);
+
+        assertEquals(id, point.getId());
+        assertEquals(position, point.getPosition());
+        assertEquals(color, point.getColor());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void progressStyle_segment() {
+        final int id = 1;
+        final int length = 100;
+        final int color = Color.RED;
+
+        final Notification.ProgressStyle.Segment segment =
+                new Notification.ProgressStyle.Segment(length).setId(id).setColor(color);
+
+        assertEquals(id, segment.getId());
+        assertEquals(length, segment.getLength());
+        assertEquals(color, segment.getColor());
+    }
+
     private void assertProgressStylesAreEqual(Notification.ProgressStyle expected,
             Notification.ProgressStyle actual) {
         assertThat(actual.getProgressPoints()).isEqualTo(expected.getProgressPoints());

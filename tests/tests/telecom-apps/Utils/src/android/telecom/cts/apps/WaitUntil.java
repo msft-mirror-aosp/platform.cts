@@ -18,14 +18,16 @@ package android.telecom.cts.apps;
 
 import static android.os.SystemClock.sleep;
 import static android.telecom.cts.apps.StackTraceUtil.appendStackTraceList;
+
 import static org.junit.Assert.assertEquals;
 
 import android.os.SystemClock;
-
 import android.telecom.Connection;
+import android.telecom.ConnectionRequest;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 
 public class WaitUntil {
     public static final long DEFAULT_TIMEOUT_MS = 10000;
@@ -94,6 +96,10 @@ public class WaitUntil {
 
     public interface ConnectionServiceImpl {
         Connection getLastConnection();
+
+        ConnectionRequest getLastFailedRequest();
+
+        CountDownLatch getCreateOutgoingConnectionLatch();
     }
 
     public static String waitUntilIdIsSet(
@@ -228,6 +234,50 @@ public class WaitUntil {
         return getLastConnection(s);
     }
 
+    public static ConnectionRequest waitUntilConnectionFails(
+            String packageName, List<String> stackTrace, ConnectionServiceImpl s) {
+
+        boolean success =
+                waitUntilConditionIsTrueOrReturnFalse(
+                        new Condition() {
+                            @Override
+                            public Object expected() {
+                                return true;
+                            }
+
+                            @Override
+                            public Object actual() {
+                                return getLastFailedRequest(s) != null;
+                            }
+                        });
+
+        if (!success) {
+            throw new TestAppException(
+                    packageName,
+                    appendStackTraceList(stackTrace, CLASS_NAME + ".waitUntilConnectionFails"),
+                    "expected:<Connection failed to be added to the ConnectionService> "
+                            + "actual:<no failed Connection detected>");
+        }
+
+        return getLastFailedRequest(s);
+    }
+
+    public static boolean waitUntilManagedCreateOutgoingConnectionInvoked(ConnectionServiceImpl s) {
+
+        return waitUntilConditionIsTrueOrReturnFalse(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return getCreateOutgoingConnectionLatch(s).getCount() == 0;
+                    }
+                });
+    }
+
     private static String extractTelecomId(Connection connection) {
         String str = connection.getTelecomCallId();
         return str.substring(0, str.indexOf(TELECOM_ID_TOKEN));
@@ -235,6 +285,14 @@ public class WaitUntil {
 
     private static Connection getLastConnection(ConnectionServiceImpl s) {
         return s.getLastConnection();
+    }
+
+    private static ConnectionRequest getLastFailedRequest(ConnectionServiceImpl s) {
+        return s.getLastFailedRequest();
+    }
+
+    private static CountDownLatch getCreateOutgoingConnectionLatch(ConnectionServiceImpl s) {
+        return s.getCreateOutgoingConnectionLatch();
     }
 
     public static void waitUntilCurrentCallEndpointIsSet(

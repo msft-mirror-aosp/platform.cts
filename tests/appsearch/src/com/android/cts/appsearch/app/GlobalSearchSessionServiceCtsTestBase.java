@@ -26,8 +26,9 @@ import static android.app.appsearch.testutil.AppSearchTestUtils.generateRandomBy
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
@@ -37,6 +38,7 @@ import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
 import android.app.appsearch.AppSearchSessionShim;
+import android.app.appsearch.Features;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
@@ -1675,6 +1677,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGlobalOpenBlobRead_visibleToGlobalReader() throws Exception {
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
@@ -1735,6 +1739,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGlobalOpenBlobRead_notVisibleToGlobalReader() throws Exception {
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
@@ -1768,6 +1774,8 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGlobalOpenBlobRead_visibleToConfig() throws Exception {
+        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
+        assumeFalse(mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(

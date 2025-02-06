@@ -39,7 +39,6 @@ import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -114,7 +113,7 @@ public class BluetoothLeAudioTest {
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
     public void closeProfileProxy() {
-        mAdapter.closeProfileProxy(BluetoothProfile.LE_AUDIO, mService);
+        mService.close();
         verify(mListener, timeout(PROXY_CONNECTION_TIMEOUT.toMillis()))
                 .onServiceDisconnected(eq(BluetoothProfile.LE_AUDIO));
     }
@@ -147,17 +146,6 @@ public class BluetoothLeAudioTest {
 
         // Verify returns false if bluetooth is not enabled
         assertThat(mService.getConnectionState(mDevice)).isEqualTo(STATE_DISCONNECTED);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
-    public void getAudioLocation_Old() {
-        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-
-        // Verify returns false if bluetooth is not enabled
-        assertThat(mService.getAudioLocation(mDevice))
-                .isEqualTo(BluetoothLeAudio.AUDIO_LOCATION_INVALID);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
@@ -207,6 +195,20 @@ public class BluetoothLeAudioTest {
         // Test success register unregister
         mService.registerCallback(mExecutor, mCallback);
         mService.unregisterCallback(mCallback);
+    }
+
+    @Test
+    // CTS doesn't run with a compatible remote device.
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @SuppressWarnings("DirectInvocationOnMock")
+    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_API_MANAGE_PRIMARY_GROUP)
+    public void fakeCallbackCoverage() {
+        mCallback.onBroadcastToUnicastFallbackGroupChanged(0);
+        mCallback.onCodecConfigChanged(0, null);
+        mCallback.onGroupNodeAdded(null, 0);
+        mCallback.onGroupNodeRemoved(null, 0);
+        mCallback.onGroupStatusChanged(0, 0);
+        mCallback.onGroupStreamStatusChanged(0, 0);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

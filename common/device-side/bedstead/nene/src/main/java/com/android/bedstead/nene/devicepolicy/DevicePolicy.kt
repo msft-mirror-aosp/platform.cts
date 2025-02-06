@@ -27,6 +27,7 @@ import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.annotations.Experimental
@@ -64,6 +65,22 @@ object DevicePolicy {
     private var mCachedProfileOwners: Map<UserReference, ProfileOwner>? = null
     private val mDateTimeFormatter by lazy {
         DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+    }
+    private val mProvisioningContextFlagEnabled: Boolean by lazy {
+        if (Versions.meetsMinimumSdkVersionRequirement(Versions.B)) {
+            true
+        } else if (Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            try {
+                DeviceFlagsValueProvider().getBoolean(
+                    "android.app.admin.flags.provisioning_context_parameter"
+                )
+            } catch (exception: Exception) {
+                Log.d(LOG_TAG, "unable to access the flag", exception)
+                false
+            }
+        } else {
+            false
+        }
     }
 
     /**
@@ -892,7 +909,7 @@ object DevicePolicy {
     }
 
     private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.B)) {
+        if (!mProvisioningContextFlagEnabled) {
             return this
         }
         val testName = FailureDumper.getCurrentTestName()

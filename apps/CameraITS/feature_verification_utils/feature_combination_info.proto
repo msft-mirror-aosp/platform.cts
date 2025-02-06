@@ -81,9 +81,16 @@ message SessionConfiguration {
   optional FrameRateRange frame_rate_range = 3;
 }
 
+enum FeatureCombinationSupport {
+    SUPPORT_UNKNOWN = 0;
+    SUPPORT_YES = 1;
+    SUPPORT_NO = 2;
+}
+
 message FeatureCombinationEntry {
   SessionConfiguration session_configuration = 1;
   bool is_supported = 2;
+  FeatureCombinationSupport support_claimed = 3;
 }
 
 message FeatureCombinationForCamera {

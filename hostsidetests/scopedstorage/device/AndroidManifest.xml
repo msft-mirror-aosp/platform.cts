@@ -34,7 +34,8 @@
         <package android:name="android.scopedstorage.cts.testapp.VUSelected" />
     </queries>
 
-    <application android:label="Scoped Storage Device Tests">
+    <application android:label="Scoped Storage Device Tests"
+                 android:debuggable="true">
         <uses-library android:name="android.test.runner" />
         <activity android:name="android.scopedstorage.cts.lib.GetResultActivity"/>
     </application>

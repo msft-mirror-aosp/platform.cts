@@ -190,6 +190,7 @@ public class RemoteViewsTest {
 
     @Before
     public void setUp() throws Throwable {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         // Ensure the UI is currently NOT in night mode.
         mInitialNightMode = changeNightMode(false);
 
@@ -2465,7 +2466,7 @@ public class RemoteViewsTest {
     public void testSameBitmapIsCached_landscapePortrait() {
         Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.testimage);
         mRemoteViews.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
-        int originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
+        long originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
         assertEquals(bitmap.getAllocationByteCount(), originalMemoryUsage);
 
         // Create a remoteviews with the same bitmap in landscape and portrait, and confirm
@@ -2490,7 +2491,7 @@ public class RemoteViewsTest {
     public void testSameBitmapIsCached_sizedViews() {
         Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.testimage);
         mRemoteViews.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
-        int originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
+        long originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
         assertEquals(bitmap.getAllocationByteCount(), originalMemoryUsage);
 
         // Create a remoteviews with the same bitmap in different sized views, and confirm
@@ -2517,7 +2518,7 @@ public class RemoteViewsTest {
     public void testSameBitmapIsCached_nestedViews() {
         Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.testimage);
         mRemoteViews.setBitmap(R.id.remoteView_image, "setImageBitmap", bitmap);
-        int originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
+        long originalMemoryUsage = mRemoteViews.estimateMemoryUsage();
         assertEquals(bitmap.getAllocationByteCount(), originalMemoryUsage);
 
         // Create a remoteviews with the same bitmap in nested views, and confirm that the cache is

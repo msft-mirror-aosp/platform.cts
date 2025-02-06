@@ -18,7 +18,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.virtualdevice.cts.defaultcameraaccesstestbase">
 
-    <uses-feature android:name="android.software.companion_device_setup" />
     <application>
         <activity
             android:name="android.app.Activity"

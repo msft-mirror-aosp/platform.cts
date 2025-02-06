@@ -2735,9 +2735,10 @@ public class CameraTestUtils extends Assert {
                 validateY8Data(data, width, height, format, image.getTimestamp(), filePath);
                 break;
             case ImageFormat.HEIC:
-            // TODO: Check for HDR gainmap presence. This needs b/364911926.
+                validateHeicData(data, width, height, filePath, false /*gainmapPresent*/);
+                break;
             case ImageFormat.HEIC_ULTRAHDR:
-                validateHeicData(data, width, height, filePath);
+                validateHeicData(data, width, height, filePath, true /*gainmapPresent*/);
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported format for validation: "
@@ -2973,7 +2974,8 @@ public class CameraTestUtils extends Assert {
 
     }
 
-    private static void validateHeicData(byte[] heicData, int width, int height, String filePath) {
+    private static void validateHeicData(byte[] heicData, int width, int height, String filePath,
+            boolean gainMapPresent) {
         BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
         // DecodeBound mode: only parse the frame header to get width/height.
         // it doesn't decode the pixel.
@@ -2984,12 +2986,19 @@ public class CameraTestUtils extends Assert {
 
         // Pixel decoding mode: decode whole image. check if the image data
         // is decodable here.
-        assertNotNull("Decoding heic failed",
-                BitmapFactory.decodeByteArray(heicData, 0, heicData.length));
+        Bitmap bitmapImage = BitmapFactory.decodeByteArray(heicData, 0, heicData.length);
+        assertNotNull("Decoding heic failed", bitmapImage);
+
         if (DEBUG && filePath != null) {
             String fileName =
                     filePath + "/" + width + "x" + height + ".heic";
             dumpFile(fileName, heicData);
+        }
+
+        if (gainMapPresent) {
+            Gainmap gainMap = bitmapImage.getGainmap();
+            assertNotNull(gainMap);
+            assertNotNull(gainMap.getGainmapContents());
         }
     }
 
@@ -4780,30 +4789,41 @@ public class CameraTestUtils extends Assert {
         static final int USE_CASE_CROPPED_RAW =
                 CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_CROPPED_RAW;
 
-        // Note: This must match the required stream combinations defined in
+        // Note:
+        // This must match the required stream combinations defined in
         // CameraCharacteristcs#INFO_SESSION_CONFIGURATION_QUERY_VERSION.
+        // - First PRIV stream is preview or preview recording,
+        // - Second PRIV stream is video recording,
+        // - YUV stream is analysis.
+        private static final int V = Build.VERSION_CODES.VANILLA_ICE_CREAM;
+        private static final int B = V + 1;
         private static final int[][] QUERY_COMBINATIONS = {
-            {PRIV, S1080P},
-            {PRIV, S720P},
-            {PRIV, S1080P,  JPEG, MAXIMUM_16_9},
-            {PRIV, S1080P,  JPEG, UHD},
-            {PRIV, S1080P,  JPEG, S1440P_16_9},
-            {PRIV, S1080P,  JPEG, S1080P},
-            {PRIV, S1080P,  PRIV, UHD},
-            {PRIV, S720P,   JPEG, MAXIMUM_16_9},
-            {PRIV, S720P,   JPEG, UHD},
-            {PRIV, S720P,   JPEG, S1080P},
-            {PRIV, XVGA,    JPEG, MAXIMUM_4_3},
-            {PRIV, S1080P_4_3, JPEG, MAXIMUM_4_3},
-            {PRIV, S1080P,  JPEG_R, MAXIMUM_16_9},
-            {PRIV, S1080P,  JPEG_R, UHD},
-            {PRIV, S1080P,  JPEG_R, S1440P_16_9},
-            {PRIV, S1080P,  JPEG_R, S1080P},
-            {PRIV, S720P,   JPEG_R, MAXIMUM_16_9},
-            {PRIV, S720P,   JPEG_R, UHD},
-            {PRIV, S720P,   JPEG_R, S1080P},
-            {PRIV, XVGA,    JPEG_R, MAXIMUM_4_3},
-            {PRIV, S1080P_4_3, JPEG_R, MAXIMUM_4_3},
+            {V, PRIV, S1080P},
+            {V, PRIV, S720P},
+            {V, PRIV, S1080P,  JPEG, MAXIMUM_16_9},
+            {V, PRIV, S1080P,  JPEG, UHD},
+            {V, PRIV, S1080P,  JPEG, S1440P_16_9},
+            {V, PRIV, S1080P,  JPEG, S1080P},
+            {V, PRIV, S1080P,  PRIV, UHD},
+            {V, PRIV, S720P,   JPEG, MAXIMUM_16_9},
+            {V, PRIV, S720P,   JPEG, UHD},
+            {V, PRIV, S720P,   JPEG, S1080P},
+            {V, PRIV, XVGA,    JPEG, MAXIMUM_4_3},
+            {V, PRIV, S1080P_4_3, JPEG, MAXIMUM_4_3},
+            {V, PRIV, S1080P,  JPEG_R, MAXIMUM_16_9},
+            {V, PRIV, S1080P,  JPEG_R, UHD},
+            {V, PRIV, S1080P,  JPEG_R, S1440P_16_9},
+            {V, PRIV, S1080P,  JPEG_R, S1080P},
+            {V, PRIV, S720P,   JPEG_R, MAXIMUM_16_9},
+            {V, PRIV, S720P,   JPEG_R, UHD},
+            {V, PRIV, S720P,   JPEG_R, S1080P},
+            {V, PRIV, XVGA,    JPEG_R, MAXIMUM_4_3},
+            {V, PRIV, S1080P_4_3, JPEG_R, MAXIMUM_4_3},
+
+            {B, PRIV, S1080P,  PRIV, S1080P},
+            {B, PRIV, S1080P,  PRIV, S1440P_16_9},
+            {B, PRIV, S1080P,  PRIV, UHD},         // In V, 4k recording wasn't tested
+            {B, PRIV, S1080P,  YUV, S1080P, PRIV, S1080P},
         };
 
         private final Size[] mMaxPrivSizes = new Size[RESOLUTION_COUNT];
@@ -5003,25 +5023,49 @@ public class CameraTestUtils extends Assert {
                         mMaxJpegRSizes[S1440P_16_9] = s1440p169Size;
                         mMaxJpegRSizes[UHD] = uhdSize;
                     }
-                    mQueryableCombinations = QUERY_COMBINATIONS;
-                } else {
-                    // JPEG_R is not supported. Remove all combinations containing JPEG_R
-                    List<int[]> combinationsMinusJpegR = new ArrayList<int[]>();
-                    for (int i = 0; i < QUERY_COMBINATIONS.length; i++) {
-                        boolean hasJpegR = false;
-                        for (int j = 0; j < QUERY_COMBINATIONS[i].length; j += 2) {
-                            if (QUERY_COMBINATIONS[i][j] == JPEG_R) {
-                                hasJpegR = true;
-                                break;
-                            }
-                        }
+                }
 
-                        if (!hasJpegR) {
-                            combinationsMinusJpegR.add(QUERY_COMBINATIONS[i]);
+                // Remove all combinations that are not supported by the camera device
+                List<int[]> combinationsToQuery = new ArrayList<int[]>();
+                for (int[] combination: QUERY_COMBINATIONS) {
+                    boolean hasUnsupportedStream = false;
+                    for (int j = 1; j < combination.length; j += 2) {
+                        int format = combination[j];
+                        int sizeIndex = combination[j + 1];
+                        Size[] supportedSizes = configs.getOutputSizes(format);
+                        Size[] sizeArray;
+                        switch (format) {
+                            case ImageFormat.PRIVATE:
+                                sizeArray = mMaxPrivSizes;
+                                break;
+                            case ImageFormat.JPEG:
+                                sizeArray = mMaxJpegSizes;
+                                break;
+                            case ImageFormat.JPEG_R:
+                                sizeArray = mMaxJpegRSizes;
+                                break;
+                            case ImageFormat.YUV_420_888:
+                                sizeArray = mMaxYuvSizes;
+                                break;
+                            default:
+                                sizeArray = new Size[0];
+                                fail("Unsupported format "
+                                        + format + " for queryable combinations!");
+                                break;
+                        }
+                        if (supportedSizes == null
+                                || !Arrays.asList(supportedSizes).contains(sizeArray[sizeIndex])) {
+                            hasUnsupportedStream = true;
+                            break;
                         }
                     }
-                    mQueryableCombinations = combinationsMinusJpegR.toArray(int[][]::new);
+
+                    // Skip combinations containing with unsupported stream sizes
+                    if (!hasUnsupportedStream) {
+                        combinationsToQuery.add(combination);
+                    }
                 }
+                mQueryableCombinations = combinationsToQuery.toArray(int[][]::new);
 
                 if (sm.isMonochromeWithY8()) {
                     mMaxY8Sizes[PREVIEW]  = CameraTestUtils.getMaxSizeWithBound(

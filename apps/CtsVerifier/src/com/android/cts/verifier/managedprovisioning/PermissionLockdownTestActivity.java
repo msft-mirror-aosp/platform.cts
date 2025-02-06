@@ -18,6 +18,7 @@ package com.android.cts.verifier.managedprovisioning;
 
 import static android.os.UserHandle.myUserId;
 
+import android.Manifest;
 import android.app.admin.DevicePolicyManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
@@ -41,8 +42,6 @@ import android.widget.Toast;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 
-import java.util.Arrays;
-
 public class PermissionLockdownTestActivity extends PassFailButtons.Activity
         implements RadioGroup.OnCheckedChangeListener {
 
@@ -65,9 +64,9 @@ public class PermissionLockdownTestActivity extends PassFailButtons.Activity
             = MANAGED_PROVISIONING_ACTION_PREFIX + "MANAGED_PROFILE_CHECK_PERMISSION_LOCKDOWN";
 
     // Permission grant states will be set on these permissions.
-    private static final String[] CONTACTS_PERMISSIONS = new String[] {
-            android.Manifest.permission.READ_CONTACTS, android.Manifest.permission.WRITE_CONTACTS
-    };
+    private static final String[] CONTACTS_PERMISSIONS =
+            new String[] {Manifest.permission.READ_CONTACTS, Manifest.permission.WRITE_CONTACTS};
+    public static final String CONTACTS_PERMISSION_GROUP = Manifest.permission_group.CONTACTS;
 
     private boolean mDeviceOwnerTest;
     private DevicePolicyManager mDevicePolicyManager;
@@ -115,7 +114,7 @@ public class PermissionLockdownTestActivity extends PassFailButtons.Activity
         packageNameTextView.setText(packageManager.getApplicationLabel(applicationInfo));
 
         TextView permissionNameTextView = (TextView) findViewById(R.id.permission_name);
-        permissionNameTextView.setText(Arrays.toString(CONTACTS_PERMISSIONS));
+        permissionNameTextView.setText(getPermissionName());
 
         // Get the current permission grant state for initializing the RadioGroup.
         int readPermissionState = mDevicePolicyManager.getPermissionGrantState(mAdmin,
@@ -147,6 +146,16 @@ public class PermissionLockdownTestActivity extends PassFailButtons.Activity
         permissionRadioGroup.setOnCheckedChangeListener(this);
 
         addFinishOrPassFailButtons();
+    }
+
+    private CharSequence getPermissionName() {
+        var pm = getPackageManager();
+        try {
+            var groupInfo = pm.getPermissionGroupInfo(CONTACTS_PERMISSION_GROUP, 0);
+            return groupInfo.loadLabel(pm);
+        } catch (PackageManager.NameNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void addFinishOrPassFailButtons() {

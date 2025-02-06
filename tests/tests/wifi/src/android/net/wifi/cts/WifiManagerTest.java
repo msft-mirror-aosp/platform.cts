@@ -771,13 +771,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         synchronized (mLock) {
+            final TestWifiStateChangedListener listener = new TestWifiStateChangedListener(mLock);
             try {
-                setWifiEnabled(true);
-                final TestWifiStateChangedListener listener =
-                        new TestWifiStateChangedListener(mLock);
                 sWifiManager.addWifiStateChangedListener(mExecutor, listener);
 
-                // Set Wi-Fi disabled and verify WifiStateChangedListener was called twice.
+                // Wi-Fi is already enabled in #setUp, so set Wi-Fi to disabled and verify
+                // WifiStateChangedListener was called twice (ENABLED -> DISABLING -> DISABLED).
                 setWifiEnabled(false);
                 long now = System.currentTimeMillis();
                 long deadline = now + TEST_WAIT_DURATION_MS;
@@ -792,6 +791,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             } catch (InterruptedException e) {
                 throw new AssertionError(
                         "Thread interrupted unexpectedly while waiting on mLock", e);
+            } finally {
+                sWifiManager.removeWifiStateChangedListener(listener);
             }
         }
     }
@@ -2209,6 +2210,14 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             for (int i = 0; i < testBandsAndChannels.size(); i++) {
                 TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
                 int testBand = testBandsAndChannels.keyAt(i);
+                if (lohsSoftApCallback
+                                .getCurrentSoftApCapability()
+                                .getSupportedChannelList(testBand)
+                                .length
+                        == 0) {
+                    // Skip if test band isn't supported anymore.
+                    continue;
+                }
                 if (skip5g6gBand && (testBand == SoftApConfiguration.BAND_6GHZ
                         || testBand == SoftApConfiguration.BAND_5GHZ)) {
                     continue;

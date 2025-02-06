@@ -21,6 +21,7 @@ import pathlib
 import cv2
 import numpy
 import scipy.spatial
+import types
 
 import camera_properties_utils
 import capture_request_utils
@@ -39,6 +40,7 @@ CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
 CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
 CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
 CHART_DISTANCE_90CM = 90.0  # cm
+CHART_DISTANCE_50CM = 50.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
 CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
@@ -81,10 +83,13 @@ FACE_CENTER_MATCH_TOL_Y = 20  # 20 pixels or ~4% in 640x480 image
 FACE_CENTER_MIN_LOGGING_DIST = 50
 FACE_MIN_CENTER_DELTA = 15
 
-FOV_THRESH_TELE25 = 25
-FOV_THRESH_TELE40 = 40
-FOV_THRESH_TELE = 60
-FOV_THRESH_UW = 90
+EPSILON = 0.01  # degrees
+FOV_ZERO = 0  # degrees
+FOV_THRESH_TELE25 = 25  # degrees
+FOV_THRESH_TELE40 = 40  # degrees
+FOV_THRESH_TELE = 60  # degrees
+FOV_THRESH_UW = 90  # degrees
+FOV_ONE_EIGHTY = 180  # degrees
 
 IMAGE_ROTATION_THRESHOLD = 40  # rotation by 20 pixels
 
@@ -95,13 +100,36 @@ NUM_AE_AWB_REGIONS = 4
 OPT_VALUE_THRESH = 0.5  # Max opt value is ~0.8
 
 SCALE_CHART_33_PERCENT = 0.33
+SCALE_CHART_50_PERCENT = 0.5
 SCALE_CHART_67_PERCENT = 0.67
-SCALE_WIDE_IN_22CM_RIG = 0.67
-SCALE_TELE_IN_22CM_RIG = 0.5
-SCALE_TELE_IN_31CM_RIG = 0.67
-SCALE_TELE40_IN_22CM_RIG = 0.33
-SCALE_TELE40_IN_31CM_RIG = 0.5
-SCALE_TELE25_IN_31CM_RIG = 0.33
+SCALE_CHART_100_PERCENT = 1.0
+# Chart scaling rules, 'None' if no scaling is needed (1x)
+CHART_DISTANCE_WITH_SCALING_RULES = types.MappingProxyType({
+    CHART_DISTANCE_22CM: {
+        (FOV_ZERO, FOV_THRESH_TELE25): SCALE_CHART_33_PERCENT,
+        (FOV_THRESH_TELE25+EPSILON, FOV_THRESH_TELE40): SCALE_CHART_33_PERCENT,
+        (FOV_THRESH_TELE40+EPSILON, FOV_THRESH_TELE): SCALE_CHART_50_PERCENT,
+        (FOV_THRESH_TELE+EPSILON, FOV_THRESH_UW): SCALE_CHART_67_PERCENT,
+        (FOV_THRESH_UW+EPSILON, FOV_ONE_EIGHTY): None,
+    },
+    CHART_DISTANCE_31CM: {
+        (FOV_ZERO, FOV_THRESH_TELE25): SCALE_CHART_33_PERCENT,
+        (FOV_THRESH_TELE25+EPSILON, FOV_THRESH_TELE40): SCALE_CHART_50_PERCENT,
+        (FOV_THRESH_TELE40+EPSILON, FOV_THRESH_TELE): SCALE_CHART_67_PERCENT,
+        (FOV_THRESH_TELE+EPSILON, FOV_THRESH_UW): None,
+        (FOV_THRESH_UW+EPSILON, FOV_ONE_EIGHTY): None,
+    },
+    CHART_DISTANCE_50CM: {
+        (FOV_ZERO, FOV_THRESH_TELE25): SCALE_CHART_33_PERCENT,
+        (FOV_THRESH_TELE25+EPSILON, FOV_THRESH_TELE40): SCALE_CHART_67_PERCENT,
+        (FOV_THRESH_TELE40+EPSILON, FOV_THRESH_TELE): SCALE_CHART_50_PERCENT,
+    },
+    CHART_DISTANCE_90CM: {
+        (FOV_ZERO, FOV_THRESH_TELE25): SCALE_CHART_33_PERCENT,
+        (FOV_THRESH_TELE25+EPSILON, FOV_THRESH_TELE40): SCALE_CHART_67_PERCENT,
+        (FOV_THRESH_TELE40+EPSILON, FOV_THRESH_TELE): SCALE_CHART_50_PERCENT,
+    },
+})
 
 SQUARE_AREA_MIN_REL = 0.05  # Minimum size for square relative to image area
 SQUARE_CROP_MARGIN = 0  # Set to aid detection of QR codes
@@ -197,38 +225,25 @@ def calc_chart_scaling(chart_distance, camera_fov):
   """Returns charts scaling factor.
 
   Args:
-   chart_distance: float; distance in cm from camera of displayed chart
+   chart_distance: float; distance in cm from camera of displayed chart.
    camera_fov: float; camera field of view.
 
   Returns:
-   chart_scaling: float; scaling factor for chart
+   chart_scaling: float; scaling factor for chart.
+   None; if no scaling rule found or no scaling needed.
   """
-  chart_scaling = 1.0
   fov = float(camera_fov)
-  is_chart_distance_22cm = math.isclose(
-      chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
-  is_chart_distance_31cm = math.isclose(
-      chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
-  is_chart_distance_90cm = math.isclose(
-      chart_distance, CHART_DISTANCE_90CM, rel_tol=CHART_SCALE_RTOL)
-
-  if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
-    chart_scaling = SCALE_WIDE_IN_22CM_RIG
-  elif FOV_THRESH_TELE40 < fov <= FOV_THRESH_TELE and is_chart_distance_22cm:
-    chart_scaling = SCALE_TELE_IN_22CM_RIG
-  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
-    chart_scaling = SCALE_TELE40_IN_22CM_RIG
-  elif fov <= FOV_THRESH_TELE25 and is_chart_distance_31cm:
-    chart_scaling = SCALE_TELE25_IN_31CM_RIG
-  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
-    chart_scaling = SCALE_TELE40_IN_31CM_RIG
-  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_90cm:
-    chart_scaling = SCALE_CHART_67_PERCENT
-  elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
-    chart_scaling = SCALE_TELE_IN_31CM_RIG
-  elif chart_distance > CHART_DISTANCE_31CM:
-    chart_scaling = SCALE_CHART_33_PERCENT
-  return chart_scaling
+  for distance, rule_set in CHART_DISTANCE_WITH_SCALING_RULES.items():
+    if math.isclose(chart_distance, distance, rel_tol=CHART_SCALE_RTOL):
+      for (fov_min, fov_max), scale in rule_set.items():
+        if fov_min <= fov <= fov_max:
+          return scale
+      logging.debug('No scaling rule found for FOV %s in %scm chart distance,'
+                    ' using un-scaled chart.', fov, chart_distance)
+      return None
+  logging.debug('No scaling rules for chart distance: %s, '
+                'using un-scaled chart.', chart_distance)
+  return None
 
 
 def scale_img(img, scale=1.0):

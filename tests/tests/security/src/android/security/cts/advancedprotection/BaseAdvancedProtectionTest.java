@@ -17,14 +17,18 @@
 package android.security.cts.advancedprotection;
 
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.fail;
 
 import android.Manifest;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.DisableFlags;
 import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.SetFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.advancedprotection.AdvancedProtectionManager;
+import android.security.Flags;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -32,11 +36,18 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 public abstract class BaseAdvancedProtectionTest {
+    private static final int TIMEOUT_S = 1;
     protected final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     protected AdvancedProtectionManager mManager;
 
     private boolean mInitialApmState;
+
+    @Rule
+    public final SetFlagsRule mSetFlagsRule = new SetFlagsRule();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -52,6 +63,9 @@ public abstract class BaseAdvancedProtectionTest {
                 Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
 
         mInitialApmState = mManager.isAdvancedProtectionEnabled();
+        /* Disabling USB AAPM feature to avoid interference with non-related test as this
+         * function will be sever the tether connection. */
+        mSetFlagsRule.disableFlags(Flags.FLAG_AAPM_FEATURE_USB_DATA_PROTECTION);
     }
 
     private static boolean shouldTestAdvancedProtection(Context context) {
@@ -75,10 +89,35 @@ public abstract class BaseAdvancedProtectionTest {
         }
 
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
-        mManager.setAdvancedProtectionEnabled(mInitialApmState);
+                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE,
+                Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE);
+        setAdvancedProtectionEnabled(mInitialApmState);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
-        Thread.sleep(1000);
+    }
 
+    protected void setAdvancedProtectionEnabled(boolean enabled) throws InterruptedException {
+        if (enabled == mManager.isAdvancedProtectionEnabled()) {
+          return;
+        }
+
+        // Called once on register, then on set
+        CountDownLatch onRegister = new CountDownLatch(1);
+        CountDownLatch onSet = new CountDownLatch(1);
+        AdvancedProtectionManager.Callback callback = bool -> {
+            if (onRegister.getCount() > 0) {
+                onRegister.countDown();
+            } else {
+                onSet.countDown();
+            }
+        };
+        mManager.registerAdvancedProtectionCallback(Runnable::run, callback);
+        if (!onRegister.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on register");
+        }
+        mManager.setAdvancedProtectionEnabled(enabled);
+        if (!onSet.await(TIMEOUT_S, TimeUnit.SECONDS)) {
+            fail("Callback not called on set");
+        }
+        mManager.unregisterAdvancedProtectionCallback(callback);
     }
 }

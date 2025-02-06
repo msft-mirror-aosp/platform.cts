@@ -31,8 +31,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -48,11 +46,9 @@ import android.appwidget.cts.provider.AppWidgetProviderCallbacks;
 import android.appwidget.cts.provider.AppWidgetProviderWithFeatures;
 import android.appwidget.cts.provider.FirstAppWidgetProvider;
 import android.appwidget.cts.provider.SecondAppWidgetProvider;
-import android.appwidget.cts.service.MyAppWidgetService;
 import android.appwidget.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -71,7 +67,6 @@ import android.provider.DeviceConfig;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.widget.RemoteViews;
-import android.widget.RemoteViewsService.RemoteViewsFactory;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
@@ -81,7 +76,6 @@ import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -1303,118 +1297,6 @@ public class AppWidgetTest extends AppWidgetTestCase {
             // Clean up.
             host.deleteAppWidgetId(firstAppWidgetId);
             host.deleteAppWidgetId(secondAppWidgetId);
-            host.deleteHost();
-            revokeBindAppWidgetPermission();
-        }
-    }
-
-    @Ignore("b/355285596")
-    @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
-    @Test
-    public void testCollectionWidgets() throws Exception {
-        // We want to bind widgets.
-        grantBindAppWidgetPermission();
-
-        final AtomicInteger invocationCounter = new AtomicInteger();
-        final Context context = getInstrumentation().getTargetContext();
-
-        // Create a host and start listening.
-        final AppWidgetHost host = new AppWidgetHost(context, 0);
-        host.deleteHost();
-        host.startListening();
-
-        final int appWidgetId;
-
-        try {
-            // Configure the provider behavior.
-            AppWidgetProviderCallbacks callbacks = createAppWidgetProviderCallbacks(
-                    invocationCounter);
-            doAnswer(new Answer<Void>() {
-                @Override
-                public Void answer(InvocationOnMock invocation) throws Throwable {
-                    final int appWidgetId = ((int[]) invocation.getArguments()[2])[0];
-
-                    Intent intent = new Intent(context, MyAppWidgetService.class);
-                    intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
-                    intent.setData(Uri.parse(intent.toUri(Intent.URI_INTENT_SCHEME)));
-
-                    RemoteViews removeViews = new RemoteViews(context.getPackageName(),
-                            R.layout.collection_widget_layout);
-                    removeViews.setRemoteAdapter(R.id.stack_view, intent);
-
-                    getAppWidgetManager().updateAppWidget(appWidgetId, removeViews);
-
-                    synchronized (mLock) {
-                        invocationCounter.incrementAndGet();
-                        mLock.notifyAll();
-                    }
-
-                    return null;
-                }
-            }).when(callbacks).onUpdate(any(Context.class), any(AppWidgetManager.class),
-                    any(int[].class));
-            FirstAppWidgetProvider.setCallbacks(callbacks);
-
-            // Grab the provider to be bound.
-            final AppWidgetProviderInfo provider = getFirstAppWidgetProviderInfo();
-
-            // Allocate a widget id to bind.
-            appWidgetId = host.allocateAppWidgetId();
-
-            // Bind the app widget.
-            getAppWidgetManager().bindAppWidgetIdIfAllowed(appWidgetId,
-                    provider.getProfile(), provider.provider, null);
-
-            // Wait for onEnabled and onUpdate
-            waitForCallCount(invocationCounter, 2);
-
-            // Configure the app widget service behavior.
-            RemoteViewsFactory factory = mock(RemoteViewsFactory.class);
-            doAnswer(new Answer<Integer>() {
-                @Override
-                public Integer answer(InvocationOnMock invocation) throws Throwable {
-                    return 1;
-                }
-            }).when(factory).getCount();
-            doAnswer(new Answer<RemoteViews>() {
-                @Override
-                public RemoteViews answer(InvocationOnMock invocation) throws Throwable {
-                    RemoteViews remoteViews = new RemoteViews(context.getPackageName(),
-                            R.layout.collection_widget_item_layout);
-                    remoteViews.setTextViewText(R.id.text_view, context.getText(R.string.foo));
-                    synchronized (mLock) {
-                        invocationCounter.incrementAndGet();
-                    }
-                    return remoteViews;
-                }
-            }).when(factory).getViewAt(any(int.class));
-            doAnswer(new Answer<Integer>() {
-                @Override
-                public Integer answer(InvocationOnMock invocation) throws Throwable {
-                    return 1;
-                }
-            }).when(factory).getViewTypeCount();
-            MyAppWidgetService.setFactory(factory);
-
-            getInstrumentation().runOnMainSync(new Runnable() {
-                @Override
-                public void run() {
-                    host.createView(context, appWidgetId, provider);
-                }
-            });
-
-            // Wait for the interactions to occur.
-            waitForCallCount(invocationCounter, 3);
-
-            // Verify the interactions.
-            verify(factory, atLeastOnce()).hasStableIds();
-            verify(factory, atLeastOnce()).getViewTypeCount();
-            verify(factory, atLeastOnce()).getCount();
-            verify(factory, atLeastOnce()).getLoadingView();
-            verify(factory, atLeastOnce()).getViewAt(same(0));
-        } finally {
-            // Clean up.
-            FirstAppWidgetProvider.setCallbacks(null);
             host.deleteHost();
             revokeBindAppWidgetPermission();
         }

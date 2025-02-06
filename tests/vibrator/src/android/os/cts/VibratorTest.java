@@ -56,6 +56,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.ApiTest;
 
 import com.google.common.collect.Range;
 
@@ -429,6 +430,15 @@ public class VibratorTest {
         // Just make sure it doesn't crash when this is called; we don't really have a way to test
         // if the amplitude control works or not.
         mVibrator.hasAmplitudeControl();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    @ApiTest(apis = "android.os.Vibrator#areVendorEffectsSupported")
+    public void testVibratorVendorEffectsAreSupported() {
+        // Just make sure it doesn't crash when this is called;
+        // We don't really have a way to test if the device supports each effect or not.
+        mVibrator.areVendorEffectsSupported();
     }
 
     @Test

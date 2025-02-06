@@ -20,8 +20,6 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
-    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
-    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
     <application android:label="InputTest"
                  android:requestLegacyExternalStorage="true">
         <activity android:name=".OverlayActivity"
@@ -48,7 +46,7 @@
         </activity>
         <!-- Disable onBackInvokedCallback to allow us to make assertions about
           the app receiving KEYCODE_BACK. -->
-        <activity android:name="android.input.cts.CaptureEventActivity"
+        <activity android:name="com.android.cts.input.CaptureEventActivity"
                   android:label="Capture events"
                   android:configChanges="touchscreen|uiMode|orientation|screenSize|screenLayout|keyboardHidden|uiMode|navigation|keyboard|density|fontScale|layoutDirection|locale|mcc|mnc|smallestScreenSize"
                   android:enableOnBackInvokedCallback="false"

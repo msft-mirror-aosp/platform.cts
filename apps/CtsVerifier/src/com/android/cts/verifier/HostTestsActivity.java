@@ -16,6 +16,8 @@
 
 package com.android.cts.verifier;
 
+import static com.android.cts.verifier.PassFailButtons.showInfoDialog;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -45,13 +47,32 @@ import java.util.TreeMap;
  *
  * <ul>
  *   <li>Show a list of tests.
- *   <li>Register a BroadcastReceiver to recod results of tests executed on the host.
+ *   <li>Register a BroadcastReceiver to record results of tests executed on the host.
  *   <li>Parse and update the results of the tests.
  * </ul>
  */
 public class HostTestsActivity extends PassFailButtons.TestListActivity {
 
     private static final String TAG = "HostTestsActivity";
+
+    // Add module categories
+    private static final HostTestCategory[] HOST_TEST_CATEGORIES = {
+        new HostTestCategory("CompanionDeviceManager Tests")
+                .addTest(
+                        "CtsCompanionDeviceManagerMultiDeviceTestCases",
+                        "CtsCompanionDeviceManagerMultiDeviceTestCases"),
+        new HostTestCategory("NFC Tests")
+                .addTest("CtsNfcHceMultiDeviceTestCases", "CtsNfcHceMultiDeviceTestCases"),
+        new HostTestCategory("UWB Tests")
+                .addTest("CtsUwbMultiDeviceFiraRangingTests", "CtsUwbMultiDeviceFiraRangingTests")
+                .addTest("CtsUwbMultiDeviceRangingManagerTests", "CtsUwbMultiDeviceRangingManagerTests")
+                .addTest("CtsUwbMultiDeviceUwbManagerTests", "CtsUwbMultiDeviceUwbManagerTests"),
+        new HostTestCategory("Wi-Fi Tests")
+                .addTest("CtsWifiAwareTests", "CtsWifiAwareTests")
+                .addTest("CtsWifiDirectTests", "CtsWifiDirectTests")
+                .addTest("CtsWifiSoftApTestCases", "CtsWifiSoftApTestCases")
+    };
+
     // The action to identify the broadcast Intent.
     private static final String ACTION_HOST_TEST_RESULT =
             "com.android.cts.verifier.ACTION_HOST_TEST_RESULT";
@@ -236,7 +257,14 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
     // The adapter to render all tests in a list.
     protected ArrayTestListAdapter mTestListAdapter;
 
-    public HostTestsActivity(int titleId, int messageId, HostTestCategory... hostTestCategories) {
+    public HostTestsActivity() {
+        this(
+                R.string.host_tests_dialog_title,
+                R.string.host_tests_dialog_content,
+                HOST_TEST_CATEGORIES);
+    }
+
+    private HostTestsActivity(int titleId, int messageId, HostTestCategory... hostTestCategories) {
         mTitleId = titleId;
         mMessageId = messageId;
         mHostTestCategories = new ArrayList<>(Arrays.asList(hostTestCategories));
@@ -248,7 +276,20 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
 
     @Override
     protected void handleItemClick(ListView l, View v, int position, long id) {
-        // Does nothing. All tests are executed in host side.
+        TestListAdapter.TestListItem item = mTestListAdapter.getItem(position);
+        if (mTestListAdapter.getTestResult(position) == TestResult.TEST_RESULT_NOT_EXECUTED) {
+            showInfoDialog(
+                    this,
+                    R.string.host_tests_dialog_title,
+                    R.string.host_tests_dialog_content,
+                    /* viewId= */ 0);
+            return;
+        }
+        Intent intent = new Intent(this, HostTestListActivity.class);
+        intent.putExtra(HostTestListActivity.MODULE_TITLE, item.title);
+        intent.putExtra(HostTestListActivity.MODULE_NAME, item.testName);
+        Log.i(TAG, "Launching activity with " + IntentDrivenTestActivity.toString(this, intent));
+        startActivity(intent);
     }
 
     @Override
@@ -283,6 +324,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         IntentFilter filter = new IntentFilter(ACTION_HOST_TEST_RESULT);
         registerReceiver(mResultsReceiver, filter, Context.RECEIVER_EXPORTED);
         mReceiverRegistered = true;
+        Log.i(TAG, "Registered broadcast receivers.");
     }
 
     @Override

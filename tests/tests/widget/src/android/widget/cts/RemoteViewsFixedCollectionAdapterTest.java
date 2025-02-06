@@ -62,6 +62,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.ApiTest;
 
 import com.google.common.collect.Lists;
 
@@ -80,6 +81,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @MediumTest
+@ApiTest(apis = {"android.widget.RemoteViews#setRemoteAdapter(int,RemoteCollectionItems)"})
 @RunWith(Parameterized.class)
 public class RemoteViewsFixedCollectionAdapterTest {
     private static final String PACKAGE_NAME = "android.widget.cts";
@@ -121,6 +123,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
     @Before
     public void setUp() throws Throwable {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mActivity = mActivityRule.getActivity();
         mRemoteViews = new RemoteViews(PACKAGE_NAME, R.layout.remoteviews_adapters);

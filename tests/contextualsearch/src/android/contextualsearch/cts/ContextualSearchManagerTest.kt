@@ -21,6 +21,7 @@ import android.app.contextualsearch.ContextualSearchManager
 import android.app.contextualsearch.ContextualSearchState
 import android.app.contextualsearch.flags.Flags
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
 import android.os.SystemClock
@@ -64,6 +65,7 @@ class ContextualSearchManagerTest {
         setTemporaryPackage(TEMPORARY_PACKAGE)
         mWatcher = CtsContextualSearchActivity.Watcher()
         CtsContextualSearchActivity.WATCHER = mWatcher
+        OverlayActivity.WATCHER = OverlayActivity.Watcher()
     }
 
     @After
@@ -71,11 +73,15 @@ class ContextualSearchManagerTest {
         setTemporaryPackage()
         setTokenDuration()
         mWatcher = null
+
+        CtsContextualSearchActivity.WATCHER?.instance?.finish()
+        OverlayActivity.WATCHER?.instance?.finish()
+
         CtsContextualSearchActivity.WATCHER = null
+        OverlayActivity.WATCHER = null
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testContextualSearchInvocation() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -85,7 +91,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testContextualSearchExtras() {
         val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
@@ -119,7 +124,47 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
+    fun testOwnSecureActivityCaptured() {
+        context.startActivity(
+            Intent(context, OverlayActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+        OverlayActivity.WATCHER!!.instance!!.addSecureFlag()
+        waitForIdle()
+
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity to be created.")
+
+        assertThat(
+            mWatcher!!.launchExtras!!
+                .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, false)
+        )
+                .isTrue()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CONTEXTUAL_SEARCH_WINDOW_LAYER)
+    fun testOwnSecureOverlayNotCaptured() {
+        context.startActivity(
+            Intent(context, OverlayActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+        OverlayActivity.WATCHER!!.instance!!.addSecureOverlay()
+        waitForIdle()
+
+        mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+        await(mWatcher?.created, "Waiting for CtsContextualSearchActivity to be created.")
+
+        assertThat(
+            mWatcher!!.launchExtras!!
+                .getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, true)
+        )
+                .isFalse()
+    }
+
+    @Test
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchState() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
@@ -141,7 +186,7 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE, Flags.FLAG_ENABLE_TOKEN_REFRESH)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_TOKEN_REFRESH)
     fun testRequestContextualSearchStateWithTokenRefresh() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -174,7 +219,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testTokenWithinValidDuration() {
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -195,7 +239,6 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SERVICE)
     fun testTokenAfterValidDuration() {
         // The token should expire immediately.
         setTokenDuration(1)
@@ -268,6 +311,10 @@ class ContextualSearchManagerTest {
             } catch (e: Exception) {
                 throw RuntimeException("Command '$command' failed: ", e)
             }
+        }
+
+        private fun waitForIdle() {
+            InstrumentationRegistry.getInstrumentation().uiAutomation.syncInputTransactions()
         }
 
         private fun await(latch: CountDownLatch?, message: String) {

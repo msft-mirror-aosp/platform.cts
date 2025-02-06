@@ -52,18 +52,28 @@ cc_test_library {
     name: "libctsgraphicsgpuprofiling_jni",
     gtest: false,
     srcs: [
-        "jni/CtsGraphicsProfilingDataJniOnLoad.cpp",
-        "jni/android_graphics_cts_GpuRenderStages.cpp",
+        "jni/android_main.cpp",
+        "jni/vulkan_renderer.cpp",
     ],
     cflags: [
+        "-DVK_USE_PLATFORM_ANDROID_KHR",
         "-Wall",
         "-Werror",
+        "-Wno-implicit-fallthrough",
+        "-Wno-unused-parameter",
     ],
     header_libs: ["jni_headers"],
     shared_libs: [
         "libandroid",
+        "libjnigraphics",
         "libvulkan",
         "liblog",
+    ],
+    static_libs: [
+        "android_native_app_glue",
+    ],
+    ldflags: [
+        "-uANativeActivity_onCreate",
     ],
     stl: "c++_shared",
     sdk_version: "current",
@@ -83,6 +93,7 @@ android_test_helper_app {
     jni_libs: [
         "libctsgraphicsgpuprofiling_jni",
     ],
+    asset_dirs: ["assets"],
     use_embedded_native_libs: false,
     stl: "c++_shared",
 }

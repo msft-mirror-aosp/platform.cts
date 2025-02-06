@@ -34,6 +34,9 @@ public class StreamedAppConstants {
     public static final ComponentName CUSTOM_HOME_ACTIVITY = new ComponentName(
             STREAMED_APP_PACKAGE, STREAMED_APP_PACKAGE + ".CustomHomeActivity");
 
+    public static final ComponentName RECORD_AUDIO_TEST_ACTIVITY = new ComponentName(
+            STREAMED_APP_PACKAGE, STREAMED_APP_PACKAGE + ".RecordAudioTestActivity");
+
     // The test activity should attempt to write a ClipData to the clipboard.
     public static final String ACTION_WRITE = "writeClipboard";
 
@@ -48,4 +51,7 @@ public class StreamedAppConstants {
 
     // The id of the device whose clipboard to access.
     public static final String EXTRA_DEVICE_ID = "deviceId";
+
+    // A boolean representing the result of creating and using an AudioRecord to record audio
+    public static final String EXTRA_RECORD_AUDIO_SUCCESS = "recordAudioSuccess";
 }

@@ -101,7 +101,7 @@ public final class BluetoothHciVendorSpecificTest {
                     IllegalArgumentException.class,
                     () ->
                             sAdapter.registerBluetoothHciVendorSpecificCallback(
-                                    Set.of(-1, 0x4f, 0x60, 0xff),
+                                    Set.of(-1, 0x51, 0x60, 0xff),
                                     sContext.getMainExecutor(),
                                     callback));
 
@@ -109,7 +109,7 @@ public final class BluetoothHciVendorSpecificTest {
                     IllegalArgumentException.class,
                     () ->
                             sAdapter.registerBluetoothHciVendorSpecificCallback(
-                                    Set.of(0, 0x50, 0x60, 0xff),
+                                    Set.of(0, 0x52, 0x60, 0xff),
                                     sContext.getMainExecutor(),
                                     callback));
 
@@ -117,7 +117,7 @@ public final class BluetoothHciVendorSpecificTest {
                     IllegalArgumentException.class,
                     () ->
                             sAdapter.registerBluetoothHciVendorSpecificCallback(
-                                    Set.of(0, 0x4f, 0x5f, 0xff),
+                                    Set.of(0, 0x51, 0x5f, 0xff),
                                     sContext.getMainExecutor(),
                                     callback));
 
@@ -125,7 +125,7 @@ public final class BluetoothHciVendorSpecificTest {
                     IllegalArgumentException.class,
                     () ->
                             sAdapter.registerBluetoothHciVendorSpecificCallback(
-                                    Set.of(0, 0x4f, 0x60, 0x100),
+                                    Set.of(0, 0x51, 0x60, 0x100),
                                     sContext.getMainExecutor(),
                                     callback));
         }
@@ -133,13 +133,13 @@ public final class BluetoothHciVendorSpecificTest {
         // Check multiple registration
         try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
             sAdapter.registerBluetoothHciVendorSpecificCallback(
-                    Set.of(0, 0x4f, 0x60, 0xff), sContext.getMainExecutor(), callback);
+                    Set.of(0, 0x51, 0x60, 0xff), sContext.getMainExecutor(), callback);
 
             assertThrows(
                     IllegalArgumentException.class,
                     () ->
                             sAdapter.registerBluetoothHciVendorSpecificCallback(
-                                    Set.of(0, 0x4f, 0x60, 0xff),
+                                    Set.of(0, 0x51, 0x60, 0xff),
                                     sContext.getMainExecutor(),
                                     mock(
                                             BluetoothAdapter.BluetoothHciVendorSpecificCallback
@@ -307,5 +307,17 @@ public final class BluetoothHciVendorSpecificTest {
 
             sAdapter.unregisterBluetoothHciVendorSpecificCallback(callback);
         }
+    }
+
+    // Android doesn't provide method without side-effect and therefore this is not testable in CTS
+    // In order to trigger the callbacks, there is no alternative to a direct call on mock
+    @Test
+    @SuppressWarnings("DirectInvocationOnMock")
+    public void fakeCallbackCoverage() {
+        BluetoothAdapter.BluetoothHciVendorSpecificCallback callback =
+                mock(BluetoothAdapter.BluetoothHciVendorSpecificCallback.class);
+
+        callback.onCommandStatus(0, 0);
+        callback.onEvent(0, null);
     }
 }

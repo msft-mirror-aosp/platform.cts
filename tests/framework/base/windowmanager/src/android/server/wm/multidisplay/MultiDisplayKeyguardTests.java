@@ -49,6 +49,8 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
 
         assumeTrue(supportsMultiDisplay());
         assumeTrue(supportsInsecureLock());
+
+        acquirePartialWakeLock();
     }
 
     /**

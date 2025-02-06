@@ -68,6 +68,10 @@ class ItsBaseTest(base_test.BaseTestClass):
     else:
       self.lighting_cntl = 'None'
       self.lighting_ch = '1'
+    if (self.user_params.get('rotator_cntl') and
+        self.user_params.get('rotator_ch')):
+      self.rotator_cntl = self.user_params['rotator_cntl']
+      self.rotator_ch = str(self.user_params['rotator_ch'])
     if self.user_params.get('tablet_device'):
       self.tablet_device = self.user_params['tablet_device'] == 'True'
     if self.user_params.get('debug_mode'):
@@ -78,6 +82,9 @@ class ItsBaseTest(base_test.BaseTestClass):
       self.log_feature_combo_support = (
           self.user_params['log_feature_combo_support'] == 'True'
       )
+    self.parallel_execution = (
+        self.user_params.get('parallel_execution') == 'True'
+    )
     camera_id_combo = self.parse_hidden_camera_id()
     self.camera_id = camera_id_combo[0]
     if len(camera_id_combo) == 2:

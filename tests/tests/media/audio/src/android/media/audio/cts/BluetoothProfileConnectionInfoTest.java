@@ -93,5 +93,15 @@ public class BluetoothProfileConnectionInfoTest {
                 .createHfpInfo();
         assertEquals(info.getProfile(), BluetoothProfile.HEADSET);
     }
+
+    @Test
+    public void testConstructor() {
+        final BluetoothProfileConnectionInfo info =
+                new BluetoothProfileConnectionInfo(BluetoothProfile.A2DP);
+        assertEquals(BluetoothProfile.A2DP, info.getProfile());
+        assertEquals(false, info.isSuppressNoisyIntent());
+        assertEquals(false, info.isLeOutput());
+        assertEquals(-1, info.getVolume());
+    }
 }
 

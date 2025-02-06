@@ -95,7 +95,15 @@ TEST_F(AAudioTestMMap, testBasicMmapOutput) {
     // If we do not specify any other parameters then we should get an MMAP stream.
     result = AAudioStreamBuilder_openStream(builder, &stream);
     EXPECT_EQ(AAUDIO_OK, result);
-    ASSERT_TRUE(AAudioExtensions::getInstance().isMMapUsed(stream)); // MMAP?
+
+    int32_t deviceId = AAudioStream_getDeviceId(stream);
+    EXPECT_NE(AAUDIO_UNSPECIFIED, deviceId);
+    AAudio_DeviceType deviceType = static_cast<AAudio_DeviceType>(getDeviceTypeFromId(deviceId));
+    EXPECT_NE(AAUDIO_UNSPECIFIED, deviceType);
+    // If the routed device supports MMAP, the stream should be MMAP when running the test
+    EXPECT_EQ(AAudioExtensions::getInstance().isMMapSupportedFor(deviceType,
+                                                                 AAUDIO_DIRECTION_OUTPUT),
+              AAudioExtensions::getInstance().isMMapUsed(stream)); // MMAP?
 
     // These should not crash if NULL.
     AAudioStream_close(stream);

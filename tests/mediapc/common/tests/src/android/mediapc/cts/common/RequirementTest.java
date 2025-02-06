@@ -20,16 +20,14 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import android.os.Build;
-
 import com.android.compatibility.common.util.DeviceReportLog;
 
 import org.junit.Test;
 
 public class RequirementTest {
     public static class TestReq extends Requirement {
-        private TestReq(String id, RequiredMeasurement<?> ... reqs) {
-            super(id, reqs);
+        private TestReq(String id, String cddId, RequiredMeasurement<?>... reqs) {
+            super(id, cddId, reqs);
         }
 
         public void setMeasurement1(int measure) {
@@ -46,13 +44,13 @@ public class RequirementTest {
                 .addRequiredValue(32, 400)
                 .build();
 
-            return new TestReq("TestReq", measurement1);
+            return new TestReq("r_1_2_3", "1.2.3", measurement1);
         }
     }
 
     public static class TestReqWith2Measures extends Requirement {
         private TestReqWith2Measures(String id, RequiredMeasurement<?> ... reqs) {
-            super(id, reqs);
+            super(id, id.replace("_", " "), reqs);
         }
 
         public void setMeasurement1(int measure) {

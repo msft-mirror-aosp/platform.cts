@@ -19,6 +19,8 @@
           package="android.contextualsearch.cts"
           android:targetSandboxVersion="2">
 
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
     <application>
         <activity android:name=".CtsContextualSearchActivity"
                  android:exported="true">
@@ -26,6 +28,8 @@
                 <action android:name="android.app.contextualsearch.action.LAUNCH_CONTEXTUAL_SEARCH" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".OverlayActivity" android:exported="false" />
 
         <!-- TODO(b/111701043): Update with required permissions -->
         <uses-library android:name="android.test.runner"/>

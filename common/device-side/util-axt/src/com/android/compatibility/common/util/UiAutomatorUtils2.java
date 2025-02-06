@@ -43,7 +43,10 @@ import java.util.regex.Pattern;
 public class UiAutomatorUtils2 {
     private UiAutomatorUtils2() {}
 
-    private static final String LOG_TAG = "UiAutomatorUtils";
+    private static final String LOG_TAG = "UiAutomatorUtils2";
+
+    // A flaky test can enable logging of ui dump when searching the item on screen.
+    public static final boolean DEBUG_UI_DUMP = false;
 
     /** Default swipe deadzone percentage. See {@link UiScrollable}. */
     private static final double DEFAULT_SWIPE_DEADZONE_PCT_TV       = 0.1f;
@@ -159,8 +162,16 @@ public class UiAutomatorUtils2 {
                 getUiDevice().waitForIdle();
                 continue;
             }
-
+            if (DEBUG_UI_DUMP) {
+                StringBuilder sb = new StringBuilder();
+                UiDumpUtils.dumpNodes(sb);
+                Log.d(LOG_TAG, selector + " " + (view == null ? "not found" : "found")
+                        + " on the screen. \n" + sb);
+            }
             if (view == null || viewHeight < minViewHeightPx) {
+                if (view == null) {
+                    Log.v(LOG_TAG, selector + " not found on the screen, try scrolling.");
+                }
                 final double deadZone = getSwipeDeadZonePct();
                 UiScrollable scrollable = new UiScrollable(new UiSelector().scrollable(true));
                 scrollable.setSwipeDeadZonePercentage(deadZone);
@@ -202,6 +213,7 @@ public class UiAutomatorUtils2 {
                             scrollable.scrollForward();
                             scrollAtStartOrEnd = false;
                         } else {
+                            Log.v(LOG_TAG, "Scrolling boundsBeforeScroll: " + boundsBeforeScroll);
                             scrollAtStartOrEnd = !scrollable.scrollForward();
                         }
                         // The scrollable view may no longer be scrollable after the toolbar is
@@ -210,11 +222,17 @@ public class UiAutomatorUtils2 {
                             Rect boundsAfterScroll = scrollable.getBounds();
                             isAtEnd = scrollAtStartOrEnd && boundsBeforeScroll.equals(
                                     boundsAfterScroll);
+                            Log.v(LOG_TAG, "Scrolling done, boundsAfterScroll: "
+                                    + boundsAfterScroll);
                         } else {
                             isAtEnd = scrollAtStartOrEnd;
                         }
+                        Log.v(LOG_TAG, "Scrolling done, scrollAtStartOrEnd=" + scrollAtStartOrEnd
+                                + ", isAtEnd=" + isAtEnd);
                     }
                 } else {
+                    Log.v(LOG_TAG, "There might be a collapsing toolbar, but no scrollable view."
+                            + " Try to collapse");
                     // There might be a collapsing toolbar, but no scrollable view. Try to collapse
                     scrollPastCollapsibleToolbar(null, deadZone);
                 }
@@ -276,6 +294,7 @@ public class UiAutomatorUtils2 {
         final UiObject2 collapsingToolbar = getUiDevice().findObject(
                 By.res(sCollapsingToolbarResPattern));
         if (collapsingToolbar == null) {
+            Log.v(LOG_TAG, "collapsingToolbar is null, return");
             return;
         }
 
@@ -283,15 +302,18 @@ public class UiAutomatorUtils2 {
         if (scrollable != null && scrollable.exists()) {
             final Rect scrollableBounds = scrollable.getVisibleBounds();
             final int distanceToSwipe = collapsingToolbar.getVisibleBounds().height() / 2;
-            getUiDevice().swipe(scrollableBounds.centerX(), scrollableBounds.centerY(),
+            boolean result = getUiDevice().swipe(scrollableBounds.centerX(),
+                    scrollableBounds.centerY(),
                     scrollableBounds.centerX(), scrollableBounds.centerY() - distanceToSwipe,
                     steps);
+            Log.v(LOG_TAG, "scrollPastCollapsibleToolbar swipe successful = " + result);
         } else {
             // There might be a collapsing toolbar, but no scrollable view. Try to collapse
             int maxY = getUiDevice().getDisplayHeight();
             int minY = (int) (deadZone * maxY);
             maxY -= minY;
-            getUiDevice().drag(0, maxY, 0, minY, steps);
+            boolean result = getUiDevice().drag(0, maxY, 0, minY, steps);
+            Log.v(LOG_TAG, "scrollPastCollapsibleToolbar drag successful = " + result);
         }
     }
 }

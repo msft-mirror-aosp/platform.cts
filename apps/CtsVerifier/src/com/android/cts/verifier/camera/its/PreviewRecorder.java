@@ -147,14 +147,17 @@ class PreviewRecorder implements AutoCloseable {
     private final float[] mTexRotMatrix; // length = 4
     private final float[] mTransformMatrix = new float[16];
 
+    // An offset applied to convert from camera timestamp to codec timestamp, due to potentially
+    // different time bases (elapsedRealtime vs uptime).
+    private long mEncoderTimestampOffset;
     private List<Long> mFrameTimeStamps = new ArrayList();
     /**
      * Initializes MediaRecorder/MediaCodec and EGL context. The result of recorded video will
      * be stored in {@code outputFile}.
      */
     PreviewRecorder(int cameraId, Size previewSize, int maxFps, int sensorOrientation,
-            String outputFile, Handler handler, boolean hlg10Enabled, Context context)
-            throws ItsException {
+            String outputFile, Handler handler, boolean hlg10Enabled, long encoderTimestampOffset,
+            Context context) throws ItsException {
         // Ensure that we can record the given size
         int maxSupportedResolution = ItsUtils.RESOLUTION_TO_CAMCORDER_PROFILE
                                         .stream()
@@ -172,6 +175,7 @@ class PreviewRecorder implements AutoCloseable {
         mMaxFps = maxFps;
         // rotate the texture as needed by the sensor orientation
         mTexRotMatrix = getRotationMatrix(sensorOrientation);
+        mEncoderTimestampOffset = encoderTimestampOffset;
 
         ConditionVariable cv = new ConditionVariable();
         cv.close();
@@ -231,18 +235,20 @@ class PreviewRecorder implements AutoCloseable {
                 }
                 try {
                     // Set EGL presentation time to camera timestamp
+                    long timestamp = surfaceTexture.getTimestamp();
                     EGLExt.eglPresentationTimeANDROID(
-                            mEGLDisplay, mEGLRecorderSurface, surfaceTexture.getTimestamp());
+                            mEGLDisplay, mEGLRecorderSurface,
+                            timestamp + mEncoderTimestampOffset);
                     copyFrameToRecordSurface();
                     // Capture results are not collected for padded green frames
                     if (mIsPaintGreen) {
                         Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
-                                + " timestamp = " + surfaceTexture.getTimestamp()
+                                + " timestamp = " + timestamp
                                 + " with color. mIsPaintGreen = " + mIsPaintGreen);
                     } else {
-                        mFrameTimeStamps.add(surfaceTexture.getTimestamp());
+                        mFrameTimeStamps.add(timestamp);
                         Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
-                                + " timestamp = " + surfaceTexture.getTimestamp());
+                                + " timestamp = " + timestamp);
                     }
                 } catch (ItsException e) {
                     Logt.e(TAG, "Failed to copy texture to recorder.", e);

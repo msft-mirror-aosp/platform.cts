@@ -97,6 +97,7 @@ public class RemoteViewsRecyclingTest {
     @UiThreadTest
     @Before
     public void setUp() {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
     }

@@ -56,9 +56,15 @@ public class ContactsContract_SettingsTest extends AndroidTestCase {
 
         mAccountManager.addAccountExplicitly(ACCT_1, null, null);
         mAccountManager.addAccountExplicitly(ACCT_2, null, null);
+
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            SimContacts.addSimAccount(mResolver, SIM_ACCT_NAME, SIM_ACCT_TYPE, SIM_SLOT_0,
-                    SimAccount.ADN_EF_TYPE);
+            try {
+                SimContacts.addSimAccount(mResolver, SIM_ACCT_NAME, SIM_ACCT_TYPE, SIM_SLOT_0,
+                        SimAccount.ADN_EF_TYPE);
+            } catch (IllegalArgumentException e) {
+                // If account already exists, ignore the exception.
+                assertEquals("Account already exists in the table", e.getMessage());
+            }
         });
 
         mInitialDefaultAccount = Settings.getDefaultAccount(mResolver);

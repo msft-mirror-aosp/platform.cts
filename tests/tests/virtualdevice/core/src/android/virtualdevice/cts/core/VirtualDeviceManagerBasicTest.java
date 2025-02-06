@@ -45,7 +45,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.companion.AssociationInfo;
-import android.companion.CompanionDeviceManager;
+import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDevice;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
@@ -55,14 +55,11 @@ import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
-import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
-
-import com.android.compatibility.common.util.SystemUtil;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -173,7 +170,8 @@ public class VirtualDeviceManagerBasicTest {
 
     @Test
     public void getAllPersistentDeviceIds_includesClosedVirtualDevice() {
-        final AssociationInfo associationInfo = mRule.createManagedAssociation();
+        final AssociationInfo associationInfo =
+                mRule.createManagedAssociation(AssociationRequest.DEVICE_PROFILE_APP_STREAMING);
         VirtualDeviceManager.VirtualDevice secondVirtualDevice =
                 mVirtualDeviceManager.createVirtualDevice(
                         associationInfo.getId(), VirtualDeviceRule.DEFAULT_VIRTUAL_DEVICE_PARAMS);
@@ -200,8 +198,7 @@ public class VirtualDeviceManagerBasicTest {
 
     @Test
     public void createVirtualDevice_noPermission_shouldThrowSecurityException() {
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity(
+        mRule.runWithoutPermissions(
                 () -> assertThrows(SecurityException.class,
                         () -> mRule.createManagedVirtualDevice()));
     }
@@ -216,22 +213,12 @@ public class VirtualDeviceManagerBasicTest {
 
     @Test
     public void createVirtualDevice_invalidDeviceProfile_shouldThrowIllegalArgumentException() {
-        final String fakeAddress = "00:00:00:00:10:10";
-        SystemUtil.runShellCommand(String.format("cmd companiondevice associate %d %s %s",
-                Process.myUserHandle().getIdentifier(), mContext.getPackageName(), fakeAddress));
-        CompanionDeviceManager cdm = mContext.getSystemService(CompanionDeviceManager.class);
-        List<AssociationInfo> associations = cdm.getMyAssociations();
-        final AssociationInfo associationInfo = associations.stream()
-                .filter(a -> fakeAddress.equals(a.getDeviceMacAddress().toString()))
-                .findAny().orElse(null);
+        AssociationInfo associationInfo =
+                mRule.createManagedAssociation(AssociationRequest.DEVICE_PROFILE_WATCH);
         assertThat(associationInfo).isNotNull();
-        try {
-            assertThrows(IllegalArgumentException.class,
-                    () -> mVirtualDeviceManager.createVirtualDevice(
-                            associationInfo.getId(), mRule.DEFAULT_VIRTUAL_DEVICE_PARAMS));
-        } finally {
-            cdm.disassociate(associationInfo.getId());
-        }
+        assertThrows(IllegalArgumentException.class,
+                () -> mVirtualDeviceManager.createVirtualDevice(
+                        associationInfo.getId(), mRule.DEFAULT_VIRTUAL_DEVICE_PARAMS));
     }
 
     @Test

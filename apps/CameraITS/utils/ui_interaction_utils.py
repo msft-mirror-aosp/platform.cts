@@ -17,12 +17,16 @@ import dataclasses
 import datetime
 import logging
 import math
+import os
 import re
+import subprocess
 import time
 import xml.etree.ElementTree as et
 
 import camera_properties_utils
+import error_util
 import its_device_utils
+
 
 _DIR_EXISTS_TXT = 'Directory exists'
 _PERMISSIONS_LIST = ('CAMERA', 'RECORD_AUDIO', 'ACCESS_FINE_LOCATION',
@@ -42,6 +46,7 @@ CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
                       '/storage/emulated/0/Pictures')
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DEFAULT_CAMERA_APP_DUMPSYS_PATH = '/sdcard/default_camera_dumpsys.txt'
+DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR = ','
 DEFAULT_JCA_UI_DUMPSYS_PATH = '/sdcard/jca-ui-dumpsys.txt'
 DONE_BUTTON_TXT = 'Done'
 EMULATED_STORAGE_PATH = '/storage/emulated/0/Pictures'
@@ -79,10 +84,8 @@ SETTINGS_BUTTON_RESOURCE_ID = 'SettingsButton'
 SETTINGS_CLOSE_TEXT = 'Close'
 SETTINGS_VIDEO_STABILIZATION_AUTO_TEXT = 'Stabilization Auto'
 SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT = 'Stabilization High Quality'
-SETTINGS_SELECT_STABILIZATION_HIGH_QUALITY_TEXT = 'High Quality'
 SETTINGS_VIDEO_STABILIZATION_MODE_TEXT = 'Set Video Stabilization'
 SETTINGS_MENU_STABILIZATION_OFF_TEXT = 'Stabilization Off'
-SETTINGS_SELECT_STABILIZATION_OFF_TEXT = 'Off'
 THREE_TO_FOUR_ASPECT_RATIO_DESC = '3 to 4 aspect ratio'
 UI_DESCRIPTION_BACK_CAMERA = 'Back Camera'
 UI_DESCRIPTION_FRONT_CAMERA = 'Front Camera'
@@ -103,6 +106,19 @@ UI_IMAGE_CAPTURE_SUCCESS_TEXT = 'Image Capture Success'
 VIEWFINDER_NOT_VISIBLE_PREFIX = 'viewfinder_not_visible'
 VIEWFINDER_VISIBLE_PREFIX = 'viewfinder_visible'
 WAIT_INTERVAL_FIVE_SECONDS = datetime.timedelta(seconds=5)
+JCA_WATCH_DUMP_FILE = 'jca_watch_dump.txt'
+DEFAULT_CAMERA_WATCH_DUMP_FILE = 'default_camera_watch_dump.txt'
+WATCH_WAIT_TIME_SECONDS = 2
+_CONTROL_ZOOM_RATIO_KEY = 'android.control.zoomRatio'
+_REQ_STR_PATTERN = 'REQ'
+JCA_VIDEO_STABILIZATION_MODE_OFF = 0
+JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
+JCA_VIDEO_STABILIZATION_MODE_ON = 2
+JCA_STABILIZATION_MODES = {
+    0: 'Off',
+    1: 'High Quality',
+    2: 'On',
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -353,7 +369,17 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
     dut: An Android controller device object.
     log_path: str; log path to save screenshots.
     stabilization_mode: int; constant describing the video stabilization mode.
-      Acceptable values: 0, 1, 2
+      Acceptable values: JCA_VIDEO_STABILIZATION_MODE_OFF,
+                         JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY,
+                         JCA_VIDEO_STABILIZATION_MODE_ON
+  Mapping of JCA modes:
+  ON: corresponds to setting android.control.videoStabilizationMode
+    to PREVIEW_STABILIZATION.
+  HIGH_QUALITY: corresponds to setting android.control.videoStabilizationMode
+    to ON
+  AUTO: will set the stabilization mode to PREVIEW_STABILIZATION,
+    if the lens supports it, and if not, it will set it to OIS.
+    If neither preview stabilization or OIS are supported it will be OFF.
   """
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
@@ -364,32 +390,44 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
         'Set Video Stabilization settings not found!'
         'Make sure you have the latest JCA app.'
     )
-  if stabilization_mode == 0:
-    if not dut.ui(text=SETTINGS_MENU_STABILIZATION_OFF_TEXT).wait.exists(
-        UI_OBJECT_WAIT_TIME_SECONDS):
-      try:
-        dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
-        dut.ui(text=SETTINGS_SELECT_STABILIZATION_OFF_TEXT).click()
-      except Exception as e:
-        dut.take_screenshot(
-            log_path, prefix='failed_to_set_video_stabilization_to_off')
-        raise AssertionError('Set Video Stabilization to Off failed!') from e
+  dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
 
-  if stabilization_mode == 1:
-    if not dut.ui(
-        text=SETTINGS_MENU_STABILIZATION_HIGH_QUALITY_TEXT).wait.exists(
-            UI_OBJECT_WAIT_TIME_SECONDS):
-      try:
-        dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).click()
-        dut.ui(text=SETTINGS_SELECT_STABILIZATION_HIGH_QUALITY_TEXT).click()
-      except Exception as e:
-        dut.take_screenshot(
-            log_path, prefix='failed_to_set_video_stabilization_to_high_quality'
-        )
-        raise AssertionError(
-            'Set Video Stabilization to High Quality failed!') from e
+  if not dut.ui(text=JCA_STABILIZATION_MODES[stabilization_mode]).wait.exists(
+      UI_OBJECT_WAIT_TIME_SECONDS):
+    dut.take_screenshot(
+        log_path, prefix='failed_to_find_video_stabilization_mode')
+    raise AssertionError(
+        'Video Stabilization Mode not found!'
+    )
+
+  # Ensure that the stabilzation options are enabled.
+  # They will be disabled if the camera does not support stabilization
+  if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).enabled:
+    raise AssertionError('Set Video Stabilization not enabled.')
+
+  dut.ui(text=JCA_STABILIZATION_MODES[stabilization_mode]).click()
+  time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+  logging.debug('JCA Video Stabilization set to %s successfully.',
+                JCA_STABILIZATION_MODES[stabilization_mode])
+  screenshot_prefix = (
+      f'jca_stabilization_mode_{JCA_STABILIZATION_MODES[stabilization_mode]}_set'
+  )
+  dut.take_screenshot(log_path, prefix=screenshot_prefix)
   dut.ui(text=SETTINGS_CLOSE_TEXT).click()
   dut.ui(res=SETTINGS_BACK_BUTTON_RESOURCE_ID).click()
+  # Verify that the setting was applied
+  if stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_ON:
+    if not dut.ui(desc='Preview is Stabilized').wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      raise AssertionError('JCA video stabilization_mode not set to ON.')
+  elif stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY:
+    if not dut.ui(desc='Only Video is Stabilized').wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      raise AssertionError(
+          'JCA video stabilization_mode not set to HIGH_QUALITY.')
+  else:
+    if 'stabilize' in dut.ui.dump().lower():
+      raise AssertionError('JCA video stabilization_mode not set to OFF.')
 
 
 def default_camera_app_setup(device_id, pkg_name):
@@ -411,6 +449,27 @@ def default_camera_app_setup(device_id, pkg_name):
   its_device_utils.run_adb_shell_command(device_id, allow_manage_storage_cmd)
 
 
+def _get_current_camera_facing(content_desc, resource_id):
+  """Returns the current camera facing based on UI elements."""
+  # If separator is present, the last element is the current camera facing.
+  if DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR in content_desc:
+    current_facing = content_desc.split(
+        DEFAULT_CAMERA_CONTENT_DESC_SEPARATOR)[-1]
+    if 'rear' in current_facing.lower() or 'back' in current_facing.lower():
+      return 'rear'
+    elif 'front' in current_facing.lower():
+      return 'front'
+
+  # If separator is not present, the element describes the other camera facing.
+  if ('rear' in content_desc.lower() or 'rear' in resource_id.lower()
+      or 'back' in content_desc.lower() or 'back' in resource_id.lower()):
+    return 'front'
+  elif 'front' in content_desc.lower() or 'front' in resource_id.lower():
+    return 'rear'
+  else:
+    raise ValueError('Failed to determine current camera facing.')
+
+
 def switch_default_camera(dut, facing, log_path):
   """Interacts with default camera app UI to switch camera.
 
@@ -428,7 +487,6 @@ def switch_default_camera(dut, facing, log_path):
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
   root = et.fromstring(default_ui_dump)
-  camera_flip_res = False
   for node in root.iter('node'):
     resource_id = node.get('resource-id')
     content_desc = node.get('content-desc')
@@ -438,30 +496,17 @@ def switch_default_camera(dut, facing, log_path):
       logging.debug('Pattern matches')
       logging.debug('Resource id: %s', resource_id)
       logging.debug('Flip camera content-desc: %s', content_desc)
-      camera_flip_res = True
       break
-  if content_desc and resource_id:
-    if facing == 'front' and camera_flip_res:
-      if ('rear' in content_desc.lower() or 'rear' in resource_id.lower()
-          or 'back' in content_desc.lower() or 'back' in resource_id.lower()
-          ):
-        logging.debug('Pattern found but camera is already switched.')
-      else:
-        dut.ui(desc=content_desc).click.wait()
-    elif facing == 'rear' and camera_flip_res:
-      if 'front' in content_desc.lower() or 'front' in resource_id.lower():
-        logging.debug('Pattern found but camera is already switched.')
-      else:
-        dut.ui(desc=content_desc).click.wait()
-    else:
-      raise ValueError(f'Unknown facing: {facing}')
+  else:
+    raise AssertionError('Flip camera resource not found.')
+  if facing == _get_current_camera_facing(content_desc, resource_id):
+    logging.debug('Pattern found but camera is already switched.')
+  else:
+    dut.ui(desc=content_desc).click.wait()
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
   )
-
-  if not camera_flip_res:
-    raise AssertionError('Flip camera resource not found.')
 
 
 def pull_img_files(device_id, input_path, output_path):
@@ -493,6 +538,10 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     img_path_on_dut: Path of the captured image on the device
   """
   device_id = dut.serial
+  # start cameraservice watch command to monitor default camera pkg
+  watch_dump_path = os.path.join(log_path, DEFAULT_CAMERA_WATCH_DUMP_FILE)
+  watch_process = start_cameraservice_watch(device_id, watch_dump_path,
+                                            pkg_name)
   try:
     logging.debug('Launching app: %s', pkg_name)
     launch_cmd = f'monkey -p {pkg_name} 1'
@@ -523,9 +572,12 @@ def launch_and_take_capture(dut, pkg_name, camera_facing, log_path,
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
+
     # pull the dumpsys output
     dut.adb.pull([dumpsys_path, log_path])
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    # stop cameraservice watch immediately after capturing image
+    stop_cameraservice_watch(watch_process)
     img_path_on_dut = ''
     photo_storage_path = ''
     for path in CAMERA_FILES_PATHS:
@@ -586,27 +638,48 @@ def default_camera_app_dut_setup(device_id, pkg_name):
         device_id, f'{REMOVE_CAMERA_FILES_CMD}{path}/*')
 
 
-def launch_jca_and_capture(dut, log_path, camera_facing):
+def launch_jca_and_capture(dut, log_path, camera_facing, zoom_ratio=None,
+                           video_stabilization=None):
   """Launches the jetpack camera app and takes still capture.
 
   Args:
     dut: An Android controller device object.
     log_path: str; log path to save screenshots.
     camera_facing: camera lens facing orientation
+    zoom_ratio: optional; zoom_ratio to be set while taking the JCA capture.
+    By default it will be set to 1 if the value is None.
+    video_stabilization: optional; video stabilization mode to be set while
+    taking the JCA capture. By default, JCA uses AUTO mode.
+
+    AUTO in JCA will set the stabilization mode to PREVIEW_STABILIZATION,
+    if the lens supports it, and if not, it will set it to OIS. If neither
+    preview stabilization or OIS are supported it will be OFF.
+
   Returns:
     img_path_on_dut: Path of the captured image on the device
   """
   device_id = dut.serial
   remove_command = f'rm -rf {EMULATED_STORAGE_PATH}/*'
   its_device_utils.run_adb_shell_command(device_id, remove_command)
+  watch_dump_path = os.path.join(log_path, JCA_WATCH_DUMP_FILE)
+  watch_process = start_cameraservice_watch(device_id, watch_dump_path,
+                                            JETPACK_CAMERA_APP_PACKAGE_NAME)
   try:
     logging.debug('Launching JCA app')
-    launch_cmd = (f'monkey -p {JETPACK_CAMERA_APP_PACKAGE_NAME} '
-                  '-c android.intent.category.LAUNCHER 1')
+    launch_cmd = (
+        'am start -n '
+        f'{JETPACK_CAMERA_APP_PACKAGE_NAME}/{JETPACK_CAMERA_APP_PACKAGE_NAME}.MainActivity '
+        '--ez "KEY_DEBUG_MODE" true'
+    )
     its_device_utils.run_adb_shell_command(device_id, launch_cmd)
     switch_jca_camera(dut, log_path, camera_facing)
     change_jca_aspect_ratio(dut, log_path,
                             aspect_ratio=THREE_TO_FOUR_ASPECT_RATIO_DESC)
+    if video_stabilization is not None:
+      _set_jca_video_stabilization(dut, log_path, video_stabilization)
+    # Set zoom_ratio after setting video stabilization to avoid reset to default
+    if zoom_ratio is not None:
+      jca_ui_zoom(dut, zoom_ratio, log_path)
     # Take dumpsys before capturing the image
     take_dumpsys_report(dut, file_path=DEFAULT_JCA_UI_DUMPSYS_PATH)
     if dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
@@ -614,6 +687,7 @@ def launch_jca_and_capture(dut, log_path, camera_facing):
     ):
       dut.ui(res=CAPTURE_BUTTON_RESOURCE_ID).click.wait()
     time.sleep(ACTIVITY_WAIT_TIME_SECONDS)
+    stop_cameraservice_watch(watch_process)
     # pull the dumpsys output
     dut.adb.pull([DEFAULT_JCA_UI_DUMPSYS_PATH, log_path])
     img_path_on_dut = (
@@ -641,3 +715,173 @@ def take_dumpsys_report(dut, file_path):
     file_path: Path of the file on device to store the report.
   """
   dut.adb.shell(['dumpsys', 'media.camera', '>', file_path])
+
+
+def _watch_clear(device_id):
+  """Clears cameraservice watch cache.
+
+  Args:
+    device_id: serial id of device.
+  """
+  cmd = f'adb -s {device_id} shell cmd media.camera watch clear'.split(' ')
+  subprocess.run(cmd, check=True)
+  logging.debug('Cleared watch cache')
+
+
+def _watch_start(device_id, pkg_name):
+  """Starts cameraservice watch command.
+
+  Args:
+    device_id: serial id of device.
+    pkg_name: pkg_name of the app.
+  """
+  cmd = [
+      'adb',
+      '-s',
+      device_id,
+      'shell',
+      'cmd',
+      'media.camera',
+      'watch',
+      'start',
+      '-m',
+      (
+          'android.control.captureIntent,android.jpeg.quality,'
+          'android.control.zoomRatio,'
+          '3a'
+      ),
+      '-c',
+      pkg_name,
+  ]
+  subprocess.run(cmd, check=True)
+  logging.debug('Started watching 3a for %s', pkg_name)
+
+
+def _watch_live(device_id, file_path):
+  """Starts cameraservice watch live command.
+
+  Args:
+    device_id: serial id of device.
+    file_path: Path of the file to store the report.
+
+  Returns:
+    watch_process: subprocess.Popen object for the watch live command.
+  """
+  cmd = f'adb -s {device_id} shell cmd media.camera watch live'.split(' ')
+  with open(file_path, 'w') as f:
+    logging.debug('Starting watch live')
+    watch_process = subprocess.Popen(
+        cmd, stdout=f, stdin=subprocess.PIPE
+    )
+  logging.debug('watch live output written to the file_path: %s', file_path)
+  return watch_process
+
+
+def start_cameraservice_watch(device_id, file_path, pkg_name):
+  """Starts cameraservice watch command.
+
+  Args:
+    device_id: serial id of device.
+    file_path: Path of the file to store the report.
+    pkg_name: pkg_name of the app.
+
+  Returns:
+    watch_process: subprocess.Popen object for the watch live command.
+  """
+  _watch_start(device_id, pkg_name)
+  watch_process = _watch_live(device_id, file_path)
+  watch_process.its_watch_process_device_id = device_id
+  return watch_process
+
+
+def stop_cameraservice_watch(watch_process):
+  """Stops cameraservice watch command.
+
+  Args:
+    watch_process: subprocess.Popen object returned by start_cameraservice_watch
+  Raises:
+    CameraItsError: If watch_process not created by start_cameraservice_watch
+  """
+  if not hasattr(watch_process, 'its_watch_process_device_id'):
+    raise error_util.CameraItsError(
+        'watch_process was not created by start_cameraservice_watch'
+    )
+  device_id = watch_process.its_watch_process_device_id
+  watch_process.stdin.write(b'\n')
+  watch_process.stdin.flush()
+  watch_process.wait()
+  logging.debug('Stopping watch live')
+  cmd = f'adb -s {device_id} shell cmd media.camera watch stop'.split(' ')
+  subprocess.run(cmd, check=True)
+  logging.debug('Stopped watching 3a')
+
+
+def get_default_camera_zoom_ratio(file_name):
+  """Returns the zoom_ratio used by default camera capture.
+
+  Args:
+    file_name: str; file name storing default camera pkg watch
+    cameraservice dump output.
+  Returns:
+    zoom_ratio: zoom_ratio rounded up to 2 decimal places
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  zoom_ratio_values = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if _CONTROL_ZOOM_RATIO_KEY in line:
+        if _REQ_STR_PATTERN not in line:
+          continue
+        logging.debug('zoomRatio line: %s', line)
+        values = line.split(':')
+        value_str = values[-1]
+        match = re.search(r'[\d.]+', value_str)
+        if match:
+          value = float(match.group())
+          rounded_value = round(value, 2)
+          logging.debug('zoomRatio found: %s', rounded_value)
+          zoom_ratio_values.append(rounded_value)
+
+  if zoom_ratio_values:
+    logging.debug('zoom_ratio_values: %s', zoom_ratio_values)
+    return zoom_ratio_values[-1]
+  return None
+
+
+def get_default_camera_video_stabilization(file_name):
+  """Returns the video stabilization mode used by default camera capture.
+
+  Args:
+    file_name: str; file name storing default camera pkg watch
+    cameraservice dump output.
+  Returns:
+    video_stabilization_mode: str; video stabilization mode used by
+    default camera app during the capture
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  video_stabilization_modes = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if 'videoStabilizationMode' in line:
+        if _REQ_STR_PATTERN not in line:
+          continue
+        logging.debug('videoStabilizationMode line: %s', line)
+        values = line.split(':')
+        value_str = values[-1]
+        match = re.search(r'[a-zA-Z]+', value_str)
+        if match:
+          value = str(match.group())
+          logging.debug('videoStabilizationMode found: %s', value)
+          video_stabilization_modes.append(value)
+  if video_stabilization_modes:
+    logging.debug('video_stabilization_modes: %s', video_stabilization_modes)
+    logging.debug('videoStabilizationMode used for default captures: %s',
+                  video_stabilization_modes[-1])
+    return video_stabilization_modes[-1].strip()
+  return None

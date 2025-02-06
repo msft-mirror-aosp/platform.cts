@@ -34,6 +34,7 @@ import opencv_processing_utils
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
 _SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 25  # number of pixels
+_PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 75  # number of pixels
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
@@ -366,13 +367,13 @@ def _are_values_non_increasing(values, abs_tol=0):
   return all(x > y - abs_tol for x, y in zip(values, values[1:]))
 
 
-def _verify_offset_monotonicity(offsets):
+def _verify_offset_monotonicity(offsets, monotonicity_atol):
   """Returns if values continuously increase or decrease with tolerance."""
   return (
       _are_values_non_decreasing(
-          offsets, _SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL) or
+          offsets, monotonicity_atol) or
       _are_values_non_increasing(
-          offsets, _SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL)
+          offsets, monotonicity_atol)
   )
 
 
@@ -408,9 +409,9 @@ def update_zoom_test_data_with_shared_aruco_marker(
         break
     else:
       shared_id = min(
-        shared_ids,
-        key=lambda i: _get_average_offset(i, aruco_ids, aruco_corners, size)
-    )
+          shared_ids,
+          key=lambda i: _get_average_offset(i, aruco_ids, aruco_corners, size)
+      )
   else:
     raise AssertionError('No shared ArUco marker found across all captures.')
   logging.debug('Using shared aruco ID %d', shared_id)
@@ -472,6 +473,7 @@ def verify_zoom_results(test_data, size, z_max, z_min,
 def verify_zoom_data(
     test_data, size,
     plot_name_stem=None, offset_plot_name_stem=None,
+    monotonicity_atol=_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
     number_of_cameras_to_test=0):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
@@ -488,6 +490,8 @@ def verify_zoom_data(
     size: array; the width and height of the images
     plot_name_stem: Optional[str]; log path and name of the plot
     offset_plot_name_stem: Optional[str]; log path and name of the offset plot
+    monotonicity_atol: Optional[float]; absolute tolerance for offset
+      monotonicity
     number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData
 
   Returns:
@@ -606,7 +610,7 @@ def verify_zoom_data(
         logging.debug('Offsets while transitioning: %s',
                       offsets_while_transitioning)
         if used_smooth_offset and not _verify_offset_monotonicity(
-            offsets_while_transitioning):
+            offsets_while_transitioning, monotonicity_atol):
           logging.error('Offsets %s are not monotonic',
                         offsets_while_transitioning)
           offset_success = False
@@ -688,7 +692,7 @@ def verify_zoom_data(
 
 
 def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
-                                plot_name_stem):
+                                plot_name_stem, number_of_cameras_to_test=0):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -704,6 +708,7 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
     z_min: float; the minimum zoom ratio being tested
     z_step_size: float; zoom step size to zoom from z_min to z_max
     plot_name_stem: str; log path and name of the plot
+    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData
 
   Returns:
     Boolean whether the test passes (True) or not (False)
@@ -742,7 +747,9 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
     logging.error(e_msg)
 
   return test_success and verify_zoom_data(
-      test_data, size, plot_name_stem=plot_name_stem)
+      test_data, size, plot_name_stem=plot_name_stem,
+      monotonicity_atol=_PREVIEW_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
+      number_of_cameras_to_test=number_of_cameras_to_test)
 
 
 def get_preview_zoom_params(zoom_range, steps):

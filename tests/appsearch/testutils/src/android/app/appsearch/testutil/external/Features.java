@@ -15,6 +15,7 @@
  */
 package android.app.appsearch;
 
+
 import org.jspecify.annotations.NonNull;
 
 import java.util.Set;
@@ -301,8 +302,16 @@ public interface Features {
      * AppSearchSchema.StringPropertyConfig#DELETE_PROPAGATION_TYPE_PROPAGATE_FROM} and {@link
      * AppSearchSchema.StringPropertyConfig.Builder#setDeletePropagationType}.
      */
+    // TODO(b/384947619) unhide the API once it is ready.
+
     String SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM =
             "SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers whether to use isolated
+     * storage for user data.
+     */
+    String ISOLATED_STORAGE = "ISOLATED_STORAGE";
 
     /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in

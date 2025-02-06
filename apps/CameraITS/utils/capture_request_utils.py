@@ -29,6 +29,7 @@ _COMMON_IMG_ARS_ATOL = 0.01
 _FLASH_MODE_SINGLE = 1
 FMT_CODE_JPEG = 0x100
 FMT_CODE_JPEG_R = 0x1005
+FMT_CODE_HEIC_ULTRAHDR = 0x1006
 FMT_CODE_PRIV = 0x22
 FMT_CODE_RAW = 0x20
 FMT_CODE_RAW10 = 0x25
@@ -234,6 +235,7 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
       'jpg': FMT_CODE_JPEG,
       'jpeg': FMT_CODE_JPEG,
       'jpeg_r': FMT_CODE_JPEG_R,
+      'heic_ultrahdr': FMT_CODE_HEIC_ULTRAHDR,
       'priv': FMT_CODE_PRIV,
       'y8': FMT_CODE_Y8
   }

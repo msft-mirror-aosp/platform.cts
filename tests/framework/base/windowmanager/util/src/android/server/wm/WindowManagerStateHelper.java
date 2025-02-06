@@ -44,10 +44,8 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.graphics.Rect;
-import android.server.wm.WindowManagerState.Activity;
 import android.text.TextUtils;
 import android.util.SparseArray;
-import android.view.InputEvent;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -501,8 +499,15 @@ public class WindowManagerStateHelper extends WindowManagerState {
             computeState();
             return getFocusedApp();
         }).setResultValidator(focusedAppName -> {
-            return focusedAppName != null && appPackageName.equals(
-                    ComponentName.unflattenFromString(focusedAppName).getPackageName());
+            if (focusedAppName == null) {
+                return false;
+            }
+            ComponentName unflattenedName = ComponentName.unflattenFromString(focusedAppName);
+            if (unflattenedName == null) {
+                logAlways("unflattenedName is null; focusedAppName=" + focusedAppName);
+                return false;
+            }
+            return appPackageName.equals(unflattenedName.getPackageName());
         }).setOnFailure(focusedAppName -> {
             fail("Timed out waiting for focus on app "
                     + appPackageName + ", last was " + focusedAppName);
@@ -511,24 +516,29 @@ public class WindowManagerStateHelper extends WindowManagerState {
 
     /**
      * Waits until the given activity is ready for input, this is only needed when directly
-     * injecting input on screen via
-     * {@link android.hardware.input.InputManager#injectInputEvent(InputEvent, int)}.
+     * injecting input on screen.
      */
-    public <T extends android.app.Activity> void waitUntilActivityReadyForInputInjection(T activity,
-            Instrumentation instrumentation, String tag, String windowDumpErrMsg)
-                    throws InterruptedException {
+    public <T extends android.app.Activity> void waitUntilActivityReadyForInputInjection(
+            T activity, Instrumentation instrumentation, String tag, String windowDumpErrMsg)
+            throws InterruptedException {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
-        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
-        instrumentation.getUiAutomation().syncInputTransactions();
-        instrumentation.waitForIdleSync();
-        if (activity.getWindow() != null
-                && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
+        assertTrue(
+                "Failed to wait for app transition to idle on display " + activity.getDisplayId(),
+                waitForAppTransitionIdleOnDisplay(activity.getDisplayId()));
+
+        waitForValidState(activity.getComponentName());
+
+        assertNotNull("Activity is not attached to a window", activity.getWindow());
+        if (!CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
             fail("Activity window did not become visible: " + activity);
         }
+
+        // Sync input transactions to ensure that InputDispatcher knows that the window is on top.
+        instrumentation.getUiAutomation().syncInputTransactions();
+        instrumentation.waitForIdleSync();
     }
 
     /**

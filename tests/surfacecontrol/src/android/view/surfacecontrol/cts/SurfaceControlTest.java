@@ -64,6 +64,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.WidgetTestUtils;
 import com.android.cts.hardware.SyncFenceUtil;
 import com.android.window.flags.Flags;
@@ -2253,6 +2254,7 @@ public class SurfaceControlTest {
     }
 
     @Test
+    @CddTest(requirement = "5.12/C-8-1")
     @RequiresFlagsEnabled(com.android.graphics.surfaceflinger.flags.Flags.FLAG_BEGONE_BRIGHT_HLG)
     public void testSurfaceTransaction_throttlesHlgBrightness() throws Throwable {
         mActivity.awaitReadyState();

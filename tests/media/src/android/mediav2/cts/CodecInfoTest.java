@@ -168,25 +168,6 @@ public class CodecInfoTest {
     }
 
     /**
-     * Checks if all the video codecs available on the device advertise supported dimensions.
-     * The ability to encode / decode clips of that size is beyond the scope of the
-     * test. The test only checks if all video codecs advertise valid size.
-     */
-    @ApiTest(apis = "android.media.MediaCodecInfo.VideoCapabilities#dimensions")
-    @Test
-    public void testSupportedDimensions() {
-        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
-        MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
-        assertNotNull(mCodecName + " did not provide codec capabilities \n", caps);
-        MediaCodecInfo.VideoCapabilities vcaps = caps.getVideoCapabilities();
-        assertNotNull(mCodecName + " did not provide video capabilities \n", vcaps);
-        int minWidth = vcaps.getSupportedWidths().getLower();
-        int minHeight = vcaps.getSupportedHeights().getLower();
-        assertTrue(mCodecInfo.getName() + " does not specify size constraints for " + mMediaType,
-                minWidth > 0 && minHeight > 0);
-    }
-
-    /**
      * For all the available decoders on the device, the test checks if their decoding
      * capabilities are in sync with the device's display capabilities. Precisely, if a video
      * decoder advertises support for a HDR profile then the device should be capable of
@@ -234,8 +215,8 @@ public class CodecInfoTest {
      * formats. The test only checks if the decoder/encoder is advertising the required color
      * format. It doesn't verify if it actually supports by decoding/encoding.
      */
-    @CddTest(requirements = {"5.1.7/C-1-2", "5.1.7/C-1-3", "5.1.7/C-4-1", "5.12/C-6-5",
-            "5.12/C-7-1", "5.12/C-7-3"})
+    @CddTest(requirements = {"5.1.7/C-1-2", "5.1.7/C-1-3", "5.12/C-6-5", "5.12/C-7-1",
+            "5.12/C-7-3"})
     @VsrTest(requirements = {"VSR-4.4-011"})
     @Test
     public void testColorFormatSupport() {

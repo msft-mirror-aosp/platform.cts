@@ -99,6 +99,7 @@ public class RemoteViewsSizeMapTest {
     @UiThreadTest
     @Before
     public void setup() {
+        RemoteViewsUtil.checkRemoteViewsProtoFlag(isProtoTest);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getTargetContext();
 

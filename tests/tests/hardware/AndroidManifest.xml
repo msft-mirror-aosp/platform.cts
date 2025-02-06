@@ -18,11 +18,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.hardware.cts">
 
-    <uses-feature android:name="android.software.companion_device_setup" />
-
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE" />
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS"/>
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REORDER_TASKS" />
@@ -33,9 +32,6 @@
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
-    <uses-permission android:name="android.permission.CREATE_VIRTUAL_DEVICE" />
-    <uses-permission android:name="android.permission.ADD_TRUSTED_DISPLAY" />
-    <uses-permission android:name="android.permission.ADD_MIRROR_DISPLAY" />
 
     <application android:requestLegacyExternalStorage="true">
         <uses-library android:name="android.test.runner" />
