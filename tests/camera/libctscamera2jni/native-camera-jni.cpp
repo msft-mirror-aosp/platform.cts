@@ -5365,14 +5365,12 @@ testCloseSessionNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext) {
     }
     sharedCtx->closeSession();
     usleep(100000); // sleep to give some time for callbacks to happen
-    // Todo: b/392933426 looks like session callback is not happening.
-    // commenting this for now till the issue is fixed.
-    /*if (!sessionListener->isClosed() || sessionListener->onClosedCount() != 1) {
+    if (!sessionListener->isClosed() || sessionListener->onClosedCount() != 1) {
         LOG_ERROR(errorString,
                 "Session for camera close error. isClosed %d close count %d",
                  sessionListener->isClosed(), sessionListener->onClosedCount());
         goto cleanup;
-    }*/
+    }
     sessionListener->reset();
     pass = true;
 cleanup:
