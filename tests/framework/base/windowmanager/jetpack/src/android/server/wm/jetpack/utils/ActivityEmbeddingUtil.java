@@ -393,10 +393,9 @@ public class ActivityEmbeddingUtil {
                                             boolean shouldWaitForResume) {
         final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
         final ComponentName activityName = activity.getComponentName();
+        wmState.waitForValidState(activityName);
         if (shouldWaitForResume) {
             wmState.waitAndAssertActivityState(activityName, STATE_RESUMED);
-        } else {
-            wmState.waitForValidState(activityName);
         }
         return wmState.getTaskByActivity(activityName).getBounds();
     }
