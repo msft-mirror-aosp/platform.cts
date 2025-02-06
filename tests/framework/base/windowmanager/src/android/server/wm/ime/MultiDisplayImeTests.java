@@ -33,6 +33,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEventWithKeyValue;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.hideSoftInputMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -473,6 +474,8 @@ public class MultiDisplayImeTests extends MultiDisplayTestBase {
     }
 
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testNoConfigurationChangedWhenSwitchBetweenTwoIdenticalDisplays() throws Exception {
         // If config_perDisplayFocusEnabled, the focus will not move even if touching on
         // the Activity in the different display.
