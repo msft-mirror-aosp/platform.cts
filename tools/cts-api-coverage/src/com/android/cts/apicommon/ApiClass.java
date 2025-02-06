@@ -131,6 +131,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
             String name, List<String> parameterTypes, TestMethodInfo testMethodInfo) {
         if (mSuperClass != null) {
             // Mark matching methods in the super class
+            // TODO(b/390548806): Only abstract method in the super class should be marked.
             mSuperClass.markMethodCoveredTest(name, parameterTypes, testMethodInfo);
         }
         if (!mInterfaceMap.isEmpty()) {
@@ -159,6 +160,7 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
     public void markMethodCovered(String name, List<String> parameterTypes, String coveredbyApk) {
         if (mSuperClass != null) {
             // Mark matching methods in the super class
+            // TODO(b/390548806): Only abstract method in the super class should be marked.
             mSuperClass.markMethodCovered(name, parameterTypes, coveredbyApk);
         }
         if (!mInterfaceMap.isEmpty()) {
@@ -210,7 +212,8 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
         return getTotalMethods();
     }
 
-    private Optional<ApiMethod> getMethod(String name, List<String> parameterTypes) {
+    /** Finds the given API method. */
+    public Optional<ApiMethod> getMethod(String name, List<String> parameterTypes) {
         for (ApiMethod method : mApiMethods) {
             boolean methodNameMatch = name.equals(method.getName());
             boolean parameterTypeMatch =
