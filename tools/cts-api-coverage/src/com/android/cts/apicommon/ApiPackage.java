@@ -40,7 +40,7 @@ public class ApiPackage implements HasCoverage {
     }
 
     public void addClass(ApiClass apiClass) {
-        mApiClassMap.put(apiClass.getName(), apiClass);
+        mApiClassMap.putIfAbsent(apiClass.getName(), apiClass);
     }
 
     public ApiClass getClass(String name) {

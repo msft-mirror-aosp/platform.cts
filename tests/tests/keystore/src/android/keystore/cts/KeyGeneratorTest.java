@@ -682,7 +682,7 @@ public class KeyGeneratorTest {
                     new String[] {KeyProperties.ENCRYPTION_PADDING_PKCS7,
                             KeyProperties.ENCRYPTION_PADDING_NONE};
             String[] digests;
-            int purposes;
+            @KeyProperties.PurposeEnum int purposes;
             if (TestUtils.isHmacAlgorithm(algorithm)) {
                 // HMAC key can only be authorized for one digest, the one implied by the key's
                 // JCA algorithm name.
@@ -894,7 +894,8 @@ public class KeyGeneratorTest {
         return getWorkingSpec(0);
     }
 
-    private static KeyGenParameterSpec.Builder getWorkingSpec(int purposes) {
+    private static KeyGenParameterSpec.Builder getWorkingSpec(
+            @KeyProperties.PurposeEnum int purposes) {
         return new KeyGenParameterSpec.Builder("test1", purposes);
     }
 

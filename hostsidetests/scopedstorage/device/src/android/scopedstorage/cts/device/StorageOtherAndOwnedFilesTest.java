@@ -16,6 +16,10 @@
 
 package android.scopedstorage.cts.device;
 
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE;
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO;
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 import static android.scopedstorage.cts.device.OtherAppFilesRule.GrantModifications.GRANT;
 import static android.scopedstorage.cts.device.OtherAppFilesRule.GrantModifications.REVOKE;
 import static android.scopedstorage.cts.device.OtherAppFilesRule.modifyReadAccess;
@@ -129,7 +133,7 @@ public class StorageOtherAndOwnedFilesTest {
     @Test
     public void test_latestSelectionOnly_withOwnedAndGrantedItems() throws Exception {
         // Only owned items should be returned since no other file item as been granted;
-        try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+        try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
             assertThat(c).isNotNull();
             assertWithMessage(
                     String.format("Expected number of owned items to be %s:", TOTAL_OWNED_ITEMS))
@@ -143,9 +147,8 @@ public class StorageOtherAndOwnedFilesTest {
         // give access for 1 file.
         modifyReadAccess(otherAppFiles.get(0), THIS_PACKAGE_NAME, GRANT);
 
-
         // Verify owned + granted items are returned.
-        try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+        try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
             assertThat(c).isNotNull();
             assertWithMessage(String.format("Expected number of items(owned + 1 granted) to be %d.",
                     TOTAL_OWNED_ITEMS + 1))
@@ -155,7 +158,7 @@ public class StorageOtherAndOwnedFilesTest {
         // grant one more item.
         modifyReadAccess(otherAppFiles.get(1), THIS_PACKAGE_NAME, GRANT);
         // Verify owned + granted items are returned.
-        try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+        try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
             assertThat(c).isNotNull();
             assertWithMessage(String.format("Expected number of items(owned + 2 granted) to be %d.",
                     TOTAL_OWNED_ITEMS + 2))
@@ -190,7 +193,7 @@ public class StorageOtherAndOwnedFilesTest {
         testFile.createNewFile();
         try {
             /* Normal scenario, all files created by the app is owned by the app. */
-            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+            try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
                 assertThat(c).isNotNull();
                 assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
             }
@@ -200,7 +203,7 @@ public class StorageOtherAndOwnedFilesTest {
              * This will set owner_package_name as null in files table for this file.
              */
             modifyReadAccess(testFile, THIS_PACKAGE_NAME, REVOKE);
-            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+            try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
                 assertThat(c).isNotNull();
                 assertEquals(TOTAL_OWNED_ITEMS, c.getCount());
             }
@@ -210,7 +213,7 @@ public class StorageOtherAndOwnedFilesTest {
              * This will add entry in media_grants and give access to this package for this file.
              */
             modifyReadAccess(testFile, THIS_PACKAGE_NAME, GRANT);
-            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+            try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
                 assertThat(c).isNotNull();
                 assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
             }
@@ -229,7 +232,7 @@ public class StorageOtherAndOwnedFilesTest {
         testFile.createNewFile();
         try {
             /* Normal scenario, all files created by the app is owned by the app. */
-            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+            try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
                 assertThat(c).isNotNull();
                 assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
             }
@@ -240,7 +243,7 @@ public class StorageOtherAndOwnedFilesTest {
              * So total owned photos remain the same.
              */
             modifyReadAccess(testFile, THIS_PACKAGE_NAME, REVOKE);
-            try (Cursor c = getResultForFilesQuery(sContentResolver, null)) {
+            try (Cursor c = getResultForFilesQuery(sContentResolver, getQueryArgsForMediaFiles())) {
                 assertThat(c).isNotNull();
                 assertEquals(TOTAL_OWNED_ITEMS + 1, c.getCount());
             }
@@ -307,5 +310,27 @@ public class StorageOtherAndOwnedFilesTest {
             executeShellCommand("rm " + renamedFile2);
             executeShellCommand("rm " + renamedFile3);
         }
+    }
+
+    /**
+     * The files table keeps records of directories and subdirectories where media is stored. When
+     * query argument is passed as null, these rows are also returned as a part of cursor. This
+     * method can be used to filter out these unwanted results when we only need media files.
+     *
+     * @return A Bundle containing the query arguments for filtering media files .
+     */
+    private Bundle getQueryArgsForMediaFiles() {
+        Bundle queryArgs = new Bundle();
+        queryArgs.putString(
+                ContentResolver.QUERY_ARG_SQL_SELECTION,
+                MEDIA_TYPE
+                        + " IN ("
+                        + MEDIA_TYPE_IMAGE
+                        + ", "
+                        + MEDIA_TYPE_VIDEO
+                        + ", "
+                        + MEDIA_TYPE_AUDIO
+                        + ")");
+        return queryArgs;
     }
 }

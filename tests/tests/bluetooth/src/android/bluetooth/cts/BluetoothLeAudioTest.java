@@ -39,7 +39,6 @@ import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -147,17 +146,6 @@ public class BluetoothLeAudioTest {
 
         // Verify returns false if bluetooth is not enabled
         assertThat(mService.getConnectionState(mDevice)).isEqualTo(STATE_DISCONNECTED);
-    }
-
-    @CddTest(requirements = {"7.4.3/C-2-1"})
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_LEAUDIO_MONO_LOCATION_ERRATA_API)
-    public void getAudioLocation_Old() {
-        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
-
-        // Verify returns false if bluetooth is not enabled
-        assertThat(mService.getAudioLocation(mDevice))
-                .isEqualTo(BluetoothLeAudio.AUDIO_LOCATION_INVALID);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})

@@ -29,7 +29,7 @@ public class ApiCoverage {
     private final Map<String, ApiPackage> mPackages = new ConcurrentHashMap<>();
 
     public void addPackage(ApiPackage pkg) {
-        mPackages.put(pkg.getName(), pkg);
+        mPackages.putIfAbsent(pkg.getName(), pkg);
     }
 
     public ApiPackage getPackage(String name) {

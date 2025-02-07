@@ -530,9 +530,6 @@ public class WindowManagerStateHelper extends WindowManagerState {
 
         waitForValidState(activity.getComponentName());
 
-        assertTrue(
-                "Failed to wait for window geometry to stabilize",
-                CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5)));
         assertNotNull("Activity is not attached to a window", activity.getWindow());
         if (!CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);

@@ -130,7 +130,8 @@ public class KeyFactoryTest {
                         KeyProperties.DIGEST_SHA224,
                         KeyProperties.DIGEST_SHA384,
                         KeyProperties.DIGEST_SHA512};
-                int purposes = KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN;
+                @KeyProperties.PurposeEnum int purposes =
+                        KeyProperties.PURPOSE_DECRYPT | KeyProperties.PURPOSE_SIGN;
                 KeyPairGenerator keyGenerator =
                         KeyPairGenerator.getInstance(algorithm, EXPECTED_PROVIDER_NAME);
                 keyGenerator.initialize(new KeyGenParameterSpec.Builder("test1", purposes)

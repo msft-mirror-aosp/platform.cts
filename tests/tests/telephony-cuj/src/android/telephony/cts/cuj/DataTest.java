@@ -20,6 +20,8 @@ import static androidx.test.InstrumentationRegistry.getContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -34,6 +36,7 @@ import android.telephony.CellInfoTdscdma;
 import android.telephony.CellInfoWcdma;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
@@ -78,16 +81,20 @@ public class DataTest {
     @Test
     @PlatinumTest(focusArea = "telephony")
     public void testBasicPhoneAttributes() {
-        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getActiveModemCount)).isGreaterThan(0);
-        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getNetworkOperatorName)).isNotEmpty();
-        assertThat((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mSubscriptionManager,
-                sm -> sm.getPhoneNumber(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID))).isNotEmpty();
-        assertThat((int) ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getDataNetworkType))
-                        .isGreaterThan(TelephonyManager.NETWORK_TYPE_UNKNOWN);
+        assertTrue("Active modem count is 0",
+                (int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                mTelephonyManager, TelephonyManager::getActiveModemCount) > 0);
+        assertFalse("Network Operator Name is empty",
+                TextUtils.isEmpty((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, TelephonyManager::getNetworkOperatorName)));
+        assertFalse("Phone Number is empty",
+                TextUtils.isEmpty((String) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mSubscriptionManager,
+                        sm -> sm.getPhoneNumber(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID))));
+        assertTrue("Network Type is Unknown",
+                (int) ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, TelephonyManager::getDataNetworkType)
+                        > TelephonyManager.NETWORK_TYPE_UNKNOWN);
     }
 
     @Test

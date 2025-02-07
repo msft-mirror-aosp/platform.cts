@@ -77,7 +77,7 @@ public final class ApiMap {
         System.out.println("Options:");
         System.out.println("  -o FILE                  output file");
         System.out.println("  -f [xml|html]            format of output");
-        System.out.println("  -a PATH                  path to the API XML file");
+        System.out.println("  -a PATH                  paths to API XML files split by commas");
         System.out.println("  -i PATH                  path to the file containing a list of jars: "
                 + "Jars must be split by a whitespace, e.g. {jar1} {jar2}.");
         System.out.println("  -m [api|annotation|full] the map information to generate: api->only "
@@ -95,7 +95,7 @@ public final class ApiMap {
         Map<String, Path> jars = new HashMap<>();
         File outputFile = null;
         int format = FORMAT_XML;
-        String apiXmlPath = "";
+        Set<String> apiXmlPaths = new HashSet<>();
         int parallelism = Runtime.getRuntime().availableProcessors();
         int mode = FULL_MODE;
 
@@ -113,7 +113,8 @@ public final class ApiMap {
                         printUsage();
                     }
                 } else if ("-a".equals(args[i])) {
-                    apiXmlPath = getExpectedArg(args, ++i);
+                    apiXmlPaths.addAll(
+                            List.of(Objects.requireNonNull(getExpectedArg(args, ++i)).split(",")));
                 } else if ("-m".equals(args[i])) {
                     String modeSpec = getExpectedArg(args, ++i);
                     if ("api".equalsIgnoreCase(modeSpec)) {
@@ -148,8 +149,8 @@ public final class ApiMap {
             throw new IllegalArgumentException("missing output file");
         }
 
-        ApiCoverage apiCoverage = (mode == ANNOTATION_ONLY_MODE)
-                ? new ApiCoverage() : getApiCoverage(apiXmlPath);
+        ApiCoverage apiCoverage =
+                (mode == ANNOTATION_ONLY_MODE) ? new ApiCoverage() : getApiCoverage(apiXmlPaths);
         apiCoverage.resolveSuperClasses();
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
@@ -262,15 +263,17 @@ public final class ApiMap {
         });
     }
 
-    private static ApiCoverage getApiCoverage(String apiXmlPath)
+    private static ApiCoverage getApiCoverage(Set<String> apiXmlPaths)
             throws SAXException, IOException {
         XMLReader xmlReader = XMLReaderFactory.createXMLReader();
         ApiXmlHandler currentXmlHandler = new ApiXmlHandler();
         xmlReader.setContentHandler(currentXmlHandler);
 
-        File currentXml = new File(apiXmlPath);
-        try (FileReader fileReader = new FileReader(currentXml)) {
-            xmlReader.parse(new InputSource(fileReader));
+        for (String apiXmlPath : apiXmlPaths) {
+            File currentXml = new File(apiXmlPath.strip());
+            try (FileReader fileReader = new FileReader(currentXml)) {
+                xmlReader.parse(new InputSource(fileReader));
+            }
         }
         return currentXmlHandler.getApi();
     }

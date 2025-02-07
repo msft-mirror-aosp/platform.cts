@@ -42,6 +42,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_HIDE;
 import static android.view.WindowManager.DISPLAY_IME_POLICY_LOCAL;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -58,6 +59,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityLauncher;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.Condition;
@@ -74,6 +78,7 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -85,6 +90,9 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -526,6 +534,8 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
 
     /** Tests that an activity can launch an activity from a different UID into its own task. */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testPermissionLaunchMultiUidTask() {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
@@ -746,6 +756,8 @@ public class MultiDisplaySecurityTests extends MultiDisplayTestBase {
      * Test setting system decoration flag and show IME flag to the trusted display.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testSettingFlagToTrustedDisplay() throws Exception {
         final DisplayContent trustedDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)

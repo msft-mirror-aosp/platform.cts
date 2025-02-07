@@ -109,7 +109,7 @@ public class SecretKeyFactoryTest {
                         new String[] {KeyProperties.ENCRYPTION_PADDING_PKCS7,
                                 KeyProperties.ENCRYPTION_PADDING_NONE};
                 String[] digests;
-                int purposes;
+                @KeyProperties.PurposeEnum int purposes;
                 if (TestUtils.isHmacAlgorithm(algorithm)) {
                     String digest = TestUtils.getHmacAlgorithmDigest(algorithm);
                     digests = new String[] {digest};

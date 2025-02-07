@@ -22,11 +22,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
 
 import java.io.IOException;
 
 public class ImageViewActivity extends Activity {
+    private static final String TAG = "ImageViewActivity";
     private static final String IMAGE_NAME = "red-hlg-profile.png";
 
     static {
@@ -39,6 +41,7 @@ public class ImageViewActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "onCreate");
 
         mImageView = new ImageView(this);
         mImageView.setImageDrawable(null);
@@ -55,6 +58,7 @@ public class ImageViewActivity extends Activity {
         ImageDecoder.Source src = ImageDecoder.createSource(assets, IMAGE_NAME);
         try {
             mBitmap = ImageDecoder.decodeBitmap(src);
+            Log.d(TAG, "Assigning bitmap from view");
             mImageView.setImageBitmap(mBitmap);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -69,8 +73,10 @@ public class ImageViewActivity extends Activity {
         }
 
         mImageView.getViewTreeObserver().registerFrameCommitCallback(() -> {
+            Log.d(TAG, "Removing bitmap from view");
             mImageView.setImageBitmap(null);
             mImageView.getViewTreeObserver().registerFrameCommitCallback(() -> {
+                Log.d(TAG, "Assigning bitmap to view");
                 mImageView.setImageBitmap(mBitmap);
                 mImageView.getViewTreeObserver().registerFrameCommitCallback(this::finish);
             });

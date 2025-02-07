@@ -497,7 +497,7 @@ public class MediaQualityTest {
         assumeTrue(mMediaQuality != null);
         when(mMediaQuality.isAutoPqSupported()).thenReturn(true);
         doNothing().when(mMediaQuality).setAutoPqEnabled(anyBoolean());
-        mManager.setAutoPictureQualityEnabled(true);
+        mManager.setAutoPictureQualityEnabled(false);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -515,7 +515,7 @@ public class MediaQualityTest {
         assumeTrue(mMediaQuality != null);
         when(mMediaQuality.isAutoSrSupported()).thenReturn(true);
         doNothing().when(mMediaQuality).setAutoSrEnabled(anyBoolean());
-        mManager.setSuperResolutionEnabled(true);
+        mManager.setSuperResolutionEnabled(false);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)
@@ -533,7 +533,7 @@ public class MediaQualityTest {
         assumeTrue(mMediaQuality != null);
         when(mMediaQuality.isAutoAqSupported()).thenReturn(true);
         doNothing().when(mMediaQuality).setAutoAqEnabled(anyBoolean());
-        mManager.setAutoSoundQualityEnabled(true);
+        mManager.setAutoSoundQualityEnabled(false);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_MEDIA_QUALITY_FW)

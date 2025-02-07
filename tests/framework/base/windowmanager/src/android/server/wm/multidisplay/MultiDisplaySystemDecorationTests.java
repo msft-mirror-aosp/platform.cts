@@ -28,6 +28,7 @@ import static android.server.wm.app.Components.TEST_LIVE_WALLPAPER_SERVICE;
 import static android.server.wm.app.Components.TestLiveWallpaperKeys.COMPONENT;
 import static android.server.wm.app.Components.TestLiveWallpaperKeys.ENGINE_DISPLAY_ID;
 import static android.view.WindowManager.LayoutParams.TYPE_WALLPAPER;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -40,6 +41,9 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.TestJournalProvider;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
@@ -50,6 +54,7 @@ import android.server.wm.WindowManagerState.WindowState;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -67,6 +72,9 @@ import java.util.stream.Collectors;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -150,6 +158,8 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
      * Test that navigation bar should not show on display without system decoration.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testNavBarNotShowingOnDisplayWithoutDecor() {
         assumeHasBars();
         // Wait for system decoration showing and record current nav states.

@@ -306,6 +306,11 @@ public class ProcessTest {
         assertEquals(exception.getMessage(), "Input UID is not an SDK sandbox UID");
     }
 
+    @Test
+    public void testToSdkSandboxUid() {
+        assertEquals(SANDBOX_SDK_UID, Process.toSdkSandboxUid(APP_UID));
+    }
+
     /**
      * Tests for {@link Process#getSdkSandboxUidForAppUid(int) (int)} API
      */

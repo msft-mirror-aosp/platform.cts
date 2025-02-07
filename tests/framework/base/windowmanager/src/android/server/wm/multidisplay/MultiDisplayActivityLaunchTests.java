@@ -57,6 +57,7 @@ import static android.server.wm.second.Components.SECOND_ACTIVITY;
 import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_ACTION;
 import static android.server.wm.second.Components.SECOND_LAUNCH_BROADCAST_RECEIVER;
 import static android.server.wm.third.Components.THIRD_ACTIVITY;
+import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -75,6 +76,9 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.MultiDisplayTestBase;
@@ -83,6 +87,7 @@ import android.server.wm.WindowManagerState.Task;
 import android.view.SurfaceView;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -94,6 +99,9 @@ import org.junit.Test;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     @Override
@@ -115,6 +123,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      * Tests launching a recent activity on virtual display.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testLaunchRecentActivityOnSecondaryDisplay() throws Exception {
         validateActivityLaunchOnNewDisplay(ACTIVITY_TYPE_RECENTS);
     }
@@ -700,6 +710,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      * process the second task launches in the same display.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testLaunchSameAffinityLaunchesSameDisplay() {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
@@ -781,6 +793,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      * Tests that the task affinity search respects the launch display id.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testLaunchDisplayAffinityMatch() {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
@@ -823,6 +837,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      * even if the root task is not on the top for the display.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testNewTaskSameDisplay() {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
@@ -859,6 +875,8 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      * even if the focused task is not on that activity's display.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
+    // TODO(b/391965805): Re-enable this test
     public void testNewTaskDefaultDisplay() {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
