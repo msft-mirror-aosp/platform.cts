@@ -63,63 +63,84 @@
                     android:layout_width="wrap_content"
                     android:text="@string/select_test_distance_presence"/>
 
-                <RadioGroup
-                    android:id="@+id/test_distance_radio_group"
+                <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:checkedButton="@id/distance_10cm"
-                    android:orientation="horizontal">
+                    android:scrollbars="horizontal">
 
-                    <RadioButton
-                        android:id="@+id/distance_10cm"
+                    <RadioGroup
+                        android:id="@+id/test_distance_radio_group"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/distance_10cm_presence"/>
+                        android:checkedButton="@id/distance_10cm"
+                        android:orientation="horizontal">
 
-                    <RadioButton
-                        android:id="@+id/distance_1m"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/distance_1m_presence"/>
+                        <RadioButton
+                            android:id="@+id/distance_10cm"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/distance_10cm_presence"/>
 
-                    <RadioButton
-                        android:id="@+id/distance_3m"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/distance_3m_presence"/>
+                        <RadioButton
+                            android:id="@+id/distance_1m"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/distance_1m_presence"/>
 
-                    <RadioButton
-                        android:id="@+id/distance_5m"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/distance_5m_presence"/>
-                </RadioGroup>
+                        <RadioButton
+                            android:id="@+id/distance_3m"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/distance_3m_presence"/>
 
-                <LinearLayout
-                    android:id="@+id/start_stop_layout"
-                    android:orientation="horizontal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content">
+                        <RadioButton
+                            android:id="@+id/distance_5m"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/distance_5m_presence"/>
+                    </RadioGroup>
+                </HorizontalScrollView>
 
-                <Button
-                    android:id="@+id/start_test"
-                    android:layout_width="wrap_content"
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/start_test_presence"/>
+                    android:scrollbars="none">
 
-                <Button
-                    android:id="@+id/stop_test"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/stop_test_presence"/>
-                </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/start_stop_layout"
+                        android:orientation="horizontal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        style="?android:attr/buttonBarStyle">
 
-                <EditText
-                    android:id="@+id/service_id_input"
-                    android:layout_width="wrap_content"
+                        <Button
+                            android:id="@+id/start_test"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/start_test_presence"
+                            style="?android:attr/buttonBarButtonStyle"/>
+
+                        <Button
+                            android:id="@+id/stop_test"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/stop_test_presence"
+                            style="?android:attr/buttonBarButtonStyle"/>
+                    </LinearLayout>
+                </HorizontalScrollView>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="numberDecimal|numberSigned"
-                    android:hint="@string/service_id_input_presence"/>
+                    android:scrollbars="none">
+
+                    <EditText
+                        android:id="@+id/service_id_input"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal|numberSigned"
+                        android:hint="@string/service_id_input_presence"/>
+                </HorizontalScrollView>
 
                 <TextView
                     android:id="@+id/device_found_info"
