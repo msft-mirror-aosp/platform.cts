@@ -45,7 +45,7 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
     private static final String TEST_PKG = "android.app.appfunctions.cts";
     private static final String TEST_CLASS = TEST_PKG + ".AppFunctionManagerTest";
 
-    private static final int NO_SUCH_METHOD_ERROR_CODE = 1001;
+    private static final int ERROR_INVALID_ARGUMENT = 1001;
     private static final int SUCCESS_ERROR_CODE = -1;
     private static final int THROWS_EXCEPTION_ERROR_CODE = 3000;
 
@@ -89,11 +89,11 @@ public class AppFunctionsStatsTest extends DeviceTestCase implements IBuildRecei
         mCtsBuild = buildInfo;
     }
 
-    public void testAtom_executeAppFunction_failed_noSuchMethod() throws Exception {
+    public void testAtom_executeAppFunction_failed_uncaughtClientException() throws Exception {
         AppFunctionsRequestReported afRequestReported =
-                runTestAndGetAtom("executeAppFunction_failed_noSuchMethod_nonParam");
+                runTestAndGetAtom("executeAppFunction_failed_uncaughtClientException_nonParam");
 
-        assertThat(afRequestReported.getErrorCode()).isEqualTo(NO_SUCH_METHOD_ERROR_CODE);
+        assertThat(afRequestReported.getErrorCode()).isEqualTo(ERROR_INVALID_ARGUMENT);
     }
 
     public void testAtom_executeAppFunction_crossUser_success() throws Exception {

@@ -108,7 +108,7 @@ public class TestAppFunctionService extends AppFunctionService {
                     callback.onResult(result);
                     break;
                 }
-            case "noSuchMethod":
+            case "uncaughtClientException":
                 {
                     callback.onError(
                             new AppFunctionException(

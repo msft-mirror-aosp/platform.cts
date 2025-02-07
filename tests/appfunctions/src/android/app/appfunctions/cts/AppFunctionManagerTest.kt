@@ -141,7 +141,8 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod() = executeAppFunction_failed_noSuchMethod_nonParam()
+    fun executeAppFunction_failed_uncaughtClientExceptionMethod() =
+        executeAppFunction_failed_uncaughtClientException_nonParam()
 
     /**
      * Same as the previous testcase, excluding Bedstead's enterprise annotations (unsupported in
@@ -149,8 +150,11 @@ class AppFunctionManagerTest {
      */
     @Test
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod_nonParam() = doBlocking {
-        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noSuchMethod").build()
+    fun executeAppFunction_failed_uncaughtClientException_nonParam() = doBlocking {
+        val request = ExecuteAppFunctionRequest.Builder(
+            CURRENT_PKG,
+            "uncaughtClientException"
+        ).build()
 
         val response = executeAppFunctionAndWait(mManager, request)
 
@@ -877,6 +881,29 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithInvalidArgument() =
+        doBlocking {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val request =
+                    ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "random_function").build()
+
+                val response = executeAppFunctionAndWait(mManager, request)
+
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.appFunctionException().errorCode)
+                    .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
+                assertThat(response.appFunctionException().errorMessage)
+                    .contains(
+                        "App function not found."
+                    )
+            }
+        }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithAppSearchException() =
         doBlocking {
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                 val request =
