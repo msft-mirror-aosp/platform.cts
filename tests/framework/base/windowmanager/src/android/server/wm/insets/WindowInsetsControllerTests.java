@@ -900,8 +900,10 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         getInstrumentation().waitForIdleSync();
 
         final int[] dispatchApplyWindowInsetsCount = {0};
+        final StringBuilder insetsSb = new StringBuilder();
         rootView.setOnApplyWindowInsetsListener((v, insets) -> {
             dispatchApplyWindowInsetsCount[0]++;
+            insetsSb.append("\n").append(insets);
             return v.onApplyWindowInsets(insets);
         });
 
@@ -914,10 +916,12 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         ANIMATION_CALLBACK.waitForFinishing();
 
         // ... should only trigger one dispatchApplyWindowInsets
-        assertEquals(1, dispatchApplyWindowInsetsCount[0]);
+        assertWithMessage("insets should be dispatched exactly once, received: " + insetsSb)
+                .that(dispatchApplyWindowInsetsCount[0]).isEqualTo(1);
 
         // One show-system-bar call...
         dispatchApplyWindowInsetsCount[0] = 0;
+        insetsSb.setLength(0);
         ANIMATION_CALLBACK.reset();
         getInstrumentation().runOnMainSync(() -> {
             rootView.setWindowInsetsAnimationCallback(ANIMATION_CALLBACK);
@@ -926,7 +930,8 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         ANIMATION_CALLBACK.waitForFinishing();
 
         // ... should only trigger one dispatchApplyWindowInsets
-        assertEquals(1, dispatchApplyWindowInsetsCount[0]);
+        assertWithMessage("insets should be dispatched exactly once, received: " + insetsSb)
+                .that(dispatchApplyWindowInsetsCount[0]).isEqualTo(1);
     }
 
     @Test
