@@ -131,7 +131,15 @@ public class MockImeSession implements AutoCloseable {
     @NonNull
     private final String mMockImeSettingsProviderAuthority;
 
+    /**
+     * @see ImeSettings.Builder#setSuppressResetIme
+     */
     private final boolean mSuppressReset;
+
+    /**
+     * @see ImeSettings.Builder#setSuppressDeleteSettings
+     */
+    private final boolean mSuppressDeleteSettings;
 
     private static final class EventStore {
         private static final int INITIAL_ARRAY_SIZE = 32;
@@ -281,6 +289,7 @@ public class MockImeSession implements AutoCloseable {
         mTargetUser = imeSettings.mTargetUser;
         mMockImeSettingsProviderAuthority = mMockImePackageName + ".provider";
         mSuppressReset = imeSettings.mSuppressResetIme;
+        mSuppressDeleteSettings = imeSettings.mSuppressDeleteSettings;
         updateSessionCreateTimestamp();
     }
 
@@ -499,10 +508,12 @@ public class MockImeSession implements AutoCloseable {
         if (mChannel != null) {
             mChannel.close();
         }
-        Log.i(TAG, "Deleting MockIme settings: session=" + this);
-        MultiUserUtils.callContentProvider(mContext, mUiAutomation,
-                mMockImeSettingsProviderAuthority, "delete", null /* arg */, null /* extras */,
-                mTargetUser);
+        if (!mSuppressDeleteSettings) {
+            Log.i(TAG, "Deleting MockIme settings: session=" + this);
+            MultiUserUtils.callContentProvider(mContext, mUiAutomation,
+                    mMockImeSettingsProviderAuthority, "delete", null /* arg */, null /* extras */,
+                    mTargetUser);
+        }
 
         // Clean up additional subtypes if any.
         final InputMethodInfo imi = getInputMethodInfo();
@@ -540,7 +551,7 @@ public class MockImeSession implements AutoCloseable {
 
     @Nullable
     @VisibleForTesting
-    ApplicationExitInfo findLatestMockImeSessionExitInfo() {
+    public ApplicationExitInfo findLatestMockImeSessionExitInfo() {
         final List<ApplicationExitInfo> latestExitReasons =
                 MultiUserUtils.getHistoricalProcessExitReasons(mContext, mUiAutomation,
                         mMockImePackageName, /* pid= */ 0, /* maxNum= */ 1, mTargetUser);

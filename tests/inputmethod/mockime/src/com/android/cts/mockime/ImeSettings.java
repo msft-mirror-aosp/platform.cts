@@ -315,6 +315,23 @@ public class ImeSettings {
             return this;
         }
 
+        boolean mSuppressDeleteSettings = false;
+
+        /**
+         * Specifies whether deleting the IME settings should be suppressed or not on {@link
+         * MockImeSession#close()}.
+         *
+         * <p>The default value is {@code false}.
+         *
+         * @param suppressDeleteSettings {@code true} to suppress IME settings deletion upon cleanup
+         *     of {@link MockImeSession}.
+         * @return this {@link Builder} object.
+         */
+        public Builder setSuppressDeleteSettings(boolean suppressDeleteSettings) {
+            mSuppressDeleteSettings = suppressDeleteSettings;
+            return this;
+        }
+
         @Nullable
         InputMethodSubtype[] mAdditionalSubtypes;
 

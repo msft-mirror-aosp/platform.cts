@@ -21,9 +21,11 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
+import android.app.ApplicationExitInfo;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.InstantAppInfo;
@@ -46,6 +48,7 @@ import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.packages.CommonPackages;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
 import com.android.cts.mockime.ImeSettings;
@@ -59,15 +62,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
 
 @LargeTest
 @RequireMultiUserSupport
 @RunWith(BedsteadJUnit4.class)
 public final class MultiUserMockImeTest {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(15);
+
+    private static final long MOCKIME_CRASH_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     @ClassRule
     @Rule
@@ -122,8 +127,8 @@ public final class MultiUserMockImeTest {
 
         try (var session1 = MockImeSession.create(context, uiAutomation,
                 new ImeSettings.Builder());
-                var session2 = MockImeSession.create(instrumentation.getContext(), uiAutomation,
-                         new ImeSettings.Builder().setTargetUser(workUser.userHandle()))) {
+                var session2 = MockImeSession.create(context, uiAutomation,
+                        new ImeSettings.Builder().setTargetUser(workUser.userHandle()))) {
             var stream1 = session1.openEventStream();
             var stream2 = session2.openEventStream();
 
@@ -181,9 +186,10 @@ public final class MultiUserMockImeTest {
                 false /* instant */));
 
         try (var session1 = MockImeSession.create(context, uiAutomation,
-                new ImeSettings.Builder())) {
-            final var session2 = MockImeSession.create(instrumentation.getContext(), uiAutomation,
-                    new ImeSettings.Builder().setTargetUser(profileUser.userHandle()));
+                new ImeSettings.Builder());
+                var session2 = MockImeSession.create(context, uiAutomation,
+                        new ImeSettings.Builder().setTargetUser(profileUser.userHandle())
+                                .setSuppressDeleteSettings(true))) {
             var stream1 = session1.openEventStream();
             var stream2 = session2.openEventStream();
 
@@ -206,19 +212,20 @@ public final class MultiUserMockImeTest {
 
                     TestApis.device().sleep();
 
-                    // The session must be closed before the user is removed.
-                    session2.close();
                     // Remove profile with screen off to maintain currentImeUser ID in
                     // InputMethodManagerService.
                     profileUser.remove();
+
+                    final var exitInfo = PollingCheck.waitFor(MOCKIME_CRASH_TIMEOUT,
+                            session2::findLatestMockImeSessionExitInfo, Objects::nonNull);
+                    assertEquals("Expected MockImeSession to crash due to removed user",
+                            ApplicationExitInfo.REASON_USER_STOPPED, exitInfo.getReason());
 
                     TestApis.device().wakeUp();
                     // Wait for lock screen to be visible and focused before unlocking.
                     mWmState.waitForNonActivityWindowFocused();
                     TestApis.device().unlock();
 
-                    expectEvent(stream2, event -> "onDestroy".equals(event.getEventName()),
-                            TIMEOUT);
                     // Must be able to startInput on the previous user even when the currentImeUser
                     // was removed.
                     expectEvent(stream1, editorMatcher("onStartInput", marker1), TIMEOUT);
