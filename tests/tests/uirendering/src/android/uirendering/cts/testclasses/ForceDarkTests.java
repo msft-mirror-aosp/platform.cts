@@ -16,6 +16,8 @@
 
 package android.uirendering.cts.testclasses;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.Manifest;
 import android.app.UiModeManager;
 import android.content.Context;
@@ -35,9 +37,11 @@ import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,9 +50,15 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class ForceDarkTests extends ActivityTestBase {
     static int sPreviousUiMode = UiModeManager.MODE_NIGHT_NO;
+    private static final boolean VISIBLE_BACKGROUND_USER =
+            new UserHelper().isVisibleBackgroundUser();
 
     @BeforeClass
     public static void enableForceDark() {
+        // Visible background users are not allowed to call setNightMode.
+        if (VISIBLE_BACKGROUND_USER) {
+            return;
+        }
         // Temporarily override the ui mode
         UiModeManager uiManager = (UiModeManager)
                 InstrumentationRegistry.getContext().getSystemService(Context.UI_MODE_SERVICE);
@@ -62,12 +72,24 @@ public class ForceDarkTests extends ActivityTestBase {
 
     @AfterClass
     public static void restoreForceDarkSetting() {
+        // Visible background users are not allowed to call setNightMode.
+        if (VISIBLE_BACKGROUND_USER) {
+            return;
+        }
         UiModeManager uiManager = (UiModeManager)
                 InstrumentationRegistry.getContext().getSystemService(Context.UI_MODE_SERVICE);
         if (sPreviousUiMode != UiModeManager.MODE_NIGHT_YES) {
             SystemUtil.runWithShellPermissionIdentity(() -> uiManager.setNightMode(sPreviousUiMode),
                     Manifest.permission.MODIFY_DAY_NIGHT_MODE);
         }
+    }
+
+    @Before
+    public void setUp() {
+        // Skip all tests in this class for a visible background user.
+        assumeFalse(
+                "Visible background users are not allowed to set night mode.",
+                VISIBLE_BACKGROUND_USER);
     }
 
     @Override
