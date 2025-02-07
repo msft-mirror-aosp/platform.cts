@@ -92,6 +92,13 @@ public final class EventLogHelperTest {
     }
 
     @Test
+    public void testWriteCarHelperWatchdogAnrKill() {
+        EventLogHelper.writeCarHelperWatchdogAnrKill();
+
+        assertLogMessage("car_helper_watchdog_anr_kill");
+    }
+
+    @Test
     public void testWriteCarHelperServiceConnected() {
         EventLogHelper.writeCarHelperServiceConnected();
 
