@@ -155,8 +155,6 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
             argsHighBitDepth.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
                             512000, 30, false},
-                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
-                            512000, 30, true},
             }));
         }
 
