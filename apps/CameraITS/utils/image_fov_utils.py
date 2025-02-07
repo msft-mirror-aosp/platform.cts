@@ -58,6 +58,7 @@ def calc_camera_fov_from_metadata(metadata, props):
     raise AssertionError(f'FoV error: {fov:.1f}')
   return fov
 
+
 def calc_scaler_crop_region_ratio(scaler_crop_region, props):
   """Calculate ratio of scaler crop region area over active array area.
 

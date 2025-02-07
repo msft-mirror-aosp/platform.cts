@@ -285,10 +285,14 @@ def find_crossover_point(cam, capture_results):
       physical_id_before = physical_id
     if physical_id_before == physical_id:
       continue
-    physical_props_id_before = cam.get_camera_properties_by_id(physical_id_before)
+    physical_props_id_before = cam.get_camera_properties_by_id(
+        physical_id_before
+    )
     physical_props_id = cam.get_camera_properties_by_id(physical_id)
-    logging.debug('Active physical id %s changed to %s at frame %s and zoom ratio %f',
-                  physical_id_before, physical_id, counter, zoom_ratio)
+    logging.debug(
+        'Active physical id %s changed to %s at frame %s and zoom ratio %f',
+        physical_id_before, physical_id, counter, zoom_ratio
+    )
     # Avoid getting HAL-simulated camera by checking field of view change
     camera_fov_before = image_fov_utils.calc_camera_fov_from_metadata(
         capture_result, physical_props_id_before)
