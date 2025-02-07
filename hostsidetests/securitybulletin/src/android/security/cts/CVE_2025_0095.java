@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,18 +28,18 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class BUG_356117796 extends NonRootSecurityTestCase {
+public class CVE_2025_0095 extends NonRootSecurityTestCase {
 
     @Test
     @AsbSecurityTest(cveBugId = 356117796)
-    public void testPocBUG_356117796() {
+    public void testPocCVE_2025_0095() {
         try {
             // Install helper application
-            installPackage("BUG-356117796-helper.apk");
+            installPackage("CVE-2025-0095-helper.apk");
 
             // Install test application and run device test
-            installPackage("BUG-356117796-test.apk");
-            runDeviceTests(new DeviceTestRunOptions("android.security.cts.BUG_356117796"));
+            installPackage("CVE-2025-0095-test.apk");
+            runDeviceTests(new DeviceTestRunOptions("android.security.cts.CVE_2025_0095"));
         } catch (Exception e) {
             assume().that(e).isNull();
         }
