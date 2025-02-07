@@ -63,6 +63,7 @@ import static android.app.admin.SecurityLog.TAG_SYNC_SEND_FILE;
 import static android.app.admin.SecurityLog.TAG_USER_RESTRICTION_ADDED;
 import static android.app.admin.SecurityLog.TAG_USER_RESTRICTION_REMOVED;
 import static android.app.admin.SecurityLog.TAG_WIPE_FAILURE;
+import static android.os.PowerManager.PARTIAL_WAKE_LOCK;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.cts.devicepolicy.TestCertificates.TEST_CA;
@@ -79,6 +80,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Parcel;
 import android.os.Process;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.security.keystore.KeyGenParameterSpec;
@@ -254,6 +257,13 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
 
     private void forceSecurityLogs() throws Exception {
         mOnSecurityLogsAvailableCalled = new CountDownLatch(1);
+        PowerManager powerManager = mContext.getSystemService(PowerManager.class);
+        if (powerManager == null) {
+            Log.i(TAG, "Failed to get PowerManager");
+        }
+
+        WakeLock mWakeLock = powerManager.newWakeLock(PARTIAL_WAKE_LOCK, TAG);
+        mWakeLock.setReferenceCounted(false);
 
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 .executeShellCommand("dpm force-security-logs");
@@ -262,9 +272,11 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
         try {
             // Broadcasts are sometimes not received (b/364927154 b/365925072), hence removing
             // assertTrue() here.
+            mWakeLock.acquire();
             mOnSecurityLogsAvailableCalled.await(60, TimeUnit.SECONDS);
         }
         finally {
+            mWakeLock.release();
             mOnSecurityLogsAvailableCalled = null;
         }
     }
