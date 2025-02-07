@@ -700,7 +700,8 @@ public class TestUtils {
 
     private static KeyProtection.Builder buildUponInternal(
             KeyProtection spec, Integer newPurposes) {
-        int purposes = (newPurposes == null) ? spec.getPurposes() : newPurposes;
+        @KeyProperties.PurposeEnum int purposes =
+                (newPurposes == null) ? spec.getPurposes() : newPurposes;
         KeyProtection.Builder result = new KeyProtection.Builder(purposes);
         result.setBlockModes(spec.getBlockModes());
         if (spec.isDigestsSpecified()) {
@@ -739,7 +740,8 @@ public class TestUtils {
 
     private static KeyGenParameterSpec.Builder buildUponInternal(
             KeyGenParameterSpec spec, Integer newPurposes) {
-        int purposes = (newPurposes == null) ? spec.getPurposes() : newPurposes;
+        @KeyProperties.PurposeEnum int purposes =
+                (newPurposes == null) ? spec.getPurposes() : newPurposes;
         KeyGenParameterSpec.Builder result =
                 new KeyGenParameterSpec.Builder(spec.getKeystoreAlias(), purposes);
         if (spec.getKeySize() >= 0) {
@@ -1150,19 +1152,21 @@ public class TestUtils {
     }
 
     public static KeyProtection getMinimalWorkingImportParametersForCipheringWith(
-            String transformation, int purposes) {
+            String transformation, @KeyProperties.PurposeEnum int purposes) {
         return getMinimalWorkingImportParametersForCipheringWith(transformation, purposes, false);
     }
 
     public static KeyProtection getMinimalWorkingImportParametersForCipheringWith(
-            String transformation, int purposes, boolean ivProvidedWhenEncrypting) {
+            String transformation, @KeyProperties.PurposeEnum int purposes,
+            boolean ivProvidedWhenEncrypting) {
         return getMinimalWorkingImportParametersForCipheringWith(transformation, purposes,
             ivProvidedWhenEncrypting, false, false);
     }
 
     public static KeyProtection getMinimalWorkingImportParametersForCipheringWith(
-            String transformation, int purposes, boolean ivProvidedWhenEncrypting,
-            boolean isUnlockedDeviceRequired, boolean isUserAuthRequired) {
+            String transformation, @KeyProperties.PurposeEnum int purposes,
+            boolean ivProvidedWhenEncrypting, boolean isUnlockedDeviceRequired,
+            boolean isUserAuthRequired) {
         String keyAlgorithm = TestUtils.getCipherKeyAlgorithm(transformation);
         if (KeyProperties.KEY_ALGORITHM_AES.equalsIgnoreCase(keyAlgorithm)
             || KeyProperties.KEY_ALGORITHM_3DES.equalsIgnoreCase(keyAlgorithm)) {
