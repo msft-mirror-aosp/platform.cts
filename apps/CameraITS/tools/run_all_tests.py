@@ -212,11 +212,11 @@ SUB_CAMERA_TESTS = {
     'scene4': (
         'test_aspect_ratio_and_crop',
     ),
-    'scene6_tele': (
+    'scene_tele/scene6_tele': (
         'test_zoom_tele',
         'test_preview_zoom_tele',
     ),
-    'scene7_tele': (
+    'scene_tele/scene7_tele': (
         'test_multi_camera_switch_tele',
     ),
     'scene_video': (
