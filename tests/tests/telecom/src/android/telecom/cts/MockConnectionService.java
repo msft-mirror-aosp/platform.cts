@@ -16,7 +16,7 @@
 
 package android.telecom.cts;
 
-import static android.telecom.cts.ThirdPartyCallScreeningServiceTest.EXTRA_NETWORK_IDENTIFIED_EMERGENCY_CALL;
+import static android.telecom.cts.BaseThirdPartyCallScreeningServiceTest.EXTRA_NETWORK_IDENTIFIED_EMERGENCY_CALL;
 
 import android.net.Uri;
 import android.os.Bundle;
