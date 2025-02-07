@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.Manifest;
 import android.content.Context;
 import android.media.MediaCommunicationManager;
 import android.media.MediaSession2;
@@ -113,8 +114,10 @@ public class MediaCommunicationManagerTest {
 
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
-    public void registerSessionCallback_noMediaContentControlPermission_throwsSecurityException()
-            throws Exception {
+    public void registerSessionCallback_noMediaContentControlPermission_throwsSecurityException() {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
         Executor executor = Executors.newSingleThreadExecutor();
 
         assertNotNull("Missing MediaCommunicationManager", mManager);
