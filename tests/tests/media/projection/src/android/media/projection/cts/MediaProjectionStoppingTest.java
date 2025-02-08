@@ -22,6 +22,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -37,6 +38,7 @@ import android.media.projection.MediaProjection;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -50,6 +52,9 @@ import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
@@ -76,9 +81,11 @@ public class MediaProjectionStoppingTest {
     private static final String TAG = "MediaProjectionStoppingTest";
     private static final int RECORDING_WIDTH = 500;
     private static final int RECORDING_HEIGHT = 700;
+    private static final int STOP_DIALOG_WAIT_TIMEOUT_MS = 5000;
     private static final int RECORDING_DENSITY = 200;
     private static final String CALL_HELPER_START_CALL = "start_call";
     private static final String CALL_HELPER_STOP_CALL = "stop_call";
+    private static final String STOP_DIALOG_TITLE = "Stop sharing screen?";
 
     @Rule
     public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -215,9 +222,11 @@ public class MediaProjectionStoppingTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_STOP_MEDIA_PROJECTION_ON_CALL_END)
+    @RequiresFlagsDisabled(Flags.FLAG_SHOW_STOP_DIALOG_POST_CALL_END)
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
-    public void testMediaProjectionStop_callStartedBeforeMediaProjection_shouldStop()
-            throws Exception {
+    public void
+            testMediaProjectionStop_callStartedBeforeMediaProjection_stopDialogFlagDisabled__shouldStop()
+                    throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELECOM));
         CountDownLatch latch = new CountDownLatch(1);
         try {
@@ -240,6 +249,43 @@ public class MediaProjectionStoppingTest {
 
         assertWithMessage("MediaProjection was not stopped after call end")
                 .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS)).isTrue();
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_STOP_MEDIA_PROJECTION_ON_CALL_END,
+        Flags.FLAG_SHOW_STOP_DIALOG_POST_CALL_END
+    })
+    public void
+            callEnds_mediaProjectionStartedDuringCallAndIsActive_stopDialogFlagEnabled_showsStopDialog()
+                    throws Exception {
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELECOM));
+
+        try {
+            startPhoneCall();
+            startMediaProjection();
+
+            mCallback =
+                    new MediaProjection.Callback() {
+                        @Override
+                        public void onStop() {
+                            fail(
+                                    "MediaProjection should not be stopped when"
+                                            + " FLAG_SHOW_STOP_DIALOG_POST_CALL_END is enabled");
+                        }
+                    };
+            mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
+            createVirtualDisplay();
+
+        } finally {
+            endPhoneCall();
+        }
+
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        boolean isDialogShown =
+                device.wait(
+                        Until.hasObject(By.text(STOP_DIALOG_TITLE)), STOP_DIALOG_WAIT_TIMEOUT_MS);
+        assertWithMessage("Stop dialog should be visible").that(isDialogShown).isTrue();
     }
 
     private void startPhoneCall() {

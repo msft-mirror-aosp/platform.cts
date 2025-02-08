@@ -36,6 +36,7 @@ android_test {
         "truth",
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.espresso.core",
+        "cts-input-lib",
         "cts-wm-util",
         "testables",
         "com.android.text.flags-aconfig-java",

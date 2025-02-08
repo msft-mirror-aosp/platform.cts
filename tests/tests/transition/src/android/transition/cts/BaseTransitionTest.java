@@ -41,6 +41,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.OverrideAnimationScaleRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Before;
@@ -69,6 +70,10 @@ public abstract class BaseTransitionTest {
     @Rule(order = 1)
     public ActivityTestRule<TransitionActivity> mActivityRule =
             new ActivityTestRule<>(TransitionActivity.class);
+
+    @Rule(order = 2)
+    public OverrideAnimationScaleRule mOverrideAnimationScaleRule =
+            new OverrideAnimationScaleRule(1f);
 
     @Before
     public void setup() {

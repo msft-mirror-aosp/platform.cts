@@ -173,7 +173,9 @@ def collect_data_with_surfaces(cam, tablet_device, output_surfaces,
   max_fps = fps_range[1] if (fps_range is not None) else None
   recording_obj = cam.do_preview_recording_multiple_surfaces(
       output_surfaces, video_stream_index, _VIDEO_DURATION, stabilize_mode, ois,
-      zoom_ratio=zoom_ratio, ae_target_fps_min=min_fps, ae_target_fps_max=max_fps)
+      zoom_ratio=zoom_ratio, ae_target_fps_min=min_fps,
+      ae_target_fps_max=max_fps
+  )
 
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])

@@ -67,6 +67,8 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
             "ROUTE_ID_ONLY_SYSTEM_AUDIO_TRANSFERABLE_2";
     public static final String ROUTE_ID_ONLY_REMOTE = "ROUTE_ID_ONLY_REMOTE";
     public static final String ROUTE_ID_BOTH_SYSTEM_AND_REMOTE = "ROUTE_ID_BOTH_SYSTEM_AND_REMOTE";
+    public static final String ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE =
+            "ROUTE_ID_ONLY_SYSTEM_AUDIO_GROUPABLE";
     public static final int VOLUME_MAX = 100;
     public static final int INITIAL_VOLUME = 50;
     private static final String ROUTING_SESSION_ID = "ROUTING_SESSION_ID";
@@ -197,15 +199,54 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
 
     @Override
     public void onSelectRoute(long requestId, @NonNull String sessionId, @NonNull String routeId) {
-        throw new IllegalStateException(
-                "Unexpected: This provider doesn't support stream expansion.");
+        synchronized (sLock) {
+            if (mCurrentRoutingSession == null
+                    || !mCurrentRoutingSession.getSelectableRoutes().contains(routeId)) {
+                notifyRequestFailed(requestId, REASON_INVALID_COMMAND);
+                return;
+            }
+            if (!mRoutes.containsKey(routeId)) {
+                notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
+                return;
+            }
+            mCurrentRoutingSession =
+                    new RoutingSessionInfo.Builder(mCurrentRoutingSession)
+                            .removeSelectableRoute(routeId)
+                            .addSelectedRoute(routeId)
+                            .addDeselectableRoute(routeId)
+                            .build();
+            notifySessionUpdated(mCurrentRoutingSession);
+        }
     }
 
     @Override
     public void onDeselectRoute(
             long requestId, @NonNull String sessionId, @NonNull String routeId) {
-        throw new IllegalStateException(
-                "Unexpected: This provider doesn't support stream expansion.");
+        synchronized (sLock) {
+            if (mCurrentRoutingSession == null
+                    || !mCurrentRoutingSession.getDeselectableRoutes().contains(routeId)) {
+                notifyRequestFailed(requestId, REASON_INVALID_COMMAND);
+                return;
+            }
+            if (!mRoutes.containsKey(routeId)) {
+                notifyRequestFailed(requestId, REASON_ROUTE_NOT_AVAILABLE);
+                return;
+            }
+            var selectedRoutes = mCurrentRoutingSession.getSelectedRoutes();
+            if (!selectedRoutes.contains(routeId) || selectedRoutes.size() == 1) {
+                // We don't expect this condition to be ever true, as that would mean that there's
+                // an implementation error in this provider. But we add this check for robustness.
+                notifyRequestFailed(requestId, REASON_UNKNOWN_ERROR);
+                return;
+            }
+            mCurrentRoutingSession =
+                    new RoutingSessionInfo.Builder(mCurrentRoutingSession)
+                            .removeSelectedRoute(routeId)
+                            .removeDeselectableRoute(routeId)
+                            .addSelectableRoute(routeId)
+                            .build();
+            notifySessionUpdated(mCurrentRoutingSession);
+        }
     }
 
     @Override
@@ -252,6 +293,7 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
         }
     }
 
+    /** Creates a routing session with a single given selected route. */
     private static RoutingSessionInfo createRoutingSession(
             String clientPackageName, String selectedRouteId) {
         boolean isInTransferableRoutes = TRANSFERABLE_ROUTES.contains(selectedRouteId);
@@ -265,6 +307,9 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
                         .setVolumeMax(VOLUME_MAX)
                         .setVolume(INITIAL_VOLUME)
                         .addSelectedRoute(selectedRouteId);
+        if (!selectedRouteId.equals(ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE)) {
+            sessionBuilder.addSelectableRoute(ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE);
+        }
         transferableRoutes.forEach(sessionBuilder::addTransferableRoute);
         return sessionBuilder.build();
     }
@@ -300,6 +345,7 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
                     ROUTE_ID_BOTH_SYSTEM_AND_REMOTE,
                     FLAG_ROUTING_TYPE_SYSTEM_AUDIO | FLAG_ROUTING_TYPE_REMOTE);
             registerRoute(ROUTE_ID_ONLY_REMOTE, FLAG_ROUTING_TYPE_REMOTE);
+            registerRoute(ROUTE_ID_ONLY_SYSTEM_AUDIO_SELECTABLE, FLAG_ROUTING_TYPE_SYSTEM_AUDIO);
         }
     }
 

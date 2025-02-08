@@ -16,6 +16,7 @@
 package com.android.cts.backportedfixes.resolver
 
 import com.android.cts.backportedfixes.bitset.toIndices
+import com.android.cts.backportedfixes.support.alias_bitset
 import java.util.BitSet
 
 internal const val ALIAS_BITSET_PROP_NAME = "ro.build.backported_fixes.alias_bitset.long_list"
@@ -38,39 +39,6 @@ class SystemPropertyResolver : StatusResolver {
 
     private fun initAliases(): Set<Int> {
         // java.util.BitSet are not thread safe, so extract the aliases here.
-        val bsArray = parseLongListString(getAliasBitsetString())
-        return BitSet.valueOf(bsArray).toIndices()
+        return BitSet.valueOf(alias_bitset.toLongArray()).toIndices()
     }
-
-    private fun getAliasBitsetString(): String {
-        // TODO b/381267367 - add sdk check when Build.getBackportedFixStatus is available.
-        try {
-            val c = Class.forName("android.os.SystemProperties")
-            val get = c.getMethod("get", String::class.java, String::class.java)
-
-            return get.invoke(c, ALIAS_BITSET_PROP_NAME, "") as String
-        } catch (e: Exception) {
-            return ""
-        }
-    }
-}
-
-/**
- * Parse a comma separated list of longs.
- *
- * Stops parsing at the first error and returns the previously parsed longs.
- */
-private fun parseLongListString(s: String): LongArray {
-    val list = buildList {
-        for (x in s.split(',')) {
-            try {
-                val l = x.toLong()
-                add(l)
-            } catch (e: NumberFormatException) {
-                // Since the order matters, stop and just return what we have.
-                break
-            }
-        }
-    }
-    return list.toLongArray()
 }
