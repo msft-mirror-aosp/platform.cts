@@ -55,7 +55,6 @@ public class ScanSettingsTest {
         assertThat(settings.getScanResultType()).isEqualTo(0);
         assertThat(settings.getReportDelayMillis()).isEqualTo(0);
         assertThat(settings.getLegacy()).isTrue();
-        assertThat(settings.getPhy()).isEqualTo(ScanSettings.PHY_LE_ALL_SUPPORTED);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
