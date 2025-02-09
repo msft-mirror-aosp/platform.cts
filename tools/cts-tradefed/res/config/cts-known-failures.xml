@@ -452,4 +452,8 @@
     <option name="compatibility:exclude-filter" value="CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#readWriteBqrVsApproachLstoParcel" />
     <option name="compatibility:exclude-filter" value="CtsBluetoothTestCases android.bluetooth.cts.BluetoothQualityReportTest#invalidQualityReportId" />
     <option name="compatibility:exclude-filter" value="CtsBluetoothTestCases android.bluetooth.cts.BluetoothAdapterTest#bluetoothQualityReportReadyCallbacks" />
+
+    <!-- b/379233406 -->
+    <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest[run-on-clone-profile]" />
+    <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest[run-on-private-profile]" />
 </configuration>
