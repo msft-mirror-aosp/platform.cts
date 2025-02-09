@@ -49,6 +49,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.time.Duration;
 
@@ -73,6 +74,8 @@ public class BluetoothPbapClientTest {
     public void setUp() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_BLUETOOTH));
         assumeTrue(BluetoothProperties.isProfilePbapClientEnabled().orElse(false));
+
+        MockitoAnnotations.initMocks(this);
 
         assertThat(BlockingBluetoothAdapter.enable()).isTrue();
 

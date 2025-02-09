@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-
 /** A class for collecting APIs covered by a CTS module. */
 public class CallGraphManager {
 
@@ -82,6 +81,7 @@ public class CallGraphManager {
      */
     public void resolveCoveredApis(ApiCoverage apiCoverage) {
         resolveExtendedMethods();
+        resolveOverriddenAbstractApiMethods(apiCoverage);
         for (ClassProfile classProfile : mModule.getClasses()) {
             if (!classProfile.isNonAbstractTestClass()) {
                 continue;
@@ -101,6 +101,13 @@ public class CallGraphManager {
         markCoveredApisWithoutCaller(apiCoverage);
     }
 
+    /** Resolves cases that methods are overriding abstract API methods. */
+    public void resolveOverriddenAbstractApiMethods(ApiCoverage apiCoverage) {
+        for (ClassProfile classProfile : mModule.getClasses()) {
+            classProfile.resolveOverriddenAbstractApiMethods(apiCoverage);
+        }
+    }
+
     /** Resolves cases that methods are extended from super classes. */
     private void resolveExtendedMethods() {
         for (ClassProfile classProfile : mModule.getClasses()) {
@@ -114,7 +121,7 @@ public class CallGraphManager {
             Set<Integer> visitedComponents,
             TarJan tarjan) {
         List<MethodProfile> methods = tarjan.getComponent(stack.peek());
-        String methodSignature = methods.get(0).getMethodSignatureWithClass();
+        String methodSignature = methods.getFirst().getMethodSignatureWithClass();
         CoveredApiCache coveredApis = mCoveredApiCaches.get(methodSignature);
         if (coveredApis != null) {
             return coveredApis;

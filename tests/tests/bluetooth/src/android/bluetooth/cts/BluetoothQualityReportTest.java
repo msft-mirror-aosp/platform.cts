@@ -102,6 +102,51 @@ public final class BluetoothQualityReportTest {
         assertThat(bqrCommon.getCalFailedItemCount()).isEqualTo(bqrp.mCalFailedItemCount);
     }
 
+    private void assertBqrV6Common(BQRParameters bqrp, BluetoothQualityReport bqr) {
+        // BQR Common
+        BqrCommon bqrCommon = bqr.getBqrCommon();
+        expect.that(bqrCommon).isNotNull();
+        expect.that(bqr.getQualityReportId()).isEqualTo(bqrp.getQualityReportId());
+        if ((bqr.getQualityReportId() == BluetoothQualityReport.QUALITY_REPORT_ID_ENERGY_MONITOR)
+                || (bqr.getQualityReportId()
+                        == BluetoothQualityReport.QUALITY_REPORT_ID_RF_STATS)) {
+            return;
+        }
+        expect.that(bqrCommon.getPacketType()).isEqualTo(bqrp.mPacketType);
+        expect.that(BqrCommon.packetTypeToString(bqrCommon.getPacketType())).isEqualTo("TYPE_NULL");
+        expect.that(bqrCommon.getConnectionHandle()).isEqualTo(bqrp.mConnectionHandle);
+        expect.that(BqrCommon.connectionRoleToString(bqrCommon.getConnectionRole()))
+                .isEqualTo(bqrp.mConnectionRoleCentral);
+        expect.that(bqrCommon.getConnectionRole()).isEqualTo(bqrp.mConnectionRole);
+        expect.that(bqrCommon.getTxPowerLevel()).isEqualTo(bqrp.mTxPowerLevel);
+        expect.that(bqrCommon.getRssi()).isEqualTo(bqrp.mRssi);
+        expect.that(bqrCommon.getSnr()).isEqualTo(bqrp.mSnr);
+        expect.that(bqrCommon.getUnusedAfhChannelCount()).isEqualTo(bqrp.mUnusedAfhChannelCount);
+        expect.that(bqrCommon.getAfhSelectUnidealChannelCount())
+                .isEqualTo(bqrp.mAfhSelectUnidealChannelCount);
+        expect.that(bqrCommon.getLsto()).isEqualTo(bqrp.mLsto);
+        expect.that(bqrCommon.getPiconetClock()).isEqualTo(bqrp.mPiconetClock);
+        expect.that(bqrCommon.getRetransmissionCount()).isEqualTo(bqrp.mRetransmissionCount);
+        expect.that(bqrCommon.getNoRxCount()).isEqualTo(bqrp.mNoRxCount);
+        expect.that(bqrCommon.getNakCount()).isEqualTo(bqrp.mNakCount);
+        expect.that(bqrCommon.getLastTxAckTimestamp()).isEqualTo(bqrp.mLastTxAckTimestamp);
+        expect.that(bqrCommon.getFlowOffCount()).isEqualTo(bqrp.mFlowOffCount);
+        expect.that(bqrCommon.getLastFlowOnTimestamp()).isEqualTo(bqrp.mLastFlowOnTimestamp);
+        expect.that(bqrCommon.getOverflowCount()).isEqualTo(bqrp.mOverflowCount);
+        expect.that(bqrCommon.getUnderflowCount()).isEqualTo(bqrp.mUnderflowCount);
+        expect.that(bqrCommon.getCalFailedItemCount()).isEqualTo(bqrp.mCalFailedItemCount);
+
+        expect.that(bqrCommon.getTxTotalPackets()).isEqualTo(bqrp.mTxTotalPackets);
+        expect.that(bqrCommon.getTxUnackPackets()).isEqualTo(bqrp.mTxUnackPackets);
+        expect.that(bqrCommon.getTxFlushPackets()).isEqualTo(bqrp.mTxFlushPackets);
+        expect.that(bqrCommon.getTxLastSubeventPackets()).isEqualTo(bqrp.mTxLastSubeventPackets);
+        expect.that(bqrCommon.getCrcErrorPackets()).isEqualTo(bqrp.mCrcErrorPackets);
+        expect.that(bqrCommon.getRxDupPackets()).isEqualTo(bqrp.mRxDupPackets);
+        expect.that(bqrCommon.getRxUnRecvPackets()).isEqualTo(bqrp.mRxUnRecvPackets);
+        expect.that(bqrCommon.getCoexInfoMask()).isEqualTo(bqrp.mCoexInfoMask);
+        expect.that(bqrCommon.getCoexInfoMask()).isEqualTo(bqrp.mCoexInfoMask);
+    }
+
     private void assertBqrApproachLsto(BQRParameters bqrp, BluetoothQualityReport bqr) {
         // BQR VS LSTO
         BqrVsLsto bqrVsLsto = (BqrVsLsto) bqr.getBqrEvent();
@@ -686,7 +731,7 @@ public final class BluetoothQualityReportTest {
             BluetoothQualityReport bqrFromParcel =
                     BluetoothQualityReport.CREATOR.createFromParcel(parcel);
 
-            assertBqrCommon(bqrp, bqrFromParcel);
+            assertBqrV6Common(bqrp, bqrFromParcel);
 
             switch (id) {
                 case BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR:

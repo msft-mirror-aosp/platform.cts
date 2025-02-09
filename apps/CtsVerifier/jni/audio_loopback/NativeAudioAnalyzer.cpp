@@ -16,6 +16,10 @@
 
 #include "NativeAudioAnalyzer.h"
 
+#include "WavFileCapture.h"
+
+extern WavFileCapture sWavFileCapture;
+
 static void convertPcm16ToFloat(const int16_t *source,
                                 float *destination,
                                 int32_t numSamples) {
@@ -167,6 +171,8 @@ aaudio_data_callback_result_t NativeAudioAnalyzer::dataCallbackProc(
                                                outputData,
                                                mActualOutputChannelCount,
                                                numFrames);
+
+            sWavFileCapture.captureData(audioData, numFrames);
 
             mIsDone = mLoopbackProcessor->isDone();
             if (mIsDone) {
