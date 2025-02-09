@@ -54,7 +54,8 @@ public class MethodProfile {
         /** A non-test method.*/
         COMMON(4),
         /** A method that is not extended from the super class. */
-        DIRECT_MEMBER(8);
+        DIRECT_MEMBER(8),
+        ABSTRACT(16);
 
         private final int mValue;
 
@@ -92,6 +93,10 @@ public class MethodProfile {
 
     public List<String> getMethodParams() {
         return mParams;
+    }
+
+    public boolean isAbstract() {
+        return matchAllTypes(MethodType.ABSTRACT.getValue());
     }
 
     public Map<String, MethodProfile> getApiMethodCalls() {

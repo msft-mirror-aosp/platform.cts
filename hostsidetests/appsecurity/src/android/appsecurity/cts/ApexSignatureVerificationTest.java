@@ -170,8 +170,8 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
     private void extractApexFiles() {
         final String subFilesFilter = "\\w+.*";
 
-        try {
-            for (Map.Entry<String, File> entry : mLocalApexFileMap.entrySet()) {
+        for (Map.Entry<String, File> entry : mLocalApexFileMap.entrySet()) {
+            try {
                 final String testSrcDirPath = TEST_APEX_SOURCE_DIR_PREFIX + entry.getKey();
                 File apexDir = FileUtil.createTempDir(testSrcDirPath, mBasePath);
                 apexDir.deleteOnExit();
@@ -182,9 +182,9 @@ public class ApexSignatureVerificationTest extends BaseHostJUnit4Test {
                 mExtractedTestDirMap.put(entry.getKey(), apexDir);
 
                 assertThat(FileUtil.findFiles(apexDir, subFilesFilter)).isNotNull();
+            } catch (IOException e) {
+                throw new AssertionError("Failed to extract " + entry.getKey(), e);
             }
-        } catch (IOException e) {
-            throw new AssertionError("extractApexFile IOException" + e);
         }
     }
 

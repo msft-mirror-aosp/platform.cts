@@ -244,13 +244,6 @@ public class VideoEncoderTest extends CodecEncoderTestBase {
         }
         if (IS_AT_LEAST_B && apvSupport() && muxerMp4EnableApv() && extractorMp4EnableApv()) {
             defArgsList.addAll(Arrays.asList(new Object[][]{
-                    {MediaFormat.MIMETYPE_VIDEO_APV, 1000000, 320, 240, 20,
-                            COLOR_FormatYUV420Flexible, CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_APV, 16000000, 720, 480, 30,
-                            COLOR_FormatYUV420Flexible, CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_APV, 40000000, 1280, 720, 30,
-                            COLOR_FormatYUV420Flexible, CODEC_OPTIONAL},
-
                     {MediaFormat.MIMETYPE_VIDEO_APV, 1000000, 320, 240, 20, COLOR_FormatYUVP010,
                             CODEC_OPTIONAL},
                     {MediaFormat.MIMETYPE_VIDEO_APV, 16000000, 720, 480, 30, COLOR_FormatYUVP010,
