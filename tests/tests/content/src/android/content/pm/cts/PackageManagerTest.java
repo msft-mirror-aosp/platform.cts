@@ -410,6 +410,15 @@ public class PackageManagerTest {
         assertTrue(intentActivities.size() > 0);
         checkActivityInfoName(ACTIVITY_NAME, intentActivities);
 
+        // Test queryIntentActivitiesAsUser
+        List<ResolveInfo> intentActivitiesAsUser =
+                mPackageManager.queryIntentActivitiesAsUser(activityIntent,
+                        PackageManager.ResolveInfoFlags.of(0),
+                        UserHandle.of(UserHandle.myUserId()));
+        assertTrue(intentActivitiesAsUser.size() > 0);
+        checkActivityInfoName(ACTIVITY_NAME, intentActivitiesAsUser);
+
+
         // End of Test query Intent Activity related methods
 
         // Test queryInstrumentation
