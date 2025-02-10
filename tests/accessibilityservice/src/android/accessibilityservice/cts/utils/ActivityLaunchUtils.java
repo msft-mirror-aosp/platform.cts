@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.app.UiAutomation;
@@ -89,6 +90,45 @@ public class ActivityLaunchUtils {
         };
         return launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(instrumentation,
                 uiAutomation, activityLauncher, Display.DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Launches an activity on a specified display and waits for it to be onscreen.
+     *
+     * <p>This method creates an intent to launch the specified activity class on the given display
+     * ID. It ensures that the activity is launched in a new task and clears any existing task that
+     * may be associated with the activity. The method also handles shell permissions required for
+     * launching the activity.</p>
+     *
+     * @param instrumentation The instrumentation instance used to start the activity.
+     * @param uiAutomation The UiAutomation instance used to manage UI interactions.
+     * @param clazz The class of the activity to be launched.
+     * @param displayId The ID of the display on which the activity should be launched.
+     * @return An instance of the launched activity.
+     * @throws Exception If there is an error launching the activity or waiting for it.
+     */
+    public static <T extends Activity> T launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
+            Instrumentation instrumentation, UiAutomation uiAutomation, Class<T> clazz,
+            int displayId) throws Exception {
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(displayId);
+        final Intent intent = new Intent(instrumentation.getTargetContext(), clazz);
+        // Add clear task because this activity may on other display.
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        ActivityLauncher activityLauncher = new ActivityLauncher() {
+            @Override
+            Activity launchActivity() {
+                uiAutomation.adoptShellPermissionIdentity();
+                try {
+                    return instrumentation.startActivitySync(intent, options.toBundle());
+                } finally {
+                    uiAutomation.dropShellPermissionIdentity();
+                }
+            }
+        };
+        return launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(instrumentation,
+                uiAutomation, activityLauncher, displayId);
     }
 
     public static CharSequence getActivityTitle(
