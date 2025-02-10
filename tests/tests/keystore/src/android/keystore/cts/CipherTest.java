@@ -1975,22 +1975,23 @@ public class CipherTest {
     }
 
     private ImportedKey importDefaultKatKey(
-            String transformation, int purposes, boolean ivProvidedWhenEncrypting)
-            throws Exception {
+            String transformation, @KeyProperties.PurposeEnum int purposes,
+            boolean ivProvidedWhenEncrypting) throws Exception {
         KeyProtection importParams = TestUtils.getMinimalWorkingImportParametersForCipheringWith(
                 transformation, purposes, ivProvidedWhenEncrypting);
         return importDefaultKatKey(transformation, importParams);
     }
 
     private Collection<ImportedKey> importKatKeys(
-            String transformation, int purposes, boolean ivProvidedWhenEncrypting)
-            throws Exception {
+            String transformation, @KeyProperties.PurposeEnum int purposes,
+            boolean ivProvidedWhenEncrypting) throws Exception {
       return importKatKeys(transformation, purposes, ivProvidedWhenEncrypting, false, false);
     }
 
     private Collection<ImportedKey> importKatKeys(
-            String transformation, int purposes, boolean ivProvidedWhenEncrypting,
-            boolean isUnlockedDeviceRequired, boolean isUserAuthRequired) throws Exception {
+            String transformation, @KeyProperties.PurposeEnum int purposes,
+            boolean ivProvidedWhenEncrypting, boolean isUnlockedDeviceRequired,
+            boolean isUserAuthRequired) throws Exception {
         KeyProtection importParams = TestUtils.getMinimalWorkingImportParametersForCipheringWith(
             transformation, purposes, ivProvidedWhenEncrypting, isUnlockedDeviceRequired,
             isUserAuthRequired);

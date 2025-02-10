@@ -458,4 +458,22 @@
     <!-- b/379233406 -->
     <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest[run-on-clone-profile]" />
     <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest[run-on-private-profile]" />
+
+    <!-- b/379236422 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaBetterTogetherTestCases[run-on-clone-profile]" />
+    <option name="compatibility:exclude-filter" value="CtsMediaBetterTogetherTestCases[run-on-private-profile]" />
+    <option name="compatibility:exclude-filter" value="CtsMediaBetterTogetherTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="CtsMediaBetterTogetherTestCases[run-on-work-profile]" />
+
+    <!-- b/379239507 -->
+    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-clone-profile]" />
+    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-private-profile]" />
+    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-work-profile]" />
+
+    <!-- b/379234304 -->
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-clone-profile]" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-private-profile]" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-work-profile]" />
 </configuration>

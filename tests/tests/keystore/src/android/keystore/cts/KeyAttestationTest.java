@@ -26,12 +26,12 @@ import static android.keystore.cts.AuthorizationList.KM_DIGEST_SHA_2_256;
 import static android.keystore.cts.AuthorizationList.KM_DIGEST_SHA_2_512;
 import static android.keystore.cts.AuthorizationList.KM_ORIGIN_GENERATED;
 import static android.keystore.cts.AuthorizationList.KM_ORIGIN_UNKNOWN;
-import static android.keystore.cts.AuthorizationList.KM_PURPOSE_DECRYPT;
-import static android.keystore.cts.AuthorizationList.KM_PURPOSE_ENCRYPT;
-import static android.keystore.cts.AuthorizationList.KM_PURPOSE_SIGN;
-import static android.keystore.cts.AuthorizationList.KM_PURPOSE_VERIFY;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE;
 import static android.security.keystore.KeyProperties.ENCRYPTION_PADDING_RSA_OAEP;
@@ -209,8 +209,8 @@ public class KeyAttestationTest {
         if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
             return;
 
-        final int[] purposes = {
-                KM_PURPOSE_SIGN, KM_PURPOSE_VERIFY, KM_PURPOSE_SIGN | KM_PURPOSE_VERIFY
+        final @KeyProperties.PurposeEnum int[] purposes = {
+                PURPOSE_SIGN, PURPOSE_VERIFY, PURPOSE_SIGN | PURPOSE_VERIFY
         };
         final boolean[] devicePropertiesAttestationValues = {true, false};
         final boolean[] includeValidityDatesValues = {true, false};
@@ -331,8 +331,14 @@ public class KeyAttestationTest {
         boolean[] devicePropertiesAttestationValues = {true, false};
         for (boolean devicePropertiesAttestation : devicePropertiesAttestationValues) {
             try {
-                testEcAttestation(new byte[129], true /* includeValidityDates */, "secp256r1", 256,
-                        KM_PURPOSE_SIGN, devicePropertiesAttestation, isStrongBox);
+                testEcAttestation(
+                        new byte[129],
+                        true /* includeValidityDates */,
+                        "secp256r1",
+                        256,
+                        PURPOSE_SIGN,
+                        devicePropertiesAttestation,
+                        isStrongBox);
                 fail("Attestation challenges larger than 128 bytes should be rejected");
             } catch (ProviderException e) {
                 KeyStoreException cause = (KeyStoreException) e.getCause();
@@ -657,7 +663,7 @@ public class KeyAttestationTest {
         if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC))
             return;
 
-        final int[] purposes = {
+        final @KeyProperties.PurposeEnum int[] purposes = {
                 PURPOSE_SIGN | PURPOSE_VERIFY,
                 PURPOSE_ENCRYPT | PURPOSE_DECRYPT,
         };
@@ -726,7 +732,7 @@ public class KeyAttestationTest {
         for (boolean devicePropertiesAttestation : devicePropertiesAttestationValues) {
             for (int keySize : keySizes) {
                 for (byte[] challenge : challenges) {
-                    for (int purpose : purposes) {
+                    for (@KeyProperties.PurposeEnum int purpose : purposes) {
                         if (isEncryptionPurpose(purpose)) {
                             testRsaAttestations(keySize, challenge, purpose, encryptionPaddingModes,
                                     devicePropertiesAttestation, isStrongBox);
@@ -945,9 +951,9 @@ public class KeyAttestationTest {
         }
     }
 
-    private void testRsaAttestations(int keySize, byte[] challenge, int purpose,
-            String[][] paddingModes, boolean devicePropertiesAttestation,
-            boolean isStrongBox) throws Exception {
+    private void testRsaAttestations(int keySize, byte[] challenge,
+            @KeyProperties.PurposeEnum int purpose, String[][] paddingModes,
+            boolean devicePropertiesAttestation, boolean isStrongBox) throws Exception {
         for (String[] paddings : paddingModes) {
             try {
                 testRsaAttestation(challenge, true /* includeValidityDates */, keySize, purpose,
@@ -1056,7 +1062,7 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("deprecation")
     private void testCurve25519Attestations(String curve, byte[] challenge,
-                                         int purpose, boolean devicePropertiesAttestation)
+            @KeyProperties.PurposeEnum int purpose, boolean devicePropertiesAttestation)
             throws Exception {
         Log.i(TAG, curve + " curve key attestation with: "
                 + " / challenge " + Arrays.toString(challenge)
@@ -1107,8 +1113,8 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("deprecation")
     private void testRsaAttestation(byte[] challenge, boolean includeValidityDates, int keySize,
-            int purposes, String[] paddingModes, boolean devicePropertiesAttestation,
-            boolean isStrongBox) throws Exception {
+            @KeyProperties.PurposeEnum int purposes, String[] paddingModes,
+            boolean devicePropertiesAttestation, boolean isStrongBox) throws Exception {
         Log.i(TAG, "RSA key attestation with: challenge " + Arrays.toString(challenge) +
                 " / includeValidityDates " + includeValidityDates + " / keySize " + keySize +
                 " / purposes " + purposes + " / paddingModes " + Arrays.toString(paddingModes) +
@@ -1163,7 +1169,8 @@ public class KeyAttestationTest {
         }
     }
 
-    private void checkKeyUsage(X509Certificate attestationCert, int purposes) {
+    private void checkKeyUsage(X509Certificate attestationCert,
+            @KeyProperties.PurposeEnum int purposes) {
 
         boolean[] expectedKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
         if (isSignaturePurpose(purposes)) {
@@ -1182,8 +1189,8 @@ public class KeyAttestationTest {
 
     @SuppressWarnings("deprecation")
     private void testEcAttestation(byte[] challenge, boolean includeValidityDates, String ecCurve,
-            int keySize, int purposes, boolean devicePropertiesAttestation,
-            boolean isStrongBox) throws Exception {
+            int keySize, @KeyProperties.PurposeEnum int purposes,
+            boolean devicePropertiesAttestation, boolean isStrongBox) throws Exception {
         Log.i(TAG, "EC key attestation with: challenge " + Arrays.toString(challenge) +
                 " / includeValidityDates " + includeValidityDates + " / ecCurve " + ecCurve +
                 " / keySize " + keySize + " / purposes " + purposes +
@@ -1305,7 +1312,8 @@ public class KeyAttestationTest {
         assertNull(attestation.getSoftwareEnforced().getSerialNumber());
     }
 
-    private void checkKeyIndependentAttestationInfo(byte[] challenge, int purposes,
+    private void checkKeyIndependentAttestationInfo(byte[] challenge,
+            @KeyProperties.PurposeEnum int purposes,
             Date startTime, boolean includesValidityDates,
             boolean devicePropertiesAttestation, Attestation attestation)
             throws NoSuchAlgorithmException, NameNotFoundException {
@@ -1318,10 +1326,10 @@ public class KeyAttestationTest {
                 devicePropertiesAttestation, attestation);
     }
 
-    private void checkKeyIndependentAttestationInfo(byte[] challenge, int purposes,
-            Set digests, Date startTime, boolean includesValidityDates,
-            boolean devicePropertiesAttestation, Attestation attestation)
-            throws NoSuchAlgorithmException, NameNotFoundException {
+    private void checkKeyIndependentAttestationInfo(byte[] challenge,
+            @KeyProperties.PurposeEnum int purposes, Set digests, Date startTime,
+            boolean includesValidityDates, boolean devicePropertiesAttestation,
+            Attestation attestation) throws NoSuchAlgorithmException, NameNotFoundException {
         checkUnexpectedOids(attestation);
         checkAttestationSecurityLevelDependentParams(attestation);
         assertNotNull("Attestation challenge must not be null.",
@@ -1539,7 +1547,8 @@ public class KeyAttestationTest {
         }
     }
 
-    private Set<Integer> checkPurposes(Attestation attestation, int purposes) {
+    private Set<Integer> checkPurposes(Attestation attestation,
+            @KeyProperties.PurposeEnum int purposes) {
         Set<Integer> expectedPurposes = buildPurposeSet(purposes);
         if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_SOFTWARE
                 || attestation.getKeymasterVersion() == 0) {
@@ -1855,19 +1864,19 @@ public class KeyAttestationTest {
         assertNull(nonKeyDetailsList.getPaddingModes());
     }
 
-    private boolean isEncryptionPurpose(int purposes) {
+    private boolean isEncryptionPurpose(@KeyProperties.PurposeEnum int purposes) {
         return (purposes & PURPOSE_DECRYPT) != 0 || (purposes & PURPOSE_ENCRYPT) != 0;
     }
 
-    private boolean isSignaturePurpose(int purposes) {
+    private boolean isSignaturePurpose(@KeyProperties.PurposeEnum int purposes) {
         return (purposes & PURPOSE_SIGN) != 0 || (purposes & PURPOSE_VERIFY) != 0;
     }
 
-    private boolean isAgreeKeyPurpose(int purposes) {
+    private boolean isAgreeKeyPurpose(@KeyProperties.PurposeEnum int purposes) {
         return (purposes & PURPOSE_AGREE_KEY) != 0;
     }
 
-    private ImmutableSet<Integer> buildPurposeSet(int purposes) {
+    private ImmutableSet<Integer> buildPurposeSet(@KeyProperties.PurposeEnum int purposes) {
         ImmutableSet.Builder<Integer> builder = ImmutableSet.builder();
         if ((purposes & PURPOSE_SIGN) != 0)
             builder.add(KM_PURPOSE_SIGN);
