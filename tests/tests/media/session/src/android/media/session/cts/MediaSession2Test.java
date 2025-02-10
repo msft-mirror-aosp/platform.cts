@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -433,6 +434,9 @@ public class MediaSession2Test {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onPostConnect_rejected() throws Exception {
+        androidx.test.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
         Session2Callback sessionCallback = new Session2Callback() {
             @Override
             public Session2CommandGroup onConnect(MediaSession2 session,
