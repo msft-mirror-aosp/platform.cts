@@ -1199,8 +1199,6 @@ public class BitStreamUtils {
         @Override
         public Pair<Integer, Integer> getProfileLevel(@SuppressWarnings("unused") boolean isCsd) {
             ParsableBitArray bitArray = new ParsableBitArray(mData, mOffset, mLimit);
-            //TODO(b/392976813): These 4 lines need to be removed once test data are fixed.
-            bitArray.readBits(32);
             Assert.assertEquals(1, bitArray.readBits(8));  // configuration version
             int numConfigEntry = bitArray.readBits(8);
 
