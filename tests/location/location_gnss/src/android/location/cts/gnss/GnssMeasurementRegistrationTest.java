@@ -101,9 +101,9 @@ public class GnssMeasurementRegistrationTest {
     @Test
     public void testGnssMeasurementRegistration() throws Exception {
         assumeTrue(TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG));
-        assumeFalse("Test is being skipped because the system has the AUTOMOTIVE feature.",
-                TestMeasurementUtil.isAutomotiveDevice(mContext));
-
+        if (TestMeasurementUtil.isAutomotiveDevice(mContext)) {
+            assumeTrue(TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager));
+        }
         // Register for GPS measurements.
         mMeasurementListener = new TestGnssMeasurementListener(TAG, GPS_EVENTS_COUNT);
         mTestLocationManager.registerGnssMeasurementCallback(mMeasurementListener);
@@ -117,9 +117,9 @@ public class GnssMeasurementRegistrationTest {
     @Test
     public void testGnssMeasurementRegistration_enableFullTracking() throws Exception {
         assumeTrue(TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG));
-        assumeFalse("Test is being skipped because the system has the AUTOMOTIVE feature.",
-                TestMeasurementUtil.isAutomotiveDevice(mContext));
-
+        if (TestMeasurementUtil.isAutomotiveDevice(mContext)) {
+            assumeTrue(TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager));
+        }
         // Register for GPS measurements.
         mMeasurementListener = new TestGnssMeasurementListener(TAG, GPS_EVENTS_COUNT);
         mTestLocationManager.registerGnssMeasurementCallback(mMeasurementListener,
@@ -134,8 +134,9 @@ public class GnssMeasurementRegistrationTest {
     @Test
     public void testGnssMeasurementRegistration_2secInterval() throws Exception {
         assumeTrue(TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG));
-        assumeFalse("Test is being skipped because the system has the AUTOMOTIVE feature.",
-                TestMeasurementUtil.isAutomotiveDevice(mContext));
+        if (TestMeasurementUtil.isAutomotiveDevice(mContext)) {
+            assumeTrue(TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager));
+        }
 
         // Register for GPS measurements.
         mMeasurementListener = new TestGnssMeasurementListener(TAG, GPS_EVENTS_COUNT);
@@ -153,8 +154,9 @@ public class GnssMeasurementRegistrationTest {
     @Test
     public void testGnssMeasurementRegistration_passiveListenerOnly() throws Exception {
         assumeTrue(TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG));
-        assumeFalse("Test is being skipped because the system has the AUTOMOTIVE feature.",
-                TestMeasurementUtil.isAutomotiveDevice(mContext));
+        if (TestMeasurementUtil.isAutomotiveDevice(mContext)) {
+            assumeTrue(TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager));
+        }
 
         // Register for GNSS measurements with passive interval
         mMeasurementListener = new TestGnssMeasurementListener(TAG, GPS_EVENTS_COUNT);
@@ -180,8 +182,9 @@ public class GnssMeasurementRegistrationTest {
     public void testGnssMeasurementRegistration_passiveListenerAndNonPassiveListener()
             throws Exception {
         assumeTrue(TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG));
-        assumeFalse("Test is being skipped because the system has the AUTOMOTIVE feature.",
-                TestMeasurementUtil.isAutomotiveDevice(mContext));
+        if (TestMeasurementUtil.isAutomotiveDevice(mContext)) {
+            assumeTrue(TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager));
+        }
 
         // Register for GNSS measurements with passive interval
         mMeasurementListener = new TestGnssMeasurementListener(TAG, GPS_EVENTS_COUNT);
@@ -231,6 +234,13 @@ public class GnssMeasurementRegistrationTest {
         Log.i(TAG, "Number of GnssMeasurement events received = " + events.size());
 
         SoftAssert softAssert = new SoftAssert(TAG);
+
+        if (TestMeasurementUtil.isAutomotiveDevice(mContext)) {
+            softAssert.assertOrWarnTrue(
+                    false, "Did not receive any GnssMeasurement events.", events.isEmpty());
+            return;
+        }
+
         softAssert.assertTrue(
                 "Did not receive any GnssMeasurement events.  Retry outdoors?",
                 !events.isEmpty());
