@@ -44,13 +44,18 @@ import static android.scopedstorage.cts.lib.TestUtils.readExifMetadataFromTestAp
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Instrumentation;
+import android.app.PendingIntent;
+import android.compat.testing.PlatformCompatChangeRule;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -68,16 +73,22 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.install.lib.TestApp;
 
+import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Set;
@@ -112,6 +123,9 @@ public class StorageOtherFilesTest {
     private final Uri mImageUriNoAccess = sFilesRule.getImageUri2();
     private final Uri mVideoUriReadable = sFilesRule.getVideoUri1();
     private final Uri mVideoUriNoAccess = sFilesRule.getVideoUri2();
+
+    @Rule public final TestRule mCompatChangeRule = new PlatformCompatChangeRule();
+    public static final long LIMIT_CREATE_REQUEST_URIS = 203408344L;
 
     @BeforeClass
     public static void init() throws Exception {
@@ -257,6 +271,127 @@ public class StorageOtherFilesTest {
         HashMap<String, String> exifFromTestApp =
                 readExifMetadataFromTestApp(APP_VU_SELECTED, IMAGE_FILE_READABLE.getPath());
         assertExifMetadataMismatch(exifFromTestApp, originalExif);
+    }
+
+    private Collection<Uri> createTestFiles(int numFiles) {
+        Collection<Uri> uris = new ArrayList<Uri>();
+
+        for (int i = 0; i < numFiles; i++) {
+            final ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, "testFile_" + i + ".png");
+            Uri fileUri =
+                    sContentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+            uris.add(fileUri);
+        }
+
+        assertThat(uris.size()).isEqualTo(numFiles);
+        return uris;
+    }
+
+    private void deleteTestFiles(Collection<Uri> uris) {
+        // Delete all files created during the test
+        for (Uri uri : uris) {
+            sContentResolver.delete(uri, null, null);
+        }
+
+        // Assert that files are deleted from the Mediaprovider database
+        try (Cursor c =
+                sContentResolver.query(
+                        uris.iterator().next(),
+                        new String[] {MediaColumns.DATA},
+                        null,
+                        null,
+                        null)) {
+            assertThat(c.getCount()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateRequestLimitUris_throwsIllegalArgumentException() throws Exception {
+        assumeTrue(sContext.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.BAKLAVA);
+
+        final int numFiles = 2100;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
+            // Assert that files are inserted in the Mediaprovider database
+            try (Cursor c =
+                    sContentResolver.query(
+                            uris.iterator().next(),
+                            new String[] {MediaColumns.DATA},
+                            null,
+                            null,
+                            null)) {
+                assertThat(c.getCount()).isEqualTo(1);
+            }
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> MediaStore.createWriteRequest(sContentResolver, uris));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> MediaStore.createDeleteRequest(sContentResolver, uris));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> MediaStore.createFavoriteRequest(sContentResolver, uris, true));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> MediaStore.createTrashRequest(sContentResolver, uris, true));
+        } finally {
+            deleteTestFiles(uris);
+        }
+    }
+
+    @Test
+    @EnableCompatChanges({LIMIT_CREATE_REQUEST_URIS})
+    public void testCreateRequestLimitUris_success() throws Exception {
+        final int numFiles = 2000;
+        Collection<Uri> uris = createTestFiles(numFiles);
+
+        try {
+            // Assert that files are inserted in the Mediaprovider database
+            try (Cursor c =
+                    sContentResolver.query(
+                            uris.iterator().next(),
+                            new String[] {MediaColumns.DATA},
+                            null,
+                            null,
+                            null)) {
+                assertThat(c.getCount()).isEqualTo(1);
+            }
+
+            PendingIntent pi = MediaStore.createWriteRequest(sContentResolver, uris);
+            assertNotNull(pi);
+            doEscalation(pi, true, true, true);
+
+            pi = MediaStore.createFavoriteRequest(sContentResolver, uris, true);
+            assertNotNull(pi);
+            doEscalation(pi);
+
+            pi = MediaStore.createTrashRequest(sContentResolver, uris, true);
+            assertNotNull(pi);
+            doEscalation(pi, true, true, true);
+
+            pi = MediaStore.createDeleteRequest(sContentResolver, uris);
+            assertNotNull(pi);
+            doEscalation(pi, true, true, true);
+
+        } finally {
+            // Assert that files are deleted from the Mediaprovider database
+            try (Cursor c =
+                    sContentResolver.query(
+                            uris.iterator().next(),
+                            new String[] {MediaColumns.DATA},
+                            null,
+                            null,
+                            null)) {
+                assertThat(c.getCount()).isEqualTo(0);
+            }
+        }
     }
 
     private File stageImageFile(String name, int sourceId) throws Exception {
