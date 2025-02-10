@@ -16,8 +16,8 @@
 package android.view.surfacecontrol.cts;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
-import static android.server.wm.CtsWindowInfoUtils.getWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.getWindowBoundsInDisplaySpace;
+import static android.server.wm.CtsWindowInfoUtils.getWindowCenter;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowFocus;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfo;
@@ -93,6 +93,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -845,6 +846,80 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         final ImeEventStream stream = mImeSession.openEventStream();
         expectEvent(stream, editorMatcher("onStartInputView",
                 editText.getPrivateImeOptions()), TIMEOUT_MS);
+    }
+
+    @Test
+    public void testImeVisibleWithZBelowRequest() throws Throwable {
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+        EditText editText = new EditText(mActivity);
+
+        mEmbeddedView = editText;
+        editText.setBackgroundColor(Color.BLUE);
+        editText.setPrivateImeOptions("Hello reader! This is a random string");
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, /*onTop*/ false);
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        // When surface view is focused, it should transfer focus to the embedded view.
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, true);
+        // assert host does not have focus
+        assertWindowFocused(mSurfaceView, false);
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    editText.requestFocus();
+                    final InputMethodManager imm =
+                            mActivity.getSystemService(InputMethodManager.class);
+                    imm.showSoftInput(editText, 0);
+                });
+
+        final ImeEventStream stream = mImeSession.openEventStream();
+        expectEvent(
+                stream,
+                editorMatcher("onStartInputView", editText.getPrivateImeOptions()),
+                TIMEOUT_MS);
+    }
+
+    @Test
+    public void testImeVisibleWithZBelowTouch() throws Throwable {
+        assumeTrue(MSG_NO_MOCK_IME, supportsInstallableIme());
+        EditText editText = new EditText(mActivity);
+
+        mEmbeddedView = editText;
+        editText.setBackgroundColor(Color.BLUE);
+        editText.setPrivateImeOptions("Hello reader! This is a random string");
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, /*onTop*/ false);
+        mInstrumentation.waitForIdleSync();
+        waitUntilEmbeddedViewDrawn();
+
+        // When surface view is focused, it should transfer focus to the embedded view.
+        requestSurfaceViewFocus();
+        assertWindowFocused(mEmbeddedView, true);
+        // assert host does not have focus
+        assertWindowFocused(mSurfaceView, false);
+
+        CountDownLatch waitForClientDraw = new CountDownLatch(1);
+        SurfaceControl.Transaction t = new SurfaceControl.Transaction();
+        t.addTransactionCommittedListener(Runnable::run, waitForClientDraw::countDown);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    mSurfaceView.getRootSurfaceControl().applyTransactionOnDraw(t);
+                    mSurfaceView.getRootSurfaceControl().setTouchableRegion(new Region());
+                });
+        assertTrue(
+                "Failed to wait for touchable region to be updated",
+                waitForClientDraw.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+
+        // wait for input to get the updated touch regions
+        mInstrumentation.getUiAutomation().syncInputTransactions(true);
+
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
+        final ImeEventStream stream = mImeSession.openEventStream();
+        expectEvent(
+                stream,
+                editorMatcher("onStartInputView", editText.getPrivateImeOptions()),
+                TIMEOUT_MS);
     }
 
     @Test
