@@ -94,6 +94,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         self.secondary.cdm.btStartAutoAcceptIncomingPairRequest()
         self.primary.cdm.btDiscoverAndGetResults()
         self.primary.cdm.btPairDevice(secondary_address)
+        sleep(cdm_base_test.OPERATION_DELAY_TIME)
 
         # Assert bluetooth pairing success
         paired_devices = map(lambda device: device['Address'], self.primary.cdm.btGetPairedDevices())
