@@ -58,6 +58,7 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @RunWith(AndroidJUnit4.class)
@@ -102,6 +103,35 @@ public class LoopbackPassthroughTest {
         }
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation().dropShellPermissionIdentity();
+    }
+
+    private static class Assert {
+        public static void fail(String message) {
+            Log.e(TAG, message);
+            org.junit.Assert.fail(message);
+        }
+
+        public static void assertNotNull(String message, Object object) {
+            if (object == null) {
+                Log.e(TAG, message);
+            }
+            org.junit.Assert.assertNotNull(message, object);
+        }
+
+        public static void assertTrue(String message, boolean condition) {
+            if (!condition) {
+                Log.e(TAG, message);
+            }
+            org.junit.Assert.assertTrue(message, condition);
+        }
+
+        public static <T> void assertEquals(String message, T expected, T actual) {
+            if (!Objects.equals(expected, actual)) {
+                Log.e(TAG, message + ". Expected " + String.valueOf(expected) + " but got "
+                        + String.valueOf(actual) + ".");
+            }
+            org.junit.Assert.assertEquals(message, expected, actual);
+        }
     }
 
     @CddTest(requirement="5.4.3/C-1-1")
@@ -182,7 +212,7 @@ public class LoopbackPassthroughTest {
                 .build();
 
         if (mAudioManager.registerAudioPolicy(mAudioPolicy) != AudioManager.SUCCESS) {
-            fail("failed to register audio policy");
+            Assert.fail("failed to register audio policy");
         }
         try {
             Thread.sleep(1000);
@@ -191,15 +221,15 @@ public class LoopbackPassthroughTest {
         }
 
         AudioRecord recorder = mAudioPolicy.createAudioRecordSink(audioMix);
-        assertNotNull("didn't create AudioRecord sink", recorder);
-        assertEquals("AudioRecord not initialized", AudioRecord.STATE_INITIALIZED,
+        Assert.assertNotNull("didn't create AudioRecord sink", recorder);
+        Assert.assertEquals("AudioRecord not initialized", AudioRecord.STATE_INITIALIZED,
                 recorder.getState());
         AudioRecordThread audioRecordThread = new AudioRecordThread(recorder, checkAudioData);
         audioRecordThread.startRecording();
 
         // when audio policy is installed, 3P apps should be able to discover direct capabilities
         if (mPlaybackSource.getFormat() == AudioFormat.ENCODING_E_AC3_JOC) {
-            assertEquals("direct playback not supported",
+            Assert.assertEquals("direct playback not supported",
                     AudioManager.DIRECT_PLAYBACK_BITSTREAM_SUPPORTED,
                     AudioManager.getDirectPlaybackSupport(mMixFormat, mediaAttr)
                             | AudioManager.DIRECT_PLAYBACK_BITSTREAM_SUPPORTED);
@@ -229,7 +259,7 @@ public class LoopbackPassthroughTest {
                     int ret = player.write(chunk, bytesRead - bytesToWrite, bytesToWrite,
                             AudioTrack.WRITE_BLOCKING);
                     if (ret < 0) {
-                        fail("Unable to write to AudioTrack");
+                        Assert.fail("Unable to write to AudioTrack, returns:" + ret);
                     } else {
                         bytesToWrite -= ret;
                         totalBytesWritten += ret;
@@ -240,7 +270,7 @@ public class LoopbackPassthroughTest {
                                 && ret < kBufferSizeInBytes) {
                             player.play();
                             Log.v(TAG, "start play");
-                            assertEquals("track not routed to remote submix",
+                            Assert.assertEquals("track not routed to remote submix",
                                     AudioDeviceInfo.TYPE_REMOTE_SUBMIX,
                                     player.getRoutedDevice().getType());
                         }
@@ -255,18 +285,18 @@ public class LoopbackPassthroughTest {
                                 expectedFramePositionPcmReferred - mMixFormat.getSampleRate();
                         float maxAllowedFramePosition =
                                 expectedFramePositionPcmReferred + mMixFormat.getSampleRate();
-                        assertTrue("timestamp position:" + timestamp.framePosition
+                        Assert.assertTrue("timestamp position:" + timestamp.framePosition
                                         + " time:" + timestamp.nanoTime + " out of range",
                                 timestamp.framePosition >= minAllowedFramePosition
                                         && timestamp.framePosition <= maxAllowedFramePosition);
-                        assertTrue("head position:" + headPosition + " out of range",
+                        Assert.assertTrue("head position:" + headPosition + " out of range",
                                 headPosition >= minAllowedFramePosition
                                         && headPosition <= maxAllowedFramePosition);
                     }
                 }
             }
         } catch (UnsupportedOperationException e) {
-            fail("can't create audio track");
+            Assert.fail("can't create audio track");
         } finally {
             if (player != null) {
                 player.stop();
@@ -276,11 +306,11 @@ public class LoopbackPassthroughTest {
 
         try {
             Thread.sleep(1000);
-            assertTrue("AudioRecord output differs from AudioTrack input",
+            Assert.assertTrue("AudioRecord output differs from AudioTrack input",
                     audioRecordThread.isRecordingOutputCorrect());
 
         } catch (InterruptedException e) {
-            fail("main thread interrupted");
+            Assert.fail("main thread interrupted");
         } finally {
             audioRecordThread.stopRecording();
         }
@@ -341,7 +371,7 @@ public class LoopbackPassthroughTest {
 
         public Eac3JocAudioSource(int resource) {
             mStream = mContext.getResources().openRawResource(resource);
-            assertNotNull("Stream is null", mStream);
+            Assert.assertNotNull("Stream is null when opening resource:" + resource, mStream);
             mBytesRead = 0;
         }
 
@@ -355,7 +385,7 @@ public class LoopbackPassthroughTest {
                 mBytesRead += bytesRead;
                 return bytesRead;
             } catch (IOException e) {
-                fail("Unable to read from stream");
+                Assert.fail("Unable to read from stream: " + e.getMessage());
                 return 0;
             }
         }
@@ -377,7 +407,7 @@ public class LoopbackPassthroughTest {
                     mStream.close();
                 }
             } catch (IOException e) {
-                fail("Unable to close asset file stream");
+                Assert.fail("Unable to close asset file stream: " + e.getMessage());
             }
         }
     }
@@ -396,9 +426,9 @@ public class LoopbackPassthroughTest {
 
         public void startRecording() {
             mRecord.startRecording();
-            assertEquals("recording didn't start", AudioRecord.RECORDSTATE_RECORDING,
+            Assert.assertEquals("recording didn't start", AudioRecord.RECORDSTATE_RECORDING,
                     mRecord.getRecordingState());
-            assertEquals("recorder not routed from remote submix",
+            Assert.assertEquals("recorder not routed from remote submix",
                     AudioDeviceInfo.TYPE_REMOTE_SUBMIX, mRecord.getRoutedDevice().getType());
             start();
         }
@@ -412,7 +442,7 @@ public class LoopbackPassthroughTest {
             try {
                 join();
             } catch (InterruptedException e) {
-                fail("Unable to complete test successfully");
+                Assert.fail("Unable to complete test successfully");
             }
         }
 
