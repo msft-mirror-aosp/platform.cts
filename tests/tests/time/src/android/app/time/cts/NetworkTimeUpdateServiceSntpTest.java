@@ -100,6 +100,8 @@ public class NetworkTimeUpdateServiceSntpTest {
 
         skipOnFormFactorsWithoutService(mNetworkTimeUpdateServiceShellHelper);
 
+        skipIfNetworkTimeUpdateServiceIsDisabled(mNetworkTimeUpdateServiceShellHelper);
+
         mSetupInstant = Instant.now();
         mSetupElapsedRealtimeMillis = SystemClock.elapsedRealtime();
         mTimeDetectorShellHelper = new TimeDetectorShellHelper(mShellCommandExecutor);
@@ -270,6 +272,23 @@ public class NetworkTimeUpdateServiceSntpTest {
             // assumeFalse(isWatch()) would also work except for the assertion immediately above.
             throw new AssumptionViolatedException(
                     "Skipping test on devices without network_time_update_service");
+        }
+    }
+
+    private static void skipIfNetworkTimeUpdateServiceIsDisabled(
+            NetworkTimeUpdateServiceShellHelper networkTimeUpdateServiceShellHelper)
+            throws Exception {
+        // Skip test if NetworkTimeUpdateService is disabled for this OEM. OEMs
+        // may use a separate time update framework, making
+        // SystemClock.currentNetworkTimeClock() unnecessary.
+        if (networkTimeUpdateServiceShellHelper.isNetworkTimeUpdateServiceDisabled()) {
+            // network_time_update_service is not expected to exist
+            // if config.disable_networktime is true
+            assertFalse(networkTimeUpdateServiceShellHelper.isNetworkTimeUpdateServicePresent());
+            // Stop the test execution, but in a way that isn't considered a failure.
+            throw new AssumptionViolatedException(
+                    "Skipping test on devices where network_time_update_service is disabled by"
+                            + " OEM");
         }
     }
 
