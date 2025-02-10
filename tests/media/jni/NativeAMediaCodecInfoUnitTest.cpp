@@ -362,9 +362,10 @@ bool NativeAMediaCodecInfoUnitTest::validateGetCodecMetadataArgs(
             }
             got = func(obj, arg);
             if (!equals(got, expResult)) {
-                mErrorLogs.append(StringFormat("For codec %s, %s returned %s expected %s \n",
-                                               mCodecName, funcName, toString(got).c_str(),
-                                               toString(expResult).c_str()));
+                mErrorLogs.append(
+                        StringFormat("For codec %s, input %s, %s returned %s expected %s \n",
+                                     mCodecName, toString(arg).c_str(), funcName,
+                                     toString(got).c_str(), toString(expResult).c_str()));
                 return false;
             }
             return true;
@@ -999,9 +1000,9 @@ bool NativeAMediaCodecInfoUnitTest::validateSizeAndRateSupport(int width, int he
             if (got != expected) {
                 mErrorLogs.append(
                         StringFormat("For ACodecVideoCapabilities_areSizeAndRateSupported width "
-                                     "%d, height %d, expected %d, "
+                                     "%d, height %d, rate %f, expected %d, "
                                      "returned %d\n",
-                                     width, height, expected, got));
+                                     width, height, frameRate, expected, got));
                 return false;
             }
             return true;
@@ -1068,12 +1069,14 @@ bool NativeAMediaCodecInfoUnitTest::validatePerformancePoint(
     if (__builtin_available(android 36, *)) {
         auto got = func(nullptr, arg);
         if (-1 != got) {
-            mErrorLogs.append(StringFormat("%s returned %d expected -1\n", funcName, got));
+            mErrorLogs.append(
+                    StringFormat("for invalid args, %s returned %d expected -1\n", funcName, got));
             return false;
         }
         got = func(pp, nullptr);
         if (-1 != got) {
-            mErrorLogs.append(StringFormat("%s returned %d expected -1\n", funcName, got));
+            mErrorLogs.append(
+                    StringFormat("for invalid args, %s returned %d expected -1\n", funcName, got));
             return false;
         }
         got = func(pp, arg);
