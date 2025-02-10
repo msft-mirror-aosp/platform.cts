@@ -364,4 +364,19 @@
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
 
+    <!-- b/379021510 -->
+    <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases[run-on-work-profile]" />
+
+    <!-- b/388414112 -->
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-work-profile]" />
+    <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-secondary-user]" />
+
+    <!-- b/383451982-->
+    <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="CtsPhotoPickerTest[run-on-work-profile]" />
+
+    <!-- b/379036155-->
+    <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases[run-on-work-profile]" />
 </configuration>
