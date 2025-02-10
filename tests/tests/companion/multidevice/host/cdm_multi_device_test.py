@@ -8,12 +8,18 @@ Run: atest CtsCompanionDeviceManagerMultiDeviceTestCases
 import api_flags_utils
 import cdm_base_test
 
+from android.platform.test.annotations import ApiTest, CddTest
 from mobly import asserts
 from mobly import test_runner
 from time import sleep
 
+@CddTest(requirements = ["3.16/C-1-1", "3.16/C-1-2"])
 class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#associate(android.companion.AssociationRequest, android.companion.CompanionDeviceManager.Callback, android.os.Handler)',
+            'android.companion.CompanionDeviceManager#getMyAssociations()'
+    ])
     def test_associate_createsAssociation_classicBluetooth(self):
         """Test that CDM can create association with another BT device"""
 
@@ -31,6 +37,12 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_true(secondary_id in associations, 'Association not found.')
 
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#buildPermissionTransferUserConsentIntent(int)',
+            'android.companion.CompanionDeviceManager#attachSystemDataTransport(int, java.io.InputStream, java.io.OutputStream)',
+            'android.companion.CompanionDeviceManager#detachSystemDataTransport(int)',
+            'android.companion.CompanionDeviceManager#startSystemDataTransfer(int, java.util.concurrent.Executor, android.os.OutcomeReceiver)'
+    ])
     def test_permissions_sync(self):
         """Test that CDM can perform permissions sync from one device to another via BT"""
 
@@ -75,6 +87,9 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         self.primary.cdm.startPermissionsSync(secondary_id)
 
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#removeBond(int)'
+    ])
     def test_removeBond_associatedDevice_succeeds(self):
         """This tests that CDM can remove bluetooth bond from an associated device."""
 
