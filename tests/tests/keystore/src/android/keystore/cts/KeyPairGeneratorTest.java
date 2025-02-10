@@ -376,7 +376,8 @@ public class KeyPairGeneratorTest {
                                 KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1};
                 String[] digests =
                         new String[] {KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_SHA1};
-                int purposes = KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_ENCRYPT;
+                @KeyProperties.PurposeEnum int purposes =
+                        KeyProperties.PURPOSE_SIGN | KeyProperties.PURPOSE_ENCRYPT;
                 KeyPairGenerator generator = getGenerator(algorithm);
                 generator.initialize(getWorkingSpec(purposes)
                         .setBlockModes(blockModes)
@@ -2152,7 +2153,7 @@ public class KeyPairGeneratorTest {
         return getWorkingSpec(0);
     }
 
-    private KeyGenParameterSpec.Builder getWorkingSpec(int purposes) {
+    private KeyGenParameterSpec.Builder getWorkingSpec(@KeyProperties.PurposeEnum int purposes) {
         return new KeyGenParameterSpec.Builder(TEST_ALIAS_1, purposes);
     }
 

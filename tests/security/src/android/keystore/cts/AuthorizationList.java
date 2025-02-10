@@ -22,6 +22,11 @@ import static com.google.common.base.Functions.forMap;
 import static com.google.common.collect.Collections2.transform;
 
 import android.os.Build;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
 import android.security.keystore.KeyProperties;
 import android.util.Log;
 
@@ -80,12 +85,6 @@ public class AuthorizationList {
     public static final int KM_ORIGIN_GENERATED = 0;
     public static final int KM_ORIGIN_IMPORTED = 2;
     public static final int KM_ORIGIN_UNKNOWN = 3;
-
-    // Operation Purposes.
-    public static final int KM_PURPOSE_ENCRYPT = 0;
-    public static final int KM_PURPOSE_DECRYPT = 1;
-    public static final int KM_PURPOSE_SIGN = 2;
-    public static final int KM_PURPOSE_VERIFY = 3;
 
     // User authenticators.
     public static final int HW_AUTH_PASSWORD = 1 << 0;
@@ -172,6 +171,7 @@ public class AuthorizationList {
             .put(KM_PURPOSE_ENCRYPT, "ENCRYPT")
             .put(KM_PURPOSE_SIGN, "SIGN")
             .put(KM_PURPOSE_VERIFY, "VERIFY")
+            .put(KM_PURPOSE_AGREE_KEY, "AGREE_KEY")
             .build();
 
     private Integer securityLevel;
