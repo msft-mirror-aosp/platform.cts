@@ -19,6 +19,7 @@ package android.security.cts.advancedprotection;
 import static android.security.advancedprotection.AdvancedProtectionManager.FEATURE_ID_ENABLE_MTE;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -89,9 +90,12 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
                         .count());
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#setAdvancedProtectionEnabled"
+            })
     @Test
     public void testEnableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
@@ -101,15 +105,22 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
                 SystemProperties.get(MTE_CONTROL_PROPERTY));
     }
 
-    @ApiTest(apis = {
-            "android.security.advancedprotection.AdvancedProtectionManager"
-                    + "#setAdvancedProtectionEnabled"})
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    @ApiTest(
+            apis = {
+                "android.security.advancedprotection.AdvancedProtectionManager"
+                        + "#setAdvancedProtectionEnabled"
+            })
     @Test
     public void testDisableProtection() throws InterruptedException {
         assumeTrue(isAvailable());
         setAdvancedProtectionEnabled(false);
-        assertEquals("The MTE system is not in default state",
-                "default",
-                SystemProperties.get(MTE_CONTROL_PROPERTY));
+        String mtePropertyValue = SystemProperties.get(MTE_CONTROL_PROPERTY);
+        // "default" is the value that should be set by the DevicePolicyManager, but
+        // "none" is also valid since that's the default value on the device.
+        boolean mteIsDefaultOrNone =
+                mtePropertyValue.equals("default") || mtePropertyValue.equals("none");
+        assertTrue(
+                "The MTE system is not in default state: " + mtePropertyValue, mteIsDefaultOrNone);
     }
 }
