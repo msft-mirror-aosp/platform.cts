@@ -307,6 +307,103 @@ public class AccessibilityNodeInfoTest {
 
     @SmallTest
     @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#getSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+                "android.view.accessibility.AccessibilityNodeInfo#SelectionPosition"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SELECTION_API)
+    public void selectionComesThroughParcel() {
+        AccessibilityNodeInfo a = new AccessibilityNodeInfo();
+        a.setText("a");
+        AccessibilityNodeInfo b = new AccessibilityNodeInfo();
+        b.setText("b");
+        AccessibilityNodeInfo info = new AccessibilityNodeInfo();
+        AccessibilityNodeInfo.Selection selection =
+                new AccessibilityNodeInfo.Selection(
+                        new AccessibilityNodeInfo.SelectionPosition(a, 1),
+                        new AccessibilityNodeInfo.SelectionPosition(b, 2));
+        info.setSelection(selection);
+        final Parcel parcel = Parcel.obtain();
+        info.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        final AccessibilityNodeInfo unparceledNode =
+                AccessibilityNodeInfo.CREATOR.createFromParcel(parcel);
+        final AccessibilityNodeInfo.Selection unparceledSelection = unparceledNode.getSelection();
+        assertEquals(selection, unparceledSelection);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#getSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+                "android.view.accessibility.AccessibilityNodeInfo#SelectionPosition"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SELECTION_API)
+    public void textSelectionInteropInvalid() {
+        AccessibilityNodeInfo a = new AccessibilityNodeInfo(new View(getContext()));
+        a.setText("a");
+        AccessibilityNodeInfo b = new AccessibilityNodeInfo(new View(getContext()));
+        b.setText("b");
+        AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
+        // Test null selection.
+        assertThat(info.getTextSelectionStart()).isEqualTo(-1);
+        assertThat(info.getTextSelectionEnd()).isEqualTo(-1);
+        AccessibilityNodeInfo.Selection selection =
+                new AccessibilityNodeInfo.Selection(
+                        new AccessibilityNodeInfo.SelectionPosition(a, 1),
+                        new AccessibilityNodeInfo.SelectionPosition(b, 2));
+        info.setSelection(selection);
+        // Test multi node selection can not be converted to text selection.
+        assertThat(info.getTextSelectionStart()).isEqualTo(-1);
+        assertThat(info.getTextSelectionEnd()).isEqualTo(-1);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#getSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SELECTION_API)
+    public void textSelectionInteropValid() {
+        AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
+        info.setText("Hello World");
+        info.setTextSelection(0, 3);
+        assertThat(info.getSelection()).isNotNull();
+        final AccessibilityNodeInfo.Selection selection = info.getSelection();
+        assertThat(selection.getStart().getOffset()).isEqualTo(0);
+        assertThat(selection.getEnd().getOffset()).isEqualTo(3);
+    }
+
+    @SmallTest
+    @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+                "android.view.accessibility.AccessibilityNodeInfo#SelectionPosition",
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SELECTION_API)
+    public void textSelectionInteropValidReverse() {
+        AccessibilityNodeInfo info = new AccessibilityNodeInfo(new View(getContext()));
+        info.setText("Hello World");
+        info.setSelection(
+                new AccessibilityNodeInfo.Selection(
+                        new AccessibilityNodeInfo.SelectionPosition(info, 0),
+                        new AccessibilityNodeInfo.SelectionPosition(info, 3)));
+        assertThat(info.getTextSelectionStart()).isEqualTo(0);
+        assertThat(info.getTextSelectionEnd()).isEqualTo(3);
+    }
+
+    @SmallTest
+    @Test
     @ApiTest(apis = {
             "android.view.accessibility.AccessibilityNodeInfo#getChecked"
     })
@@ -565,6 +662,9 @@ public class AccessibilityNodeInfoTest {
         if (Flags.a11yIsRequiredApi()) {
             info.setFieldRequired(true);
         }
+
+        // Populate 1 field
+        populateSelection(info);
     }
 
     /**
@@ -581,6 +681,22 @@ public class AccessibilityNodeInfoTest {
 
         final TouchDelegateInfo touchDelegateInfo = new TouchDelegateInfo(targetMap);
         info.setTouchDelegateInfo(touchDelegateInfo);
+    }
+
+    private void populateSelection(AccessibilityNodeInfo info) {
+        if (Flags.a11ySelectionApi()) {
+            AccessibilityNodeInfo nodeA = new AccessibilityNodeInfo();
+            nodeA.setText("a");
+            AccessibilityNodeInfo nodeB = new AccessibilityNodeInfo();
+            nodeB.setText("b");
+            AccessibilityNodeInfo.SelectionPosition pos1 =
+                    new AccessibilityNodeInfo.SelectionPosition(nodeA, 0);
+            AccessibilityNodeInfo.SelectionPosition pos2 =
+                    new AccessibilityNodeInfo.SelectionPosition(nodeB, 0);
+            AccessibilityNodeInfo.Selection selection =
+                    new AccessibilityNodeInfo.Selection(pos1, pos2);
+            info.setSelection(selection);
+        }
     }
 
     private static void assertEqualsTouchDelegateInfo(String message,
@@ -660,8 +776,10 @@ public class AccessibilityNodeInfoTest {
         assertEquals("MinDurationBetweenContentChanges has incorrect value",
                 expectedInfo.getMinDurationBetweenContentChanges().toMillis(),
                 receivedInfo.getMinDurationBetweenContentChanges().toMillis());
-        assertEquals("Unique id has incorrect value", expectedInfo.getUniqueId(),
-            receivedInfo.getUniqueId());
+        assertEquals(
+                "Unique id has incorrect value",
+                expectedInfo.getUniqueId(),
+                receivedInfo.getUniqueId());
         assertEquals("Container title has incorrect value", expectedInfo.getContainerTitle(),
                 receivedInfo.getContainerTitle());
         assertEquals("drawing order has incorrect value", expectedInfo.getDrawingOrder(),
@@ -851,6 +969,11 @@ public class AccessibilityNodeInfoTest {
                     expectedInfo.isFieldRequired(),
                     receivedInfo.isFieldRequired());
         }
+
+        // 1 field
+        if (Flags.a11ySelectionApi()) {
+            assertEquals(expectedInfo.getSelection(), receivedInfo.getSelection());
+        }
     }
 
     /**
@@ -971,6 +1094,11 @@ public class AccessibilityNodeInfoTest {
         // 1 Boolean Proptery
         if (Flags.a11yIsRequiredApi()) {
             assertFalse("isFieldRequired not properly reset", info.isFieldRequired());
+        }
+
+        // 1 field
+        if (Flags.a11ySelectionApi()) {
+            assertNull(info.getSelection());
         }
     }
 
