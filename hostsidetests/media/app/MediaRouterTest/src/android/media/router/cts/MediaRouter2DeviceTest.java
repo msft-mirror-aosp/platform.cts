@@ -16,8 +16,11 @@
 
 package android.media.router.cts;
 
+import static android.content.pm.PackageManager.FEATURE_LEANBACK_ONLY;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_VIDEO;
+import static android.media.MediaRoute2Info.ROUTE_ID_DEFAULT;
+import static android.media.MediaRoute2Info.ROUTE_ID_DEVICE;
 import static android.media.cts.MediaRouterTestConstants.FEATURE_SAMPLE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_DEDUPLICATION_ID_1;
@@ -36,6 +39,7 @@ import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_2;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_3;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_APP_3_ROUTE_5;
+import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_BUILTIN_SPEAKER;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_ID_SELF_SCAN_ONLY;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_4;
 import static android.media.cts.MediaRouterTestConstants.ROUTE_NAME_5;
@@ -73,6 +77,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /** Device-side test for {@link MediaRouter2} functionality. */
@@ -336,21 +341,35 @@ public class MediaRouter2DeviceTest {
         assertThat(
                         waitForAndGetRoutes(
                                         SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
-                                        /* expectedRouteIds= */ Set.of(
-                                                MediaRoute2Info.ROUTE_ID_DEFAULT))
+                                        /* expectedRouteIds= */ Set.of(ROUTE_ID_DEFAULT))
                                 .keySet())
-                .containsExactly(MediaRoute2Info.ROUTE_ID_DEFAULT);
+                .containsExactly(ROUTE_ID_DEFAULT);
     }
 
     @Test
     public void getRoutes_returnDeviceRoute() throws TimeoutException {
-        assertThat(
-                        waitForAndGetRoutes(
-                                        SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
-                                        /* expectedRouteIds= */ Set.of(
-                                                MediaRoute2Info.ROUTE_ID_DEVICE))
-                                .keySet())
-                .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
+        if (isTv()) {
+                // Some Android 14 TV devices have a backported feature for wired devices, which
+                // removes the 'ROUTE_ID_DEVICE' and replaces it with 'ROUTE_ID_BUILTIN_SPEAKER'.
+                Predicate<Set<String>> isDeviceOrBuiltinSpeakerPredicate =
+                                routeIds ->
+                                                routeIds.contains(ROUTE_ID_DEVICE)
+                                                || routeIds.contains(ROUTE_ID_BUILTIN_SPEAKER);
+                assertThat(
+                                waitForAndGetRoutes(
+                                                SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
+                                                isDeviceOrBuiltinSpeakerPredicate)
+                                        .keySet())
+                        .containsAnyOf(ROUTE_ID_DEVICE, ROUTE_ID_BUILTIN_SPEAKER);
+        } else {
+                assertThat(
+                                waitForAndGetRoutes(
+                                                SYSTEM_ROUTE_DISCOVERY_PREFERENCE,
+                                                /* expectedRouteIds= */ Set.of(
+                                                MediaRoute2Info.ROUTE_ID_DEFAULT))
+                                        .keySet())
+                        .containsExactly(MediaRoute2Info.ROUTE_ID_DEVICE);
+        }
     }
 
     @ApiTest(apis = {"android.media.MediaRouter2"})
@@ -369,6 +388,7 @@ public class MediaRouter2DeviceTest {
                                 /* expectedRouteIds= */ Set.of(ROUTE_ID_SELF_SCAN_ONLY)));
     }
 
+
     /**
      * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
      * that includes all the given {@code expectedRouteIds}.
@@ -377,6 +397,19 @@ public class MediaRouter2DeviceTest {
      */
     private Map<String, MediaRoute2Info> waitForAndGetRoutes(
             RouteDiscoveryPreference preference, Set<String> expectedRouteIds)
+            throws TimeoutException {
+        return waitForAndGetRoutes(
+                preference, routeIds -> routeIds.containsAll(expectedRouteIds));
+    }
+
+    /**
+     * Returns the next route list received via {@link MediaRouter2.RouteCallback#onRoutesUpdated}
+     * where {@code routesPredicate} returns true.
+     *
+     * <p>Will only wait for up to {@link #ROUTE_UPDATE_MAX_WAIT_MS}.
+     */
+    private Map<String, MediaRoute2Info> waitForAndGetRoutes(
+            RouteDiscoveryPreference preference, Predicate<Set<String>> routesPredicate)
             throws TimeoutException {
         ConditionVariable condition = new ConditionVariable();
         MediaRouter2.RouteCallback routeCallback =
@@ -387,7 +420,7 @@ public class MediaRouter2DeviceTest {
                                 routes.stream()
                                         .map(MediaRoute2Info::getOriginalId)
                                         .collect(Collectors.toSet());
-                        if (receivedRouteIds.containsAll(expectedRouteIds)) {
+                        if (routesPredicate.test(receivedRouteIds)) {
                             condition.open();
                         }
                     }
@@ -400,7 +433,7 @@ public class MediaRouter2DeviceTest {
                         .map(MediaRoute2Info::getOriginalId)
                         .collect(Collectors.toSet());
         try {
-            if (!currentRoutes.containsAll(expectedRouteIds)
+            if (!routesPredicate.test(currentRoutes)
                     && !condition.block(ROUTE_UPDATE_MAX_WAIT_MS)) {
                 throw new TimeoutException(
                         "Failed to get expected routes after "
@@ -435,5 +468,9 @@ public class MediaRouter2DeviceTest {
                 mConditionVariable.open();
             }
         }
+    }
+
+    private boolean isTv() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_LEANBACK_ONLY);
     }
 }
