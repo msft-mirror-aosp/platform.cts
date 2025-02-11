@@ -263,6 +263,42 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         uid1Watcher.finish();
     }
 
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyMediaServiceAfterStopForegroundInternal() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service active --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
