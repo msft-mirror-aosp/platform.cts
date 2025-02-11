@@ -48,6 +48,7 @@ import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import junit.framework.AssertionFailedError
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.rules.ExternalResource
@@ -212,6 +213,14 @@ private class Impl<A : Activity>(
             activity = instrumentation.startActivitySync(intent, bundle) as A
         }, Manifest.permission.INTERNAL_SYSTEM_WINDOW)
         waitUntilActivityReadyForInput()
+
+        assertEquals(
+            "Ensure the activity is launched on the virtual display", displayId, activity.displayId
+        )
+        assertEquals(
+            "Ensure the activity is configured with the same density as the virtual display",
+             DENSITY, activity.resources.displayMetrics.densityDpi
+        )
     }
 
     /** Clean up the resources related to the virtual display and the test activity. */
