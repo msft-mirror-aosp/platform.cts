@@ -106,6 +106,7 @@ android_test {
     libs: [
         "android.test.base",
         "android.test.runner",
+        "android.car-test-stubs",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
