@@ -95,6 +95,3 @@ per-file *Storage* = file:platform/frameworks/base:/core/java/android/os/storage
 per-file ApexSignatureVerificationTest.java = dariofreni@google.com
 per-file *ResumeOnReboot* = file:platform/frameworks/base:/core/java/android/service/resumeonreboot/OWNERS
 per-file BootCountTrackerRule.java = file:platform/frameworks/base:/core/java/android/service/resumeonreboot/OWNERS
-
-# FS Verify
-per-file ApkVerityInstallTest.java = file:platform/system/security:/fsverity/OWNERS

@@ -41,6 +41,7 @@ import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
 import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS
 import com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.compatibility.common.util.ApiTest
@@ -200,7 +201,10 @@ class CreateManagedProfileTest {
         }
 
         private fun getNonRequiredAppsForUser(user: UserReference): Collection<Package> {
-            TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS).use {
+            TestApis.permissions().withPermission(
+                MANAGE_PROFILE_AND_DEVICE_OWNERS,
+                INTERACT_ACROSS_USERS
+            ).use {
                 val nonRequiredApps = localDevicePolicyManager.getDisallowedSystemApps(
                         DEVICE_ADMIN_COMPONENT_NAME,
                         context.userId,

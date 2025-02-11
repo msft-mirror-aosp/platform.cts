@@ -147,8 +147,7 @@ class PointerIconTest {
     fun testLoadBitmapIcon() {
         val view = activity.window.decorView.rootView
         view.pointerIcon =
-            PointerIcon.load(InstrumentationRegistry.getInstrumentation().targetContext.resources,
-                R.drawable.pointer_arrow_bitmap_icon)
+            PointerIcon.load(activity.resources, R.drawable.pointer_arrow_bitmap_icon)
 
         device.hoverMove(1, 1)
         verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_HOVER_ENTER))
@@ -163,11 +162,7 @@ class PointerIconTest {
         assumeTrue(android.view.flags.Flags.enableVectorCursors())
 
         val view = activity.window.decorView.rootView
-        val pointer =
-            PointerIcon.load(
-                InstrumentationRegistry.getInstrumentation().targetContext.resources,
-                R.drawable.pointer_arrow_vector_icon
-            )
+        val pointer = PointerIcon.load(activity.resources, R.drawable.pointer_arrow_vector_icon)
         // Turn off vector drop shadow for this test to confirm position of the pointer, ignoring
         // any differences in the shadow, which can change based on the hardware running the test.
         pointer.setDrawNativeDropShadow(false)
@@ -187,8 +182,7 @@ class PointerIconTest {
 
         val view = activity.window.decorView.rootView
         view.pointerIcon =
-            PointerIcon.load(InstrumentationRegistry.getInstrumentation().targetContext.resources,
-                R.drawable.pointer_arrow_vector_icon)
+            PointerIcon.load(activity.resources, R.drawable.pointer_arrow_vector_icon)
 
         device.hoverMove(1, 1)
         waitForPointerIconUpdate()

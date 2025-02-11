@@ -65,4 +65,13 @@ public class BluetoothGattCharacteristicTest {
 
         assertThat(mBluetoothGattCharacteristic.getService()).isEqualTo(service);
     }
+
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @Test
+    public void setWriteType() {
+        mBluetoothGattCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_SIGNED);
+
+        assertThat(mBluetoothGattCharacteristic.getWriteType())
+                .isEqualTo(BluetoothGattCharacteristic.WRITE_TYPE_SIGNED);
+    }
 }

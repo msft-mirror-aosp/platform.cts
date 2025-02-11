@@ -17,7 +17,6 @@
 package com.android.cts.apicommon;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +81,7 @@ public class ApiConstructor implements Comparable<ApiConstructor> {
         return mCoveredWith.keySet();
     }
 
-    public Collection<TestMethodInfo> getCoveredTests() {
-        return mCoveredTests.values();
+    public List<TestMethodInfo> getCoveredTests() {
+        return mCoveredTests.values().stream().toList();
     }
 }

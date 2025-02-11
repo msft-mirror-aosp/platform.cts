@@ -72,6 +72,7 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -1320,6 +1321,10 @@ public class WallpaperManagerTest {
     public void testEngineCallbackCountsParam(
             @TestParameter WallpaperManagerTestUtils.WallpaperState state)
             throws IOException {
+        DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
+        assumeTrue("this test item is not suitable for multi screen devices"
+                + " that expand display screens", displayManager.getDisplays().length <= 1);
+
         ArrayList<String> errorMessages = new ArrayList<>();
         runWithShellPermissionIdentity(() -> {
             for (WallpaperChange change: state.allPossibleChanges()) {
@@ -1364,6 +1369,10 @@ public class WallpaperManagerTest {
      */
     @Test
     public void testExistingWallpaperWindows() {
+        DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
+        assumeTrue("this test item is not suitable for multi screen devices"
+                + " that expand display screens", displayManager.getDisplays().length <= 1);
+
         assumeTrue("Test requires FEATURE_LIVE_WALLPAPER",
                 mContext.getPackageManager().hasSystemFeature(FEATURE_LIVE_WALLPAPER));
         runWithShellPermissionIdentity(() -> {

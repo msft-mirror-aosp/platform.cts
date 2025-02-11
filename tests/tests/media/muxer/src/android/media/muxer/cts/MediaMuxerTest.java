@@ -177,7 +177,7 @@ public class MediaMuxerTest {
     @Test
     @RequiresFlagsEnabled({FLAG_EXTRACTOR_MP4_ENABLE_APV, FLAG_MUXER_MP4_ENABLE_APV})
     public void testAPVVideoOnlyOutputInMP4() throws Exception {
-        final String source = "pattern_640x480_30fps_8213kbps_apv_10bit.mp4";
+        final String source = "pattern_640x480_30fps_16mbps_apv_10bit.mp4";
         String outputFilePath =
                 File.createTempFile("testAPVVideoOnlyOutputInMP4", ".mp4").getAbsolutePath();
         cloneAndVerify(

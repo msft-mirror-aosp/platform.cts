@@ -2,6 +2,7 @@ package android.location.cts.gnss;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.location.cts.common.SoftAssert.failOrWarning;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -62,7 +63,7 @@ public class GnssAntennaInfoTest {
 
         // Revoke location permissions from packages before running GnssStatusTest stops
         // active location requests, allowing this test to receive all necessary Gnss callbacks.
-        List<String> courseLocationPackages = TestUtils.revokePermissions(ACCESS_COARSE_LOCATION);
+        List<String> coarseLocationPackages = TestUtils.revokePermissions(ACCESS_COARSE_LOCATION);
         List<String> fineLocationPackages = TestUtils.revokePermissions(ACCESS_FINE_LOCATION);
 
         try {
@@ -85,7 +86,7 @@ public class GnssAntennaInfoTest {
             }
         } finally {
             // For each location package, re-grant the permission
-            TestUtils.grantLocationPermissions(ACCESS_COARSE_LOCATION, courseLocationPackages);
+            TestUtils.grantLocationPermissions(ACCESS_COARSE_LOCATION, coarseLocationPackages);
             TestUtils.grantLocationPermissions(ACCESS_FINE_LOCATION, fineLocationPackages);
         }
     }
@@ -100,23 +101,46 @@ public class GnssAntennaInfoTest {
                 Looper.getMainLooper());
 
         boolean isAutomotiveDevice = TestMeasurementUtil.isAutomotiveDevice(context);
+        List<String> packagesWithCoarsePermAfterRevoke =
+                TestUtils.getPackagesWithPermissions(ACCESS_COARSE_LOCATION);
+        List<String> packagesWithFinePermAfterRevoke =
+                TestUtils.getPackagesWithPermissions(ACCESS_FINE_LOCATION);
+        // Revocation of permissions is not possible for all packages. This includes, for example,
+        // system-fixed permissions and policy-fixed permissions. The test should be skipped if
+        // external interference is detected. b/249210283.
+        boolean runTestOnAutomotive =
+                isAutomotiveDevice
+                        && packagesWithCoarsePermAfterRevoke.isEmpty()
+                        && packagesWithFinePermAfterRevoke.isEmpty();
+
         boolean success = true;
-        if(!isAutomotiveDevice){
+        if (!isAutomotiveDevice || runTestOnAutomotive) {
             success = testGnssStatusCallback.awaitStart();
         }
         success = success ? testGnssStatusCallback.awaitStatus() : false;
-        if(!isAutomotiveDevice){
+        if (!isAutomotiveDevice || runTestOnAutomotive) {
             success = success ? testGnssStatusCallback.awaitTtff() : false;
         }
         mTestLocationManager.getLocationManager().removeUpdates(listener);
-        if(!isAutomotiveDevice){
+        if (!isAutomotiveDevice || runTestOnAutomotive) {
             success = success ? testGnssStatusCallback.awaitStop() : false;
         }
         mTestLocationManager.unregisterGnssStatusCallback(testGnssStatusCallback);
 
-        assertWithMessage(
-                "Time elapsed without getting the right status changes."
-                        + " Possibly, the test has been run deep indoors."
-                        + " Consider retrying test outdoors.").that(success).isTrue();
+        if (runTestOnAutomotive) {
+            failOrWarning(
+                    false,
+                    "Time elapsed without getting the right status changes."
+                            + " Possibly, the test has been run deep indoors."
+                            + " Consider retrying test outdoors.",
+                    success);
+        } else {
+            assertWithMessage(
+                            "Time elapsed without getting the right status changes."
+                                    + " Possibly, the test has been run deep indoors."
+                                    + " Consider retrying test outdoors.")
+                    .that(success)
+                    .isTrue();
+        }
     }
 }

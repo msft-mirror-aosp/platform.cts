@@ -19,6 +19,8 @@ package com.android.cts.apimap;
 import com.android.cts.apicommon.ApiCoverage;
 import com.android.cts.apicommon.ApiPackage;
 import com.android.cts.apicommon.ApiXmlHandler;
+import com.android.cts.apimap.output.HtmlWriter;
+import com.android.cts.apimap.output.XmlWriter;
 import com.android.cts.ctsprofiles.ClassProfile;
 import com.android.cts.ctsprofiles.ModuleProfile;
 import com.android.cts.ctsprofiles.Utils;
@@ -59,10 +61,6 @@ public final class ApiMap {
     private static final int FORMAT_XML = 1;
     private static final int FORMAT_HTML = 2;
 
-    private static final int FULL_MODE = 1;
-    private static final int API_ONLY_MODE = 2;
-    private static final int ANNOTATION_ONLY_MODE = 3;
-
     private static final Set<String> IGNORE_PACKAGES = new HashSet<>(
             List.of("androidx.", "javax", "kotlinx.")
     );
@@ -80,9 +78,10 @@ public final class ApiMap {
         System.out.println("  -a PATH                  paths to API XML files split by commas");
         System.out.println("  -i PATH                  path to the file containing a list of jars: "
                 + "Jars must be split by a whitespace, e.g. {jar1} {jar2}.");
-        System.out.println("  -m [api|annotation|full] the map information to generate: api->only "
-                + "generate api mapping data; annotation->only generate annotation mapping data; "
-                + "full->generate all mapping data.");
+        System.out.println(
+                "  -m [api_map|xts_annotation] the static analysis data to generate:"
+                        + " api_map->api mapping data; xts_annotation->xts annotation mapping data."
+                        + " All data will be generated in one xml if this option is not set.");
         System.out.println("  -j PARALLELISM           number of tasks to run in parallel, defaults"
                 + " to number of cpus");
         System.out.println();
@@ -97,44 +96,47 @@ public final class ApiMap {
         int format = FORMAT_XML;
         Set<String> apiXmlPaths = new HashSet<>();
         int parallelism = Runtime.getRuntime().availableProcessors();
-        int mode = FULL_MODE;
+        List<ModeType> modeTypes = new ArrayList<>();
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("-")) {
-                if ("-o".equals(args[i])) {
-                    outputFile = new File(Objects.requireNonNull(getExpectedArg(args, ++i)));
-                } else if ("-f".equals(args[i])) {
-                    String formatSpec = getExpectedArg(args, ++i);
-                    if ("xml".equalsIgnoreCase(formatSpec)) {
-                        format = FORMAT_XML;
-                    } else if ("html".equalsIgnoreCase(formatSpec)) {
-                        format = FORMAT_HTML;
-                    } else {
-                        printUsage();
+                switch (args[i]) {
+                    case "-o" ->
+                            outputFile =
+                                    new File(Objects.requireNonNull(getExpectedArg(args, ++i)));
+                    case "-f" -> {
+                        String formatSpec = getExpectedArg(args, ++i);
+                        if ("xml".equalsIgnoreCase(formatSpec)) {
+                            format = FORMAT_XML;
+                        } else if ("html".equalsIgnoreCase(formatSpec)) {
+                            format = FORMAT_HTML;
+                        } else {
+                            printUsage();
+                        }
                     }
-                } else if ("-a".equals(args[i])) {
-                    apiXmlPaths.addAll(
-                            List.of(Objects.requireNonNull(getExpectedArg(args, ++i)).split(",")));
-                } else if ("-m".equals(args[i])) {
-                    String modeSpec = getExpectedArg(args, ++i);
-                    if ("api".equalsIgnoreCase(modeSpec)) {
-                        mode = API_ONLY_MODE;
-                    } else if ("annotation".equalsIgnoreCase(modeSpec)) {
-                        mode = ANNOTATION_ONLY_MODE;
-                    } else if ("both".equalsIgnoreCase(modeSpec)) {
-                        mode = FULL_MODE;
-                    } else {
-                        printUsage();
+                    case "-a" ->
+                            apiXmlPaths.addAll(
+                                    List.of(
+                                            Objects.requireNonNull(getExpectedArg(args, ++i))
+                                                    .split(",")));
+                    case "-m" -> {
+                        String modeSpec = getExpectedArg(args, ++i);
+                        switch (modeSpec) {
+                            case "api_map" -> modeTypes.add(ModeType.API_MAP);
+                            case "xts_annotation" -> modeTypes.add(ModeType.XTS_ANNOTATION);
+                            default -> printUsage();
+                        }
                     }
-                } else if ("-j".equals(args[i])) {
-                    parallelism = Integer.parseInt(
-                            Objects.requireNonNull(getExpectedArg(args, ++i)));
-                } else if ("-i".equals(args[i])) {
-                    for (Path jar : FileUtils.getJarFilesFromFile(getExpectedArg(args, ++i))) {
-                        jars.putIfAbsent(jar.getFileName().toString(), jar);
+                    case "-j" ->
+                            parallelism =
+                                    Integer.parseInt(
+                                            Objects.requireNonNull(getExpectedArg(args, ++i)));
+                    case "-i" -> {
+                        for (Path jar : FileUtils.getJarFilesFromFile(getExpectedArg(args, ++i))) {
+                            jars.putIfAbsent(jar.getFileName().toString(), jar);
+                        }
                     }
-                } else {
-                    printUsage();
+                    default -> printUsage();
                 }
             } else {
                 Path jar = FileUtils.getJarFile(args[i]);
@@ -149,31 +151,34 @@ public final class ApiMap {
             throw new IllegalArgumentException("missing output file");
         }
 
+        if (modeTypes.isEmpty()) {
+            modeTypes = List.of(ModeType.values());
+        }
+
         ApiCoverage apiCoverage =
-                (mode == ANNOTATION_ONLY_MODE) ? new ApiCoverage() : getApiCoverage(apiXmlPaths);
+                modeTypes.contains(ModeType.API_MAP)
+                        ? getApiCoverage(apiXmlPaths) : new ApiCoverage();
         apiCoverage.resolveSuperClasses();
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
 
         XmlWriter xmlWriter = new XmlWriter();
+        xmlWriter.registerXmlGenerators(modeTypes);
         for (Map.Entry<String, Path> jar : jars.entrySet()) {
             String moduleName = jar.getKey();
             int dotIndex = moduleName.lastIndexOf('.');
             moduleName = (dotIndex == -1) ? moduleName : moduleName.substring(0, dotIndex);
-            tasks.add(scanJarFile(
-                    service, jar.getValue(), moduleName, apiCoverage, mode));
+            tasks.add(scanJarFile(service, jar.getValue(), moduleName, apiCoverage, modeTypes));
             // Clear tasks when there are too many in the blocking queue to avoid memory issue.
             if (tasks.size() > parallelism * 5) {
-                executeTasks(tasks, xmlWriter, mode);
+                executeTasks(tasks, xmlWriter);
                 tasks.clear();
             }
         }
-        executeTasks(tasks, xmlWriter, mode);
+        executeTasks(tasks, xmlWriter);
         service.shutdown();
 
-        if (mode != ANNOTATION_ONLY_MODE) {
-            xmlWriter.generateApiMapData(apiCoverage);
-        }
+        xmlWriter.generateApiData(apiCoverage);
         FileOutputStream output = new FileOutputStream(outputFile);
         if (format == FORMAT_XML) {
             xmlWriter.dumpXml(output);
@@ -183,14 +188,11 @@ public final class ApiMap {
     }
 
     /** Executes given tasks. */
-    private static void executeTasks(
-            List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter, int mode) {
+    private static void executeTasks(List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter) {
         for (Future<CallGraphManager> task : tasks) {
             try {
                 CallGraphManager callGraphManager = task.get();
-                if (mode != API_ONLY_MODE) {
-                    xmlWriter.generateXtsAnnotationMapData(callGraphManager.getModule());
-                }
+                xmlWriter.generateModuleData(callGraphManager.getModule());
             } catch (ExecutionException e) {
                 System.out.println("Task was completed unsuccessfully.");
             } catch (InterruptedException e) {
@@ -217,50 +219,57 @@ public final class ApiMap {
      * @param filePath jar file to be analyzed
      * @param moduleName test module name
      * @param apiCoverage object to which the coverage statistics will be added to
+     * @param modeTypes a list of analysis modes
      */
     private static Future<CallGraphManager> scanJarFile(
             ExecutorService service,
             Path filePath,
             String moduleName,
             ApiCoverage apiCoverage,
-            int mode) {
-        return service.submit(() -> {
-            ModuleProfile moduleProfile = new ModuleProfile(moduleName);
-            try (ZipFile zipSrc = new ZipFile(filePath.toString())) {
-                Enumeration<? extends ZipEntry> srcEntries = zipSrc.entries();
-                while (srcEntries.hasMoreElements()) {
-                    ZipEntry entry = srcEntries.nextElement();
-                    ZipEntry newEntry = new ZipEntry(entry.getName());
-                    newEntry.setTime(entry.getTime());
-                    BufferedInputStream bis = new BufferedInputStream(zipSrc.getInputStream(entry));
-                    String className = entry.getName();
-                    if (!className.endsWith(".class")) {
-                        continue;
+            List<ModeType> modeTypes) {
+        return service.submit(
+                () -> {
+                    ModuleProfile moduleProfile = new ModuleProfile(moduleName);
+                    try (ZipFile zipSrc = new ZipFile(filePath.toString())) {
+                        Enumeration<? extends ZipEntry> srcEntries = zipSrc.entries();
+                        while (srcEntries.hasMoreElements()) {
+                            ZipEntry entry = srcEntries.nextElement();
+                            ZipEntry newEntry = new ZipEntry(entry.getName());
+                            newEntry.setTime(entry.getTime());
+                            BufferedInputStream bis =
+                                    new BufferedInputStream(zipSrc.getInputStream(entry));
+                            String className = entry.getName();
+                            if (!className.endsWith(".class")) {
+                                continue;
+                            }
+                            Pair<String, String> packageClass =
+                                    Utils.getPackageClassFromASM(
+                                            className.substring(0, className.length() - 6));
+                            if (ignoreClass(
+                                    packageClass.getFirst(),
+                                    packageClass.getSecond(),
+                                    apiCoverage)) {
+                                continue;
+                            }
+                            ClassReader cr = new ClassReader(bis);
+                            ClassProfile classProfile =
+                                    moduleProfile.getOrCreateClass(
+                                            packageClass.getFirst(),
+                                            packageClass.getSecond(),
+                                            apiCoverage);
+                            ClassAnalyzer visitor =
+                                    new ClassAnalyzer(classProfile, moduleProfile, apiCoverage);
+                            cr.accept(visitor, 0);
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                    Pair<String, String> packageClass = Utils.getPackageClassFromASM(
-                            className.substring(0, className.length() - 6));
-                    if (ignoreClass(
-                            packageClass.getFirst(),
-                            packageClass.getSecond(),
-                            apiCoverage)) {
-                        continue;
+                    CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
+                    if (modeTypes.contains(ModeType.API_MAP)) {
+                        callGraphManager.resolveCoveredApis(apiCoverage);
                     }
-                    ClassReader cr = new ClassReader(bis);
-                    ClassProfile classProfile = moduleProfile.getOrCreateClass(
-                            packageClass.getFirst(), packageClass.getSecond(), apiCoverage);
-                    ClassAnalyzer visitor = new ClassAnalyzer(
-                            classProfile, moduleProfile, apiCoverage);
-                    cr.accept(visitor, 0);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
-            if (mode != ANNOTATION_ONLY_MODE) {
-                callGraphManager.resolveCoveredApis(apiCoverage);
-            }
-            return callGraphManager;
-        });
+                    return callGraphManager;
+                });
     }
 
     private static ApiCoverage getApiCoverage(Set<String> apiXmlPaths)
@@ -293,4 +302,3 @@ public final class ApiMap {
                 className.split("\\.")[0]) != null;
     }
 }
-

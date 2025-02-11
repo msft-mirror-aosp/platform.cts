@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.cts.apimap;
+package com.android.cts.apimap.output;
 
-import java.io.FileNotFoundException;
+import com.android.cts.apimap.ApiMap;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,7 +34,7 @@ import javax.xml.transform.stream.StreamSource;
  * Class that outputs an HTML report of the API mapping data. The format is as same as
  * cts-api-coverage HTML reports.
  */
-class HtmlWriter {
+public class HtmlWriter {
 
     public static void printHtmlReport(XmlWriter xmlWriter, OutputStream htmlOut)
             throws TransformerException, IOException {
@@ -41,22 +42,24 @@ class HtmlWriter {
         final PipedOutputStream xmlOut = new PipedOutputStream();
         final PipedInputStream xmlIn = new PipedInputStream(xmlOut);
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    xmlWriter.dumpXml(xmlOut);
-                } catch (FileNotFoundException | TransformerException e) {
-                    throw new RuntimeException(e);
-                }
-                // Close the output stream to avoid "Write dead end" errors.
-                try {
-                    xmlOut.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        Thread t =
+                new Thread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    xmlWriter.dumpXml(xmlOut);
+                                } catch (TransformerException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                // Close the output stream to avoid "Write dead end" errors.
+                                try {
+                                    xmlOut.close();
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        });
         t.start();
 
         InputStream xsl = ApiMap.class.getResourceAsStream("/api-coverage.xsl");
@@ -69,4 +72,3 @@ class HtmlWriter {
         transformer.transform(xmlSource, result);
     }
 }
-

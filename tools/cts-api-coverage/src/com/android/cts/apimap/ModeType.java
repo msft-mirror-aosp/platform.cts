@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,24 @@
  * limitations under the License.
  */
 
-package android.appsecurity.cts.apkveritytestapp;
+package com.android.cts.apimap;
 
-import android.app.Activity;
+/** Represents the static analysis mode. */
+public enum ModeType {
 
-/** Placeholder class just to generate some dex */
-public class DummyActivity extends Activity {}
+    // Represents xTS test annotation analysis.
+    XTS_ANNOTATION(1),
+
+    // Represents API map (API coverage) analysis.
+    API_MAP(2);
+
+    private final int mValue;
+
+    ModeType(int value) {
+        mValue = value;
+    }
+
+    public int getValue() {
+        return mValue;
+    }
+}

@@ -17,6 +17,7 @@
 package android.display.cts;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -29,11 +30,13 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.PowerManager;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.server.wm.UiDeviceUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
@@ -43,7 +46,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.server.display.feature.flags.Flags;
 
 import org.junit.After;
@@ -79,6 +81,8 @@ public class DisplayEventTest extends TestBase {
     private Context mContext;
     private DisplayManager mDisplayManager;
 
+    private PowerManager mPowerManager;
+
     private Display mDisplay;
 
     @Rule
@@ -101,7 +105,6 @@ public class DisplayEventTest extends TestBase {
     private Messenger mMessenger;
     private final LinkedBlockingQueue<Pair<Integer, Integer>> mExpectations =
             new LinkedBlockingQueue<>();
-    private int mInitialMatchContentFrameRate;
     private DisplayManager.DisplayListener mDisplayListener;
 
     @Before
@@ -109,13 +112,12 @@ public class DisplayEventTest extends TestBase {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContext = mInstrumentation.getContext();
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
+        mPowerManager = mContext.getSystemService(PowerManager.class);
         mDisplay = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY);
         mHandlerThread = new HandlerThread("handler");
         mHandlerThread.start();
         mHandler = new TestHandler(mHandlerThread.getLooper());
         mMessenger = new Messenger(mHandler);
-        mInitialMatchContentFrameRate = toSwitchingType(
-                mDisplayManager.getMatchContentFrameRateUserPreference());
     }
 
     @After
@@ -124,14 +126,18 @@ public class DisplayEventTest extends TestBase {
         if (mDisplayListener != null) {
             mDisplayManager.unregisterDisplayListener(mDisplayListener);
         }
-        mDisplayManager.setRefreshRateSwitchingType(mInitialMatchContentFrameRate);
-        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
-    public void testDisplayStateChangedEvent() throws Exception {
+    public void testDisplayStateChangedEvent() {
         registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_STATE);
+
+        // Change the display state
+        switchDisplayState();
+
+        // Validate the event was received
+        waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
 
         // Change the display state
         switchDisplayState();
@@ -148,6 +154,15 @@ public class DisplayEventTest extends TestBase {
         switchRefreshRate();
 
         waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
+    }
+
+    @Test
+    public void testNoDisplayRefreshRateChangedEvent() throws InterruptedException {
+        registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_CHANGED);
+
+        switchRefreshRate();
+
+        assertNoDisplayEventEmitted();
     }
 
     private void registerDisplayListener(int eventFlagMask) {
@@ -202,22 +217,47 @@ public class DisplayEventTest extends TestBase {
         }
     }
 
-    private void switchDisplayState() throws Exception {
-        if (mDisplay.getState() == Display.STATE_OFF) {
-            SystemUtil.runShellCommand(mInstrumentation, "cmd power wakeup");
-        } else {
-            SystemUtil.runShellCommand(mInstrumentation, "cmd power sleep");
+    /** Validates that no events are emitted */
+    private void assertNoDisplayEventEmitted() {
+        try {
+            Pair<Integer, Integer> event =
+                    mExpectations.poll(TEST_FAILURE_TIMEOUT_MSEC, TimeUnit.MILLISECONDS);
+            assertNull(event);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void switchRefreshRate() {
-        mDisplayManager.setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE);
-        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
+    private void switchDisplayState() {
+        if (!mPowerManager.isInteractive()) {
+            UiDeviceUtils.pressWakeupButton();
+        } else {
+            UiDeviceUtils.pressSleepButton();
+        }
+    }
+
+    private void switchRefreshRate() throws InterruptedException {
+        UiDeviceUtils.pressSleepButton();
+        UiDeviceUtils.pressWakeupButton();
+        int mInitialMatchContentFrameRate =
+                toSwitchingType(mDisplayManager.getMatchContentFrameRateUserPreference());
+        setRefreshRateSwitchingType(DisplayManager.SWITCHING_TYPE_NONE, true);
 
         int alternateRefreshRateModeId = getAlternateRefreshRateModeId();
         mActivityRule.getScenario().onActivity(activity -> {
             activity.setModeId(alternateRefreshRateModeId);
         });
+
+        setRefreshRateSwitchingType(mInitialMatchContentFrameRate, false);
+    }
+
+    private void setRefreshRateSwitchingType(int switchingType, boolean appRequestedMode)
+            throws InterruptedException {
+        mDisplayManager.setRefreshRateSwitchingType(switchingType);
+        mDisplayManager.setShouldAlwaysRespectAppRequestedMode(appRequestedMode);
+
+        // Wait for DisplayModeDirector to notify sf about the changes to the switching type
+        Thread.sleep(2000);
     }
 
     private int getAlternateRefreshRateModeId() {

@@ -235,6 +235,9 @@ public class MediaSessionManagerTest {
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testOnMediaKeyEventSessionChangedListener_noPermission_throwsSecurityException() {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
         MediaKeyEventSessionListener keyEventSessionListener = new MediaKeyEventSessionListener();
         assertThrows(
                 "Expected security exception for call to"
@@ -306,11 +309,19 @@ public class MediaSessionManagerTest {
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
     public void testSetOnVolumeKeyLongPressListener() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         Context context = getInstrumentation().getTargetContext();
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)
                 || context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
-                || context.getResources().getBoolean(Resources.getSystem().getIdentifier(
-                        "config_handleVolumeKeysInWindowManager", "bool", "android"))) {
+                || context.getResources()
+                        .getBoolean(
+                                Resources.getSystem()
+                                        .getIdentifier(
+                                                "config_handleVolumeKeysInWindowManager",
+                                                "bool",
+                                                "android"))) {
             // Skip this test, because the PhoneWindowManager dispatches volume key
             // events directly to the audio service to change the system volume.
             return;
@@ -348,6 +359,9 @@ public class MediaSessionManagerTest {
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
     public void testSetOnMediaKeyListener() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         Handler handler = createHandlerWithScheduledLooperQuit();
         MediaSession session = new MediaSession(getInstrumentation().getTargetContext(), TAG);
         mResourceReleaser.add(session::release);
@@ -411,6 +425,9 @@ public class MediaSessionManagerTest {
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testRemoteUserInfo() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandlerWithScheduledLooperQuit();
 
@@ -460,6 +477,9 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2Tokens() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandlerWithScheduledLooperQuit();
         Executor handlerExecutor = new HandlerExecutor(handler);
@@ -486,6 +506,9 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testGetSession2TokensWithTwoSessions() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandlerWithScheduledLooperQuit();
         Executor handlerExecutor = new HandlerExecutor(handler);
@@ -536,6 +559,9 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testAddAndRemoveSession2TokensListener() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandlerWithScheduledLooperQuit();
         Executor handlerExecutor = new HandlerExecutor(handler);
@@ -567,6 +593,9 @@ public class MediaSessionManagerTest {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testSession2TokensNotChangedBySession1() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandlerWithScheduledLooperQuit();
 
@@ -588,6 +617,9 @@ public class MediaSessionManagerTest {
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCustomClassConfigValuesAreValid() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         Context context = getInstrumentation().getTargetContext();
         String customMediaKeyDispatcher = context.getString(
                 android.R.string.config_customMediaKeyDispatcher);
@@ -610,6 +642,9 @@ public class MediaSessionManagerTest {
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testIsTrustedForMediaControl_withEnabledNotificationListener() throws Exception {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         List<String> packageNames = getEnabledNotificationListenerPackages();
         for (String packageName : packageNames) {
             int packageUid =
@@ -623,7 +658,10 @@ public class MediaSessionManagerTest {
     @Test
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
-    public void testIsTrustedForMediaControl_withInvalidUid() throws Exception {
+    public void testIsTrustedForMediaControl_withInvalidUid() {
+        getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         List<String> packageNames = getEnabledNotificationListenerPackages();
         for (String packageName : packageNames) {
             MediaSessionManager.RemoteUserInfo info =

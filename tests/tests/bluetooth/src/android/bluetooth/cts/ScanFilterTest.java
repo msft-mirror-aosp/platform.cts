@@ -63,6 +63,10 @@ public class ScanFilterTest {
 
     private static final String LOCAL_NAME = "Ped";
     private static final String DEVICE_MAC = "01:02:03:04:05:AB";
+    private static final String DEVICE_MAC_RANDOM_STATIC = "C1:02:03:04:05:AB";
+    private static final String DEVICE_MAC_RANDOM_RESOLVABLE = "41:02:03:04:05:AB";
+    private static final String DEVICE_MAC_RANDOM_NON_RESOLVABLE = "01:02:03:04:05:AB";
+
     private static final String UUID1 = "0000110a-0000-1000-8000-00805f9b34fb";
     private static final String UUID2 = "0000110b-0000-1000-8000-00805f9b34fb";
     private static final String UUID3 = "0000110c-0000-1000-8000-00805f9b34fb";
@@ -177,6 +181,66 @@ public class ScanFilterTest {
 
         filter = mFilterBuilder.setDeviceAddress("11:22:33:44:55:66").build();
         assertThat(filter.matches(mScanResult)).isFalse();
+    }
+
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setDeviceAddressForTypeAndIrk() {
+        byte[] irk = new byte[ScanFilter.Builder.LEN_IRK_OCTETS];
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mFilterBuilder.setDeviceAddress(
+                                "AA:INVALID", BluetoothDevice.ADDRESS_TYPE_PUBLIC, irk));
+
+        byte[] invalidIrkLength = new byte[0];
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mFilterBuilder.setDeviceAddress(
+                                DEVICE_MAC, BluetoothDevice.ADDRESS_TYPE_PUBLIC, invalidIrkLength));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mFilterBuilder.setDeviceAddress(
+                                DEVICE_MAC, BluetoothDevice.ADDRESS_TYPE_UNKNOWN, irk));
+
+        assertThrows(
+                NullPointerException.class,
+                () ->
+                        mFilterBuilder.setDeviceAddress(
+                                null, BluetoothDevice.ADDRESS_TYPE_UNKNOWN, irk));
+
+        ScanFilter filter =
+                mFilterBuilder
+                        .setDeviceAddress(DEVICE_MAC, BluetoothDevice.ADDRESS_TYPE_PUBLIC, irk)
+                        .build();
+        assertThat(filter.getAddressType()).isEqualTo(BluetoothDevice.ADDRESS_TYPE_PUBLIC);
+        assertThat(filter.getIrk()).isEqualTo(irk);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mFilterBuilder.setDeviceAddress(
+                                DEVICE_MAC_RANDOM_RESOLVABLE,
+                                BluetoothDevice.ADDRESS_TYPE_RANDOM,
+                                irk));
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        mFilterBuilder.setDeviceAddress(
+                                DEVICE_MAC_RANDOM_NON_RESOLVABLE,
+                                BluetoothDevice.ADDRESS_TYPE_RANDOM,
+                                irk));
+
+        filter =
+                mFilterBuilder
+                        .setDeviceAddress(
+                                DEVICE_MAC_RANDOM_STATIC, BluetoothDevice.ADDRESS_TYPE_RANDOM, irk)
+                        .build();
+        assertThat(filter.getAddressType()).isEqualTo(BluetoothDevice.ADDRESS_TYPE_RANDOM);
+        assertThat(filter.getIrk()).isEqualTo(irk);
     }
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
