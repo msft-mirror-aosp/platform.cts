@@ -3622,31 +3622,37 @@ public class PackageManagerShellCommandInstallTest {
                 Manifest.permission.MANAGE_ROLE_HOLDERS,
                 Manifest.permission.BYPASS_ROLE_QUALIFICATION
         );
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch removeLatch = new CountDownLatch(1);
+        CountDownLatch addLatch = new CountDownLatch(1);
         try {
-            if (mPreviousDependencyInstallerRoleHolder == null) {
-                mRoleManager.removeRoleHolderAsUser(
-                        ROLE_SYSTEM_DEPENDENCY_INSTALLER, CTS_PACKAGE_NAME,
-                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, UserHandle.of(userId),
-                        getContext().getMainExecutor(), success -> {
-                            if (success) {
-                                latch.countDown();
-                            }
-                        });
-                assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-            } else {
-                // If there was a previous role holder, replace the one set in the test with the
-                // previous one.
+            mRoleManager.setBypassingRoleQualification(true);
+
+            mRoleManager.removeRoleHolderAsUser(
+                    ROLE_SYSTEM_DEPENDENCY_INSTALLER,
+                    CTS_PACKAGE_NAME,
+                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                    UserHandle.of(userId),
+                    getContext().getMainExecutor(),
+                    success -> {
+                        if (success) {
+                            removeLatch.countDown();
+                        }
+                    });
+            assertThat(removeLatch.await(5, TimeUnit.SECONDS)).isTrue();
+
+            if (mPreviousDependencyInstallerRoleHolder != null) {
                 mRoleManager.addRoleHolderAsUser(
                         ROLE_SYSTEM_DEPENDENCY_INSTALLER,
                         mPreviousDependencyInstallerRoleHolder,
-                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, UserHandle.of(userId),
-                        getContext().getMainExecutor(), success -> {
+                        RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP,
+                        UserHandle.of(userId),
+                        getContext().getMainExecutor(),
+                        success -> {
                             if (success) {
-                                latch.countDown();
+                                addLatch.countDown();
                             }
                         });
-                assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(addLatch.await(5, TimeUnit.SECONDS)).isTrue();
                 assertWithMessage("Failed to set dependency installer role holder")
                         .that(getDependencyInstallerRoleHolder(userId))
                         .isEqualTo(mPreviousDependencyInstallerRoleHolder);
