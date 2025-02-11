@@ -28,6 +28,7 @@ import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
@@ -224,7 +225,12 @@ public class GainmapTest {
         }
     }
 
-    private void checkIsoGainmap(Bitmap bitmap) throws Exception {
+    private void checkInvalidGaimap(Bitmap bitmap) throws Exception {
+        assertNotNull(bitmap);
+        assertFalse("Missing gainmap", bitmap.hasGainmap());
+    }
+
+    private void checkIsoGainmap(Bitmap bitmap, boolean isPng) throws Exception {
         assertNotNull(bitmap);
         assertTrue("Missing gainmap", bitmap.hasGainmap());
         if (bitmap.getConfig() == Bitmap.Config.HARDWARE) {
@@ -259,15 +265,21 @@ public class GainmapTest {
         assertEquals(2.f, gainmap.getMinDisplayRatioForHdrTransition(), EPSILON);
         assertEquals(4.f, gainmap.getDisplayRatioForFullHdr(), EPSILON);
         if (Flags.isoGainmapApis()) {
-            if (com.android.graphics.flags.Flags.displayBt2020Colorspace()) {
+            if (isPng) {
+                // PNG alpha8 or gray gainmaps don't support alternative image primaries
+                assertNull(gainmap.getAlternativeImagePrimaries());
+            } else {
+                if (com.android.graphics.flags.Flags.displayBt2020Colorspace()) {
                 ColorSpace.Rgb displayBt2020 =
                         (ColorSpace.Rgb) ColorSpace.get(ColorSpace.Named.DISPLAY_BT2020);
                 // We only care about the primaries
                 assertArrayEquals(displayBt2020.getPrimaries(),
                         ((ColorSpace.Rgb) gainmap.getAlternativeImagePrimaries()).getPrimaries(),
                         EPSILON);
+                }
+                assertEquals(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR, gainmap.getGainmapDirection());
             }
-            assertEquals(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR, gainmap.getGainmapDirection());
+
         }
 
     }
@@ -300,6 +312,13 @@ public class GainmapTest {
         return callables;
     }
 
+    static CompressFormat[] getCompressFormats() {
+        return new CompressFormat[] {
+                CompressFormat.JPEG,
+                CompressFormat.PNG,
+        };
+    }
+
     @Test
     @Parameters(method = "getGainmapDecodeVariations")
     public void testDecodeGainmap(DecoderVariation provider) throws Exception {
@@ -314,8 +333,21 @@ public class GainmapTest {
 
     @Test
     @Parameters(method = "getGainmapDecodeVariations")
-    public void testDecodeIsoGainmap(DecoderVariation provider) throws Exception {
-        checkIsoGainmap(provider.decode(R.raw.gainmap_iso21496_1));
+    public void testDecodeIsoJpegGainmap(DecoderVariation provider) throws Exception {
+        checkIsoGainmap(provider.decode(R.raw.gainmap_iso21496_1), false);
+    }
+
+    @Test
+    @Parameters(method = "getGainmapDecodeVariations")
+    public void testDecodeIsoPngGainmap(DecoderVariation provider) throws Exception {
+        checkIsoGainmap(provider.decode(R.raw.png_gainmap), true);
+    }
+
+    @Test
+    @Parameters(method = "getGainmapDecodeVariations")
+    public void testDecodeInvalidPngGainmaps(DecoderVariation provider) throws Exception {
+        checkInvalidGaimap(provider.decode(R.raw.gainmap_no_gdat));
+        checkInvalidGaimap(provider.decode(R.raw.gainmap_gdat_no_gmap));
     }
 
     @Test
@@ -615,10 +647,11 @@ public class GainmapTest {
         p.recycle();
     }
 
+    @Parameters(method = "getCompressFormats")
     @Test
-    public void testCompress8888() throws Exception {
+    public void testCompress8888(CompressFormat format) throws Exception {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        assertTrue(sScalingRed8888.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        assertTrue(sScalingRed8888.compress(format, 100, stream));
         byte[] data = stream.toByteArray();
         Bitmap result = ImageDecoder.decodeBitmap(
                 ImageDecoder.createSource(data), (decoder, info, src) -> {
@@ -637,10 +670,11 @@ public class GainmapTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ISO_GAINMAP_APIS)
+    @Parameters(method = "getCompressFormats")
     @Test
-    public void testISOCompress8888() throws Exception {
+    public void testISOCompress8888(CompressFormat format) throws Exception {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        assertTrue(sScalingRedHLG8888.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        assertTrue(sScalingRedHLG8888.compress(format, 100, stream));
         byte[] data = stream.toByteArray();
         Bitmap result = ImageDecoder.decodeBitmap(
                 ImageDecoder.createSource(data), (decoder, info, src) -> {
@@ -661,10 +695,11 @@ public class GainmapTest {
         }
     }
 
+    @Parameters(method = "getCompressFormats")
     @Test
-    public void testCompressA8ByImageDecoder() throws Exception {
+    public void testCompressA8ByImageDecoder(CompressFormat format) throws Exception {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        assertTrue(sScalingRedA8.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        assertTrue(sScalingRedA8.compress(format, 100, stream));
         byte[] data = stream.toByteArray();
         Bitmap result = ImageDecoder.decodeBitmap(
                 ImageDecoder.createSource(data), (decoder, info, src) -> {
@@ -682,6 +717,7 @@ public class GainmapTest {
         }
     }
 
+    @Parameters(method = "getCompressFormats")
     @Test
     @Ignore("Skip it until BitmapRegionDecoder have Alpha8 gainmap support")
     public void testCompressA8ByBitmapRegionDecoder() throws Exception {
@@ -702,10 +738,11 @@ public class GainmapTest {
         }
     }
 
+    @Parameters(method = "getCompressFormats")
     @Test
-    public void testCompressA8ByBitmapFactory() throws Exception {
+    public void testCompressA8ByBitmapFactory(CompressFormat format) throws Exception {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        assertTrue(sScalingRedA8.compress(Bitmap.CompressFormat.JPEG, 100, stream));
+        assertTrue(sScalingRedA8.compress(format, 100, stream));
         byte[] data = stream.toByteArray();
         Bitmap result = BitmapFactory.decodeByteArray(data, 0, data.length);
         assertTrue(result.hasGainmap());
