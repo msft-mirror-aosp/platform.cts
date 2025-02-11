@@ -18,7 +18,6 @@ package android.input.cts
 
 import android.hardware.input.InputManager
 import android.hardware.input.InputSettings
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -29,7 +28,6 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_A
 import com.android.cts.input.UinputKeyboard
-import com.android.hardware.input.Flags.FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
@@ -102,7 +100,6 @@ class A11yBounceKeysTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG)
     fun testKeyIgnoredIfPressedWithinBounceThreshold() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
@@ -120,7 +117,6 @@ class A11yBounceKeysTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_KEYBOARD_A11Y_BOUNCE_KEYS_FLAG)
     fun testKeyAcceptedIfPressedAfterBounceThreshold() {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
