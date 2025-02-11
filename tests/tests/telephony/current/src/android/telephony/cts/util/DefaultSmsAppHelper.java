@@ -37,7 +37,6 @@ import com.android.compatibility.common.util.ShellIdentityUtils;
 import org.junit.Assume;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +45,7 @@ public class DefaultSmsAppHelper {
     private static final String TAG = "DefaultSmsAppHelper";
     private static final int ASYNC_TIMEOUT = 10000;
     public static void ensureDefaultSmsApp() {
+        Log.d(TAG, "ensureDefaultSmsApp");
         if (!hasTelephony() || !hasSms()) {
             Log.d(TAG, "ensureDefaultSmsApp: does not have telephony or sms feature.");
             return;
@@ -91,6 +91,7 @@ public class DefaultSmsAppHelper {
     }
 
     public static void stopBeingDefaultSmsApp() {
+        Log.d(TAG, "stopBeingDefaultSmsApp");
         if (!hasSms()) {
             Log.d(TAG, "stopBeingDefaultSmsApp: does not have sms feature.");
             return;
