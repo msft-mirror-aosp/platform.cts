@@ -89,6 +89,7 @@ android_test {
         ":AppInstalledOnMultipleUsers",
         ":SharedUidTestApp1",
         ":SharedUidTestApp2",
+        ":AppThatExploitsAttributionTags",
     ],
     per_testcase_directory: true,
 }
