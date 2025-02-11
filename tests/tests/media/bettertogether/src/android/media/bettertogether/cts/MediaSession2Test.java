@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
@@ -40,8 +41,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.Process;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -50,6 +51,7 @@ import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.UserTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -120,6 +122,12 @@ public class MediaSession2Test {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        InstrumentationRegistry
+                .getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
@@ -433,6 +441,9 @@ public class MediaSession2Test {
     @Test
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
     public void testCallback_onPostConnect_rejected() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_EXTERNAL_STORAGE);
         Session2Callback sessionCallback = new Session2Callback() {
             @Override
             public Session2CommandGroup onConnect(MediaSession2 session,
