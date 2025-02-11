@@ -1465,7 +1465,6 @@ public class AppWidgetTest extends AppWidgetTestCase {
         getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_CHECK_REMOTE_VIEWS_URI_PERMISSION})
     @Test
     public void testCheckRemoteViewsUri() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
