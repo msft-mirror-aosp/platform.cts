@@ -145,16 +145,14 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
                     && MockConditionProvider.getInstance().isBound()) {
                 // Get a hold of the default policy by creating a temporary rule. This will be used
                 // in upcoming comparisons.
-                if (android.app.Flags.modesApi()) {
-                    AutomaticZenRule dummyRule =
-                            createRule("Rule", "value", INTERRUPTION_FILTER_PRIORITY);
-                    String ruleId = mNm.addAutomaticZenRule(dummyRule);
-                    try {
-                        dummyRule = mNm.getAutomaticZenRule(ruleId);
-                        mDefaultPolicy = dummyRule.getZenPolicy();
-                    } finally {
-                        mNm.removeAutomaticZenRule(ruleId);
-                    }
+                AutomaticZenRule dummyRule =
+                        createRule("Rule", "value", INTERRUPTION_FILTER_PRIORITY);
+                String ruleId = mNm.addAutomaticZenRule(dummyRule);
+                try {
+                    dummyRule = mNm.getAutomaticZenRule(ruleId);
+                    mDefaultPolicy = dummyRule.getZenPolicy();
+                } finally {
+                    mNm.removeAutomaticZenRule(ruleId);
                 }
                 status = PASS;
                 next();
@@ -1100,18 +1098,13 @@ public class ConditionProviderVerifierActivity extends InteractiveVerifierActivi
     }
 
     private boolean compareZenPolicies(ZenPolicy a, ZenPolicy b) {
-        if (android.app.Flags.modesApi()) {
-            if (mDefaultPolicy == null) {
-                throw new IllegalStateException(
-                        "mDefaultPolicy should've been loaded by IsEnabledTest, but it's null");
-            }
-            // With MODES_API, partially specified policies are "completed" with the default policy,
-            // so compare after setting any unset fields to their defaults.
-            return Objects.equals(mDefaultPolicy.overwrittenWith(a),
-                    mDefaultPolicy.overwrittenWith(b));
-        } else {
-            return Objects.equals(a, b);
+        if (mDefaultPolicy == null) {
+            throw new IllegalStateException(
+                    "mDefaultPolicy should've been loaded by IsEnabledTest, but it's null");
         }
+        // Partially specified policies are "completed" with the default policy, so compare after
+        // setting any unset fields to their defaults.
+        return Objects.equals(mDefaultPolicy.overwrittenWith(a), mDefaultPolicy.overwrittenWith(b));
     }
 
     protected View createSettingsItem(ViewGroup parent, int messageId) {

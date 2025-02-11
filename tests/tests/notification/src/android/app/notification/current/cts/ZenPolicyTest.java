@@ -18,10 +18,8 @@ package android.app.notification.current.cts;
 
 import static org.junit.Assert.assertEquals;
 
-import android.app.Flags;
 import android.app.NotificationManager;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.notification.ZenPolicy;
@@ -41,16 +39,15 @@ public class ZenPolicyTest {
 
     @Test
     public void testWriteToParcel() {
-        ZenPolicy.Builder builder = new ZenPolicy.Builder()
-                .allowAlarms(true)
-                .allowCalls(ZenPolicy.PEOPLE_TYPE_NONE)
-                .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
-                .allowConversations(ZenPolicy.CONVERSATION_SENDERS_ANYONE)
-                .showInNotificationList(false);
-        if (Flags.modesApi()) {
-            builder.allowPriorityChannels(true);
-        }
-        ZenPolicy policy = builder.build();
+        ZenPolicy policy =
+                new ZenPolicy.Builder()
+                        .allowAlarms(true)
+                        .allowCalls(ZenPolicy.PEOPLE_TYPE_NONE)
+                        .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
+                        .allowConversations(ZenPolicy.CONVERSATION_SENDERS_ANYONE)
+                        .showInNotificationList(false)
+                        .allowPriorityChannels(true)
+                        .build();
 
         Parcel parcel = Parcel.obtain();
         policy.writeToParcel(parcel, 0);
@@ -433,7 +430,6 @@ public class ZenPolicyTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void testAllowPriorityChannels() {
         ZenPolicy.Builder builder = new ZenPolicy.Builder();
         ZenPolicy policy = builder.allowPriorityChannels(true).build();

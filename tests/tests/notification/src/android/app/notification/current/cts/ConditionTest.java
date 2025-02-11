@@ -21,7 +21,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import android.app.Flags;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Parcel;
@@ -44,7 +43,7 @@ public class ConditionTest {
             .build();
     private final String mSummary = "summary";
     private final int mState = Condition.STATE_FALSE;
-    private final int mSource = Flags.modesApi() ? Condition.SOURCE_USER_ACTION : 0;
+    private final int mSource = Condition.SOURCE_USER_ACTION;
 
     @Before
     public void setUp() throws Exception {
@@ -60,10 +59,8 @@ public class ConditionTest {
 
     @Test
     public void testConstructor() {
-        Condition condition = new Condition(mConditionId, mSummary, mState);
-        if (Flags.modesApi()) {
-            condition = new Condition(mConditionId, mSummary, mState, mSource);
-        }
+        Condition condition = new Condition(mConditionId, mSummary, mState, mSource);
+
         assertEquals(mConditionId, condition.id);
         assertEquals(mSummary, condition.summary);
         assertEquals("", condition.line1);
@@ -71,21 +68,18 @@ public class ConditionTest {
         assertEquals(mState, condition.state);
         assertEquals(-1, condition.icon);
         assertEquals(Condition.FLAG_RELEVANT_ALWAYS, condition.flags);
-        if (Flags.modesApi()) {
-            assertEquals(mSource, condition.source);
-        }
+        assertEquals(mSource, condition.source);
     }
 
     @Test
     public void testWriteToParcel() {
-        Condition original = new Condition(mConditionId, mSummary, mState);
-        if (Flags.modesApi()) {
-            original = new Condition(mConditionId, mSummary, mState, mSource);
-        }
+        Condition original = new Condition(mConditionId, mSummary, mState, mSource);
         Parcel parcel = Parcel.obtain();
+
         original.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         Condition copy = new Condition(parcel);
+
         assertEquals(mConditionId, copy.id);
         assertEquals(mSummary, copy.summary);
         assertEquals("", copy.line1);
@@ -93,18 +87,14 @@ public class ConditionTest {
         assertEquals(mState, copy.state);
         assertEquals(-1, copy.icon);
         assertEquals(Condition.FLAG_RELEVANT_ALWAYS, copy.flags);
-        if (Flags.modesApi()) {
-            assertEquals(mSource, copy.source);
-        }
+        assertEquals(mSource, copy.source);
     }
 
     @Test
     public void testCopy() {
-        Condition original = new Condition(mConditionId, mSummary, mState);
-        if (Flags.modesApi()) {
-            original = new Condition(mConditionId, mSummary, mState, mSource);
-        }
+        Condition original = new Condition(mConditionId, mSummary, mState, mSource);
         Condition copy = original.copy();
+
         assertEquals(mConditionId, copy.id);
         assertEquals(mSummary, copy.summary);
         assertEquals("", copy.line1);
@@ -112,9 +102,7 @@ public class ConditionTest {
         assertEquals(mState, copy.state);
         assertEquals(-1, copy.icon);
         assertEquals(Condition.FLAG_RELEVANT_ALWAYS, copy.flags);
-        if (Flags.modesApi()) {
-            assertEquals(mSource, copy.source);
-        }
+        assertEquals(mSource, copy.source);
     }
 
     @Test
@@ -156,9 +144,6 @@ public class ConditionTest {
 
     @Test
     public void testSourceDefault() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         Condition condition = new Condition(mConditionId, mSummary, mState);
         assertEquals(Condition.SOURCE_UNKNOWN, condition.source);
     }
