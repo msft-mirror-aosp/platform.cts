@@ -75,6 +75,7 @@ public class ActivityEmbeddingUtil {
 
     public static final String TAG = "ActivityEmbeddingTests";
     public static final long WAIT_FOR_LIFECYCLE_TIMEOUT_MS = 3000L * HW_TIMEOUT_MULTIPLIER;
+    public static final long WAIT_FOR_COLD_LAUNCH_TIMEOUT_MS = 5000L * HW_TIMEOUT_MULTIPLIER;
     public static final SplitAttributes DEFAULT_SPLIT_ATTRS = new SplitAttributes.Builder().build();
 
     public static final SplitAttributes EXPAND_SPLIT_ATTRS = new SplitAttributes.Builder()
@@ -431,8 +432,12 @@ public class ActivityEmbeddingUtil {
     }
 
     private static boolean waitForResumed(@NonNull String activityId) {
+        return waitForResumed(activityId, WAIT_FOR_LIFECYCLE_TIMEOUT_MS);
+    }
+
+    private static boolean waitForResumed(@NonNull String activityId, long timeout) {
         final long startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < WAIT_FOR_LIFECYCLE_TIMEOUT_MS) {
+        while (System.currentTimeMillis() - startTime < timeout) {
             if (getResumedActivityById(activityId) != null) {
                 return true;
             }
@@ -443,6 +448,16 @@ public class ActivityEmbeddingUtil {
 
     private static boolean waitForResumed(@NonNull Activity activity) {
         return waitForResumed(Arrays.asList(activity));
+    }
+
+    /**
+     * Similar to #waitAndAssertResumed, but with a longer timeout, since it may include a cold
+     * launch which involves process startup and application initialization.
+     */
+    public static void waitAndAssertColdLaunch(@NonNull String activityId) {
+        assertTrue(
+                "Activity with id=" + activityId + " should be resumed",
+                waitForResumed(activityId, WAIT_FOR_COLD_LAUNCH_TIMEOUT_MS));
     }
 
     public static void waitAndAssertResumed(@NonNull String activityId) {
