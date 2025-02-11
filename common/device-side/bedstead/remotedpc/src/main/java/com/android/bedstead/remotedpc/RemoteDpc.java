@@ -21,6 +21,7 @@ import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES;
 import android.content.ComponentName;
 import android.os.Build;
 import android.os.UserHandle;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 
@@ -46,6 +47,8 @@ public class RemoteDpc extends RemotePolicyManager {
     public static final TestApp REMOTE_DPC_TEST_APP = sTestAppProvider.query()
             .wherePackageName().isEqualTo(DPC_COMPONENT_NAME.getPackageName())
             .get();
+
+    public static final String TAG = "RemoteDpc";
 
     /**
      * Get the {@link RemoteDpc} instance for the Device Owner.
@@ -218,9 +221,16 @@ public class RemoteDpc extends RemotePolicyManager {
         RemoteDpc remoteDpc = new RemoteDpc(
                 TestApis.devicePolicy().setProfileOwner(user, DPC_COMPONENT_NAME));
 
-        // DISALLOW_INSTALL_UNKNOWN_SOURCES causes verification failures in work profiles
-        remoteDpc.devicePolicyManager()
-                .clearUserRestriction(remoteDpc.componentName(), DISALLOW_INSTALL_UNKNOWN_SOURCES);
+        try {    // workaround for: b/391462951
+            // DISALLOW_INSTALL_UNKNOWN_SOURCES causes verification failures in work profiles
+            remoteDpc.devicePolicyManager().clearUserRestriction(
+                    remoteDpc.componentName(),
+                    DISALLOW_INSTALL_UNKNOWN_SOURCES
+            );
+        } catch (Exception e) {
+            Log.e(TAG, "unable to clear user restriction: "
+                    + DISALLOW_INSTALL_UNKNOWN_SOURCES, e);
+        }
 
         return remoteDpc;
     }
