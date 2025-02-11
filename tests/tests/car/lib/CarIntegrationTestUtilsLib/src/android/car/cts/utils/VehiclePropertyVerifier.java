@@ -202,7 +202,7 @@ public class VehiclePropertyVerifier<T> {
     private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
     private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
     private static final int SET_PROPERTY_CALLBACK_TIMEOUT_SEC = 5;
-    private static final long CPM_ACTION_DELAY_MS = 20;
+    private static final long CPM_ACTION_DELAY_MS = 300;
     private static final Object sLock = new Object();
     private static final ImmutableSet<Integer> WHEEL_AREAS = ImmutableSet.of(
             VehicleAreaWheel.WHEEL_LEFT_FRONT, VehicleAreaWheel.WHEEL_LEFT_REAR,
@@ -3933,13 +3933,20 @@ public class VehiclePropertyVerifier<T> {
 
     private static void spaceOutCarPropertyManagerActions() {
         synchronized (sLock) {
-            long currentElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
-            while (currentElapsedRealtimeNanos - sLastActionElapsedRealtimeNanos
-                    < Duration.ofMillis(CPM_ACTION_DELAY_MS).toNanos()) {
-                SystemClock.sleep(CPM_ACTION_DELAY_MS);
-                currentElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
-            }
-            sLastActionElapsedRealtimeNanos = currentElapsedRealtimeNanos;
+            do {
+                long currentElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
+                long remainingDelayMs =
+                        CPM_ACTION_DELAY_MS
+                                - Duration.ofNanos(
+                                                currentElapsedRealtimeNanos
+                                                        - sLastActionElapsedRealtimeNanos)
+                                        .toMillis();
+                if (remainingDelayMs <= 0) {
+                    sLastActionElapsedRealtimeNanos = currentElapsedRealtimeNanos;
+                    break;
+                }
+                SystemClock.sleep(remainingDelayMs);
+            } while (true);
         }
     }
 }
