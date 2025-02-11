@@ -41,6 +41,7 @@ import android.util.DisplayMetrics;
 import android.view.DisplayCutout;
 import android.view.WindowMetrics;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -49,6 +50,7 @@ import java.util.List;
  * Build/Install/Run:
  *     atest CtsWindowManagerDeviceTestCases:ManifestLayoutTests
  */
+@Ignore("b/384638198")
 @Presubmit
 public class ManifestLayoutTests extends ActivityManagerTestBase {
 

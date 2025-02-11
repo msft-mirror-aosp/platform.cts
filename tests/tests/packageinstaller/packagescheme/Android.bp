@@ -31,13 +31,14 @@ android_test {
         "kotlin-test",
         "truth-prebuilt",
         "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
     ],
     platform_apis: true,
     test_suites: [
         "cts",
         "general-tests",
     ],
-    java_resources: [
+    data: [
         ":CtsEmptyTestApp",
     ],
     test_config: "AndroidTestNoVisibility.xml",
@@ -58,13 +59,14 @@ android_test {
         "kotlin-test",
         "truth-prebuilt",
         "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
     ],
     platform_apis: true,
     test_suites: [
         "cts",
         "general-tests",
     ],
-    java_resources: [
+    data: [
         ":CtsEmptyTestApp",
     ],
     test_config: "AndroidTestVisibility.xml",

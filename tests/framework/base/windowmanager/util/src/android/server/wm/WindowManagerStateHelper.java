@@ -451,8 +451,15 @@ public class WindowManagerStateHelper extends WindowManagerState {
             computeState();
             return getFocusedApp();
         }).setResultValidator(focusedAppName -> {
-            return focusedAppName != null && appPackageName.equals(
-                    ComponentName.unflattenFromString(focusedAppName).getPackageName());
+            if (focusedAppName == null) {
+                return false;
+            }
+            ComponentName unflattenedName = ComponentName.unflattenFromString(focusedAppName);
+            if (unflattenedName == null) {
+                logAlways("unflattenedName is null; focusedAppName=" + focusedAppName);
+                return false;
+            }
+            return appPackageName.equals(unflattenedName.getPackageName());
         }).setOnFailure(focusedAppName -> {
             fail("Timed out waiting for focus on app "
                     + appPackageName + ", last was " + focusedAppName);

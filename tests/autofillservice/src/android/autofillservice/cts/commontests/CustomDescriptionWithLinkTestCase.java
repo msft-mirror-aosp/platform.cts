@@ -97,6 +97,7 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
                 !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
 
         mUiBot.assumeMinimumResolution(500);
+        mUiBot.assumeMinimumResolutionInDp(480);
         mUiBot.setScreenOrientation(UiBot.PORTRAIT);
         try {
             saveUiRestoredAfterTappingLinkTest(

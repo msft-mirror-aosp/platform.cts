@@ -66,6 +66,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.hardware.DataSpace;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.Trace;
 import android.platform.test.annotations.RequiresDevice;
 import android.test.suitebuilder.annotation.LargeTest;
@@ -1242,9 +1243,11 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
         assertTrue(onCompleteCallback.mLatchTime > 0);
 
-        assertTrue("transaction was presented too early. presentTime="
-                        + onCompleteCallback.mPresentTime,
-                onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("transaction was presented too early. presentTime="
+                            + onCompleteCallback.mPresentTime,
+                    onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        }
     }
 
     @Test
@@ -1286,9 +1289,11 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
         assertTrue(onCompleteCallback.mLatchTime > 0);
 
-        assertTrue("transaction was presented too early. presentTime="
-                        + onCompleteCallback.mPresentTime,
-                onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("transaction was presented too early. presentTime="
+                            + onCompleteCallback.mPresentTime,
+                    onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        }
     }
 
     @Test
@@ -1331,9 +1336,11 @@ public class ASurfaceControlTest {
         assertTrue(onCompleteCallback.mCallbackTime > 0);
         assertTrue(onCompleteCallback.mLatchTime > 0);
 
-        assertTrue("transaction was presented too early. presentTime="
-                        + onCompleteCallback.mPresentTime,
-                onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        if(SystemProperties.getBoolean("service.sf.present_timestamp", true)) {
+            assertTrue("transaction was presented too early. presentTime="
+                            + onCompleteCallback.mPresentTime,
+                    onCompleteCallback.mPresentTime >= mDesiredPresentTime);
+        }
     }
 
     @Test

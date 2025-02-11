@@ -35,6 +35,10 @@ public class NetworkTimeUpdateServiceShellHelper {
 
     private static final String SHELL_CMD_PREFIX = "cmd " + SERVICE_NAME + " ";
 
+    private static final String SERVICE_PROPERTY = "config.disable_networktime";
+
+    private static final String SHELL_CMD_GET_PROPERTY = "getprop " + SERVICE_PROPERTY;
+
     private final DeviceShellCommandExecutor mShellCommandExecutor;
 
     public NetworkTimeUpdateServiceShellHelper(DeviceShellCommandExecutor shellCommandExecutor) {
@@ -65,6 +69,12 @@ public class NetworkTimeUpdateServiceShellHelper {
             }
             return false;
         }
+    }
+
+    /** Returns {@code true} if the network_time_update_service service is disabled. */
+    public boolean isNetworkTimeUpdateServiceDisabled() throws Exception {
+        String resultString = mShellCommandExecutor.executeToTrimmedString(SHELL_CMD_GET_PROPERTY);
+        return (resultString != null) && (resultString.equals("true"));
     }
 
     /**

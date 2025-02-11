@@ -212,7 +212,7 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
         String packetDeviceName = "";
         if (DEVICE_NAME.length() > BleAdvertisingPacket.MAX_REFERENCE_DEVICE_NAME_LENGTH) {
             packetDeviceName = DEVICE_NAME.substring(0,
-                    BleAdvertisingPacket.MAX_REFERENCE_DEVICE_NAME_LENGTH - 1);
+                    BleAdvertisingPacket.MAX_REFERENCE_DEVICE_NAME_LENGTH);
         } else {
             packetDeviceName = DEVICE_NAME;
         }

@@ -451,3 +451,12 @@ fun waitFindObject(uiAutomation: UiAutomation, selector: BySelector): UiObject2 
         }
     }
 }
+
+fun scrollToLabel(label: String) {
+    val uiDevice = UiAutomatorUtils.getUiDevice()
+
+    if (!uiDevice.hasObject(By.text(label))) {
+        var scrollableObject = UiScrollable(UiSelector().scrollable(true))
+        scrollableObject.scrollTextIntoView(label)
+    }
+}

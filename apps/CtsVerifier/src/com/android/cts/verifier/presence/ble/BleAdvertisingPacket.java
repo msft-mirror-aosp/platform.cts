@@ -67,12 +67,14 @@ public class BleAdvertisingPacket {
             Log.e(TAG, "Advertising packet is null or not the right size");
             return null;
         }
-        String referenceDeviceName = new String(
-                ByteBuffer.wrap(packet, 0, MAX_REFERENCE_DEVICE_NAME_LENGTH - 1).array(),
-                StandardCharsets.UTF_8);
-        byte randomDeviceId = ByteBuffer.wrap(packet, MAX_REFERENCE_DEVICE_NAME_LENGTH, 1).get();
-        byte rssiMedianFromReferenceDevice = ByteBuffer.wrap(packet,
-                MAX_REFERENCE_DEVICE_NAME_LENGTH + 1, 1).get();
+
+        ByteBuffer byteBuffer = ByteBuffer.wrap(packet);
+        byte[] referenceDeviceNameBytes = new byte[MAX_REFERENCE_DEVICE_NAME_LENGTH];
+        byteBuffer.get(referenceDeviceNameBytes);
+        String referenceDeviceName = new String(referenceDeviceNameBytes, StandardCharsets.UTF_8);
+        byte randomDeviceId = byteBuffer.get();
+        byte rssiMedianFromReferenceDevice = byteBuffer.get();
+
         return new BleAdvertisingPacket(referenceDeviceName, randomDeviceId,
                 rssiMedianFromReferenceDevice);
     }

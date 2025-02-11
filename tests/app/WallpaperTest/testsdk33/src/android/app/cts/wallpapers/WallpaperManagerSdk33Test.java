@@ -91,7 +91,7 @@ public class WallpaperManagerSdk33Test {
         if (sTvTarget) return;
 
         sWallpaperManager = WallpaperManager.getInstance(context);
-        sWallpaperManager.clear(FLAG_SYSTEM | FLAG_LOCK);
+        sWallpaperManager.clearWallpaper();
 
         // ignore for targets that have a live default wallpaper
         runWithShellPermissionIdentity(
@@ -117,7 +117,7 @@ public class WallpaperManagerSdk33Test {
     @AfterClass
     public static void tearDownClass() throws IOException {
         if (sRedBitmap != null && !sRedBitmap.isRecycled()) sRedBitmap.recycle();
-        if (sWallpaperManager != null) sWallpaperManager.clear(FLAG_SYSTEM | FLAG_LOCK);
+        if (sWallpaperManager != null) sWallpaperManager.clearWallpaper();
         sWallpaperManager = null;
     }
 
@@ -179,7 +179,7 @@ public class WallpaperManagerSdk33Test {
     public void getWallpaperFile_lock_noPermission_returnsDefault() throws IOException {
         sWallpaperManager.setBitmap(sRedBitmap, null, true, FLAG_LOCK);
         ParcelFileDescriptor parcelFileDescriptor = sWallpaperManager.getWallpaperFile(FLAG_LOCK);
-        sWallpaperManager.clear(FLAG_SYSTEM | FLAG_LOCK);
+        sWallpaperManager.clearWallpaper();
         try {
             if (parcelFileDescriptor != null) {
                 Bitmap bitmap = BitmapFactory.decodeFileDescriptor(

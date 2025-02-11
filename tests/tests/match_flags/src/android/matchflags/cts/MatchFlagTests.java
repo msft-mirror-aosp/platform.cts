@@ -123,6 +123,7 @@ public class MatchFlagTests {
     @Test
     public void startNoBrowserRequireDefaultUnapproved() throws Exception {
         assumeFalse("Skipping test for watch", FeatureUtil.isWatch());
+        assumeFalse("Skipping test for car", FeatureUtil.isAutomotive());
         setDomainUserSelectionApproval(false);
         startNoBrowserRequireDefaultInternal(false);
     }

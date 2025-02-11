@@ -295,8 +295,15 @@ class TouchModeTest {
     private fun injectMotionEventOnMainDisplay() {
         val downTime = SystemClock.uptimeMillis()
         val eventTime = downTime
+        val display: Display? = activity.display
+        val cutout = display?.cutout
+        val left = cutout?.safeInsetLeft?: 0
+        val top =  cutout?.safeInsetTop?: 0
+        val xPosition = 100f + left
+        val yPosition = 100f + top
+
         val event = MotionEvent.obtain(downTime, eventTime, ACTION_DOWN,
-                /* x= */ 100f, /* y= */ 100f, /* metaState= */ 0)
+                /* x= */ xPosition, /* y= */ yPosition, /* metaState= */ 0)
         event.source = InputDevice.SOURCE_TOUCHSCREEN
         instrumentation.uiAutomation.injectInputEvent(event, /* sync= */ true)
     }

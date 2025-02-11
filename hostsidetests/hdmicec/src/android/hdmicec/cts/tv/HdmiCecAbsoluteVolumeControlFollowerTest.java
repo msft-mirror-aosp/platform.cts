@@ -24,8 +24,10 @@ import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecMessage;
 import android.hdmicec.cts.CecOperand;
 import android.hdmicec.cts.HdmiCecConstants;
+import android.hdmicec.cts.LogHelper;
 import android.hdmicec.cts.LogicalAddress;
 
+import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Rule;
@@ -38,6 +40,10 @@ import org.junit.runner.RunWith;
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class HdmiCecAbsoluteVolumeControlFollowerTest extends BaseHdmiCecCtsTest {
+    private static String DEVICE_DISCOVERY_ACTION_TAG = "DeviceDiscoveryAction";
+    private static String DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG = "Wrap up Device Discovery";
+    private static int DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS = 40;
+
     public HdmiCecAbsoluteVolumeControlFollowerTest() {
         super(HdmiCecConstants.CEC_DEVICE_TYPE_TV, "-t", "p", "-t", "a");
     }
@@ -56,27 +62,34 @@ public class HdmiCecAbsoluteVolumeControlFollowerTest extends BaseHdmiCecCtsTest
      */
     @Test
     public void testSystemAudioModeOn_respondsFeatureAbort() throws Exception {
-        AudioManagerHelper.unmuteDevice(getDevice());
+        ITestDevice device = getDevice();
+        try {
+            // Wait for DeviceDiscoveryAction to end before starting the test.
+            LogHelper.waitForLog(device, DEVICE_DISCOVERY_ACTION_TAG,
+                    DEVICE_DISCOVERY_ACTION_TIMEOUT_SECONDS, DEVICE_DISCOVERY_ACTION_WRAP_UP_LOG);
+        } finally {
+            AudioManagerHelper.unmuteDevice(device);
 
-        int initialDeviceVolume = AudioManagerHelper.getDutAudioVolume(getDevice());
+            int initialDeviceVolume = AudioManagerHelper.getDutAudioVolume(device);
 
-        getDevice().executeShellCommand("cmd hdmi_control setsam on");
+            device.executeShellCommand("cmd hdmi_control setsam on");
 
-        hdmiCecClient.sendCecMessage(LogicalAddress.PLAYBACK_1,
-                CecOperand.SET_AUDIO_VOLUME_LEVEL,
-                CecMessage.formatParams((initialDeviceVolume + 50) % 101));
+            hdmiCecClient.sendCecMessage(LogicalAddress.PLAYBACK_1,
+                    CecOperand.SET_AUDIO_VOLUME_LEVEL,
+                    CecMessage.formatParams((initialDeviceVolume + 50) % 101));
 
-        // Check that the DUT sent
-        // <Feature Abort>[Set Audio Volume Level, Not in correct mode to respond]
-        String featureAbort = hdmiCecClient.checkExpectedOutput(
-                LogicalAddress.PLAYBACK_1, CecOperand.FEATURE_ABORT);
-        assertThat(CecOperand.getOperand(CecMessage.getParams(featureAbort, 0, 2)))
-                .isEqualTo(CecOperand.SET_AUDIO_VOLUME_LEVEL);
-        assertThat(CecMessage.getParams(featureAbort, 2, 4)).isEqualTo(1);
+            // Check that the DUT sent
+            // <Feature Abort>[Set Audio Volume Level, Not in correct mode to respond]
+            String featureAbort = hdmiCecClient.checkExpectedOutput(
+                    LogicalAddress.PLAYBACK_1, CecOperand.FEATURE_ABORT);
+            assertThat(CecOperand.getOperand(CecMessage.getParams(featureAbort, 0, 2)))
+                    .isEqualTo(CecOperand.SET_AUDIO_VOLUME_LEVEL);
+            assertThat(CecMessage.getParams(featureAbort, 2, 4)).isEqualTo(1);
 
-        // Check that volume did not change
-        assertThat(AudioManagerHelper.getDutAudioVolume(getDevice()))
-                .isEqualTo(initialDeviceVolume);
+            // Check that volume did not change
+            assertThat(AudioManagerHelper.getDutAudioVolume(device))
+                    .isEqualTo(initialDeviceVolume);
+        }
     }
 
     /**
