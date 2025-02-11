@@ -16,9 +16,9 @@
  -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.resources.registerresourcepaths2">
+    package="android.resources.cts.registerresourcepaths2">
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                     android:targetPackage="android.resources.registerresourcepaths2"/>
+                     android:targetPackage="android.resources.cts.registerresourcepaths2"/>
 </manifest>
