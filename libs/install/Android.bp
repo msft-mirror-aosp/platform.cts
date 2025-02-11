@@ -141,7 +141,6 @@ android_test_helper_app {
     srcs: ["testapp/src/**/*.java"],
     resource_dirs: ["testapp/res_v1"],
     certificate: ":cts-ec-p256",
-    apex_available: ["com.android.apex.apkrollback.test_v1"],
 }
 
 android_test_helper_app {
@@ -153,7 +152,6 @@ android_test_helper_app {
     certificate: ":cts-ec-p256",
     additional_certificates: [":cts-ec-p256_2"],
     lineage: "testapp/signing/ec-p256-por-1_2",
-    apex_available: ["com.android.apex.apkrollback.test_v2"],
 }
 
 android_test_helper_app {
@@ -162,7 +160,6 @@ android_test_helper_app {
     sdk_version: "current",
     srcs: ["testapp/src/**/*.java"],
     resource_dirs: ["testapp/res_v2"],
-    apex_available: ["com.android.apex.apkrollback.test_v2"],
 }
 
 android_test_helper_app {
