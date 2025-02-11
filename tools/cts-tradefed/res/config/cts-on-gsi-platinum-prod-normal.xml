@@ -436,11 +436,6 @@
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewThrottlesHLGHeadroom"/>
     <!-- CtsViewTestCases -->
     <option name="compatibility:include-filter" value="CtsViewTestCases android.view.cts.PointerCaptureTest#testPointerCaptureChangeDispatch"/>
-    <!-- CtsVirtualDevicesTestCases -->
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#createVirtualDevice_alwaysUnlocked_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#createVirtualDevice_withCustomClipboardPolicy_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#createVirtualDisplay_trusted_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#dynamicallySetCustomClipboardPolicy_throwsException"/>
     <!-- CtsWebkitTestCases -->
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testGoBackAndForward"/>
     <!-- CtsWidgetTestCases -->
