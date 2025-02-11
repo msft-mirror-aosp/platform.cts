@@ -121,12 +121,12 @@ public class TransactionalVoipAppControlMain extends Service {
                 }
 
                 @Override
-                public NoDataTransaction addFailedCallWithCreateOutgoingConnectionVerify(
+                public NoDataTransaction addFailedCallWithCreateConnectionVerify(
                         CallAttributes callAttributes) {
                     List<String> stackTrace =
                             createStackTraceList(
                                     mClassName
-                                            + ".addFailedCallWithCreateOutgoingConnectionVerify("
+                                            + ".addFailedCallWithCreateConnectionVerify("
                                             + callAttributes
                                             + ")");
                     return new NoDataTransaction(

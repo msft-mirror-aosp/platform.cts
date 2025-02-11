@@ -33,6 +33,7 @@ public class ManagedConnectionService extends ConnectionService {
     public static ManagedConnection sLastConnection = null;
     public static ConnectionRequest sLastFailedRequest = null;
     public static CountDownLatch sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+    public static CountDownLatch sCreateIncomingConnectionLatch = new CountDownLatch(1);
 
     @Override
     public void onBindClient(Intent intent) {
@@ -40,6 +41,7 @@ public class ManagedConnectionService extends ConnectionService {
         sConnectionService = this;
         sLastConnection = null;
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+        sCreateIncomingConnectionLatch = new CountDownLatch(1);
     }
 
     @Override
@@ -48,6 +50,7 @@ public class ManagedConnectionService extends ConnectionService {
         sConnectionService = null;
         sLastConnection = null;
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
+        sCreateIncomingConnectionLatch = new CountDownLatch(1);
         return super.onUnbind(intent);
     }
 
@@ -87,6 +90,7 @@ public class ManagedConnectionService extends ConnectionService {
             ConnectionRequest request) {
         Log.i(LOG_TAG, String.format("onCreateIncomingConnection: account=[%s], request=[%s]",
                 connectionManagerPhoneAccount, request));
+        sCreateIncomingConnectionLatch.countDown();
         return createConnection(request, false);
     }
 
