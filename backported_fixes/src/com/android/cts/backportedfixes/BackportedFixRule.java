@@ -25,6 +25,8 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.Locale;
+
 /**
  * Validates test annotated with {@link BackportedFixTest}.
  *
@@ -48,9 +50,13 @@ public class BackportedFixRule implements TestRule {
         }
         int alias = mFixes.getAlias(issue.value());
         if (!mFixes.getAllIssues().contains(issue.value())) {
-            throw new IllegalStateException(
-                    "https://issuetracker.google.com/issues/%d is not an approved backported fix."
-                            .formatted(issue.value()));
+            String msg =
+                    String.format(
+                            Locale.ROOT,
+                            "https://issuetracker.google.com/issues/%d is not an approved"
+                                    + " backported fix.",
+                            issue.value());
+            throw new IllegalStateException(msg);
         }
         return new Statement() {
             @Override
@@ -58,15 +64,17 @@ public class BackportedFixRule implements TestRule {
                 try {
                     statement.evaluate();
                 } catch (AssertionError e) {
-
                     if (mStatusResolver.getBackportedFixStatus(alias) == Status.Fixed) {
                         throw e;
                     }
-                    throw new AssumptionViolatedException(
-                            ("https://issuetracker.google.com/issues/%d with alias %d is not "
-                                            + "marked fixed on this device.")
-                                    .formatted(issue.value(), alias),
-                            e);
+                    String msg =
+                            String.format(
+                                    Locale.ROOT,
+                                    "https://issuetracker.google.com/issues/%d with alias %d is not"
+                                            + " marked fixed on this device.",
+                                    issue.value(),
+                                    alias);
+                    throw new AssumptionViolatedException(msg, e);
                 }
             }
         };

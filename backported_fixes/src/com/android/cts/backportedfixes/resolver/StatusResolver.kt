@@ -16,6 +16,7 @@
 package com.android.cts.backportedfixes.resolver
 
 import android.os.Flags
+import androidx.core.os.BuildCompat
 
 /**
  * Resolves the [Status] of a known issue.
@@ -27,8 +28,8 @@ interface StatusResolver {
     companion object {
         @JvmStatic
         fun create(): StatusResolver {
-            // TODO b/381267367 - use SDK check when api is released.
-            return if (Flags.apiForBackportedFixes()) {
+            // TODO b/381267367 - use SDK only the check when api is released.
+            return if (BuildCompat.isAtLeastB() && Flags.apiForBackportedFixes()) {
                 BackportedFixApiResolver()
             } else {
                 SystemPropertyResolver()
