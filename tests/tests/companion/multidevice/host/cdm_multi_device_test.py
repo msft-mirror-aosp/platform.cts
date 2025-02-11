@@ -122,8 +122,11 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_false(secondary_address in paired_devices, 'Devices should not be paired.')
 
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#associate(android.companion.AssociationRequest, android.companion.CompanionDeviceManager.Callback, android.os.Handler)',
+    ])
     def test_association_persistence_after_reboot(self):
-        """Test that association persisting after the device is reboot"""
+        """Test that association persists after a device reboot"""
 
         # Skip if device is a watch
         asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
@@ -141,6 +144,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # The association should be remaining.
         associations = self.primary.cdm.getMyAssociations()
         asserts.assert_true(secondary_id in associations, 'Association not found.')
+
 
 if __name__ == '__main__':
     # Take test args
