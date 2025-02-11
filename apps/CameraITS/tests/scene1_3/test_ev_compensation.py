@@ -33,6 +33,7 @@ _LINEAR_TONEMAP_CURVE = [0.0, 0.0, 1.0, 1.0]
 _LOCKED = 3
 _LUMA_DELTA_ATOL = 0.05
 _LUMA_DELTA_ATOL_SAT = 0.10
+_LUMA_DELTA_ATOL_SAT_UW = 0.15  # higher tol to compensate for less chart area
 _LUMA_LOCKED_RTOL_EV_SM = 0.05
 _LUMA_LOCKED_RTOL_EV_LG = 0.10
 _LUMA_SAT_THRESH = 0.75  # luma value at which ATOL changes from MID to SAT
@@ -43,6 +44,7 @@ _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
 _THRESH_CONVERGE_FOR_EV = 8  # AE must converge within this num
+_UW_FOV_THRESHOLD = 90  # degrees
 _VGA_W, _VGA_H = 640, 480
 _YUV_FULL_SCALE = 255
 _YUV_SAT_MIN = 250
@@ -365,8 +367,10 @@ class EvCompensationTest(its_base_test.ItsBaseTest):
       _create_advanced_plot(ev_steps, lumas, expected_lumas, log_path)
 
       # Assert correct behavior for advanced EV compensation
+      luma_delta_sat_atol = _LUMA_DELTA_ATOL_SAT_UW if float(
+          cam.calc_camera_fov(props)) > _UW_FOV_THRESHOLD else _LUMA_DELTA_ATOL
       luma_delta_atols = [_LUMA_DELTA_ATOL if l < _LUMA_SAT_THRESH
-                          else _LUMA_DELTA_ATOL_SAT for l in expected_lumas]
+                          else luma_delta_sat_atol for l in expected_lumas]
       _assert_correct_advanced_ev_compensation(
           imgs, ev_steps, lumas, expected_lumas, luma_delta_atols, log_path
       )
