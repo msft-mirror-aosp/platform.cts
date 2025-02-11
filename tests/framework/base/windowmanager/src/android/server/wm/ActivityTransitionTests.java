@@ -108,11 +108,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
     static final String ACTION_FINISH =
             "android.server.wm.ActivityTransitionTests.ACTION_FINISH";
 
-    private boolean mAnimationScaleResetRequired = false;
-    private String mInitialWindowAnimationScale;
-    private String mInitialTransitionAnimationScale;
-    private String mInitialAnimatorDurationScale;
-
     // We need to allow for some variation stemming from color conversions
     private static final float COLOR_VALUE_VARIANCE_TOLERANCE = 0.05f;
 
