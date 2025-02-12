@@ -25,6 +25,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"/>
 
+    <queries>
+        <package android:name="com.android.cts.mockime" />
+        <package android:name="android.server.wm.scvh" />
+    </queries>
+
     <application android:label="Android TestCase"
          android:maxRecents="1"
          android:multiArch="true"
@@ -105,6 +110,10 @@
                 <category android:name="android.intent.category.FRAMEWORK_INSTRUMENTATION_TEST"/>
             </intent-filter>
         </activity>
+
+        <activity android:name="android.view.surfacecontrol.cts.SurfaceControlViewHostTests$TestActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
 
         <service android:name="android.server.wm.scvh.EmbeddedSCVHService"
             android:process="com.android.server.wm.scvh.embedded_process" />
