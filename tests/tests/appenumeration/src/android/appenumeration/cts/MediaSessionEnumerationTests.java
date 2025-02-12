@@ -26,12 +26,15 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -41,8 +44,14 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class MediaSessionEnumerationTests extends AppEnumerationTestsBase {
 
+    private UserHelper mUserHelper = new UserHelper();
+
     @Before
     public void onBefore() {
+        // Skip tests for visible background users.
+        // TODO(b/380297485): Enable the tests back when notification listener fully supports
+        // visible background users.
+        assumeFalse(mUserHelper.isVisibleBackgroundUser());
         setAllowGetActiveSession(TARGET_NO_API, true);
     }
 
