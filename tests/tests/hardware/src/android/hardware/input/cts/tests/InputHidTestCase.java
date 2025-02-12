@@ -49,6 +49,9 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 
+import androidx.annotation.NonNull;
+
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.input.HidBatteryTestData;
 import com.android.cts.input.HidDevice;
 import com.android.cts.input.HidLightTestData;
@@ -84,7 +87,6 @@ public abstract class InputHidTestCase extends InputTestCase {
     private final boolean mVolumeKeysHandledInWindowManager;
 
     private HidDevice mHidDevice;
-    private int mDeviceId;
     private boolean mDelayAfterSetup = false;
     private InputJsonParser mParser;
     private int mVid;
@@ -110,9 +112,8 @@ public abstract class InputHidTestCase extends InputTestCase {
         mParser = new InputJsonParser(mInstrumentation.getTargetContext());
         mVid = mParser.readVendorId(mRegisterResourceId);
         mPid = mParser.readProductId(mRegisterResourceId);
-        mDeviceId = mParser.readDeviceId(mRegisterResourceId);
         mHidDevice = new HidDevice(mInstrumentation,
-                mDeviceId,
+                mParser.readDeviceId(mRegisterResourceId),
                 mVid,
                 mPid,
                 mParser.readSources(mRegisterResourceId) | getAdditionalSources(),
@@ -166,22 +167,16 @@ public abstract class InputHidTestCase extends InputTestCase {
     }
 
     /**
-     * Gets an input device with the given capability and with Vendor and Product IDs that match the
-     * ones specified in the registration command.
+     * Waits for the input device to have the specified capability.
      */
-    protected InputDevice getInputDevice(Capability capability) {
+    private @NonNull InputDevice waitForCapability(String description, Capability capability) {
         final InputManager inputManager = Objects.requireNonNull(
                 mInstrumentation.getTargetContext().getSystemService(InputManager.class));
-        final int[] inputDeviceIds = inputManager.getInputDeviceIds();
-        for (int inputDeviceId : inputDeviceIds) {
-            final InputDevice inputDevice = inputManager.getInputDevice(inputDeviceId);
-            Objects.requireNonNull(inputDevice, "Failed to get InputDevice");
-            if (inputDevice.getVendorId() == mVid && inputDevice.getProductId() == mPid
-                    && capability.check(inputDevice)) {
-                return inputDevice;
-            }
-        }
-        return null;
+        PollingCheck.waitFor(() -> {
+            final InputDevice inputDevice = inputManager.getInputDevice(mHidDevice.getDeviceId());
+            return inputDevice != null && capability.check(inputDevice);
+        }, "Failed to wait for input device to have capability: " + description);
+        return Objects.requireNonNull(inputManager.getInputDevice(mHidDevice.getDeviceId()));
     }
 
     /**
@@ -190,10 +185,7 @@ public abstract class InputHidTestCase extends InputTestCase {
      * @return Vibrator object in specified InputDevice
      */
     private Vibrator getVibrator() {
-        InputDevice inputDevice = getInputDevice((d) -> d.getVibrator().hasVibrator());
-        if (inputDevice == null) {
-            fail("Failed to find test device with vibrator");
-        }
+        InputDevice inputDevice = waitForCapability("vibrator", (d) -> d.getVibrator().hasVibrator());
         return inputDevice.getVibrator();
     }
 
@@ -203,11 +195,8 @@ public abstract class InputHidTestCase extends InputTestCase {
      * @return LightsManager object in specified InputDevice
      */
     private LightsManager getLightsManager() {
-        InputDevice inputDevice = getInputDevice(
+        InputDevice inputDevice = waitForCapability("lights",
                 (d) -> !d.getLightsManager().getLights().isEmpty());
-        if (inputDevice == null) {
-            fail("Failed to find test device with light");
-        }
         return inputDevice.getLightsManager();
     }
 
@@ -291,14 +280,15 @@ public abstract class InputHidTestCase extends InputTestCase {
                     && SystemClock.elapsedRealtime() - startTime < timeoutMills) {
                 SystemClock.sleep(1000);
 
-                results = mHidDevice.getResults(mDeviceId, UHID_EVENT_TYPE_UHID_OUTPUT);
+                results = mHidDevice.getResults(mHidDevice.getRegisterCommandDeviceId(),
+                        UHID_EVENT_TYPE_UHID_OUTPUT);
                 if (results.size() < totalVibrations) {
                     continue;
                 }
                 vibrationCount = 0;
                 for (int i = 0; i < results.size(); i++) {
                     HidResultData result = results.get(i);
-                    if (result.deviceId == mDeviceId
+                    if (result.deviceId == mHidDevice.getRegisterCommandDeviceId()
                             && verifyVibratorReportData(test, result)) {
                         int ffLeft = result.reportData[test.leftFfIndex] & 0xFF;
                         int ffRight = result.reportData[test.rightFfIndex] & 0xFF;
@@ -359,14 +349,15 @@ public abstract class InputHidTestCase extends InputTestCase {
                     && SystemClock.elapsedRealtime() - startTime < timeoutMills) {
                 SystemClock.sleep(1000);
 
-                results = mHidDevice.getResults(mDeviceId, UHID_EVENT_TYPE_UHID_OUTPUT);
+                results = mHidDevice.getResults(mHidDevice.getRegisterCommandDeviceId(),
+                        UHID_EVENT_TYPE_UHID_OUTPUT);
                 if (results.size() < totalVibrations) {
                     continue;
                 }
                 vibrationCount = 0;
                 for (int i = 0; i < results.size(); i++) {
                     HidResultData result = results.get(i);
-                    if (result.deviceId == mDeviceId
+                    if (result.deviceId == mHidDevice.getRegisterCommandDeviceId()
                             && verifyVibratorReportData(test, result)) {
                         int ffLeft = result.reportData[test.leftFfIndex] & 0xFF;
                         int ffRight = result.reportData[test.rightFfIndex] & 0xFF;
@@ -385,8 +376,8 @@ public abstract class InputHidTestCase extends InputTestCase {
     }
 
     public void testInputBatteryEvents(int resourceId) {
-        final InputDevice inputDevice = getInputDevice((d) -> d.getBatteryState().isPresent());
-        assertNotNull("Failed to find test device with battery", inputDevice);
+        final InputDevice inputDevice = waitForCapability("battery",
+                (d) -> d.getBatteryState().isPresent());
 
         final List<HidBatteryTestData> tests = mParser.getHidBatteryTestData(resourceId);
         for (HidBatteryTestData testData : tests) {
@@ -446,7 +437,8 @@ public abstract class InputHidTestCase extends InputTestCase {
                 // Delay before sysfs node was updated.
                 SystemClock.sleep(200);
                 // Verify HID report data
-                List<HidResultData> results = mHidDevice.getResults(mDeviceId,
+                List<HidResultData> results = mHidDevice.getResults(
+                        mHidDevice.getRegisterCommandDeviceId(),
                         test.hidEventType);
                 assertFalse(results.isEmpty());
                 // We just check the last HID output to be expected.
