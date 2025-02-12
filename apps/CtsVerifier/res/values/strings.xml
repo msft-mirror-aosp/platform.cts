@@ -7840,9 +7840,9 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="host_tests_title">Host-side Tests</string>
     <string name="host_tests_dialog_title">Host-side Tests</string>
     <string name="host_tests_dialog_content">
-        Host-side CTS-V tests.
-        Connect DUTs to a host and use cts-v-host-tradefed in the android-cts-verifier.zip to run these tests.
-        Use \"cts-v-host-console > run cts-v-host\" to trigger the full host test plan.
+        Host-side CTS-V tests. See
+        <a href="https://source.android.com/partners/android-16/compatibility/cts/cts-multidevice">https://source.android.com/partners/android-16/compatibility/cts/cts-multidevice</a>
+        for instructions.
     </string>
     <!-- Register host-side modules. -->
     <!-- Also add test categories for these modules in .HostTestsActivity -->
