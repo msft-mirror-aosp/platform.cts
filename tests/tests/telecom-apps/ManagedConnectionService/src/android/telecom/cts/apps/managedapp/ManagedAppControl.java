@@ -144,9 +144,8 @@ public class ManagedAppControl extends Service {
                         ConnectionRequest request =
                                 waitUntilConnectionFails(
                                         PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
-                        // clear out the last failed connection since it has been noted
-                        ManagedConnectionService.sLastFailedRequest = null;
-                        resetCreateConnectionLatches();
+                        // clear out the connection fields as they're no longer needed.
+                        resetConnectionFields();
                         if (callAttributes.getAddress().equals(request.getAddress())) {
                             return new NoDataTransaction(TestAppTransaction.Success);
                         } else {
@@ -186,7 +185,8 @@ public class ManagedAppControl extends Service {
                         boolean onCreateConnectionInvoked =
                                 waitUntilManagedCreateConnectionInvoked(
                                         mConnectionServiceImpl, isOutgoing(callAttributes));
-                        resetCreateConnectionLatches();
+                        // clear out the connection fields as they're no longer needed.
+                        resetConnectionFields();
                         // signal to the test process the onCreateOutgoingConnection callback was
                         // not fired.
                         if (!onCreateConnectionInvoked) {
@@ -275,11 +275,9 @@ public class ManagedAppControl extends Service {
                                 });
                     }
                     mIdToConnection.put(id, connection);
-                    // clear out the last connection since it has been added to tracking
-                    ManagedConnectionService.sLastConnection = null;
-                    // also reset the create connection latches so that they can properly be
+                    // Reset the connection fields/latches so that they can properly be
                     // tested when referenced
-                    resetCreateConnectionLatches();
+                    resetConnectionFields();
                 }
 
                 private void maybeClearHoldCapabilities(
@@ -605,8 +603,10 @@ public class ManagedAppControl extends Service {
         }
     }
 
-    private void resetCreateConnectionLatches() {
+    private void resetConnectionFields() {
         ManagedConnectionService.sCreateOutgoingConnectionLatch = new CountDownLatch(1);
         ManagedConnectionService.sCreateIncomingConnectionLatch = new CountDownLatch(1);
+        ManagedConnectionService.sLastFailedRequest = null;
+        ManagedConnectionService.sLastConnection = null;
     }
 }
