@@ -120,7 +120,7 @@ public class PackageInstallerCujTestBase {
     public static final String WORK_PROFILE_LABEL = "work profile";
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
-    public static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
+    public static final long FIND_OBJECT_TIMEOUT_MS = 20 * 1000L;
     private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 3 * 1000L;
 
     private static final long TEST_APK_VERSION = 1;
@@ -133,6 +133,8 @@ public class PackageInstallerCujTestBase {
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
 
     private static String sPackageInstallerPackageName = null;
+
+    private static double sSwipeDeadZonePercentage = 0f;
 
     public static Instrumentation getInstrumentation() {
         return InstrumentationRegistry.getInstrumentation();
@@ -213,6 +215,45 @@ public class PackageInstallerCujTestBase {
     public static void pressBack() {
         getUiDevice().pressBack();
         waitForUiIdle();
+    }
+
+    /** Use UiScrollable to scroll forward. */
+    public static void scrollForward() throws Exception {
+        new UiScrollable(new UiSelector().scrollable(true))
+                .setSwipeDeadZonePercentage(getSwipeDeadZonePercentage())
+                .scrollForward();
+    }
+
+    /**
+     * Get the swipe dead zone percentage on the current device. E.g. If display height * 0.1 is
+     * larger than the inset of the system bar + gap buffer, return 0.1f. Otherwise, if the display
+     * height * 0.2 is larger than the inset of the system bar + gap buffer, then return 0.2f. The
+     * maximum value is 0.3f. If the percentage is larger than 0.3f, the range is too small to
+     * scroll.
+     */
+    private static double getSwipeDeadZonePercentage() {
+        if (sSwipeDeadZonePercentage != 0f) {
+            return sSwipeDeadZonePercentage;
+        }
+
+        DisplayMetrics displayMetrics = getContext().getResources().getDisplayMetrics();
+        // the gap buffer is 24 * dp
+        int gapBuffer = (int) (24 * displayMetrics.density);
+
+        // Get the insets of system bars and displayCutOut
+        WindowManager wm = getContext().getSystemService(WindowManager.class);
+        Insets insets = wm.getCurrentWindowMetrics().getWindowInsets()
+                .getInsets(displayCutout() | systemBars());
+
+        double percentage = 0.1;
+        while (displayMetrics.heightPixels * percentage < insets.bottom + gapBuffer
+                && percentage < 0.3) {
+            percentage += 0.05;
+        }
+
+        sSwipeDeadZonePercentage = percentage;
+        Log.d(TAG, "sSwipeDeadZonePercentage = " + sSwipeDeadZonePercentage);
+        return sSwipeDeadZonePercentage;
     }
 
     /**
@@ -374,7 +415,7 @@ public class PackageInstallerCujTestBase {
         while (startTime + timeoutMs > System.currentTimeMillis()) {
             try {
                 waitForUiIdle();
-                object = getUiDevice().wait(Until.findObject(bySelector), /* timeout= */ 10 * 1000);
+                object = getUiDevice().wait(Until.findObject(bySelector), /* timeout= */ 2 * 1000);
                 if (object != null) {
                     Log.d(TAG, "Found bounds: " + object.getVisibleBounds()
                             + " of object: " + bySelector + ", text: " + object.getText()
@@ -385,8 +426,8 @@ public class PackageInstallerCujTestBase {
                             + object.getVisibleCenter());
                     return object;
                 } else {
-                    // Maybe the screen is small. Scroll forward and attempt to click
-                    new UiScrollable(new UiSelector().scrollable(true)).scrollForward();
+                    // Maybe the screen is small. Scroll forward.
+                    scrollForward();
                 }
             } catch (Exception ignored) {
                 // do nothing
