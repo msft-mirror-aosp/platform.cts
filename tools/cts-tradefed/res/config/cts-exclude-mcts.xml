@@ -64,7 +64,6 @@
 
     <!-- Exclude tests in CtsAppSecurityHostTestCases that are testing mainline modules-->
     <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ApexSignatureVerificationTest" />
-    <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ApkVerityInstallTest" />
     <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppDataIsolationTests" />
     <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.LocationPolicyTest" />
     <option name="compatibility:exclude-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.NoAppDataStorageHostTest" />
