@@ -33,6 +33,8 @@ import com.android.tradefed.testtype.junit4.DeviceParameterizedRunner;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.Pair;
 
+import junitparams.Parameters;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,8 +44,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import junitparams.Parameters;
 
 /**
  * Compilation tests that don't require root access.
@@ -411,7 +411,7 @@ public class CompilationTest extends BaseHostJUnit4Test {
             com.android.art.flags.Flags.FLAG_ART_SERVICE_V3})
     public void testSdmOk() throws Exception {
         CompilationArtifacts artifacts =
-                mUtils.generateCompilationArtifacts(TEST_APP_APK_RES, TEST_APP_PROF_RES);
+                mUtils.generateCompilationArtifacts(TEST_APP_APK_RES, TEST_APP_PROF_RES, getAbi());
         File dmFile = mUtils.createDm(TEST_APP_PROF_RES, artifacts.vdexFile());
         File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile());
 
