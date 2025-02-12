@@ -126,9 +126,33 @@ public class SoftAssert {
     /**
      * Check if condition is true
      *
-     * @param strict      if true, add this to the failure list, else, log a warning message
-     * @param message     message to describe the test - output on pass or fail
-     * @param condition   condition for test
+     * @param strict if true, add this to the failure list, else, log a warning message
+     * @param message the message associated with the condition
+     * @param eventTimeInNs the time at which the condition occurred
+     * @param expectedResult the expected result of the condition
+     * @param actualResult the actual result of the condition
+     * @param condition condition for test
+     */
+    public void assertOrWarnTrue(
+            boolean strict,
+            String message,
+            long eventTimeInNs,
+            String expectedResult,
+            String actualResult,
+            boolean condition) {
+        String formattedMessage =
+                String.format(
+                        "At time = %d ns, %s (actual : %s, expected : %s).",
+                        eventTimeInNs, message, actualResult, expectedResult);
+        assertOrWarnTrue(strict, formattedMessage, condition);
+    }
+
+    /**
+     * Check if condition is true
+     *
+     * @param strict if true, add this to the failure list, else, log a warning message
+     * @param message message to describe the test - output on pass or fail
+     * @param condition condition for test
      */
     public void assertOrWarnTrue(boolean strict, String message, boolean condition) {
         if (condition) {

@@ -87,9 +87,10 @@ public class GnssMeasurementValuesTest extends GnssTestCase {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;
         }
-
-        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
+        boolean isAutomotive = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        boolean canTestRunOnAutomotiveDevice =
+                TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager);
+        if (isAutomotive && !canTestRunOnAutomotiveDevice) {
             return;
         }
 
@@ -120,22 +121,36 @@ public class GnssMeasurementValuesTest extends GnssTestCase {
         int eventCount = events.size();
         Log.i(TAG, "Number of Gps Event received = " + eventCount);
 
-        softAssert.assertTrue("GnssMeasurementEvent count", "X > 0",
-                String.valueOf(eventCount), eventCount > 0);
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "GnssMeasurementEvent count should be greater than 0.",
+                eventCount > 0);
+        if (isAutomotive && eventCount == 0) {
+            return;
+        }
 
         boolean carrierPhaseQualityPrrFound = false;
         // we received events, so perform a quick initial check on mandatory fields
         for (GnssMeasurementsEvent event : events) {
             // Verify Gps Event mandatory fields are in required ranges
-            assertNotNull("GnssMeasurementEvent cannot be null.", event);
+            if (isAutomotive) {
+                softAssert.assertOrWarnTrue(
+                        false, "GnssMeasurementEvent cannot be null.", event != null);
+                if (event == null) {
+                    continue;
+                }
+            } else {
+                assertNotNull("GnssMeasurementEvent cannot be null.", event);
+            }
 
             // TODO(sumitk): To validate the timestamp if we receive GPS clock.
             long timeInNs = event.getClock().getTimeNanos();
-            TestMeasurementUtil.assertGnssClockFields(event.getClock(), softAssert, timeInNs);
+            TestMeasurementUtil.assertGnssClockFields(
+                    event.getClock(), softAssert, /* asWarning= */ isAutomotive, timeInNs);
 
             for (GnssMeasurement measurement : event.getMeasurements()) {
                 TestMeasurementUtil.assertAllGnssMeasurementMandatoryFields(mTestLocationManager,
-                        measurement, softAssert, timeInNs);
+                        measurement, softAssert, /* asWarning= */ isAutomotive, timeInNs);
                 carrierPhaseQualityPrrFound |=
                         TestMeasurementUtil.gnssMeasurementHasCarrierPhasePrr(measurement);
                 if (measurement.hasCarrierFrequencyHz()) {
@@ -150,8 +165,8 @@ public class GnssMeasurementValuesTest extends GnssTestCase {
             }
         }
         TestMeasurementUtil.assertGnssClockHasConsistentFullBiasNanos(softAssert, events);
-
-        softAssert.assertTrue(
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
                 "GNSS Measurements PRRs with Carrier Phase "
                         + "level uncertainties.  If failed, retry near window or outdoors?",
                 carrierPhaseQualityPrrFound);
@@ -166,7 +181,8 @@ public class GnssMeasurementValuesTest extends GnssTestCase {
         // received, the check is done as <= 1
         Set<String> svDiff = gnssStatusCallback.getGnssUsedSvStringIds();
         svDiff.removeAll(mGnssMeasSvStringIds);
-        softAssert.assertOrWarnTrue(/* strict= */ YEAR_2017_CAPABILITY_ENFORCED,
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
                 "Used Svs with no Meas: " + (svDiff.isEmpty() ? "None" : svDiff),
                 svDiff.size() <= 1);
 
