@@ -112,7 +112,6 @@ android_test {
         ":CtsMockInputMethod",
         ":CtsDeviceServicesTestShareUidAppA",
         ":CtsDeviceServicesTestShareUidAppB",
-        ":CtsCrossProcessSurfaceControlViewHostTestService",
         ":CtsWindowManagerJetpackSecondUidApp",
         ":CtsBackLegacyApp",
         ":CtsDragAndDropTargetAppSdk23",
