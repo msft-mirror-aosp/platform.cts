@@ -32,8 +32,9 @@ public class CallScreeningServiceControl extends Service {
     public static final String CONTROL_INTERFACE_ACTION =
             "android.telecom.cts.screeningtestapp.ACTION_CONTROL_CALL_SCREENING_SERVICE";
     public static final ComponentName CONTROL_INTERFACE_COMPONENT =
-            ComponentName.unflattenFromString(
-                    "android.telecom.cts.screeningtestapp/.CallScreeningServiceControl");
+            new ComponentName(
+                    "android.telecom.cts.screeningtestapp",
+                    "android.telecom.cts.screeningtestapp.CallScreeningServiceControl");
 
     private static CallScreeningServiceControl sCallScreeningServiceControl = null;
     private CountDownLatch mBindingLatch = new CountDownLatch(1);
@@ -45,6 +46,7 @@ public class CallScreeningServiceControl extends Service {
             new android.telecom.cts.screeningtestapp.ICallScreeningControl.Stub() {
                 @Override
                 public void reset() {
+                    Log.i(TAG, "reset: mCallResponse");
                     mCallResponse =
                             new CallScreeningService.CallResponse.Builder()
                                     .setDisallowCall(false)
@@ -63,7 +65,7 @@ public class CallScreeningServiceControl extends Service {
                         boolean shouldSilenceCall,
                         boolean shouldSkipCallLog,
                         boolean shouldSkipNotification) {
-                    Log.i(TAG, "setCallResponse");
+
                     mCallResponse =
                             new CallScreeningService.CallResponse.Builder()
                                     .setSkipNotification(shouldSkipNotification)
@@ -72,6 +74,20 @@ public class CallScreeningServiceControl extends Service {
                                     .setRejectCall(shouldRejectCall)
                                     .setSilenceCall(shouldSilenceCall)
                                     .build();
+
+                    Log.i(
+                            TAG,
+                            String.format(
+                                    "setCallResponse: shouldDisallowCall=[%b],"
+                                        + " shouldRejectCall=[%b], shouldSilenceCall=[%b],"
+                                        + " shouldSkipCallLog=[%b], shouldSkipNotification=[%b] ,"
+                                        + " mCallResponse.hash=[%d]",
+                                    shouldDisallowCall,
+                                    shouldRejectCall,
+                                    shouldSilenceCall,
+                                    shouldSkipCallLog,
+                                    shouldSkipNotification,
+                                    mCallResponse.hashCode()));
                 }
 
                 @Override
@@ -131,11 +147,11 @@ public class CallScreeningServiceControl extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.i(TAG, "onUnbind: call screening control interface");
+        Log.i(TAG, "onUnbind: call screening control interface: intent= " + intent);
         sCallScreeningServiceControl = null;
         mIsBound = false;
         super.onUnbind(intent);
-        return true; // true allows the service to stop when unbound for cleanup
+        return false;
     }
 
     public void onScreeningServiceBound() {
@@ -143,6 +159,20 @@ public class CallScreeningServiceControl extends Service {
     }
 
     public CallScreeningService.CallResponse getCallResponse() {
+        Log.i(
+                TAG,
+                String.format(
+                        "getCallResponse: shouldDisallowCall=[%b], "
+                                + "shouldRejectCall=[%b], "
+                                + "shouldSilenceCall=[%b], "
+                                + "shouldSkipCallLog=[%b], "
+                                + "shouldSkipNotification=[%b] , mCallResponse.hash=[%d]",
+                        mCallResponse.getDisallowCall(),
+                        mCallResponse.getRejectCall(),
+                        mCallResponse.getSilenceCall(),
+                        mCallResponse.getSkipCallLog(),
+                        mCallResponse.getSkipNotification(),
+                        mCallResponse.hashCode()));
         return mCallResponse;
     }
 }
