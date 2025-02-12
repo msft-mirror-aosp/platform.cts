@@ -553,6 +553,9 @@ public final class ActivityManagerAppExitInfoTest {
         // Start a process and do nothing
         startService(ACTION_FINISH, STUB_SERVICE_NAME, false, false);
 
+        // Give a few seconds to let stub process enter into cache state.
+        sleep(WAITFOR_SETTLE_DOWN);
+
         final ArrayList<IBinder> memConsumers = new ArrayList<>();
         List<ApplicationExitInfo> list = new ArrayList<>();
         final MemoryConsumerService.TestFuncInterface testFunc =
