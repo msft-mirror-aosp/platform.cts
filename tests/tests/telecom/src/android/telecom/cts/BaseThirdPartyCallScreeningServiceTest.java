@@ -112,9 +112,7 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
     @Override
     protected void tearDown() throws Exception {
         if (mShouldTestTelecom) {
-            if (mServiceConnection != null) {
-                waitForAppUnbinding(mServiceConnection);
-            }
+            resetAndRestoreCallScreening();
         }
         super.tearDown();
     }
@@ -135,14 +133,16 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
                 new ServiceConnection() {
                     @Override
                     public void onServiceConnected(ComponentName name, IBinder service) {
-                        Log.i(TAG, "onServiceConnected");
+                        Log.i(TAG, "onServiceConnected: " + name);
                         mCallScreeningControl = ICallScreeningControl.Stub.asInterface(service);
                         bindLatch.countDown();
                     }
 
                     @Override
                     public void onServiceDisconnected(ComponentName name) {
-                        Log.i(TAG, "onServiceDisconnected");
+                        // The onServiceDisconnected() callback is not invoked when you explicitly
+                        // unbind; it's only called when the connection is unexpectedly lost.
+                        Log.i(TAG, "onServiceDisconnected: " + name);
                         mCallScreeningControl = null;
                     }
                 };
@@ -160,12 +160,19 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
         return serviceConnection;
     }
 
-    protected void waitForAppUnbinding(ServiceConnection serviceConnection) throws Exception {
-        resetAndRestoreCallScreening();
-        if (serviceConnection == null) {
+    protected void waitForAppUnbinding() throws RemoteException {
+        if (mServiceConnection == null
+                || mCallScreeningControl == null
+                || !mCallScreeningControl.isBound()) {
+            Log.w(TAG, "waitForAppUnbinding: skipping unbind because service is already unbound");
             return;
         }
-        mContext.unbindService(serviceConnection);
+        Log.i(TAG, "waitForAppUnbinding: requesting control unbind");
+        try {
+            mContext.unbindService(mServiceConnection);
+        } catch (Exception e) {
+            Log.w(TAG, "waitForAppUnbinding: hit an exception when calling unbind. e=[" + e + "]");
+        }
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
                     @Override
@@ -187,6 +194,7 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
                 TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS,
                 "mCallScreeningControl object which represents binding to the test app is NOT "
                         + "null. This means the app is still bound when it should be unbound.");
+        Log.i(TAG, "waitForAppUnbinding: done");
     }
 
     protected void resetAndRestoreCallScreening() throws Exception {
@@ -199,6 +207,7 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
         if (!TextUtils.isEmpty(mPreviousCallScreeningPackage)) {
             addRoleHolder(ROLE_CALL_SCREENING, mPreviousCallScreeningPackage);
         }
+        waitForAppUnbinding();
     }
 
     private void rememberPreviousCallScreeningApp() {

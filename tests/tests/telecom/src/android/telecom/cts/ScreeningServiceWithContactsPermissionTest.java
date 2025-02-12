@@ -55,7 +55,6 @@ public class ScreeningServiceWithContactsPermissionTest
             return;
         }
         grantReadContactPermission();
-        setupCallScreening();
     }
 
     /**
@@ -66,15 +65,20 @@ public class ScreeningServiceWithContactsPermissionTest
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        // Tell the test app to block the call.
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
+        try {
+            setupCallScreening();
+            // Tell the test app to block the call.
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
 
-        addIncomingAndVerifyBlocked(false /* addContact */);
+            addIncomingAndVerifyBlocked(false /* addContact */);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     /**
@@ -88,15 +92,20 @@ public class ScreeningServiceWithContactsPermissionTest
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        // Tell the test app to block the call; also try to skip logging the call.
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                true /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
+        try {
+            setupCallScreening();
+            // Tell the test app to block the call; also try to skip logging the call.
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    true /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
 
-        addIncomingAndVerifyBlocked(false /* addContact */);
+            addIncomingAndVerifyBlocked(false /* addContact */);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     /**
@@ -106,15 +115,20 @@ public class ScreeningServiceWithContactsPermissionTest
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        // Tell the test app to silence the call.
-        mCallScreeningControl.setCallResponse(
-                false /* shouldDisallowCall */,
-                false /* shouldRejectCall */,
-                true /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                false /* shouldSkipNotification */);
+        try {
+            setupCallScreening();
+            // Tell the test app to silence the call.
+            mCallScreeningControl.setCallResponse(
+                    false /* shouldDisallowCall */,
+                    false /* shouldRejectCall */,
+                    true /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    false /* shouldSkipNotification */);
 
-        addIncomingAndVerifyCallExtraForSilence(true);
+            addIncomingAndVerifyCallExtraForSilence(true);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     /**
@@ -125,163 +139,219 @@ public class ScreeningServiceWithContactsPermissionTest
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        // Tell the test app to not silence the call.
-        mCallScreeningControl.setCallResponse(
-                false /* shouldDisallowCall */,
-                false /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                false /* shouldSkipNotification */);
+        try {
+            setupCallScreening();
+            // Tell the test app to not silence the call.
+            mCallScreeningControl.setCallResponse(
+                    false /* shouldDisallowCall */,
+                    false /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    false /* shouldSkipNotification */);
 
-        addIncomingAndVerifyCallExtraForSilence(false);
+            addIncomingAndVerifyCallExtraForSilence(false);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testHasPermissionAndNoContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        verifyPermission(true);
-        // Tell the test app to block the call.
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
-        addIncomingAndVerifyBlocked(false /* addContact */);
+        try {
+            setupCallScreening();
+            verifyPermission(true);
+            // Tell the test app to block the call.
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
+            addIncomingAndVerifyBlocked(false /* addContact */);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testHasPermissionAndHasContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        verifyPermission(true);
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
-        addIncomingAndVerifyBlocked(true /* addContact */);
+        try {
+            setupCallScreening();
+            verifyPermission(true);
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
+            addIncomingAndVerifyBlocked(true /* addContact */);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testHasPermissionAndNoContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        verifyPermission(true);
-        placeOutgoingCall(false /* addContact */);
-        assertTrue(mCallScreeningControl.waitForBind());
+        try {
+            setupCallScreening();
+            verifyPermission(true);
+            placeOutgoingCall(false /* addContact */);
+            assertTrue(mCallScreeningControl.waitForBind());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testHasPermissionAndHasContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        verifyPermission(true);
-        placeOutgoingCall(true /* addContact */);
-        assertTrue(mCallScreeningControl.waitForBind());
+        try {
+            setupCallScreening();
+            verifyPermission(true);
+            placeOutgoingCall(true /* addContact */);
+            assertTrue(mCallScreeningControl.waitForBind());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testNoPostCallActivityWithoutRole() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        removeRoleHolder(ROLE_CALL_SCREENING, CtsCallScreeningService.class.getPackage().getName());
-        addIncomingAndVerifyAllowed(false);
-        assertFalse(mCallScreeningControl.waitForActivity());
+        try {
+            setupCallScreening();
+            removeRoleHolder(
+                    ROLE_CALL_SCREENING, CtsCallScreeningService.class.getPackage().getName());
+            addIncomingAndVerifyAllowed(false);
+            assertFalse(mCallScreeningControl.waitForActivity());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testAllowCall() throws Exception {
         if (!mShouldTestTelecom || !hasTelephonyFeature(mContext)) {
             return;
         }
-        mCallScreeningControl.setCallResponse(
-                false /* shouldDisallowCall */,
-                false /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                false /* shouldSkipNotification */);
-        addIncomingAndVerifyAllowed(false /* addContact */);
-        assertTrue(mCallScreeningControl.waitForActivity());
+        try {
+            setupCallScreening();
+            mCallScreeningControl.setCallResponse(
+                    false /* shouldDisallowCall */,
+                    false /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    false /* shouldSkipNotification */);
+            addIncomingAndVerifyAllowed(false /* addContact */);
+            assertTrue(mCallScreeningControl.waitForActivity());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testNoPostCallActivityWhenBlocked() throws Exception {
         if (!mShouldTestTelecom) {
             return;
         }
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
-        addIncomingAndVerifyBlocked(false /* addContact */);
-        assertFalse(mCallScreeningControl.waitForActivity());
+        try {
+            setupCallScreening();
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
+            addIncomingAndVerifyBlocked(false /* addContact */);
+            assertFalse(mCallScreeningControl.waitForActivity());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testNoPostCallActivityWhenAudioProcessing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        mCallScreeningControl.setCallResponse(
-                false /* shouldDisallowCall */,
-                false /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                false /* shouldSkipNotification */);
-        Uri testNumber = createRandomTestNumber();
-        Bundle extras = new Bundle();
-        extras.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, testNumber);
-        mTelecomManager.addNewIncomingCall(TestUtils.TEST_PHONE_ACCOUNT_HANDLE, extras);
+        try {
+            setupCallScreening();
+            mCallScreeningControl.setCallResponse(
+                    false /* shouldDisallowCall */,
+                    false /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    false /* shouldSkipNotification */);
+            Uri testNumber = createRandomTestNumber();
+            Bundle extras = new Bundle();
+            extras.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, testNumber);
+            mTelecomManager.addNewIncomingCall(TestUtils.TEST_PHONE_ACCOUNT_HANDLE, extras);
 
-        // Wait until the new incoming call is processed.
-        waitOnAllHandlers(getInstrumentation());
+            // Wait until the new incoming call is processed.
+            waitOnAllHandlers(getInstrumentation());
 
-        assertEquals(1, mInCallCallbacks.getService().getCallCount());
-        Call call = mInCallCallbacks.getService().getLastCall();
-        call.enterBackgroundAudioProcessing();
+            assertEquals(1, mInCallCallbacks.getService().getCallCount());
+            Call call = mInCallCallbacks.getService().getLastCall();
+            call.enterBackgroundAudioProcessing();
 
-        waitOnAllHandlers(getInstrumentation());
-        mInCallCallbacks.getService().disconnectAllCalls();
-        assertFalse(mCallScreeningControl.waitForActivity());
+            waitOnAllHandlers(getInstrumentation());
+            mInCallCallbacks.getService().disconnectAllCalls();
+            assertFalse(mCallScreeningControl.waitForActivity());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testNoPostCallActivityForOutgoingEmergencyCall() throws Exception {
         if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
-        setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
-        Bundle extras = new Bundle();
-        extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, TEST_EMERGENCY_URI);
-        placeAndVerifyCall(extras);
+        try {
+            setupCallScreening();
+            setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
+            Bundle extras = new Bundle();
+            extras.putParcelable(TestUtils.EXTRA_PHONE_NUMBER, TEST_EMERGENCY_URI);
+            placeAndVerifyCall(extras);
 
-        // Wait until the new incoming call is processed.
-        waitOnAllHandlers(getInstrumentation());
-        mInCallCallbacks.getService().disconnectAllCalls();
-        assertFalse(mCallScreeningControl.waitForActivity());
+            // Wait until the new incoming call is processed.
+            waitOnAllHandlers(getInstrumentation());
+            mInCallCallbacks.getService().disconnectAllCalls();
+            assertFalse(mCallScreeningControl.waitForActivity());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     public void testNoPostCallActivityForIncomingEmergencyCall() throws Exception {
         if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
-        setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
-        mCallScreeningControl.setCallResponse(
-                false /* shouldDisallowCall */,
-                false /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                false /* shouldSkipNotification */);
-        Bundle extras = new Bundle();
-        extras.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, TEST_EMERGENCY_URI);
-        extras.putBoolean(EXTRA_NETWORK_IDENTIFIED_EMERGENCY_CALL, true);
-        mTelecomManager.addNewIncomingCall(TestUtils.TEST_PHONE_ACCOUNT_HANDLE, extras);
+        try {
+            setupCallScreening();
+            setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
+            mCallScreeningControl.setCallResponse(
+                    false /* shouldDisallowCall */,
+                    false /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    false /* shouldSkipNotification */);
+            Bundle extras = new Bundle();
+            extras.putParcelable(TelecomManager.EXTRA_INCOMING_CALL_ADDRESS, TEST_EMERGENCY_URI);
+            extras.putBoolean(EXTRA_NETWORK_IDENTIFIED_EMERGENCY_CALL, true);
+            mTelecomManager.addNewIncomingCall(TestUtils.TEST_PHONE_ACCOUNT_HANDLE, extras);
 
-        // Wait until the new incoming call is processed.
-        waitOnAllHandlers(getInstrumentation());
-        mInCallCallbacks.getService().disconnectAllCalls();
+            // Wait until the new incoming call is processed.
+            waitOnAllHandlers(getInstrumentation());
+            mInCallCallbacks.getService().disconnectAllCalls();
 
-        assertFalse(mCallScreeningControl.waitForActivity());
+            assertFalse(mCallScreeningControl.waitForActivity());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 }
