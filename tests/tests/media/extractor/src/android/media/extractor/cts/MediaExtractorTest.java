@@ -149,8 +149,7 @@ public class MediaExtractorTest {
     @Test
     public void testApvMediaExtractor() throws Exception {
         TestMediaDataSource dataSource =
-                setDataSource("pattern_640x480_30fps_8213kbps_apv_10bit.mp4");
-
+                setDataSource("pattern_640x480_30fps_16mbps_apv_10bit.mp4");
         MediaFormat trackFormat = mExtractor.getTrackFormat(0);
 
         int profile = trackFormat.getInteger(MediaFormat.KEY_PROFILE);

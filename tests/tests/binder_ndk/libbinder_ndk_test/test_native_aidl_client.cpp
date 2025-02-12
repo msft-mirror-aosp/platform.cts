@@ -300,6 +300,20 @@ TEST_P(NdkBinderTest_Aidl, RepeatPrimitiveIntEnum) {
   EXPECT_EQ(IntEnum::FOO, out);
 }
 
+TEST_P(NdkBinderTest_Aidl, RepeatPrimitiveIntEnumUndefined) {
+  IntEnum out;
+  ASSERT_OK(iface->RepeatIntEnum(static_cast<IntEnum>(12), &out));
+  EXPECT_EQ(static_cast<IntEnum>(12), out);
+}
+
+TEST_P(NdkBinderTest_Aidl, RepeatPrimitiveIntEnumIncorrectBitwiseOp) {
+  IntEnum out;
+  IntEnum in =
+      static_cast<IntEnum>(static_cast<int32_t>(IntEnum::FOO) | static_cast<int32_t>(IntEnum::BAR));
+  ASSERT_OK(iface->RepeatIntEnum(in, &out));
+  EXPECT_EQ(in, out);
+}
+
 TEST_P(NdkBinderTest_Aidl, RepeatPrimitiveLongEnum) {
   LongEnum out;
   ASSERT_OK(iface->RepeatLongEnum(LongEnum::FOO, &out));

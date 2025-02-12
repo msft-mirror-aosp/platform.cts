@@ -3317,6 +3317,7 @@ public class ItsService extends Service implements SensorEventListener {
         assert outputFilePath != null;
 
         int aeTargetFpsMax = 30;
+        boolean prevSend3AResults = mSend3AResults;
         try (PreviewRecorder pr = new PreviewRecorder(cameraDeviceId, previewSize, aeTargetFpsMax,
                 sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false,
                 getEncoderTimestampOffset(), this)) {
@@ -3361,6 +3362,8 @@ public class ItsService extends Service implements SensorEventListener {
         } catch (InterruptedException e) {
             Log.e(TAG, "doCapturePreviewFrame [error]", e);
             throw new ItsException("Interrupted while recording preview", e);
+        } finally {
+            mSend3AResults = prevSend3AResults;
         }
     }
 

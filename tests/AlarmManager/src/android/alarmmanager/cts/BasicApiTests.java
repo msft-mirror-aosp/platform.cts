@@ -310,6 +310,33 @@ public class BasicApiTests {
         mAm.cancel(mSender);
     }
 
+    @Test
+    public void testSetInexactRepeating() {
+        mMockAlarmReceiver.reset();
+        mWakeupTime = System.currentTimeMillis() + TEST_ALARM_FUTURITY;
+        mAm.setInexactRepeating(AlarmManager.RTC_WAKEUP, mWakeupTime, REPEAT_PERIOD, mSender);
+
+        // wait beyond the initial alarm's possible delivery window to verify that it fires the
+        // first time
+        new PollingCheck(TEST_ALARM_FUTURITY + REPEAT_PERIOD) {
+            @Override
+            protected boolean check() {
+                return mMockAlarmReceiver.isAlarmed();
+            }
+        }.run();
+
+        // Now reset the receiver and wait for the intended repeat alarm to fire as expected
+        mMockAlarmReceiver.reset();
+        new PollingCheck(REPEAT_PERIOD * 2) {
+            @Override
+            protected boolean check() {
+                return mMockAlarmReceiver.isAlarmed();
+            }
+        }.run();
+
+        mAm.cancel(mSender);
+    }
+
     private static boolean isDeviceIdleEnabled() {
         final String output = SystemUtil.runShellCommand("cmd deviceidle enabled deep").trim();
         return Integer.parseInt(output) != 0;

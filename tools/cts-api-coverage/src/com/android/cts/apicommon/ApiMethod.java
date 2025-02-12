@@ -17,13 +17,11 @@
 package com.android.cts.apicommon;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 
 /** Representation of a method in the API with parameters (arguments) and a return value. */
 public class ApiMethod implements Comparable<ApiMethod> {
@@ -114,8 +112,8 @@ public class ApiMethod implements Comparable<ApiMethod> {
         return mCoveredWith.keySet();
     }
 
-    public Collection<TestMethodInfo> getCoveredTests() {
-        return mCoveredTests.values();
+    public List<TestMethodInfo> getCoveredTests() {
+        return mCoveredTests.values().stream().toList();
     }
 
     public void setCovered(String coveredWithModule) {

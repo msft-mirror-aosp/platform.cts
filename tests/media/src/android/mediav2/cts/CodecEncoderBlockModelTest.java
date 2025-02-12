@@ -16,6 +16,9 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectELD;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectHE;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectLC;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.cts.AudioEncoderTest.flattenParams;
 
@@ -65,31 +68,40 @@ public class CodecEncoderBlockModelTest extends CodecEncoderBlockModelTestBase {
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
     public static Collection<Object[]> input() {
         List<Object[]> defArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-                // mediaType, arrays of bit-rates, sample rate, channel counts, pcm encoding
+                // mediaType, arrays of bit-rates, sample rate, channel counts, pcm encoding,
+                // profile
 
                 // mono testing @ common sample rates, pcm encoding
                 {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000}, new int[]{8000, 16000},
-                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, AACObjectLC},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000}, new int[]{16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, AACObjectHE},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000}, new int[]{16000},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, AACObjectELD},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{64000}, new int[]{8000, 16000},
-                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_NB, new int[]{4750, 12200}, new int[]{8000},
-                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_WB, new int[]{6600, 23850}, new int[]{16000},
-                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{8000, 16000},
-                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{8000, 16000},
-                        new int[]{1}, AudioFormat.ENCODING_PCM_FLOAT},
+                        new int[]{1}, AudioFormat.ENCODING_PCM_FLOAT, -1},
 
                 // stereo testing @ common sample rates, pcm encoding
                 {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{128000}, new int[]{44100, 48000},
-                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT, AACObjectLC},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{128000}, new int[]{44100, 48000},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT, AACObjectHE},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{128000}, new int[]{44100, 48000},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT, AACObjectELD},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{128000}, new int[]{48000},
-                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{48000, 192000},
-                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 7}, new int[]{48000, 192000},
-                        new int[]{2}, AudioFormat.ENCODING_PCM_FLOAT},
+                        new int[]{2}, AudioFormat.ENCODING_PCM_FLOAT, -1},
         }));
         List<Object[]> argsList = flattenParams(defArgsList);
         return prepareParamList(argsList, true, true, false, true, ComponentClass.ALL);
