@@ -530,13 +530,20 @@ public class WindowManagerStateHelper extends WindowManagerState {
 
         waitForValidState(activity.getComponentName());
 
+        // We have already waited for all transitions to finish on the activity's display,
+        // which means any display transitions (like rotations or configuration changes) and
+        // activity transitions (like activity launch animations) should have finished.
+        // Now, ensure the activity window is on top so that no other windows like dialogs or
+        // notifications are obscuring the activity window. We will skip waiting for stable
+        // window geometry since animations should have already finished.
         assertNotNull("Activity is not attached to a window", activity.getWindow());
-        if (!CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
+        if (!CtsWindowInfoUtils.waitForWindowOnTopImmediate(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
             fail("Activity window did not become visible: " + activity);
         }
 
-        // Sync input transactions to ensure that InputDispatcher knows that the window is on top.
+        // Sync input transactions to ensure that InputDispatcher knows that the window is on top,
+        // and that it has finished processing the WindowInfos update.
         instrumentation.getUiAutomation().syncInputTransactions();
         instrumentation.waitForIdleSync();
     }
