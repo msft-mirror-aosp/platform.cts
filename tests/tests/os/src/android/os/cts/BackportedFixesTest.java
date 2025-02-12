@@ -21,15 +21,25 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.ResultType;
+import com.android.compatibility.common.util.ResultUnit;
+import com.android.cts.backportedfixes.ApprovedBackportedFixes;
 import com.android.cts.backportedfixes.BackportedFixRule;
 import com.android.cts.backportedfixes.BackportedFixTest;
+import com.android.cts.backportedfixes.bitset.BitSets;
+import com.android.cts.backportedfixes.support.BackportedFixesPropertiesCompat;
 
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
+
+import java.util.BitSet;
+import java.util.SortedSet;
 
 /**
  * Tests for backported fixes used in {@link BuildTest}.
@@ -52,6 +62,13 @@ public class BackportedFixesTest {
     @Test
     public void alwaysFixed() {
         // always passes
+
+        // Log all approved and applied fixes.
+        var bitset = BackportedFixesPropertiesCompat.alias_bitset();
+        var aliases =
+                BitSets.toIndices(
+                        BitSet.valueOf(bitset.stream().mapToLong(Long::longValue).toArray()));
+        logFixesApplied(aliases);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_API_FOR_BACKPORTED_FIXES)
@@ -61,5 +78,27 @@ public class BackportedFixesTest {
         Assert.fail(
                 "This is never fixed on device. However because it is not declared fixed it "
                         + "will be an AssumptionFailure instead");
+    }
+
+    private static void logFixesApplied(SortedSet<Integer> aliases) {
+        var approvedFixes = ApprovedBackportedFixes.getInstance();
+        DeviceReportLog reportLog =
+                new DeviceReportLog("BackportedFixesTestCases", "fixes_applied_on_device");
+        reportLog.addValues(
+                "applied_aliases",
+                aliases.stream().mapToInt(Integer::intValue).toArray(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValues(
+                "applied_fixes",
+                aliases.stream().mapToLong(approvedFixes::getId).sorted().toArray(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValues(
+                "approved_fixes",
+                approvedFixes.getAllIssues().stream().mapToLong(Long::longValue).sorted().toArray(),
+                ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.submit(InstrumentationRegistry.getInstrumentation());
     }
 }
