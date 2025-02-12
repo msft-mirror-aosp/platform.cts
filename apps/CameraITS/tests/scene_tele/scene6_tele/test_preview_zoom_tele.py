@@ -237,7 +237,7 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
           number_of_cameras_to_test=_NUMBER_OF_CAMERAS_TO_TEST):
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
         failure_msg = f'{_NAME} failed! Check test_log.DEBUG for errors'
-        if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+        if first_api_level >= its_session_utils.ANDROID16_API_LEVEL:
           raise AssertionError(failure_msg)
         else:
           raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
