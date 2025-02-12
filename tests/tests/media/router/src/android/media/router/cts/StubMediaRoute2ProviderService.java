@@ -33,6 +33,7 @@ import android.text.TextUtils;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -469,6 +470,17 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
             mRoutes.remove(routeId);
             publishRoutes();
         }
+    }
+
+    /** Removes routes that don't match a set of ids, and publishes the remaining routes. */
+    public void removeAllRoutesExcept(Collection<String> routeIdsToKeep) {
+        List<String> routeIds = List.copyOf(mRoutes.keySet());
+        for (String id : routeIds) {
+            if (!routeIdsToKeep.contains(id)) {
+                mRoutes.remove(id);
+            }
+        }
+        publishRoutes();
     }
 
     void maybeDeselectRoute(String routeId, long requestId) {
