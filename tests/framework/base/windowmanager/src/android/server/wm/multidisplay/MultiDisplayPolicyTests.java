@@ -737,8 +737,7 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
 
         assertTrue("Toast window must be shown", mWmState.waitForWithAmState(
                 state -> state.containsWindow(TOAST_NAME), "toast window to show"));
-        assertTrue("Toast window must be visible",
-                mWmState.isWindowSurfaceShown(TOAST_NAME));
+        mWmState.waitAndAssertWindowSurfaceShown(TOAST_NAME, true /* shown */);
     }
 
     /**
