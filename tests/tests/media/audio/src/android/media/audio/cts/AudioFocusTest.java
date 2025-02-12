@@ -21,6 +21,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import android.Manifest;
 import android.annotation.Nullable;
 import android.annotation.RawRes;
+import android.car.Car;
+import android.car.media.CarAudioManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -170,23 +172,47 @@ public class AudioFocusTest extends CtsAndroidTestCase {
     }
 
     public void testAudioFocusRequestGainLoss() throws Exception {
+        // Check refactored in Android 15 to use assumeFalse
+        if (isOemServiceEnabled()) {
+            Log.i(TAG,"Test testAudioFocusRequestGainLoss "
+                    + "skipped: OEM audio service is enabled");
+            return;
+        }
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, false /*no handler*/);
     }
 
     public void testAudioFocusRequestGainLossHandler() throws Exception {
+        // Check refactored in Android 15 to use assumeFalse
+        if (isOemServiceEnabled()) {
+            Log.i(TAG,"Test testAudioFocusRequestGainLossHandler "
+                    + "skipped: OEM audio service is enabled");
+            return;
+        }
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN, attributes, true /*with handler*/);
     }
 
 
     public void testAudioFocusRequestGainLossTransient() throws Exception {
+        // Check refactored in Android 15 to use assumeFalse
+        if (isOemServiceEnabled()) {
+            Log.i(TAG,"Test testAudioFocusRequestGainLossTransient "
+                    + "skipped: OEM audio service is enabled");
+            return;
+        }
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 false /*no handler*/);
     }
 
     public void testAudioFocusRequestGainLossTransientHandler() throws Exception {
+        // Check refactored in Android 15 to use assumeFalse
+        if (isOemServiceEnabled()) {
+            Log.i(TAG,"Test testAudioFocusRequestGainLossTransientHandler "
+                    + "skipped: OEM audio service is enabled");
+            return;
+        }
         final AudioAttributes[] attributes = { ATTR_DRIVE_DIR, ATTR_MEDIA };
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT, attributes,
                 true /*with handler*/);
@@ -232,6 +258,12 @@ public class AudioFocusTest extends CtsAndroidTestCase {
     }
 
     public void testAudioFocusRequestA11y() throws Exception {
+        // Check refactored in Android 15 to use assumeFalse
+        if (isOemServiceEnabled()) {
+            Log.i(TAG,"Test testAudioFocusRequestA11y "
+                    + "skipped: OEM Automotive Audio policies active");
+            return;
+        }
         final AudioAttributes[] attributes = {ATTR_DRIVE_DIR, ATTR_A11Y};
         doTestTwoPlayersGainLoss(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE, attributes,
@@ -827,6 +859,24 @@ public class AudioFocusTest extends CtsAndroidTestCase {
                 "MediaPlayer wasn't prepared in under " + MEDIAPLAYER_PREPARE_TIMEOUT_MS + " ms",
                 onPreparedCalled.isSignalled());
         return mp;
+    }
+
+    private boolean isOemServiceEnabled() {
+        boolean oemAudioServiceEnabled = false;
+        Context context = getContext();
+        if (hasAutomotiveFeature(context)) {
+            final Car car = Car.createCar(context);
+            try {
+                final CarAudioManager carAudioManager = car.getCarManager(CarAudioManager.class);
+                oemAudioServiceEnabled = carAudioManager.isAudioFeatureEnabled(
+                            CarAudioManager.AUDIO_FEATURE_OEM_AUDIO_SERVICE);
+            } finally {
+                if (car != null) {
+                    car.disconnect();
+                }
+            }
+        }
+        return oemAudioServiceEnabled;
     }
 
     private static class FocusChangeListener implements OnAudioFocusChangeListener {
