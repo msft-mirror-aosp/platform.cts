@@ -48,7 +48,10 @@ public final class PacProcessorTest {
 
     @After
     public void tearDown() throws Throwable {
-        mProcess.close();
+        // mProcess might be null if TestProcessClient.createProcessB() threw an exception.
+        if (mProcess != null) {
+            mProcess.close();
+        }
     }
 
     static class TestCreatePacProcessor extends TestProcessClient.TestRunnable {
