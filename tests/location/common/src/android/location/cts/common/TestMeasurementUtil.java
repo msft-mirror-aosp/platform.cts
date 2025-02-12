@@ -136,6 +136,11 @@ public final class TestMeasurementUtil {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
+    public static boolean canTestRunOnAutomotiveDevice(TestLocationManager testLocationManager) {
+        return isAutomotiveDevice(testLocationManager.getContext())
+                && testLocationManager.getLocationManager().getGnssCapabilities().hasMeasurements();
+    }
+
     /**
      * Check if pseudorange rate uncertainty in Gnss Measurement is in the expected range.
      * See field description in {@code gps.h}.
@@ -1103,10 +1108,14 @@ public final class TestMeasurementUtil {
                     "X > 0",
                     String.valueOf(satellitePvt.getVelocityEcef().getUreRateMetersPerSecond()),
                     satellitePvt.getVelocityEcef().getUreRateMetersPerSecond() > 0);
-            softAssert.assertTrue("hardware_code_bias_meters : "
-                    + "The satellite hardware code bias of the reported code type "
-                    + "w.r.t ionosphere-free measurement in meters.",
-                    String.format(Locale.ROOT, "%.4f < X < %.4f", hardwareCodeBiasMetersRange.lowerEndpoint(),
+            softAssert.assertTrue(
+                    "hardware_code_bias_meters : "
+                            + "The satellite hardware code bias of the reported code type "
+                            + "w.r.t ionosphere-free measurement in meters.",
+                    String.format(
+                            Locale.ROOT,
+                            "%.4f < X < %.4f",
+                            hardwareCodeBiasMetersRange.lowerEndpoint(),
                             hardwareCodeBiasMetersRange.upperEndpoint()),
                     String.valueOf(satellitePvt.getClockInfo().getHardwareCodeBiasMeters()),
                     hardwareCodeBiasMetersRange.contains(
@@ -1119,14 +1128,17 @@ public final class TestMeasurementUtil {
                     String.valueOf(satellitePvt.getClockInfo().getTimeCorrectionMeters()),
                     satellitePvt.getClockInfo().getTimeCorrectionMeters() > -3e6 &&
                     satellitePvt.getClockInfo().getTimeCorrectionMeters() < 3e6);
-            softAssert.assertTrue("clock_drift_mps : "
-                    + "The satellite clock drift (meters per second)",
+            softAssert.assertTrue(
+                    "clock_drift_mps : " + "The satellite clock drift (meters per second)",
                     timeInNs,
-                    String.format(Locale.ROOT, "%.4f < X < %.4f", clockDriftMpsRange.lowerEndpoint(),
+                    String.format(
+                            Locale.ROOT,
+                            "%.4f < X < %.4f",
+                            clockDriftMpsRange.lowerEndpoint(),
                             clockDriftMpsRange.upperEndpoint()),
                     String.valueOf(satellitePvt.getClockInfo().getClockDriftMetersPerSecond()),
                     clockDriftMpsRange.contains(
-                        satellitePvt.getClockInfo().getClockDriftMetersPerSecond()));
+                            satellitePvt.getClockInfo().getClockDriftMetersPerSecond()));
         }
 
         if (satellitePvt.hasIono()){

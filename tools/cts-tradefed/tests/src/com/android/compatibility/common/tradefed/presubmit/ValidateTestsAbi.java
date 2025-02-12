@@ -85,6 +85,12 @@ public class ValidateTestsAbi {
         APK_EXCEPTIONS.add("CtsExtractNativeLibsAppFalse64");
 
         /**
+         * These apks are prebuilts needed for some tests
+         */
+        APK_EXCEPTIONS.add("CtsApkVerityTestAppPrebuilt");
+        APK_EXCEPTIONS.add("CtsApkVerityTestApp2Prebuilt");
+
+        /**
          * Data apk used by SimpleperfTestCases
          */
         APK_EXCEPTIONS.add("base");

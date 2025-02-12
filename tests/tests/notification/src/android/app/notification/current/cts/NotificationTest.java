@@ -1273,16 +1273,14 @@ public class NotificationTest {
     public void testProgressStyle_ignoresInvalidPoints() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         expectedProgressStyle
-                .addProgressPoint(new Notification.ProgressStyle.Point(10)
-                        .setColor(Color.BLUE)
-                        .setId(100))
-                .addProgressPoint(new Notification.ProgressStyle.Point(-100)
-                        .setId(1))
-                .addProgressPoint(new Notification.ProgressStyle.Point(20)
-                        .setColor(Color.GREEN))
-                .addProgressPoint(new Notification.ProgressStyle.Point(0)
-                        .setColor(Color.CYAN))
-                .addProgressPoint(new Notification.ProgressStyle.Point(10));
+                .addProgressPoint(
+                        new Notification.ProgressStyle.Point(10).setColor(Color.BLUE).setId(100))
+                .addProgressPoint(new Notification.ProgressStyle.Point(-100).setId(1))
+                .addProgressPoint(new Notification.ProgressStyle.Point(20).setColor(Color.GREEN))
+                .addProgressPoint(new Notification.ProgressStyle.Point(0).setColor(Color.CYAN))
+                .addProgressPoint(new Notification.ProgressStyle.Point(10))
+                .addProgressPoint(new Notification.ProgressStyle.Point(100).setColor(Color.YELLOW))
+                .addProgressPoint(new Notification.ProgressStyle.Point(80));
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setSmallIcon(1)
@@ -1294,16 +1292,16 @@ public class NotificationTest {
                 (Notification.ProgressStyle) Notification.Builder.recoverBuilder(
                         mContext, mNotification).getStyle();
 
-        assertThat(recoveredStyle.getProgressPoints()).isEqualTo(List.of(
-                        new Notification.ProgressStyle.Point(10)
-                                .setColor(Color.BLUE)
-                                .setId(100),
-                        new Notification.ProgressStyle.Point(20)
-                                .setColor(Color.GREEN),
-                        new Notification.ProgressStyle.Point(0)
-                                .setColor(Color.CYAN),
-                new Notification.ProgressStyle.Point(10)
-        ));
+        assertThat(recoveredStyle.getProgressPoints())
+                .isEqualTo(
+                        List.of(
+                                new Notification.ProgressStyle.Point(10)
+                                        .setColor(Color.BLUE)
+                                        .setId(100),
+                                new Notification.ProgressStyle.Point(20).setColor(Color.GREEN),
+                                new Notification.ProgressStyle.Point(10),
+                                new Notification.ProgressStyle.Point(100).setColor(Color.YELLOW),
+                                new Notification.ProgressStyle.Point(80)));
     }
 
     @Test
@@ -1326,9 +1324,9 @@ public class NotificationTest {
     public void progressStyle_setProgressPoints() {
         final List<Notification.ProgressStyle.Point> points =
                 List.of(
-                        new Notification.ProgressStyle.Point(0).setColor(Color.WHITE),
+                        new Notification.ProgressStyle.Point(20).setColor(Color.WHITE),
                         new Notification.ProgressStyle.Point(50).setColor(Color.RED),
-                        new Notification.ProgressStyle.Point(100).setColor(Color.BLUE));
+                        new Notification.ProgressStyle.Point(80).setColor(Color.BLUE));
 
         final Notification.ProgressStyle progressStyle1 = new Notification.ProgressStyle();
         progressStyle1.setProgressPoints(points);

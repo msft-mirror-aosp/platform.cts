@@ -23,6 +23,7 @@ python_test_host {
     libs: [
         "mobly",
         "mobly_device_flags",
+        "platform-test-py-annotations",
     ],
     test_suites: [
         "general-tests",

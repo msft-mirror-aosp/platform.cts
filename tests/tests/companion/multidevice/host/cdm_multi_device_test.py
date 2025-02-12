@@ -8,12 +8,18 @@ Run: atest CtsCompanionDeviceManagerMultiDeviceTestCases
 import api_flags_utils
 import cdm_base_test
 
+from android.platform.test.annotations import ApiTest, CddTest
 from mobly import asserts
 from mobly import test_runner
 from time import sleep
 
+@CddTest(requirements = ["3.16/C-1-1", "3.16/C-1-2"])
 class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#associate(android.companion.AssociationRequest, android.companion.CompanionDeviceManager.Callback, android.os.Handler)',
+            'android.companion.CompanionDeviceManager#getMyAssociations()'
+    ])
     def test_associate_createsAssociation_classicBluetooth(self):
         """Test that CDM can create association with another BT device"""
 
@@ -31,6 +37,12 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.assert_true(secondary_id in associations, 'Association not found.')
 
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#buildPermissionTransferUserConsentIntent(int)',
+            'android.companion.CompanionDeviceManager#attachSystemDataTransport(int, java.io.InputStream, java.io.OutputStream)',
+            'android.companion.CompanionDeviceManager#detachSystemDataTransport(int)',
+            'android.companion.CompanionDeviceManager#startSystemDataTransfer(int, java.util.concurrent.Executor, android.os.OutcomeReceiver)'
+    ])
     def test_permissions_sync(self):
         """Test that CDM can perform permissions sync from one device to another via BT"""
 
@@ -75,6 +87,9 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         self.primary.cdm.startPermissionsSync(secondary_id)
 
 
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#removeBond(int)'
+    ])
     def test_removeBond_associatedDevice_succeeds(self):
         """This tests that CDM can remove bluetooth bond from an associated device."""
 
@@ -94,6 +109,7 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         self.secondary.cdm.btStartAutoAcceptIncomingPairRequest()
         self.primary.cdm.btDiscoverAndGetResults()
         self.primary.cdm.btPairDevice(secondary_address)
+        sleep(cdm_base_test.OPERATION_DELAY_TIME)
 
         # Assert bluetooth pairing success
         paired_devices = map(lambda device: device['Address'], self.primary.cdm.btGetPairedDevices())
@@ -104,6 +120,30 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         sleep(cdm_base_test.OPERATION_DELAY_TIME)
         paired_devices = map(lambda device: device['Address'], self.primary.cdm.btGetPairedDevices())
         asserts.assert_false(secondary_address in paired_devices, 'Devices should not be paired.')
+
+
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#associate(android.companion.AssociationRequest, android.companion.CompanionDeviceManager.Callback, android.os.Handler)',
+    ])
+    def test_association_persistence_after_reboot(self):
+        """Test that association persists after a device reboot"""
+
+        # Skip if device is a watch
+        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
+
+        secondary_address = self.secondary.cdm.btGetAddress()
+
+        # Create association
+        self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        secondary_id = self.primary.cdm.associate(secondary_address)
+
+        # Reboot the primary device
+        with (self.primary.handle_reboot()):
+            self.primary.reboot()
+
+        # The association should be remaining.
+        associations = self.primary.cdm.getMyAssociations()
+        asserts.assert_true(secondary_id in associations, 'Association not found.')
 
 
 if __name__ == '__main__':

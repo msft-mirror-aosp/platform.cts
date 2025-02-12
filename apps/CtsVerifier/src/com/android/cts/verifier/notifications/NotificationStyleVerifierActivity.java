@@ -557,38 +557,31 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     .setStyle(
                             new Notification.ProgressStyle()
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(20).setColor(
-                                                    COLOR_ORANGE)
-                                    )
+                                            new Notification.ProgressStyle.Segment(20)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(30).setColor(
-                                                    COLOR_YELLOW)
-                                    )
+                                            new Notification.ProgressStyle.Segment(30)
+                                                    .setColor(COLOR_YELLOW))
                                     .addProgressSegment(
-                                            new Notification.ProgressStyle.Segment(50).setColor(
-                                                    COLOR_RED)
-                                    )
+                                            new Notification.ProgressStyle.Segment(50)
+                                                    .setColor(COLOR_RED))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(0).setColor(
-                                                    COLOR_ORANGE))
+                                            new Notification.ProgressStyle.Point(20)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(30).setColor(
-                                                    COLOR_YELLOW))
+                                            new Notification.ProgressStyle.Point(30)
+                                                    .setColor(COLOR_YELLOW))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(70).setColor(
-                                                    COLOR_ORANGE))
+                                            new Notification.ProgressStyle.Point(70)
+                                                    .setColor(COLOR_ORANGE))
                                     .addProgressPoint(
-                                            new Notification.ProgressStyle.Point(100).setColor(
-                                                    COLOR_RED))
+                                            new Notification.ProgressStyle.Point(80)
+                                                    .setColor(COLOR_RED))
                                     .setProgressTrackerIcon(
                                             Icon.createWithResource(
-                                                    mContext,
-                                                    R.drawable.navigation_tracker
-                                            )
-                                    )
+                                                    mContext, R.drawable.navigation_tracker))
                                     .setStyledByProgress(false)
-                                    .setProgress(60)
-                    )
+                                    .setProgress(60))
                     .build();
         }
     }

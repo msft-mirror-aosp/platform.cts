@@ -1205,7 +1205,7 @@ public class KeyAttestationTest {
             // Because we sometimes set "no padding", allow non-randomized encryption.
             builder.setRandomizedEncryptionRequired(false);
         }
-        if (isSignaturePurpose(purposes)) {
+        if (isSignaturePurpose(purposes) || isVerifyPurpose(purposes)) {
             builder.setSignaturePaddings(paddingModes);
         }
 
@@ -1236,7 +1236,18 @@ public class KeyAttestationTest {
             @KeyProperties.PurposeEnum int purposes) {
 
         boolean[] expectedKeyUsage = new boolean[KEY_USAGE_BITSTRING_LENGTH];
+        boolean[] certKeyUsage = attestationCert.getKeyUsage();
+
+        if (isVerifyPurpose(purposes)) {
+            // Some implementations may set the signature key usage
+            // bit when PURPOSE_VERIFY is used, but some do not.  Allow
+            // for either possibility by updating the expected value of
+            // the bit to match what's actually present.
+            expectedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] =
+                certKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET];
+        }
         if (isSignaturePurpose(purposes)) {
+            // A PURPOSE_SIGN key should definitely have the bit set.
             expectedKeyUsage[KEY_USAGE_DIGITAL_SIGNATURE_BIT_OFFSET] = true;
         }
         if (isEncryptionPurpose(purposes)) {
@@ -1247,7 +1258,7 @@ public class KeyAttestationTest {
             expectedKeyUsage[KEY_USAGE_KEY_AGREE_BIT_OFFSET] = true;
         }
         assertThat("Attested certificate has unexpected key usage.",
-                attestationCert.getKeyUsage(), is(expectedKeyUsage));
+            certKeyUsage, is(expectedKeyUsage));
     }
 
     @SuppressWarnings("deprecation")
@@ -2070,7 +2081,11 @@ public class KeyAttestationTest {
     }
 
     private boolean isSignaturePurpose(@KeyProperties.PurposeEnum int purposes) {
-        return (purposes & PURPOSE_SIGN) != 0 || (purposes & PURPOSE_VERIFY) != 0;
+        return (purposes & PURPOSE_SIGN) != 0;
+    }
+
+    private boolean isVerifyPurpose(@KeyProperties.PurposeEnum int purposes) {
+        return (purposes & PURPOSE_VERIFY) != 0;
     }
 
     private boolean isAgreeKeyPurpose(@KeyProperties.PurposeEnum int purposes) {

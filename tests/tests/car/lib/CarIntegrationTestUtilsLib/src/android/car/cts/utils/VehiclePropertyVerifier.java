@@ -87,7 +87,6 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -849,8 +848,10 @@ public class VehiclePropertyVerifier<T> {
                         if (step.equals(STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE)) {
                             assumeTrue(
                                     "Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
-                            if (turnOffHvacPowerIfHvacPowerDependent()) {
-                                verifyGetNotAvailable();
+                            ImmutableSet<Integer> areaIdsTurnedOff =
+                                    turnOffHvacPowerIfHvacPowerDependent();
+                            if (!areaIdsTurnedOff.isEmpty()) {
+                                verifyGetNotAvailable(areaIdsTurnedOff);
                             }
                         }
                     },
@@ -1006,29 +1007,38 @@ public class VehiclePropertyVerifier<T> {
             }, propertyPermissions.toArray(new String[0]));
             enableAdasFeatureIfAdasStateProperty();
 
-            runWithShellPermissionIdentity(() -> {
-                turnOnHvacPowerIfHvacPowerDependent();
+            runWithShellPermissionIdentity(
+                    () -> {
+                        turnOnHvacPowerIfHvacPowerDependent();
 
-                if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC)) {
-                    verifyCarPropertyValueSetter();
-                    if (exceptedExceptionClass != null) {
-                        assertWithMessage("Expected " + sExceptionClassOnSet + " to be of type "
-                                + exceptedExceptionClass).that(sExceptionClassOnSet)
-                                .isEqualTo(exceptedExceptionClass);
-                    }
-                }
+                        if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_SYNC)) {
+                            verifyCarPropertyValueSetter();
+                            if (exceptedExceptionClass != null) {
+                                assertWithMessage(
+                                                "Expected "
+                                                        + sExceptionClassOnSet
+                                                        + " to be of type "
+                                                        + exceptedExceptionClass)
+                                        .that(sExceptionClassOnSet)
+                                        .isEqualTo(exceptedExceptionClass);
+                            }
+                        }
 
-                if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC)
-                        && exceptedExceptionClass == null) {
-                    verifySetPropertiesAsync();
-                }
-                if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE)) {
-                    assumeTrue("Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
-                    if (turnOffHvacPowerIfHvacPowerDependent()) {
-                        verifySetNotAvailable();
-                    }
-                }
-            }, propertyPermissions.toArray(new String[0]));
+                        if (step.equals(STEP_VERIFY_WRITE_APIS_SET_PROPERTY_ASYNC)
+                                && exceptedExceptionClass == null) {
+                            verifySetPropertiesAsync();
+                        }
+                        if (step.equals(STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE)) {
+                            assumeTrue(
+                                    "Not depending on HVAC power", mPossiblyDependentOnHvacPowerOn);
+                            ImmutableSet<Integer> areaIdsTurnedOff =
+                                    turnOffHvacPowerIfHvacPowerDependent();
+                            if (!areaIdsTurnedOff.isEmpty()) {
+                                verifySetNotAvailable(areaIdsTurnedOff);
+                            }
+                        }
+                    },
+                    propertyPermissions.toArray(new String[0]));
         } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
@@ -1058,18 +1068,17 @@ public class VehiclePropertyVerifier<T> {
                 hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.TRUE);
     }
 
-    private boolean turnOffHvacPowerIfHvacPowerDependent() {
+    private ImmutableSet<Integer> turnOffHvacPowerIfHvacPowerDependent() {
         CarPropertyConfig<Boolean> hvacPowerOnCarPropertyConfig = (CarPropertyConfig<Boolean>)
                 getCarPropertyConfig(VehiclePropertyIds.HVAC_POWER_ON);
         if (hvacPowerOnCarPropertyConfig == null
                 || !hvacPowerOnCarPropertyConfig.getConfigArray().contains(mPropertyId)) {
-            return false;
+            return ImmutableSet.of();
         }
 
         // Turn the power off for all supported HVAC area IDs.
-        setBooleanPowerPropertyInAllAreaIds(
+        return setBooleanPowerPropertyInAllAreaIds(
                 hvacPowerOnCarPropertyConfig, /* setValue: */ Boolean.FALSE);
-        return true;
     }
 
     /**
@@ -1113,12 +1122,22 @@ public class VehiclePropertyVerifier<T> {
     private void disableAdasFeatureIfAdasStatePropertyAndVerify(
             String[] enabledPermissionsList, boolean verifySet) {
         try {
-            if (disableAdasFeatureIfAdasStateProperty()) {
-                runWithShellPermissionIdentity(() -> {
-                    verifyAdasPropertyDisabled(verifySet);
-                }, enabledPermissionsList);
+            ImmutableSet<Integer> areaIdsDisabled = disableAdasFeatureIfAdasStateProperty();
+            if (areaIdsDisabled.isEmpty()) {
+                return;
             }
-        }  finally {
+            runWithShellPermissionIdentity(
+                    () -> {
+                        if (mVerifyErrorStates) {
+                            verifyAdasPropertyErrorState(areaIdsDisabled);
+                        } else if (verifySet) {
+                            verifySetNotAvailable(areaIdsDisabled);
+                        } else {
+                            verifyGetNotAvailable(areaIdsDisabled);
+                        }
+                    },
+                    enabledPermissionsList);
+        } finally {
             // Restore all property values even if test fails.
             runWithShellPermissionIdentity(() -> {
                 restoreInitialValues();
@@ -1128,13 +1147,15 @@ public class VehiclePropertyVerifier<T> {
 
     /**
      * Disables the ADAS feature if the property is an ADAS property.
+     *
+     * @return all area IDs that are disabled
      */
-    public boolean disableAdasFeatureIfAdasStateProperty() {
+    public ImmutableSet<Integer> disableAdasFeatureIfAdasStateProperty() {
         if (!mDependentOnPropertyId.isPresent()) {
-            return false;
+            return ImmutableSet.of();
         }
 
-        AtomicBoolean isDisabled = new AtomicBoolean(false);
+        ImmutableSet.Builder<Integer> areaIdsDisabled = ImmutableSet.builder();
         runWithShellPermissionIdentity(
                 () -> {
                     int adasEnabledPropertyId = mDependentOnPropertyId.get();
@@ -1152,12 +1173,12 @@ public class VehiclePropertyVerifier<T> {
                     storeCurrentValuesForProperty(adasEnabledCarPropertyConfig);
 
                     // Disable ADAS feature in all supported area IDs.
-                    setBooleanPowerPropertyInAllAreaIds(
-                            adasEnabledCarPropertyConfig, /* setValue: */ Boolean.FALSE);
-                    isDisabled.set(true);
+                    areaIdsDisabled.addAll(
+                            setBooleanPowerPropertyInAllAreaIds(
+                                    adasEnabledCarPropertyConfig, /* setValue: */ Boolean.FALSE));
                 },
                 mDependentOnPropertyPermissions.toArray(new String[0]));
-        return isDisabled.get();
+        return areaIdsDisabled.build();
     }
 
     /** Stores the property's current values for all areas so that they can be restored later. */
@@ -1291,17 +1312,26 @@ public class VehiclePropertyVerifier<T> {
      *
      * <p>Power properties include {@code HVAC_POWER_ON} and all ADAS ENABLED properties such as
      * {@code AUTOMATIC_EMERGENCY_BRAKING_ENABLED}.
+     *
+     * @return all area IDs that are set (or already set) to {@code setValue}
      */
-    private void setBooleanPowerPropertyInAllAreaIds(
+    private ImmutableSet<Integer> setBooleanPowerPropertyInAllAreaIds(
             CarPropertyConfig<Boolean> booleanCarPropertyConfig, Boolean setValue) {
+        ImmutableSet.Builder<Integer> areaIdsUpdated = ImmutableSet.builder();
         boolean updateSentToVhal = false;
         int propertyId = booleanCarPropertyConfig.getPropertyId();
         for (int areaId : booleanCarPropertyConfig.getAreaIds()) {
             if (mCarPropertyManager.getBooleanProperty(propertyId, areaId) == setValue) {
+                areaIdsUpdated.add(areaId);
                 continue;
             }
-            setPropertyAndWaitForChange(
-                    mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
+            CarPropertyValue<Boolean> updatedValue =
+                    setPropertyAndWaitForChange(
+                            mCarPropertyManager, propertyId, Boolean.class, areaId, setValue);
+            if (updatedValue == null) {
+                continue;
+            }
+            areaIdsUpdated.add(areaId);
             updateSentToVhal = true;
         }
         if (updateSentToVhal && mPowerPropagationDelayMs != 0) {
@@ -1317,6 +1347,7 @@ public class VehiclePropertyVerifier<T> {
             SystemClock.sleep(mPowerPropagationDelayMs);
             Log.i(TAG, "Completed sleeping for: " + mPowerPropagationDelayMs);
         }
+        return areaIdsUpdated.build();
     }
 
     // Restore the initial values of the property provided by {@code areaIdToInitialValue}.
@@ -1759,18 +1790,31 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    private void verifyGetNotAvailable() {
+    private void verifyGetNotAvailable(Collection<Integer> areaIdsNotAvailable) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (!isAreaIdSupportedInList(areaId, areaIdsNotAvailable)) {
+                Log.i(
+                        TAG,
+                        "Skipping verifyGetNotAvailable because power could not be turned off for"
+                                + " power dependent property - "
+                                + mPropertyName
+                                + " at areaId - "
+                                + areaId);
+                continue;
+            }
+
             try {
                 // getProperty may/may not throw exception when the property is not available.
                 CarPropertyValue<T> currentValue =
                         mCarPropertyManager.getProperty(mPropertyId, areaId);
-                assertWithMessage("When the power is turned off getProperty should throw"
+                assertWithMessage(
+                                "When the power is turned off getProperty should throw"
                                         + " PropertyNotAvailableException when trying to get a"
                                         + " property with StatusCode.NOT_AVAILABLE or return a"
                                         + " CarPropertyValue with status UNAVAILABLE."
-                                        + " Returned CarPropertyValue: " + currentValue.toString())
+                                        + " Returned CarPropertyValue: "
+                                        + currentValue.toString())
                         .that(currentValue.getStatus())
                         .isEqualTo(CarPropertyValue.STATUS_UNAVAILABLE);
             } catch (Exception e) {
@@ -1778,17 +1822,20 @@ public class VehiclePropertyVerifier<T> {
                 // PropertyNotAvailableException. If the property is write-only, then it will throw
                 // IllegalArgumentException.
                 assertWithMessage(
-                                "Getting property " + mPropertyName + " when it's not available"
-                                    + " should throw either PropertyNotAvailableException or"
-                                    + " IllegalArgumentException.")
+                                "Getting property "
+                                        + mPropertyName
+                                        + " when it's not available"
+                                        + " should throw either PropertyNotAvailableException or"
+                                        + " IllegalArgumentException.")
                         .that(e.getClass())
-                        .isAnyOf(PropertyNotAvailableException.class,
+                        .isAnyOf(
+                                PropertyNotAvailableException.class,
                                 IllegalArgumentException.class);
             }
         }
     }
 
-    private void verifySetNotAvailable() {
+    private void verifySetNotAvailable(Collection<Integer> areaIdsNotAvailable) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if (!AREA_ID_CONFIG_ACCESS_FLAG
                 && carPropertyConfig.getAccess()
@@ -1805,6 +1852,17 @@ public class VehiclePropertyVerifier<T> {
                     carPropertyConfig,
                     areaId,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
+                continue;
+            }
+
+            if (!isAreaIdSupportedInList(areaId, areaIdsNotAvailable)) {
+                Log.i(
+                        TAG,
+                        "Skipping verifySetNotAvailable because power could not be turned off for"
+                                + " power dependent property - "
+                                + mPropertyName
+                                + " at areaId - "
+                                + areaId);
                 continue;
             }
 
@@ -1862,15 +1920,7 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    private void verifyAdasPropertyDisabled(boolean verifySet) {
-        if (!mVerifyErrorStates) {
-            verifyGetNotAvailable();
-            if (verifySet) {
-                verifySetNotAvailable();
-            }
-            return;
-        }
-
+    private void verifyAdasPropertyErrorState(Collection<Integer> areaIdsDisabled) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if (!AREA_ID_CONFIG_ACCESS_FLAG && carPropertyConfig.getAccess()
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
@@ -1878,16 +1928,28 @@ public class VehiclePropertyVerifier<T> {
         }
 
         for (int areaId : carPropertyConfig.getAreaIds()) {
-            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
-                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
+            if (doesAreaIdAccessMatch(
+                    carPropertyConfig, areaId, CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
                 continue;
             }
+            if (!isAreaIdSupportedInList(areaId, areaIdsDisabled)) {
+                Log.i(
+                        TAG,
+                        "Skipping verifyAdasPropertyErrorState because could not disable feature"
+                                + " for ADAS STATE property - "
+                                + mPropertyName
+                                + " at areaId - "
+                                + areaId);
+                continue;
+            }
+
             Integer adasState = mCarPropertyManager.getIntProperty(mPropertyId, areaId);
             assertWithMessage(
                             "When ADAS feature is disabled, "
-                                + VehiclePropertyIds.toString(mPropertyId)
-                                + " must be set to " + ErrorState.NOT_AVAILABLE_DISABLED
-                                + " (ErrorState.NOT_AVAILABLE_DISABLED).")
+                                    + mPropertyName
+                                    + " must be set to "
+                                    + ErrorState.NOT_AVAILABLE_DISABLED
+                                    + " (ErrorState.NOT_AVAILABLE_DISABLED).")
                     .that(adasState)
                     .isEqualTo(ErrorState.NOT_AVAILABLE_DISABLED);
         }
@@ -2675,6 +2737,15 @@ public class VehiclePropertyVerifier<T> {
                     SecurityException.class,
                     () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId, FAKE_CALLBACK));
         }
+    }
+
+    private static boolean isAreaIdSupportedInList(int areaIdToFind, Collection<Integer> areaIds) {
+        for (Integer areaId : areaIds) {
+            if ((areaIdToFind & areaId) == areaIdToFind) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static Optional<Integer> getAreaIdAccess(CarPropertyConfig<?> carPropertyConfig,

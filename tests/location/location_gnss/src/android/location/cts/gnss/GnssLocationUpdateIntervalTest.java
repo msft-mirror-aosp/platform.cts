@@ -125,12 +125,6 @@ public class GnssLocationUpdateIntervalTest extends GnssTestCase {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;
         }
-
-        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
-            return;
-        }
-
         testUtcToElapsedRealtimeDriftAtInterval(/* fixIntervalMillis= */ 0);
     }
 

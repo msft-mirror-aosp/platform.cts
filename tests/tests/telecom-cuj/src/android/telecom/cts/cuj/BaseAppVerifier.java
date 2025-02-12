@@ -286,11 +286,9 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.addCallAndVerifyFailure(appControl, attributes);
     }
 
-    public void addFailedCallWithCreateOutgoingConnectionVerify(
-            AppControlWrapper appControl, CallAttributes attributes)
-            throws Exception {
-        mBaseAppVerifierImpl.addFailedCallWithCreateOutgoingConnectionVerify(
-                appControl, attributes);
+    public void addFailedCallWithCreateConnectionVerify(
+            AppControlWrapper appControl, CallAttributes attributes) throws Exception {
+        mBaseAppVerifierImpl.addFailedCallWithCreateConnectionVerify(appControl, attributes);
     }
 
     public void waitUntilExpectedCallCount(int expectedCallCount) {

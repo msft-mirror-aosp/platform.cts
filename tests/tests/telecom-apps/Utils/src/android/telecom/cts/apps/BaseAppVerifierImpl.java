@@ -346,10 +346,9 @@ public class BaseAppVerifierImpl {
         appControl.addFailedCall(attributes);
     }
 
-    public void addFailedCallWithCreateOutgoingConnectionVerify(
-            AppControlWrapper appControl, CallAttributes attributes)
-            throws Exception {
-        appControl.addFailedCallWithCreateOutgoingConnectionVerify(attributes);
+    public void addFailedCallWithCreateConnectionVerify(
+            AppControlWrapper appControl, CallAttributes attributes) throws Exception {
+        appControl.addFailedCallWithCreateConnectionVerify(attributes);
     }
 
     public void waitUntilExpectedCallCount(int expectedCallCount) {

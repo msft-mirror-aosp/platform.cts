@@ -73,12 +73,15 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
     ui_interaction_utils.force_stop_app(
         self.dut, _JETPACK_CAMERA_APP_PACKAGE_NAME
     )
-    # Release the serial ports properly after the test
-    motor_port = gen2_rig_controller_utils.find_serial_port(self.rotator_cntl)
-    motor_port.close()
-    # Lights will go back to default state after the test
-    lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
-    lights_port.close()
+
+    if self.rotator_cntl == 'gen2_rotator':
+      # Release the serial ports properly after the test
+      motor_port = gen2_rig_controller_utils.find_serial_port(self.rotator_cntl)
+      motor_port.close()
+    if self.lighting_cntl == 'gen2_lights':
+      # Lights will go back to default state after the test
+      lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
+      lights_port.close()
 
   def on_fail(self, record):
     super().on_fail(record)
