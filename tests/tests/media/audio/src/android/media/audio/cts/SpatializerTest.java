@@ -16,6 +16,8 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_DEFAULT_AUDIO_EFFECTS;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static org.junit.Assert.assertThrows;
 
 import android.annotation.NonNull;
@@ -26,17 +28,14 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.Spatializer;
 import android.util.Log;
-
 import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.NonMainlineTest;
-
-import org.junit.Assert;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import org.junit.Assert;
 
 @NonMainlineTest
 public class SpatializerTest extends CtsAndroidTestCase {
@@ -454,19 +453,16 @@ public class SpatializerTest extends CtsAndroidTestCase {
             spat.addOnSpatializerStateChangedListener(Executors.newSingleThreadExecutor(),
                     stateListener);
             // now disable the effect and check head tracker availability
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                    "android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-            spat.setEnabled(false);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            runWithShellPermissionIdentity(() -> {
+                spat.setEnabled(false);
+            }, MODIFY_DEFAULT_AUDIO_EFFECTS);
             assertFalse("spatializer state listener not notified after disabling",
                     stateListener.getEnabled());
             assertFalse("head tracker available despite spatializer disabled",
                     spat.isHeadTrackerAvailable());
-            // reset state and wait until done
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                    "android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-            spat.setEnabled(true);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            runWithShellPermissionIdentity(() -> {
+                spat.setEnabled(true);
+            }, MODIFY_DEFAULT_AUDIO_EFFECTS);
             assertTrue("spatializer state listener not notified after enabling",
                     stateListener.getEnabled());
         }
