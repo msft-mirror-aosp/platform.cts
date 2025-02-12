@@ -45,6 +45,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureV
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getSeatOccupancyVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getTirePressureVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getVehicleCurbWeightVerifierBuilder;
@@ -3956,26 +3957,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getRangeRemainingVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.RANGE_REMAINING,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                rangeRemaining) ->
-                                assertWithMessage(
-                                        "RANGE_REMAINING Float value must be greater than"
-                                                + " or equal 0")
-                                        .that(rangeRemaining)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_ENERGY)
-                .addReadPermission(Car.PERMISSION_ADJUST_RANGE_REMAINING)
-                .addWritePermission(Car.PERMISSION_ADJUST_RANGE_REMAINING);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
