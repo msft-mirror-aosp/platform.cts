@@ -29,6 +29,7 @@ import static com.android.systemui.Flags.FLAG_STATUS_BAR_NOTIFICATION_CHIPS;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Notification;
@@ -152,81 +153,90 @@ public class LightBarTests extends LightBarTestBase {
     @Test
     @AppModeFull // Instant apps cannot create notifications
     @PlatinumTest(focusArea = "sysui")
-    public void testLightStatusBarIcons() throws Throwable {
+    public void testLightStatusBarIcons() {
         assumeHasColoredStatusBar(mActivityRule);
         // TODO(b/394505070): Fix the test on large screen devices.
         assumeFalse(isTablet());
 
-        runInNotificationSession(() -> {
-            requestLightBars(LIGHT_BG_COLOR);
-            Thread.sleep(WAIT_TIME);
+        runInNotificationSession(
+                () -> {
+                    requestLightBars(LIGHT_BG_COLOR);
+                    SystemClock.sleep(WAIT_TIME);
 
-            Bitmap bitmap = takeStatusBarScreenshot(mActivityRule.getActivity());
-            Stats s = evaluateLightBarBitmap(bitmap, LIGHT_BG_COLOR, 0);
-            assertStats(bitmap, s, true /* light */);
-        });
+                    Bitmap bitmap = takeStatusBarScreenshot(mActivityRule.getActivity());
+                    Stats s = evaluateLightBarBitmap(bitmap, LIGHT_BG_COLOR, 0);
+                    assertStats(bitmap, s, true /* light */);
+                });
     }
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
     @PlatinumTest(focusArea = "sysui")
-    public void testAppearanceCanOverwriteLegacyFlags() throws Throwable {
+    public void testAppearanceCanOverwriteLegacyFlags() {
         assumeHasColoredStatusBar(mActivityRule);
 
-        runInNotificationSession(() -> {
-            final LightBarActivity activity = mActivityRule.getActivity();
-            activity.runOnUiThread(() -> {
-                activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
+        runInNotificationSession(
+                () -> {
+                    final LightBarActivity activity = mActivityRule.getActivity();
+                    activity.runOnUiThread(
+                            () -> {
+                                activity.getWindow()
+                                        .setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
 
-                activity.setLightStatusBarLegacy(true);
-                activity.setLightNavigationBarLegacy(true);
+                                activity.setLightStatusBarLegacy(true);
+                                activity.setLightNavigationBarLegacy(true);
 
-                // The new appearance APIs can overwrite the appearance specified by the legacy
-                // flags.
-                activity.setLightStatusBarAppearance(false);
-                activity.setLightNavigationBarAppearance(false);
-            });
-            Thread.sleep(WAIT_TIME);
+                                // The new appearance APIs can overwrite the appearance specified by
+                                // the legacy
+                                // flags.
+                                activity.setLightStatusBarAppearance(false);
+                                activity.setLightNavigationBarAppearance(false);
+                            });
+                    SystemClock.sleep(WAIT_TIME);
 
-            Bitmap bitmap = takeStatusBarScreenshot(mActivityRule.getActivity());
-            Stats s = evaluateDarkBarBitmap(bitmap, LIGHT_BG_COLOR, 0);
-            assertStats(bitmap, s, false /* light */);
-        });
+                    Bitmap bitmap = takeStatusBarScreenshot(mActivityRule.getActivity());
+                    Stats s = evaluateDarkBarBitmap(bitmap, LIGHT_BG_COLOR, 0);
+                    assertStats(bitmap, s, false /* light */);
+                });
     }
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
     @PlatinumTest(focusArea = "sysui")
-    public void testLegacyFlagsCannotOverwriteAppearance() throws Throwable {
+    public void testLegacyFlagsCannotOverwriteAppearance() {
         assumeHasColoredStatusBar(mActivityRule);
 
-        runInNotificationSession(() -> {
-            final LightBarActivity activity = mActivityRule.getActivity();
-            activity.runOnUiThread(() -> {
-                activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
+        runInNotificationSession(
+                () -> {
+                    final LightBarActivity activity = mActivityRule.getActivity();
+                    activity.runOnUiThread(
+                            () -> {
+                                activity.getWindow()
+                                        .setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
 
-                activity.setLightStatusBarAppearance(false);
-                activity.setLightNavigationBarAppearance(false);
+                                activity.setLightStatusBarAppearance(false);
+                                activity.setLightNavigationBarAppearance(false);
 
-                // Once the client starts using the new appearance APIs, the legacy flags won't
-                // change the appearance anymore.
-                activity.setLightStatusBarLegacy(true);
-                activity.setLightNavigationBarLegacy(true);
-            });
-            Thread.sleep(WAIT_TIME);
+                                // Once the client starts using the new appearance APIs, the legacy
+                                // flags won't
+                                // change the appearance anymore.
+                                activity.setLightStatusBarLegacy(true);
+                                activity.setLightNavigationBarLegacy(true);
+                            });
+                    SystemClock.sleep(WAIT_TIME);
 
-            Bitmap bitmap = takeStatusBarScreenshot(mActivityRule.getActivity());
-            Stats s = evaluateDarkBarBitmap(bitmap, LIGHT_BG_COLOR, 0);
-            assertStats(bitmap, s, false /* light */);
-        });
+                    Bitmap bitmap = takeStatusBarScreenshot(mActivityRule.getActivity());
+                    Stats s = evaluateDarkBarBitmap(bitmap, LIGHT_BG_COLOR, 0);
+                    assertStats(bitmap, s, false /* light */);
+                });
     }
 
     @Test
-    public void testLightNavigationBar() throws Throwable {
+    public void testLightNavigationBar() {
         assumeHasColoredNavigationBar(mActivityRule);
 
         requestLightBars(LIGHT_BG_COLOR);
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
 
         ensureNavBarFullOpacity();
 
@@ -238,33 +248,41 @@ public class LightBarTests extends LightBarTestBase {
 
     @Test
     @AppModeFull // Instant apps cannot create notifications
-    public void testLightBarIsNotAllowed_fitStatusBar() throws Throwable {
+    public void testLightBarIsNotAllowed_fitStatusBar() {
         assumeHasColoredStatusBar(mActivityRule);
         // TODO(b/394505070): Fix the test on large screen devices.
         assumeFalse(isTablet());
 
-        runInNotificationSession(() -> {
-            final LightBarActivity activity = mActivityRule.getActivity();
-            activity.runOnUiThread(() -> {
-                final WindowMetrics metrics = activity.getWindowManager().getCurrentWindowMetrics();
-                final Insets insets = metrics.getWindowInsets().getInsets(Type.statusBars());
-                final WindowManager.LayoutParams attrs = activity.getWindow().getAttributes();
-                attrs.gravity = Gravity.LEFT | Gravity.TOP;
-                attrs.x = insets.left;
-                attrs.y = insets.top;
-                attrs.width = metrics.getBounds().width() - insets.left - insets.right;
-                attrs.height = metrics.getBounds().height() - insets.top - insets.bottom;
-                activity.getWindow().setAttributes(attrs);
-                activity.getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
-                activity.setLightStatusBarAppearance(true);
-                activity.setLightNavigationBarAppearance(true);
-            });
-            Thread.sleep(WAIT_TIME);
+        runInNotificationSession(
+                () -> {
+                    final LightBarActivity activity = mActivityRule.getActivity();
+                    activity.runOnUiThread(
+                            () -> {
+                                final WindowMetrics metrics =
+                                        activity.getWindowManager().getCurrentWindowMetrics();
+                                final Insets insets =
+                                        metrics.getWindowInsets().getInsets(Type.statusBars());
+                                final WindowManager.LayoutParams attrs =
+                                        activity.getWindow().getAttributes();
+                                attrs.gravity = Gravity.LEFT | Gravity.TOP;
+                                attrs.x = insets.left;
+                                attrs.y = insets.top;
+                                attrs.width =
+                                        metrics.getBounds().width() - insets.left - insets.right;
+                                attrs.height =
+                                        metrics.getBounds().height() - insets.top - insets.bottom;
+                                activity.getWindow().setAttributes(attrs);
+                                activity.getWindow()
+                                        .setBackgroundDrawable(new ColorDrawable(Color.BLACK));
+                                activity.setLightStatusBarAppearance(true);
+                                activity.setLightNavigationBarAppearance(true);
+                            });
+                    SystemClock.sleep(WAIT_TIME);
 
-            Bitmap bitmap = takeStatusBarScreenshot(activity);
-            Stats s = evaluateDarkBarBitmap(bitmap, Color.TRANSPARENT, 0);
-            assertStats(bitmap, s, false /* light */);
-        });
+                    Bitmap bitmap = takeStatusBarScreenshot(activity);
+                    Stats s = evaluateDarkBarBitmap(bitmap, Color.TRANSPARENT, 0);
+                    assertStats(bitmap, s, false /* light */);
+                });
     }
 
     /**
@@ -272,7 +290,7 @@ public class LightBarTests extends LightBarTestBase {
      * the navigation bar insets area.
      */
     @Test
-    public void testLightNavigationBarLegacy_escapeNavBar_notAllowToChange() throws Throwable {
+    public void testLightNavigationBarLegacy_escapeNavBar_notAllowToChange() {
         assumeHasColoredNavigationBar(mActivityRule);
 
         final LightBarActivity activity = mActivityRule.getActivity();
@@ -282,7 +300,7 @@ public class LightBarTests extends LightBarTestBase {
                     activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
                     requestLightBars(LIGHT_BG_COLOR);
                 });
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
 
         ensureNavBarFullOpacity();
 
@@ -295,12 +313,12 @@ public class LightBarTests extends LightBarTestBase {
     }
 
     /**
-     * Verify whether the activity can't control navigation bar with
-     * {@link android.view.WindowInsetsController#setSystemBarsAppearance} if it doesn't cover
-     * the navigation bar insets area .
+     * Verify whether the activity can't control navigation bar with {@link
+     * android.view.WindowInsetsController#setSystemBarsAppearance} if it doesn't cover the
+     * navigation bar insets area .
      */
     @Test
-    public void testLightNavigationBar_escapeNavBar_notAllowToChange() throws Throwable {
+    public void testLightNavigationBar_escapeNavBar_notAllowToChange() {
         assumeHasColoredNavigationBar(mActivityRule);
 
         final LightBarActivity activity = mActivityRule.getActivity();
@@ -310,7 +328,7 @@ public class LightBarTests extends LightBarTestBase {
                     activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
                     activity.setLightNavigationBarAppearance(true);
                 });
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
 
         ensureNavBarFullOpacity();
 
@@ -327,7 +345,7 @@ public class LightBarTests extends LightBarTestBase {
      * fill the parent container.
      */
     @Test
-    public void testLightNavigationBarLegacy_bottomHalfLayout() throws Throwable {
+    public void testLightNavigationBarLegacy_bottomHalfLayout() {
         assumeHasColoredNavigationBar(mActivityRule);
 
         final LightBarActivity activity = mActivityRule.getActivity();
@@ -337,7 +355,7 @@ public class LightBarTests extends LightBarTestBase {
                     activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
                     requestLightBars(LIGHT_BG_COLOR);
                 });
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
 
         ensureNavBarFullOpacity();
 
@@ -347,12 +365,12 @@ public class LightBarTests extends LightBarTestBase {
     }
 
     /**
-     * Verify whether the activity can control navigation bar
-     * with {@link android.view.WindowInsetsController#setSystemBarsAppearance} even if it doesn't
-     * fill the parent container.
+     * Verify whether the activity can control navigation bar with {@link
+     * android.view.WindowInsetsController#setSystemBarsAppearance} even if it doesn't fill the
+     * parent container.
      */
     @Test
-    public void testLightNavigationBar_bottomHalfLayout() throws Throwable {
+    public void testLightNavigationBar_bottomHalfLayout() {
         assumeHasColoredNavigationBar(mActivityRule);
 
         final LightBarActivity activity = mActivityRule.getActivity();
@@ -362,7 +380,7 @@ public class LightBarTests extends LightBarTestBase {
                     activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
                     activity.setLightNavigationBarAppearance(true);
                 });
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
 
         ensureNavBarFullOpacity();
 
@@ -371,14 +389,14 @@ public class LightBarTests extends LightBarTestBase {
         assertStats(bitmap, s, true /* light */);
     }
 
-    private void ensureNavBarFullOpacity() throws InterruptedException {
+    private void ensureNavBarFullOpacity() {
         int x = mActivityRule.getActivity().getWidth() / 2;
         int y = mActivityRule.getActivity().getBottom() + 10;
         injectCanceledTap(x, y);
-        Thread.sleep(WAIT_TIME);
+        SystemClock.sleep(WAIT_TIME);
     }
 
-    private void runInNotificationSession(ThrowingRunnable task) throws Exception {
+    private void runInNotificationSession(ThrowingRunnable task) {
         Context context = getInstrumentation().getContext();
         String packageName = getInstrumentation().getTargetContext().getPackageName();
         try {
@@ -400,6 +418,8 @@ public class LightBarTests extends LightBarTestBase {
             }
 
             task.run();
+        } catch (Exception e) {
+            fail("Grant permission fail due to " + e);
         } finally {
             mNm.cancelAll();
             mNm.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID);
