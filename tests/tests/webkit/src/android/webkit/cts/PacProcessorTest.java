@@ -17,7 +17,6 @@
 package android.webkit.cts;
 
 import android.content.Context;
-import android.net.ConnectivityManager;
 import android.net.Network;
 import android.webkit.PacProcessor;
 
@@ -116,11 +115,7 @@ public final class PacProcessorTest {
     static class TestSetNetwork extends TestProcessClient.TestRunnable {
         @Override
         public void run(Context ctx) {
-            ConnectivityManager connectivityManager =
-                    ctx.getSystemService(ConnectivityManager.class);
-            Network[] networks = connectivityManager.getAllNetworks();
-            Assert.assertTrue(
-                    "testSetNetwork requires at least one available Network", networks.length > 0);
+            Network[] networks = WebkitUtils.checkNetworkAvailable(ctx);
 
             PacProcessor pacProcessor = PacProcessor.createInstance();
             PacProcessor otherPacProcessor = PacProcessor.createInstance();
