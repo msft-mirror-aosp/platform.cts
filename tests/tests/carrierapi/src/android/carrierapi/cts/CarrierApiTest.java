@@ -608,10 +608,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         try {
             mTelephonyManager.getDeviceId();
             mTelephonyManager.getDeviceSoftwareVersion();
+            mTelephonyManager.getImei();
 
-            if (hasFeature(PackageManager.FEATURE_TELEPHONY_GSM)) {
-                mTelephonyManager.getImei();
-            }
             if (hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA)) {
                 mTelephonyManager.getMeid();
             }
