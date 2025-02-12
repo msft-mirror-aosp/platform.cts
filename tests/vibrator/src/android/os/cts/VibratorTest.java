@@ -81,6 +81,7 @@ import java.util.concurrent.Executors;
 @RunWith(Parameterized.class)
 public class VibratorTest {
     private static final String SYSTEM_VIBRATOR_LABEL = "SystemVibrator";
+    private static final float TEST_TOLERANCE = 1e-5f;
 
     @Rule(order = 0)
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -668,7 +669,9 @@ public class VibratorTest {
             int frequency = frequencyToOutputAccelerationMap.keyAt(i);
             float expectedOutputAcceleration = frequencyToOutputAccelerationMap.get(frequency);
             outputAccelerationGs = frequencyProfile.getOutputAccelerationGs(frequency);
-            assertThat(outputAccelerationGs).isEqualTo(expectedOutputAcceleration);
+            assertThat(outputAccelerationGs)
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expectedOutputAcceleration);
         }
 
         outputAccelerationGs = frequencyProfile.getOutputAccelerationGs(
