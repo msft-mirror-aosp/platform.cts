@@ -631,10 +631,6 @@
                   android:theme="@android:style/Theme.Dialog"
                   android:exported="true"/>
 
-        <activity android:name="android.server.wm.SurfaceControlViewHostTests$TestActivity"
-                  android:exported="true"
-                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
-
         <activity android:name="android.server.wm.MoveAnimationTests$FloatingActivity"
                   android:exported="true"
                   android:noHistory="true"

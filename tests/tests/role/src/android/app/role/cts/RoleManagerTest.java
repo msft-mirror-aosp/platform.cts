@@ -138,6 +138,9 @@ public class RoleManagerTest {
             sIsWatch
                     ? By.text("Don\u2019t ask again")
                     : By.res("com.android.permissioncontroller:id/dont_ask_again");
+    private static final BySelector PERMISSION_APP_LABEL =
+            By.pkg(sPackageManager.getPermissionControllerPackageName()).text(APP_LABEL);
+
 
     @Rule
     public DisableAnimationRule mDisableAnimationRule = new DisableAnimationRule();
@@ -404,7 +407,7 @@ public class RoleManagerTest {
     private void respondToRoleRequest(boolean allow)
             throws InterruptedException, UiObjectNotFoundException {
         if (allow) {
-            waitFindObject(By.text(APP_LABEL)).click();
+            waitFindObject(PERMISSION_APP_LABEL).click();
         }
         Pair<Integer, Intent> result = clickButtonAndWaitForResult(allow);
         int expectedResult = allow ? Activity.RESULT_OK : Activity.RESULT_CANCELED;
