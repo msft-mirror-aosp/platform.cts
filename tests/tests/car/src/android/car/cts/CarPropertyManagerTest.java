@@ -193,9 +193,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
 
     private static final CarSvcPropsParser CAR_SVC_PROPS_PARSER = new CarSvcPropsParser();
 
-    private static final List<Integer> VIC_FLAG_PROPERTIES =
-            CAR_SVC_PROPS_PARSER.getSystemPropertyIdsForFlag(
-                    Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES);
     private static final List<Integer> B_FLAG_PROPERTIES =
             CAR_SVC_PROPS_PARSER.getSystemPropertyIdsForFlag(
                     Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES);
@@ -1339,60 +1336,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     /**
-     * If the feature flag: FLAG_ANDROID_VIC_VEHICLE_PROPERTIES is disabled, the VIC properties must
-     * not be supported.
-     */
-    @RequiresFlagsDisabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
-    @Test
-    @ApiTest(
-            apis = {
-                "android.car.hardware.property.CarPropertyManager#getPropertyList",
-                "android.car.hardware.property.CarPropertyManager#getCarPropertyConfig",
-            })
-    public void testVicPropertiesMustNotBeSupportedIfFlagDisabled() {
-        List<Integer> vicSystemPropertyIds =
-                CAR_SVC_PROPS_PARSER.getSystemPropertyIdsForFlag(
-                        "FLAG_ANDROID_VIC_VEHICLE_PROPERTIES");
-
-        List<CarPropertyConfig> configs = new ArrayList<>();
-        // Use shell permission identity to get as many property configs as possible.
-        runWithShellPermissionIdentity(
-                () -> {
-                    configs.addAll(mCarPropertyManager.getPropertyList());
-                });
-
-        for (int i = 0; i < configs.size(); i++) {
-            int propertyId = configs.get(i).getPropertyId();
-            if (!isSystemProperty(propertyId)) {
-                continue;
-            }
-
-            String propertyName = VehiclePropertyIds.toString(propertyId);
-            expectWithMessage(
-                            "Property: "
-                                    + propertyName
-                                    + " must not be supported if "
-                                    + "FLAG_ANDROID_VIC_VEHICLE_PROPERTIES is disabled")
-                    .that(propertyId)
-                    .isNotIn(vicSystemPropertyIds);
-        }
-
-        runWithShellPermissionIdentity(
-                () -> {
-                    for (int propertyId : vicSystemPropertyIds) {
-                        String propertyName = VehiclePropertyIds.toString(propertyId);
-                        expectWithMessage(
-                                        "getCarPropertyConfig for: "
-                                                + propertyName
-                                                + " when FLAG_ANDROID_VIC_VEHICLE_PROPERTIES is"
-                                                + " disabled must return null")
-                                .that(mCarPropertyManager.getCarPropertyConfig(propertyId))
-                                .isNull();
-                    }
-                });
-    }
-
-    /**
      * If the feature flag: FLAG_ANDROID_B_VEHICLE_PROPERTIES is disabled, the B properties must not
      * be supported.
      */
@@ -1600,9 +1543,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         VerifierInfo(VehiclePropertyVerifier.Builder<?> builder) {
             mBuilder = builder;
             int propertyId = builder.getPropertyId();
-            if (VIC_FLAG_PROPERTIES.contains(propertyId)) {
-                mFlag = Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES;
-            }
             if (B_FLAG_PROPERTIES.contains(propertyId)) {
                 mFlag = Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES;
             }
@@ -1859,10 +1799,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         var flag = verifierInfo.mFlag;
         if (flag != null) {
             switch (flag) {
-                case Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES:
-                    assumeTrue(
-                            "Flag: " + flag + " is disabled ", Flags.androidVicVehicleProperties());
-                    break;
                 case Flags.FLAG_VEHICLE_PROPERTY_25Q2_3P_PERMISSIONS:
                     // Do nothing as property should be supported when this flag is enabled and when
                     // it is disabled.
@@ -2251,7 +2187,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(HANDS_ON_DETECTION_DRIVER_STATES, ERROR_STATES);
     }
@@ -2276,7 +2211,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionWarningAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DROWSINESS_ATTENTION_WARNINGS, ERROR_STATES);
     }
@@ -2301,7 +2235,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_STATES, ERROR_STATES);
     }
@@ -2326,7 +2259,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionWarningAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_WARNINGS, ERROR_STATES);
     }
@@ -4182,7 +4114,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testLowSpeedCollisionWarningStateWithErrorState() {
         verifyEnumValuesAreDistinct(LOW_SPEED_COLLISION_WARNING_STATES, ERROR_STATES);
     }
@@ -4207,7 +4138,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testElectronicStabilityControlStateWithErrorState() {
         verifyEnumValuesAreDistinct(ELECTRONIC_STABILITY_CONTROL_STATES, ERROR_STATES);
     }
@@ -4251,7 +4181,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testLowSpeedAutomaticEmergencyBrakingStateWithErrorState() {
         verifyEnumValuesAreDistinct(LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATES, ERROR_STATES);
     }
@@ -5846,21 +5775,18 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadCarSeatBeltsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_CAR_SEAT_BELTS_PROPERTIES, Car.PERMISSION_READ_CAR_SEAT_BELTS);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadImpactSensorsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_IMPACT_SENSORS_PROPERTIES, Car.PERMISSION_READ_IMPACT_SENSORS);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadCarAirbagsGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_CAR_AIRBAGS_PROPERTIES, Car.PERMISSION_READ_CAR_AIRBAGS);
@@ -5971,7 +5897,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionControlCarDynamicsStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CONTROL_CAR_DYNAMICS_STATE_PROPERTIES,
@@ -6069,7 +5994,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionCarDriving3pStateGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CAR_DRIVING_STATE_PROPERTIES, Car.PERMISSION_CAR_DRIVING_STATE);
@@ -6083,21 +6007,18 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadValetModeGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_VALET_MODE_PROPERTIES, Car.PERMISSION_READ_VALET_MODE);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionControlValetModeGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CONTROL_VALET_MODE_PROPERTIES, Car.PERMISSION_CONTROL_VALET_MODE);
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionReadHeadUpDisplayStatusGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_READ_HEAD_UP_DISPLAY_STATUS_PROPERTIES,
@@ -6105,7 +6026,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testPermissionControlHeadUpDisplayGranted() {
         verifyExpectedPropertiesWhenPermissionsGranted(
                 PERMISSION_CONTROL_HEAD_UP_DISPLAY_PROPERTIES,

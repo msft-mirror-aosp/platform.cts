@@ -17,7 +17,6 @@
 package android.car.cts;
 
 import static android.car.feature.Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES;
-import static android.car.feature.Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -463,16 +462,6 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
                 .isEqualTo("LANE_CENTERING_ASSIST_COMMAND");
         assertThat(VehiclePropertyIds.toString(VehiclePropertyIds.LANE_CENTERING_ASSIST_STATE))
                 .isEqualTo("LANE_CENTERING_ASSIST_STATE");
-        assertThat(VehiclePropertyIds.toString(3)).isEqualTo("0x3");
-        assertThat(VehiclePropertyIds.toString(12)).isEqualTo("0xc");
-    }
-
-    /**
-     * Test for {@link VehiclePropertyIds#toString()} for properties added in Android VIC.
-     */
-    @Test
-    @RequiresFlagsEnabled(FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
-    public void testToStringForAndroidVicVehicleProperties() {
         assertThat(
                 VehiclePropertyIds.toString(
                         VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED))
@@ -566,6 +555,8 @@ public class VehiclePropertyIdsTest extends AbstractCarLessTestCase {
         assertThat(VehiclePropertyIds.toString(
                 VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE))
                 .isEqualTo("LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_STATE");
+        assertThat(VehiclePropertyIds.toString(3)).isEqualTo("0x3");
+        assertThat(VehiclePropertyIds.toString(12)).isEqualTo("0xc");
     }
 
     /**
