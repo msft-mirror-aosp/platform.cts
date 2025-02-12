@@ -389,6 +389,19 @@ public class CtsWindowInfoUtils {
      * Waits until the window specified by {@code predicate} is present, at the expected level
      * of the composition hierarchy, and hasn't had geometry changes for 200ms.
      *
+     * @see #waitForNthWindowFromTop(Duration, Predicate, int, boolean)
+     */
+    public static boolean waitForNthWindowFromTop(@NonNull Duration timeout,
+                                                  @NonNull Predicate<WindowInfo> predicate,
+                                                  int expectedOrder)
+            throws InterruptedException {
+        return waitForNthWindowFromTop(timeout, predicate, expectedOrder, /* stabilize= */ true);
+    }
+
+    /**
+     * Waits until the window specified by {@code predicate} is present, at the expected level
+     * of the composition hierarchy.
+     *
      * The window is considered occluded if any part of another window is above it, excluding
      * trusted overlays and bbq.
      *
@@ -402,12 +415,15 @@ public class CtsWindowInfoUtils {
      *                      tested each time window infos change.
      * @param expectedOrder The expected order of the surface control we are looking
      *                      for.
+     * @param stabilize     Whether to wait until the window geometry is stable before
+     *                      returning. If true, it waits until the window geometry is stable for
+     *                      200ms.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForNthWindowFromTop(@NonNull Duration timeout,
+    private static boolean waitForNthWindowFromTop(@NonNull Duration timeout,
                                                   @NonNull Predicate<WindowInfo> predicate,
-                                                  int expectedOrder)
+                                                  int expectedOrder, boolean stabilize)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -488,7 +504,7 @@ public class CtsWindowInfoUtils {
                         latch.countDown();
                     }
                 };
-                mTimer.schedule(mTask, 200L * HW_TIMEOUT_MULTIPLIER);
+                mTimer.schedule(mTask, stabilize ? 200L * HW_TIMEOUT_MULTIPLIER : 0L);
             }
         };
 
@@ -553,6 +569,21 @@ public class CtsWindowInfoUtils {
             IBinder windowToken = windowTokenSupplier.get();
             return windowToken != null && windowInfo.windowToken == windowToken;
         });
+    }
+
+    /**
+     * Waits until the given window is present and not occluded.
+     *
+     * Same as {@link #waitForWindowOnTop(Window)}, but doesn't wait for the window
+     * geometry to stabilize.
+     */
+    public static boolean waitForWindowOnTopImmediate(@NonNull Window window)
+            throws InterruptedException {
+        return waitForNthWindowFromTop(Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
+            windowInfo -> {
+                IBinder windowToken = window.getDecorView().getWindowToken();
+                return windowToken != null && windowInfo.windowToken == windowToken;
+            }, /* expectedOrder= */ 0, /* stabilize= */ false);
     }
 
     /**
