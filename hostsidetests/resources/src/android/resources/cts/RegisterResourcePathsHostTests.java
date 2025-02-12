@@ -45,8 +45,8 @@ public class RegisterResourcePathsHostTests extends BaseHostJUnit4Test {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
-    private static final String DEVICE_TEST_PKG1 = "android.resources.registerresourcepaths1";
-    private static final String DEVICE_TEST_PKG2 = "android.resources.registerresourcepaths2";
+    private static final String DEVICE_TEST_PKG1 = "android.resources.cts.registerresourcepaths1";
+    private static final String DEVICE_TEST_PKG2 = "android.resources.cts.registerresourcepaths2";
     private static final String DEVICE_TEST_CLASS = "RegisterResourcePathsTest";
 
     @Test

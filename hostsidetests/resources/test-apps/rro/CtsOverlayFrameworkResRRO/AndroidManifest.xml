@@ -16,7 +16,7 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.resources.overlayframeworkres.rro">
+    package="android.resources.cts.overlayframeworkres.rro">
     <application android:hasCode="false"/>
     <overlay
         android:targetPackage="android"
