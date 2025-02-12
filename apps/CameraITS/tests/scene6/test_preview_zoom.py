@@ -41,6 +41,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
 _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
+_WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
 _WIDE_ZOOM_RATIO_MAX = 2.5
 
 # Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
@@ -220,6 +221,16 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         if phy_id:
           physical_ids.add(phy_id)
         logging.debug('Physical IDs: %s', physical_ids)
+        # Ignore captures at higher zooms where smooth zoom can affect results.
+        if (tele_camera_found and
+            len(physical_ids) > _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
+            z > _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO):
+          logging.debug('Found enough zoom data, given that tele camera found: '
+                        '%d physical IDs at zoom ratio %.2f, ignoring '
+                        'remaining captures.',
+                        len(physical_ids), z)
+          z_max = z
+          break
 
         # read image
         img_bgr = cv2.imread(os.path.join(log_path, img_name))
