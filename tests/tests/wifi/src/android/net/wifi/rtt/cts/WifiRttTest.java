@@ -1267,6 +1267,7 @@ public class WifiRttTest extends TestBase {
                 "android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
                 "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported",
                 "android.net.wifi.rtt.ResponderConfig#getSecureRangingConfig",
+                "android.net.wifi.ScanResult#isRangingFrameProtectionRequired",
                 "android.net.wifi.rtt.PasnConfig#Builder",
                 "android.net.wifi.rtt.PasnConfig.Builder#setWifiSsid",
                 "android.net.wifi.rtt.PasnConfig.Builder#setPassword",
