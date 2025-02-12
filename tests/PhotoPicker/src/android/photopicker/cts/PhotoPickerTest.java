@@ -843,7 +843,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         if (isVisibleBackgroundUser()) {
             findPlayButton(getMainDisplayId(), 1000).swipe(Direction.LEFT, 1.0f);
         } else {
-            findPlayButton().swipeLeft(5);
+            swipeLeftAndWait();
         }
         findPauseButton().waitForExists(SHORT_TIMEOUT);
         // Video preview is now in unmute mode. Hence, PhotoPicker will request audio focus. Verify
@@ -1245,6 +1245,11 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
                 REGEX_PACKAGE_NAME + ":id/preview_player_view"));
     }
 
+    private static UiObject findViewPager() {
+        return new UiObject(
+                new UiSelector().resourceIdMatches(REGEX_PACKAGE_NAME + ":id/preview_viewPager"));
+    }
+
     private static BySelector getPlayerViewSelector(int displayId) {
         return By.res(Pattern.compile(
                 REGEX_PACKAGE_NAME + ":id/preview_player_view")).displayId(displayId);
@@ -1293,9 +1298,9 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
                 REGEX_PACKAGE_NAME + ":id/preview_video_image"));
     }
 
-    private void swipeLeftAndWait() {
-        final int width = sDevice.getDisplayWidth();
-        final int height = sDevice.getDisplayHeight();
+    private void swipeLeftAndWait() throws UiObjectNotFoundException {
+        final int width = findViewPager().getVisibleBounds().width();
+        final int height = findViewPager().getVisibleBounds().height();
         sDevice.swipe(15 * width / 20, height / 2, width / 20, height / 2, 10);
         sDevice.waitForIdle();
     }
