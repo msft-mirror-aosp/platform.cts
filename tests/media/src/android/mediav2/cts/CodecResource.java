@@ -229,4 +229,40 @@ class CodecResourceUtils {
             Assert.assertEquals(logs.toString(), RESOURCE_EQ, result);
         }
     }
+
+    /**
+     * Determines the maximum percentage of resource consumption across all resources.
+     *
+     * This method compares the total available resources before usage to the remaining resources
+     * afterward and calculates the percentage of each resource that has been consumed. It then
+     * returns the highest observed consumption percentage among all resources.
+     *
+     * @param globalResources list of CodecResource representing the total available resources.
+     * @param usedResources   list of CodecResource representing the remaining resources after
+     *                        usage.
+     * @return The highest percentage of resource consumption among all resources.
+     */
+    public static double computeConsumption(List<CodecResource> globalResources,
+            List<CodecResource> usedResources) {
+        Map<String, CodecResource> globalResourcesMap = new HashMap<>();
+        Map<String, CodecResource> usedResourcesMap = new HashMap<>();
+
+        for (CodecResource resource : globalResources) {
+            globalResourcesMap.put(resource.getResourceId(), resource);
+        }
+        for (CodecResource resource : usedResources) {
+            usedResourcesMap.put(resource.getResourceId(), resource);
+        }
+
+        double max = 0;
+        for (Map.Entry<String, CodecResource> global : globalResourcesMap.entrySet()) {
+            CodecResource used = usedResourcesMap.get(global.getKey());
+            if (used != null) {
+                double result = (double) (global.getValue().getAvailable() - used.getAvailable())
+                        / global.getValue().getAvailable() * 100;
+                max = Math.max(max, result);
+            }
+        }
+        return max;
+    }
 }
