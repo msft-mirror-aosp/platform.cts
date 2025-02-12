@@ -349,6 +349,11 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.verifyCallIsInState(id, state);
     }
 
+    public void verifyCallExtraPresent(String id, String extraToVerify, boolean expected)
+            throws Exception {
+        mBaseAppVerifierImpl.verifyCallExtraPresent(id, extraToVerify, expected);
+    }
+
     public CallEndpoint getAnotherCallEndpoint(AppControlWrapper appControl, String id)
             throws Exception {
         return mBaseAppVerifierImpl.getAnotherCallEndpoint(appControl, id);
