@@ -203,7 +203,7 @@ class CreateManagedProfileTest {
             TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS).use {
                 val nonRequiredApps = localDevicePolicyManager.getDisallowedSystemApps(
                         DEVICE_ADMIN_COMPONENT_NAME,
-                        context.userId,
+                        user.id(),
                         DevicePolicyManager.ACTION_PROVISION_MANAGED_PROFILE
                 )
                 val nonRequiredAppsInProfile = TestApis.packages().installedForUser(user)
