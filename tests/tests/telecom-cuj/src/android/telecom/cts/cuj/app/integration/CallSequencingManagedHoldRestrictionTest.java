@@ -251,6 +251,35 @@ public class CallSequencingManagedHoldRestrictionTest extends BaseAppVerifier {
         }
     }
 
+    /**
+     * Given there is a HOLDING and ACTIVE non-holdable call on managed acct 0, ensure that when a
+     * new RINGING call on managed acct 1 is placed, Telecom disconnects the HOLDING + ACTIVE call
+     * before answering the RINGING call.
+     */
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
+    public void testHeld0Active0_Answer1() throws Exception {
+        HashMap<Integer, AppControlWrapper> apps = new HashMap<>(2);
+        try {
+            // initial state
+            String call1 = createHeldCall(apps, MANAGED_0);
+            String call2 = createActiveCall(apps, MANAGED_0);
+            // Create ringing call on other sub and answer
+            String call3 = createRingingCall(apps, MANAGED_1);
+            answerViaInCallServiceAndVerify(call3, VideoProfile.STATE_AUDIO_ONLY);
+            // verify final state
+            verifyCallIsInState(call1, STATE_DISCONNECTED);
+            verifyCallIsInState(call2, STATE_DISCONNECTED);
+            verifyCallIsInState(call3, STATE_ACTIVE);
+            waitUntilExpectedCallCount(1);
+            // clean up
+            disconnectCall(apps, MANAGED_1, call3);
+            waitUntilExpectedCallCount(0);
+        } finally {
+            tearDownApps(apps.values().stream().toList());
+        }
+    }
+
     private String createHeldCall(Map<Integer, AppControlWrapper> apps, TelecomTestApp app)
             throws Exception {
         AppControlWrapper wrapper = createOrGetAppWrapper(apps, app);
