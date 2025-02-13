@@ -52,6 +52,7 @@
         <option name="push-file" key="AppWithLongAttributionTag.apk" value="/data/local/tmp/cts/appops/AppWithLongAttributionTag.apk" />
         <option name="push-file" key="AppWithTooManyAttributions.apk" value="/data/local/tmp/cts/appops/AppWithTooManyAttributions.apk" />
         <option name="push-file" key="CtsAppWithReceiverAttribution.apk" value="/data/local/tmp/cts/appops/CtsAppWithReceiverAttribution.apk" />
+        <option name="push-file" key="AppThatExploitsAttributionTags.apk" value="/data/local/tmp/cts/appops/AppThatExploitsAttributionTags.apk" />
     </target_preparer>
 
     <!-- Remove additional apps if installed -->
