@@ -16,6 +16,8 @@
 
 package android.settings.cts;
 
+import static android.telephony.TelephonyManager.MULTISIM_ALLOWED;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeFalse;
 
@@ -27,6 +29,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -52,12 +55,14 @@ public class SettingsIntentsTest {
     static final String TAG = "SettingsIntentsTest";
 
     private PackageManager mPackageManager;
+    private TelephonyManager mTelephonyManager;
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     @Before
     public void setUp() throws Exception {
         mPackageManager = mContext.getPackageManager();
+        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
     }
 
     @Test
@@ -91,6 +96,11 @@ public class SettingsIntentsTest {
         assumeFalse(
                 "SIM is not supported on visible background user",
                 new UserHelper(mContext).isVisibleBackgroundUser());
+
+        // Skipping for single sim devices as the intent is only for multi-sim devices.
+        assumeFalse(
+                "This is only for devices supporting multi-sim",
+                mTelephonyManager.isMultiSimSupported() != MULTISIM_ALLOWED);
 
         final Intent intent = new Intent(Settings.ACTION_SIM_PREFERENCE_SETTINGS).addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK);
