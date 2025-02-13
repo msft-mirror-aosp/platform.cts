@@ -468,11 +468,20 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 launchTaskDisplayAreaFeatureId, DEFAULT_DISPLAY);
         mWmState.waitForActivityState(BROADCAST_RECEIVER_ACTIVITY, STATE_RESUMED);
         mWmState.waitForActivityState(MOVE_TASK_TO_BACK_ACTIVITY,STATE_STOPPED);
-        final int topActivityTaskWindowingMode =
-                mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).getWindowingMode();
+        mWmState.computeState();
+        final Task topTask =
+                mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY);
+        final boolean topTaskCanAffectBottomTaskVisibility =
+                topTask.getWindowingMode() == WINDOWING_MODE_FULLSCREEN
+                        ||
+                        // Top task in multi window mode can still affect bottom's task visibility
+                        // if it fillsParent
+                        (topTask.getWindowingMode() == WINDOWING_MODE_MULTI_WINDOW
+                                && topTask.isFullscreen());
+
         final boolean topActivityOccludes =
-                topActivityTaskWindowingMode == WINDOWING_MODE_FULLSCREEN &&
-                        !mWmState.isActivityTranslucent(BROADCAST_RECEIVER_ACTIVITY);
+                topTaskCanAffectBottomTaskVisibility
+                && !mWmState.isActivityTranslucent(BROADCAST_RECEIVER_ACTIVITY);
         if (!topActivityOccludes) {
             mWmState.assertVisibility(MOVE_TASK_TO_BACK_ACTIVITY, true);
         } else {
