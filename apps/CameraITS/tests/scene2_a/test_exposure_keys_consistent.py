@@ -192,6 +192,8 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       post_raw_sensitivity_boost = cr['android.control.postRawSensitivityBoost']
       frame_duration = cr['android.sensor.frameDuration']
 
+      camera_properties_utils.skip_unless(post_raw_sensitivity_boost is not None)
+
       logging.info('sensor_sensitivity: %s', sensor_sensitivity)
       logging.info('exposure_time: %s', exposure_time)
       logging.info('post_raw_sensitivity_boost: %s', post_raw_sensitivity_boost)
@@ -200,12 +202,24 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       req['android.control.aeMode'] = 0  # OFF
       req['android.sensor.sensitivity'] = sensor_sensitivity
       req['android.sensor.exposureTime'] = exposure_time
-      if post_raw_sensitivity_boost is not None:
-        req['android.control.postRawSensitivityBoost'] = (
-            post_raw_sensitivity_boost
-        )
+      req['android.control.postRawSensitivityBoost'] = (
+          post_raw_sensitivity_boost
+      )
       req['android.sensor.frameDuration'] = frame_duration
       cap_no_ae = cam.do_capture([req], out_surface)[0]
+
+      cr_no_ae = cap_no_ae['metadata']
+      post_raw_sensitivity_boost_no_ae = cr_no_ae[
+          'android.control.postRawSensitivityBoost'
+      ]
+      logging.info(
+          '(no ae) post_raw_sensitivity_boost: %s',
+          post_raw_sensitivity_boost_no_ae
+      )
+      camera_properties_utils.skip_unless(
+          post_raw_sensitivity_boost_no_ae is not None
+          and post_raw_sensitivity_boost == post_raw_sensitivity_boost_no_ae
+      )
 
       sad = calc_max_avg_exposure_sad(
           cap_no_ae['data'], cap_ae['data'], name_with_log_path
