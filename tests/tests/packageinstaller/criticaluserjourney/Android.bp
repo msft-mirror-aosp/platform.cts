@@ -86,7 +86,6 @@ android_test {
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentWithUpdateOwnershipTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaSessionWithUpdateOwnershipTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
-        "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/UpdateOwnershipTestBase.java",
     ],
     test_config: "UpdateOwnerShipTest.xml",
