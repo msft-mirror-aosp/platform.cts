@@ -1263,9 +1263,11 @@ public class WifiRttTest extends TestBase {
     @RequiresFlagsEnabled(Flags.FLAG_SECURE_RANGING)
     @ApiTest(
             apis = {
+                "android.net.wifi.rtt.RangingRequest#getSecurityMode",
                 "android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
                 "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported",
                 "android.net.wifi.rtt.ResponderConfig#getSecureRangingConfig",
+                "android.net.wifi.ScanResult#isRangingFrameProtectionRequired",
                 "android.net.wifi.rtt.PasnConfig#Builder",
                 "android.net.wifi.rtt.PasnConfig.Builder#setWifiSsid",
                 "android.net.wifi.rtt.PasnConfig.Builder#setPassword",
@@ -1299,6 +1301,8 @@ public class WifiRttTest extends TestBase {
 
         // Validate responder configuration
         assertEquals(1, request.getRttResponders().size());
+        // check security mode is opportunistic by default
+        assertEquals(RangingRequest.SECURITY_MODE_OPPORTUNISTIC, request.getSecurityMode());
         ResponderConfig responderConfig = request.getRttResponders().getFirst();
         SecureRangingConfig secureRangingConfig = responderConfig.getSecureRangingConfig();
         assertNotNull(secureRangingConfig);
