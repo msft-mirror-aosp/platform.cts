@@ -77,12 +77,12 @@ public class GnssMeasurementsConstellationTest extends GnssTestCase {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;
         }
-
-        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
-            return;
+        boolean isAutomotive = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        if (isAutomotive) {
+            if (!TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager)) {
+                return;
+            }
         }
-
         // Register for GPS measurements.
         mMeasurementListener = new TestGnssMeasurementListener(TAG, GPS_EVENTS_COUNT);
         mTestLocationManager.registerGnssMeasurementCallback(mMeasurementListener);
@@ -97,20 +97,27 @@ public class GnssMeasurementsConstellationTest extends GnssTestCase {
         Log.i(TAG, "Number of GnssMeasurement events received = " + events.size());
 
         SoftAssert softAssert = new SoftAssert(TAG);
-        softAssert.assertTrue(
-                "Did not receive any GnssMeasurement events.  Retry outdoors?",
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Did not receive any GnssMeasurement events. Retry outdoors?",
                 !events.isEmpty());
 
         for (GnssMeasurementsEvent event : events) {
             // Verify Gps Event mandatory fields are in required ranges
-            assertNotNull("GnssMeasurementEvent cannot be null.", event);
+            softAssert.assertOrWarnTrue(
+                    !isAutomotive, "GnssMeasurementEvent cannot be null.", event != null);
+            if (event == null) {
+                continue;
+            }
             long timeInNs = event.getClock().getTimeNanos();
-
-            softAssert.assertTrue("time_ns: clock value",
+            softAssert.assertOrWarnTrue(
+                    !isAutomotive,
+                    "time_ns: clock value",
                     timeInNs,
                     "X >= 0",
                     String.valueOf(timeInNs),
                     timeInNs >= 0L);
+
             boolean isExpectedConstellationType = false;
             int constellationType = 0;
             for (GnssMeasurement measurement : event.getMeasurements()) {
