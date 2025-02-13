@@ -223,6 +223,7 @@
              android:label="PixelCopyViewProducerDialogActivity"
              android:screenOrientation="portrait"
              android:rotationAnimation="jumpcut"
+             android:resizeableActivity="false"
              android:theme="@android:style/Theme.Material.Dialog.NoActionBar"
              android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
              android:exported="true"/>
