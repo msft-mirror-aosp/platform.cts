@@ -2921,6 +2921,15 @@ public class VehiclePropertyVerifier<T> {
         }
 
         /**
+         * Sets the property as required if condition is true. If condition is true, test will fail
+         * if the property is not supported.
+         */
+        public Builder<T> requireProperty(boolean condition) {
+            mRequiredProperty = condition;
+            return this;
+        }
+
+        /**
          * Sets the config array verifier.
          */
         public Builder<T> setConfigArrayVerifier(ConfigArrayVerifier configArrayVerifier) {

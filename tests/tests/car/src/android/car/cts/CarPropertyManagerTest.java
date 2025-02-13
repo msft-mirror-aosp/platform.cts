@@ -21,6 +21,7 @@ import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
@@ -3945,17 +3946,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .that(evCurrentBatteryCapacity)
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
                         })
-                .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float>
-            getEvBatteryInstantaneousChargeRateVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_BATTERY_INSTANTANEOUS_CHARGE_RATE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 

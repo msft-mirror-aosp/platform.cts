@@ -1495,6 +1495,17 @@ public class VehiclePropertyVerifiers {
                 .addWritePermission(Car.PERMISSION_ADJUST_RANGE_REMAINING);
     }
 
+    public static VehiclePropertyVerifier.Builder<Float>
+            getEvBatteryInstantaneousChargeRateVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.EV_BATTERY_INSTANTANEOUS_CHARGE_RATE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Float.class)
+                .addReadPermission(Car.PERMISSION_ENERGY);
+    }
+
     private static void verifyHvacTemperatureValueSuggestion(
             VehiclePropertyVerifier.VerifierContext verifierContext,
             Float[] temperatureSuggestion) {
