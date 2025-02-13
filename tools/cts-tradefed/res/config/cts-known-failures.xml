@@ -466,10 +466,10 @@
     <option name="compatibility:exclude-filter" value="CtsMediaBetterTogetherTestCases[run-on-work-profile]" />
 
     <!-- b/379239507 -->
-    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-clone-profile]" />
-    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-private-profile]" />
-    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-secondary-user]" />
-    <option name="compatibility:exclude-filter" value="mCtsMediaBetterTogetherTestCases[run-on-work-profile]" />
+    <option name="compatibility:exclude-filter" value="MctsMediaBetterTogetherTestCases[run-on-clone-profile]" />
+    <option name="compatibility:exclude-filter" value="MctsMediaBetterTogetherTestCases[run-on-private-profile]" />
+    <option name="compatibility:exclude-filter" value="MctsMediaBetterTogetherTestCases[run-on-secondary-user]" />
+    <option name="compatibility:exclude-filter" value="MctsMediaBetterTogetherTestCases[run-on-work-profile]" />
 
     <!-- b/379234304 -->
     <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-clone-profile]" />
