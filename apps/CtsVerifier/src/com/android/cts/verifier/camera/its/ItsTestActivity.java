@@ -511,9 +511,11 @@ public class ItsTestActivity extends DialogTestListActivity {
                         }
 
                         JSONArray featureQueryProtos =
-                                sceneResult.getJSONArray(FEATURE_COMBINATION_QUERY_KEY);
-                        String featureQueryProtoStr = featureQueryProtos.getString(0);
-                        camJsonObj.put(FEATURE_COMBINATION_QUERY_KEY, featureQueryProtoStr);
+                            sceneResult.getJSONArray(FEATURE_COMBINATION_QUERY_KEY);
+                        if (featureQueryProtos != null && featureQueryProtos.length() > 0) {
+                            String featureQueryProtoStr = featureQueryProtos.getString(0);
+                            camJsonObj.put(FEATURE_COMBINATION_QUERY_KEY, featureQueryProtoStr);
+                        }
                     }
                     // Add performance metrics for all scenes along with camera_id as json arr
                     // to CtsVerifierReportLog for each camera.

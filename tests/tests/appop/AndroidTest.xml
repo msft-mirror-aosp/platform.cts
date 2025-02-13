@@ -59,6 +59,7 @@
         <option name="push-file" key="AppInstalledOnMultipleUsers.apk" value="/data/local/tmp/cts/appops/AppInstalledOnMultipleUsers.apk" />
         <option name="push-file" key="SharedUidTestApp1.apk" value="/data/local/tmp/cts/appops/SharedUidTestApp1.apk" />
         <option name="push-file" key="SharedUidTestApp2.apk" value="/data/local/tmp/cts/appops/SharedUidTestApp2.apk" />
+        <option name="push-file" key="AppThatExploitsAttributionTags.apk" value="/data/local/tmp/cts/appops/AppThatExploitsAttributionTags.apk" />
     </target_preparer>
 
     <!-- Remove additional apps if installed -->

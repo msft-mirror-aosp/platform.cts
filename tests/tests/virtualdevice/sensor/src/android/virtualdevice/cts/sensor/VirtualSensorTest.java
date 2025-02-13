@@ -868,6 +868,11 @@ public class VirtualSensorTest {
     }
 
     private static HardwareBuffer createSensorsHardwareBuffer() {
+        assumeTrue(HardwareBuffer.isSupported(
+                /*width=*/SHARED_MEMORY_SIZE, /*height=*/1, HardwareBuffer.BLOB, /*layers=*/1,
+                HardwareBuffer.USAGE_CPU_READ_OFTEN
+                        | HardwareBuffer.USAGE_GPU_DATA_BUFFER
+                        | HardwareBuffer.USAGE_SENSOR_DIRECT_DATA));
         return HardwareBuffer.create(
                 /*width=*/SHARED_MEMORY_SIZE, /*height=*/1, HardwareBuffer.BLOB, /*layers=*/1,
                 HardwareBuffer.USAGE_CPU_READ_OFTEN

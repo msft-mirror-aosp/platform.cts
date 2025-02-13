@@ -16,20 +16,24 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-// TODO: b/372899205 - move Annotation and Rules to a common cts location.
+java_defaults {
+    name: "cts_backported_fixes_java_defaults",
+    min_sdk_version: "33", // Min SDK where API for Backported Fixes is a GMS requirement.
+    sdk_version: "test_current",
+}
 
 java_library {
     name: "cts_backported_fixes_annotation",
+    defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
         "src/com/android/cts/backportedfixes/BackportedFixTest.java",
     ],
-
-    sdk_version: "test_current",
     host_supported: true,
 }
 
 java_library {
     name: "cts_backported_fixes_rule",
+    defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
         "src/com/android/cts/backportedfixes/BackportedFixRule.java",
     ],
@@ -39,45 +43,46 @@ java_library {
         "cts_backported_fixes_resolver",
         "junit",
     ],
-    sdk_version: "test_current",
 }
 
 // TODO b/382721475 - use androidx libarary when available.
 java_library {
     name: "cts_backported_fixes_resolver",
+    defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
         "src/com/android/cts/backportedfixes/resolver/*.kt",
     ],
     static_libs: [
         "android.os.flags-aconfig-java",
+        "androidx.core_core",
         "cts_backported_fixes_bitset",
         "cts_backported_fixes_support",
     ],
-    sdk_version: "test_current",
 }
 
 // TODO b/382721475 - use androidx libarary when available.
 java_library {
     name: "cts_backported_fixes_bitset",
+    defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
         "src/com/android/cts/backportedfixes/bitset/*.kt",
     ],
     host_supported: true,
-    sdk_version: "test_current",
 }
 
 // TODO b/382721475 - use androidx libarary when available.
 java_library {
     name: "cts_backported_fixes_support",
+    defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
         "src/com/android/cts/backportedfixes/support/*.kt",
     ],
     host_supported: true,
-    sdk_version: "test_current",
 }
 
 java_library {
     name: "cts_backported_fixes_ids",
+    defaults: ["cts_backported_fixes_java_defaults"],
     srcs: [
         "src/com/android/cts/backportedfixes/ApprovedBackportedFixes.java",
     ],
@@ -85,7 +90,6 @@ java_library {
         "guava",
         "backported_fixes_proto",
     ],
-    sdk_version: "test_current",
     host_supported: true,
     java_resources: [
         ":cts_backported_fixes_binpb",
@@ -94,6 +98,7 @@ java_library {
 
 java_library {
     name: "cts_backported_fixes",
+    defaults: ["cts_backported_fixes_java_defaults"],
     static_libs: [
         "cts_backported_fixes_annotation",
         "cts_backported_fixes_rule",
@@ -101,7 +106,6 @@ java_library {
         "junit",
         "guava",
     ],
-    sdk_version: "test_current",
 }
 
 genrule {

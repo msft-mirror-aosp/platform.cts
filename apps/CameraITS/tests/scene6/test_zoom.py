@@ -36,6 +36,7 @@ _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 # Wider zoom ratio range will be tested by test_zoom_tele
 _WIDE_ZOOM_RATIO_MAX = 2.2
+_WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
 _ZOOM_RATIO_REQUEST_RESULT_DIFF_RTOL = 0.1
 
 
@@ -131,6 +132,16 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
       for zoom_ratio, capture in zip(z_list, captures):
         physical_ids.add(capture.physical_id)
         logging.debug('Physical IDs: %s', physical_ids)
+        # Ignore captures at higher zooms where smooth zoom can affect results.
+        if (tele_camera_found and
+            len(physical_ids) > _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST and
+            zoom_ratio > _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO):
+          logging.debug('Found enough zoom data, given that tele camera found: '
+                        '%d physical IDs at zoom ratio %.2f, ignoring '
+                        'remaining captures.',
+                        len(physical_ids),
+                        zoom_ratio)
+          break
         bgr_img = cv2.imread(capture.capture_path)
         # Use first image size for all captures
         if not size:

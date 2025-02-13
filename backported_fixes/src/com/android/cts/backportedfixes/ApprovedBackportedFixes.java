@@ -59,6 +59,17 @@ public final class ApprovedBackportedFixes {
         return alias == null ? 0 : alias;
     }
 
+    /**
+     * Returns the id of a known issue.
+     *
+     * @param alias The alias of the known issue.
+     * @return the id or 0 if the alias is not found.
+     */
+    public long getId(int alias) {
+        Long id = mId2Alias.inverse().get(alias);
+        return id == null ? 0 : id;
+    }
+
     public Set<Integer> getAllAliases() {
         return mId2Alias.values();
     }

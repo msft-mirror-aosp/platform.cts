@@ -1190,11 +1190,6 @@
     <option name="compatibility:include-filter" value="CtsViewTestCases android.view.cts.ViewTest#testGetFocusables"/>
     <!-- CtsVirtualDevicesAudioTestCases -->
     <option name="compatibility:include-filter" value="CtsVirtualDevicesAudioTestCases android.virtualdevice.cts.audio.VirtualAudioPermissionTest#audioInjection_virtualDevice_permissionNotGranted"/>
-    <!-- CtsVirtualDevicesTestCases -->
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#createVirtualDevice_alwaysUnlocked_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#createVirtualDevice_withCustomClipboardPolicy_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#createVirtualDisplay_trusted_throwsException"/>
-    <option name="compatibility:include-filter" value="CtsVirtualDevicesTestCases android.virtualdevice.cts.core.SensorDeviceStreamingBehaviorTest#dynamicallySetCustomClipboardPolicy_throwsException"/>
     <!-- CtsVoiceInteractionHostTestCases -->
     <option name="compatibility:include-filter" value="CtsVoiceInteractionHostTestCases com.android.cts.voiceinteraction.host.VoiceInteractionCompatTests#testDefaultPhraseIdEnforcementBehavior"/>
     <!-- CtsVoiceInteractionTestCases -->
