@@ -17,6 +17,8 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.media.AudioAttributes.USAGE_NOTIFICATION_RINGTONE;
+import static android.media.Utils.SYNCHRONIZED_VIBRATION;
+import static android.media.Utils.VIBRATION_URI_PARAM;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
@@ -28,12 +30,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.media.AudioManager;
 import android.media.AudioManager.AudioPlaybackCallback;
 import android.media.AudioPlaybackConfiguration;
+import android.media.RingtoneManager;
 import android.media.audio.Flags;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -378,16 +383,17 @@ public class RingerTest extends BaseAppVerifier {
     }
 
     /**
-     * Test the scenario where a new MANAGED incoming call is created and transitions to RINGING
-     * while the ringer is in VIBRATE mode and "Vibrations & haptics" are enabled if device
-     * supports ringtone vibration settings.
+     * Test the scenario where a new MANAGED incoming call is created while the ringer is in
+     * VIBRATE mode and "Vibrations & haptics" are enabled if device supports ringtone vibration
+     * settings.
      * <p>
      *
      * <h3> Test Steps: </h3>
      *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
      *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
      * <p>
-     *  2. verify that the call rang and that {@link AudioPlaybackCallback} was triggered.
+     *  2. verify that the silent call rang with vibration and that {@link AudioPlaybackCallback}
+     *  was triggered.
      * <p>
      *  3. disconnect the call
      */
@@ -395,6 +401,12 @@ public class RingerTest extends BaseAppVerifier {
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RINGTONE_HAPTICS_CUSTOMIZATION)
     public void testIncomingCallVibrateMode_vibrationSettingsSupported_VibrateAndRing()
             throws Exception {
+        Uri defaultRingtoneUri = RingtoneManager.getActualDefaultRingtoneUri(mContext,
+                RingtoneManager.TYPE_RINGTONE);
+        assumeNotNull(defaultRingtoneUri);
+        Uri testRingtoneUri = defaultRingtoneUri.buildUpon().appendQueryParameter(
+                VIBRATION_URI_PARAM, SYNCHRONIZED_VIBRATION).build();
+
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
         assumeTrue(hasVibrator());
@@ -411,6 +423,9 @@ public class RingerTest extends BaseAppVerifier {
 
         AppControlWrapper managedApp = null;
         try {
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> RingtoneManager.setActualDefaultRingtoneUri(mContext,
+                            RingtoneManager.TYPE_RINGTONE, testRingtoneUri));
             managedApp = bindToApp(ManagedConnectionServiceApp);
             String mt = addIncomingCallAndVerify(managedApp);
 
@@ -428,6 +443,10 @@ public class RingerTest extends BaseAppVerifier {
             answerViaInCallServiceAndVerify(mt, VideoProfile.STATE_AUDIO_ONLY);
             setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
         } finally {
+            // restore the default ringtone
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> RingtoneManager.setActualDefaultRingtoneUri(mContext,
+                            RingtoneManager.TYPE_RINGTONE, defaultRingtoneUri));
             tearDownApp(managedApp);
             audioManager.unregisterAudioPlaybackCallback(callback);
         }
