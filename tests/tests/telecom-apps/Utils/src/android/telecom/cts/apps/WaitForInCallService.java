@@ -61,6 +61,26 @@ public class WaitForInCallService {
         assertCallState(targetCall, targetCallState);
     }
 
+    public static void verifyCallExtras(
+            InCallServiceMethods verifierMethods,
+            String id,
+            String extraToVerify,
+            boolean expected) {
+        List<Call> mCalls = verifierMethods.getOngoingCalls();
+        Call targetCall = getCallWithId(mCalls, id);
+        boolean containsCall = targetCall != null;
+
+        if (!containsCall) {
+            fail("call " + id + " is not in map - it may have been dropped");
+        }
+        if (expected) {
+            assertCallExtra(targetCall, extraToVerify);
+        } else if (targetCall.getDetails() != null
+                && targetCall.getDetails().getExtras() != null
+                && targetCall.getDetails().getExtras().getBoolean(extraToVerify, false)) {
+            fail("call " + id + " should not have contained the " + extraToVerify + "extra");
+        }
+    }
 
     public static void waitForInCallServiceBinding(InCallServiceMethods verifierMethods) {
         WaitUntil.waitUntilConditionIsTrueOrTimeout(
@@ -149,6 +169,31 @@ public class WaitForInCallService {
                 "Expected CallState=[" + stateToString(targetState) + "];"
                         + " actual CallState[" + stateToString(call.getState()) + "]"
         );
+    }
+
+    private static void assertCallExtra(final Call call, String extraToVerify) {
+        WaitUntil.waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        boolean extrasPresent =
+                                call.getDetails() != null && call.getDetails().getExtras() != null;
+                        return extrasPresent
+                                && call.getDetails().getExtras().getBoolean(extraToVerify, false);
+                    }
+                },
+                WaitUntil.DEFAULT_TIMEOUT_MS,
+                "Expected call to contain extra("
+                        + extraToVerify
+                        + ")=[true];"
+                        + " actual extra("
+                        + extraToVerify
+                        + ")=[false]");
     }
 
     private static String stateToString(int state) {

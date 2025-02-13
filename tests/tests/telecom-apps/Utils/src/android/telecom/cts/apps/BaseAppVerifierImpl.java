@@ -31,6 +31,7 @@ import static android.telecom.cts.apps.ShellCommandExecutor.dumpTelecom;
 import static android.telecom.cts.apps.ShellCommandExecutor.executeShellCommand;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceAppClone;
+import static android.telecom.cts.apps.WaitForInCallService.verifyCallExtras;
 import static android.telecom.cts.apps.WaitForInCallService.verifyCallState;
 import static android.telecom.cts.apps.WaitForInCallService.waitForInCallServiceBinding;
 import static android.telecom.cts.apps.WaitForInCallService.waitUntilExpectCallCount;
@@ -379,6 +380,11 @@ public class BaseAppVerifierImpl {
         appControl.setCallState(id, targetCallState, true, extras);
         // verify the call was added in the ICS
         verifyCallState(mVerifierMethods, id, targetCallState);
+    }
+
+    public void verifyCallExtraPresent(String id, String extraToVerify, boolean expected)
+            throws Exception {
+        verifyCallExtras(mVerifierMethods, id, extraToVerify, expected);
     }
 
     public CallException setCallStateButExpectOnError(AppControlWrapper appControl,
