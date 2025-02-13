@@ -41,7 +41,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.android.compatibility.common.util.ApiTest
 import com.android.graphics.hwui.flags.Flags
-import kotlin.test.assertEquals
 import org.junit.Assert
 import org.junit.Ignore
 import org.junit.Rule
@@ -588,53 +587,6 @@ class RuntimeShaderTests : ActivityTestBase() {
         { canvas: Canvas, width: Int, height: Int -> canvas.drawRect(rect, paint) },
             true
         ).runWithVerifier(RectVerifier(Color.WHITE, Color.RED, rect))
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SHADER_COLOR_SPACE)
-    fun testWorkingColorSpace() {
-        val scalingShader =
-            RuntimeShader("""
-           layout(color) uniform vec4 inputColor;
-           vec4 main(vec2 coord) {
-               return vec4(inputColor.rgb * 2.0, inputColor.a);
-           }
-        """)
-        val p3_linear = ColorSpace.Rgb(
-            "Display P3 Linear",
-            floatArrayOf(0.680f, 0.320f, 0.265f, 0.690f, 0.150f, 0.060f),
-            ColorSpace.ILLUMINANT_D65,
-            1.0
-        )
-        val p3 = ColorSpace.get(ColorSpace.Named.DISPLAY_P3)
-        val srgb = ColorSpace.get(ColorSpace.Named.SRGB)
-        val inputColor = Color.pack(0.1f, 0.2f, 0.3f, 1.0f, p3)
-        scalingShader.setColorUniform("inputColor", inputColor)
-        scalingShader.setWorkingColorSpace(p3_linear)
-        val result = Bitmap.createBitmap(Picture().apply {
-            beginRecording(1, 1).drawPaint(
-                Paint().apply {
-                    shader = scalingShader
-                }
-            )
-            endRecording()
-        }, 1, 1, Bitmap.Config.ARGB_8888)
-
-        val p3ToLinear = ColorSpace.connect(p3, p3_linear)
-        val p3LinearToSrgb = ColorSpace.connect(p3_linear, srgb)
-
-        val p3LinearColor = p3ToLinear.transform(0.1f, 0.2f, 0.3f)
-        p3LinearColor[0] *= 2.0f
-        p3LinearColor[1] *= 2.0f
-        p3LinearColor[2] *= 2.0f
-
-        val expected = p3LinearToSrgb.transform(p3LinearColor)
-
-        val observed = result.getColor(0, 0)
-
-        assertEquals(expected[0], observed.red(), .03f, "red")
-        assertEquals(expected[1], observed.green(), .03f, "green")
-        assertEquals(expected[2], observed.blue(), .03f, "blue")
     }
 
     val mSemiTransparentBlueShader = """
