@@ -449,7 +449,7 @@ public final class BluetoothTest {
       
         Poll.forValue("Opp Launcher Component Enabled",
                 () -> TestApis.packages().activity(OPP_LAUNCHER_COMPONENT)
-                        .isEnabled(TestApis.users().system()))
+                        .isEnabled(TestApis.users().current()))
                 .toBeEqualTo(false)
                 .errorOnFail()
                 .await();
