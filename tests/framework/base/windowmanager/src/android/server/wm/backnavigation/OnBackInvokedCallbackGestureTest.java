@@ -361,6 +361,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
 
     @Test
     public void ignoresKeyCodeBackDuringDispatch() {
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
