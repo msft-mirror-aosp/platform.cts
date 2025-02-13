@@ -132,6 +132,7 @@ android_test {
         ":AppInBackground",
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
+        ":AppThatExploitsAttributionTags",
     ],
     per_testcase_directory: true,
 }
