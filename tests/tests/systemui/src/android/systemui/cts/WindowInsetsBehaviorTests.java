@@ -57,6 +57,7 @@ import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewTreeObserver;
 import android.view.WindowInsets;
 
@@ -69,6 +70,7 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.cts.input.DebugInputRule;
@@ -100,6 +102,9 @@ public class WindowInsetsBehaviorTests {
     private static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
     private static final String ARGUMENT_KEY_FORCE_ENABLE = "force_enable_gesture_navigation";
     private static final String NAV_BAR_INTERACTION_MODE_RES_NAME = "config_navBarInteractionMode";
+    private static final long TIMEOUT_RESET_PRESSED_STATE =
+            // Give it a bit more time in case the main thread is busy.
+            ViewConfiguration.getPressedStateDuration() + 300L;
     private static final int STEPS = 10;
     private static final int INTERVAL_CLICKS = 300;
 
@@ -392,6 +397,14 @@ public class WindowInsetsBehaviorTests {
     }
 
     private void clickAndWaitByUiDevice(Point p) {
+        // Wait for the pressed state getting cleared. Otherwise, the pressed state caused by the
+        // next DOWN event might get cleared unexpectedly, causing the next UP event won't trigger a
+        // click event.
+        PollingCheck.waitFor(
+                TIMEOUT_RESET_PRESSED_STATE,
+                () -> !mActivity.isPressed(),
+                "The pressed state haven't been reset in time.");
+
         CountDownLatch latch = new CountDownLatch(1);
         mActivity.setOnClickConsumer((view) -> {
             latch.countDown();
