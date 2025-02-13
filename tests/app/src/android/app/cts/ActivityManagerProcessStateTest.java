@@ -1563,6 +1563,10 @@ public class ActivityManagerProcessStateTest {
             result = SystemUtil.runShellCommand(mInstrumentation, cmd);
             uid1Watcher.expect(WatchUidRunner.CMD_IDLE, null);
 
+            // We are interested in only the uid changes happening after returning to home.
+            // Clear the history so we won't match staled results.
+            device.waitForIdle();
+            uid2Watcher.clearHistory();
             // Return to home.
             mTargetContext.startActivity(homeIntent);
             uid2Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
@@ -1578,6 +1582,7 @@ public class ActivityManagerProcessStateTest {
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
+            device.waitForIdle();
             uid2Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uid2Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_HEAVY_WEIGHT);
 
