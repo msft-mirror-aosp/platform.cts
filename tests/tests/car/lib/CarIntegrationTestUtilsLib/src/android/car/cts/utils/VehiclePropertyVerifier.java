@@ -100,6 +100,8 @@ public class VehiclePropertyVerifier<T> {
     private static final String STEP_VERIFY_READ_APIS_PREFIX = "verifyReadApis";
     private static final String STEP_VERIFY_WRITE_APIS_PREFIX = "verifyWriteApis";
 
+    private static final CarSvcPropsParser CAR_SVC_PROPS_PARSER = new CarSvcPropsParser();
+
     /** A step to verify {@link CarPropertyManager#getCarPropertyConfig} returns expected config. */
     public static final String STEP_VERIFY_PROPERTY_CONFIG = "verifyPropertyConfig";
 
@@ -394,6 +396,30 @@ public class VehiclePropertyVerifier<T> {
         }
         return new Builder<>(
                 propertyId, allowedAccessModesBuilder.build(), areaType, changeMode, propertyType);
+    }
+
+    /**
+     * Gets a new default verifier builder for the property Id.
+     *
+     * <p>The verifier verifies basic information, including access mode, area type, change mode
+     * property type and permissions.
+     */
+    public static <T> Builder<T> newDefaultBuilder(int propertyId) {
+        var vehiclePropertyIdInfo = CAR_SVC_PROPS_PARSER.getVehiclePropertyIdInfo(propertyId);
+        var builder =
+                new Builder<>(
+                        propertyId,
+                        vehiclePropertyIdInfo.allowedAccessModes,
+                        vehiclePropertyIdInfo.areaType,
+                        vehiclePropertyIdInfo.changeMode,
+                        (Class<T>) vehiclePropertyIdInfo.propertyType);
+        for (String readPermission : vehiclePropertyIdInfo.readPermissions) {
+            builder.addReadPermission(readPermission);
+        }
+        for (ImmutableSet<String> allOfWritePermission : vehiclePropertyIdInfo.writePermissions) {
+            builder.addWritePermission(allOfWritePermission);
+        }
+        return builder;
     }
 
     /** Gets the ID of the property. */

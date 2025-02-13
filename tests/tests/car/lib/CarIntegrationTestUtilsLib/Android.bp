@@ -38,4 +38,7 @@ java_library {
         "android.car",
         "android.car-test-stubs",
     ],
+    java_resources: [
+        ":CarSvcProps_JSON",
+    ],
 }
