@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.resources.overlayresapp2;
+package android.resources.cts.overlayresapp2;
 
 import static com.android.cts.overlay.target.Utils.setOverlayEnabled;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class OverlayResTest {
-    private static final String OVERLAY_PACKAGE = "android.resources.overlayres2.rro";
+    private static final String OVERLAY_PACKAGE = "android.resources.cts.overlayres2.rro";
 
     // Default timeout value
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
