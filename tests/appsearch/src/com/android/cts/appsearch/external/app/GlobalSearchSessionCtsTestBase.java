@@ -60,6 +60,7 @@ import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.TestObserverCallback;
 import android.content.Context;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -2375,10 +2376,9 @@ public abstract class GlobalSearchSessionCtsTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_ISOLATED_STORAGE)
     public void testWriteAndReadBlob() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
-        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
-        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         byte[] data1 = generateRandomBytes(10); // 10 Bytes
         byte[] data2 = generateRandomBytes(20); // 20 Bytes
         byte[] digest1 = calculateDigest(data1);
@@ -2450,10 +2450,9 @@ public abstract class GlobalSearchSessionCtsTestBase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_ISOLATED_STORAGE)
     public void testWriteAndReadBlob_withoutCommit() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.BLOB_STORAGE));
-        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
-        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle =

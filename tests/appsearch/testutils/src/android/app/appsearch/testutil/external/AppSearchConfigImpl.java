@@ -16,6 +16,7 @@
 
 package com.android.server.appsearch.external.localstorage;
 
+
 import com.android.server.appsearch.icing.proto.PersistType;
 
 import org.jspecify.annotations.NonNull;
@@ -170,7 +171,7 @@ public class AppSearchConfigImpl implements AppSearchConfig {
     }
 
     @Override
-    public String getIcuDataFileAbsolutePath() {
+    public @NonNull String getIcuDataFileAbsolutePath() {
         return mIcingOptionsConfig.getIcuDataFileAbsolutePath();
     }
 

@@ -194,7 +194,7 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_DESCRIPTION) // setDescription
     public void testSetSchema_schemaDescription_notSupported() throws Exception {
         assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
         AppSearchSchema schema =
@@ -223,7 +223,7 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_DESCRIPTION) // setDescription
     public void testSetSchema_propertyDescription_notSupported() throws Exception {
         assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
         AppSearchSchema schema =
@@ -252,7 +252,7 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_DESCRIPTION) // setDescription
     public void testSetSchema_updateSchemaDescription() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
 
@@ -311,7 +311,7 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_DESCRIPTION) // setDescription
     public void testSetSchema_updatePropertyDescription() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
 
@@ -12303,6 +12303,275 @@ public abstract class AppSearchSessionCtsTestBase {
                 .contains(
                         Features.SCHEMA_EMBEDDING_QUANTIZATION
                                 + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testRankingFunction_maxMinOrDefault() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features.SEARCH_SPEC_RANKING_FUNCTION_MAX_MIN_OR_DEFAULT));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, 0.8f}, "my_model"))
+                        .build();
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, -0.8f}, "my_model"),
+                                new EmbeddingVector(new float[] {0.2f, 0.1f, -1.2f}, "my_model"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(doc0, doc1).build()));
+
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: -0.5
+        // - document 1: -2.1, -1.5
+        EmbeddingVector searchEmbedding = new EmbeddingVector(new float[] {-1, -1, 1}, "my_model");
+
+        // Create a hybrid query that matches document 0 because of term-based search
+        // and document 1 because of embedding-based search.
+        //
+        // The scoring expression for each doc will be evaluated as:
+        // - document 0: maxOrDefault({}, -100) = -100
+        // - document 1: maxOrDefault({-2.1, -1.5}, -100) = -1.5
+        SearchSpec searchSpec1 =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setRankingStrategy(
+                                "maxOrDefault(this.matchedSemanticScores(getEmbeddingParameter(0)),"
+                                        + " -100)")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "foo OR semanticSearch(getEmbeddingParameter(0), -10, -1)", searchSpec1);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(-1.5);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-100);
+
+        // Create the same query with minOrDefault.
+        //
+        // The scoring expression for each doc will be evaluated as:
+        // - document 0: minOrDefault({}, -100) = -100
+        // - document 1: minOrDefault({-2.1, -1.5}, -100) = -2.1
+        SearchSpec searchSpec2 =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setRankingStrategy(
+                                "minOrDefault(this.matchedSemanticScores(getEmbeddingParameter(0)),"
+                                        + " -100)")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        searchResults =
+                mDb1.search(
+                        "foo OR semanticSearch(getEmbeddingParameter(0), -10, -1)", searchSpec2);
+        results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(-2.1);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-100);
+    }
+
+    @Test
+    public void testRankingFunction_maxMinOrDefault_notSupported() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION));
+        assumeFalse(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features.SEARCH_SPEC_RANKING_FUNCTION_MAX_MIN_OR_DEFAULT));
+
+        // Schema registration
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        // Index a document
+        AppSearchEmail inEmail =
+                new AppSearchEmail.Builder("namespace", "id1")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("This is the body of the testPut email")
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(inEmail).build()));
+
+        // Query for the document with the unsupported ranking function maxOrDefault.
+        SearchResultsShim searchResults1 =
+                mDb1.search(
+                        "foo",
+                        new SearchSpec.Builder().setRankingStrategy("maxOrDefault()").build());
+        ExecutionException executionException =
+                assertThrows(
+                        ExecutionException.class, () -> searchResults1.getNextPageAsync().get());
+        assertThat(executionException).hasCauseThat().isInstanceOf(AppSearchException.class);
+        AppSearchException exception = (AppSearchException) executionException.getCause();
+        assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertThat(exception).hasMessageThat().contains("Unknown function: maxOrDefault");
+
+        // Query for the document with the unsupported ranking function minOrDefault.
+        SearchResultsShim searchResults2 =
+                mDb1.search(
+                        "foo",
+                        new SearchSpec.Builder().setRankingStrategy("minOrDefault()").build());
+        executionException =
+                assertThrows(
+                        ExecutionException.class, () -> searchResults2.getNextPageAsync().get());
+        assertThat(executionException).hasCauseThat().isInstanceOf(AppSearchException.class);
+        exception = (AppSearchException) executionException.getCause();
+        assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertThat(exception).hasMessageThat().contains("Unknown function: minOrDefault");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testRankingFunction_filterByRange() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc =
+                new GenericDocument.Builder<>("namespace", "id", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, -0.8f}, "my_model"),
+                                new EmbeddingVector(new float[] {0.2f, 0.1f, -1.2f}, "my_model"),
+                                new EmbeddingVector(new float[] {0.f, 0.f, 0.1f}, "my_model"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(doc).build()));
+
+        // Add an embedding search with dot product semantic scores: -2.1, -1.5, 0.1
+        EmbeddingVector searchEmbedding = new EmbeddingVector(new float[] {-1, -1, 1}, "my_model");
+
+        // Create a query with a ranking signal as the sum of all matched semantic scores within
+        // [-2, 1], which will be evaluated as -1.5 + 0.1 = -1.4.
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addEmbeddingParameters(searchEmbedding)
+                        .setRankingStrategy(
+                                "sum(filterByRange(this.matchedSemanticScores("
+                                        + "getEmbeddingParameter(0)), -2, 1))")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search("semanticSearch(getEmbeddingParameter(0))", searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(-1.5 + 0.1);
+    }
+
+    @Test
+    public void testRankingFunction_filterByRange_notSupported() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION));
+        assumeFalse(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE));
+
+        // Schema registration
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder().addSchemas(AppSearchEmail.SCHEMA).build())
+                .get();
+
+        // Index a document
+        AppSearchEmail inEmail =
+                new AppSearchEmail.Builder("namespace", "id1")
+                        .setFrom("from@example.com")
+                        .setTo("to1@example.com", "to2@example.com")
+                        .setSubject("testPut example")
+                        .setBody("This is the body of the testPut email")
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(inEmail).build()));
+
+        // Query for the document with the unsupported ranking function filterByRange.
+        SearchResultsShim searchResults1 =
+                mDb1.search(
+                        "foo",
+                        new SearchSpec.Builder().setRankingStrategy("filterByRange()").build());
+        ExecutionException executionException =
+                assertThrows(
+                        ExecutionException.class, () -> searchResults1.getNextPageAsync().get());
+        assertThat(executionException).hasCauseThat().isInstanceOf(AppSearchException.class);
+        AppSearchException exception = (AppSearchException) executionException.getCause();
+        assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertThat(exception).hasMessageThat().contains("Unknown function: filterByRange");
     }
 
     @Test
