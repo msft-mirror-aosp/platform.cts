@@ -29,6 +29,7 @@ import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABI
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT;
 import static android.telephony.CarrierConfigManager.KEY_FORCE_HOME_NETWORK_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MODE_WHILE_USING_NTN_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_DISPLAY_NAME_STRING;
@@ -80,6 +81,7 @@ import android.telephony.satellite.SatelliteManager;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.compatibility.common.util.TestThread;
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -307,6 +309,12 @@ public class CarrierConfigManagerTest {
                     config.getIntArray(CarrierConfigManager
                             .KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY),
                     new int[] {NetworkCapabilities.NET_CAPABILITY_IMS});
+            if (Flags.starlinkDataBugfix()) {
+                assertEquals("KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_IN_MILLIS "
+                                + "doesn't match static default.",
+                        config.getLong(KEY_SATELLITE_CONNECTED_NOTIFICATION_THROTTLE_MILLIS_INT),
+                        TimeUnit.DAYS.toMillis(7));
+            }
         }
 
         // These key should return default values if not customized.
