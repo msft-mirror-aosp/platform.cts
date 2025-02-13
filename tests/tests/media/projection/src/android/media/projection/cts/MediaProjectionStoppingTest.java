@@ -91,7 +91,8 @@ public class MediaProjectionStoppingTest {
     private static final int RECORDING_DENSITY = 200;
     private static final String CALL_HELPER_START_CALL = "start_call";
     private static final String CALL_HELPER_STOP_CALL = "stop_call";
-    private static final String STOP_DIALOG_TITLE = "Stop sharing screen?";
+    private static final String STOP_DIALOG_TITLE_RES_ID = "android:id/alertTitle";
+    private static final String STOP_DIALOG_CLOSE_BUTTON_RES_ID = "android:id/button2";
 
     @Rule
     public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -307,8 +308,21 @@ public class MediaProjectionStoppingTest {
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         boolean isDialogShown =
                 device.wait(
-                        Until.hasObject(By.text(STOP_DIALOG_TITLE)), STOP_DIALOG_WAIT_TIMEOUT_MS);
+                        Until.hasObject(By.res(STOP_DIALOG_TITLE_RES_ID)),
+                        STOP_DIALOG_WAIT_TIMEOUT_MS);
         assertWithMessage("Stop dialog should be visible").that(isDialogShown).isTrue();
+
+        // Find and click the "Close" button
+        boolean hasCloseButton =
+                device.wait(
+                        Until.hasObject(By.res(STOP_DIALOG_CLOSE_BUTTON_RES_ID)),
+                        STOP_DIALOG_WAIT_TIMEOUT_MS);
+        if (hasCloseButton) {
+            device.findObject(By.res(STOP_DIALOG_CLOSE_BUTTON_RES_ID)).click();
+            Log.d(TAG, "Clicked on 'Close' button to dismiss the stop dialog.");
+        } else {
+            fail("Close button not found, unable to dismiss stop dialog.");
+        }
     }
 
     private void startPhoneCall() throws InterruptedException {
