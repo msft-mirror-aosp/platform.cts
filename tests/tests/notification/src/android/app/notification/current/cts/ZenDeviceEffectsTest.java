@@ -18,9 +18,7 @@ package android.app.notification.current.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import android.app.Flags;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.notification.ZenDeviceEffects;
@@ -34,7 +32,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-@RequiresFlagsEnabled(Flags.FLAG_MODES_API)
 public class ZenDeviceEffectsTest {
 
     @Rule(order = 0)
