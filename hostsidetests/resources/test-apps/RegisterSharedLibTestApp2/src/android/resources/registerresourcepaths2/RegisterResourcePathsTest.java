@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.resources.registerresourcepaths2;
+package android.resources.cts.registerresourcepaths2;
 
 import static org.junit.Assume.assumeTrue;
 

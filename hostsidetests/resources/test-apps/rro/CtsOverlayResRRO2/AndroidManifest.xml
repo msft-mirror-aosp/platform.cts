@@ -16,10 +16,10 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.resources.overlayres2.rro">
+    package="android.resources.cts.overlayres2.rro">
     <application android:hasCode="false"/>
     <overlay
-        android:targetPackage="android.resources.overlayresapp2"
+        android:targetPackage="android.resources.cts.overlayresapp2"
         android:resourcesMap="@xml/overlays"
         android:targetName="OverlayResApp2"
         android:isStatic="true" />

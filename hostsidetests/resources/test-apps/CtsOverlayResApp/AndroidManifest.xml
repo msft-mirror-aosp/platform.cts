@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="android.resources.overlayresapp"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="android.resources.cts.overlayresapp"
     xmlns:tools="http://schemas.android.com/tools">
 
   <application>
@@ -28,6 +28,6 @@
   </application>
 
   <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                   android:targetPackage="android.resources.overlayresapp" />
+                   android:targetPackage="android.resources.cts.overlayresapp" />
 
 </manifest>
