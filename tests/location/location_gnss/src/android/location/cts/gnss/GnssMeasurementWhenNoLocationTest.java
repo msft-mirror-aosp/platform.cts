@@ -190,12 +190,17 @@ public class GnssMeasurementWhenNoLocationTest extends GnssTestCase {
                     Integer.toString(satelliteCount), // actual value
                     satelliteCount > 0); // condition
 
-            TestMeasurementUtil.assertGnssClockFields(firstEvent.getClock(), softAssert, timeInNs);
+            TestMeasurementUtil.assertGnssClockFields(
+                    firstEvent.getClock(), softAssert, /* asWarning= */ false, timeInNs);
 
             // Verify mandatory fields of GnssMeasurement
             for (GnssMeasurement measurement : gpsMeasurements) {
-                TestMeasurementUtil.assertAllGnssMeasurementMandatoryFields(mTestLocationManager,
-                        measurement, softAssert, timeInNs);
+                TestMeasurementUtil.assertAllGnssMeasurementMandatoryFields(
+                        mTestLocationManager,
+                        measurement,
+                        softAssert,
+                        /* asWarning= */ false,
+                        timeInNs);
             }
             softAssert.assertAll();
         } finally {

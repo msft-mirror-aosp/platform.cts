@@ -153,7 +153,7 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
       assertNotNull("GnssMeasurementEvent cannot be null.", event);
 
       long timeInNs = event.getClock().getTimeNanos();
-      TestMeasurementUtil.assertGnssClockFields(event.getClock(), softAssert, timeInNs);
+      TestMeasurementUtil.assertGnssClockFields(event.getClock(), softAssert, /* asWarning= */ false, timeInNs);
 
       ArrayList<GnssMeasurement> filteredMeasurements = filterMeasurements(event.getMeasurements());
       HashMap<Integer, ArrayList<GnssMeasurement>> measurementConstellationMap =
