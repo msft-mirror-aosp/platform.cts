@@ -23,6 +23,7 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.UiccCardInfo;
+import android.util.Log;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.RequiredFeatureRule;
@@ -134,6 +135,9 @@ class RemovableSims {
                 }
             }
         }
-        return (counter > 1 && counter == mTelephonyManager.getActiveModemCount());
+        Log.i("RemovableSims",
+                "hasActivePsimsOnly: counter = " + counter + "   active modemCount = "
+                        + mTelephonyManager.getActiveModemCount());
+        return (counter > 0 && counter == mTelephonyManager.getActiveModemCount());
     }
 }
