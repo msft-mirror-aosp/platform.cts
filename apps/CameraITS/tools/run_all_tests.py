@@ -598,7 +598,7 @@ def main():
   # Override camera, scenes and testbed with cmd line values if available
   for s in list(sys.argv[1:]):
     if 'scenes=' in s:
-      scenes = s.split('=')[1].split(',')
+      scenes = s.split('scenes=')[1].split(',')
     elif 'camera=' in s:
       camera_id_combos = s.split('=')[1].split(',')
     elif 'testbed_index=' in s:
@@ -640,7 +640,8 @@ def main():
       if scenes == ['scene_ip']:
         if TEST_KEY_GEN2 not in name:
           testbed_to_remove.append(i)
-      elif set(scenes).intersection(set(_CHECKERBOARD_SCENES)):
+      elif set(scenes).intersection(
+          set(_CHECKERBOARD_SCENES)) or scenes == ['checkerboard']:
         if TEST_KEY_SENSOR_FUSION not in name:
           testbed_to_remove.append(i)
       else:
