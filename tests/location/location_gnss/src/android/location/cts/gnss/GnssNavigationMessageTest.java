@@ -115,7 +115,8 @@ public class GnssNavigationMessageTest extends GnssTestCase {
         List<GnssNavigationMessage> events = mTestGnssNavigationMessageListener.getEvents();
 
         // Verify mandatory GnssNavigationMessage field values.
-        TestMeasurementUtil.verifyGnssNavMessageMandatoryField(mTestLocationManager, events);
+        TestMeasurementUtil.verifyGnssNavMessageMandatoryField(
+                mTestLocationManager, events, /* asWarning= */ false);
         softAssert.assertAll();
     }
 

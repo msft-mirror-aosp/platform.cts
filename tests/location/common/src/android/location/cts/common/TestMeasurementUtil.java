@@ -1039,44 +1039,57 @@ public final class TestMeasurementUtil {
     }
 
     /**
-     * Assert all mandatory fields in Gnss Navigation Message are in expected range.
-     * See mandatory fields in {@code gps.h}.
+     * Assert all mandatory fields in Gnss Navigation Message are in expected range. See mandatory
+     * fields in {@code gps.h}.
      *
      * @param testLocationManager TestLocationManager
      * @param events GnssNavigationMessageEvents
      */
-    public static void verifyGnssNavMessageMandatoryField(TestLocationManager testLocationManager,
-                                                          List<GnssNavigationMessage> events) {
+    public static void verifyGnssNavMessageMandatoryField(
+            TestLocationManager testLocationManager,
+            List<GnssNavigationMessage> events,
+            boolean asWarning) {
         // Verify mandatory GnssNavigationMessage field values.
         SoftAssert softAssert = new SoftAssert(TAG);
         for (GnssNavigationMessage message : events) {
             int type = message.getType();
-            softAssert.assertTrue("Gnss Navigation Message Type:expected [" +
-                getGnssNavMessageTypes() + "] actual = " + type,
+            softAssert.assertOrWarnTrue(
+                    asWarning,
+                    "Gnss Navigation Message Type:expected ["
+                            + getGnssNavMessageTypes()
+                            + "] actual = "
+                            + type,
                     GNSS_NAVIGATION_MESSAGE_TYPE.contains(type));
 
-            int messageType = message.getType();
-            softAssert.assertTrue("Message ID cannot be 0", message.getMessageId() != 0);
-            if (messageType == GnssNavigationMessage.TYPE_GAL_I) {
-                softAssert.assertTrue("Sub Message ID can not be negative.",
-                    message.getSubmessageId() >= 0);
+            softAssert.assertOrWarnTrue(
+                    asWarning, "Message ID cannot be 0", message.getMessageId() != 0);
+
+            if (type == GnssNavigationMessage.TYPE_GAL_I) {
+                softAssert.assertOrWarnTrue(
+                        asWarning,
+                        "Sub Message ID can not be negative.",
+                        message.getSubmessageId() >= 0);
             } else {
-                softAssert.assertTrue("Sub Message ID has to be greater than 0.",
-                    message.getSubmessageId() > 0);
+                softAssert.assertOrWarnTrue(
+                        asWarning,
+                        "Sub Message ID has to be greater than 0.",
+                        message.getSubmessageId() > 0);
             }
 
             // if message type == TYPE_L1CA, verify PRN & Data Size.
-            if (messageType == GnssNavigationMessage.TYPE_GPS_L1CA) {
+            if (type == GnssNavigationMessage.TYPE_GPS_L1CA) {
                 int svid = message.getSvid();
-                softAssert.assertTrue("Space Vehicle ID : expected = [1, 32], actual = " +
-                                svid,
+                softAssert.assertOrWarnTrue(
+                        asWarning,
+                        "Space Vehicle ID : expected = [1, 32], actual = " + svid,
                         svid >= 1 && svid <= 32);
                 int dataSize = message.getData().length;
-                softAssert.assertTrue("Data size: expected = 40, actual = " + dataSize,
+                softAssert.assertOrWarnTrue(
+                        asWarning,
+                        "Data size: expected = 40, actual = " + dataSize,
                         dataSize == 40);
             } else {
-                Log.i(TAG, "GnssNavigationMessage (type = " + messageType
-                        + ") skipped for verification.");
+                Log.i(TAG, "GnssNavigationMessage (type = " + type + ") skipped for verification.");
             }
         }
         softAssert.assertAll();
