@@ -464,9 +464,6 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
         } else {
             if (locationEnabled) {
                 mFailButton.setEnabled(true);
-            } else {
-                Toast.makeText(this, R.string.ci_location_permissions_fail_error,
-                    Toast.LENGTH_SHORT).show();
             }
         }
 
