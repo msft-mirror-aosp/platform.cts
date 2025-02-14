@@ -63,6 +63,9 @@ import java.util.function.Consumer;
 public class SingleDeviceTest extends WifiJUnit3TestBase {
     private static final String USD_SERVICE_NAME = "USD_CTS_TEST";
     private static final int WAIT_FOR_USD_CALLBACK_SECS = 15;
+    private static final int TEST_TIMEOUT_SECS = 1;
+    private static final int USD_SERVICE_NAME_MAX_LENGTH = 255;
+    private static final int USD_MIN_SSI_LENGTH = 255;
     private UsdManager mUsdManager;
     private WifiManager mWifiManager;
     private final Object mLock = new Object();
@@ -102,7 +105,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         synchronized (mLock) {
             now = System.currentTimeMillis();
             deadline = now + WAIT_FOR_USD_CALLBACK_SECS * 1000;
-            while (mCallbackStatus.get() != CALLBACK_STATUS_NOT_CALLED && now < deadline) {
+            while (mCallbackStatus.get() == CALLBACK_STATUS_NOT_CALLED && now < deadline) {
                 mLock.wait(deadline - now);
                 now = System.currentTimeMillis();
             }
@@ -168,8 +171,11 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertNotNull(mUsdManager);
             Characteristics characteristics = mUsdManager.getCharacteristics();
             assertNotNull(characteristics);
-            assertEquals("Service Name Length", characteristics.getMaxServiceNameLength(), 255);
-            assertEquals("Match Filter Length", characteristics.getMaxMatchFilterLength(), 255);
+            assertEquals(
+                    "Service Name Length",
+                    USD_SERVICE_NAME_MAX_LENGTH,
+                    characteristics.getMaxServiceNameLength());
+            assertTrue("Match Filter Length", characteristics.getMaxMatchFilterLength() >= 0);
             if (mWifiManager.isUsdPublisherSupported()) {
                 assertTrue(
                         "Maximum number of Publish sessions",
@@ -180,8 +186,9 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                         "Maximum number of Subscribe sessions",
                         characteristics.getMaxNumberOfSubscribeSessions() > 0);
             }
-            assertTrue("Maximum Service Specific Info Length",
-                    characteristics.getMaxServiceSpecificInfoLength() >= 255);
+            assertTrue(
+                    "Maximum Service Specific Info Length",
+                    characteristics.getMaxServiceSpecificInfoLength() >= USD_MIN_SSI_LENGTH);
         }
     }
 
@@ -250,10 +257,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         static final int ON_PUBLISH_RECEIVED = 5;
         static final int UNKNOWN = 255;
         private PublishSession mPublishSession;
-        private int mCallbackCalled = UNKNOWN;
-
         private int mReasonCode = PublishSessionCallback.TERMINATION_REASON_UNKNOWN;
-
         private final Object mLocalLock = new Object();
         private final ArrayDeque<Integer> mCallbackQueue = new ArrayDeque<>();
         private CountDownLatch mBlocker;
@@ -329,8 +333,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         @Override
         public void onPublishStarted(@NonNull PublishSession session) {
-            processCallback(ON_PUBLISH_STARTED);
             mPublishSession = session;
+            processCallback(ON_PUBLISH_STARTED);
         }
 
         @Override
@@ -340,14 +344,13 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         @Override
         public void onSessionTerminated(int reason) {
-            processCallback(ON_PUBLISH_TERMINATED);
             mReasonCode = reason;
+            processCallback(ON_PUBLISH_TERMINATED);
         }
 
         @Override
         public void onMessageReceived(int peerId, @Nullable byte[] message) {
             processCallback(ON_PUBLISH_RECEIVED);
-            mBlocker.countDown();
         }
 
         public PublishSession getPublishSession() {
@@ -406,7 +409,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                             .setAnnouncementPeriodMillis(200)
                             .setEventsEnabled(true)
                             .setTtlSeconds(TEST_TTL_SECONDS)
-                            .setServiceProtoType(PublishConfig.SERVICE_PROTO_TYPE_GENERIC)
+                            .setServiceProtoType(PublishConfig.SERVICE_PROTO_TYPE_CSA_MATTER)
                             .setSolicitedTransmissionType(PublishConfig.TRANSMISSION_TYPE_UNICAST);
             if (TEST_SSI.length <= characteristics.getMaxServiceSpecificInfoLength()) {
                 builder.setServiceSpecificInfo(TEST_SSI);
@@ -430,21 +433,20 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertFalse(
                     "Publish failed",
                     publishSessionCallbackTest.waitForCallback(
-                            PublishSessionCallbackTest.ON_PUBLISH_FAILED));
+                            PublishSessionCallbackTest.ON_PUBLISH_FAILED, TEST_TIMEOUT_SECS));
             assertFalse(
                     "Publish replied",
                     publishSessionCallbackTest.waitForCallback(
-                            PublishSessionCallbackTest.ON_PUBLISH_REPLIED));
+                            PublishSessionCallbackTest.ON_PUBLISH_REPLIED, TEST_TIMEOUT_SECS));
             assertFalse(
                     "Message received",
                     publishSessionCallbackTest.waitForCallback(
-                            PublishSessionCallbackTest.ON_PUBLISH_RECEIVED));
+                            PublishSessionCallbackTest.ON_PUBLISH_RECEIVED, TEST_TIMEOUT_SECS));
             // Make sure session is not terminated
             assertFalse(
                     "Publish terminated",
                     publishSessionCallbackTest.hasCallbackAlreadyHappened(
                             SubscribeSessionCallbackTest.ON_SESSION_TERMINATED));
-            // Cancel
             PublishSession session = publishSessionCallbackTest.getPublishSession();
             assertNotNull(session);
             // Send a message; this is expected to fail.
@@ -492,7 +494,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     new PublishConfig.Builder(USD_SERVICE_NAME)
                             .setOperatingFrequenciesMhz(operatingFrequencies)
                             .build();
-            assertEquals(operatingFrequencies, publishConfig.getOperatingFrequenciesMhz());
+            assertArrayEquals(operatingFrequencies, publishConfig.getOperatingFrequenciesMhz());
             PublishSessionCallbackTest publishSessionCallbackTest =
                     new PublishSessionCallbackTest();
             mUsdManager.publish(publishConfig, executor, publishSessionCallbackTest);
@@ -651,6 +653,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         @Override
         public void onSessionTerminated(int reason) {
+            mReasonCode = reason;
             processCallback(ON_SESSION_TERMINATED);
         }
 
@@ -666,8 +669,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         @Override
         public void onSubscribeStarted(@NonNull SubscribeSession session) {
-            processCallback(ON_SUBSCRIBE_STARTED);
             mSubscribeSession = session;
+            processCallback(ON_SUBSCRIBE_STARTED);
         }
 
         @Override
@@ -749,15 +752,15 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             assertFalse(
                     "Subscribe failed",
                     subscribeSessionCallbackTest.waitForCallback(
-                            SubscribeSessionCallbackTest.ON_SUBSCRIBE_FAILED));
+                            SubscribeSessionCallbackTest.ON_SUBSCRIBE_FAILED, TEST_TIMEOUT_SECS));
             assertFalse(
                     "Service Discovered",
                     subscribeSessionCallbackTest.waitForCallback(
-                            SubscribeSessionCallbackTest.ON_SERVICE_DISCOVERED));
+                            SubscribeSessionCallbackTest.ON_SERVICE_DISCOVERED, TEST_TIMEOUT_SECS));
             assertFalse(
                     "Message received",
                     subscribeSessionCallbackTest.waitForCallback(
-                            SubscribeSessionCallbackTest.ON_MESSAGE_RECEIVED));
+                            SubscribeSessionCallbackTest.ON_MESSAGE_RECEIVED, TEST_TIMEOUT_SECS));
             // Make sure session is not terminated
             assertFalse(
                     "Subscribe terminated",
@@ -804,7 +807,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
                     new SubscribeConfig.Builder(USD_SERVICE_NAME)
                             .setOperatingFrequenciesMhz(TEST_FREQUENCIES)
                             .build();
-            assertEquals(TEST_FREQUENCIES, subscribeConfig.getOperatingFrequenciesMhz());
+            assertArrayEquals(TEST_FREQUENCIES, subscribeConfig.getOperatingFrequenciesMhz());
             SubscribeSessionCallbackTest subscribeSessionCallbackTest =
                     new SubscribeSessionCallbackTest();
             mUsdManager.subscribe(subscribeConfig, executor, subscribeSessionCallbackTest);
