@@ -113,7 +113,7 @@ _ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
 # Scenes that are logically grouped and can be called as group
 # scene6_tele is not grouped with scene6 because it requires extension rig
 _GROUPED_SCENES = types.MappingProxyType({
-        'scene1': ('scene1_1', 'scene1_2'),
+        'scene1': ('scene1_1', 'scene1_2', 'scene1_3'),
         'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
                    'scene2_f', 'scene2_g')
 })
