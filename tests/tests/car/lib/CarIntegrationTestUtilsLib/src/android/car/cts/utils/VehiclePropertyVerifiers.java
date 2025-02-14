@@ -1551,6 +1551,56 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
+    public static VehiclePropertyVerifier.Builder<Float> getFuelLevelVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.FUEL_LEVEL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Float.class)
+                .setCarPropertyConfigVerifier(
+                        (verifierContext, carPropertyConfig) -> {
+                            assertFuelPropertyNotImplementedOnEv(
+                                    verifierContext.getCarPropertyManager(),
+                                    VehiclePropertyIds.FUEL_LEVEL);
+                        })
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                fuelLevel) -> {
+                            assertWithMessage(
+                                            "FUEL_LEVEL Float value must be greater than or equal"
+                                                    + " 0")
+                                    .that(fuelLevel)
+                                    .isAtLeast(0);
+
+                            if (verifierContext
+                                            .getCarPropertyManager()
+                                            .getCarPropertyConfig(
+                                                    VehiclePropertyIds.INFO_FUEL_CAPACITY)
+                                    == null) {
+                                return;
+                            }
+
+                            CarPropertyValue<?> infoFuelCapacityValue =
+                                    verifierContext
+                                            .getCarPropertyManager()
+                                            .getProperty(
+                                                    VehiclePropertyIds.INFO_FUEL_CAPACITY,
+                                                    VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
+
+                            assertWithMessage(
+                                            "FUEL_LEVEL Float value must not exceed"
+                                                    + " INFO_FUEL_CAPACITY Float value")
+                                    .that(fuelLevel)
+                                    .isAtMost((Float) infoFuelCapacityValue.getValue());
+                        })
+                .addReadPermission(Car.PERMISSION_ENERGY);
+    }
+
     private static void verifyHvacTemperatureValueSuggestion(
             VehiclePropertyVerifier.VerifierContext verifierContext,
             Float[] temperatureSuggestion) {

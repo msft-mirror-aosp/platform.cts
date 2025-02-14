@@ -23,6 +23,7 @@ import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionI
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
@@ -3831,48 +3832,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_READ_DISPLAY_UNITS)
                 .addWritePermission(ImmutableSet.of(Car.PERMISSION_CONTROL_DISPLAY_UNITS,
                         Car.PERMISSION_VENDOR_EXTENSION));
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getFuelLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyConfigVerifier(
-                        (verifierContext, carPropertyConfig) -> {
-                            assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.getCarPropertyManager(),
-                                    VehiclePropertyIds.FUEL_LEVEL);
-                        })
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                fuelLevel) -> {
-                            assertWithMessage(
-                                            "FUEL_LEVEL Float value must be greater than or equal"
-                                                + " 0")
-                                    .that(fuelLevel)
-                                    .isAtLeast(0);
-
-                            if (verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.INFO_FUEL_CAPACITY)
-                                    == null) {
-                                return;
-                            }
-
-                            CarPropertyValue<?> infoFuelCapacityValue =
-                                    verifierContext.getCarPropertyManager().getProperty(
-                                            VehiclePropertyIds.INFO_FUEL_CAPACITY,
-                                            VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
-
-                            assertWithMessage(
-                                            "FUEL_LEVEL Float value must not exceed"
-                                                + " INFO_FUEL_CAPACITY Float value")
-                                    .that(fuelLevel)
-                                    .isAtMost((Float) infoFuelCapacityValue.getValue());
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
