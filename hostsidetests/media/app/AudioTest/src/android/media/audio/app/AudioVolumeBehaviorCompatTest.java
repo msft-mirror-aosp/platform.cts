@@ -100,9 +100,12 @@ public class AudioVolumeBehaviorCompatTest {
         }
 
         try {
-            mAudioDeviceVolumeManager.setDeviceAbsoluteVolumeAdjustOnlyBehavior(DEVICE_SPEAKER_OUT,
-                    volumeInfo, Executors.newSingleThreadExecutor(),
-                    new AbsoluteVolumeChangedListener(), true);
+            mAudioDeviceVolumeManager.setDeviceAbsoluteVolumeAdjustOnlyBehavior(
+                    DEVICE_SPEAKER_OUT,
+                    volumeInfo,
+                    true,
+                    Executors.newSingleThreadExecutor(),
+                    new AbsoluteVolumeChangedListener());
 
             int behavior = mAudioManager.getDeviceVolumeBehavior(DEVICE_SPEAKER_OUT);
 
@@ -131,9 +134,12 @@ public class AudioVolumeBehaviorCompatTest {
         }
 
         try {
-            mAudioDeviceVolumeManager.setDeviceAbsoluteVolumeAdjustOnlyBehavior(DEVICE_SPEAKER_OUT,
-                    volumeInfo, Executors.newSingleThreadExecutor(),
-                    new AbsoluteVolumeChangedListener(), true);
+            mAudioDeviceVolumeManager.setDeviceAbsoluteVolumeAdjustOnlyBehavior(
+                    DEVICE_SPEAKER_OUT,
+                    volumeInfo,
+                    true,
+                    Executors.newSingleThreadExecutor(),
+                    new AbsoluteVolumeChangedListener());
 
             int behavior = mAudioManager.getDeviceVolumeBehavior(DEVICE_SPEAKER_OUT);
 
