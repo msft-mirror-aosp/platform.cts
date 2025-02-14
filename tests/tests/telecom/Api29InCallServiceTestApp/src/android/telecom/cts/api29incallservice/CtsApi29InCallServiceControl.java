@@ -19,7 +19,6 @@ package android.telecom.cts.api29incallservice;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.os.Process;
 import android.telecom.Call;
 import android.util.Log;
 
@@ -61,11 +60,6 @@ public class CtsApi29InCallServiceControl extends Service {
         @Override
         public boolean waitForBindRequest() {
             return CtsApi29InCallService.waitForBindRequest();
-        }
-
-        @Override
-        public void kill() {
-            Process.killProcess(Process.myPid());
         }
     };
 

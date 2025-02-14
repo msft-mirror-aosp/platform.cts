@@ -9,9 +9,9 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.DeadObjectException;
 import android.telecom.cts.api29incallservice.CtsApi29InCallService;
 import android.telecom.cts.api29incallservice.ICtsApi29InCallServiceControl;
+import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
@@ -53,9 +53,11 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
         try {
             setComponentEnabledSettingsAndWaitForBroadcasts(
                     new PackageManager.ComponentEnabledSetting(
-                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                            ComponentName.createRelative(
+                                    CtsApi29InCallService.PACKAGE_NAME,
                                     "." + CtsApi29InCallService.class.getSimpleName()),
-                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED, 0));
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            0 /* doKillApp */));
             ICtsApi29InCallServiceControl controlInterface = setUpControl();
 
             addAndVerifyNewIncomingCall(createTestNumber(), new Bundle());
@@ -73,16 +75,9 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             boolean hasBound = controlInterface.waitForBindRequest();
             assertTrue("InCall was not bound to", hasBound);
             waitOnAllHandlers(getInstrumentation());
-
             assertEquals("Call was not sent to incall", 1, controlInterface.getLocalCallCount());
-
-            try {
-                controlInterface.kill();
-            } catch (DeadObjectException e) {
-                //expected
-            }
-            tearDownControl();
         } finally {
+            tearDownControl();
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
@@ -157,18 +152,14 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             waitOnAllHandlers(getInstrumentation());
 
             assertEquals("Call was not sent to incall", 1, controlInterface.getLocalCallCount());
-            try {
-                controlInterface.kill();
-            } catch (DeadObjectException e) {
-                //expected
-            }
+        } finally {
             tearDownControl();
             if (connection != null) {
                 connection.disconnectAndDestroy();
-            }
-        } finally {
-            if (connection != null) {
-                connection.disconnectAndDestroy();
+                boolean isStillInCall = waitForIsInCall(false);
+                if (isStillInCall) {
+                    Log.e(LOG_TAG, "Assumption Error: Still in call after test finished");
+                }
             }
             // Re-enable Bluetooth to make sure the ICS it has is not running.
             bluetoothManager.getAdapter().enable();
@@ -197,9 +188,11 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
         try {
             setComponentEnabledSettingsAndWaitForBroadcasts(
                     new PackageManager.ComponentEnabledSetting(
-                            ComponentName.createRelative(CtsApi29InCallService.PACKAGE_NAME,
+                            ComponentName.createRelative(
+                                    CtsApi29InCallService.PACKAGE_NAME,
                                     "." + CtsApi29InCallService.class.getSimpleName()),
-                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0));
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            0 /* doKillApp */));
             ICtsApi29InCallServiceControl controlInterface = setUpControl();
             controlInterface.setShouldReturnNullBinding(true);
 
@@ -214,13 +207,8 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
             assertEquals("Call was sent to incall despite null binding",
                     0, controlInterface.getLocalCallCount());
 
-            try {
-                controlInterface.kill();
-            } catch (DeadObjectException e) {
-                //expected
-            }
-            tearDownControl();
         } finally {
+            tearDownControl();
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
@@ -232,8 +220,8 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
         return setupResult.second;
     }
 
-    private void tearDownControl() throws Exception {
-        Api29InCallUtils.tearDownControl(mContext,
-                mServiceConnection);
+    private void tearDownControl() {
+        if (mServiceConnection == null) return;
+        Api29InCallUtils.tearDownControl(mContext, mServiceConnection);
     }
 }
