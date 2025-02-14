@@ -23,10 +23,18 @@ import android.app.AppOpsManager.OP_FLAGS_ALL
 import android.content.Context
 import android.content.Intent
 import android.content.ComponentName
+import android.content.Intent.EXTRA_RESULT_RECEIVER
+import android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.os.Bundle
+import android.os.RemoteCallback
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.AsbSecurityTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.common.truth.Truth.assertThat
+import java.lang.Thread.sleep
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
 import org.junit.Before
 import org.junit.Ignore
 import org.junit.Test
@@ -227,6 +235,52 @@ class AttributionTest {
         startProxyOpForAttribution(ATTRIBUTION_2, ATTRIBUTION_2)
         assertThat(getPersistedAttribution(ATTRIBUTION_2))
                 .isEqualTo(ATTRIBUTION_2)
+    }
+
+    @AsbSecurityTest(cveBugId = [372678095])
+    @Test
+    fun noteOpWithTooManyAttributionTags() {
+        val packageName = "android.app.appops.cts.appthatexploitsattributiontags"
+
+        installApk("AppThatExploitsAttributionTags.apk")
+        sleep(1000)
+
+        val future = CompletableFuture<Boolean>()
+        val callback = RemoteCallback { result: Bundle? -> future.complete(true) }
+        val intent = Intent().setComponent(
+            ComponentName(
+                packageName,
+                "$packageName.AppOpNoteActivity"
+            )
+        )
+            .putExtra(EXTRA_RESULT_RECEIVER, callback)
+            .setFlags(FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TASK)
+
+        context.startActivity(intent)
+
+        assertThat(future.get(20, TimeUnit.SECONDS)).isTrue()
+
+        val uid = context.packageManager.getPackageUid(packageName, 0)
+        try {
+            runWithShellPermissionIdentity {
+                val packageOps = appOpsManager.getOpsForPackage(
+                    uid, packageName,
+                    AppOpsManager.OPSTR_COARSE_LOCATION,
+                    AppOpsManager.OPSTR_FINE_LOCATION,
+                    AppOpsManager.OPSTR_GPS,
+                    AppOpsManager.OPSTR_VIBRATE,
+                    AppOpsManager.OPSTR_READ_CONTACTS,
+                    AppOpsManager.OPSTR_WRITE_CONTACTS,
+                    AppOpsManager.OPSTR_READ_CALL_LOG,
+                    AppOpsManager.OPSTR_WRITE_CALL_LOG,
+                    AppOpsManager.OPSTR_READ_CALENDAR,
+                )
+
+                assertThat(packageOps).isNotEmpty()
+            }
+        } finally {
+            runCommand("pm uninstall --user ${context.userId} $packageName")
+        }
     }
 
     private fun noteProxyOpForAttribution(attributionForContextCreation: String, attributionForNoteOp: String) {
