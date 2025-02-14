@@ -18,7 +18,6 @@ import logging
 import os.path
 
 import camera_properties_utils
-import capture_request_utils
 import its_base_test
 import its_session_utils
 import opencv_processing_utils
