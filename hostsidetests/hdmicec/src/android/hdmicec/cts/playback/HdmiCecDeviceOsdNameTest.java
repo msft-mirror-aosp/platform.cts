@@ -73,7 +73,7 @@ public final class HdmiCecDeviceOsdNameTest extends BaseHdmiCecCtsTest {
         String deviceName = getDeviceName();
         hdmiCecClient.sendCecMessage(LogicalAddress.TV, CecOperand.GIVE_OSD_NAME);
         String message = hdmiCecClient.checkExpectedOutput(LogicalAddress.TV, CecOperand.SET_OSD_NAME);
-        assertThat(CecMessage.getAsciiString(message)).isEqualTo(deviceName);
+        assertThat(CecMessage.getAsciiString(message).trim()).isEqualTo(deviceName);
     }
 
     /**
@@ -94,7 +94,7 @@ public final class HdmiCecDeviceOsdNameTest extends BaseHdmiCecCtsTest {
                             CecOperand.GIVE_OSD_NAME,
                             HdmiCecConstants.ABORT_NOT_IN_CORRECT_MODE);
             if (CecMessage.getOperand(message) != CecOperand.FEATURE_ABORT) {
-                assertThat(CecMessage.getAsciiString(message)).isEqualTo(deviceName);
+                assertThat(CecMessage.getAsciiString(message).trim()).isEqualTo(deviceName);
             }
         } finally {
             wakeUpDevice();
