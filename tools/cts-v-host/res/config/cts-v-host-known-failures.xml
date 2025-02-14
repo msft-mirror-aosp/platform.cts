@@ -14,4 +14,9 @@
      limitations under the License.
 -->
 <configuration description="Configuration with CTS-V-HOST known failures" >
+    <!-- b/390079492 -->
+    <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases CtsNfcHceMultiDeviceTestCases#test_polling_frame_data" />
+    <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases CtsNfcHceMultiDeviceTestCases#test_polling_frame_type" />
+    <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases CtsNfcHceMultiDeviceTestCases#test_polling_frame_vendor_specific_gain" />
+    <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases CtsNfcHceMultiDeviceTestCases#test_single_payment_service_crashes" />
 </configuration>
