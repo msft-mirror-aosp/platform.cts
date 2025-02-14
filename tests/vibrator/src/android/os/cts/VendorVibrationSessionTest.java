@@ -188,6 +188,19 @@ public class VendorVibrationSessionTest {
             "android.os.Vibrator#startVendorSession",
             "android.os.vibrator.VendorVibrationSession.Callback#onStarted",
     })
+    public void testDeviceWithoutVibrator_returnsUnsupportedStatus() throws Exception {
+        assumeFalse(mVibrator.hasVibrator());
+
+        TestCallback callback = startSession(TOUCH_ATTRIBUTES);
+        assertSessionNeverStarted(callback, VendorVibrationSession.STATUS_UNSUPPORTED);
+    }
+
+  @Test
+    @ApiTest(apis = {
+            "android.os.Vibrator#areVendorSessionsSupported",
+            "android.os.Vibrator#startVendorSession",
+            "android.os.vibrator.VendorVibrationSession.Callback#onStarted",
+    })
     public void testVendorSessionsNotSupported_returnsUnsupportedStatus() throws Exception {
         assumeFalse(mVibrator.areVendorSessionsSupported());
 
