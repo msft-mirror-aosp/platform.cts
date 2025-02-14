@@ -22,6 +22,7 @@ import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAutoOnVerifierBuilder;
@@ -3870,43 +3871,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                 + " INFO_FUEL_CAPACITY Float value")
                                     .that(fuelLevel)
                                     .isAtMost((Float) infoFuelCapacityValue.getValue());
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getEvBatteryLevelVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_BATTERY_LEVEL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                evBatteryLevel) -> {
-                            assertWithMessage(
-                                            "EV_BATTERY_LEVEL Float value must be greater than or"
-                                                + " equal 0")
-                                    .that(evBatteryLevel)
-                                    .isAtLeast(0);
-
-                            if (verifierContext.getCarPropertyManager().getCarPropertyConfig(
-                                            VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY)
-                                    == null) {
-                                return;
-                            }
-
-                            CarPropertyValue<?> infoEvBatteryCapacityValue =
-                                    verifierContext.getCarPropertyManager().getProperty(
-                                            VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                                            VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
-
-                            assertWithMessage(
-                                            "EV_BATTERY_LEVEL Float value must not exceed "
-                                                    + "INFO_EV_BATTERY_CAPACITY Float "
-                                                    + "value")
-                                    .that(evBatteryLevel)
-                                    .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
                         })
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
