@@ -16,7 +16,9 @@
 
 package com.android.cts.verifier;
 
+import android.app.AlertDialog;
 import android.content.ContentResolver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -51,17 +53,25 @@ public class HostTestListActivity extends PassFailButtons.TestListActivity {
         try (Cursor cursor =
                 resolver.query(
                         TestResultsProvider.getResultContentUri(this),
-                        new String[] {TestResultsProvider.COLUMN_TEST_NAME},
+                        new String[] {
+                            TestResultsProvider.COLUMN_TEST_NAME,
+                            TestResultsProvider.COLUMN_TEST_DETAILS
+                        },
                         TestResultsProvider.COLUMN_TEST_NAME + " LIKE ?",
                         new String[] {moduleName + "%"},
                         TestResultsProvider.COLUMN_TEST_NAME)) {
             if (cursor != null && cursor.moveToFirst()) {
                 do {
                     String testId = cursor.getString(0);
+                    if (testId.equals(moduleName)
+                            && !cursor.isNull(1)
+                            && !cursor.getString(1).isEmpty()) {
+                        showAlertDialog(moduleName, cursor.getString(1));
+                    }
                     // Format: Module#Class#Testcase
                     String[] parts = testId.split(HostTestsActivity.TEST_ID_SEPARATOR, 3);
                     if (parts.length < 3) {
-                        Log.i(TAG, "Skip invalid interactive sub-test " + testId);
+                        Log.i(TAG, "Skip invalid host-side sub-test " + testId);
                         continue;
                     }
                     List<TestListAdapter.TestListItem> testcases =
@@ -80,5 +90,26 @@ public class HostTestListActivity extends PassFailButtons.TestListActivity {
     @Override
     protected void handleItemClick(ListView l, View v, int position, long id) {
         // Does nothing.
+    }
+
+    private void showAlertDialog(String moduleName, String details) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle(moduleName);
+        builder.setMessage(
+                String.format(
+                        "%s For the detailed reason, check results and logs on the host.",
+                        details));
+
+        builder.setPositiveButton(
+                "OK",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 }
