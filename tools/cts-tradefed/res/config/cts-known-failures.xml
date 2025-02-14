@@ -476,7 +476,7 @@
     <option name="compatibility:exclude-filter" value="CtsOsTestCases[run-on-work-profile]" />
 
     <!-- b/395784217 -->
-    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases com.android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_withMismatchedBuyerAdTech_sellerStillCalled" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_withMismatchedBuyerAdTech_sellerStillCalled" />
 
     <!-- b/395783356 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_reportImpression" />
