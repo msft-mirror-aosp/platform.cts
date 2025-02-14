@@ -58,16 +58,16 @@ open class CompanionDeviceManagerUi(private val ui: UiDevice) {
     fun waitUntilGone() = ui.waitShort(Until.gone(CONFIRMATION_UI), "CDM UI has not disappeared")
 
     fun waitAndClickOnFirstFoundDevice() {
-        val firstDevice = ui.waitLongAndFind(
-                Until.findObject(DEVICE_LIST_WITH_ITEMS),
-                "The item in the Device List not found or empty"
-        ).children[0]
-
         val startTime = SystemClock.uptimeMillis()
         var elapsedTime = 0L
         // Keep trying to click the first item in the list until the device_list is disappeared
         // or it times out after 5s.
-        while (ui.hasObject(DEVICE_LIST) && elapsedTime < 5.seconds.inWholeMilliseconds) {
+        while (ui.hasObject(DEVICE_LIST) && elapsedTime < 10.seconds.inWholeMilliseconds) {
+            val firstDevice = ui.waitLongAndFind(
+                Until.findObject(DEVICE_LIST_WITH_ITEMS),
+                "The item in the Device List not found or empty"
+            ).children[0]
+
             firstDevice.click()
             sleep(0.2.seconds.inWholeMilliseconds)
             elapsedTime = SystemClock.uptimeMillis() - startTime
