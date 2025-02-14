@@ -479,6 +479,14 @@
 
     <!-- b/395784217 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportImpression_withMismatchedBuyerAdTech_sellerStillCalled" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_registerBuyerAndSellerBeacons_happyPath" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_failToRegisterBuyerBeacon_sellerBeaconSucceeds" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_withMismatchedBuyerAdTech_sellerStillCalled" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_withMismatchedSellerAdTech_buyerStillCalled" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_withBuyerBeacon_onlyReportsForViewInteraction" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_failToRegisterSellerBeacon_buyerBeaconSucceeds" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_registerBuyerAndSellerBeacons_happyPath_usingGetMethod" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testAdSelection_withAdCostInUrl_adCostIsReported" />
 
     <!-- b/395783356 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_reportImpression" />
