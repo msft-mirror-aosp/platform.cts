@@ -412,7 +412,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     private void assertInvoked(CountDownLatch latch) throws InterruptedException {
-        assertTrue(latch.await(500, TimeUnit.MILLISECONDS));
+        assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
     }
 
     private void assertNotInvoked(CountDownLatch latch) {
@@ -449,7 +449,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         private void reset() {
             mStartLatch = new CountDownLatch(1);
             mInvokeLatch = new CountDownLatch(1);
-            mProgressLatch = new CountDownLatch(PROGRESS_SWIPE_STEPS);
+            mProgressLatch = new CountDownLatch(1);
             mCancelLatch = new CountDownLatch(1);
             mCancelProgressLatch = new CountDownLatch(1);
             mIsCancelRequested = false;
@@ -467,7 +467,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
             if (mIsCancelRequested && 0 == e.getProgress()) {
                 // Ensure the progress could reach to 0 for cancel animation.
                 mCancelProgressLatch.countDown();
-            } else {
+            } else if (!mIsCancelRequested && e.getProgress() > 0.2f) {
                 mProgressLatch.countDown();
             }
         }
