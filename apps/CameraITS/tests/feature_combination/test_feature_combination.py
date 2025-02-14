@@ -145,10 +145,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
           database_str = text_format.MessageToString(database)
           tf.write(database_str)
 
-  def _finish_combination(self, combination_name, is_stabilized, support_claimed,
-                          passed, recording_obj, gyro_events, test_name, log_path,
-                          facing, output_surfaces, fps_range, hlg10,
-                          features_passed, streams_name, fps_range_tuple):
+  def _finish_combination(
+      self, combination_name, is_stabilized, support_claimed,
+      passed, recording_obj, gyro_events, test_name, log_path,
+      facing, output_surfaces, fps_range, hlg10,
+      features_passed, streams_name, fps_range_tuple
+  ):
     """Finish verifying a feature combo & preview stabilization if necessary."""
     result = {'name': combination_name,
               'output_surfaces': output_surfaces,
@@ -297,7 +299,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 continue
 
               # Check if the hlg10 is supported for the video size and fps
-              video_size = stream_combination['combination'][video_stream_index]['size']
+              video_size = (
+                  stream_combination['combination'][video_stream_index]['size']
+              )
               if (hlg10 and
                   not cam.is_hlg10_recording_supported_for_size_and_fps(
                       video_size, fps_range[1])
@@ -307,10 +311,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               # Check if stabilization is supported: Use video stabilization
               # if there is a dedicated video stream
               if video_stream_index == 0:
-                stabilize_mode = camera_properties_utils.STABILIZATION_MODE_PREVIEW
+                stabilize_mode = (
+                    camera_properties_utils.STABILIZATION_MODE_PREVIEW
+                )
               else:
                 stabilize_mode = camera_properties_utils.STABILIZATION_MODE_ON
-              if not stabilize_mode in stabilization_modes:
+              if stabilize_mode not in stabilization_modes:
                 continue
 
               logging.debug('combination name: %s', combination_name)
@@ -373,18 +379,24 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               try:
                 recording_obj = (
                     preview_processing_utils.collect_data_with_surfaces(
-                        cam, self.tablet_device, output_surfaces, video_stream_index,
-                        stabilize_mode, rot_rig=rot_rig, fps_range=fps_range))
+                        cam, self.tablet_device, output_surfaces,
+                        video_stream_index, stabilize_mode, rot_rig=rot_rig,
+                        fps_range=fps_range
+                    )
+                )
               except error_util.CameraItsError as e:
                 if (support_query and
-                    support_claimed == feature_combination_info_pb2.SUPPORT_YES):
+                    support_claimed == feature_combination_info_pb2.SUPPORT_YES
+                   ):
                   raise e
                 failure_msg = (
                     f'{combination_name}: collect_data_with_surfaces throws '
                     f'exception: {e}')
                 logging.debug(failure_msg)
-                self._append_test_failure(test_failures, feature_combination_query_version,
-                                          combo_version, failure_msg)
+                self._append_test_failure(
+                    test_failures, feature_combination_query_version,
+                    combo_version, failure_msg
+                )
                 passed = False
                 self._add_feature_combo_entry_to_proto(
                     database, output_surfaces, support_claimed,
@@ -419,8 +431,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{avg_frame_rate_codec} exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
-                self._append_test_failure(test_failures, feature_combination_query_version,
-                                          combo_version, failure_msg)
+                self._append_test_failure(
+                    test_failures, feature_combination_query_version,
+                    combo_version, failure_msg
+                )
                 passed = False
 
               # Verify FPS by inspecting the result metadata
@@ -443,8 +457,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{avg_frame_rate_metadata} exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
                     f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
-                self._append_test_failure(test_failures, feature_combination_query_version,
-                                          combo_version, failure_msg)
+                self._append_test_failure(
+                    test_failures, feature_combination_query_version,
+                    combo_version, failure_msg
+                )
                 passed = False
 
               # Verify color space
@@ -455,8 +471,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 failure_msg = (
                     f'{combination_name}: video color space {color_space} '
                     'is missing COLORSPACE_HDR')
-                self._append_test_failure(test_failures, feature_combination_query_version,
-                                          combo_version, failure_msg)
+                self._append_test_failure(
+                    test_failures, feature_combination_query_version,
+                    combo_version, failure_msg
+                )
                 passed = False
 
               # Schedule finishing up of verification to run asynchronously
@@ -477,8 +495,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         logging.debug('Verification result: %s', result)
         if 'stabilization_failure' in result:
           failure_msg = f"{result['name']}: {result['stabilization_failure']}"
-          self._append_test_failure(test_failures, feature_combination_query_version,
-                                    combo_version, failure_msg)
+          self._append_test_failure(
+              test_failures, feature_combination_query_version,
+              combo_version, failure_msg
+          )
 
         self._add_feature_combo_entry_to_proto(
             database, result['output_surfaces'], result['support_claimed'],
