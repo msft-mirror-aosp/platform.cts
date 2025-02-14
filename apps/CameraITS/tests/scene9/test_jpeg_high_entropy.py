@@ -22,7 +22,6 @@ import numpy as np
 import PIL
 
 import its_base_test
-import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
