@@ -294,9 +294,10 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         activitySession.getActivity().runOnUiThread(() ->
                 presentation.setPresentationView(presentationView));
         waitAndAssert(() -> presentationView.mAttachedToWindow);
-        final int presentationDisplayId = presentationView.getDisplay().getDisplayId();
+        final Display presentationDisplay = presentationView.getDisplay();
+        final int presentationDisplayId = presentationDisplay.getDisplayId();
         assertNotEquals(DEFAULT_DISPLAY, presentationDisplayId);
-        assertNotEquals(Display.STATE_OFF, presentationView.getDisplay().getState());
+        assertNotEquals(Display.STATE_OFF, presentationDisplay.getState());
         assertEquals(mWindowAreaSessionState, SESSION_STATE_CONTENT_VISIBLE);
 
         mWmState.waitAndAssertKeyguardGoneOnSecondaryDisplay(presentationDisplayId);
@@ -304,7 +305,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         activitySession.getActivity().finish();
 
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_INACTIVE);
-        assertNotEquals(Display.STATE_ON, presentationDisplayId);
+        assertNotEquals(Display.STATE_ON, presentationDisplay.getState());
     }
 
     /**
@@ -408,7 +409,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
 
         lockScreenSession.sleepDevice();
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_INACTIVE);
-        assertNotEquals(Display.STATE_ON, presentationDisplay.getDisplayId());
+        assertNotEquals(Display.STATE_ON, presentationDisplay.getState());
     }
 
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
