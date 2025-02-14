@@ -216,45 +216,55 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         //   (starred) allowed.
         // * Some suppressed visual effects.
         // (using the SystemUI permission so we're certain to update global state).
-        runAsSystemUi(() -> {
-            mOriginalPolicy = mNotificationManager.getNotificationPolicy();
+        runAsSystemUi(
+                () -> {
+                    mOriginalPolicy = mNotificationManager.getNotificationPolicy();
 
-            mNotificationManager.setNotificationPolicy(new NotificationManager.Policy(
-                    PRIORITY_CATEGORY_ALARMS | PRIORITY_CATEGORY_MEDIA | PRIORITY_CATEGORY_CALLS
-                            | PRIORITY_CATEGORY_MESSAGES | PRIORITY_CATEGORY_REPEAT_CALLERS
-                            | PRIORITY_CATEGORY_CONVERSATIONS, PRIORITY_SENDERS_STARRED,
-                    PRIORITY_SENDERS_STARRED,
-                    SUPPRESSED_EFFECT_AMBIENT | SUPPRESSED_EFFECT_PEEK | SUPPRESSED_EFFECT_LIGHTS
-                            | SUPPRESSED_EFFECT_FULL_SCREEN_INTENT,
-                    CONVERSATION_SENDERS_IMPORTANT));
-            mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
+                    mNotificationManager.setNotificationPolicy(
+                            new NotificationManager.Policy(
+                                    PRIORITY_CATEGORY_ALARMS
+                                            | PRIORITY_CATEGORY_MEDIA
+                                            | PRIORITY_CATEGORY_CALLS
+                                            | PRIORITY_CATEGORY_MESSAGES
+                                            | PRIORITY_CATEGORY_REPEAT_CALLERS
+                                            | PRIORITY_CATEGORY_CONVERSATIONS,
+                                    PRIORITY_SENDERS_STARRED,
+                                    PRIORITY_SENDERS_STARRED,
+                                    SUPPRESSED_EFFECT_AMBIENT
+                                            | SUPPRESSED_EFFECT_PEEK
+                                            | SUPPRESSED_EFFECT_LIGHTS
+                                            | SUPPRESSED_EFFECT_FULL_SCREEN_INTENT,
+                                    CONVERSATION_SENDERS_IMPORTANT));
+                    mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
 
-            // Also get and cache the default policy for comparison later.
-            if (Flags.modesApi()) {
-                if (Flags.modesUi()) {
-                    mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
-                } else {
-                    // Pre-modes_ui, the "default policy" (for the purposes of merging with missing
-                    // or underspecified policies) is actually the manual policy. Thus we construct
-                    // a ZenPolicy matching the previous setNotificationPolicy() call.
-                    mDefaultPolicy = new ZenPolicy.Builder()
-                            .allowPriorityChannels(true)
-                            .disallowAllSounds()
-                            .allowAlarms(true)
-                            .allowMedia(true)
-                            .allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
-                            .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
-                            .allowConversations(ZenPolicy.CONVERSATION_SENDERS_IMPORTANT)
-                            .allowRepeatCallers(true)
-                            .showAllVisualEffects()
-                            .showInAmbientDisplay(false)
-                            .showPeeking(false)
-                            .showLights(false)
-                            .showFullScreenIntent(false)
-                            .build();
-                }
-            }
-        });
+                    // Also get and cache the default policy for comparison later.
+                    if (Flags.modesUi()) {
+                        mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                    } else {
+                        // Pre-modes_ui, the "default policy" (for the purposes of merging with
+                        // missing
+                        // or underspecified policies) is actually the manual policy. Thus we
+                        // construct
+                        // a ZenPolicy matching the previous setNotificationPolicy() call.
+                        mDefaultPolicy =
+                                new ZenPolicy.Builder()
+                                        .allowPriorityChannels(true)
+                                        .disallowAllSounds()
+                                        .allowAlarms(true)
+                                        .allowMedia(true)
+                                        .allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
+                                        .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
+                                        .allowConversations(
+                                                ZenPolicy.CONVERSATION_SENDERS_IMPORTANT)
+                                        .allowRepeatCallers(true)
+                                        .showAllVisualEffects()
+                                        .showInAmbientDisplay(false)
+                                        .showPeeking(false)
+                                        .showLights(false)
+                                        .showFullScreenIntent(false)
+                                        .build();
+                    }
+                });
     }
 
     @After
@@ -623,14 +633,14 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
                 .setUsage(AudioAttributes.USAGE_GAME);
         gameChannel.setSound(null, aa2.build());
         mNotificationManager.createNotificationChannel(gameChannel);
-        if (Flags.modesApi()) {
-            // "Priority" channel has canBypassDnd set to true.
-            NotificationChannel priorityChannel = new NotificationChannel(
-                    NOTIFICATION_CHANNEL_ID_PRIORITY, NOTIFICATION_CHANNEL_ID_PRIORITY,
-                    NotificationManager.IMPORTANCE_HIGH);
-            priorityChannel.setBypassDnd(true);
-            mNotificationManager.createNotificationChannel(priorityChannel);
-        }
+        // "Priority" channel has canBypassDnd set to true.
+        NotificationChannel priorityChannel =
+                new NotificationChannel(
+                        NOTIFICATION_CHANNEL_ID_PRIORITY,
+                        NOTIFICATION_CHANNEL_ID_PRIORITY,
+                        NotificationManager.IMPORTANCE_HIGH);
+        priorityChannel.setBypassDnd(true);
+        mNotificationManager.createNotificationChannel(priorityChannel);
     }
 
     private void deleteChannels() {
@@ -638,9 +648,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID_NOISY);
         mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID_MEDIA);
         mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID_GAME);
-        if (Flags.modesApi()) {
-            mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID_PRIORITY);
-        }
+        mNotificationManager.deleteNotificationChannel(NOTIFICATION_CHANNEL_ID_PRIORITY);
     }
 
     private void deleteAllAutomaticZenRules() {
@@ -704,14 +712,13 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     // TESTS START
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     @RequiresFlagsDisabled(Flags.FLAG_MODES_UI)
     public void testAreAutomaticZenRulesUserManaged_flagsOff() {
         assertFalse(mNotificationManager.areAutomaticZenRulesUserManaged());
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     public void testAreAutomaticZenRulesUserManaged_flagsOn() {
         if (mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
                 || mPackageManager.hasSystemFeature(FEATURE_WATCH)) {
@@ -857,34 +864,10 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             NotificationManager.Policy consolidatedPolicy =
                     mNotificationManager.getConsolidatedNotificationPolicy();
 
-            if (Flags.modesApi()) {
-                // Expect the final consolidated policy to be effectively equivalent to the
-                // specified custom policy with remaining fields filled in by defaults.
-                ZenPolicy fullySpecified = mDefaultPolicy.overwrittenWith(rule.getZenPolicy());
-                assertPolicyCategoriesMatchZenPolicy(consolidatedPolicy, fullySpecified);
-            } else {
-                // reminders is allowed from the automatic rule's custom ZenPolicy
-                assertTrue(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_REMINDERS) != 0);
-
-                // media is disallowed from the automatic rule's custom ZenPolicy
-                assertFalse((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_MEDIA) != 0);
-
-                // other stuff is from the default notification policy (see #setUp)
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS) != 0);
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_CONVERSATIONS)
-                        != 0);
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_CALLS) != 0);
-                assertTrue(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_REPEAT_CALLERS)
-                            != 0);
-                assertTrue(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_MESSAGES) != 0);
-                assertFalse(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_SYSTEM) != 0);
-                assertFalse(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_EVENTS) != 0);
-            }
+            // Expect the final consolidated policy to be effectively equivalent to the
+            // specified custom policy with remaining fields filled in by defaults.
+            ZenPolicy fullySpecified = mDefaultPolicy.overwrittenWith(rule.getZenPolicy());
+            assertPolicyCategoriesMatchZenPolicy(consolidatedPolicy, fullySpecified);
         } finally {
             mNotificationManager.setInterruptionFilter(originalFilter);
             mNotificationManager.setNotificationPolicy(origPolicy);
@@ -930,49 +913,26 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             NotificationManager.Policy consolidatedPolicy =
                     mNotificationManager.getConsolidatedNotificationPolicy();
 
-            if (Flags.modesApi()) {
-                // if modesApi is enabled, confirm that these settings match depending on the device
-                // defaults. Each rule inherits default values for any unset fields, so for fields
-                // where only one rule has expressed an explicit opinion about the setting, the
-                // default setting may be more restrictive and win.
-                ZenPolicy expectedCombined = new ZenPolicy.Builder()
-                        .allowReminders(false)  // rule1 wins over rule2
-                        .allowSystem(true)  // both active rules set this
-                        .allowAlarms(false)  // opinion only from rule1
-                        // media opinion only from rule2 (to be allowed); therefore it depends on
-                        // default settings
-                        .allowMedia(
-                                mDefaultPolicy.getPriorityCategoryAlarms() == ZenPolicy.STATE_ALLOW)
-                        .build();
+            // Confirm that these settings match depending on the device defaults.
+            // Each rule inherits default values for any unset fields, so for fields
+            // where only one rule has expressed an explicit opinion about the setting, the
+            // default setting may be more restrictive and win.
+            ZenPolicy expectedCombined =
+                    new ZenPolicy.Builder()
+                            .allowReminders(false) // rule1 wins over rule2
+                            .allowSystem(true) // both active rules set this
+                            .allowAlarms(false) // opinion only from rule1
+                            // media opinion only from rule2 (to be allowed); therefore it depends
+                            // on
+                            // default settings
+                            .allowMedia(
+                                    mDefaultPolicy.getPriorityCategoryAlarms()
+                                            == ZenPolicy.STATE_ALLOW)
+                            .build();
 
-                // The rest are entirely from the default policy.
-                ZenPolicy fullySpecified = mDefaultPolicy.overwrittenWith(expectedCombined);
-                assertPolicyCategoriesMatchZenPolicy(consolidatedPolicy, fullySpecified);
-            } else {
-                // reminders aren't allowed from rule1 overriding rule2
-                // (not allowed takes precedence over allowed)
-                assertTrue(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_REMINDERS) == 0);
-
-                // system allowed from both
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_SYSTEM) != 0);
-
-                // alarms aren't allowed from rule1, so that alarm setting will always win
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS) == 0);
-
-                // media is allowed from rule2
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_MEDIA) != 0);
-
-                // other stuff is from the default notification policy (see #setUp)
-                assertTrue(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_CONVERSATIONS)
-                            != 0);
-                assertTrue((consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_CALLS) != 0);
-                assertTrue(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_MESSAGES) != 0);
-                assertFalse(
-                        (consolidatedPolicy.priorityCategories & PRIORITY_CATEGORY_EVENTS) != 0);
-            }
+            // The rest are entirely from the default policy.
+            ZenPolicy fullySpecified = mDefaultPolicy.overwrittenWith(expectedCombined);
+            assertPolicyCategoriesMatchZenPolicy(consolidatedPolicy, fullySpecified);
         } finally {
             mNotificationManager.setInterruptionFilter(originalFilter);
             mNotificationManager.setNotificationPolicy(origPolicy);
@@ -980,7 +940,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API})
     public void testConsolidatedNotificationPolicy_broadcasts() throws Exception {
         // Setup also changes Policy and creates a DND-bypassing channel, so we might get 1-2
         // extra broadcasts. Make sure they are out of the way.
@@ -1048,11 +1007,10 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         runAsSystemUi(() -> mNotificationManager.setNotificationPolicy(updatePolicy));
 
         br.assertBroadcastsReceivedWithin(Duration.ofMillis(500));
-        if (Flags.modesApi()) {
-            NotificationManager.Policy broadcastPolicy = (NotificationManager.Policy) br.getExtra(
-                    NotificationManager.EXTRA_NOTIFICATION_POLICY, 0, 0);
-            assertThat(broadcastPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS).isEqualTo(0);
-        }
+        NotificationManager.Policy broadcastPolicy =
+                (NotificationManager.Policy)
+                        br.getExtra(NotificationManager.EXTRA_NOTIFICATION_POLICY, 0, 0);
+        assertThat(broadcastPolicy.priorityCategories & PRIORITY_CATEGORY_ALARMS).isEqualTo(0);
 
         if (com.android.server.notification.Flags.nmBinderPerfReduceZenBroadcasts()) {
             Thread.sleep(500);
@@ -1061,7 +1019,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void testConsolidatedNotificationPolicy_mergesAllowPriorityChannels() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -2109,7 +2066,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void testPriorityChannelNotInterceptedByDefault() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -2147,7 +2103,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void testPriorityChannelInterceptedWhenChannelsDisallowed() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -2187,7 +2142,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void testAddAutomaticZenRule_includesModesApiFields() throws Exception {
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
@@ -2210,9 +2164,8 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testSnoozeRule() throws Exception {
-        if (!Flags.modesApi() || !CompatChanges.isChangeEnabled(308673617)) {
-            Log.d(TAG, "Skipping testSnoozeRule() "
-                    + Flags.modesApi() + " " + Build.VERSION.SDK_INT);
+        if (!CompatChanges.isChangeEnabled(308673617)) {
+            Log.d(TAG, "Skipping testSnoozeRule() " + Build.VERSION.SDK_INT);
             return;
         }
         NotificationManagerBroadcastReceiver br = new NotificationManagerBroadcastReceiver();
@@ -2241,11 +2194,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testUnsnoozeRule_disableEnable() throws Exception {
-        if (!Flags.modesApi()) {
-            Log.d(TAG, "Skipping testUnsnoozeRule_disableEnable() " + Flags.modesApi()
-                    + " " + Build.VERSION.SDK_INT);
-            return;
-        }
         NotificationManagerBroadcastReceiver br = new NotificationManagerBroadcastReceiver();
         br.register(mContext, ACTION_AUTOMATIC_ZEN_RULE_STATUS_CHANGED, 3);
 
@@ -2300,18 +2248,16 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     public void testGetAutomaticZenRules() {
         assertThat(mNotificationManager.getAutomaticZenRules()).isEmpty();
 
-        AutomaticZenRule rule1 = createRule("One");
-        AutomaticZenRule rule2 = createRule("Two");
-        if (Flags.modesApi()) {
-            rule1 = new AutomaticZenRule.Builder(rule1)
-                    .setType(AutomaticZenRule.TYPE_DRIVING)
-                    .setManualInvocationAllowed(true)
-                    .build();
-            rule2 = new AutomaticZenRule.Builder(rule2)
-                    .setTriggerDescription("On the twelfth day of Christmas")
-                    .setIconResId(R.drawable.icon_green)
-                    .build();
-        }
+        AutomaticZenRule rule1 =
+                new AutomaticZenRule.Builder(createRule("One"))
+                        .setType(AutomaticZenRule.TYPE_DRIVING)
+                        .setManualInvocationAllowed(true)
+                        .build();
+        AutomaticZenRule rule2 =
+                new AutomaticZenRule.Builder(createRule("Two"))
+                        .setTriggerDescription("On the twelfth day of Christmas")
+                        .setIconResId(R.drawable.icon_green)
+                        .build();
         String ruleId1 = mNotificationManager.addAutomaticZenRule(rule1);
         String ruleId2 = mNotificationManager.addAutomaticZenRule(rule2);
 
@@ -2331,18 +2277,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(r1.getName()).isEqualTo(r2.getName());
         assertThat(r1.getOwner()).isEqualTo(r2.getOwner());
         assertThat(r1.isEnabled()).isEqualTo(r2.isEnabled());
-
-        if (Flags.modesApi()) {
-            assertThat(r1.getDeviceEffects()).isEqualTo(r2.getDeviceEffects());
-            assertThat(doPoliciesMatchWithDefaults(r1.getZenPolicy(), r2.getZenPolicy())).isTrue();
-
-            assertThat(r1.getIconResId()).isEqualTo(r2.getIconResId());
-            assertThat(r1.getTriggerDescription()).isEqualTo(r2.getTriggerDescription());
-            assertThat(r1.getType()).isEqualTo(r2.getType());
-            assertThat(r1.isManualInvocationAllowed()).isEqualTo(r2.isManualInvocationAllowed());
-        } else {
-            assertThat(r1.getZenPolicy()).isEqualTo(r2.getZenPolicy());
-        }
+        assertThat(r1.getDeviceEffects()).isEqualTo(r2.getDeviceEffects());
+        assertThat(doPoliciesMatchWithDefaults(r1.getZenPolicy(), r2.getZenPolicy())).isTrue();
+        assertThat(r1.getIconResId()).isEqualTo(r2.getIconResId());
+        assertThat(r1.getTriggerDescription()).isEqualTo(r2.getTriggerDescription());
+        assertThat(r1.getType()).isEqualTo(r2.getType());
+        assertThat(r1.isManualInvocationAllowed()).isEqualTo(r2.isManualInvocationAllowed());
     }
 
     // Checks that the priority categories in the provided NotificationManager.Policy match
@@ -2371,7 +2311,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void addAutomaticZenRule_withInterruptionFilterAll_canBeUsed()
             throws InterruptedException {
         AutomaticZenRule rule = createRule("Without filter", INTERRUPTION_FILTER_ALL);
@@ -2407,7 +2346,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void addAutomaticZenRule_fromUser_onlyAcceptedFromSystem() {
         AutomaticZenRule newRule = createRule("Test");
 
@@ -2424,7 +2362,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void updateAutomaticZenRule_fromUser_updatesRuleFully() {
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
@@ -2503,7 +2440,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void updateAutomaticZenRule_fromApp_forNonUserModifiedRule_allFieldsUpdated() {
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
@@ -2544,7 +2480,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void updateAutomaticZenRule_fromApp_forUserModifiedRule_onlySomeFieldsUpdated() {
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
@@ -2609,7 +2544,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void addAutomaticZenRule_forDeletedAndPreviouslyUserModifiedRule_restoresRule() {
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
@@ -2644,7 +2578,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void addAutomaticZenRule_withDeviceEffects_stored() {
         ZenDeviceEffects effects = new ZenDeviceEffects.Builder()
                 .setShouldDisplayGrayscale(true)
@@ -2661,7 +2594,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void addAutomaticZenRule_withDeviceExtraEffects_storedFromSystem() {
         ZenDeviceEffects effects = new ZenDeviceEffects.Builder()
                 .setShouldDisplayGrayscale(true)
@@ -2678,7 +2610,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void addAutomaticZenRule_withUnderspecifiedPolicies_filledIn() {
         AutomaticZenRule noPolicy = new AutomaticZenRule.Builder("no policy", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
@@ -2714,7 +2645,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void getAutomaticZenRuleState_returnsRuleState() {
         AutomaticZenRule rule = createRule("Test");
 
@@ -2738,7 +2668,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithGrayscale_applied() throws Exception {
         assertThat(isColorDisplayManagerSaturationActivated()).isFalse();
 
@@ -2760,7 +2689,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithDimWallpaper_applied() throws Exception {
         assumeTrue(mContext.getSystemService(WallpaperManager.class).isWallpaperSupported());
         assertThat(getWallpaperManagerDimAmount()).isZero();
@@ -2781,7 +2709,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithDisableAmbientDisplay_applied() throws Exception {
         assertThat(isPowerManagerAmbientDisplaySuppressed()).isFalse();
 
@@ -2803,7 +2730,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithNightMode_appliedImmediately() throws Exception {
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse();
 
@@ -2834,7 +2760,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             + "wakefulness in power manager. The test will be enabled once per display "
             + "interactiveness is supported on MUMD. relevant bugs: b/370631032")
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithNightMode_appliedOnScreenOff() throws Exception {
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse();
 
@@ -2867,7 +2792,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_multipleRulesWithDeviceEffects_effectsMerged()
             throws Exception {
         AutomaticZenRule withDisableAmbientDisplay = createRule("Disable ambient display");
@@ -2943,7 +2867,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     public void testSetInterruptionFilter_usesAutomaticZenRule() throws Exception {
         // NMS: MANAGE_GLOBAL_ZEN_VIA_IMPLICIT_RULES
-        if (!android.app.Flags.modesApi() || !CompatChanges.isChangeEnabled(308670109L)) {
+        if (!CompatChanges.isChangeEnabled(308670109L)) {
             return;
         }
         assertThat(mNotificationManager.getAutomaticZenRules()).isEmpty();
@@ -2961,7 +2885,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     public void testSetNotificationPolicy_usesAutomaticZenRule() {
         // NMS: MANAGE_GLOBAL_ZEN_VIA_IMPLICIT_RULES
-        if (!android.app.Flags.modesApi() || !CompatChanges.isChangeEnabled(308670109L)) {
+        if (!CompatChanges.isChangeEnabled(308670109L)) {
             return;
         }
         assertThat(mNotificationManager.getAutomaticZenRules()).isEmpty();
@@ -2987,7 +2911,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     public void testSetInterruptionFilter_withSetNotificationPolicy_sharesAutomaticZenRule() {
         // NMS: MANAGE_GLOBAL_ZEN_VIA_IMPLICIT_RULES
-        if (!android.app.Flags.modesApi() || !CompatChanges.isChangeEnabled(308670109L)) {
+        if (!CompatChanges.isChangeEnabled(308670109L)) {
             return;
         }
         assertThat(mNotificationManager.getAutomaticZenRules()).isEmpty();
@@ -3017,7 +2941,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(activePolicy.priorityCategories & PRIORITY_CATEGORY_CALLS).isEqualTo(0);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     @Test
     public void testIndividualRuleIntent_resolvesToActivity() {
         assumeTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
@@ -3033,7 +2957,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     public void setAutomaticZenRuleState_manualActivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
         String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
@@ -3063,7 +2987,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     @Test
     public void setAutomaticZenRuleState_manualDeactivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3097,7 +3021,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     @Test
     public void setAutomaticZenRuleState_respectsManuallyActivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3130,7 +3054,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     @Test
     public void setAutomaticZenRuleState_respectsManuallyDeactivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3164,7 +3088,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     @Test
     public void setAutomaticZenRuleState_manualActivationFromApp() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3196,7 +3120,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     @Test
     public void setAutomaticZenRuleState_manualDeactivationFromApp() {
         AutomaticZenRule ruleToCreate = createRule("rule");

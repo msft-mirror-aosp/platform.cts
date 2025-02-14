@@ -1,6 +1,7 @@
 <configuration description="Runs CTS-V host-side tests from a pre-existing CTS-V installation">
 
     <include name="everything" />
+    <include name="cts-v-host-known-failures" />
 
     <option name="plan" value="cts-v-host" />
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package android.security.cts;
 
+import static com.android.sts.common.SystemUtil.withSetting;
+
 import static com.google.common.truth.TruthJUnit.assume;
 
 import android.platform.test.annotations.AsbSecurityTest;
@@ -28,18 +30,20 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class BUG_356117796 extends NonRootSecurityTestCase {
+public class CVE_2025_22430 extends NonRootSecurityTestCase {
 
+    @AsbSecurityTest(cveBugId = 374257207)
     @Test
-    @AsbSecurityTest(cveBugId = 356117796)
-    public void testPocBUG_356117796() {
+    public void testPocCVE_2025_22430() {
         try {
-            // Install helper application
-            installPackage("BUG-356117796-helper.apk");
+            // Install test app
+            installPackage("CVE-2025-22430.apk");
 
-            // Install test application and run device test
-            installPackage("BUG-356117796-test.apk");
-            runDeviceTests(new DeviceTestRunOptions("android.security.cts.BUG_356117796"));
+            try (AutoCloseable withHiddenApiPolicy =
+                    withSetting(getDevice(), "global", "hidden_api_policy", "1")) {
+                // Run DeviceTest with hidden_api_policy enabled
+                runDeviceTests(new DeviceTestRunOptions("android.security.cts.CVE_2025_22430"));
+            }
         } catch (Exception e) {
             assume().that(e).isNull();
         }

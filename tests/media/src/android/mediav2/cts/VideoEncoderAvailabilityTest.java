@@ -16,15 +16,18 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
 import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
-import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.RHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.compareResources;
+import static android.mediav2.cts.CodecResourceUtils.computeConsumption;
 import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
+import static android.mediav2.cts.VideoDecoderAvailabilityTest.MIN_UTILIZATION_THRESHOLD;
+import static android.mediav2.cts.VideoDecoderAvailabilityTest.estimateVideoSizeFromPerformancePoint;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -36,11 +39,10 @@ import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.InputSurface;
 import android.mediav2.common.cts.OutputManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.opengl.GLES20;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.util.Pair;
-import android.util.Range;
 import android.util.Size;
 import android.view.Surface;
 
@@ -63,8 +65,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
-import java.util.Vector;
 
 /**
  * Wrapper class for trying and testing encoder components in surface mode.
@@ -473,6 +473,10 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
         int numInstances;
         List<CodecResource> lastGlobalResources = getCurrentGlobalCodecResources();
         List<CodecResource> currentGlobalResources;
+        MediaFormat lastFormat = null;
+        MediaFormat currentFormat = null;
+        List<CodecResource> lastGlobalResourcesForFormat = lastGlobalResources;
+        List<CodecResource> currentGlobalResourcesForFormat = null;
         StringBuilder testLogs = new StringBuilder();
         int maxInstances = getMaxSupportedInstances(codecName, mediaType);
         for (List<EncoderConfigParams> params : testableParams) {
@@ -494,6 +498,10 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                                     + " available \n" + testLogs + mTestEnv + mTestConfig,
                             LHS_RESOURCE_GE, result);
                     lastGlobalResources = currentGlobalResources;
+                    if (numInstances == 1) {
+                        currentGlobalResourcesForFormat = currentGlobalResources;
+                        currentFormat = configParam.getFormat();
+                    }
                 } catch (IllegalArgumentException e) {
                     Assert.fail("Got unexpected IllegalArgumentException " + e.getMessage());
                 } catch (IOException e) {
@@ -527,6 +535,15 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         RHS_RESOURCE_GE, result);
             }
             codecs.clear();
+            if (currentGlobalResourcesForFormat != null) {
+                int result = compareResources(lastGlobalResourcesForFormat,
+                        currentGlobalResourcesForFormat, testLogs);
+                Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
+                        + " is expected to consume more resources than format : " + currentFormat
+                        + testLogs + mTestEnv + mTestConfig, LHS_RESOURCE_GE, result);
+                lastGlobalResourcesForFormat = currentGlobalResourcesForFormat;
+                lastFormat = currentFormat;
+            }
         }
     }
 
@@ -550,5 +567,50 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
             "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
     public void testConcurrentMaxInstances() {
         validateMaxInstances(mCodecName, mMediaType);
+    }
+
+    /**
+     * Tests the resource consumption of a codec for various advertised performance points.
+     * This test iterates through the supported performance points of a given codec,
+     * configures the codec with a video format corresponding to each performance point,
+     * starts the codec, and measures the resource consumption. It checks if the consumption
+     * meets a minimum threshold.
+     */
+    @LargeTest
+    @VsrTest(requirements = {"VSR-4.1-002"})
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @RequiresFlagsEnabled(FLAG_CODEC_AVAILABILITY)
+    @ApiTest(apis = {"android.media.MediaCodec#getGloballyAvailableResources",
+            "android.media.MediaCodec#getRequiredResources",
+            "android.media.MediaCodec.Callback#onRequiredResourcesChanged"})
+    public void testResourceConsumptionForPerfPoints() throws IOException, InterruptedException {
+        List<CodecResource> globalResources = getCurrentGlobalCodecResources();
+        MediaCodecInfo.CodecCapabilities caps = getCodecCapabilities(mCodecName, mMediaType);
+        Assert.assertNotNull("received null capabilities for codec : " + mCodecName, caps);
+        MediaCodecInfo.VideoCapabilities vcaps = caps.getVideoCapabilities();
+        Assert.assertNotNull("received null video capabilities for codec : " + mCodecName, vcaps);
+        List<MediaCodecInfo.VideoCapabilities.PerformancePoint> pps =
+                vcaps.getSupportedPerformancePoints();
+        Assume.assumeFalse(mCodecName + " codec did not advertise any performance points",
+                pps == null || pps.isEmpty());
+        for (MediaCodecInfo.VideoCapabilities.PerformancePoint pp : pps) {
+            Size videoSize = estimateVideoSizeFromPerformancePoint(pp);
+            EncoderConfigParams configParam =
+                    new EncoderConfigParams.Builder(mMediaType).setWidth(videoSize.getWidth())
+                            .setHeight(videoSize.getHeight()).setFrameRate(pp.getMaxFrameRate())
+                            .setColorFormat(COLOR_FormatSurface).build();
+            CodecEncoderGLSurface codec =
+                    new CodecEncoderGLSurface(mCodecName, mMediaType, configParam, mAllTestParams);
+            codec.launchInstance();
+            List<CodecResource> usedResources = getCurrentGlobalCodecResources();
+            double consumption = computeConsumption(globalResources, usedResources);
+            codec.stopInstance();
+            codec.releaseInstance();
+            if (consumption < MIN_UTILIZATION_THRESHOLD) {
+                Assert.fail("For performance point " + pp + " and codec : " + mCodecName
+                        + " max resources consumed is expected to be at least "
+                        + MIN_UTILIZATION_THRESHOLD + "% but got " + consumption + "%");
+            }
+        }
     }
 }

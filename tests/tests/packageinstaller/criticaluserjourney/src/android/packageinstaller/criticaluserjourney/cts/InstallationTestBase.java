@@ -770,8 +770,25 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
 
         // Start to find the objects, find the checkable items first
-        final List<UiObject2> uiObjects = getUiDevice().wait(
-                Until.findObjects(By.checkable(true).checked(false)), FIND_OBJECT_TIMEOUT_MS);
+        List<UiObject2> uiObjects = null;
+        long endTime = System.currentTimeMillis() + FIND_OBJECT_TIMEOUT_MS;
+        while (endTime > System.currentTimeMillis()) {
+            try {
+                waitForUiIdle();
+                uiObjects = getUiDevice().wait(
+                        Until.findObjects(By.checkable(true).checked(false)),
+                        /* timeout= */ 2 * 1000);
+                if (uiObjects == null || uiObjects.isEmpty()) {
+                    Log.d(TAG, "Can not find the checkable items, scroll the screen");
+                    // Maybe the screen is small. Scroll forward.
+                    scrollForward();
+                } else {
+                    break;
+                }
+            } catch (Exception ignored) {
+                // do nothing
+            }
+        }
 
         if (uiObjects == null || uiObjects.isEmpty()) {
             // dump window hierarchy for debug

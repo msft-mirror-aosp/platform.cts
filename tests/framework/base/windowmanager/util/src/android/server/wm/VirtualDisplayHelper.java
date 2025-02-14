@@ -127,13 +127,19 @@ public class VirtualDisplayHelper {
                 VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, mReader.getSurface(), flags);
     }
 
+    /** Wait for the default display to be in the desired state. */
     public static void waitForDefaultDisplayState(boolean wantOn) {
         waitForDisplayState(DEFAULT_DISPLAY, wantOn);
     }
 
-    private static void waitForDisplayState(int displayId, boolean wantOn) {
-        final String message = (displayId == DEFAULT_DISPLAY ? "default" : "virtual")
-                + " display " + (wantOn ? "on" : "off");
+    /** Wait for the display with the given display ID to be in the desired state. */
+    public static void waitForDisplayState(int displayId, boolean wantOn) {
+        final String displayType = displayId == DEFAULT_DISPLAY ? "default" : "virtual";
+        final String displayState = wantOn ? "on" : "off";
+
+        final String message =
+                String.format(
+                        "%s display (ID: %d) was not: %s", displayType, displayId, displayState);
         waitForOrFail(message, () -> isDisplayOn(displayId) == wantOn);
     }
 }

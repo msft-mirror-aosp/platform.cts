@@ -48,7 +48,6 @@ public class ScreeningServiceNoContactsPermissionTest
             return;
         }
         revokeReadContactPermission();
-        setupCallScreening();
     }
 
     /**
@@ -59,15 +58,20 @@ public class ScreeningServiceNoContactsPermissionTest
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        verifyPermission(false); // Verify permission is indeed revoked
-        // Tell the test app to block the call.
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
-        addIncomingAndVerifyBlocked(false /* addContact */);
+        try {
+            setupCallScreening();
+            verifyPermission(false); // Verify permission is indeed revoked
+            // Tell the test app to block the call.
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
+            addIncomingAndVerifyBlocked(false /* addContact */);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     /**
@@ -79,14 +83,19 @@ public class ScreeningServiceNoContactsPermissionTest
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
-        verifyPermission(false); // Verify permission is indeed revoked
-        mCallScreeningControl.setCallResponse(
-                true /* shouldDisallowCall */,
-                true /* shouldRejectCall */,
-                false /* shouldSilenceCall */,
-                false /* shouldSkipCallLog */,
-                true /* shouldSkipNotification */);
-        addIncomingAndVerifyAllowed(true /* addContact */);
+        try {
+            setupCallScreening();
+            verifyPermission(false); // Verify permission is indeed revoked
+            mCallScreeningControl.setCallResponse(
+                    true /* shouldDisallowCall */,
+                    true /* shouldRejectCall */,
+                    false /* shouldSilenceCall */,
+                    false /* shouldSkipCallLog */,
+                    true /* shouldSkipNotification */);
+            addIncomingAndVerifyAllowed(true /* addContact */);
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     /**
@@ -97,9 +106,14 @@ public class ScreeningServiceNoContactsPermissionTest
         if (!shouldTestTelecom(mContext)) {
             return;
         }
-        verifyPermission(false); // Verify permission is indeed revoked
-        placeOutgoingCall(false /* addContact */);
-        assertTrue(mCallScreeningControl.waitForBind());
+        try {
+            setupCallScreening();
+            verifyPermission(false); // Verify permission is indeed revoked
+            placeOutgoingCall(false /* addContact */);
+            assertTrue(mCallScreeningControl.waitForBind());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 
     /**
@@ -112,8 +126,13 @@ public class ScreeningServiceNoContactsPermissionTest
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
-        verifyPermission(false); // Verify permission is indeed revoked
-        placeOutgoingCall(true /* addContact */);
-        assertFalse(mCallScreeningControl.waitForBind());
+        try {
+            setupCallScreening();
+            verifyPermission(false); // Verify permission is indeed revoked
+            placeOutgoingCall(true /* addContact */);
+            assertFalse(mCallScreeningControl.waitForBind());
+        } finally {
+            resetAndRestoreCallScreening();
+        }
     }
 }

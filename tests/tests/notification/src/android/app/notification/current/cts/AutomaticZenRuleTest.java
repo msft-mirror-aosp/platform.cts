@@ -24,7 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 import android.app.AutomaticZenRule;
-import android.app.Flags;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.net.Uri;
@@ -68,10 +67,7 @@ public class AutomaticZenRuleTest {
     public void testWriteToParcel() {
         AutomaticZenRule rule = new AutomaticZenRule(mName, mOwner, mConfigActivity, mConditionId,
                 mPolicy, mInterruptionFilter, mEnabled);
-        if (Flags.modesApi()) {
-            rule.setDeviceEffects(
-                    new ZenDeviceEffects.Builder().setShouldDimWallpaper(true).build());
-        }
+        rule.setDeviceEffects(new ZenDeviceEffects.Builder().setShouldDimWallpaper(true).build());
         Parcel parcel = Parcel.obtain();
         rule.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
@@ -82,10 +78,9 @@ public class AutomaticZenRuleTest {
         assertEquals(mInterruptionFilter, rule1.getInterruptionFilter());
         assertEquals(mEnabled, rule1.isEnabled());
         assertEquals(mPolicy, rule1.getZenPolicy());
-        if (Flags.modesApi()) {
-            assertEquals(new ZenDeviceEffects.Builder().setShouldDimWallpaper(true).build(),
-                    rule1.getDeviceEffects());
-        }
+        assertEquals(
+                new ZenDeviceEffects.Builder().setShouldDimWallpaper(true).build(),
+                rule1.getDeviceEffects());
         assertEquals(mConfigActivity, rule1.getConfigurationActivity());
 
         rule.setName(null);
@@ -158,9 +153,6 @@ public class AutomaticZenRuleTest {
 
     @Test
     public void testBuilder() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         AutomaticZenRule rule1 = new AutomaticZenRule.Builder(mName, mConditionId)
                 .setZenPolicy(mPolicy)
                 .setDeviceEffects(
@@ -191,9 +183,6 @@ public class AutomaticZenRuleTest {
 
     @Test
     public void testBuilder_overwriteConstructorParameters() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         AutomaticZenRule rule = new AutomaticZenRule.Builder("oldName", Uri.parse("oldCondition"))
                 .setName(mName)
                 .setConditionId(mConditionId)
@@ -204,9 +193,6 @@ public class AutomaticZenRuleTest {
 
     @Test
     public void testBuilder_fromInstance() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         AutomaticZenRule rule1 = new AutomaticZenRule.Builder(
                 new AutomaticZenRule.Builder(mName, mConditionId)
                         .setZenPolicy(mPolicy)
@@ -239,9 +225,6 @@ public class AutomaticZenRuleTest {
 
     @Test
     public void testWriteToParcelFromBuilder() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         AutomaticZenRule rule = new AutomaticZenRule.Builder(mName, mConditionId)
                 .setZenPolicy(mPolicy)
                 .setDeviceEffects(
@@ -276,9 +259,6 @@ public class AutomaticZenRuleTest {
 
     @Test
     public void testEquals() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         AutomaticZenRule rule = new AutomaticZenRule.Builder(mName, mConditionId)
                 .setZenPolicy(mPolicy)
                 .setDeviceEffects(
@@ -308,9 +288,6 @@ public class AutomaticZenRuleTest {
 
     @Test
     public void testHashCode() {
-        if (!Flags.modesApi()) {
-            return;
-        }
         AutomaticZenRule rule = new AutomaticZenRule.Builder(mName, mConditionId)
                 .setZenPolicy(mPolicy)
                 .setDeviceEffects(

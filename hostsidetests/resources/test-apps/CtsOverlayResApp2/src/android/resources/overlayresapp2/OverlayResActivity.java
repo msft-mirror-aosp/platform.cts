@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.resources.overlayresapp2;
+package android.resources.cts.overlayresapp2;
 
 import android.app.Activity;
 import android.content.res.Configuration;

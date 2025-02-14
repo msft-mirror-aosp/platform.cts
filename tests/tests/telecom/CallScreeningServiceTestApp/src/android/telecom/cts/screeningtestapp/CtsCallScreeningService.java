@@ -34,7 +34,7 @@ public class CtsCallScreeningService extends CallScreeningService {
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.i(TAG, "onBind: returning actual service");
+        Log.i(TAG, "onBind: to call screening service");
         mCallScreeningServiceControl = CallScreeningServiceControl.getInstance();
         mCallScreeningServiceControl.onScreeningServiceBound();
         return super.onBind(intent);
@@ -42,15 +42,31 @@ public class CtsCallScreeningService extends CallScreeningService {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.i(TAG, "onUnbind: unbinding the actual service");
+        Log.i(TAG, "onUnbind: unbinding call screening service");
+        mCallScreeningServiceControl = null;
         super.onUnbind(intent);
-        return true; // true allows the service to stop when unbound for cleanup
+        return false;
     }
 
     @Override
     public void onScreenCall(Call.Details callDetails) {
         Log.i(TAG, "onScreenCall");
         if (mCallScreeningServiceControl != null) {
+            CallScreeningService.CallResponse r = mCallScreeningServiceControl.getCallResponse();
+            Log.i(
+                    TAG,
+                    String.format(
+                            "onScreenCall: shouldDisallowCall=[%b], "
+                                    + "shouldRejectCall=[%b], "
+                                    + "shouldSilenceCall=[%b], "
+                                    + "shouldSkipCallLog=[%b], "
+                                    + "shouldSkipNotification=[%b] , mCallResponse.hash=[%d]",
+                            r.getDisallowCall(),
+                            r.getRejectCall(),
+                            r.getSilenceCall(),
+                            r.getSkipCallLog(),
+                            r.getSkipNotification(),
+                            r.hashCode()));
             respondToCall(callDetails, mCallScreeningServiceControl.getCallResponse());
         } else {
             Log.w(TAG, "No control interface.");

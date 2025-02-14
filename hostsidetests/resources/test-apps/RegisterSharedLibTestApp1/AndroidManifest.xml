@@ -16,7 +16,7 @@
  -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.resources.registerresourcepaths1">
+    package="android.resources.cts.registerresourcepaths1">
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application android:maxRecents="1"
@@ -36,5 +36,5 @@
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                     android:targetPackage="android.resources.registerresourcepaths1"/>
+                     android:targetPackage="android.resources.cts.registerresourcepaths1"/>
 </manifest>

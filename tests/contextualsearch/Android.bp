@@ -21,25 +21,30 @@ android_test {
     team: "trendy_team_system_intelligence",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.app.contextualsearch.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
+        "bedstead-root",
         "compatibility-device-util-axt",
         "com.android.window.flags.window-aconfig-java",
         "ctstestrunner-axt",
         "flag-junit",
+        "kotlin-test",
         "platform-test-annotations",
         "truth",
-        "android.app.contextualsearch.flags-aconfig-java",
     ],
     manifest: "AndroidManifest.xml",
     srcs: [
-        "src/**/*.java",
+        "caller/src/**/*.kt",
         "src/**/*.kt",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
+    ],
+    data: [
+        ":CtsCaller",
     ],
     sdk_version: "test_current",
 }

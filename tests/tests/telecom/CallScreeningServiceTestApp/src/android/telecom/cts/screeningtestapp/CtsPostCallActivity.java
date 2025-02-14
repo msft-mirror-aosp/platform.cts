@@ -23,11 +23,13 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class CtsPostCallActivity extends Activity {
+    private static final String TAG = CtsPostCallActivity.class.getSimpleName();
     private static final String ACTION_POST_CALL = "android.telecom.action.POST_CALL";
     private static final int DEFAULT_DISCONNECT_CAUSE = -1;
     private static final long TEST_TIMEOUT = 5000;
@@ -40,6 +42,7 @@ public class CtsPostCallActivity extends Activity {
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         final Intent intent = getIntent();
+        Log.i(TAG, "onCreate: intent= " + intent);
         final String action = intent != null ? intent.getAction() : null;
         if (ACTION_POST_CALL.equals(action)) {
             cachedHandle = intent.getParcelableExtra(EXTRA_HANDLE);
@@ -58,12 +61,14 @@ public class CtsPostCallActivity extends Activity {
     }
 
     public static void resetPostCallActivity() {
+        Log.i(TAG, "resetPostCallActivity:");
         sLatch = new CountDownLatch(1);
         cachedHandle = null;
         cachedDisconnectCause = DEFAULT_DISCONNECT_CAUSE;
     }
 
     public static boolean waitForActivity() {
+        Log.i(TAG, "waitForActivity:");
         try {
             return sLatch.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {

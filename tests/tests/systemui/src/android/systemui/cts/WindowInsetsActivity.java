@@ -327,6 +327,15 @@ public class WindowInsetsActivity extends LightBarBaseActivity implements View.O
     }
 
     /**
+     * Indicates whether the content view of this activity is currently in pressed state.
+     *
+     * @return true if the content view is currently pressed, false otherwise.
+     */
+    public boolean isPressed() {
+        return mContent.isPressed();
+    }
+
+    /**
      * To set the callback to notify the onClickListener is triggered.
      * @param clickConsumer trigger the callback after clicking view.
      */

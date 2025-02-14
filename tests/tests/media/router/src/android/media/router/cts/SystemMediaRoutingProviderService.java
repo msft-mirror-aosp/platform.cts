@@ -52,7 +52,7 @@ import javax.annotation.concurrent.GuardedBy;
  */
 public class SystemMediaRoutingProviderService extends MediaRoute2ProviderService {
 
-    /** The format to pass to {@link #notifySystemMediaSessionCreated}. */
+    /** The format to pass to {@link #notifySystemRoutingSessionCreated}. */
     private static final AudioFormat AUDIO_FORMAT_RECORDING =
             new AudioFormat.Builder()
                     .setSampleRate(44100 /*Hz*/)
@@ -271,12 +271,12 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
     @Override
     public void onCreateSystemRoutingSession(
             long requestId,
-            @NonNull String packageName,
             @NonNull String routeId,
-            @Nullable Bundle sessionHints) {
-        var routingSession = createRoutingSession(packageName, /* selectedRouteId= */ routeId);
+            @NonNull SystemRoutingSessionParams parameters) {
+        var routingSession =
+                createRoutingSession(parameters.getPackageName(), /* selectedRouteId= */ routeId);
         var streams =
-                notifySystemMediaSessionCreated(
+                notifySystemRoutingSessionCreated(
                         requestId,
                         routingSession,
                         new MediaStreamsFormats.Builder()
