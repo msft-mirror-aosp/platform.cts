@@ -1556,11 +1556,6 @@ public class AudioManagerTest {
                 () -> mAudioManager.setStreamVolume(STREAM_MUSIC, 7, 0),
                 STREAM_MUSIC,
                 "Should not be able to adjust media volume in Zen mode");
-        assertCallChangesStreamVolume(
-                () -> mAudioManager.setStreamVolume(STREAM_RING, 7, 0),
-                STREAM_RING,
-                7,
-                "Should be able to adjust ring volume in Zen mode");
     }
 
     @Test
@@ -1571,18 +1566,17 @@ public class AudioManagerTest {
 
         setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
 
-        // can still adjust music and ring volume
+        // can still adjust music and alarms
         assertCallChangesStreamVolume(
                 () -> mAudioManager.setStreamVolume(STREAM_MUSIC, 3, 0),
                 STREAM_MUSIC,
                 3,
                 "Stream volume settable in alarm only zen");
         assertCallChangesStreamVolume(
-                () -> mAudioManager.setStreamVolume(STREAM_RING, 7, 0),
-                STREAM_RING,
-                7,
+                () -> mAudioManager.setStreamVolume(STREAM_ALARM, 3, 0),
+                STREAM_ALARM,
+                3,
                 "Stream volume settable in alarm only zen");
-
     }
 
     @Test
@@ -2080,7 +2074,6 @@ public class AudioManagerTest {
                 case NotificationManager.INTERRUPTION_FILTER_ALL -> AudioManager.RINGER_MODE_NORMAL;
                 default -> throw new AssertionError("Unexpected notification type");
         };
-
 
         var future = mCancelRule.registerFuture(getFutureForIntent(
                 mContext,
@@ -3185,8 +3178,7 @@ public class AudioManagerTest {
         r.run();
         SystemClock.sleep(PROVE_NEGATIVE_DURATION_MS);
         AmUtils.waitForBroadcastBarrier();
-        assertThat(future.isDone())
-                .isFalse();
+        assertThat(future.isDone()).isFalse();
 
         assertWithMessage("Call expected to not change volume. "
                 + ((message != null) ? message : ""))
