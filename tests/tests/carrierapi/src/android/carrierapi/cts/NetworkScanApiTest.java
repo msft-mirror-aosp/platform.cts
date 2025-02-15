@@ -38,6 +38,7 @@ import android.os.Parcel;
 import android.os.Process;
 import android.os.UserHandle;
 import android.telephony.AccessNetworkConstants;
+import android.telephony.CellIdentityLte;
 import android.telephony.CellInfo;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
@@ -278,27 +279,33 @@ public class NetworkScanApiTest extends BaseCarrierApiTest {
 
     private List<RadioAccessSpecifier> getRadioAccessSpecifier(List<CellInfo> allCellInfo) {
         List<RadioAccessSpecifier> radioAccessSpecifier = new ArrayList<>();
-        List<Integer> lteChannels = new ArrayList<>();
         List<Integer> wcdmaChannels = new ArrayList<>();
         List<Integer> gsmChannels = new ArrayList<>();
         for (int i = 0; i < allCellInfo.size(); i++) {
             CellInfo cellInfo = allCellInfo.get(i);
             if (cellInfo instanceof CellInfoLte) {
-                lteChannels.add(((CellInfoLte) cellInfo).getCellIdentity().getEarfcn());
+                CellIdentityLte cellIdentity = ((CellInfoLte) cellInfo).getCellIdentity();
+                if (cellIdentity.getBands().length > 0) {
+                    Log.d(
+                            TAG,
+                            "lte channel:"
+                                    + cellIdentity.getEarfcn()
+                                    + " lte bands:"
+                                    + Arrays.toString(cellIdentity.getBands()));
+                    int ranLte = AccessNetworkConstants.AccessNetworkType.EUTRAN;
+                    radioAccessSpecifier.add(
+                            new RadioAccessSpecifier(
+                                    ranLte,
+                                    cellIdentity.getBands(),
+                                    cellIdentity.getEarfcn() == cellInfo.UNAVAILABLE
+                                            ? null
+                                            : new int[] {cellIdentity.getEarfcn()}));
+                }
             } else if (cellInfo instanceof CellInfoWcdma) {
                 wcdmaChannels.add(((CellInfoWcdma) cellInfo).getCellIdentity().getUarfcn());
             } else if (cellInfo instanceof CellInfoGsm) {
                 gsmChannels.add(((CellInfoGsm) cellInfo).getCellIdentity().getArfcn());
             }
-        }
-        if (!lteChannels.isEmpty()) {
-            Log.d(TAG, "lte channels" + lteChannels.toString());
-            int ranLte = AccessNetworkConstants.AccessNetworkType.EUTRAN;
-            radioAccessSpecifier.add(
-                    new RadioAccessSpecifier(
-                            ranLte,
-                            null /* bands */,
-                            lteChannels.stream().mapToInt(i -> i).toArray()));
         }
         if (!wcdmaChannels.isEmpty()) {
             Log.d(TAG, "wcdma channels" + wcdmaChannels.toString());
