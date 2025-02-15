@@ -283,6 +283,7 @@ public class ItsTestActivity extends DialogTestListActivity {
             "scene0",
             "scene1_1",
             "scene1_2",
+            "scene1_3",
             "scene2_a",
             "scene4",
             "scene_tele/scene6_tele",
