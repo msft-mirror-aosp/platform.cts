@@ -111,7 +111,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     public static final String PKG_NAME = "android.telecom.cts";
     public static final String PERMISSION_PROCESS_OUTGOING_CALLS =
             "android.permission.PROCESS_OUTGOING_CALLS";
-    public static final String PERMISSION_PACKAGE_USAGE_STATS = "android.permission.PACKAGE_USAGE_STATS";
+    public static final String PERMISSION_PACKAGE_USAGE_STATS =
+            "android.permission.PACKAGE_USAGE_STATS";
 
     public static final String OTT_TEST_EVENT_NAME = "test.oem.event_name";
 
@@ -363,12 +364,29 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         if (!mShouldTestTelecom) {
             return;
         }
-        unregisterTelephonyCallbacks();
-        cleanupCalls();
+        // This is not standard, but during teardown, if there is any sort of assertion error, it
+        // will stop teardown and bail early. If this happens, it can put the device into a bad
+        // state because the cleanup steps never fully get run. Save the "first" error that happens
+        // and re-throw it at the end of the tearDown procedure.
+        Throwable assertionError = null;
         if (!TextUtils.isEmpty(mPreviousDefaultDialer)) {
             TestUtils.setDefaultDialer(getInstrumentation(), mPreviousDefaultDialer);
         }
+        unregisterTelephonyCallbacks();
+        try {
+            cleanupCalls();
+            if (this.connectionService != null) {
+                assertNumConnections(this.connectionService, 0);
+            }
+        } catch (Throwable t) {
+            assertionError = t;
+        }
         tearDownConnectionService(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+        try {
+            assertCtsConnectionServiceUnbound();
+        } catch (Throwable t) {
+            if (assertionError == null) assertionError = t;
+        }
         tearDownEmergencyCalling();
         try {
             assertMockInCallServiceUnbound();
@@ -377,7 +395,7 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
             // cleaning up. Forcibly unbind and clean up Telecom state so that we don't have a
             // cascading failure of tests.
             TestUtils.executeShellCommand(getInstrumentation(), "telecom cleanup-stuck-calls");
-            throw t;
+            if (assertionError == null) assertionError = t;
         }
         UiAutomation uiAutomation =
                 InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -385,6 +403,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 UserHandle.CURRENT);
         // Verify that not phone accounts were left behind after the test.
         checkForCrossTestIsolationIssues();
+        // Rethrow the error found in tearDown if any existed.
+        if (assertionError != null) throw new AssertionError(assertionError);
     }
 
     public void unregisterTelephonyCallbacks() {
@@ -447,14 +467,10 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         return TestUtils.TEST_PHONE_ACCOUNT;
     }
 
-    protected void tearDownConnectionService(PhoneAccountHandle accountHandle) throws Exception {
+    protected void tearDownConnectionService(PhoneAccountHandle accountHandle) {
         Log.i(TAG, "Tearing down mock connection service");
-        if (this.connectionService != null) {
-            assertNumConnections(this.connectionService, 0);
-        }
         mTelecomManager.unregisterPhoneAccount(accountHandle);
         CtsConnectionService.tearDown();
-        assertCtsConnectionServiceUnbound();
         if (mShouldRestoreDefaultOutgoingAccount) {
             runWithShellPermissionIdentity(() -> mTelecomManager
                     .setUserSelectedOutgoingPhoneAccount(mPreviousDefaultOutgoingAccount));
@@ -501,137 +517,166 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     }
 
     private void setupCallbacks() {
-        mInCallCallbacks = new InCallServiceCallbacks() {
-            @Override
-            public void onCallAdded(Call call, int numCalls) {
-                Log.i(TAG, "onCallAdded, Call: " + call + ", Num Calls: " + numCalls);
-                this.lock.release();
-                mPreviousPhoneAccountHandle = call.getDetails().getAccountHandle();
-            }
-            @Override
-            public void onCallRemoved(Call call, int numCalls) {
-                Log.i(TAG, "onCallRemoved, Call: " + call + ", Num Calls: " + numCalls);
-            }
-            @Override
-            public void onParentChanged(Call call, Call parent) {
-                Log.i(TAG, "onParentChanged, Call: " + call + ", Parent: " + parent);
-                this.lock.release();
-            }
-            @Override
-            public void onChildrenChanged(Call call, List<Call> children) {
-                Log.i(TAG, "onChildrenChanged, Call: " + call + "Children: " + children);
-                this.lock.release();
-            }
-            @Override
-            public void onConferenceableCallsChanged(Call call, List<Call> conferenceableCalls) {
-                Log.i(TAG, "onConferenceableCallsChanged, Call: " + call + ", Conferenceables: " +
-                        conferenceableCalls);
-            }
-            @Override
-            public void onDetailsChanged(Call call, Call.Details details) {
-                Log.i(TAG, "onDetailsChanged, Call: " + call + ", Details: " + details);
-                if (!areBundlesEqual(mPreviousExtras, details.getExtras())) {
-                    mOnExtrasChangedCounter.invoke(call, details);
-                }
-                mPreviousExtras = details.getExtras();
+        mInCallCallbacks =
+                new InCallServiceCallbacks() {
+                    @Override
+                    public void onCallAdded(Call call, int numCalls) {
+                        Log.i(TAG, "onCallAdded, Call: " + call + ", Num Calls: " + numCalls);
+                        this.lock.release();
+                        mPreviousPhoneAccountHandle = call.getDetails().getAccountHandle();
+                    }
 
-                if (mPreviousProperties != details.getCallProperties()) {
-                    mOnPropertiesChangedCounter.invoke(call, details);
-                    Log.i(TAG, "onDetailsChanged; properties changed from " + Call.Details.propertiesToString(mPreviousProperties) +
-                            " to " + Call.Details.propertiesToString(details.getCallProperties()));
-                }
-                mPreviousProperties = details.getCallProperties();
+                    @Override
+                    public void onCallRemoved(Call call, int numCalls) {
+                        Log.i(TAG, "onCallRemoved, Call: " + call + ", Num Calls: " + numCalls);
+                    }
 
-                if (details.getAccountHandle() != null &&
-                        !details.getAccountHandle().equals(mPreviousPhoneAccountHandle)) {
-                    mOnPhoneAccountChangedCounter.invoke(call, details.getAccountHandle());
-                }
-                mPreviousPhoneAccountHandle = details.getAccountHandle();
-            }
-            @Override
-            public void onCallDestroyed(Call call) {
-                Log.i(TAG, "onCallDestroyed, Call: " + call);
-            }
-            @Override
-            public void onCallStateChanged(Call call, int newState) {
-                Log.i(TAG, "onCallStateChanged, Call: " + call + ", New State: " + newState);
-            }
-            @Override
-            public void onBringToForeground(boolean showDialpad) {
-                mOnBringToForegroundCounter.invoke(showDialpad);
-            }
-            @Override
-            public void onCallAudioStateChanged(CallAudioState audioState) {
-                Log.i(TAG, "onCallAudioStateChanged, audioState: " + audioState);
-                mOnCallAudioStateChangedCounter.invoke(audioState);
-            }
-            @Override
-            public void onPostDialWait(Call call, String remainingPostDialSequence) {
-                mOnPostDialWaitCounter.invoke(call, remainingPostDialSequence);
-            }
-            @Override
-            public void onCannedTextResponsesLoaded(Call call, List<String> cannedTextResponses) {
-                mOnCannedTextResponsesLoadedCounter.invoke(call, cannedTextResponses);
-            }
-            @Override
-            public void onConnectionEvent(Call call, String event, Bundle extras) {
-                mOnConnectionEventCounter.invoke(call, event, extras);
-            }
+                    @Override
+                    public void onParentChanged(Call call, Call parent) {
+                        Log.i(TAG, "onParentChanged, Call: " + call + ", Parent: " + parent);
+                        this.lock.release();
+                    }
 
-            @Override
-            public void onSilenceRinger() {
-                Log.i(TAG, "onSilenceRinger");
-                mOnSilenceRingerCounter.invoke();
-            }
+                    @Override
+                    public void onChildrenChanged(Call call, List<Call> children) {
+                        Log.i(TAG, "onChildrenChanged, Call: " + call + "Children: " + children);
+                        this.lock.release();
+                    }
 
-            @Override
-            public void onRttModeChanged(Call call, int mode) {
-                mOnRttModeChangedCounter.invoke(call, mode);
-            }
+                    @Override
+                    public void onConferenceableCallsChanged(
+                            Call call, List<Call> conferenceableCalls) {
+                        Log.i(
+                                TAG,
+                                "onConferenceableCallsChanged, Call: "
+                                        + call
+                                        + ", Conferenceables: "
+                                        + conferenceableCalls);
+                    }
 
-            @Override
-            public void onRttStatusChanged(Call call, boolean enabled, Call.RttCall rttCall) {
-                mOnRttStatusChangedCounter.invoke(call, enabled, rttCall);
-            }
+                    @Override
+                    public void onDetailsChanged(Call call, Call.Details details) {
+                        Log.i(TAG, "onDetailsChanged, Call: " + call + ", Details: " + details);
+                        if (!areBundlesEqual(mPreviousExtras, details.getExtras())) {
+                            mOnExtrasChangedCounter.invoke(call, details);
+                        }
+                        mPreviousExtras = details.getExtras();
 
-            @Override
-            public void onRttRequest(Call call, int id) {
-                mOnRttRequestCounter.invoke(call, id);
-            }
+                        if (mPreviousProperties != details.getCallProperties()) {
+                            mOnPropertiesChangedCounter.invoke(call, details);
+                            Log.i(
+                                    TAG,
+                                    "onDetailsChanged; properties changed from "
+                                            + Call.Details.propertiesToString(mPreviousProperties)
+                                            + " to "
+                                            + Call.Details.propertiesToString(
+                                                    details.getCallProperties()));
+                        }
+                        mPreviousProperties = details.getCallProperties();
 
-            @Override
-            public void onRttInitiationFailure(Call call, int reason) {
-                mOnRttInitiationFailedCounter.invoke(call, reason);
-            }
+                        if (details.getAccountHandle() != null
+                                && !details.getAccountHandle()
+                                        .equals(mPreviousPhoneAccountHandle)) {
+                            mOnPhoneAccountChangedCounter.invoke(call, details.getAccountHandle());
+                        }
+                        mPreviousPhoneAccountHandle = details.getAccountHandle();
+                    }
 
-            @Override
-            public void onHandoverComplete(Call call) {
-                mOnHandoverCompleteCounter.invoke(call);
-            }
+                    @Override
+                    public void onCallDestroyed(Call call) {
+                        Log.i(TAG, "onCallDestroyed, Call: " + call);
+                    }
 
-            @Override
-            public void onHandoverFailed(Call call, int reason) {
-                mOnHandoverFailedCounter.invoke(call, reason);
-            }
+                    @Override
+                    public void onCallStateChanged(Call call, int newState) {
+                        Log.i(
+                                TAG,
+                                "onCallStateChanged, Call: " + call + ", New State: " + newState);
+                    }
 
-            @Override
-            public void onCallEndpointChanged(CallEndpoint callEndpoint) {
-                Log.i(TAG, "onCallEndpointChanged, callEndpoint: " + callEndpoint);
-                mOnCallEndpointChangedCounter.invoke(callEndpoint);
-            }
+                    @Override
+                    public void onBringToForeground(boolean showDialpad) {
+                        mOnBringToForegroundCounter.invoke(showDialpad);
+                    }
 
-            @Override
-            public void onAvailableCallEndpointsChanged(List<CallEndpoint> availableEndpoints) {
-                Log.i(TAG, "onAvailableCallEndpointsChanged");
-                mOnAvailableEndpointsChangedCounter.invoke(availableEndpoints);
-            }
+                    @Override
+                    public void onCallAudioStateChanged(CallAudioState audioState) {
+                        Log.i(TAG, "onCallAudioStateChanged, audioState: " + audioState);
+                        mOnCallAudioStateChangedCounter.invoke(audioState);
+                    }
 
-            @Override
-            public void onMuteStateChanged(boolean isMuted) {
-                Log.i(TAG, "onMuteStateChanged, isMuted: " + isMuted);
-                mOnMuteStateChangedCounter.invoke(isMuted);
-            }
-        };
+                    @Override
+                    public void onPostDialWait(Call call, String remainingPostDialSequence) {
+                        mOnPostDialWaitCounter.invoke(call, remainingPostDialSequence);
+                    }
+
+                    @Override
+                    public void onCannedTextResponsesLoaded(
+                            Call call, List<String> cannedTextResponses) {
+                        mOnCannedTextResponsesLoadedCounter.invoke(call, cannedTextResponses);
+                    }
+
+                    @Override
+                    public void onConnectionEvent(Call call, String event, Bundle extras) {
+                        mOnConnectionEventCounter.invoke(call, event, extras);
+                    }
+
+                    @Override
+                    public void onSilenceRinger() {
+                        Log.i(TAG, "onSilenceRinger");
+                        mOnSilenceRingerCounter.invoke();
+                    }
+
+                    @Override
+                    public void onRttModeChanged(Call call, int mode) {
+                        mOnRttModeChangedCounter.invoke(call, mode);
+                    }
+
+                    @Override
+                    public void onRttStatusChanged(
+                            Call call, boolean enabled, Call.RttCall rttCall) {
+                        mOnRttStatusChangedCounter.invoke(call, enabled, rttCall);
+                    }
+
+                    @Override
+                    public void onRttRequest(Call call, int id) {
+                        mOnRttRequestCounter.invoke(call, id);
+                    }
+
+                    @Override
+                    public void onRttInitiationFailure(Call call, int reason) {
+                        mOnRttInitiationFailedCounter.invoke(call, reason);
+                    }
+
+                    @Override
+                    public void onHandoverComplete(Call call) {
+                        mOnHandoverCompleteCounter.invoke(call);
+                    }
+
+                    @Override
+                    public void onHandoverFailed(Call call, int reason) {
+                        mOnHandoverFailedCounter.invoke(call, reason);
+                    }
+
+                    @Override
+                    public void onCallEndpointChanged(CallEndpoint callEndpoint) {
+                        Log.i(TAG, "onCallEndpointChanged, callEndpoint: " + callEndpoint);
+                        mOnCallEndpointChangedCounter.invoke(callEndpoint);
+                    }
+
+                    @Override
+                    public void onAvailableCallEndpointsChanged(
+                            List<CallEndpoint> availableEndpoints) {
+                        Log.i(TAG, "onAvailableCallEndpointsChanged");
+                        mOnAvailableEndpointsChangedCounter.invoke(availableEndpoints);
+                    }
+
+                    @Override
+                    public void onMuteStateChanged(boolean isMuted) {
+                        Log.i(TAG, "onMuteStateChanged, isMuted: " + isMuted);
+                        mOnMuteStateChangedCounter.invoke(isMuted);
+                    }
+                };
 
         MockInCallService.setCallbacks(mInCallCallbacks);
 
@@ -640,7 +685,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mOnBringToForegroundCounter = new TestUtils.InvokeCounter("OnBringToForeground");
         mOnCallAudioStateChangedCounter = new TestUtils.InvokeCounter("OnCallAudioStateChanged");
         mOnPostDialWaitCounter = new TestUtils.InvokeCounter("OnPostDialWait");
-        mOnCannedTextResponsesLoadedCounter = new TestUtils.InvokeCounter("OnCannedTextResponsesLoaded");
+        mOnCannedTextResponsesLoadedCounter =
+                new TestUtils.InvokeCounter("OnCannedTextResponsesLoaded");
         mOnSilenceRingerCounter = new TestUtils.InvokeCounter("OnSilenceRinger");
         mOnConnectionEventCounter = new TestUtils.InvokeCounter("OnConnectionEvent");
         mOnExtrasChangedCounter = new TestUtils.InvokeCounter("OnDetailsChangedCounter");
@@ -776,6 +822,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     }
 
     void verifyNewIncomingCall(int currentCallCount) {
+        if (mInCallCallbacks.getService() != null
+                && currentCallCount + 1 == mInCallCallbacks.getService().getCallCount()) {
+            // Handle the case where the InCallService has already added a call before tryAcquire
+            // was called.
+            return;
+        }
         try {
             if (!mInCallCallbacks.lock.tryAcquire(TestUtils.WAIT_FOR_CALL_ADDED_TIMEOUT_S,
                     TimeUnit.SECONDS)) {
@@ -1264,6 +1316,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         if (mInCallCallbacks != null && mInCallCallbacks.getService() != null) {
             mInCallCallbacks.getService().disconnectAllConferenceCalls();
             mInCallCallbacks.getService().disconnectAllCalls();
+            // This method relies on assertions at the end, otherwise it can skip important
+            // cleanup when the assertion causes the method to return early.
             assertNumConferenceCalls(mInCallCallbacks.getService(), 0);
             assertNumCalls(mInCallCallbacks.getService(), 0);
         }
@@ -2116,6 +2170,22 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         );
     }
 
+    boolean waitForIsInCall(boolean isInCall) {
+        return waitForCondition(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return isInCall;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return mTelecomManager.isInManagedCall();
+                    }
+                },
+                WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+    }
+
     void assertIsInManagedCall(boolean isIncall) {
         waitUntilConditionIsTrueOrTimeout(
                 new Condition() {
@@ -2371,13 +2441,17 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         );
     }
 
-    void waitUntilConditionIsTrueOrTimeout(Condition condition, long timeout,
-            String description) {
+    boolean waitForCondition(Condition condition, long timeout) {
         final long start = System.currentTimeMillis();
         while (!Objects.equals(condition.expected(), condition.actual())
                 && System.currentTimeMillis() - start < timeout) {
             sleep(50);
         }
+        return Objects.equals(condition.expected(), condition.actual());
+    }
+
+    void waitUntilConditionIsTrueOrTimeout(Condition condition, long timeout, String description) {
+        waitForCondition(condition, timeout);
         assertEquals(description, condition.expected(), condition.actual());
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2025 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 
-package android.telecom.cts.api29incallservice;
+package android.supervision.cts
 
-interface ICtsApi29InCallServiceControl {
-    int getCallState(String callId);
+import android.app.Activity
 
-    int getLocalCallCount();
-
-    int getHistoricalCallCount();
-
-    boolean hasReceivedBindRequest();
-
-    void setShouldReturnNullBinding(boolean shouldReturnNullBinding);
-
-    boolean waitForBindRequest();
-}
+/** Main activity used in CTS tests related to supervision. */
+class MainActivity : Activity()

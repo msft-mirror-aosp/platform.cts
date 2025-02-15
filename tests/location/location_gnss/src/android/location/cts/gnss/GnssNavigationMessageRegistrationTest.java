@@ -94,10 +94,11 @@ public class GnssNavigationMessageRegistrationTest extends GnssTestCase {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;
         }
-
-        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
-            return;
+        boolean isAutomotive = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        if (isAutomotive) {
+            if (!TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager)) {
+                return;
+            }
         }
 
         // Register Gps Navigation Message Listener.
@@ -116,7 +117,8 @@ public class GnssNavigationMessageRegistrationTest extends GnssTestCase {
         List<GnssNavigationMessage> events = mTestGnssNavigationMessageListener.getEvents();
         if (!events.isEmpty()) {
             // Verify mandatory GnssNavigationMessage field values.
-            TestMeasurementUtil.verifyGnssNavMessageMandatoryField(mTestLocationManager, events);
+            TestMeasurementUtil.verifyGnssNavMessageMandatoryField(
+                    mTestLocationManager, events, /* asWarning= */ isAutomotive);
             // Test passes if we get at least 1 GPS Navigation Message event.
             Log.i(TAG, "Received GPS Navigation Message. Test Pass.");
             return;

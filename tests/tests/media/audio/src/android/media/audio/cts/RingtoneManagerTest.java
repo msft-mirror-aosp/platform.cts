@@ -15,6 +15,7 @@
  */
 package android.media.audio.cts;
 
+import static android.media.Utils.SYNCHRONIZED_VIBRATION;
 import static android.media.Utils.VIBRATION_URI_PARAM;
 import static android.media.cts.Utils.getTestVibrationFile;
 
@@ -320,6 +321,15 @@ public class RingtoneManagerTest {
 
         assertThat(ringtone).isNotNull();
         assertTrue(ringtone.getAudioAttributes().areHapticChannelsMuted());
+
+        // Test for synchronized vibration
+        final Uri ringtoneUriWithSynchronized = audioCoupledRingtoneUri.buildUpon()
+                .appendQueryParameter(VIBRATION_URI_PARAM, SYNCHRONIZED_VIBRATION).build();
+        ringtone = RingtoneManager.getRingtone(mContext, ringtoneUriWithSynchronized, null, attr);
+
+        assertThat(ringtone).isNotNull();
+        assertFalse(ringtone.getAudioAttributes().areHapticChannelsMuted());
+
     }
 
     private AudioAttributes getDefaultRingtoneAudioAttributes(boolean hapticChannelsMuted) {

@@ -82,10 +82,11 @@ public class GnssNavigationMessageTest extends GnssTestCase {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;
         }
-
-        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
-            return;
+        boolean isAutomotive = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        if (isAutomotive) {
+            if (!TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager)) {
+                return;
+            }
         }
 
         mLocationListener = new TestLocationListener(EVENTS_COUNT);
@@ -106,16 +107,20 @@ public class GnssNavigationMessageTest extends GnssTestCase {
         }
 
         SoftAssert softAssert = new SoftAssert(TAG);
-        softAssert.assertTrue(
-            "Time elapsed without getting enough navigation messages."
-                + " Possibly, the test has been run deep indoors."
-                + " Consider retrying test outdoors.",
-            success);
-
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Time elapsed without getting enough navigation messages."
+                        + " Possibly, the test has been run deep indoors."
+                        + " Consider retrying test outdoors.",
+                success);
+        if (!success) {
+            return;
+        }
         List<GnssNavigationMessage> events = mTestGnssNavigationMessageListener.getEvents();
 
         // Verify mandatory GnssNavigationMessage field values.
-        TestMeasurementUtil.verifyGnssNavMessageMandatoryField(mTestLocationManager, events);
+        TestMeasurementUtil.verifyGnssNavMessageMandatoryField(
+                mTestLocationManager, events, /* asWarning= */ isAutomotive);
         softAssert.assertAll();
     }
 

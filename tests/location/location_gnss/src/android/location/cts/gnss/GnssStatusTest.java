@@ -132,9 +132,12 @@ public class GnssStatusTest extends GnssTestCase  {
           "0.0 <= X <= 360.0",
           String.valueOf(status.getAzimuthDegrees(i)),
           status.getAzimuthDegrees(i) >= 0.0 && status.getAzimuthDegrees(i) <= 360.0);
-      TestMeasurementUtil.verifyGnssCarrierFrequency(softAssert, mTestLocationManager,
-          status.hasCarrierFrequencyHz(i),
-          status.hasCarrierFrequencyHz(i) ? status.getCarrierFrequencyHz(i) : 0F);
+            TestMeasurementUtil.verifyGnssCarrierFrequency(
+                    softAssert,
+                    /* asWarning= */ false,
+                    mTestLocationManager,
+                    status.hasCarrierFrequencyHz(i),
+                    status.hasCarrierFrequencyHz(i) ? status.getCarrierFrequencyHz(i) : 0F);
 
       softAssert.assertTrue("c_n0_dbhz: Carrier-to-noise density",
           "0.0 <= X <= 63",
@@ -156,10 +159,14 @@ public class GnssStatusTest extends GnssTestCase  {
           String.valueOf(status.getElevationDegrees(i)),
           status.getElevationDegrees(i) >= 0.0 && status.getElevationDegrees(i) <= 90.0);
 
-      // in validateSvidSub, it will validate ConstellationType, svid
-      // however, we don't have the event time in the current scope, pass in "-1" instead
-      TestMeasurementUtil.validateSvidSub(softAssert, null,
-          status.getConstellationType(i),status.getSvid(i));
+            // in validateSvidSub, it will validate ConstellationType, svid
+            // however, we don't have the event time in the current scope, pass in "-1" instead
+            TestMeasurementUtil.validateSvidSub(
+                    softAssert,
+                    /* asWarning= */ false,
+                    null,
+                    status.getConstellationType(i),
+                    status.getSvid(i));
 
       // For those function with boolean type return, just simply call the function
       // to make sure those function won't crash, also increase the test coverage.

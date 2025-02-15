@@ -314,6 +314,26 @@ public interface Features {
     String ISOLATED_STORAGE = "ISOLATED_STORAGE";
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "minOrDefault" and "maxOrDefault" functions in ranking expressions.
+     *
+     * <p>For details on the functions in the ranking language, see {@link
+     * SearchSpec.Builder#setRankingStrategy(String)}.
+     */
+    String SEARCH_SPEC_RANKING_FUNCTION_MAX_MIN_OR_DEFAULT =
+            "SEARCH_SPEC_RANKING_FUNCTION_MAX_MIN_OR_DEFAULT";
+
+    /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers the use of the
+     * "filterByRange" function in ranking expressions.
+     *
+     * <p>For details on the function in the ranking language, see {@link
+     * SearchSpec.Builder#setRankingStrategy(String)}.
+     */
+    String SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE =
+            "SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE";
+
+    /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in
      * question, the AppSearch backend being used and the Android version of the device.
      *

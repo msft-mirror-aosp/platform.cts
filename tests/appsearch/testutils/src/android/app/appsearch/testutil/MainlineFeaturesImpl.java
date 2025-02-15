@@ -94,6 +94,10 @@ public class MainlineFeaturesImpl implements Features {
             case Features.SCHEMA_STRING_PROPERTY_CONFIG_DELETE_PROPAGATION_TYPE_PROPAGATE_FROM:
                 // fall through
             case Features.BLOB_STORAGE:
+                // fall through
+            case Features.SEARCH_SPEC_RANKING_FUNCTION_FILTER_BY_RANGE:
+                // fall through
+            case Features.SEARCH_SPEC_RANKING_FUNCTION_MAX_MIN_OR_DEFAULT:
                 return true;
 
             // Features which are supported on U+ devices only.

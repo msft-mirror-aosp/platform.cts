@@ -24,7 +24,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EMBEDDED_ACT
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilder;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifyNoCallback;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertColdLaunch;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 
 import static org.junit.Assert.assertEquals;
@@ -167,7 +167,7 @@ public class ActivityEmbeddingIntegrationTests extends ActivityEmbeddingTestBase
         extras.putFloat(EXTRA_SPLIT_RATIO, 0.1f);
         startActivityNoWait(mContext, SIGNED_EMBEDDING_ACTIVITY, extras);
 
-        waitAndAssertResumed(EMBEDDED_ACTIVITY_ID);
+        waitAndAssertColdLaunch(EMBEDDED_ACTIVITY_ID);
         TestActivityWithId secondaryActivity = getResumedActivityById(EMBEDDED_ACTIVITY_ID);
         assertNotNull(secondaryActivity);
         assertTrue(mActivityEmbeddingComponent.isActivityEmbedded(secondaryActivity));

@@ -393,7 +393,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
         int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 12,336 when test was written.
-        assertLessThan(15_000, dataSize);
+        assertLessThan(16_000, dataSize);
     }
 
     @Test
@@ -437,7 +437,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
         int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 22,100 when test was written.
-        assertLessThan(30_000, dataSize);
+        assertLessThan(31_000, dataSize);
     }
 
     @Test

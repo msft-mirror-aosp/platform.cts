@@ -641,10 +641,9 @@ public class MediaSessionManagerTest {
     @Test
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
-    public void testIsTrustedForMediaControl_withEnabledNotificationListener() throws Exception {
-        getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
+    public void testIsTrustedForMediaControl_noPermissionWithEnabledNotificationListener_isTrusted()
+            throws Exception {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(new String[0]);
         List<String> packageNames = getEnabledNotificationListenerPackages();
         for (String packageName : packageNames) {
             int packageUid =
@@ -658,12 +657,33 @@ public class MediaSessionManagerTest {
     @Test
     @FrameworkSpecificTest
     @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
-    public void testIsTrustedForMediaControl_withInvalidUid() {
+    public void
+            testIsTrustedForMediaControl_withPermissionNoEnabledNotificationListener_isTrusted() {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL);
         List<String> packageNames = getEnabledNotificationListenerPackages();
         for (String packageName : packageNames) {
+            // When using Process.myUid() the package name and the uid does not match to an enabled
+            // notification listener. The controller is trusted because it holds the
+            // MEDIA_CONTENT_CONTROL permission instead.
+            MediaSessionManager.RemoteUserInfo info =
+                    new MediaSessionManager.RemoteUserInfo(
+                            packageName, /* pid= */ 0, Process.myUid());
+            assertThat(mSessionManager.isTrustedForMediaControl(info)).isTrue();
+        }
+    }
+
+    @Test
+    @FrameworkSpecificTest
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    public void
+            testIsTrustedForMediaControl_noPermissionNoEnabledNotificationListener_notTrusted() {
+        getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(new String[0]);
+        List<String> packageNames = getEnabledNotificationListenerPackages();
+        for (String packageName : packageNames) {
+            // When using Process.myUid() the package name and the uid does not match to an enabled
+            // notification listener.
             MediaSessionManager.RemoteUserInfo info =
                     new MediaSessionManager.RemoteUserInfo(
                             packageName, /* pid= */ 0, Process.myUid());
