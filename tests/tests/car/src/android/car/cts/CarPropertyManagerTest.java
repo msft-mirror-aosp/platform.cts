@@ -20,9 +20,11 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacActualFanSpeedRpmVerifierBuilder;
@@ -2672,28 +2674,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
-    private static void assertFuelPropertyNotImplementedOnEv(
-            CarPropertyManager mgr, int propertyId) {
-        runWithShellPermissionIdentity(
-                () -> {
-                    if (mgr.getCarPropertyConfig(
-                            VehiclePropertyIds.INFO_FUEL_TYPE) == null) {
-                        return;
-                    }
-                    CarPropertyValue<?> infoFuelTypeValue = mgr.getProperty(
-                            VehiclePropertyIds.INFO_FUEL_TYPE, /* areaId */ 0);
-                    if (infoFuelTypeValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
-                        return;
-                    }
-                    Integer[] fuelTypes = (Integer[]) infoFuelTypeValue.getValue();
-                    assertWithMessage("If fuelTypes only contains FuelType.ELECTRIC, "
-                                    + VehiclePropertyIds.toString(propertyId)
-                                    + " property must not be implemented")
-                            .that(fuelTypes).isNotEqualTo(new Integer[]{FuelType.ELECTRIC});
-                },
-                Car.PERMISSION_CAR_INFO);
-    }
-
     private static VehiclePropertyVerifier.Builder<Float> getInfoFuelCapacityVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.INFO_FUEL_CAPACITY,
@@ -3880,16 +3860,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class)
-                .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getFuelLevelLowVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_LEVEL_LOW,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 

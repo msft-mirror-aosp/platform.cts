@@ -17,11 +17,13 @@
 package android.car.cts.utils;
 
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.Car;
+import android.car.FuelType;
 import android.car.VehicleAreaType;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleSeatOccupancyState;
@@ -1598,6 +1600,40 @@ public class VehiclePropertyVerifiers {
                                     .that(fuelLevel)
                                     .isAtMost((Float) infoFuelCapacityValue.getValue());
                         })
+                .addReadPermission(Car.PERMISSION_ENERGY);
+    }
+
+    /** Assert fuel property is not implement on an EV vehicle. */
+    public static void assertFuelPropertyNotImplementedOnEv(
+            CarPropertyManager mgr, int propertyId) {
+        runWithShellPermissionIdentity(
+                () -> {
+                    if (mgr.getCarPropertyConfig(VehiclePropertyIds.INFO_FUEL_TYPE) == null) {
+                        return;
+                    }
+                    CarPropertyValue<?> infoFuelTypeValue =
+                            mgr.getProperty(VehiclePropertyIds.INFO_FUEL_TYPE, /* areaId */ 0);
+                    if (infoFuelTypeValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE) {
+                        return;
+                    }
+                    Integer[] fuelTypes = (Integer[]) infoFuelTypeValue.getValue();
+                    assertWithMessage(
+                                    "If fuelTypes only contains FuelType.ELECTRIC, "
+                                            + VehiclePropertyIds.toString(propertyId)
+                                            + " property must not be implemented")
+                            .that(fuelTypes)
+                            .isNotEqualTo(new Integer[] {FuelType.ELECTRIC});
+                },
+                Car.PERMISSION_CAR_INFO);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Boolean> getFuelLevelLowVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.FUEL_LEVEL_LOW,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
