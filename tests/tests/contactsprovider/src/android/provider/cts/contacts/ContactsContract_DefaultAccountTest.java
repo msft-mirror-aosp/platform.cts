@@ -284,7 +284,7 @@ public class ContactsContract_DefaultAccountTest {
 
         // Insert with account should always succeed and to be placed in the correct account.
         long rawContactId1 = RawContactUtil.insertRawContactUsingNullAccount(mResolver, null);
-        assertRawContactAccount(rawContactId1, null);
+        assertRawContactAccount(rawContactId1, getLocalAccount());
 
         long rawContactId2 = RawContactUtil.insertRawContactUsingNullAccount(mResolver,
                 getLocalAccount());
@@ -302,7 +302,7 @@ public class ContactsContract_DefaultAccountTest {
 
         // Insert with account should always succeed and to be placed in the correct account.
         long groupId1 = GroupUtil.insertGroupWithAccount(mResolver, null);
-        assertGroupAccount(groupId1, null);
+        assertGroupAccount(groupId1, getLocalAccount());
 
         long groupId2 = GroupUtil.insertGroupWithAccount(mResolver, getLocalAccount());
         assertGroupAccount(groupId2, getLocalAccount());
@@ -327,7 +327,7 @@ public class ContactsContract_DefaultAccountTest {
 
         // Insert with account should always succeed and to be placed in the correct account.
         long rawContactId1 = RawContactUtil.insertRawContactUsingNullAccount(mResolver, null);
-        assertRawContactAccount(rawContactId1, null);
+        assertRawContactAccount(rawContactId1, getLocalAccount());
 
         long rawContactId2 = RawContactUtil.insertRawContactUsingNullAccount(mResolver,
                 getLocalAccount());
@@ -345,7 +345,7 @@ public class ContactsContract_DefaultAccountTest {
 
         // Insert with account should always succeed and to be placed in the correct account.
         long groupId1 = GroupUtil.insertGroupWithAccount(mResolver, null);
-        assertGroupAccount(groupId1, null);
+        assertGroupAccount(groupId1, getLocalAccount());
 
         long groupId2 = GroupUtil.insertGroupWithAccount(mResolver, getLocalAccount());
         assertGroupAccount(groupId2, getLocalAccount());
@@ -370,7 +370,7 @@ public class ContactsContract_DefaultAccountTest {
 
         // Insert with account should always succeed and to be placed in the correct account.
         long rawContactId1 = RawContactUtil.insertRawContactUsingNullAccount(mResolver, null);
-        assertRawContactAccount(rawContactId1, null);
+        assertRawContactAccount(rawContactId1, getLocalAccount());
 
         long rawContactId2 = RawContactUtil.insertRawContactUsingNullAccount(mResolver,
                 getLocalAccount());
