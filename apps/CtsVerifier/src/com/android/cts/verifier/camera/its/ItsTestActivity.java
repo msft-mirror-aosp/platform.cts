@@ -142,7 +142,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final Pattern PERF_METRICS_YUV_PLUS_RAW_PATTERN =
             Pattern.compile("test_yuv_plus_raw.*");
 
-    private static final String PERF_METRICS_KEY_PREFIX_YUV_PLUS = "yuv_plus";
+    private static final String PERF_METRICS_KEY_PREFIX_YUV_PLUS = "yuv_plus_";
     private static final String PERF_METRICS_KEY_RAW = "raw_";
     private static final String PERF_METRICS_KEY_RAW10 = "raw10";
     private static final String PERF_METRICS_KEY_RAW12 = "raw12";
