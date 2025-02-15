@@ -33,7 +33,6 @@
         <option name="test-file-name" value="CtsOverlayResApp.apk" />
         <option name="test-file-name" value="CtsOverlayResRRO.apk" />
         <option name="test-file-name" value="CtsOverlayLayoutRRO.apk" />
-        <option name="test-file-name" value="CtsOverlayFrameworkResRRO.apk" />
         <option name="test-file-name" value="CtsOverlayResApp2.apk" />
         <option name="test-file-name" value="CtsOverlayResRRO2.apk" />
     </target_preparer>
