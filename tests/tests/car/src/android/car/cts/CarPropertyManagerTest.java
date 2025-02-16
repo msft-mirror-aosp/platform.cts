@@ -7936,29 +7936,52 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     public void testGetAllSupportedReadablePropertiesSync() {
         runWithShellPermissionIdentity(
                 () -> {
-                    List<CarPropertyConfig> configs =
-                            mCarPropertyManager.getPropertyList(mPropertyIds);
+                    List<CarPropertyConfig> configs = mCarPropertyManager.getPropertyList();
                     for (CarPropertyConfig cfg : configs) {
-                        int propId = cfg.getPropertyId();
+                        int propertyId = cfg.getPropertyId();
                         List<AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
-                        List<AreaIdConfig<?>> filteredAreaIdConfigs = new ArrayList<>();
-                        if (Flags.areaIdConfigAccess()) {
-                            for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                                if (areaIdConfig.getAccess()
-                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                                        || areaIdConfig.getAccess()
-                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                                    filteredAreaIdConfigs.add(areaIdConfig);
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            int areaId = areaIdConfig.getAreaId();
+                            try {
+                                if (cfg.getPropertyType() == Boolean.class) {
+                                    mCarPropertyManager.getBooleanProperty(propertyId, areaId);
+                                } else if (cfg.getPropertyType() == Integer.class) {
+                                    mCarPropertyManager.getIntProperty(propertyId, areaId);
+                                } else if (cfg.getPropertyType() == Float.class) {
+                                    mCarPropertyManager.getFloatProperty(propertyId, areaId);
+                                } else if (cfg.getPropertyType() == Integer[].class) {
+                                    mCarPropertyManager.getIntArrayProperty(propertyId, areaId);
+                                } else {
+                                    mCarPropertyManager.getProperty(
+                                            cfg.getPropertyType(), propertyId, areaId);
                                 }
+                            } catch (IllegalArgumentException e) {
+                                expectWithMessage(
+                                                "Should not throw IllegalArgumentException for"
+                                                        + " property: "
+                                                        + VehiclePropertyIds.toString(propertyId)
+                                                        + ", area ID: "
+                                                        + areaId
+                                                        + ", access: "
+                                                        + areaIdConfig.getAccess()
+                                                        + ", error: "
+                                                        + e)
+                                        .that(areaIdConfig.getAccess())
+                                        .isIn(NO_READ_ACCESS_SET);
+                                continue;
+                            } catch (PropertyNotAvailableAndRetryException
+                                    | PropertyNotAvailableException
+                                    | CarInternalErrorException e) {
+                                Log.w(
+                                        TAG,
+                                        "Failed to get property:"
+                                                + VehiclePropertyIds.toString(propertyId)
+                                                + ", area ID: "
+                                                + areaId
+                                                + ", error: "
+                                                + e);
+                                continue;
                             }
-                        } else {
-                            filteredAreaIdConfigs = areaIdConfigs;
-                        }
-                        // no guarantee if we can get values, just call and check if it throws
-                        // exception.
-                        for (AreaIdConfig<?> areaIdConfig : filteredAreaIdConfigs) {
-                            mCarPropertyManager.getProperty(cfg.getPropertyType(), propId,
-                                    areaIdConfig.getAreaId());
                         }
                     }
                 });
