@@ -27,6 +27,7 @@ import static com.android.media.editing.flags.Flags.muxerMp4EnableApv;
 import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecEncoderSurfaceTestBase;
@@ -155,8 +156,6 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
             argsHighBitDepth.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
                             512000, 30, false},
-                    {MediaFormat.MIMETYPE_VIDEO_APV, "pattern_640x480_30fps_16mbps_apv_10bit.mp4",
-                            512000, 30, true},
             }));
         }
 
@@ -188,6 +187,11 @@ public class VideoTranscoderTest extends CodecEncoderSurfaceTestBase {
         boolean muxOutput = true;
         if (mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) && CodecTestBase.IS_BEFORE_U) {
             muxOutput = false;
+        }
+        if (mEncMediaType.equals(MediaFormat.MIMETYPE_VIDEO_APV)) {
+            assumeFalse(
+                    "skip tonemap tests for APV encoders as they don't support 8-bit output",
+                    mIsOutputToneMapped);
         }
         String tmpPath = getTempFilePath(mEncCfgParams.mInputBitDepth > 8 ? "10bit" : "");
         mTmpFiles.add(tmpPath);
