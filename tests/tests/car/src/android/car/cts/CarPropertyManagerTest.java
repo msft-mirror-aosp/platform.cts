@@ -6351,16 +6351,29 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     public void testIsPropertyAvailable() {
         runWithShellPermissionIdentity(
                 () -> {
-                    List<CarPropertyConfig> configs =
-                            mCarPropertyManager.getPropertyList(mPropertyIds);
-
+                    List<CarPropertyConfig> configs = mCarPropertyManager.getPropertyList();
                     for (CarPropertyConfig cfg : configs) {
-                        int[] areaIds = getAreaIdsHelper(cfg);
-                        for (int areaId : areaIds) {
-                            assertThat(
-                                            mCarPropertyManager.isPropertyAvailable(
-                                                    cfg.getPropertyId(), areaId))
-                                    .isTrue();
+                        int propertyId = cfg.getPropertyId();
+                        List<AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            int areaId = areaIdConfig.getAreaId();
+                            try {
+                                mCarPropertyManager.isPropertyAvailable(propertyId, areaId);
+                            } catch (IllegalArgumentException e) {
+                                expectWithMessage(
+                                                "Should not throw IllegalArgumentException for"
+                                                        + " property: "
+                                                        + VehiclePropertyIds.toString(propertyId)
+                                                        + ", area ID: "
+                                                        + areaId
+                                                        + ", access: "
+                                                        + cfg.getAccess()
+                                                        + ", error: "
+                                                        + e)
+                                        .that(cfg.getAccess())
+                                        .isIn(NO_READ_ACCESS_SET);
+                                continue;
+                            }
                         }
                     }
                 });
@@ -7138,15 +7151,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             return ONCHANGE_RATE_EVENT_COUNTER;
         } else {
             return 0;
-        }
-    }
-
-    // Returns {0} if the property is global property, otherwise query areaId for CarPropertyConfig
-    private int[] getAreaIdsHelper(CarPropertyConfig config) {
-        if (config.isGlobalProperty()) {
-            return new int[]{0};
-        } else {
-            return config.getAreaIds();
         }
     }
 
