@@ -22,8 +22,10 @@ import static android.media.MediaFormat.PICTURE_TYPE_I;
 import static android.media.MediaFormat.PICTURE_TYPE_P;
 import static android.media.MediaFormat.PICTURE_TYPE_UNKNOWN;
 
+import android.annotation.TargetApi;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.util.Pair;
 
 import org.junit.Assert;
@@ -1028,6 +1030,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel1Band3;
                     }
+                    break;
                 case 33:
                     switch (band) {
                         case 0:
@@ -1039,6 +1042,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel11Band3;
                     }
+                    break;
                 case 60:
                     switch (band) {
                         case 0:
@@ -1050,6 +1054,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel2Band3;
                     }
+                    break;
                 case 63:
                     switch (band) {
                         case 0:
@@ -1061,6 +1066,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel21Band3;
                     }
+                    break;
                 case 90:
                     switch (band) {
                         case 0:
@@ -1072,6 +1078,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel3Band3;
                     }
+                    break;
                 case 93:
                     switch (band) {
                         case 0:
@@ -1083,6 +1090,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel31Band3;
                     }
+                    break;
                 case 120:
                     switch (band) {
                         case 0:
@@ -1094,6 +1102,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel4Band3;
                     }
+                    break;
                 case 123:
                     switch (band) {
                         case 0:
@@ -1105,6 +1114,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel41Band3;
                     }
+                    break;
                 case 150:
                     switch (band) {
                         case 0:
@@ -1116,6 +1126,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel5Band3;
                     }
+                    break;
                 case 153:
                     switch (band) {
                         case 0:
@@ -1127,6 +1138,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel51Band3;
                     }
+                    break;
                 case 180:
                     switch (band) {
                         case 0:
@@ -1138,6 +1150,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel6Band3;
                     }
+                    break;
                 case 183:
                     switch (band) {
                         case 0:
@@ -1149,6 +1162,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel61Band3;
                     }
+                    break;
                 case 210:
                     switch (band) {
                         case 0:
@@ -1160,6 +1174,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel7Band3;
                     }
+                    break;
                 case 213:
                     switch (band) {
                         case 0:
@@ -1171,6 +1186,7 @@ public class BitStreamUtils {
                         case 3:
                             return APVLevel71Band3;
                     }
+                    break;
             }
             return APVLevel71Band3;
         }
@@ -1183,8 +1199,6 @@ public class BitStreamUtils {
         @Override
         public Pair<Integer, Integer> getProfileLevel(@SuppressWarnings("unused") boolean isCsd) {
             ParsableBitArray bitArray = new ParsableBitArray(mData, mOffset, mLimit);
-            //TODO(b/392976813): These 4 lines need to be removed once test data are fixed.
-            bitArray.readBits(32);
             Assert.assertEquals(1, bitArray.readBits(8));  // configuration version
             int numConfigEntry = bitArray.readBits(8);
 
@@ -1227,6 +1241,7 @@ public class BitStreamUtils {
         return null;
     }
 
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
     public static int getFrameTypeFromBitStream(ByteBuffer buf, MediaCodec.BufferInfo info,
             ParserBase o) {
         if (o == null) return PICTURE_TYPE_UNKNOWN;

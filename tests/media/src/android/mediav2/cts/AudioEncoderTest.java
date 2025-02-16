@@ -16,6 +16,10 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectELD;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectHE;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AACObjectLC;
+import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_DEFAULT;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
 import static org.junit.Assert.assertEquals;
@@ -28,6 +32,7 @@ import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecEncoderTestBase;
+import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.EncoderConfigParams;
 import android.mediav2.common.cts.OutputManager;
 
@@ -62,17 +67,22 @@ import java.util.List;
  */
 @RunWith(Parameterized.class)
 public class AudioEncoderTest extends CodecEncoderTestBase {
+    private static final String LOG_TAG = AudioEncoderTest.class.getSimpleName();
+    private static final ArrayList<String> REQUIRED_MEDIA_TYPE_LIST =
+            CodecTestBase.compileRequiredMediaTypeList(true, true, false);
+
     public AudioEncoderTest(String encoder, String mediaType, EncoderConfigParams encCfgParams,
             @SuppressWarnings("unused") String testLabel, String allTestParams) {
         super(encoder, mediaType, new EncoderConfigParams[]{encCfgParams}, allTestParams);
     }
 
     private static EncoderConfigParams getAudioEncoderCfgParams(String mediaType, int qualityPreset,
-            int sampleRate, int channelCount, int pcmEncoding) {
+            int sampleRate, int channelCount, int pcmEncoding, int profile) {
         EncoderConfigParams.Builder foreman = new EncoderConfigParams.Builder(mediaType)
                 .setSampleRate(sampleRate)
                 .setChannelCount(channelCount)
-                .setPcmEncoding(pcmEncoding);
+                .setPcmEncoding(pcmEncoding)
+                .setProfile(profile);
         if (mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)) {
             foreman = foreman.setCompressionLevel(qualityPreset);
         } else {
@@ -89,19 +99,20 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
             int[] sampleRates = (int[]) param[2];
             int[] channelCounts = (int[]) param[3];
             int pcmEncoding = (int) param[4];
+            int profile = (int) param[5];
             for (int qualityPreset : qualityPresets) {
                 for (int sampleRate : sampleRates) {
                     for (int channelCount : channelCounts) {
                         Object[] testArgs = new Object[3];
                         testArgs[0] = param[0];
                         testArgs[1] = getAudioEncoderCfgParams(mediaType, qualityPreset, sampleRate,
-                                channelCount, pcmEncoding);
-                        testArgs[2] = String.format("%d%s_%dkHz_%dch_%s",
+                                channelCount, pcmEncoding, profile);
+                        testArgs[2] = String.format("%d%s_%dkHz_%dch_%s_%d",
                                 mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC) ? qualityPreset :
                                         qualityPreset / 1000,
                                 mediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC) ? "clevel" :
                                         "kbps", sampleRate / 1000, channelCount,
-                                audioEncodingToString(pcmEncoding));
+                                audioEncodingToString(pcmEncoding), profile);
                         argsList.add(testArgs);
                     }
                 }
@@ -118,23 +129,28 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         List<Object[]> defArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 // mediaType, arrays of bit-rates, sample rates, channel counts, pcm encoding
                 {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{8000, 12000,
+                        16000, 22050, 24000, 32000, 44100, 48000}, new int[]{1, 2, 5, 6},
+                        AudioFormat.ENCODING_PCM_16BIT, AACObjectLC},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{16000, 24000,
+                        32000, 44100, 48000}, new int[]{1, 2, 5, 6}, AudioFormat.ENCODING_PCM_16BIT,
+                        AACObjectHE},
+                {MediaFormat.MIMETYPE_AUDIO_AAC, new int[]{64000, 128000}, new int[]{16000, 12000,
                         16000, 22050, 24000, 32000, 44100, 48000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{64000, 128000}, new int[]{8000, 12000,
-                        16000, 24000, 48000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT},
+                        AudioFormat.ENCODING_PCM_16BIT, AACObjectELD},
+                {MediaFormat.MIMETYPE_AUDIO_OPUS, new int[]{128000}, new int[]{48000}, new int[]{2},
+                        AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_NB, new int[]{4750, 5150, 5900, 6700, 7400, 7950,
                         10200, 12200}, new int[]{8000}, new int[]{1},
-                        AudioFormat.ENCODING_PCM_16BIT},
+                        AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_AMR_WB, new int[]{6600, 8850, 12650, 14250, 15850,
                         18250, 19850, 23050, 23850}, new int[]{16000}, new int[]{1},
-                        AudioFormat.ENCODING_PCM_16BIT},
+                        AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8},
                         new int[]{8000, 16000, 32000, 48000, 96000, 192000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_16BIT},
+                        AudioFormat.ENCODING_PCM_16BIT, -1},
                 {MediaFormat.MIMETYPE_AUDIO_FLAC, new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8},
                         new int[]{8000, 16000, 32000, 48000, 96000, 192000}, new int[]{1, 2},
-                        AudioFormat.ENCODING_PCM_FLOAT},
+                        AudioFormat.ENCODING_PCM_FLOAT, -1},
         }));
         List<Object[]> argsList = flattenParams(defArgsList);
         return prepareParamList(argsList, isEncoder, needAudio, needVideo, false);
@@ -208,7 +224,10 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
      */
     @ApiTest(apis = {"android.media.AudioFormat#ENCODING_PCM_16BIT",
             "android.media.AudioFormat#ENCODING_PCM_FLOAT"})
-    @CddTest(requirements = "5.1.1/C-3-1")
+    @CddTest(requirements = {"2.2.2/5.1/H-0-1", "2.2.2/5.1/H-0-2", "2.2.2/5.1/H-0-3",
+            "2.2.2/5.1/H-0-4", "2.2.2/5.1/H-0-5", "2.3.2/5.1/T-0-1", "2.3.2/5.1/T-0-2",
+            "2.3.2/5.1/T-0-3", "2.5.2/5.1/A-0-1", "2.5.2/5.1/A-0-2", "2.5.2/5.1/A-0-3",
+            "5.1.1/C-1-2", "5.1.1/C-1-3", "5.1.1/C-3-1"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
     public void testEncodeAndValidate() throws IOException, InterruptedException {
@@ -216,7 +235,8 @@ public class AudioEncoderTest extends CodecEncoderTestBase {
         mActiveEncCfg = mEncCfgParams[0];
         ArrayList<MediaFormat> formats = new ArrayList<>();
         formats.add(mActiveEncCfg.getFormat());
-        checkFormatSupport(mCodecName, mMediaType, true, formats, null, CODEC_OPTIONAL);
+        checkFormatSupport(mCodecName, mMediaType, true, formats, null,
+                REQUIRED_MEDIA_TYPE_LIST.contains(mMediaType) ? CODEC_DEFAULT : CODEC_OPTIONAL);
 
         // encode and validate
         mActiveRawRes = EncoderInput.getRawResource(mActiveEncCfg);
