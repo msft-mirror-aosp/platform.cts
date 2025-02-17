@@ -19,6 +19,7 @@ package android.systemui.cts;
 import static android.Manifest.permission.POST_NOTIFICATIONS;
 import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL;
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
+import static android.server.wm.ActivityManagerTestBase.isTablet;
 import static android.server.wm.BarTestUtils.assumeHasColoredNavigationBar;
 import static android.server.wm.BarTestUtils.assumeHasColoredStatusBar;
 
@@ -26,7 +27,9 @@ import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.systemui.Flags.FLAG_STATUS_BAR_NOTIFICATION_CHIPS;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -57,6 +60,7 @@ import android.view.WindowMetrics;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.settingslib.flags.Flags;
@@ -73,6 +77,15 @@ import org.junit.runner.RunWith;
  *
  * <p>atest CtsSystemUiTestCases:LightBarTests
  */
+@ApiTest(
+        apis = {
+            "android.view.WindowInsetsController#setSystemBarsAppearance",
+            "android.view.WindowInsetsController#APPEARANCE_LIGHT_NAVIGATION_BARS",
+            "android.view.WindowInsetsController#APPEARANCE_LIGHT_STATUS_BARS",
+            "android.view.View#setSystemUiVisibility",
+            "android.view.View#SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR",
+            "android.view.View#SYSTEM_UI_FLAG_LIGHT_STATUS_BAR"
+        })
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsDisabled(FLAG_STATUS_BAR_NOTIFICATION_CHIPS)
 public class LightBarTests extends LightBarTestBase {
@@ -141,6 +154,8 @@ public class LightBarTests extends LightBarTestBase {
     @PlatinumTest(focusArea = "sysui")
     public void testLightStatusBarIcons() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
+        // TODO(b/394505070): Fix the test on large screen devices.
+        assumeFalse(isTablet());
 
         runInNotificationSession(() -> {
             requestLightBars(LIGHT_BG_COLOR);
@@ -213,11 +228,7 @@ public class LightBarTests extends LightBarTestBase {
         requestLightBars(LIGHT_BG_COLOR);
         Thread.sleep(WAIT_TIME);
 
-        // Inject a cancelled interaction with the nav bar to ensure it is at full opacity.
-        int x = mActivityRule.getActivity().getWidth() / 2;
-        int y = mActivityRule.getActivity().getBottom() + 10;
-        injectCanceledTap(x, y);
-        Thread.sleep(WAIT_TIME);
+        ensureNavBarFullOpacity();
 
         LightBarActivity activity = mActivityRule.getActivity();
         Bitmap bitmap = takeNavigationBarScreenshot(activity);
@@ -229,6 +240,8 @@ public class LightBarTests extends LightBarTestBase {
     @AppModeFull // Instant apps cannot create notifications
     public void testLightBarIsNotAllowed_fitStatusBar() throws Throwable {
         assumeHasColoredStatusBar(mActivityRule);
+        // TODO(b/394505070): Fix the test on large screen devices.
+        assumeFalse(isTablet());
 
         runInNotificationSession(() -> {
             final LightBarActivity activity = mActivityRule.getActivity();
@@ -252,6 +265,117 @@ public class LightBarTests extends LightBarTestBase {
             Stats s = evaluateDarkBarBitmap(bitmap, Color.TRANSPARENT, 0);
             assertStats(bitmap, s, false /* light */);
         });
+    }
+
+    /**
+     * Verify whether the activity can't control navigation bar with legacy APIs if it doesn't cover
+     * the navigation bar insets area.
+     */
+    @Test
+    public void testLightNavigationBarLegacy_escapeNavBar_notAllowToChange() throws Throwable {
+        assumeHasColoredNavigationBar(mActivityRule);
+
+        final LightBarActivity activity = mActivityRule.getActivity();
+        activity.runOnUiThread(
+                () -> {
+                    activity.setToEscapeNavBarInsets();
+                    activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
+                    requestLightBars(LIGHT_BG_COLOR);
+                });
+        Thread.sleep(WAIT_TIME);
+
+        ensureNavBarFullOpacity();
+
+        final Bitmap bitmap = takeNavigationBarScreenshot(activity);
+        final Stats s = evaluateDarkBarBitmap(bitmap, LIGHT_BG_COLOR, activity.getBottom());
+        assertFalse(
+                "The activity must not change the nav bar color since it doesn't cover "
+                        + "the nav bar area",
+                canNavigationBarChangesColor(s.backgroundPixels, s.totalPixels()));
+    }
+
+    /**
+     * Verify whether the activity can't control navigation bar with
+     * {@link android.view.WindowInsetsController#setSystemBarsAppearance} if it doesn't cover
+     * the navigation bar insets area .
+     */
+    @Test
+    public void testLightNavigationBar_escapeNavBar_notAllowToChange() throws Throwable {
+        assumeHasColoredNavigationBar(mActivityRule);
+
+        final LightBarActivity activity = mActivityRule.getActivity();
+        activity.runOnUiThread(
+                () -> {
+                    activity.setToEscapeNavBarInsets();
+                    activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
+                    activity.setLightNavigationBarAppearance(true);
+                });
+        Thread.sleep(WAIT_TIME);
+
+        ensureNavBarFullOpacity();
+
+        final Bitmap bitmap = takeNavigationBarScreenshot(activity);
+        final Stats s = evaluateDarkBarBitmap(bitmap, LIGHT_BG_COLOR, activity.getBottom());
+        assertFalse(
+                "The activity must not change the nav bar color since it doesn't cover "
+                        + "the nav bar area",
+                canNavigationBarChangesColor(s.backgroundPixels, s.totalPixels()));
+    }
+
+    /**
+     * Verify whether the activity can control navigation bar with legacy APIs even if it doesn't
+     * fill the parent container.
+     */
+    @Test
+    public void testLightNavigationBarLegacy_bottomHalfLayout() throws Throwable {
+        assumeHasColoredNavigationBar(mActivityRule);
+
+        final LightBarActivity activity = mActivityRule.getActivity();
+        activity.runOnUiThread(
+                () -> {
+                    activity.setBottomHalfLayout();
+                    activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
+                    requestLightBars(LIGHT_BG_COLOR);
+                });
+        Thread.sleep(WAIT_TIME);
+
+        ensureNavBarFullOpacity();
+
+        final Bitmap bitmap = takeNavigationBarScreenshot(activity);
+        final Stats s = evaluateLightBarBitmap(bitmap, LIGHT_BG_COLOR, activity.getBottom());
+        assertStats(bitmap, s, true /* light */);
+    }
+
+    /**
+     * Verify whether the activity can control navigation bar
+     * with {@link android.view.WindowInsetsController#setSystemBarsAppearance} even if it doesn't
+     * fill the parent container.
+     */
+    @Test
+    public void testLightNavigationBar_bottomHalfLayout() throws Throwable {
+        assumeHasColoredNavigationBar(mActivityRule);
+
+        final LightBarActivity activity = mActivityRule.getActivity();
+        activity.runOnUiThread(
+                () -> {
+                    activity.setBottomHalfLayout();
+                    activity.getWindow().setBackgroundDrawable(new ColorDrawable(LIGHT_BG_COLOR));
+                    activity.setLightNavigationBarAppearance(true);
+                });
+        Thread.sleep(WAIT_TIME);
+
+        ensureNavBarFullOpacity();
+
+        final Bitmap bitmap = takeNavigationBarScreenshot(activity);
+        final Stats s = evaluateLightBarBitmap(bitmap, LIGHT_BG_COLOR, activity.getBottom());
+        assertStats(bitmap, s, true /* light */);
+    }
+
+    private void ensureNavBarFullOpacity() throws InterruptedException {
+        int x = mActivityRule.getActivity().getWidth() / 2;
+        int y = mActivityRule.getActivity().getBottom() + 10;
+        injectCanceledTap(x, y);
+        Thread.sleep(WAIT_TIME);
     }
 
     private void runInNotificationSession(ThrowingRunnable task) throws Exception {

@@ -86,8 +86,14 @@ public class LightBarTestBase {
     }
 
     protected void assumeNavigationBarChangesColor(int backgroundColorPixelCount, int totalPixel) {
-        assumeTrue("Not enough background pixels. The navigation bar may not be able to change "
-                + "color.", backgroundColorPixelCount > 0.3f * totalPixel);
+        assumeTrue(
+                "Not enough background pixels. The navigation bar may not be able to change "
+                        + "color.",
+                canNavigationBarChangesColor(backgroundColorPixelCount, totalPixel));
+    }
+
+    protected boolean canNavigationBarChangesColor(int backgroundColorPixelCount, int totalPixel) {
+        return backgroundColorPixelCount > 0.3f * totalPixel;
     }
 
     protected ArrayList loadCutout(LightBarBaseActivity activity) {
