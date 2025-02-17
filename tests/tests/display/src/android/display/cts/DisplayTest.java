@@ -359,7 +359,8 @@ public class DisplayTest extends TestBase {
 
         // Add a secondary display
         mUiAutomation.executeShellCommand(
-                "settings put global overlay_display_devices 181x161/214|182x162/214");
+                "settings put global overlay_display_devices 181x161/214|182x162/214"
+                        +",fixed_content_mode");
 
         // Wait for the secondary display to become available
         assertTrue(signal.await(20, TimeUnit.SECONDS));
