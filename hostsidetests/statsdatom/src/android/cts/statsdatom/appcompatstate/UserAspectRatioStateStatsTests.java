@@ -44,6 +44,7 @@ import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.util.RunUtil;
@@ -51,6 +52,8 @@ import com.android.tradefed.util.RunUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This test is for making sure that user aspect ratio changes in Settings log the desired atoms.
@@ -64,6 +67,9 @@ public class UserAspectRatioStateStatsTests  extends DeviceTestCase implements I
     private static final String TEST_APK =
             "CtsPropertyCompatAllowUserAspectRatioOverrideOptInApp.apk";
     private static final String TEST_PKG = "android.server.wm.allowuseraspectratiooverrideoptin";
+    private static final Pattern USER_ASPECT_RATIO_SETTINGS_PATTERN =
+            Pattern.compile("Is the user aspect ratio settings enabled: (true|false)");
+    private static final String WM_GET_LETTERBOX_STYLE = "wm get-letterbox-style";
     private IBuildInfo mCtsBuild;
 
     @Override
@@ -96,6 +102,8 @@ public class UserAspectRatioStateStatsTests  extends DeviceTestCase implements I
 
     public void testUserAspectRatioOption() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
+        // Cannot enforce existence of user aspect ratio settings.
+        if (isUserAspectRatioSettingsDisabled()) return;
         // Run an local test (AppCompatTests#testUserAspectRatioOptions) to
         // generate device interactions that cause aspect ratio option atoms to be logged.
         final String testClass = ".appcompat.AppCompatTests";
@@ -105,10 +113,6 @@ public class UserAspectRatioStateStatsTests  extends DeviceTestCase implements I
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
-        // Cannot enforce existence of user aspect ratio settings.
-        if (data.isEmpty()) {
-            return;
-        }
 
         List<Action> realActions = new ArrayList<>();
         for (StatsLog.EventMetricData d : data) {
@@ -131,5 +135,12 @@ public class UserAspectRatioStateStatsTests  extends DeviceTestCase implements I
                 ACTION_USER_ASPECT_RATIO_HALF_SCREEN_SELECTED,
                 ACTION_USER_ASPECT_RATIO_HALF_SCREEN_UNSELECTED);
         assertThat(realActions).containsAnyIn(expectedAnyActions);
+    }
+
+    private boolean isUserAspectRatioSettingsDisabled() throws DeviceNotAvailableException {
+        String output = getDevice().executeShellCommand(WM_GET_LETTERBOX_STYLE);
+        final Matcher matcher = USER_ASPECT_RATIO_SETTINGS_PATTERN.matcher(output);
+        assertTrue(matcher.find());
+        return !Boolean.parseBoolean(matcher.group(1));
     }
 }

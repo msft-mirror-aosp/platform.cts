@@ -29,7 +29,6 @@ import static org.junit.Assume.assumeNotNull;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.RemoteException;
@@ -45,7 +44,6 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.NonApiTest;
-import com.android.internal.R;
 import com.android.server.cts.device.statsdatom.MinAspectRatioPortraitActivity;
 import com.android.server.cts.device.statsdatom.StatsdCtsMinAspectRatioPortraitActivity;
 
@@ -62,7 +60,6 @@ public class AppCompatTests {
     private static final long FIND_TIMEOUT = 5000L;
     private static final int BOUNDS_OFFSET = 155;
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-    private static final String SETTINGS_PACKAGE = "com.android.settings";
     private static final String TEST_PKG = "android.server.wm.allowuseraspectratiooverrideoptin";
     private final UiDevice mDevice =
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
@@ -209,9 +206,6 @@ public class AppCompatTests {
     @NonApiTest(exemptionReasons = {}, justification = "METRIC")
     @Test
     public void testUserAspectRatioOptions() {
-        if (isUserAspectRatioSettingsDisabled()) {
-            return;
-        }
         final Context context = getApplicationContext();
         final Intent intent = new Intent(Settings.ACTION_MANAGE_USER_ASPECT_RATIO_SETTINGS);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -222,10 +216,9 @@ public class AppCompatTests {
         context.startActivity(intent);
         mDevice.waitForIdle();
 
-        UiObject2 page = findSettingsMainContentView();
         do {
             clickAllCheckableButtons();
-            page.scroll(Direction.DOWN, 1.0f);
+            scrollPageDown();
         } while (mDevice.wait(Until.gone(By.checked(true)), FIND_TIMEOUT));
     }
 
@@ -237,16 +230,10 @@ public class AppCompatTests {
         }
     }
 
-    private UiObject2 findSettingsMainContentView() {
-        return mDevice.wait(
-                Until.findObject(
-                        By.pkg(SETTINGS_PACKAGE).res(SETTINGS_PACKAGE, "content_parent")),
-                FIND_TIMEOUT);
-    }
-
-    private boolean isUserAspectRatioSettingsDisabled() {
-        final Resources res = getApplicationContext().getResources();
-        return !res.getBoolean(R.bool.config_appCompatUserAppAspectRatioSettingsIsEnabled)
-                && !res.getBoolean(R.bool.config_appCompatUserAppAspectRatioFullscreenIsEnabled);
+    private void scrollPageDown() {
+        List<UiObject2> pages = mDevice.wait(Until.findObjects(By.scrollable(true)), FIND_TIMEOUT);
+        for (int i = 0; i < pages.size(); i++) {
+            pages.get(i).scroll(Direction.DOWN, 1.0f);
+        }
     }
 }
