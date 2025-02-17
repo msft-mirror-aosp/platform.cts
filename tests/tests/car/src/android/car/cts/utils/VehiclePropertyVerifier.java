@@ -65,6 +65,7 @@ import com.google.common.collect.Sets;
 
 import org.hamcrest.Matchers;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -85,6 +86,8 @@ public class VehiclePropertyVerifier<T> {
     private static final int VENDOR_ERROR_CODE_MINIMUM_VALUE = 0x0;
     private static final int VENDOR_ERROR_CODE_MAXIMUM_VALUE = 0xffff;
     private static final int SET_PROPERTY_CALLBACK_TIMEOUT_SEC = 5;
+    private static final long CPM_ACTION_DELAY_MS = 300;
+    private static final Object sLock = new Object();
     private static final ImmutableSet<Integer> WHEEL_AREAS = ImmutableSet.of(
             VehicleAreaWheel.WHEEL_LEFT_FRONT, VehicleAreaWheel.WHEEL_LEFT_REAR,
             VehicleAreaWheel.WHEEL_RIGHT_FRONT, VehicleAreaWheel.WHEEL_RIGHT_REAR);
@@ -129,6 +132,9 @@ public class VehiclePropertyVerifier<T> {
     private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
             CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
             CarPropertyValue.STATUS_ERROR);
+
+    @GuardedBy("sLock")
+    private static long sLastActionElapsedRealtimeNanos = 0;
 
     private final CarPropertyManager mCarPropertyManager;
     private final int mPropertyId;
@@ -1021,6 +1027,7 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private void verifySetPropertyOkayOrThrowExpectedExceptions(int areaId, T valueToSet) {
+        spaceOutCarPropertyManagerActions();
         try {
             mCarPropertyManager.setProperty(mPropertyType, mPropertyId, areaId, valueToSet);
         } catch (PropertyNotAvailableAndRetryException e) {
@@ -1066,6 +1073,7 @@ public class VehiclePropertyVerifier<T> {
             assertWithMessage("Testing mixed type property is not supported").fail();
         }
         for (int areaId : carPropertyConfig.getAreaIds()) {
+            spaceOutCarPropertyManagerActions();
             SetterCallback setterCallback = new SetterCallback(mPropertyId, areaId, valueToSet);
             assertWithMessage("Failed to register no change setter callback for "
                             + VehiclePropertyIds.toString(mPropertyId))
@@ -2433,6 +2441,7 @@ public class VehiclePropertyVerifier<T> {
     private static <U> CarPropertyValue<U> setPropertyAndWaitForChange(
             CarPropertyManager carPropertyManager, int propertyId, Class<U> propertyType,
             int areaId, U valueToSet, U expectedValueToGet) {
+        spaceOutCarPropertyManagerActions();
         SetterCallback setterCallback = new SetterCallback(propertyId, areaId, expectedValueToGet);
         assertWithMessage("Failed to register setter callback for " + VehiclePropertyIds.toString(
                 propertyId)).that(carPropertyManager.registerCallback(setterCallback, propertyId,
@@ -2453,5 +2462,24 @@ public class VehiclePropertyVerifier<T> {
                 setterCallback.waitForPropertyEvent(SET_PROPERTY_CALLBACK_TIMEOUT_SEC);
         carPropertyManager.unregisterCallback(setterCallback, propertyId);
         return carPropertyValue;
+    }
+
+    private static void spaceOutCarPropertyManagerActions() {
+        synchronized (sLock) {
+            do {
+                long currentElapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos();
+                long remainingDelayMs =
+                        CPM_ACTION_DELAY_MS
+                                - Duration.ofNanos(
+                                                currentElapsedRealtimeNanos
+                                                        - sLastActionElapsedRealtimeNanos)
+                                        .toMillis();
+                if (remainingDelayMs <= 0) {
+                    sLastActionElapsedRealtimeNanos = currentElapsedRealtimeNanos;
+                    break;
+                }
+                SystemClock.sleep(remainingDelayMs);
+            } while (true);
+        }
     }
 }
