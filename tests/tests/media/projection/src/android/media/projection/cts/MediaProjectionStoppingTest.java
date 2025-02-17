@@ -18,11 +18,15 @@ package android.media.projection.cts;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
+import static com.android.compatibility.common.util.FeatureUtil.isAutomotive;
+import static com.android.compatibility.common.util.FeatureUtil.isTV;
+import static com.android.compatibility.common.util.FeatureUtil.isWatch;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -273,6 +277,11 @@ public class MediaProjectionStoppingTest {
     public void
             callEnds_mediaProjectionStartedDuringCallAndIsActive_stopDialogFlagEnabled_showsStopDialog()
                     throws Exception {
+        // MediaProjection stop Dialog is only available on phones.
+        assumeFalse(isWatch());
+        assumeFalse(isAutomotive());
+        assumeFalse(isTV());
+
         assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELECOM));
 
         try {
