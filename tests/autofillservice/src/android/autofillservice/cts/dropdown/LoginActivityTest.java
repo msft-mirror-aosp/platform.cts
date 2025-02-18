@@ -98,6 +98,7 @@ import android.autofillservice.cts.testcore.MyAutofillCallback;
 import android.autofillservice.cts.testcore.NoOpAutofillService;
 import android.autofillservice.cts.testcore.OneTimeCancellationSignalListener;
 import android.autofillservice.cts.testcore.OneTimeTextWatcher;
+import android.autofillservice.cts.testcore.Repeat;
 import android.autofillservice.cts.testcore.Timeouts;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -2623,7 +2624,8 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         mActivity.assertAutoFilled();
     }
 
-    @FlakyTest(bugId = 162372863) // Re-add @Presubmit after fixing.
+    @Presubmit
+    @Repeat(times = 10)
     @Test
     public void testCommitMultipleTimes() throws Throwable {
         // Set service.
@@ -2633,60 +2635,52 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 .setRequiredSavableIds(SAVE_DATA_TYPE_PASSWORD, ID_USERNAME, ID_PASSWORD)
                 .build();
 
-        for (int i = 1; i <= 10; i++) {
-            Log.i(TAG, "testCommitMultipleTimes(): step " + i);
-            final String username = "user-" + i;
-            final String password = "pass-" + i;
-            try {
-                // Set expectations.
-                sReplier.addResponse(response);
+        // Set expectations.
+        sReplier.addResponse(response);
 
-                Timeouts.IDLE_UNBIND_TIMEOUT.run("wait for session created", () -> {
-                    // Trigger auto-fill.
-                    mActivity.onUsername(View::clearFocus);
-                    mActivity.onUsername(View::requestFocus);
+        final String username = "user-";
+        final String password = "pass-";
 
-                    return isConnected() ? "not_used" : null;
-                });
+        Timeouts.IDLE_UNBIND_TIMEOUT.run("wait for session created", () -> {
+            // Trigger auto-fill.
+            mActivity.onUsername(View::clearFocus);
+            mActivity.onUsername(View::requestFocus);
 
-                sReplier.getNextFillRequest();
+            return isConnected() ? "not_used" : null;
+        });
 
-                // Validation check.
-                mUiBot.assertNoDatasetsEver();
+        sReplier.getNextFillRequest();
 
-                // Set credentials...
-                mActivity.onUsername((v) -> v.setText(username));
-                mActivity.onPassword((v) -> v.setText(password));
+        // Validation check.
+        mUiBot.assertNoDatasetsEver();
 
-                // Change focus to prepare for next step - must do it before session is gone
-                mActivity.onPassword(View::requestFocus);
+        // Set credentials...
+        mActivity.onUsername((v) -> v.setText(username));
+        mActivity.onPassword((v) -> v.setText(password));
 
-                // ...and save them
-                mActivity.tapSave();
+        // Change focus to prepare for next step - must do it before session is gone
+        mActivity.onPassword(View::requestFocus);
 
-                // Assert the snack bar is shown and tap "Save".
-                mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
+        // ...and save them
+        mActivity.tapSave();
 
-                final SaveRequest saveRequest = sReplier.getNextSaveRequest();
+        // Assert the snack bar is shown and tap "Save".
+        mUiBot.saveForAutofill(true, SAVE_DATA_TYPE_PASSWORD);
 
-                // Assert value of expected fields - should not be sanitized.
-                final ViewNode usernameNode = findNodeByResourceId(saveRequest.structure,
-                        ID_USERNAME);
-                assertTextAndValue(usernameNode, username);
-                final ViewNode passwordNode = findNodeByResourceId(saveRequest.structure,
-                        ID_PASSWORD);
-                assertTextAndValue(passwordNode, password);
+        final SaveRequest saveRequest = sReplier.getNextSaveRequest();
 
-                waitUntilDisconnected();
+        // Assert value of expected fields - should not be sanitized.
+        final ViewNode usernameNode = findNodeByResourceId(saveRequest.structure,
+                ID_USERNAME);
+        assertTextAndValue(usernameNode, username);
+        final ViewNode passwordNode = findNodeByResourceId(saveRequest.structure,
+                ID_PASSWORD);
+        assertTextAndValue(passwordNode, password);
 
-                // Wait and check if the save window is correctly hidden.
-                mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
-            } catch (RetryableException e) {
-                throw new RetryableException(e, "on step %d", i);
-            } catch (Throwable t) {
-                throw new Throwable("Error on step " + i, t);
-            }
-        }
+        waitUntilDisconnected();
+
+        // Wait and check if the save window is correctly hidden.
+        mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
     }
 
     @Presubmit
