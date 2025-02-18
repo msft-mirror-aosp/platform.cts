@@ -51,7 +51,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -547,10 +546,6 @@ public class ImsMmTelManagerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to telephony provider")
     public void testVoWiFiRoamingModeSettingUsingNonTerrestrialNetwork() throws Exception {
-        if (!Flags.carrierEnabledSatelliteFlag()) {
-            return;
-        }
-
         // Get original VoWiFi roaming mode
         ImsManager imsManager = getContext().getSystemService(ImsManager.class);
         ImsMmTelManager mMmTelManager = imsManager.getImsMmTelManager(sTestSub);

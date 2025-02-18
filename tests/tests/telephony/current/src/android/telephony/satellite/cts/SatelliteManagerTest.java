@@ -947,7 +947,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testGetAggregateSatellitePlmnListForCarrier() {
         if (!shouldTestSatellite()) return;
 

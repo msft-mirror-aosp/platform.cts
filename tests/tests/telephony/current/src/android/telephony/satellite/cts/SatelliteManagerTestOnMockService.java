@@ -48,7 +48,6 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
-import android.annotation.FlaggedApi;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.AppOpsManager;
@@ -3386,7 +3385,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteAttachEnabledForCarrier() {
-        if (!Flags.carrierEnabledSatelliteFlag()) return;
 
         logd("testSatelliteAttachEnabledForCarrier");
         grantSatellitePermission();
@@ -3482,8 +3480,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     @Test
     public void testSatelliteAttachRestrictionForCarrier() {
-        if (!Flags.carrierEnabledSatelliteFlag()) return;
-
         logd("testSatelliteAttachRestrictionForCarrier");
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
@@ -4308,10 +4304,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @FlaggedApi(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testGetSatellitePlmnsForCarrier() {
-        if (!Flags.carrierEnabledSatelliteFlag()) return;
-
         logd("testGetAggregateSatellitePlmnListForCarrier");
         grantSatellitePermission();
         beforeSatelliteForCarrierTest();
