@@ -43,6 +43,7 @@ import org.junit.runner.RunWith;
 @SmallTest
 public class BluetoothCddTest {
     private static final String TAG = BluetoothCddTest.class.getSimpleName();
+
     private static final int PROFILE_MCP_SERVER = 24;
     private static final int PROFILE_LE_CALL_CONTROL = 27;
     // Some devices need some extra time after entering STATE_OFF
