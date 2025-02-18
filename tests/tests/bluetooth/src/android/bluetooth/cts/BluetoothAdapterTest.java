@@ -89,6 +89,7 @@ import java.util.concurrent.Executor;
 @MediumTest
 public class BluetoothAdapterTest {
     private static final String TAG = "BluetoothAdapterTest";
+
     private static final String ENABLE_DUAL_MODE_AUDIO = "persist.bluetooth.enable_dual_mode_audio";
 
     @Rule
