@@ -51,6 +51,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
+import com.android.cts.input.DebugInputRule;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
@@ -77,6 +78,8 @@ public final class MultiUserMockImeTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();  // Required by Bedstead.
+
+    @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     /** Tag for the first EditText. */
     private static final String FIRST_EDIT_TEXT_TAG = "first-EditText";
@@ -157,6 +160,7 @@ public final class MultiUserMockImeTest {
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @RequireFeature(CommonPackages.FEATURE_MANAGED_USERS)
     @EnsureHasWorkProfile
+    @DebugInputRule.DebugInput(bug = 385227171)
     public void testRemoveCurrentProfileCanStartInputOnOtherUser() throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
         final UserReference profileUser = workProfile(sDeviceState, currentUser);
