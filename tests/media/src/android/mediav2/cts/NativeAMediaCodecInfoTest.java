@@ -33,6 +33,7 @@ import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.util.Range;
 import android.util.Size;
 
@@ -121,6 +122,9 @@ public class NativeAMediaCodecInfoTest {
         for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (codecInfo.isAlias()) continue;
             String codecName = codecInfo.getName();
+            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
+                continue;
+            }
             if (codecPrefix != null && !codecName.startsWith(codecPrefix)
                     || (codecFilter != null && !codecFilter.matcher(codecName).matches())) {
                 continue;
