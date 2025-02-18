@@ -24,6 +24,7 @@ import static android.autofillservice.cts.testcore.Helper.getActivityName;
 import static android.autofillservice.cts.testcore.Timeouts.CONNECTION_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_EVENTS_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.FILL_TIMEOUT;
+import static android.autofillservice.cts.testcore.Timeouts.FIRST_FILL_REQUEST_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.IDLE_UNBIND_TIMEOUT;
 import static android.autofillservice.cts.testcore.Timeouts.RESPONSE_DELAY_MS;
 import static android.autofillservice.cts.testcore.Timeouts.SAVE_TIMEOUT;
@@ -101,6 +102,7 @@ public class InstrumentedAutoFillService extends AutofillService {
 
     private static AtomicBoolean sConnected = new AtomicBoolean(false);
     private static AtomicBoolean sTestRunning = new AtomicBoolean(false);
+    private static AtomicBoolean sFillRequestReceived = new AtomicBoolean(false);
 
     // We must handle all requests in a separate thread as the service's main thread is the also
     // the UI thread of the test process and we don't want to hose it in case of failures here
@@ -219,6 +221,7 @@ public class InstrumentedAutoFillService extends AutofillService {
         }
         mConnected = true;
         mHandler.post(() -> handleConnected(true));
+        mHandler.post(() -> sFillRequestReceived.set(false));
     }
 
     @Override
@@ -256,13 +259,24 @@ public class InstrumentedAutoFillService extends AutofillService {
             Log.w(TAG, "Ignoring onFillRequest() from different package: " + component);
             return;
         }
+        if (!sFillRequestReceived.get()) {
+            // Note: this call needs happen before posting sReplier.onFillRequest() to make sure
+            // that the test can wait for first fill request is received but not necessarily handled
+            Log.d(TAG, "onFillRequest() received first time after onConnected()");
+            mHandler.post(() -> sFillRequestReceived.set(true));
+        }
         mHandler.post(
-                () -> sReplier.onFillRequest(request.getFillContexts(), request.getHints(),
-                        request.getClientState(),
-                        cancellationSignal, callback, request.getFlags(),
-                        request.getInlineSuggestionsRequest(),
-                        request.getDelayedFillIntentSender(),
-                        request.getId()));
+                () ->
+                        sReplier.onFillRequest(
+                                request.getFillContexts(),
+                                request.getHints(),
+                                request.getClientState(),
+                                cancellationSignal,
+                                callback,
+                                request.getFlags(),
+                                request.getInlineSuggestionsRequest(),
+                                request.getDelayedFillIntentSender(),
+                                request.getId()));
     }
 
     @Override
@@ -377,6 +391,22 @@ public class InstrumentedAutoFillService extends AutofillService {
         timeout.run("wait for connected=" + expected,  () -> {
             return isConnected() == expected ? Boolean.TRUE : null;
         });
+    }
+
+    /**
+     * Waits until {@link #onFillRequest()} is first called after {@link #onConnected()}, or fails
+     * if it times out.
+     *
+     * <p>Note this only verifies that the first fill request is received on
+     * InstrumentedAutofillService, not necessarily it is already handled, i.e.
+     * sReplier.onFillRequest() might not have been called yet.
+     */
+    public static void waitUntilFirstFillRequestAfterConnectReceived() throws Exception {
+        FIRST_FILL_REQUEST_TIMEOUT.run(
+                "wait for receiving first fill request",
+                () -> {
+                    return sFillRequestReceived.get() ? Boolean.TRUE : null;
+                });
     }
 
     /**
