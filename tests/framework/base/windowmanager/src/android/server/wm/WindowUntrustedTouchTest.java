@@ -19,13 +19,10 @@ package android.server.wm;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.provider.Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS;
-import static android.server.wm.UiDeviceUtils.pressUnlockButton;
-import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.overlay.Components.OverlayActivity.EXTRA_TOKEN;
 import static android.view.WindowInsets.Type.navigationBars;
 import static android.view.WindowInsets.Type.statusBars;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -44,7 +41,6 @@ import android.app.Instrumentation;
 import android.app.NotificationManager;
 import android.app.WindowConfiguration;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -63,31 +59,32 @@ import android.server.wm.overlay.R;
 import android.server.wm.settings.SettingsSession;
 import android.server.wm.shared.BlockingResultReceiver;
 import android.server.wm.shared.IUntrustedTouchTestService;
-import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.ArraySet;
+import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.view.accessibility.AccessibilityWindowInfo;
 import android.widget.Toast;
 
 import androidx.annotation.AnimRes;
 import androidx.annotation.Nullable;
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.OverrideAnimationScaleRule;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -138,9 +135,6 @@ public class WindowUntrustedTouchTest {
 
     private static final String[] APPS = {APP_A, APP_B};
 
-    private static final String SETTING_MAXIMUM_OBSCURING_OPACITY =
-            "maximum_obscuring_opacity_for_touch";
-
     private static SettingsSession<String> sImmersiveModeConfirmationSetting;
 
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
@@ -149,11 +143,9 @@ public class WindowUntrustedTouchTest {
     private Instrumentation mInstrumentation;
     private Context mContext;
     private Resources mResources;
-    private ContentResolver mContentResolver;
     private TouchHelper mTouchHelper;
     private Handler mMainHandler;
     private InputManager mInputManager;
-    private WindowManager mWindowManager;
     private ActivityManager mActivityManager;
     private NotificationManager mNotificationManager;
     private TestActivity mActivity;
@@ -172,6 +164,16 @@ public class WindowUntrustedTouchTest {
     public ActivityScenarioRule<TestActivity> activityRule =
             new ActivityScenarioRule<>(TestActivity.class, createLaunchActivityOptionsBundle());
 
+    private ActivityScenario<TestActivity> mScenario;
+
+    private static final float DEFAULT_SCALE = 1f;
+
+
+    // Animations require default animation scale to pass
+    @ClassRule
+    public static final OverrideAnimationScaleRule overrideAnimationScaleRule =
+            new OverrideAnimationScaleRule(DEFAULT_SCALE);
+
     @BeforeClass
     public static void setUpClass() {
         sImmersiveModeConfirmationSetting = new SettingsSession<>(
@@ -189,7 +191,10 @@ public class WindowUntrustedTouchTest {
 
     @Before
     public void setUp() throws Exception {
-        activityRule.getScenario().onActivity(activity -> {
+        mInstrumentation = getInstrumentation();
+        mContext = mInstrumentation.getContext();
+        mScenario = activityRule.getScenario();
+        mScenario.onActivity(activity -> {
             mActivity = activity;
             mContainer = mActivity.view;
             // On ARC++, text toast is fixed on the screen. Its position may overlays the navigation
@@ -197,45 +202,44 @@ public class WindowUntrustedTouchTest {
             mContainer.getWindowInsetsController().hide(statusBars() | navigationBars());
             mContainer.setOnTouchListener(this::onTouchEvent);
         });
-        mInstrumentation = getInstrumentation();
-        mContext = mInstrumentation.getContext();
+        mTouchesReceived.set(0);
         mResources = mContext.getResources();
-        mContentResolver = mContext.getContentResolver();
         mTouchHelper = new TouchHelper(mInstrumentation, mWmState);
         mMainHandler = new Handler(Looper.getMainLooper());
         mInputManager = mContext.getSystemService(InputManager.class);
-        mWindowManager = mContext.getSystemService(WindowManager.class);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
 
         mPreviousSawAppOp = AppOpsUtils.getOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW);
         AppOpsUtils.setOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW, MODE_ALLOWED);
+        // Store current values and restore in teardown
         mPreviousTouchOpacity = setMaximumObscuringOpacityForTouch(MAXIMUM_OBSCURING_OPACITY);
         mPreviousMode = setBlockUntrustedTouchesMode(FEATURE_MODE_BLOCK);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(false));
 
-        pressWakeupButton();
-        pressUnlockButton();
+        UiDeviceUtils.wakeUpAndUnlock(mContext);
     }
 
     @After
     public void tearDown() throws Throwable {
-        mWmState.waitForAppTransitionIdleOnDisplay(Display.DEFAULT_DISPLAY);
-        mTouchesReceived.set(0);
-        removeOverlays();
-        for (FutureConnection<IUntrustedTouchTestService> connection : mConnections.values()) {
-            mContext.unbindService(connection);
-        }
-        mConnections.clear();
+        // We need to stop the app because not every overlay is created via the service (eg.
+        // activity overlays and custom toasts)
         for (String app : APPS) {
             stopPackage(app);
         }
+        try {
+            // Catch any exception so teardown completes
+            removeOverlays();
+        } catch (Throwable t) {
+            Log.w(TAG, "Error when removing overlays " + t);
+        }
+        // Restore to original values
+        setBlockUntrustedTouchesMode(mPreviousMode);
+        AppOpsUtils.setOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW, mPreviousSawAppOp);
+        setMaximumObscuringOpacityForTouch(mPreviousTouchOpacity);
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(true));
-        setBlockUntrustedTouchesMode(mPreviousMode);
-        setMaximumObscuringOpacityForTouch(mPreviousTouchOpacity);
-        AppOpsUtils.setOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW, mPreviousSawAppOp);
     }
 
     @Test
@@ -273,10 +277,11 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testMaximumObscuringOpacity() throws Throwable {
-        // Setting the previous value since we override this on setUp()
-        setMaximumObscuringOpacityForTouch(mPreviousTouchOpacity);
+        setMaximumObscuringOpacityForTouch(0f);
+        float previous = setMaximumObscuringOpacityForTouch(MAXIMUM_OBSCURING_OPACITY);
+        assertEquals(0f, previous);
 
-        assertEquals(0.8f, mInputManager.getMaximumObscuringOpacityForTouch());
+        assertEquals(MAXIMUM_OBSCURING_OPACITY, mInputManager.getMaximumObscuringOpacityForTouch());
     }
 
     @Test
@@ -693,7 +698,6 @@ public class WindowUntrustedTouchTest {
     public void testWhenEnterAnimationBelowThresholdAndNewActivityNotTouchable_allowsTouch() {
         addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_7, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
-
         mTouchHelper.tapOnViewCenter(mContainer, /* waitAnimations*/ false);
 
         assertAnimationRunning();
@@ -909,7 +913,7 @@ public class WindowUntrustedTouchTest {
     }
 
     private void addMyCustomToastOverlay() {
-        mActivity.runOnUiThread(() -> {
+        mMainHandler.post(() -> {
             mToast = new Toast(mContext);
             View view = new View(mContext);
             view.setBackgroundColor(OVERLAY_COLOR);
@@ -922,7 +926,7 @@ public class WindowUntrustedTouchTest {
     }
 
     private void removeMyCustomToastOverlay() {
-        mActivity.runOnUiThread(() -> {
+        mMainHandler.post(() -> {
             if (mToast != null) {
                 mToast.cancel();
                 mToast = null;
@@ -1004,13 +1008,6 @@ public class WindowUntrustedTouchTest {
 
     private void addActivity(ComponentName component, @Nullable Bundle extras,
             @Nullable Bundle options) {
-        final int focusedWindowIdBeforeStart =
-                mInstrumentation.getUiAutomation().getWindows()
-                        .stream()
-                        .filter(AccessibilityWindowInfo::isFocused)
-                        .mapToInt(AccessibilityWindowInfo::getId)
-                        .findFirst().orElse(-1);
-
         Intent intent = new Intent();
         intent.setComponent(component);
         if (extras != null) {
@@ -1019,37 +1016,12 @@ public class WindowUntrustedTouchTest {
         mActivity.startActivity(intent, options);
         String packageName = component.getPackageName();
         String activity = ComponentNameUtils.getActivityName(component);
-        final boolean transparent = extras != null
-                && extras.getFloat(Components.OverlayActivity.EXTRA_OPACITY, 1.f) == 0;
         if (!mWmState.waitFor("activity window " + activity,
-                state -> {
-                    if (!TextUtils.equals(activity, state.getFocusedActivity())
-                            || !state.hasActivityState(component, STATE_RESUMED)
-                            || !state.isWindowSurfaceShown(activity)) {
-                        return false;
-                    }
-
-                    // We need to make sure that InputFlinger has populated window info before
-                    // proceeding. This checks AccessibilityWindowInfo because it is accessible from
-                    // test and information comes from input.
-
-                    if (transparent) {
-                        // TODO: window with opacity=0 is not exposed to a11y. Skip checking them.
-                        //  This can be resolved by directly querying WindowInfo.
-                        return true;
-                    }
-                    return mInstrumentation.getUiAutomation().getWindows()
-                            .stream()
-                            .anyMatch(w -> {
-                                Rect rect = new Rect();
-                                w.getBoundsInScreen(rect);
-                                return w.isFocused()
-                                        && w.getId() != focusedWindowIdBeforeStart
-                                        && rect.equals(state.getActivity(component).getBounds());
-                            });
-                })) {
-            fail("Activity from app " + packageName + " did not appear on time");
-        }
+                    state -> activity.equals(state.getFocusedActivity())
+                        && state.hasActivityState(component, STATE_RESUMED)
+                        && state.isWindowSurfaceShown(activity))) {
+                fail("Activity from app " + packageName + " did not appear on time");
+            }
     }
 
     private void removeActivityOverlays() {
@@ -1094,13 +1066,14 @@ public class WindowUntrustedTouchTest {
 
     private void removeOverlays() throws Throwable {
         for (FutureConnection<IUntrustedTouchTestService> connection : mConnections.values()) {
-            connection.getCurrent().removeOverlays();
+            IUntrustedTouchTestService current = connection.getCurrent();
+            if (current != null) {
+                // This can throw android.os.DeadObjectException
+                current.removeOverlays();
+            }
+            mContext.unbindService(connection);
         }
-        // We need to stop the app because not every overlay is created via the service (eg.
-        // activity overlays and custom toasts)
-        for (String app : APPS) {
-            stopPackage(app);
-        }
+        mConnections.clear();
         waitForNoSawOverlays("SAWs not removed on time");
         removeActivityOverlays();
         waitForNoActivityOverlays("Activities not removed on time");
@@ -1109,8 +1082,12 @@ public class WindowUntrustedTouchTest {
     }
 
     private void stopPackage(String packageName) {
-        SystemUtil.runWithShellPermissionIdentity(
-                () -> mActivityManager.forceStopPackage(packageName));
+        try {
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> mActivityManager.forceStopPackage(packageName));
+        } catch (Throwable t) {
+            Log.w(TAG, "Exception when trying to force stop package : " + packageName);
+        }
     }
 
     private int setBlockUntrustedTouchesMode(int mode) throws Exception {
