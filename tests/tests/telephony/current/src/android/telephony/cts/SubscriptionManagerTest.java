@@ -1319,8 +1319,14 @@ public class SubscriptionManagerTest {
 
         // Vendors can add supported usage settings by adding resources.
         try {
-            int[] usageSettingsFromResource = context.getResources().getIntArray(
-                Resources.getSystem().getIdentifier("config_supported_cellular_usage_settings","array","android"));
+            int[] usageSettingsFromResource =
+                    context.getResources()
+                            .getIntArray(
+                                    Resources.getSystem()
+                                            .getIdentifier(
+                                                    "config_supported_cellular_usage_settings",
+                                                    "array",
+                                                    "android"));
 
             for (int setting : usageSettingsFromResource) {
                 supportedUsageSettings.add(setting);
@@ -1769,15 +1775,12 @@ public class SubscriptionManagerTest {
                 .getSystemService(TelephonyManager.class);
 
         int dataNetworkType;
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (InstrumentationRegistry.getContext().getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
-                dataNetworkType = tm.getDataNetworkType(mSubId);
-            } else {
-                dataNetworkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
-            }
-        } else {
+        if (InstrumentationRegistry.getContext()
+                .getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
             dataNetworkType = tm.getDataNetworkType(mSubId);
+        } else {
+            dataNetworkType = TelephonyManager.NETWORK_TYPE_UNKNOWN;
         }
         long supportedRats = ShellIdentityUtils.invokeMethodWithShellPermissions(tm,
                 TelephonyManager::getSupportedRadioAccessFamily);

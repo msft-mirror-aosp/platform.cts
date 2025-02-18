@@ -43,8 +43,6 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.TtsSpan;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,11 +69,10 @@ public class PhoneNumberUtilsTest {
         mOldMinMatch = PhoneNumberUtils.getMinMatchForTest();
         PhoneNumberUtils.setMinMatchForTest(MIN_MATCH);
 
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            mPackageManager = getContext().getPackageManager();
-            assumeTrue("Skipping test that requires FEATURE_TELEPHONY_CALLING",
-                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
-        }
+        mPackageManager = getContext().getPackageManager();
+        assumeTrue(
+                "Skipping test that requires FEATURE_TELEPHONY_CALLING",
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
     }
 
     @After
