@@ -65,20 +65,24 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.android.compatibility.common.util.FeatureUtil;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -86,7 +90,7 @@ import java.util.concurrent.TimeoutException;
 /**
  * Tests for permission behavior with VirtualAudioDevice
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualAudioPermissionTest {
 
@@ -237,100 +241,96 @@ public class VirtualAudioPermissionTest {
     }
 
     @RequiresFlagsEnabled({
-        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
+            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
     })
+    @Parameters(method = "allPermissionCombinations")
     @Test
-    public void audioInjection_localPermissionDenied_remotePermissionDenied() throws Exception {
-        testAudioRecordWithPermissions(/*localPermission*/ false, /*remotePermission*/ false);
-    }
-
-    @RequiresFlagsEnabled({
-        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
-    })
-    @Ignore("b/381386115, fix device aware 'RECORD_AUDIO' permission")
-    @Test
-    public void audioInjection_localPermissionDenied_remotePermissionGranted() throws Exception {
-        testAudioRecordWithPermissions(/*localPermission*/ false, /*remotePermission*/ true);
-    }
-
-    @RequiresFlagsEnabled({
-        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
-    })
-    @Ignore("b/381386115, fix device aware 'RECORD_AUDIO' permission")
-    @Test
-    public void audioInjection_localPermissionGranted_remotePermissionDenied() throws Exception {
-        testAudioRecordWithPermissions(/*localPermission*/ true, /*remotePermission*/ false);
-    }
-
-    @RequiresFlagsEnabled({
-        android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
-        android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
-    })
-    @Test
-    public void audioInjection_localPermissionGranted_remotePermissionGranted() throws Exception {
-        testAudioRecordWithPermissions(/*localPermission*/ true, /*remotePermission*/ true);
-    }
-
-    /**
-     * Tests a combination of local and remote device permission values for RECORD_AUDIO. The test
-     * has the following steps:
-     * - Checks the initial state of the permissions for the STREAMED_APP_PACKAGE
-     * - Sets the required value of the permission on each device/context
-     * - Checks the value of the permission is as expected on each device/context
-     * - Starts the RecordAudioTestActivity from STREAMED_APP_PACKAGE which tries to open and
-     * record from an AudioRecord
-     * - Checks expectation of the audio record succeeding or failing depending on the permission
-     * value for the tested device/context
-     *
-     * @param localPermission - true if permission granted on the local device, false otherwise
-     * @param remotePermission - true if permission granted on the remote device, false otherwise
-     */
-    private void testAudioRecordWithPermissions(boolean localPermission, boolean remotePermission)
+    @TestCaseName("customAudioPolicy_localPermission_{0}_remotePermission_{1}_runningLocally_{2}")
+    public void audioInjection_permissionCombinationWithCustomAudioPolicy(
+            boolean localPermission, boolean remotePermission, boolean runLocally)
             throws Exception {
 
         setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
         setupVirtualAudioDevice();
 
         Context deviceContext = mContext.createDeviceContext(mVirtualDeviceId);
+        checkAndGrantPermissions(localPermission, remotePermission, deviceContext);
 
+        if (runLocally) {
+            // audio record succeeds on local device with local permission and it doesn't without
+            verifyRecordAudioResulFromActivity(
+                    Display.DEFAULT_DISPLAY, localPermission,
+                    "Custom audio policy. Record on local device.");
+        } else {
+            // audio record succeeds on remote device with remote permission and it doesn't without
+            verifyRecordAudioResulFromActivity(
+                    mVirtualDisplayId, remotePermission,
+                    "Custom audio policy. Record on remote device.");
+        }
+    }
+
+    @RequiresFlagsEnabled({
+            android.media.audiopolicy.Flags.FLAG_RECORD_AUDIO_DEVICE_AWARE_PERMISSION,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+            android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED
+    })
+    @Parameters(method = "allPermissionCombinations")
+    @Test
+    @TestCaseName("defaultAudioPolicy_localPermission_{0}_remotePermission_{1}_runningLocally_{2}")
+    public void audioInjection_permissionCombinationWithDefaultAudioPolicy(
+            boolean localPermission, boolean remotePermission, boolean runLocally)
+            throws Exception {
+
+        setupVirtualDevice(VirtualDeviceParams.DEVICE_POLICY_DEFAULT);
+        // for the default audio policy, there is no need to setup a virtual audio device since
+        // the routing will redirect to the local ones, but we do it to check proper functionality
+        setupVirtualAudioDevice();
+
+        Context deviceContext = mContext.createDeviceContext(mVirtualDeviceId);
+        checkAndGrantPermissions(localPermission, remotePermission, deviceContext);
+
+        if (runLocally) {
+            // audio record succeeds on local device with local permission and it doesn't without
+            verifyRecordAudioResulFromActivity(
+                    Display.DEFAULT_DISPLAY, localPermission,
+                    "Default audio policy. Record on local device.");
+        } else {
+            // audio record succeeds on remote device with local permission and it doesn't without
+            verifyRecordAudioResulFromActivity(
+                    mVirtualDisplayId, localPermission,
+                    "Default audio policy. Record on remote device.");
+        }
+    }
+
+    private void checkAndGrantPermissions(boolean localPermission, boolean remotePermission,
+            Context deviceContext) {
         // Assert no initial permissions on neither local nor remote devices
-        assertThat(mContext.getPackageManager().checkPermission(RECORD_AUDIO, STREAMED_APP_PACKAGE))
+        assertThat(mContext.getPackageManager()
+                .checkPermission(RECORD_AUDIO, STREAMED_APP_PACKAGE))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
-        assertThat(deviceContext.getPackageManager().checkPermission(RECORD_AUDIO,
-                STREAMED_APP_PACKAGE)).isEqualTo(PackageManager.PERMISSION_DENIED);
+        assertThat(deviceContext.getPackageManager()
+                .checkPermission(RECORD_AUDIO, STREAMED_APP_PACKAGE))
+                .isEqualTo(PackageManager.PERMISSION_DENIED);
 
         // grant local permission if needed
         if (localPermission) {
             mContext.getPackageManager().grantRuntimePermission(STREAMED_APP_PACKAGE, RECORD_AUDIO,
                     UserHandle.of(mContext.getUserId()));
-
-            assertThat(mContext.getPackageManager().checkPermission(RECORD_AUDIO,
-                    STREAMED_APP_PACKAGE)).isEqualTo(PackageManager.PERMISSION_GRANTED);
+            assertThat(mContext.getPackageManager()
+                    .checkPermission(RECORD_AUDIO, STREAMED_APP_PACKAGE))
+                    .isEqualTo(PackageManager.PERMISSION_GRANTED);
         }
 
         // grant remote permission if needed
         if (remotePermission) {
-            deviceContext.getPackageManager().grantRuntimePermission(STREAMED_APP_PACKAGE,
-                    RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
-
-            assertThat(deviceContext.getPackageManager().checkPermission(RECORD_AUDIO,
-                    STREAMED_APP_PACKAGE)).isEqualTo(PackageManager.PERMISSION_GRANTED);
+            deviceContext.getPackageManager().grantRuntimePermission(
+                    STREAMED_APP_PACKAGE, RECORD_AUDIO, UserHandle.of(deviceContext.getUserId()));
+            assertThat(deviceContext.getPackageManager()
+                    .checkPermission(RECORD_AUDIO, STREAMED_APP_PACKAGE))
+                    .isEqualTo(PackageManager.PERMISSION_GRANTED);
         }
-
-        // audio record succeeds on local device with permission and it doesn't without
-        verifyRecordAudioResulFromActivity(Display.DEFAULT_DISPLAY, localPermission,
-                "Record on local device.");
-
-        // audio record succeeds on remote device with permission and it doesn't without
-        verifyRecordAudioResulFromActivity(mVirtualDisplayId, remotePermission,
-                "Record on remote device.");
     }
 
     private void setupVirtualDevice(int audioPolicy) {
@@ -430,6 +430,18 @@ public class VirtualAudioPermissionTest {
         }
     }
 
+    private static Object[] allPermissionCombinations() {
+        List<Object[]> permissions = new ArrayList<>();
+        for (boolean localPermission : new boolean[]{true, false}) {
+            for (boolean remotePermission : new boolean[]{true, false}) {
+                for (boolean runLocally : new boolean[]{true, false}) {
+                    permissions.add(new Object[]{localPermission, remotePermission, runLocally});
+                }
+            }
+        }
+        return permissions.toArray(new Object[0][]);
+    }
+
     public void verifyRecordAudioResulFromActivity(int displayId, boolean expected, String msg) {
         launchRecordAudioActivity(displayId);
 
@@ -445,6 +457,7 @@ public class VirtualAudioPermissionTest {
     }
 
     private void launchRecordAudioActivity(int displayId) {
+        Mockito.clearInvocations(mResultReceiver);
         RemoteCallback remoteCallback = new RemoteCallback(mResultReceiver);
 
         Intent intent = new Intent()
