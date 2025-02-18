@@ -3501,7 +3501,7 @@ public class ItsService extends Service implements SensorEventListener {
 
         CountDownLatch frameNumLatch = new CountDownLatch(frameNumToCapture + 1);
         ExtensionPreviewFrameCaptureResultListener captureResultListener =
-                new ExtensionPreviewFrameCaptureResultListener(frameNumLatch);
+                new ExtensionPreviewFrameCaptureResultListener(frameNumLatch, extension);
 
         BlockingExtensionSessionCallback sessionListener =
                 new BlockingExtensionSessionCallback();
@@ -4607,10 +4607,36 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private boolean hasCapability(int capability) throws ItsException {
-        int[] capabilities = mCameraCharacteristics.get(
-                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
-        if (capabilities == null) {
-            throw new ItsException("Failed to get capabilities");
+        return hasCapability(capability, false, -1 /* cameraExtensionMode */);
+   }
+
+    /**
+     * Returns true if the camera has the given capability.
+     *
+     * @param capability The capability to check.
+     * @param isCameraExtension Whether the capability is for a camera extension session.
+     * @param cameraExtensionMode The mode of the camera extension. Only used if
+     * isCameraExtension is true. Use -1 for non-camera extension sessions.
+     * @return True if the camera has the given capability.
+     */
+    private boolean hasCapability(int capability, boolean isCameraExtension,
+        int cameraExtensionMode) throws ItsException {
+        final int[] capabilities;
+        if (isCameraExtension) {
+            if (!ItsUtils.isAtLeastV()) {
+                return false;
+            }
+            capabilities = mCameraExtensionCharacteristics.get(cameraExtensionMode,
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            if (capabilities == null) {
+                return false;
+            }
+        } else {
+            capabilities = mCameraCharacteristics.get(
+                    CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            if (capabilities == null) {
+                throw new ItsException("Failed to get capabilities");
+            }
         }
         for (int c : capabilities) {
             if (c == capability) {
@@ -4621,6 +4647,20 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private String buildLogString(CaptureResult result) throws ItsException {
+        return buildLogString(result, false, -1 /* cameraExtensionMode */);
+    }
+
+    /**
+     * Returns a string representation of the given capture result.
+     *
+     * @param result The capture result to log.
+     * @param isCameraExtension Whether the capture result is for a camera extension session.
+     * @param cameraExtensionMode The mode of the camera extension. Only used if
+     * isCameraExtension is true. Use -1 for non-camera extension sessions.
+     * @return A string representation of the capture result.
+     */
+    private String buildLogString(CaptureResult result,
+        boolean isCameraExtension, int cameraExtensionMode) throws ItsException {
         StringBuilder logMsg = new StringBuilder();
         logMsg.append(String.format(
                 "Capt result: AE=%d, AF=%d, AWB=%d, ",
@@ -4629,7 +4669,9 @@ public class ItsService extends Service implements SensorEventListener {
                 result.get(CaptureResult.CONTROL_AWB_STATE)));
 
         boolean readSensorSettings = hasCapability(
-                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS);
+                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_READ_SENSOR_SETTINGS,
+                isCameraExtension,
+                cameraExtensionMode);
 
         if (readSensorSettings) {
             logMsg.append(String.format(
@@ -4911,9 +4953,12 @@ public class ItsService extends Service implements SensorEventListener {
     private class ExtensionPreviewFrameCaptureResultListener
             extends ExtensionCaptureResultListener {
         private CountDownLatch mFrameCaptureLatch;
+        private final int mCameraExtensionMode;
 
-        ExtensionPreviewFrameCaptureResultListener(CountDownLatch frameCaptureLatch) {
+        ExtensionPreviewFrameCaptureResultListener(CountDownLatch frameCaptureLatch,
+            int cameraExtensionMode) {
             mFrameCaptureLatch = frameCaptureLatch;
+            mCameraExtensionMode = cameraExtensionMode;
         }
 
         @Override
@@ -4937,7 +4982,7 @@ public class ItsService extends Service implements SensorEventListener {
                 if (request == null || result == null) {
                     throw new ItsException("Request/result is invalid");
                 }
-                Logt.i(TAG, buildLogString(result));
+                Logt.i(TAG, buildLogString(result, true, mCameraExtensionMode));
             } catch (ItsException e) {
                 Logt.e(TAG, "Script error: ", e);
             }
