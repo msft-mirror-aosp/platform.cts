@@ -568,6 +568,7 @@ public class VoipConnectionServiceControlMain extends Service {
     }
 
     private void cleanupImplementation() {
+        VoipConnectionServiceMain.sLastFailedRequest = null;
         disconnectAndDestroyAllCalls();
         unregisterAllPhoneAccounts();
         // delete the call channel
