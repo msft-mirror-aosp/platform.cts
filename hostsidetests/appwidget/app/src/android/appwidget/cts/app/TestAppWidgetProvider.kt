@@ -15,6 +15,27 @@
  */
 package android.appwidget.cts.app
 
+import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.Context
+import android.widget.RemoteViews
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.flow.MutableStateFlow
 
-class TestAppWidgetProvider : AppWidgetProvider()
+class TestAppWidgetProvider : AppWidgetProvider() {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        views.get()?.let { views ->
+            appWidgetManager.updateAppWidget(appWidgetIds, views)
+        }
+        updates.value += 1
+    }
+
+    companion object {
+        val views = AtomicReference<RemoteViews?>(null)
+        val updates = MutableStateFlow(0)
+    }
+}

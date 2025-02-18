@@ -26,6 +26,7 @@ java_test_host {
     ],
     static_libs: [
         "android.appwidget.flags-aconfig-java-host",
+        "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
     ],
     libs: [
