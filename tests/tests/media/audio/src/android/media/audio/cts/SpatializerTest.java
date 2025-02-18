@@ -16,7 +16,10 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_DEFAULT_AUDIO_EFFECTS;
 import static android.media.audio.Flags.FLAG_FEATURE_SPATIAL_AUDIO_HEADTRACKING_LOW_LATENCY;
+
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertThrows;
 
@@ -497,19 +500,21 @@ public class SpatializerTest extends CtsAndroidTestCase {
             spat.addOnSpatializerStateChangedListener(Executors.newSingleThreadExecutor(),
                     stateListener);
             // now disable the effect and check head tracker availability
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                    "android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-            spat.setEnabled(false);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            // now disable the effect and check head tracker availability
+            runWithShellPermissionIdentity(
+                    () -> {
+                        spat.setEnabled(false);
+                    },
+                    MODIFY_DEFAULT_AUDIO_EFFECTS);
             assertFalse("spatializer state listener not notified after disabling",
                     stateListener.getEnabled());
             assertFalse("head tracker available despite spatializer disabled",
                     spat.isHeadTrackerAvailable());
-            // reset state and wait until done
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                    "android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-            spat.setEnabled(true);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            runWithShellPermissionIdentity(
+                    () -> {
+                        spat.setEnabled(true);
+                    },
+                    MODIFY_DEFAULT_AUDIO_EFFECTS);
             assertTrue("spatializer state listener not notified after enabling",
                     stateListener.getEnabled());
         }
