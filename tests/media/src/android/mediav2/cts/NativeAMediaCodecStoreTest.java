@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
 import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
+import static android.mediav2.cts.NativeAMediaCodecInfoTest.SPECIAL_CODEC;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaExtractor;
@@ -111,7 +112,7 @@ public class NativeAMediaCodecStoreTest {
             for (String type : types) {
                 MediaCodecInfo.CodecCapabilities codecCapabilities =
                         codecInfo.getCapabilitiesForType(type);
-                if (codecCapabilities.isFeatureSupported("special-codec")) continue;
+                if (codecCapabilities.isFeatureSupported(SPECIAL_CODEC)) continue;
                 if (mediaType != null) {
                     if (type.equalsIgnoreCase(mediaType)) {
                         boolean isOk = true;
