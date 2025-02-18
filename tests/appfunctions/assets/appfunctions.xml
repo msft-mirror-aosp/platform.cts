@@ -109,4 +109,8 @@
         <function_id>longRunningFunction</function_id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
     </appfunction>
+    <appfunction>
+        <function_id>runForever</function_id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
+    </appfunction>
 </appfunctions>

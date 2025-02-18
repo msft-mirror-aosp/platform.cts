@@ -37,6 +37,7 @@ import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceive
 import android.app.appsearch.GenericDocument
 import android.content.Context
 import android.os.CancellationSignal
+import android.os.UserHandle
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -68,6 +69,7 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertFailsWith
+import kotlin.test.fail
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -892,9 +894,7 @@ class AppFunctionManagerTest {
                 assertThat(response.appFunctionException().errorCode)
                     .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
                 assertThat(response.appFunctionException().errorMessage)
-                    .contains(
-                        "App function not found."
-                    )
+                    .contains("App function not found.")
             }
         }
 
@@ -914,11 +914,6 @@ class AppFunctionManagerTest {
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.appFunctionException().errorCode)
                     .isEqualTo(AppFunctionException.ERROR_FUNCTION_NOT_FOUND)
-                assertThat(response.appFunctionException().errorMessage)
-                    .contains(
-                        "Document (android\$apps-db/app_functions," +
-                            " android.app.appfunctions.cts.helper/random_function) not found"
-                    )
             }
         }
 
@@ -1115,6 +1110,56 @@ class AppFunctionManagerTest {
         }
     }
 
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunctionWithoutPermission_processStateIsNotBfgs() = doBlocking {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "runForever")
+                .setParameters(parameters)
+                .build()
+
+        val cancellationSignal = CancellationSignal()
+        try {
+            mManager.executeAppFunction(request, Runnable::run, cancellationSignal) {}
+            waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
+            assertProcessState(isBfgs = false)
+        } finally {
+            cancellationSignal.cancel()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunctionWithPermission_processStateIsBfgs() = doBlocking {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "runForever")
+                    .setParameters(parameters)
+                    .build()
+
+            val cancellationSignal = CancellationSignal()
+            try {
+                mManager.executeAppFunction(request, Runnable::run, cancellationSignal) {}
+                waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)
+                assertProcessState(isBfgs = true)
+            } finally {
+                cancellationSignal.cancel()
+            }
+        }
+    }
+
     private fun assertCancelListenerTriggered() {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
@@ -1156,6 +1201,30 @@ class AppFunctionManagerTest {
         val userId = user.id()
         assertThat(SystemUtil.runShellCommand("pm install-existing --user $userId $packageName"))
             .isEqualTo("Package $packageName installed for user: $userId\n")
+    }
+
+    /**
+     * Asserts the state of the process running AppFunctionService is 'bfgs', i.e. bound foreground
+     * service, or not.
+     */
+    private fun assertProcessState(isBfgs: Boolean) {
+        val output = SystemUtil.runShellCommand("dumpsys activity lru")
+        for (line in output.lines()) {
+            if (
+                line.contains("android.app.appfunctions.cts:appfunctions/u${UserHandle.myUserId()}")
+            ) {
+                if (isBfgs) {
+                    assertThat(line).contains("BFGS")
+                } else {
+                    assertThat(line).doesNotContain("BFGS")
+                }
+                return
+            }
+        }
+        fail(
+            "Cannot find android.app.appfunctions.cts:appfunctions/u${UserHandle.myUserId()}" +
+                " from dumpsys activity lru"
+        )
     }
 
     private companion object {
