@@ -83,7 +83,9 @@ class DebugInputRule : TestWatcher() {
                     SystemUtil.runShellCommandOrThrow("getprop log.tag.$tag")!!.trim()
             SystemUtil.runShellCommandOrThrow("setprop log.tag.$tag DEBUG")
         }
-        SystemUtil.runShellCommandOrThrow("wm logging enable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS")
+        SystemUtil.runShellCommandOrThrow(
+            "wm logging enable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS"
+        )
     }
 
     override fun failed(e: Throwable?, description: Description?) {
@@ -98,7 +100,9 @@ class DebugInputRule : TestWatcher() {
             SystemUtil.runShellCommandOrThrow("setprop log.tag.${entry.key} $value")
         }
         initialValues.clear()
-        SystemUtil.runShellCommandOrThrow("wm logging disable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS")
+        SystemUtil.runShellCommandOrThrow(
+            "wm logging disable-text WM_DEBUG_FOCUS_LIGHT WM_DEBUG_FOCUS"
+        )
     }
 
     override fun skipped(e: AssumptionViolatedException?, description: Description?) {
