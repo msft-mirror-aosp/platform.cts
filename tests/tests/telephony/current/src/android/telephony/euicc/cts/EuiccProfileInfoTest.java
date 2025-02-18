@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import android.annotation.FlaggedApi;
 import android.os.Parcel;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -52,7 +51,6 @@ public class EuiccProfileInfoTest {
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @FlaggedApi(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING)
     @Before
     public void setUp() throws Exception {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
