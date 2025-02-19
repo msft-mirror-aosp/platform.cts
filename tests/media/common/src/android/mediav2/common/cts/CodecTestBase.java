@@ -855,7 +855,7 @@ public abstract class CodecTestBase {
     }
 
     public static CodecCapabilities getCodecCapabilities(String codecName, String mediaType) {
-        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (codecName.equals(codecInfo.getName())) {
                 return codecInfo.getCapabilitiesForType(mediaType);
             }
