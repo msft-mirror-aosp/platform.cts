@@ -15,7 +15,7 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.car.cts">
+    package="android.car">
     <uses-feature android:name="android.hardware.type.automotive" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
     <uses-permission android:name="android.car.permission.USE_CAR_TELEMETRY_SERVICE" />
@@ -84,7 +84,7 @@
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
-                     android:targetPackage="android.car.cts"
+                     android:targetPackage="android.car"
                      android:label="CTS tests for Automotive">
     </instrumentation>
 </manifest>
