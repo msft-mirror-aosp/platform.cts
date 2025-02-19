@@ -1010,7 +1010,7 @@ def main():
               num_pass += 1
               break
 
-            if test_code == 1 and not test_not_yet_mandated:
+            if test_code != 0 and not test_not_yet_mandated:
               return_string = 'FAIL '
               if 'Problem with socket' in content and num_try != NUM_TRIES-1:
                 logging.info('Retry %s/%s', s, test)
