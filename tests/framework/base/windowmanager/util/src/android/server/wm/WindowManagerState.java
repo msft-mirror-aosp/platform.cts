@@ -1997,6 +1997,7 @@ public class WindowManagerState {
         private boolean mShouldSendCompatFakeFocus;
         private int mOverrideOrientation;
         private boolean mShouldForceRotateForCameraCompat;
+        private boolean mShouldAllowSimulateRequestedOrientationForCameraCompat;
         private boolean mShouldRefreshActivityForCameraCompat;
         private boolean mShouldRefreshActivityViaPauseForCameraCompat;
         private boolean mShouldOverrideMinAspectRatio;
@@ -2027,6 +2028,8 @@ public class WindowManagerState {
             mParent = parent;
             mShouldForceRotateForCameraCompat = proto.getShouldForceRotateForCameraCompat();
             mShouldRefreshActivityForCameraCompat = proto.getShouldRefreshActivityForCameraCompat();
+            mShouldAllowSimulateRequestedOrientationForCameraCompat =
+                    proto.getShouldAllowSimulateRequestedOrientationForCameraCompat();
             mShouldRefreshActivityViaPauseForCameraCompat =
                     proto.getShouldRefreshActivityViaPauseForCameraCompat();
             mShouldOverrideMinAspectRatio = proto.getShouldOverrideMinAspectRatio();
@@ -2057,6 +2060,8 @@ public class WindowManagerState {
             mParent = parent;
             mShouldForceRotateForCameraCompat = proto.shouldForceRotateForCameraCompat;
             mShouldRefreshActivityForCameraCompat = proto.shouldRefreshActivityForCameraCompat;
+            mShouldAllowSimulateRequestedOrientationForCameraCompat =
+                    proto.shouldAllowSimulateRequestedOrientationForCameraCompat;
             mShouldRefreshActivityViaPauseForCameraCompat =
                     proto.shouldRefreshActivityViaPauseForCameraCompat;
             mShouldOverrideMinAspectRatio = proto.shouldOverrideMinAspectRatio;
@@ -2133,6 +2138,10 @@ public class WindowManagerState {
 
         public boolean getShouldRefreshActivityForCameraCompat() {
             return mShouldRefreshActivityForCameraCompat;
+        }
+
+        public boolean getShouldAllowSimulateRequestedOrientationForCameraCompat() {
+            return mShouldAllowSimulateRequestedOrientationForCameraCompat;
         }
 
         public boolean getShouldRefreshActivityViaPauseForCameraCompat() {
