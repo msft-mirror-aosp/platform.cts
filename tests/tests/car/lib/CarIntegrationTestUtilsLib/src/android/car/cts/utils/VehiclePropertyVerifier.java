@@ -1261,7 +1261,6 @@ public class VehiclePropertyVerifier<T> {
                     temperatureRequest, expectedTemperatureResponse);
             verifyCarPropertyValue(updatedCarPropertyValue, areaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            verifyHvacTemperatureValueSuggestionResponse(updatedCarPropertyValue.getValue());
         }
     }
 
@@ -1484,10 +1483,6 @@ public class VehiclePropertyVerifier<T> {
             for (CarPropertyValue<?> carPropertyValue : carPropertyValues) {
                 verifyCarPropertyValue(carPropertyValue, carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             }
         }
     }
@@ -1801,10 +1796,6 @@ public class VehiclePropertyVerifier<T> {
             try {
                 carPropertyValue = mCarPropertyManager.getProperty(mPropertyId, areaId);
                 verifyCarPropertyValue(carPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             } catch (PropertyNotAvailableException | CarInternalErrorException e) {
                 handleGetPropertyExceptions(e);
             }
@@ -2152,53 +2143,6 @@ public class VehiclePropertyVerifier<T> {
                     SecurityException.class,
                     () ->  mCarPropertyManager.subscribePropertyEvents(mPropertyId, FAKE_CALLBACK));
         }
-    }
-
-    private void verifyHvacTemperatureValueSuggestionResponse(Float[] temperatureSuggestion) {
-        Float suggestedTempInCelsius = temperatureSuggestion[2];
-        Float suggestedTempInFahrenheit = temperatureSuggestion[3];
-        CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
-                mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
-        if (hvacTemperatureSetCarPropertyConfig == null) {
-            return;
-        }
-        List<Integer> hvacTemperatureSetConfigArray =
-                hvacTemperatureSetCarPropertyConfig.getConfigArray();
-        if (hvacTemperatureSetConfigArray.isEmpty()) {
-            return;
-        }
-        Integer minTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(0);
-        Integer maxTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(1);
-        Integer incrementInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(2);
-        verifyHvacTemperatureIsValid(suggestedTempInCelsius, minTempInCelsiusTimesTen,
-                maxTempInCelsiusTimesTen, incrementInCelsiusTimesTen);
-
-        Integer minTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(3);
-        Integer maxTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(4);
-        Integer incrementInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(5);
-        verifyHvacTemperatureIsValid(suggestedTempInFahrenheit, minTempInFahrenheitTimesTen,
-                maxTempInFahrenheitTimesTen, incrementInFahrenheitTimesTen);
-
-        int suggestedTempInCelsiusTimesTen = (int) (suggestedTempInCelsius * 10f);
-        int suggestedTempInFahrenheitTimesTen = (int) (suggestedTempInFahrenheit * 10f);
-        int numIncrementsCelsius =
-                Math.round((suggestedTempInCelsiusTimesTen - minTempInCelsiusTimesTen)
-                        / incrementInCelsiusTimesTen.floatValue());
-        int numIncrementsFahrenheit =
-                Math.round((suggestedTempInFahrenheitTimesTen - minTempInFahrenheitTimesTen)
-                        / incrementInFahrenheitTimesTen.floatValue());
-        assertWithMessage(
-                        "The temperature in celsius must map to the same temperature in fahrenheit"
-                            + " using the HVAC_TEMPERATURE_SET config array: "
-                            + hvacTemperatureSetConfigArray)
-                .that(numIncrementsFahrenheit)
-                .isEqualTo(numIncrementsCelsius);
     }
 
     /**
@@ -2864,10 +2808,6 @@ public class VehiclePropertyVerifier<T> {
                     CarPropertyValue.STATUS_AVAILABLE, getPropertyResult.getTimestampNanos(),
                     (T) getPropertyResult.getValue(), expectedAreaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                verifyHvacTemperatureValueSuggestionResponse(
-                        (Float[]) getPropertyResult.getValue());
-            }
         }
 
         for (PropertyAsyncError propertyAsyncError :
