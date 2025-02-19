@@ -747,31 +747,31 @@ void SurfaceTransaction_setLuts(JNIEnv* env, jclass, jlong surfaceControl, jlong
     ADisplayLuts* luts = ADisplayLuts_create();
     if (jdimensionArray) {
         jsize numLuts = env->GetArrayLength(jdimensionArray);
-        ScopedIntArrayRW joffsets(env, joffsetArray);
+        ScopedIntArrayRO joffsets(env, joffsetArray);
         if (joffsets.get() == nullptr) {
-            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRW from joffsetArray");
+            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRO from joffsetArray");
             return;
         }
-        ScopedIntArrayRW jdimensions(env, jdimensionArray);
+        ScopedIntArrayRO jdimensions(env, jdimensionArray);
         if (jdimensions.get() == nullptr) {
-            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRW from jdimensionArray");
+            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRO from jdimensionArray");
             return;
         }
-        ScopedIntArrayRW jsizes(env, jsizeArray);
+        ScopedIntArrayRO jsizes(env, jsizeArray);
         if (jsizes.get() == nullptr) {
-            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRW from jsizeArray");
+            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRO from jsizeArray");
             return;
         }
-        ScopedIntArrayRW jsamplingKeys(env, jsamplingKeyArray);
+        ScopedIntArrayRO jsamplingKeys(env, jsamplingKeyArray);
         if (jsamplingKeys.get() == nullptr) {
-            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRW from jsamplingKeyArray");
+            jniThrowRuntimeException(env, "Failed to get ScopedIntArrayRO from jsamplingKeyArray");
             return;
         }
 
         if (numLuts > 0) {
-            ScopedFloatArrayRW jbuffers(env, jbufferArray);
+            ScopedFloatArrayRO jbuffers(env, jbufferArray);
             if (jbuffers.get() == nullptr) {
-                jniThrowRuntimeException(env, "Failed to get ScopedFloatArrayRW from jbufferArray");
+                jniThrowRuntimeException(env, "Failed to get ScopedFloatArrayRO from jbufferArray");
                 return;
             }
             int32_t bufferSize = (int32_t)env->GetArrayLength(jbufferArray);
@@ -780,10 +780,13 @@ void SurfaceTransaction_setLuts(JNIEnv* env, jclass, jlong surfaceControl, jlong
             for (int32_t i = 0; i < numLuts; i++) {
                 int32_t bufferSizePerLut = (i + 1 == numLuts) ? bufferSize - joffsets[i]
                                                               : joffsets[i + 1] - joffsets[i];
+                float* buffersPtr = const_cast<float*>(jbuffers.get());
                 ADisplayLutsEntry* entry =
-                        ADisplayLutsEntry_createEntry(jbuffers.get() + joffsets[i], bufferSizePerLut,
-                                        static_cast<ADisplayLuts_Dimension>(jdimensions[i]),
-                                        static_cast<ADisplayLuts_SamplingKey>(jsamplingKeys[i]));
+                        ADisplayLutsEntry_createEntry(buffersPtr + joffsets[i], bufferSizePerLut,
+                                                      static_cast<ADisplayLuts_Dimension>(
+                                                              jdimensions[i]),
+                                                      static_cast<ADisplayLuts_SamplingKey>(
+                                                              jsamplingKeys[i]));
                 entries.emplace_back(entry);
             }
             ADisplayLuts_setEntries(luts, entries.data(), numLuts);
