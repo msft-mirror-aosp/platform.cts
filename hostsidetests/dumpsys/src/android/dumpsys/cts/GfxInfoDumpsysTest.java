@@ -82,13 +82,16 @@ public class GfxInfoDumpsysTest extends BaseDumpsysTest {
             while ((line = reader.readLine()) != null && line.isEmpty()) {}
 
             assertNotNull(line);
-            assertTrue("First line was not the expected header: " + line,
-                    line.startsWith("Flags,FrameTimelineVsyncId,IntendedVsync,Vsync"
-                            + ",InputEventId,HandleInputStart,AnimationStart,PerformTraversalsStart"
-                            + ",DrawStart,FrameDeadline,FrameInterval,FrameStartTime"
-                            + ",SyncQueued,SyncStart,IssueDrawCommandsStart,SwapBuffers"
-                            + ",FrameCompleted,DequeueBufferDuration,QueueBufferDuration"
-                            + ",GpuCompleted,SwapBuffersCompleted,DisplayPresentTime"));
+            assertTrue(
+                    "First line was not the expected header: " + line,
+                    line.startsWith(
+                            "Flags,FrameTimelineVsyncId,IntendedVsync,Vsync"
+                                    + ",InputEventId,HandleInputStart,AnimationStart"
+                                    + ",PerformTraversalsStart,DrawStart,FrameDeadline"
+                                    + ",FrameStartTime,FrameInterval,WorkloadTarget"
+                                    + ",SyncQueued,SyncStart,IssueDrawCommandsStart,SwapBuffers"
+                                    + ",FrameCompleted,DequeueBufferDuration,QueueBufferDuration"
+                                    + ",GpuCompleted,SwapBuffersCompleted,DisplayPresentTime"));
 
             long[] numparts = new long[TIMESTAMP_COUNT];
             while ((line = reader.readLine()) != null && !line.isEmpty()) {
@@ -112,12 +115,12 @@ public class GfxInfoDumpsysTest extends BaseDumpsysTest {
                 final long timestampAnimationStart = numparts[6];
                 final long timestampPerformTraversalsStart = numparts[7];
                 final long timestampDrawStart = numparts[8];
-                // skip FrameDeadline, FrameInterval,FrameStartTime
-                final long timestampSyncQueued = numparts[12];
-                final long timestampSyncStart = numparts[13];
-                final long timestampIssueDrawCommandsStart = numparts[14];
-                final long timestampSwapBuffers = numparts[15];
-                final long timestampFrameCompleted = numparts[16];
+                // skip FrameDeadline, FrameInterval, FrameStartTime, WorkloadDuration
+                final long timestampSyncQueued = numparts[13];
+                final long timestampSyncStart = numparts[14];
+                final long timestampIssueDrawCommandsStart = numparts[15];
+                final long timestampSwapBuffers = numparts[16];
+                final long timestampFrameCompleted = numparts[17];
 
                 // assert time is flowing forwards. we need to check each entry explicitly
                 // as some entries do not represent a flow of events.
