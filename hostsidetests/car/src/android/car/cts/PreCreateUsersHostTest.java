@@ -21,6 +21,7 @@ import static com.android.tradefed.device.NativeDevice.INVALID_USER_ID;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.Presubmit;
 
@@ -95,6 +96,9 @@ public final class PreCreateUsersHostTest extends CarHostJUnit4TestCase {
 
     private void appsAreNotInstalledOnPreCreatedUserTest(boolean isGuest,
             boolean afterReboot) throws Exception {
+
+        assumePreCreatedUsersAreEnabled(isGuest);
+
         deletePreCreatedUsers();
         requiresExtraUsers(1);
 
@@ -156,6 +160,9 @@ public final class PreCreateUsersHostTest extends CarHostJUnit4TestCase {
 
     private void appPermissionsPreCreatedUserPackagesTest(boolean isGuest, boolean afterReboot)
             throws Exception {
+
+        assumePreCreatedUsersAreEnabled(isGuest);
+
         deletePreCreatedUsers();
         requiresExtraUsers(2);
 
@@ -304,5 +311,21 @@ public final class PreCreateUsersHostTest extends CarHostJUnit4TestCase {
     private void restartSystem() throws Exception {
         // Restart the system to make sure PackageManager preserves the installed bit
         restartSystemServer();
+    }
+
+    private void assumePreCreatedUsersAreEnabled(boolean guests) throws Exception {
+        assumeTrue("Pre-created users are not enabled",
+                getNumberOfRequestedPreCreatedUsers(guests) > 0);
+    }
+
+    private int getNumberOfRequestedPreCreatedUsers(boolean guests) throws Exception {
+        String result = getDevice()
+                                .executeShellCommand("getprop android.car.number_pre_created_"
+                                        + (guests ? "guests" : "users"))
+                                .trim();
+        if (result == null || result.isEmpty()) {
+            return 0;
+        }
+        return Integer.valueOf(result);
     }
 }
