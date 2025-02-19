@@ -26,8 +26,8 @@ import android.content.ComponentName;
 
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -263,7 +263,7 @@ public final class PackageSuspensionTest {
     //@MostRestrictiveCoexistenceTest(policy = SuspendPackage.class)
     // MostRestrictiveCoexistenceTest does not work for policies which have 0 or 2+ permissions
     @EnsureHasDevicePolicyManagerRoleHolder
-    @EnsureHasDeviceOwner(isPrimary = true)
+    @EnsureHasProfileOwner(isPrimary = true)
     @RequireFlagsEnabled(Flags.FLAG_UNMANAGED_MODE_MIGRATION)
     @Postsubmit(reason = "new test")
     @Test
@@ -298,7 +298,7 @@ public final class PackageSuspensionTest {
     }
 
     @EnsureHasDevicePolicyManagerRoleHolder
-    @EnsureHasDeviceOwner(isPrimary = true)
+    @EnsureHasProfileOwner(isPrimary = true)
     @RequireFlagsEnabled(Flags.FLAG_UNMANAGED_MODE_MIGRATION)
     @Postsubmit(reason = "new test")
     @Test
