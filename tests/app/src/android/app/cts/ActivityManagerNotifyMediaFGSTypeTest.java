@@ -85,8 +85,21 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         mContext = mInstrumentation.getContext();
         mTargetContext = mInstrumentation.getTargetContext();
         mActivityManager = mContext.getSystemService(ActivityManager.class);
-        CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
+
         cleanUp();
+        CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
+
+        // Configure short timeout for test execution and verify it's set.
+        mMediaDeviceConfig.set(
+                USER_ENGAGED_TIMEOUT_KEY, Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
+        sleep(500); // Let the setting propagate.
+        final String dumpLines = runShellCommand("dumpsys media_session");
+        final String expectedLine =
+                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
+        assertTrue(
+                "Failed to configure temp user engaged timeout", dumpLines.contains(expectedLine));
+
+        // Ensure we can remote control media sessions from the test.
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -564,16 +577,6 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
-        // Configure temp user engaged timeout.
-        mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
-                Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
-        // Verify if timeout is set.
-        final String dumpLines = runShellCommand("dumpsys media_session");
-        final String expectedLine =
-                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
-        assertTrue(
-                "Failed to configure temp user engaged timeout",
-                dumpLines.contains(expectedLine));
         // Transition session to user disengaged.
         controller.getTransportControls().pause();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
@@ -596,16 +599,6 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
-        // Configure temp user engaged timeout.
-        mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
-                Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
-        // Verify if timeout is set.
-        final String dumpLines = runShellCommand("dumpsys media_session");
-        final String expectedLine =
-                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
-        assertTrue(
-                "Failed to configure temp user engaged timeout",
-                dumpLines.contains(expectedLine));
         // Transition session to user disengaged.
         controller.getTransportControls().stop();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
