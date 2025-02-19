@@ -73,6 +73,11 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
 
     private MockNetworkService mServiceState;
 
+    @RadioError private int mSatelliteErrorCode = RadioError.NONE;
+    private String[] mCarrierPlmnArray = new String[0];
+    private String[] mAllSatellitePlmnArray = new String[0];
+    private boolean mIsSatelliteEnabledForCarrier = false;
+
     public IRadioNetworkImpl(
             MockModemService service,
             Context context,
@@ -1049,21 +1054,43 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
     @Override
     public void setSatellitePlmn(
             int serial, String[] carrierPlmnArray, String[] allSatellitePlmnArray) {
-        Log.d(TAG, "setSatellitePlmn");
+        Log.d(TAG, "setSatellitePlmn: mErrorCode=" + mSatelliteErrorCode);
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        RadioResponseInfo rsp;
+        if (mSatelliteErrorCode != RadioError.NONE) {
+            rsp = mService.makeSolRsp(serial, mSatelliteErrorCode);
+        } else {
+            rsp = mService.makeSolRsp(serial, RadioError.NONE);
+            mCarrierPlmnArray = carrierPlmnArray;
+            mAllSatellitePlmnArray = allSatellitePlmnArray;
+        }
+
         try {
             mRadioNetworkResponse.setSatellitePlmnResponse(rsp);
         } catch (RemoteException ex) {
             Log.e(TAG, "Failed to setSatellitePlmn from AIDL. Exception " + ex);
         }
+
+        mService.onSetSatellitePlmn();
     }
 
     @Override
     public void setSatelliteEnabledForCarrier(int serial, boolean satelliteEnabled) {
-        Log.d(TAG, "setSatelliteEnabledForCarrier");
+        Log.d(
+                TAG,
+                "setSatelliteEnabledForCarrier: mErrorCode="
+                        + mSatelliteErrorCode
+                        + " satelliteEnabled="
+                        + satelliteEnabled);
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        RadioResponseInfo rsp;
+        if (mSatelliteErrorCode != RadioError.NONE) {
+            rsp = mService.makeSolRsp(serial, mSatelliteErrorCode);
+        } else {
+            rsp = mService.makeSolRsp(serial, RadioError.NONE);
+            mIsSatelliteEnabledForCarrier = satelliteEnabled;
+        }
+
         try {
             mRadioNetworkResponse.setSatelliteEnabledForCarrierResponse(rsp);
         } catch (RemoteException ex) {
@@ -1073,11 +1100,18 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
 
     @Override
     public void isSatelliteEnabledForCarrier(int serial) {
-        Log.d(TAG, "isSatelliteEnabledForCarrier");
+        Log.d(TAG, "isSatelliteEnabledForCarrier: mErrorCode=" + mSatelliteErrorCode);
 
-        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        RadioResponseInfo rsp;
+        if (mSatelliteErrorCode != RadioError.NONE) {
+            rsp = mService.makeSolRsp(serial, mSatelliteErrorCode);
+        } else {
+            rsp = mService.makeSolRsp(serial, RadioError.NONE);
+        }
+
         try {
-            mRadioNetworkResponse.isSatelliteEnabledForCarrierResponse(rsp, false);
+            mRadioNetworkResponse.isSatelliteEnabledForCarrierResponse(
+                    rsp, mIsSatelliteEnabledForCarrier);
         } catch (RemoteException ex) {
             Log.e(TAG, "Failed to isSatelliteEnabledForCarrier from AIDL. Exception " + ex);
         }
@@ -1377,5 +1411,35 @@ public class IRadioNetworkImpl extends IRadioNetwork.Stub {
      */
     public void resetAllLatchCountdown() {
         mServiceState.resetAllLatchCountdown();
+    }
+
+    /** Set error code to be returned by mock modem. */
+    public void setSatelliteErrorCode(int errorCode) {
+        Log.d(TAG, "setSatelliteErrorCode: errorCode=" + errorCode);
+        mSatelliteErrorCode = errorCode;
+    }
+
+    /** Get carrier PLMN array. */
+    public String[] getCarrierPlmnArray() {
+        Log.d(TAG, "getCarrierPlmnArray");
+        return mCarrierPlmnArray;
+    }
+
+    /** Get all satellite PLMN array. */
+    public String[] getAllSatellitePlmnArray() {
+        Log.d(TAG, "getAllSatellitePlmnArray");
+        return mAllSatellitePlmnArray;
+    }
+
+    /** Get whether satellite is enabled for carrier. */
+    public boolean getIsSatelliteEnabledForCarrier() {
+        Log.d(TAG, "getIsSatelliteEnabledForCarrier");
+        return mIsSatelliteEnabledForCarrier;
+    }
+
+    /** Clear satellite enabled for carrier. */
+    public void clearSatelliteEnabledForCarrier() {
+        Log.d(TAG, "clearSatelliteEnabledForCarrier");
+        mIsSatelliteEnabledForCarrier = false;
     }
 }
