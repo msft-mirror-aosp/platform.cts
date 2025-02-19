@@ -360,8 +360,8 @@ public final class Packages {
 
             return null;
         }
-
-        if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
+        // Always use ADB to install so package verification can be correctly disabled.
+        if (true || !Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
             return installPreS(user, apkFile);
         }
 
