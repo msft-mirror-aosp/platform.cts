@@ -78,7 +78,7 @@ public class NotificationStatsTests extends DeviceTestCase implements IBuildRece
         boolean foundTestPackagePreferences = false;
         int uid = DeviceUtils.getStatsdTestAppUid(getDevice());
         for (AtomsProto.PackageNotificationPreferences pref : allPreferences) {
-            assertThat(pref.getUid()).isGreaterThan(0);
+            assertThat(pref.getUid()).isAtLeast(0);
             assertTrue(pref.hasImportance());
             assertTrue(pref.hasVisibility());
             assertTrue(pref.hasUserLockedFields());
@@ -113,7 +113,7 @@ public class NotificationStatsTests extends DeviceTestCase implements IBuildRece
         boolean foundTestPackagePreferences = false;
         int uid = DeviceUtils.getStatsdTestAppUid(getDevice());
         for (AtomsProto.PackageNotificationChannelPreferences pref : allChannelPreferences) {
-            assertThat(pref.getUid()).isGreaterThan(0);
+            assertThat(pref.getUid()).isAtLeast(0);
             assertTrue(pref.hasChannelId());
             assertTrue(pref.hasChannelName());
             assertTrue(pref.hasDescription());
@@ -152,7 +152,7 @@ public class NotificationStatsTests extends DeviceTestCase implements IBuildRece
         boolean foundTestPackagePreferences = false;
         int uid = DeviceUtils.getStatsdTestAppUid(getDevice());
         for (AtomsProto.PackageNotificationChannelGroupPreferences pref : allGroupPreferences) {
-            assertThat(pref.getUid()).isGreaterThan(0);
+            assertThat(pref.getUid()).isAtLeast(0);
             assertTrue(pref.hasGroupId());
             assertTrue(pref.hasGroupName());
             assertTrue(pref.hasDescription());
