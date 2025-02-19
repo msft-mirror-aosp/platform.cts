@@ -50,13 +50,12 @@ import java.nio.ByteOrder;
 
 @RunWith(AndroidJUnit4.class)
 public final class BluetoothQualityReportTest {
+    private static final String TAG = "BluetoothQualityReportTest";
 
     @Rule public final Expect expect = Expect.create();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    private static final String TAG = "BluetoothQualityReportTest";
 
     private static String mRemoteAddress = "01:02:03:04:05:06";
     private static String mDefaultAddress = "00:00:00:00:00:00";
