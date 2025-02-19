@@ -487,6 +487,11 @@
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_failToRegisterSellerBeacon_buyerBeaconSucceeds" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionReportingTest#testReportEvent_registerBuyerAndSellerBeacons_happyPath_usingGetMethod" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testAdSelection_withAdCostInUrl_adCostIsReported" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testReportImpression_failToRegisterBuyerBeacon_sellerBeaconSucceeds" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testReportImpression_withMismatchedSellerAdTech_buyerStillCalled" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testReportImpression_withBuyerBeacon_onlyReportsForViewInteraction" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testReportImpression_failToRegisterSellerBeacon_buyerBeaconSucceeds" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionTest#testReportImpression_registerBuyerAndSellerBeacons_happyPath" />
 
     <!-- b/395783356 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_reportImpression" />
