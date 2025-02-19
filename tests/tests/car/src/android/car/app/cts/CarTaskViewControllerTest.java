@@ -38,7 +38,7 @@ import android.car.app.CarTaskViewControllerCallback;
 import android.car.app.ControlledRemoteCarTaskView;
 import android.car.app.ControlledRemoteCarTaskViewCallback;
 import android.car.app.ControlledRemoteCarTaskViewConfig;
-import android.car.cts.R;
+import android.car.R;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
