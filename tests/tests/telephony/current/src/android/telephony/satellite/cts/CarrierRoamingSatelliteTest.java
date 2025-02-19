@@ -80,7 +80,6 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testCarrierRoamingNtnModeListener() throws Exception {
         insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
         CarrierRoamingNtnListenerTest listener = new CarrierRoamingNtnListenerTest();

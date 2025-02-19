@@ -225,15 +225,19 @@ public class AppCompatTests {
     private void clickAllCheckableButtons() {
         List<UiObject2> objects = mDevice.wait(Until.findObjects(By.checkable(true)),
                 FIND_TIMEOUT);
-        for (int i = objects.size() - 1; i >= 0; i--) {
-            objects.get(i).click();
+        if (objects != null) {
+            for (int i = objects.size() - 1; i >= 0; i--) {
+                objects.get(i).click();
+            }
         }
     }
 
     private void scrollPageDown() {
         List<UiObject2> pages = mDevice.wait(Until.findObjects(By.scrollable(true)), FIND_TIMEOUT);
-        for (int i = 0; i < pages.size(); i++) {
-            pages.get(i).scroll(Direction.DOWN, 1.0f);
+        if (pages != null) {
+            for (int i = 0; i < pages.size(); i++) {
+                pages.get(i).scroll(Direction.DOWN, 1.0f);
+            }
         }
     }
 }

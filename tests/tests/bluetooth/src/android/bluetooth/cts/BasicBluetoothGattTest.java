@@ -51,6 +51,7 @@ import java.util.UUID;
 @RunWith(AndroidJUnit4.class)
 public class BasicBluetoothGattTest {
     private static final String TAG = BasicBluetoothGattTest.class.getSimpleName();
+
     private static final UUID TEST_UUID = UUID.fromString("0000110a-0000-1000-8000-00805f9b34fb");
 
     private BluetoothAdapter mBluetoothAdapter;

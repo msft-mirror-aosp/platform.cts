@@ -66,7 +66,6 @@ public class SettingsIntentsTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void settingActivity_launchSatelliteSettingIntent() {
         assumeFalse(
                 "Skipping test: Satellite settings are not supported in AAOS",

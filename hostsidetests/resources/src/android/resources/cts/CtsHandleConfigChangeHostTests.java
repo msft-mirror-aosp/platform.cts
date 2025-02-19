@@ -25,6 +25,7 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,6 +40,16 @@ public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
     private static final String DEVICE_TEST_PKG2 = "android.resources.cts.overlayresapp2";
     private static final String DEVICE_TEST_CLASS = "OverlayResTest";
 
+    private static final String FRAMEWORK_RRO_APK = "CtsOverlayFrameworkResRRO.apk";
+
+    private void installFrameworkRroOrSkip() {
+        try {
+            installPackage(FRAMEWORK_RRO_APK);
+        } catch (Exception e) {
+            Assume.assumeNoException("Can't install the framework overlay", e);
+        }
+    }
+
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES)
     public void testOverlayRes() throws Exception {
@@ -49,6 +60,7 @@ public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES)
     public void testOverlayFrameworkRes() throws Exception {
+        installFrameworkRroOrSkip();
         runDeviceTests(DEVICE_TEST_PKG1, DEVICE_TEST_PKG1 + "." + DEVICE_TEST_CLASS,
                 "overlayFrameworkRes_onConfigurationChanged");
     }
@@ -70,6 +82,7 @@ public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES)
     public void testOverlayLayoutFrameworkRes() throws Exception {
+        installFrameworkRroOrSkip();
         runDeviceTests(DEVICE_TEST_PKG1, DEVICE_TEST_PKG1 + "." + DEVICE_TEST_CLASS,
                 "overlayLayoutFrameworkRes_onConfigurationChanged");
     }
