@@ -128,8 +128,16 @@ public class MediaRecorderCameraActivity extends Activity implements SurfaceHold
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        if (Camera.getNumberOfCameras() > 0) {
+            // Open camera
+            mCamera = Camera.open(0);
+        }
+        if (mCamera == null) {
+            mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR, TAG +
+                    " no cameras available.");
+            return;
+        }
         try {
-            mCamera = Camera.open();
             mOutFile = new File(mOutputPath);
             mCamera.unlock();
             mMediaRecorder.setCamera(mCamera);

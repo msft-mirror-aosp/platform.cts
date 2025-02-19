@@ -46,7 +46,10 @@ public class Camera1Activity extends Activity {
         Log.i(TAG, "onResume called.");
         super.onResume();
         try {
-            mCamera = Camera.open();
+            if (Camera.getNumberOfCameras() > 0) {
+                // Open camera
+                mCamera = Camera.open(0);
+            }
             if (mCamera == null) {
                 mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR, TAG +
                         " no cameras available.");
