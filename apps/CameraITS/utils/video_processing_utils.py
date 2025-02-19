@@ -368,18 +368,15 @@ def get_frame_deltas(video_file_name_with_path, timestamp_type='pts'):
 
   Args:
     video_file_name_with_path: path to the video to be analyzed
-    timestamp_type: 'pts' or 'dts'
+    timestamp_type: 'pts' or 'pkt_dts'
   Returns:
     List of floats. Time diffs between frames in seconds.
   """
 
-  cmd = ['ffprobe',
-         '-show_entries',
-         f'frame=pkt_{timestamp_type}_time',
-         '-select_streams',
-         'v',
-         video_file_name_with_path
-         ]
+  cmd = [
+      'ffprobe', '-show_entries', f'frame={timestamp_type}_time',
+      '-select_streams', 'v', video_file_name_with_path
+  ]
   logging.debug('Getting frame deltas')
   raw_output = ''
   try:
