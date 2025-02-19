@@ -624,7 +624,7 @@ public class BaseAppVerifierImpl {
             }
         });
         if (result[0] == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
-            waitForAndVerifyMusicFocus(new int[]{AudioManager.AUDIOFOCUS_REQUEST_GRANTED});
+            waitForAndVerifyMusicFocus(true, new int[] {AudioManager.AUDIOFOCUS_REQUEST_GRANTED});
         } else {
             assertEquals("Failed to acquire focus for media playback in order to verify that "
                             + "media focus is lost in calls.",
@@ -633,28 +633,34 @@ public class BaseAppVerifierImpl {
         }
     }
 
-    /**
-     * Waits to ensure that the music audio focus was one of the expected values.
-     */
-    public void waitForAndVerifyMusicFocus(int[] expectedValues) {
+    /** Waits to ensure that the music audio focus was one of the expected values. */
+    public boolean waitForAndVerifyMusicFocus(boolean verifyPresence, int[] expectedValues) {
         Integer newFocus = null;
         try {
             newFocus = mMusicAudioFocusQueue.poll(FOCUS_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ie) {
             fail("Expected to get new music focus but timed out.");
         }
-        assertNotNull("Expected focus to be reported but none was within the timeout.",
-                newFocus);
-        int newFocusValue = newFocus.intValue();
+        if (verifyPresence) {
+            assertNotNull(
+                    "Expected focus to be reported but none was within the timeout.", newFocus);
+        }
+        boolean wasExpectedFocusValue = false;
+        if (newFocus != null) {
+            int newFocusValue = newFocus.intValue();
 
-        // We expect to have lost focus; it will likely be reported as transient focus lost.  Both
-        // of these focus lost types indicate that something else has gained exclusive access to the
-        // audio focus.
-        boolean wasExpectedFocusValue = Arrays.stream(expectedValues)
-                .anyMatch(v -> v == newFocusValue);
-        assertTrue("Expected focus to be one of " + Arrays.toString(expectedValues)
-                        + " but was " + newFocusValue,
-                wasExpectedFocusValue);
+            // We expect to have lost focus; it will likely be reported as transient focus lost.
+            // Both of these focus lost types indicate that something else has gained exclusive
+            // access to the audio focus.
+            wasExpectedFocusValue = Arrays.stream(expectedValues).anyMatch(v -> v == newFocusValue);
+            assertTrue(
+                    "Expected focus to be one of "
+                            + Arrays.toString(expectedValues)
+                            + " but was "
+                            + newFocusValue,
+                    wasExpectedFocusValue);
+        }
+        return wasExpectedFocusValue;
     }
 
     /**
