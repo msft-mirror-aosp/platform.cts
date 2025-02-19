@@ -58,6 +58,8 @@ public class RemoteDpc extends RemotePolicyManager {
 
     private boolean mShouldRemoveUserWhenRemoved = false;
 
+    public static final String TAG = "RemoteDpc";
+
     /**
      * Get the {@link RemoteDpc} instance for the Device Owner.
      *
@@ -354,9 +356,16 @@ public class RemoteDpc extends RemotePolicyManager {
                 dpcTestApp,
                 TestApis.devicePolicy().setProfileOwner(user, componentName));
 
-        // DISALLOW_INSTALL_UNKNOWN_SOURCES causes verification failures in work profiles
-        remoteDpc.devicePolicyManager()
-                .clearUserRestriction(remoteDpc.componentName(), DISALLOW_INSTALL_UNKNOWN_SOURCES);
+        try {    // workaround for: b/391462951
+            // DISALLOW_INSTALL_UNKNOWN_SOURCES causes verification failures in work profiles
+            remoteDpc.devicePolicyManager().clearUserRestriction(
+                    remoteDpc.componentName(),
+                    DISALLOW_INSTALL_UNKNOWN_SOURCES
+            );
+        } catch (Exception e) {
+            Log.e(TAG, "unable to clear user restriction: "
+                    + DISALLOW_INSTALL_UNKNOWN_SOURCES, e);
+        }
 
         return remoteDpc;
     }
