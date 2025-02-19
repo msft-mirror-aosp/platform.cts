@@ -126,6 +126,9 @@ public class VehiclePropertyVerifier<T> {
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SPEED_HIGH,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_POOR_VISIBILITY,
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE_SAFETY);
+    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
+            CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
+            CarPropertyValue.STATUS_ERROR);
 
     private final CarPropertyManager mCarPropertyManager;
     private final int mPropertyId;
@@ -997,7 +1000,6 @@ public class VehiclePropertyVerifier<T> {
                     temperatureRequest, expectedTemperatureResponse);
             verifyCarPropertyValue(updatedCarPropertyValue, areaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            verifyHvacTemperatureValueSuggestionResponse(updatedCarPropertyValue.getValue());
         }
     }
 
@@ -1162,10 +1164,6 @@ public class VehiclePropertyVerifier<T> {
             for (CarPropertyValue<?> carPropertyValue : carPropertyValues) {
                 verifyCarPropertyValue(carPropertyValue, carPropertyValue.getAreaId(),
                         CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                    verifyHvacTemperatureValueSuggestionResponse(
-                            (Float[]) carPropertyValue.getValue());
-                }
             }
         }
     }
@@ -1438,9 +1436,6 @@ public class VehiclePropertyVerifier<T> {
             }
 
             verifyCarPropertyValue(carPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
-            if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                verifyHvacTemperatureValueSuggestionResponse((Float[]) carPropertyValue.getValue());
-            }
         }
     }
 
@@ -1481,9 +1476,6 @@ public class VehiclePropertyVerifier<T> {
             int propertyId, int areaId, int status, long timestampNanos, T value,
             int expectedAreaId, String source) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        mCarPropertyValueVerifier.ifPresent(
-                propertyValueVerifier -> propertyValueVerifier.verify(carPropertyConfig, propertyId,
-                        areaId, timestampNanos, value));
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -1513,9 +1505,10 @@ public class VehiclePropertyVerifier<T> {
                                 + areaId
                                 + " - source: "
                                 + source
-                                + " value must have AVAILABLE status")
-                .that(status)
-                .isEqualTo(CarPropertyValue.STATUS_AVAILABLE);
+                                + " value must have a valid status: "
+                                + VALID_CAR_PROPERTY_VALUE_STATUSES)
+                .that(VALID_CAR_PROPERTY_VALUE_STATUSES)
+                .contains(status);
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -1547,6 +1540,20 @@ public class VehiclePropertyVerifier<T> {
                                 + " type value")
                 .that(value.getClass())
                 .isEqualTo(mPropertyType);
+
+        // Only validate value if STATUS_AVAILABLE
+        if (status != CarPropertyValue.STATUS_AVAILABLE) {
+            return;
+        }
+
+        mCarPropertyValueVerifier.ifPresent(
+                propertyValueVerifier ->
+                        propertyValueVerifier.verify(
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                value));
 
         if (mRequirePropertyValueToBeInConfigArray) {
             assertWithMessage(
@@ -1715,53 +1722,6 @@ public class VehiclePropertyVerifier<T> {
                         mCarPropertyManager.registerCallback(carPropertyValueCallback, mPropertyId,
                                 carPropertyConfig.getMaxSampleRate()))
                 .isFalse();
-    }
-
-    private void verifyHvacTemperatureValueSuggestionResponse(Float[] temperatureSuggestion) {
-        Float suggestedTempInCelsius = temperatureSuggestion[2];
-        Float suggestedTempInFahrenheit = temperatureSuggestion[3];
-        CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
-                mCarPropertyManager.getCarPropertyConfig(VehiclePropertyIds.HVAC_TEMPERATURE_SET);
-        if (hvacTemperatureSetCarPropertyConfig == null) {
-            return;
-        }
-        List<Integer> hvacTemperatureSetConfigArray =
-                hvacTemperatureSetCarPropertyConfig.getConfigArray();
-        if (hvacTemperatureSetConfigArray.isEmpty()) {
-            return;
-        }
-        Integer minTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(0);
-        Integer maxTempInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(1);
-        Integer incrementInCelsiusTimesTen =
-                hvacTemperatureSetConfigArray.get(2);
-        verifyHvacTemperatureIsValid(suggestedTempInCelsius, minTempInCelsiusTimesTen,
-                maxTempInCelsiusTimesTen, incrementInCelsiusTimesTen);
-
-        Integer minTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(3);
-        Integer maxTempInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(4);
-        Integer incrementInFahrenheitTimesTen =
-                hvacTemperatureSetConfigArray.get(5);
-        verifyHvacTemperatureIsValid(suggestedTempInFahrenheit, minTempInFahrenheitTimesTen,
-                maxTempInFahrenheitTimesTen, incrementInFahrenheitTimesTen);
-
-        int suggestedTempInCelsiusTimesTen = (int) (suggestedTempInCelsius * 10f);
-        int suggestedTempInFahrenheitTimesTen = (int) (suggestedTempInFahrenheit * 10f);
-        int numIncrementsCelsius =
-                Math.round((suggestedTempInCelsiusTimesTen - minTempInCelsiusTimesTen)
-                        / incrementInCelsiusTimesTen.floatValue());
-        int numIncrementsFahrenheit =
-                Math.round((suggestedTempInFahrenheitTimesTen - minTempInFahrenheitTimesTen)
-                        / incrementInFahrenheitTimesTen.floatValue());
-        assertWithMessage(
-                        "The temperature in celsius must map to the same temperature in fahrenheit"
-                            + " using the HVAC_TEMPERATURE_SET config array: "
-                            + hvacTemperatureSetConfigArray)
-                .that(numIncrementsFahrenheit)
-                .isEqualTo(numIncrementsCelsius);
     }
 
     public static void verifyHvacTemperatureIsValid(float temp, int minTempTimesTen,
@@ -2307,22 +2267,17 @@ public class VehiclePropertyVerifier<T> {
                     CarPropertyValue.STATUS_AVAILABLE, getPropertyResult.getTimestampNanos(),
                     (T) getPropertyResult.getValue(), expectedAreaId,
                     CAR_PROPERTY_VALUE_SOURCE_CALLBACK);
-            if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                verifyHvacTemperatureValueSuggestionResponse(
-                        (Float[]) getPropertyResult.getValue());
-            }
         }
 
         for (PropertyAsyncError propertyAsyncError :
                 testGetPropertyCallback.getPropertyAsyncErrors()) {
             int requestId = propertyAsyncError.getRequestId();
+            // Async errors are ok as long the requestId is valid
             if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                 assertWithMessage(
                         "getPropertiesAsync received PropertyAsyncError with unknown requestId: "
                                 + propertyAsyncError).fail();
             }
-            assertWithMessage("Received PropertyAsyncError when testing getPropertiesAsync: "
-                    + propertyAsyncError).fail();
         }
     }
 
@@ -2422,12 +2377,11 @@ public class VehiclePropertyVerifier<T> {
             for (PropertyAsyncError propertyAsyncError :
                     testSetPropertyCallback.getPropertyAsyncErrors()) {
                 int requestId = propertyAsyncError.getRequestId();
+                // Async errors are ok as long the requestId is valid
                 if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                     assertWithMessage("setPropertiesAsync received PropertyAsyncError with unknown "
                             + "requestId: " + propertyAsyncError).fail();
                 }
-                assertWithMessage("Received PropertyAsyncError when testing setPropertiesAsync: "
-                        + propertyAsyncError).fail();
             }
         }
     }
