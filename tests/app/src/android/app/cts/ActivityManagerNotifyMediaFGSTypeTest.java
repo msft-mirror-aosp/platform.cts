@@ -276,6 +276,42 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         uid1Watcher.finish();
     }
 
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyMediaServiceAfterStopForegroundInternal() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service active --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
@@ -706,5 +742,52 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActiveMediaSessionMultiplePlayPauseStopCycle() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller for active session before deactivating.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
+        // Configure temp user engaged timeout.
+        mMediaDeviceConfig.set(
+                USER_ENGAGED_TIMEOUT_KEY, Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
+        // Verify if timeout is set.
+        final String dumpLines = runShellCommand("dumpsys media_session");
+        final String expectedLine =
+                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
+        assertTrue(
+                "Failed to configure temp user engaged timeout", dumpLines.contains(expectedLine));
+
+        controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+        controller.getTransportControls().pause();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+        controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+        controller.getTransportControls().pause();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 }
