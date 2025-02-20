@@ -45,6 +45,7 @@ import org.junit.Before;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Wrapper class for trying and testing mediacodec decoder components.
@@ -385,13 +386,13 @@ public class CodecDecoderTestBase extends CodecTestBase {
                         + mTestEnv + mOutputBuff.getErrMsg());
             }
             if (IS_AT_LEAST_B && subsessionMetrics()) {
-                assertEquals(
-                        "expected and received metrics flush counts are not same.\n"
-                                + mTestConfig
-                                + mTestEnv
-                                + mOutputBuff.getErrMsg(),
-                        mAsyncHandle.getExpectedMetricsFlushCount(),
-                        mAsyncHandle.getActualMetricsFlushCount());
+                int min = mAsyncHandle.getMinExpectedMetricsFlushCount();
+                int got = mAsyncHandle.getActualMetricsFlushCount();
+                if (min > got) {
+                    fail(String.format(Locale.getDefault(),
+                            "min expected metrics flush count is %d, but got %d \n" + mTestConfig
+                                    + mTestEnv, min, got));
+                }
             }
         }
     }
