@@ -87,6 +87,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 
@@ -1419,6 +1420,57 @@ public class AppWidgetTest extends AppWidgetTestCase {
             assertThat(
                     getAppWidgetManager().getWidgetPreview(newInfo.provider, newInfo.getProfile(),
                             WIDGET_CATEGORY_KEYGUARD)).isNull();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            host.deleteHost();
+        }
+    }
+
+    @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
+    @Test
+    public void testSetGeneratedPreview_invalidPreview() {
+        // AppWidgetHost is used to wait until provider change notification is sent.
+        final Context context = getInstrumentation().getTargetContext();
+        final AppWidgetHostWithLatch host = new AppWidgetHostWithLatch(context, 0);
+        host.deleteHost();
+        host.startListening();
+
+        try {
+            // Disable setWidgetPreview rate limit for tests
+            setGeneratedPreviewRateLimit(
+                /* resetIntervalMs= */ 0, /* maxCallsPerInterval */ Integer.MAX_VALUE);
+
+            final ComponentName provider = getFirstWidgetComponent();
+            final AppWidgetProviderInfo initialInfo = getFirstAppWidgetProviderInfo();
+
+            // Clear providers and verify initial state
+            if (initialInfo.generatedPreviewCategories != 0) {
+                host.latch = new CountDownLatch(1);
+                getAppWidgetManager()
+                        .removeWidgetPreview(provider, initialInfo.generatedPreviewCategories);
+                host.latch.await();
+
+                final AppWidgetProviderInfo info = getFirstAppWidgetProviderInfo();
+                assertThat(info.generatedPreviewCategories).isEqualTo(0);
+                assertThat(getAppWidgetManager().getWidgetPreview(info.provider, info.getProfile(),
+                    WIDGET_CATEGORY_HOME_SCREEN)).isNull();
+                assertThat(getAppWidgetManager().getWidgetPreview(info.provider, info.getProfile(),
+                    WIDGET_CATEGORY_KEYGUARD)).isNull();
+            }
+
+            final RemoteViews invalidLayout =
+                    new RemoteViews(context.getPackageName(), R.layout.simple_white_layout);
+            // RemoteViews proto code will not serialize IDs that don't map to a real resource
+            invalidLayout.setBoolean(-1, "", false);
+
+            host.latch = new CountDownLatch(1);
+            assertThat(getAppWidgetManager().setWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN,
+                invalidLayout)).isTrue();
+            // onProvidersChanged is never called because the preview was not updated
+            boolean result = host.latch.await(5, TimeUnit.SECONDS);
+            assertThat(result).isFalse();
+            // This test also ensures that an invalid preview does not cause a system_server crash.
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
