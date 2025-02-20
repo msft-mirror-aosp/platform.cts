@@ -116,34 +116,27 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
   def _output_feature_combo_proto(self, feature_combo_for_camera):
     """Finish logging feature combination info and write to ReportLogFiles."""
-    debug_mode = self.debug_mode
-    log_to_file = self.log_feature_combo_support
     database = feature_combination_info_pb2.FeatureCombinationDatabase()
     database.build_fingerprint = (
         its_session_utils.get_build_fingerprint(self.dut.serial))
     database.timestamp_in_sec = int(time.time())
     database.feature_combination_for_camera.append(feature_combo_for_camera)
 
-    # Log the feature combination query result and send over to ItsService
-    database_str_oneline = text_format.MessageToString(
-        database, as_one_line=True)
-    print(f'feature_query_proto:{database_str_oneline}')
+    current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    proto_file_name = (
+        f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
+    )
+    logging.debug('proto_file_name %s', proto_file_name)
 
-    if log_to_file:
-      current_time = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
-      proto_file_name = (
-          f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
-      )
-      logging.debug('proto_file_name %s', proto_file_name)
+    with open(proto_file_name, 'wb') as f:
+      f.write(database.SerializeToString())
 
-      with open(proto_file_name, 'wb') as f:
-        f.write(database.SerializeToString())
+    txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
+    with open(txtpb_file_name, 'w') as tf:
+      database_str = text_format.MessageToString(database)
+      tf.write(database_str)
 
-      if debug_mode:
-        txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
-        with open(txtpb_file_name, 'w') as tf:
-          database_str = text_format.MessageToString(database)
-          tf.write(database_str)
+    print(f'feature_query_proto:{txtpb_file_name}')
 
   def _finish_combination(
       self, combination_name, is_stabilized, support_claimed,
