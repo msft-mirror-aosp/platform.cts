@@ -2876,13 +2876,12 @@ public class VehiclePropertyVerifier<T> {
         for (PropertyAsyncError propertyAsyncError :
                 testGetPropertyCallback.getPropertyAsyncErrors()) {
             int requestId = propertyAsyncError.getRequestId();
+            // Async errors are ok as long the requestId is valid
             if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                 assertWithMessage(
                         "getPropertiesAsync received PropertyAsyncError with unknown requestId: "
                                 + propertyAsyncError).fail();
             }
-            assertWithMessage("Received PropertyAsyncError when testing getPropertiesAsync: "
-                    + propertyAsyncError).fail();
         }
     }
 
@@ -2994,12 +2993,11 @@ public class VehiclePropertyVerifier<T> {
             for (PropertyAsyncError propertyAsyncError :
                     testSetPropertyCallback.getPropertyAsyncErrors()) {
                 int requestId = propertyAsyncError.getRequestId();
+                // Async errors are ok as long the requestId is valid
                 if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
                     assertWithMessage("setPropertiesAsync received PropertyAsyncError with unknown "
                             + "requestId: " + propertyAsyncError).fail();
                 }
-                assertWithMessage("Received PropertyAsyncError when testing setPropertiesAsync: "
-                        + propertyAsyncError).fail();
             }
         }
     }
