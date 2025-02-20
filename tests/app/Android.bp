@@ -45,6 +45,7 @@ android_test {
         "android.app.flags-aconfig-java",
         "ravenwood-junit",
         "bedstead",
+        "services.core",
     ],
     srcs: [
         "src/**/*.java",
