@@ -15,6 +15,7 @@
  */
 
 package android.graphics.cts;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -48,6 +49,9 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.net.Uri;
+import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.DisplayMetrics;
 import android.util.Size;
 import android.util.TypedValue;
@@ -219,9 +223,15 @@ public class ImageDecoderTest {
 
     private Callable<AssetFileDescriptor> getAsCallable(int resId) {
         final Context context = InstrumentationRegistry.getTargetContext();
-        final Uri uri = getAsContentUri(resId);
         return () -> {
-            return context.getContentResolver().openAssetFileDescriptor(uri, "r");
+            try {
+                return context.getResources().openRawResourceFd(resId);
+            } catch (Resources.NotFoundException e) {
+                // Compressed assets, extract and get fd
+                var file = getAsFile(resId);
+                var fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+                return new AssetFileDescriptor(fd, 0, file.length());
+            }
         };
     }
 
@@ -357,6 +367,7 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getRecords")
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testUris(Record record) {
         int resId = record.resId;
         String name = getResources().getResourceEntryName(resId);
@@ -410,6 +421,7 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getRecords")
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testDecodeDrawable(Record record) {
         for (SourceCreator f : mCreators) {
             ImageDecoder.Source src = f.apply(record.resId);
@@ -440,7 +452,9 @@ public class ImageDecoderTest {
                 assertEquals(record.height, bm.getHeight());
                 assertFalse(bm.isMutable());
                 // FIXME: This may change for small resources, etc.
-                assertEquals(Bitmap.Config.HARDWARE, bm.getConfig());
+                if (Utils.isHardwareBufferSupported()) {
+                    assertEquals(Bitmap.Config.HARDWARE, bm.getConfig());
+                }
             } catch (IOException e) {
                 fail("Failed with exception " + e);
             }
@@ -505,6 +519,12 @@ public class ImageDecoderTest {
     @Parameters(method = "paramsForTestSetAllocatorDecodeBitmap")
     public void testSetAllocatorDecodeBitmap(Record record, int allocator, boolean doCrop,
                                              boolean doScale) {
+        if (!Utils.isHardwareBufferSupported()) {
+            assumeTrue(
+                    "Ravenwood only support software allocator",
+                    allocator == ImageDecoder.ALLOCATOR_SOFTWARE);
+        }
+
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             public int allocator;
             public boolean doCrop;
@@ -661,6 +681,10 @@ public class ImageDecoderTest {
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(), record.resId);
         assertNotNull(src);
         for (boolean requireSoftware : trueFalse) {
+            if (!Utils.isHardwareBufferSupported() && !requireSoftware) {
+                continue;
+            }
+
             l.requireSoftware = requireSoftware;
 
             Bitmap bitmap = null;
@@ -687,6 +711,7 @@ public class ImageDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testNinepatchWithDensityNone() {
         Resources res = getResources();
         TypedValue value = new TypedValue();
@@ -699,6 +724,7 @@ public class ImageDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testPostProcessorOverridesNinepatch() {
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             public boolean requireSoftware;
@@ -924,6 +950,7 @@ public class ImageDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testResizeTransparency() {
         ImageDecoder.Source src = mCreators[0].apply(R.drawable.animated);
         Drawable dr = null;
@@ -1058,6 +1085,7 @@ public class ImageDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testExceptionInStream() throws Throwable {
         InputStream is = new ExceptionStream(R.drawable.animated, 27570);
         ImageDecoder.Source src = ImageDecoder.createSource(getResources(), is,
@@ -1846,6 +1874,7 @@ public class ImageDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testAlphaMaskPlusHardwareAnimated() {
         // AnimatedImageDrawable ignores both of these settings, so it is okay
         // to combine them.
@@ -1917,11 +1946,14 @@ public class ImageDecoderTest {
         for (int resId : resIds) {
             // By default, this will decode to HARDWARE
             ImageDecoder.Source src = f.apply(resId);
-            try {
-                Bitmap bm = ImageDecoder.decodeBitmap(src);
-                assertEquals(Bitmap.Config.HARDWARE, bm.getConfig());
-            } catch (IOException e) {
-                fail("Failed with exception " + e);
+
+            if (Utils.isHardwareBufferSupported()) {
+                try {
+                    Bitmap bm = ImageDecoder.decodeBitmap(src);
+                    assertEquals(Bitmap.Config.HARDWARE, bm.getConfig());
+                } catch (IOException e) {
+                    fail("Failed with exception " + e);
+                }
             }
 
             // Now set alpha mask, which is incompatible with HARDWARE
@@ -1965,6 +1997,7 @@ public class ImageDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not have hardware support")
     public void testConserveMemoryPlusHardware() {
         class Listener implements ImageDecoder.OnHeaderDecodedListener {
             int allocator;
@@ -2113,8 +2146,7 @@ public class ImageDecoderTest {
                 reference = null;
                 isWebp = true;
             }
-            Uri uri = Utils.getAsResourceUri(resId);
-            ImageDecoder.Source src = ImageDecoder.createSource(getContentResolver(), uri);
+            ImageDecoder.Source src = ImageDecoder.createSource(getResources(), resId);
             try {
                 Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
                     // Use software allocator so we can compare.
@@ -2132,12 +2164,14 @@ public class ImageDecoderTest {
                     bm.recycle();
                 }
             } catch (IOException e) {
+                Uri uri = Utils.getAsResourceUri(resId);
                 fail("Decoding " + uri.toString() + " yielded " + e);
             }
         }
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testOrientationWithSampleSize() {
         Uri uri = Utils.getAsResourceUri(R.drawable.orientation_6);
         ImageDecoder.Source src = ImageDecoder.createSource(getContentResolver(), uri);
@@ -2712,6 +2746,7 @@ public class ImageDecoderTest {
     @Test
     @LargeTest
     @Parameters(method = "getRecordsAsSources")
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuse(Record record, SourceCreator f) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
@@ -2725,6 +2760,7 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getRecords")
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuse2(Record record) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
@@ -2743,9 +2779,9 @@ public class ImageDecoderTest {
         return Utils.crossProduct(getRecords(), mUriCreators);
     }
 
-
     @Test
     @Parameters(method = "getRecordsAsUris")
+    @DisabledOnRavenwood(blockedBy = {ContentResolver.class, Drawable.class})
     public void testReuseUri(Record record, UriCreator f) {
         if (record.mimeType.equals("image/heif") || record.mimeType.equals("image/avif")) {
             // These images take too long for this test.
@@ -2759,14 +2795,15 @@ public class ImageDecoderTest {
 
     @Test
     @Parameters(method = "getAssetRecords")
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuseAssetRecords(AssetRecord record) {
         AssetManager assets = getResources().getAssets();
         ImageDecoder.Source src = ImageDecoder.createSource(assets, record.name);
         testReuse(src, record.name);
     }
 
-
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testReuseAnimated() {
         ImageDecoder.Source src = mCreators[0].apply(R.drawable.animated);
         testReuse(src, "animated.gif");
@@ -2795,13 +2832,20 @@ public class ImageDecoderTest {
             assertTrue(mimeType, ImageDecoder.isMimeTypeSupported(mimeType));
         }
 
-        assertEquals("image/heic", ImageDecoder.isMimeTypeSupported("image/heic"),
-                MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_HEVC));
+        if (RavenwoodRule.isOnRavenwood()) {
+            assertFalse(ImageDecoder.isMimeTypeSupported("image/heic"));
+        } else {
+            assertEquals(
+                    "image/heic",
+                    ImageDecoder.isMimeTypeSupported("image/heic"),
+                    MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_HEVC));
+        }
 
         assertFalse(ImageDecoder.isMimeTypeSupported("image/x-does-not-exist"));
     }
 
     @Test(expected = FileNotFoundException.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testBadUri() throws IOException {
         Uri uri = new Uri.Builder()
                 .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
@@ -2814,6 +2858,7 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = FileNotFoundException.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testBadUri2() throws IOException {
         // This URI will attempt to open a file from EmptyProvider, which always
         // returns null. This test ensures that we throw FileNotFoundException,
@@ -2825,6 +2870,7 @@ public class ImageDecoderTest {
     }
 
     @Test(expected = FileNotFoundException.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testUriWithoutScheme() throws IOException {
         Uri uri = new Uri.Builder()
                 .authority("authority")

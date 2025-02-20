@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.telephony.TelephonyManager;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -53,6 +54,7 @@ import java.util.regex.Pattern;
  */
 @MediumTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = Linkify.class)
 public class LinkifyTest {
     private static final Pattern LINKIFY_TEST_PATTERN = Pattern.compile(
             "(test:)?[a-zA-Z0-9]+(\\.pattern)?");

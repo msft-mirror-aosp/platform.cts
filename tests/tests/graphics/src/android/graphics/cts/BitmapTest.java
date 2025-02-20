@@ -49,6 +49,7 @@ import android.graphics.Shader;
 import android.hardware.HardwareBuffer;
 import android.os.Parcel;
 import android.os.StrictMode;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.DisplayMetrics;
 import android.view.Surface;
 
@@ -90,7 +91,9 @@ public class BitmapTest {
     private static final BitmapFactory.Options HARDWARE_OPTIONS = createHardwareBitmapOptions();
 
     static {
-        System.loadLibrary("ctsgraphics_jni");
+        if (Utils.isNdkSupported()) {
+            System.loadLibrary("ctsgraphics_jni");
+        }
     }
 
     private Resources mRes;
@@ -228,13 +231,19 @@ public class BitmapTest {
         Bitmap bitmap = Bitmap.createBitmap(1, 1, Config.ALPHA_8);
         assertFalse("Incorrectly compressed ALPHA_8 to " + format,
                 bitmap.compress(format, 50, new ByteArrayOutputStream()));
+    }
 
+    @Test
+    @Parameters(method = "compressFormats")
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
+    public void testCompressAlpha8NdkFails(CompressFormat format) {
         if (format == CompressFormat.WEBP) {
             // Skip the native test, since the NDK just has equivalents for
             // WEBP_LOSSY and WEBP_LOSSLESS.
             return;
         }
 
+        Bitmap bitmap = Bitmap.createBitmap(1, 1, Config.ALPHA_8);
         byte[] storage = new byte[16 * 1024];
         OutputStream stream = new ByteArrayOutputStream();
         assertFalse("Incorrectly compressed ALPHA_8 with the NDK to " + format,
@@ -346,7 +355,9 @@ public class BitmapTest {
         assertEquals(10, ret.getWidth());
         assertEquals(10, ret.getHeight());
         assertEquals(Config.RGB_565, ret.getConfig());
-        assertEquals(ANDROID_BITMAP_FORMAT_RGB_565, nGetFormat(ret));
+        if (Utils.isNdkSupported()) {
+            assertEquals(ANDROID_BITMAP_FORMAT_RGB_565, nGetFormat(ret));
+        }
     }
 
     @Test(expected=IllegalArgumentException.class)
@@ -369,7 +380,10 @@ public class BitmapTest {
         ret = Bitmap.createBitmap(mBitmap, 10, 10, 50, 50);
         assertNotNull(ret);
         assertFalse(mBitmap.equals(ret));
-        assertEquals(ANDROID_BITMAP_FORMAT_RGBA_8888, nGetFormat(mBitmap));
+        assertEquals(Config.ARGB_8888, ret.getConfig());
+        if (Utils.isNdkSupported()) {
+            assertEquals(ANDROID_BITMAP_FORMAT_RGBA_8888, nGetFormat(mBitmap));
+        }
     }
 
     @Test(expected=IllegalArgumentException.class)
@@ -427,6 +441,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testCreateBitmapFromHardwareBitmap() {
         Bitmap hardwareBitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot,
                 HARDWARE_OPTIONS);
@@ -617,6 +632,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Picture.class)
     public void testCreateBitmap_Picture_immutable() {
         Picture picture = new Picture();
         Canvas canvas = picture.beginRecording(200, 100);
@@ -655,6 +671,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferSucceeds() {
         try (HardwareBuffer hwBuffer = createTestBuffer(128, 128, false)) {
             Bitmap bitmap = Bitmap.wrapHardwareBuffer(hwBuffer, ColorSpace.get(Named.SRGB));
@@ -664,6 +681,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferMissingGpuUsageFails() {
         try (HardwareBuffer hwBuffer = HardwareBuffer.create(512, 512, HardwareBuffer.RGBA_8888, 1,
             HardwareBuffer.USAGE_CPU_WRITE_RARELY)) {
@@ -674,6 +692,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferWithProtectedUsageFails() {
         long usage = HardwareBuffer.USAGE_GPU_COLOR_OUTPUT
                 | HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE
@@ -691,6 +710,7 @@ public class BitmapTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferWithRgbBufferButNonRgbColorSpaceFails() {
         try (HardwareBuffer hwBuffer = HardwareBuffer.create(512, 512, HardwareBuffer.RGBA_8888, 1,
             HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE)) {
@@ -699,6 +719,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferFor1010102BufferSucceeds() {
         HardwareBuffer hwBufferMaybe = null;
 
@@ -729,6 +750,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferMatchesWrapped() {
         try (HardwareBuffer hwBuffer = createTestBuffer(128, 128, false)) {
             Bitmap bitmap = Bitmap.wrapHardwareBuffer(hwBuffer, ColorSpace.get(Named.SRGB));
@@ -752,6 +774,7 @@ public class BitmapTest {
 
     @Test
     @Parameters(method = "parametersFor_testGetAllocationSizeWrappedBuffer")
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetAllocationSizeWrappedBuffer(int format) {
         final long usage = HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE;
         assumeTrue(HardwareBuffer.isSupported(1, 1, format, 1, usage));
@@ -774,6 +797,7 @@ public class BitmapTest {
 
     @Test
     @Parameters(method = "parametersFor_testGetHardwareBufferConfig")
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferConfig(Config config) {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, config);
         bitmap = bitmap.copy(Config.HARDWARE, false);
@@ -788,6 +812,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferTwice() {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
         bitmap = bitmap.copy(Config.HARDWARE, false);
@@ -801,6 +826,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferMatches() {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
         bitmap = bitmap.copy(Config.HARDWARE, false);
@@ -812,12 +838,14 @@ public class BitmapTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferNonHardware() {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
         bitmap.getHardwareBuffer();
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferRecycled() {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
         bitmap = bitmap.copy(Config.HARDWARE, false);
@@ -826,6 +854,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetHardwareBufferClosed() {
         HardwareBuffer hwBuffer = createTestBuffer(128, 128, false);
         Bitmap bitmap = Bitmap.wrapHardwareBuffer(hwBuffer, ColorSpace.get(Named.SRGB));
@@ -938,12 +967,12 @@ public class BitmapTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testGetColorHardware() {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.HARDWARE;
         mBitmap = BitmapFactory.decodeResource(mRes, R.drawable.start, options);
         mBitmap.getColor(50, 50);
-
     }
 
     private static float clamp(float f) {
@@ -1165,7 +1194,11 @@ public class BitmapTest {
         assertEquals(Bitmap.Config.RGB_565, bm2.getConfig());
         // Attempting to create a 4444 bitmap actually creates an 8888 bitmap.
         assertEquals(Bitmap.Config.ARGB_8888, bm3.getConfig());
+    }
 
+    @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
+    public void testGetHardwareConfig() {
         // Can't call Bitmap.createBitmap with Bitmap.Config.HARDWARE,
         // because createBitmap creates mutable bitmap and hardware bitmaps are always immutable,
         // so such call will throw an exception.
@@ -1891,6 +1924,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWriteHwBitmapToParcel() {
         mBitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         Parcel p = Parcel.obtain();
@@ -2060,6 +2094,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testSameAs_hardware() {
         Bitmap bitmap1 = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         Bitmap bitmap2 = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
@@ -2072,6 +2107,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testSameAs_wrappedHardwareBuffer() {
         try (HardwareBuffer hwBufferA = createTestBuffer(512, 512, true);
              HardwareBuffer hwBufferB = createTestBuffer(512, 512, true);
@@ -2095,13 +2131,15 @@ public class BitmapTest {
         }
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareGetPixel() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.getPixel(0, 0);
     }
 
-    @Test(expected=IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareGetPixels() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.getPixels(new int[5], 0, 5, 0, 0, 5, 1);
@@ -2109,63 +2147,77 @@ public class BitmapTest {
 
     @Test
     public void testGetConfigOnRecycled() {
-        Bitmap bitmap1 = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
-        bitmap1.recycle();
-        assertEquals(Config.HARDWARE, bitmap1.getConfig());
-        Bitmap bitmap2 = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
-        bitmap2.recycle();
-        assertEquals(Config.ARGB_8888, bitmap2.getConfig());
+        Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
+        bitmap.recycle();
+        assertEquals(Config.ARGB_8888, bitmap.getConfig());
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
+    public void testHardwareGetConfigOnRecycled() {
+        Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
+        bitmap.recycle();
+        assertEquals(Config.HARDWARE, bitmap.getConfig());
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareSetWidth() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.setWidth(30);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareSetHeight() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.setHeight(30);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareSetConfig() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.setConfig(Config.ARGB_8888);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareReconfigure() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.reconfigure(30, 30, Config.ARGB_8888);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareSetPixels() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.setPixels(new int[10], 0, 1, 0, 0, 1, 1);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareSetPixel() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.setPixel(1, 1, 0);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareEraseColor() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.eraseColor(0);
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareEraseColorLong() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.robot, HARDWARE_OPTIONS);
         bitmap.eraseColor(Color.pack(0));
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareCopyPixelsToBuffer() {
         Bitmap bitmap = BitmapFactory.decodeResource(mRes, R.drawable.start, HARDWARE_OPTIONS);
         ByteBuffer byteBuf = ByteBuffer.allocate(bitmap.getRowBytes() * bitmap.getHeight());
@@ -2173,6 +2225,7 @@ public class BitmapTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareCopyPixelsFromBuffer() {
         IntBuffer intBuf1 = IntBuffer.allocate(mBitmap.getRowBytes() * mBitmap.getHeight());
         assertEquals(0, intBuf1.position());
@@ -2191,6 +2244,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testCopyHWBitmapInStrictMode() {
         strictModeTest(()->{
             Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2200,6 +2254,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testCreateScaledFromHWInStrictMode() {
         strictModeTest(()->{
             Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2209,6 +2264,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testExtractAlphaFromHWInStrictMode() {
         strictModeTest(()->{
             Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2218,6 +2274,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testCompressInStrictMode() {
         strictModeTest(()->{
             Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2226,6 +2283,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testParcelHWInStrictMode() {
         strictModeTest(()->{
             mBitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2235,6 +2293,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testSameAsFirstHWInStrictMode() {
         strictModeTest(()->{
             Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2244,6 +2303,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = StrictMode.class)
     public void testSameAsSecondHWInStrictMode() {
         strictModeTest(()->{
             Bitmap bitmap = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
@@ -2253,6 +2313,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkAccessAfterRecycle() {
         Bitmap bitmap = Bitmap.createBitmap(10, 20, Config.RGB_565);
         Bitmap hardware = bitmap.copy(Config.HARDWARE, false);
@@ -2277,6 +2338,7 @@ public class BitmapTest {
 
     @Test
     @LargeTest
+    @DisabledOnRavenwood(reason = "Timeout")
     public void testHardwareBitmapNotLeaking() {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredConfig = Config.HARDWARE;
@@ -2295,6 +2357,7 @@ public class BitmapTest {
 
     @Test
     @LargeTest
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrappedHardwareBufferBitmapNotLeaking() {
         final ColorSpace colorSpace = ColorSpace.get(Named.SRGB);
         try (HardwareBuffer hwBuffer = createTestBuffer(1024, 512, false)) {
@@ -2312,6 +2375,7 @@ public class BitmapTest {
 
     @Test
     @LargeTest
+    @DisabledOnRavenwood(reason = "Timeout")
     public void testDrawingHardwareBitmapNotLeaking() {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredConfig = Config.HARDWARE;
@@ -2338,6 +2402,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferHoldsReference() {
         Bitmap bitmap;
         // Create hardware-buffer and wrap it in a Bitmap
@@ -2363,6 +2428,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testWrapHardwareBufferPreservesColors() {
         try (HardwareBuffer hwBuffer = createTestBuffer(128, 128, true)) {
             // Fill buffer with colors (x, y, 42, 255)
@@ -2409,6 +2475,7 @@ public class BitmapTest {
 
     @Test
     @Parameters(method = "parametersForTestAsShared")
+    @DisabledOnRavenwood(reason = "Ashmem unsupported")
     public void testAsShared(Config config, ColorSpace colorSpace) {
         Bitmap original = Bitmap.createBitmap(10, 10,
                 config == Config.HARDWARE ? Config.ARGB_8888 : config, true /*hasAlpha*/,
@@ -2449,6 +2516,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ashmem unsupported")
     public void testAsSharedRecycled() {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
         bitmap.recycle();
@@ -2456,6 +2524,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ashmem unsupported")
     public void testAsSharedDensity() {
         DisplayMetrics metrics =
                 InstrumentationRegistry.getTargetContext().getResources().getDisplayMetrics();
@@ -2472,6 +2541,7 @@ public class BitmapTest {
 
     @Test
     @Parameters({"true", "false"})
+    @DisabledOnRavenwood(reason = "Ashmem unsupported")
     public void testAsSharedImageDecoder(boolean mutable) {
         Resources res = InstrumentationRegistry.getTargetContext().getResources();
         ImageDecoder.Source source = ImageDecoder.createSource(res.getAssets(),
@@ -2498,6 +2568,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkFormats() {
         for (ConfigToFormat pair : CONFIG_TO_FORMAT) {
             Bitmap bm = Bitmap.createBitmap(10, 10, pair.config);
@@ -2508,6 +2579,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkFormatsHardware() {
         for (ConfigToFormat pair : CONFIG_TO_FORMAT) {
             Bitmap bm = Bitmap.createBitmap(10, 10, pair.config);
@@ -2528,6 +2600,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNullBitmapNdk() {
         Bitmap bitmap = Bitmap.createBitmap(10, 10, Bitmap.Config.ARGB_8888);
         nTestNullBitmap(bitmap);
@@ -2545,6 +2618,7 @@ public class BitmapTest {
 
     @Test
     @Parameters(method = "parametersForTestNdkInfo")
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testNdkInfo(Config config, final int expectedFormat) {
         // Arbitrary width and height.
         final int width = 13;
@@ -2574,6 +2648,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkDataSpaceF16Extended() {
         // In RGBA_F16 we force EXTENDED in these cases.
         for (ColorSpace colorSpace : new ColorSpace[] {
@@ -2600,6 +2675,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkDataSpaceNonExtended() {
         // In 565 and 8888, these force non-extended.
         for (ColorSpace colorSpace : new ColorSpace[] {
@@ -2630,6 +2706,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkDataSpace() {
         // DataSpace.ADATASPACEs that do not depend on the Config.
         for (ColorSpace colorSpace : new ColorSpace[] {
@@ -2660,6 +2737,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkDataSpaceAlpha8() {
         // ALPHA_8 doesn't support ColorSpaces
         Bitmap bm = Bitmap.createBitmap(10, 10, Config.ALPHA_8);
@@ -2670,6 +2748,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkDataSpaceNullBitmap() {
         assertEquals(DataSpace.ADATASPACE_UNKNOWN, nGetDataSpace(null));
     }
@@ -2771,6 +2850,7 @@ public class BitmapTest {
 
     @Test
     @Parameters(method = "parametersForNdkCompress")
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkCompress(CompressFormat format, ColorSpace cs, Config config)
             throws IOException {
         // Verify that ndk compress behaves the same as Bitmap#compress
@@ -2821,6 +2901,7 @@ public class BitmapTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Ravenwood does not support NDK APIs yet")
     public void testNdkCompressBadParameter() throws IOException {
         try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
             nTestNdkCompressBadParameter(mBitmap, stream, new byte[16 * 1024]);

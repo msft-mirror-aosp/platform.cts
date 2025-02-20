@@ -21,8 +21,11 @@ import static org.junit.Assert.assertNotEquals;
 
 import android.graphics.Typeface;
 import android.graphics.cts.R;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.TextPaint;
 import android.util.Pair;
+
+import com.android.ravenwood.common.RavenwoodCommonUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -345,5 +348,14 @@ public class FontTestUtil {
      */
     public static String getSelectedVariationSettings(Typeface typeface) {
         return FONT_VARIATION_SETTING_LIST[getSelectedFontStyle(typeface)];
+    }
+
+    /** Returns the correct fonts directory, either on device or running in Ravenwood. */
+    public static String getFontsDir() {
+        if (RavenwoodRule.isOnRavenwood()) {
+            return RavenwoodCommonUtils.getRavenwoodRuntimePath() + "/fonts/";
+        } else {
+            return "/system/fonts/";
+        }
     }
 }

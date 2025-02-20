@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 import android.content.ContentResolver;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -128,5 +129,13 @@ public class Utils {
             }
         }
         return ret;
+    }
+
+    static boolean isNdkSupported() {
+        return !RavenwoodRule.isOnRavenwood();
+    }
+
+    static boolean isHardwareBufferSupported() {
+        return !RavenwoodRule.isOnRavenwood();
     }
 }

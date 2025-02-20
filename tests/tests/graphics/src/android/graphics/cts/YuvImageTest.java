@@ -29,8 +29,9 @@ import android.graphics.ColorSpace;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.media.ExifInterface;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -46,7 +47,6 @@ import org.junit.runner.RunWith;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -407,6 +407,7 @@ public class YuvImageTest {
     @ApiTest(apis = {"android.graphics.YuvImage#compressToJpegR"})
     @RequiresFlagsEnabled(Flags.FLAG_YUV_IMAGE_COMPRESS_TO_ULTRA_HDR)
     @Test
+    @DisabledOnRavenwood(blockedBy = ExifInterface.class)
     public void testCompressYuvToJpegRWithExif() {
         String hdrInput = Utils.obtainPath(R.raw.raw_p010_image, 0);
         String sdrInput = Utils.obtainPath(R.raw.raw_yuv420_image, 0);

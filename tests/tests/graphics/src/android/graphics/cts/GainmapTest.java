@@ -40,6 +40,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.hardware.HardwareBuffer;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -65,6 +66,7 @@ import java.util.function.Function;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
+@DisabledOnRavenwood(blockedBy = Gainmap.class)
 public class GainmapTest {
     private static final float EPSILON = 0.002f;
     private static final int TILE_SIZE = 256;

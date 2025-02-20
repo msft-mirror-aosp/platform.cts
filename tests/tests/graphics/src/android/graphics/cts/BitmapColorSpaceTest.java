@@ -31,7 +31,9 @@ import android.graphics.Color;
 import android.graphics.ColorSpace;
 import android.graphics.ImageDecoder;
 import android.graphics.Matrix;
+import android.hardware.HardwareBuffer;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.Log;
 
 import androidx.annotation.ColorInt;
@@ -41,6 +43,9 @@ import androidx.test.filters.RequiresDevice;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ColorUtils;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,9 +57,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
@@ -378,6 +380,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391358787)
     public void getPixel() {
         verifyGetPixel("green-p3.png", 0x75fb4cff);
         verifyGetPixel("translucent-green-p3.png", 0x3a7d267f); // 50% translucent
@@ -424,6 +427,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391358787)
     public void getPixels() {
         verifyGetPixels("green-p3.png");
         verifyGetPixels("translucent-green-p3.png"); // 50% translucent
@@ -466,6 +470,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391358787)
     public void setPixel() {
         verifySetPixel("green-p3.png", 0xffff0000, 0xea3323ff);
         verifySetPixel("translucent-green-p3.png", 0x7fff0000, 0x7519127f);
@@ -509,6 +514,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391358787)
     public void setPixels() {
         verifySetPixels("green-p3.png", 0xffff0000, 0xea3323ff);
         verifySetPixels("translucent-green-p3.png", 0x7fff0000, 0x7519127f);
@@ -613,6 +619,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void p3hardware() {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredConfig = Bitmap.Config.HARDWARE;
@@ -740,6 +747,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391358787)
     public void inColorSpaceP3ToSRGB() {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB);
@@ -758,6 +766,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391358787)
     public void inColorSpaceSRGBToP3() {
         BitmapFactory.Options opts = new BitmapFactory.Options();
         opts.inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.DISPLAY_P3);
@@ -967,6 +976,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void copyHardwareToAlpha8() {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.HARDWARE;
@@ -1110,6 +1120,7 @@ public class BitmapColorSpaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testEncodeP3hardware() {
         Bitmap b = null;
         ImageDecoder.Source src = ImageDecoder.createSource(mResources.getAssets(),
@@ -1144,6 +1155,7 @@ public class BitmapColorSpaceTest {
 
     @Test
     @RequiresDevice // SwiftShader does not yet have support for F16 in HARDWARE b/75778024
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void test16bitHardware() {
         // Decoding to HARDWARE may use EXTENDED_SRGB or SRGB, depending
         // on whether F16 is supported in HARDWARE.
