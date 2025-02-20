@@ -22,6 +22,7 @@ import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEnvOutsideTemperatureVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortConnectedVerifierBuilder;
@@ -3215,17 +3216,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_NOT_REQUIRED,
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_REQUIRED_V1))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float>
-            getEnvOutsideTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getCurrentGearVerifierBuilder() {

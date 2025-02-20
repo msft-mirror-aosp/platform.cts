@@ -1678,6 +1678,16 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
+    public static VehiclePropertyVerifier.Builder<Float> getEnvOutsideTemperatureVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
+                        Float.class)
+                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
+    }
+
     private static void verifyHvacTemperatureValueSuggestion(
             VehiclePropertyVerifier.VerifierContext verifierContext,
             Float[] temperatureSuggestion) {
