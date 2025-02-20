@@ -2482,7 +2482,6 @@ public class WebViewTest extends SharedWebViewTest {
      * this test should be reflected in that test as necessary. See http://go/modifying-webview-cts.
      */
     @Test
-    @Ignore("b/368230178 - re-enable when WebView M131 is available in Android main branch")
     public void testSetSafeBrowsingAllowlistWithValidList() throws Exception {
         List allowlist = new ArrayList<String>();
         allowlist.add("safe-browsing");
