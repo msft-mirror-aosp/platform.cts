@@ -1626,6 +1626,24 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_ENERGY);
     }
 
+    public static VehiclePropertyVerifier.Builder<Boolean> getFuelDoorOpenVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.FUEL_DOOR_OPEN,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class)
+                .setCarPropertyConfigVerifier(
+                        (verifierContext, config) -> {
+                            assertFuelPropertyNotImplementedOnEv(
+                                    verifierContext.getCarPropertyManager(),
+                                    VehiclePropertyIds.FUEL_DOOR_OPEN);
+                        })
+                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
+                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
+                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
+    }
+
     /** Assert fuel property is not implement on an EV vehicle. */
     public static void assertFuelPropertyNotImplementedOnEv(
             CarPropertyManager mgr, int propertyId) {

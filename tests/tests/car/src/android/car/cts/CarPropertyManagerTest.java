@@ -26,6 +26,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstant
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortConnectedVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortOpenVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
@@ -3869,24 +3870,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getFuelDoorOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_DOOR_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setCarPropertyConfigVerifier(
-                        (verifierContext, config) -> {
-                            assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.getCarPropertyManager(),
-                                    VehiclePropertyIds.FUEL_DOOR_OPEN);
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
