@@ -161,7 +161,6 @@ android_library {
         "src/**/I*.aidl",
     ],
     static_libs: [
-        "androidx.appcompat_appcompat",
         "androidx.legacy_legacy-support-v4",
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",

@@ -571,7 +571,7 @@ public class CameraIntentsActivity extends PassFailButtons.Activity
                             "com.android.cts.verifier.managedprovisioning.fileprovider",
                             mImageTarget);
                     CameraPresentMediaDialog.newInstance(photoUri)
-                            .show(getSupportFragmentManager(), "CameraPresentMediaDialogFragment");
+                            .show(getFragmentManager(), "CameraPresentMediaDialogFragment");
                 } else {
                     mActionSuccess = true;
                 }
