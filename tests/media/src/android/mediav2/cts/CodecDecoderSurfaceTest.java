@@ -16,28 +16,45 @@
 
 package android.mediav2.cts;
 
+import static android.Manifest.permission.OBSERVE_PICTURE_PROFILES;
 import static android.media.codec.Flags.apvSupport;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
+import static android.media.tv.flags.Flags.FLAG_APPLY_PICTURE_PROFILES;
+import static android.media.tv.flags.Flags.FLAG_MEDIA_QUALITY_FW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
-import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static com.android.media.extractor.flags.Flags.extractorMp4EnableApv;
+import static com.google.common.truth.Truth.assertThat;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import static java.util.Arrays.stream;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.codec.Flags;
+import android.media.quality.ActiveProcessingPicture;
+import android.media.quality.MediaQualityManager;
+import android.media.quality.PictureProfile;
+import android.media.quality.PictureProfileHandle;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Surface;
+import android.view.SurfaceControl;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
@@ -45,6 +62,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,10 +71,17 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.IOException;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.List;
+
+import junit.framework.AssertionFailedError;
 
 /**
  * Test mediacodec api, video decoders and their interactions in surface mode.
@@ -478,5 +503,68 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         boolean isPass = nativeTestFlush(mCodecName, mSurface, mMediaType, mTestFile,
                 format.getInteger(MediaFormat.KEY_COLOR_FORMAT), mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);
+    }
+
+    private Bundle setPictureProfileInstance(PictureProfile instance) {
+        final Bundle bundle = new Bundle();
+        bundle.putObject(MediaFormat.KEY_PICTURE_PROFILE_INSTANCE, instance);
+        return bundle;
+    }
+
+    /**
+     * Test setting PictureProfile instance as a parameter using MediaCodec.setParameter().
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    @RequiresFlagsEnabled({FLAG_APPLY_PICTURE_PROFILES, FLAG_MEDIA_QUALITY_FW})
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_PICTURE_PROFILE_INSTANCE"})
+    @Test
+    public void testSetPictureProfileInstanceAsParameter()
+            throws Exception, AssertionFailedError {
+        assumeTrue("Skipping test because feature flag is disabled",
+                com.android.graphics.libgui.flags.Flags.applyPictureProfiles());
+        // TODO(b/337330263): Call MediaQualityManager.getMaxPictureProfiles instead
+        assumeTrue("Skipping test because no picture profile support",
+                SurfaceControl.getMaxPictureProfiles() > 0);
+
+        try {
+            MediaQualityManager mediaQualityManager =
+                    CONTEXT.getSystemService(MediaQualityManager.class);
+            BlockingDeque<List<ActiveProcessingPicture>> picturesDeque =
+                    new LinkedBlockingDeque<>();
+            mediaQualityManager.addActiveProcessingPictureListener(
+                    Executors.newSingleThreadExecutor(),
+                    activeProcessingPictures -> {
+                        picturesDeque.addFirst(activeProcessingPictures);
+                    }
+            );
+
+            MediaFormat format = setUpSource(mTestFile);
+            mOutputBuff = new OutputManager();
+            mCodec = MediaCodec.createByCodecName(mCodecName);
+            mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+            PictureProfile testPictureProfile =
+                    new PictureProfile.Builder("test").setProfileId("testProfile").build();
+            configureCodec(format, true, true, false);
+            mCodec.start();
+            mCodec.setParameters(setPictureProfileInstance(testPictureProfile));
+            doWork(1);
+            queueEOS();
+            waitForAllOutputs();
+
+            PollingCheck.check("No callback with active picture and profile after 200ms", 200,
+                () -> {
+                    List<ActiveProcessingPicture> pictures = picturesDeque.peek();
+                    return pictures != null && pictures.get(0).getProfileId().equals(
+                            testPictureProfile.getProfileId());
+                }
+            );
+        } catch (AssertionFailedError e) {
+            fail(e.toString());
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            endCodecSession(mCodec);
+            mCodec.release();
+        }
     }
 }
