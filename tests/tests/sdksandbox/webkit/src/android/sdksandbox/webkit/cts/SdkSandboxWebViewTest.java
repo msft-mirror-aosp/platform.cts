@@ -161,6 +161,7 @@ public class SdkSandboxWebViewTest {
                 "testJavascriptInterfaceCustomPropertiesClearedOnReload");
     }
 
+    @Ignore("b/171702662")
     @Test
     @MediumTest
     public void testJavascriptInterfaceForClientPopup() throws Throwable {

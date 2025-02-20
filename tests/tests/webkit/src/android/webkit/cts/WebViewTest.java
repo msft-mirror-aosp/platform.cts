@@ -79,7 +79,6 @@ import android.widget.LinearLayout;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 
 import com.android.compatibility.common.util.NullWebViewUtils;
@@ -785,8 +784,8 @@ public class WebViewTest extends SharedWebViewTest {
         assertEquals("false", mOnUiThread.evaluateJavascriptSync("'custom_property' in interface"));
     }
 
+    @Ignore("b/171702662")
     @Test
-    @FlakyTest(bugId = 171702662)
     public void testJavascriptInterfaceForClientPopup() throws Exception {
         mOnUiThread.getSettings().setJavaScriptEnabled(true);
         mOnUiThread.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
