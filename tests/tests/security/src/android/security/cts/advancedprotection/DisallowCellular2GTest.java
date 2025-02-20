@@ -36,7 +36,6 @@ import android.telephony.TelephonyManager;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +53,15 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     @Before
     public void setup() {
         super.setup();
+
         mUserManager = mInstrumentation.getContext().getSystemService(UserManager.class);
+
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.QUERY_ADVANCED_PROTECTION_MODE,
+                        Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE,
+                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
     }
 
     private static boolean isEmbeddedSubscriptionVisible(SubscriptionInfo subInfo) {
@@ -71,11 +78,8 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     private List<TelephonyManager> getTelephonyManagers() {
         SubscriptionManager subscriptionManager =
                 mInstrumentation.getContext().getSystemService(SubscriptionManager.class);
-        List<SubscriptionInfo> subscriptions =
-                ShellIdentityUtils.invokeMethodWithShellPermissions(
-                        subscriptionManager,
-                        (sm) -> sm.getActiveSubscriptionInfoList(),
-                        Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+
+        List<SubscriptionInfo> subscriptions = subscriptionManager.getActiveSubscriptionInfoList();
 
         List<TelephonyManager> managers = new ArrayList<>();
         for (SubscriptionInfo info : subscriptions) {
@@ -94,13 +98,9 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     private boolean isAvailable() {
         for (TelephonyManager telephonyManager : getTelephonyManagers()) {
             boolean hasCellular =
-                    ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            telephonyManager,
-                            (tm) ->
-                                    tm.isRadioInterfaceCapabilitySupported(
-                                        tm.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK)
-                                    && tm.isDataCapable(),
-                            Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+                    telephonyManager.isRadioInterfaceCapabilitySupported(
+                                    telephonyManager.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK)
+                            && telephonyManager.isDataCapable();
 
             if (hasCellular) {
                 return true;
@@ -111,15 +111,9 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     }
 
     private long getNumFeatures() {
-        return ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mManager,
-                (m) ->
-                        m.getAdvancedProtectionFeatures().stream()
-                                .filter(
-                                        feature ->
-                                                feature.getId() == FEATURE_ID_DISALLOW_CELLULAR_2G)
-                                .count(),
-                Manifest.permission.MANAGE_ADVANCED_PROTECTION_MODE);
+        return mManager.getAdvancedProtectionFeatures().stream()
+                .filter(feature -> feature.getId() == FEATURE_ID_DISALLOW_CELLULAR_2G)
+                .count();
     }
 
     @ApiTest(

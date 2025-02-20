@@ -190,7 +190,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             FutureConnection<ICrossProcessSurfaceControlViewHostTestService>> mConnections =
             new ArrayMap<>();
     private ICrossProcessSurfaceControlViewHostTestService mTestService = null;
-    private static final long TIMEOUT_MS = 3000L;
+    private static final long TIMEOUT_MS = 3000L * HW_TIMEOUT_MULTIPLIER;
 
     /*
      * Configurable state to control how the surfaceCreated callback
@@ -541,6 +541,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         return ((glEsVersion & 0xffff0000) >> 16);
     }
 
+    private @NonNull String getImeTestMarker() {
+        return mName + Long.toString(SystemClock.elapsedRealtimeNanos());
+    }
+
     @Test
     @RequiresDevice
     public void testEmbeddedViewIsHardwareAccelerated() throws Throwable {
@@ -831,7 +835,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         mEmbeddedView = editText;
         editText.setBackgroundColor(Color.BLUE);
-        editText.setPrivateImeOptions("Hello reader! This is a random string");
+        editText.setPrivateImeOptions(getImeTestMarker());
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
@@ -855,7 +859,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         mEmbeddedView = editText;
         editText.setBackgroundColor(Color.BLUE);
-        editText.setPrivateImeOptions("Hello reader! This is a random string");
+        editText.setPrivateImeOptions(getImeTestMarker());
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, /*onTop*/ false);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();
@@ -869,12 +873,17 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mActivityRule.runOnUiThread(
                 () -> {
                     editText.requestFocus();
+                });
+        final ImeEventStream stream = mImeSession.openEventStream();
+        expectEvent(stream, editorMatcher("onStartInput",
+                editText.getPrivateImeOptions()), TIMEOUT_MS);
+
+        mActivityRule.runOnUiThread(
+                () -> {
                     final InputMethodManager imm =
                             mActivity.getSystemService(InputMethodManager.class);
                     imm.showSoftInput(editText, 0);
                 });
-
-        final ImeEventStream stream = mImeSession.openEventStream();
         expectEvent(
                 stream,
                 editorMatcher("onStartInputView", editText.getPrivateImeOptions()),
@@ -888,7 +897,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         mEmbeddedView = editText;
         editText.setBackgroundColor(Color.BLUE);
-        editText.setPrivateImeOptions("Hello reader! This is a random string");
+        editText.setPrivateImeOptions(getImeTestMarker());
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, /*onTop*/ false);
         mInstrumentation.waitForIdleSync();
         waitUntilEmbeddedViewDrawn();

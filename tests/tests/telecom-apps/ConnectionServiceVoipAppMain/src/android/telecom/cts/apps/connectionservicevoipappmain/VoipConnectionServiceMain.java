@@ -38,7 +38,8 @@ public class VoipConnectionServiceMain extends ConnectionService {
         Log.i(TAG, String.format("onBindClient: intent=[%s]", intent));
         sConnectionService = this;
         sLastConnection = null;
-        sLastFailedRequest = null;
+        // sLastFailedRequest needs to be cleaned up by the control interface for verification after
+        // unbind in some cases.
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
     }
 
@@ -47,7 +48,8 @@ public class VoipConnectionServiceMain extends ConnectionService {
         Log.i(TAG, String.format("onUnbind: intent=[%s]", intent));
         sConnectionService = null;
         sLastConnection = null;
-        sLastFailedRequest = null;
+        // sLastFailedRequest needs to be cleaned up by the control interface for verification after
+        // unbind in some cases.
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
         return super.onUnbind(intent);
     }

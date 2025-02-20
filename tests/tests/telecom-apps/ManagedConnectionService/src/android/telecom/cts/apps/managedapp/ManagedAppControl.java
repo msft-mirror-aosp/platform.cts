@@ -585,6 +585,7 @@ public class ManagedAppControl extends Service {
     }
 
     private void cleanupImplementation() {
+        ManagedConnectionService.sLastFailedRequest = null;
         disconnectAndDestroyAllCalls();
     }
 

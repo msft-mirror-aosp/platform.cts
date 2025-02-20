@@ -115,12 +115,12 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
     if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
       return;
     }
-
-    if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-        Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
-        return;
-    }
-
+        boolean isAutomotive = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        if (isAutomotive) {
+            if (!TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager)) {
+                return;
+            }
+        }
     mLocationListener = new TestLocationListener(LOCATION_TO_COLLECT_COUNT);
     mTestLocationManager.requestLocationUpdates(mLocationListener);
 
@@ -131,35 +131,46 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
     boolean success = mLocationListener.await();
     success &= mMeasurementListener.await();
     SoftAssert softAssert = new SoftAssert(TAG);
-    softAssert.assertTrue(
-        "Time elapsed without getting enough location fixes."
-            + " Possibly, the test has been run deep indoors."
-            + " Consider retrying test outdoors.",
-        success);
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Time elapsed without getting enough location fixes."
+                        + " Possibly, the test has been run deep indoors."
+                        + " Consider retrying test outdoors.",
+                success);
+        if (!success) {
+            return;
+        }
 
     Log.i(TAG, "Location status received = " + mLocationListener.isLocationReceived());
 
     List<GnssMeasurementsEvent> events = mMeasurementListener.getEvents();
     int eventCount = events.size();
     Log.i(TAG, "Number of GNSS measurement events received = " + eventCount);
-    softAssert.assertTrue(
-        "GnssMeasurementEvent count: expected > 0, received = " + eventCount,
-        eventCount > 0);
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "GnssMeasurementEvent count: expected > 0, received = " + eventCount,
+                eventCount > 0);
 
     boolean hasEventWithEnoughMeasurements = false;
     // we received events, so perform a quick initial check on mandatory fields
     for (GnssMeasurementsEvent event : events) {
-      // Verify Gnss Event mandatory fields are in required ranges
-      assertNotNull("GnssMeasurementEvent cannot be null.", event);
+            // Verify Gnss Event mandatory fields are in required ranges
+            softAssert.assertOrWarnTrue(
+                    !isAutomotive, "GnssMeasurementEvent cannot be null.", event != null);
+            if (event == null) {
+                continue;
+            }
 
       long timeInNs = event.getClock().getTimeNanos();
-      TestMeasurementUtil.assertGnssClockFields(event.getClock(), softAssert, /* asWarning= */ false, timeInNs);
+            TestMeasurementUtil.assertGnssClockFields(
+                    event.getClock(), softAssert, /* asWarning= */ isAutomotive, timeInNs);
 
       ArrayList<GnssMeasurement> filteredMeasurements = filterMeasurements(event.getMeasurements());
       HashMap<Integer, ArrayList<GnssMeasurement>> measurementConstellationMap =
           groupByConstellation(filteredMeasurements);
       for (ArrayList<GnssMeasurement> measurements : measurementConstellationMap.values()) {
-        validatePseudorange(measurements, softAssert, timeInNs);
+                validatePseudorange(
+                        measurements, softAssert, /* asWarning= */ isAutomotive, timeInNs);
       }
 
       // we need at least 4 satellites to calculate the pseudorange
@@ -168,10 +179,11 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
       }
     }
 
-    softAssert.assertTrue(
-        "Should have at least one GnssMeasurementEvent with at least 4"
-            + "GnssMeasurement. If failed, retry near window or outdoors?",
-        hasEventWithEnoughMeasurements);
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Should have at least one GnssMeasurementEvent with at least 4"
+                        + "GnssMeasurement. If failed, retry near window or outdoors?",
+                hasEventWithEnoughMeasurements);
 
     softAssert.assertAll();
   }
@@ -211,12 +223,15 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
         return filteredMeasurement;
     }
 
-  /**
-   * Uses the common reception time approach to calculate pseudorange time
-   * measurements reported by the receiver according to http://cdn.intechopen.com/pdfs-wm/27712.pdf.
-   */
-  private void validatePseudorange(Collection<GnssMeasurement> measurements,
-      SoftAssert softAssert, long timeInNs) {
+    /**
+     * Uses the common reception time approach to calculate pseudorange time measurements reported
+     * by the receiver according to http://cdn.intechopen.com/pdfs-wm/27712.pdf.
+     */
+    private void validatePseudorange(
+            Collection<GnssMeasurement> measurements,
+            SoftAssert softAssert,
+            boolean asWarning,
+            long timeInNs) {
     long largestReceivedSvTimeNanosTod = 0;
     // closest satellite has largest time (closest to now), as of nano secs of the day
     // so the largestReceivedSvTimeNanosTod will be the svTime we got from one of the GPS/GLONASS sv
@@ -239,11 +254,13 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
                           - (measurement.getReceivedSvTimeNanos() % TimeUnit.DAYS.toNanos(1));
       double deltaiSeconds = deltaiNanos * SECONDS_PER_NANO;
 
-      softAssert.assertTrue("deltaiSeconds in Seconds.",
-          timeInNs,
-          "0.0 <= deltaiSeconds <= " + String.valueOf(threshold),
-          String.valueOf(deltaiSeconds),
-          (deltaiSeconds >= 0.0 && deltaiSeconds <= threshold));
+            softAssert.assertOrWarnTrue(
+                    asWarning,
+                    "deltaiSeconds in Seconds.",
+                    timeInNs,
+                    "0.0 <= deltaiSeconds <= " + String.valueOf(threshold),
+                    String.valueOf(deltaiSeconds),
+                    (deltaiSeconds >= 0.0 && deltaiSeconds <= threshold));
     }
   }
 
@@ -259,12 +276,12 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {
             return;
         }
-
-        if (TestMeasurementUtil.isAutomotiveDevice(getContext())) {
-            Log.i(TAG, "Test is being skipped because the system has the AUTOMOTIVE feature.");
-            return;
+        boolean isAutomotive = TestMeasurementUtil.isAutomotiveDevice(getContext());
+        if (isAutomotive) {
+            if (!TestMeasurementUtil.canTestRunOnAutomotiveDevice(mTestLocationManager)) {
+                return;
+            }
         }
-
         mLocationListener = new TestLocationListener(LOCATION_TO_COLLECT_COUNT);
         mTestLocationManager.requestLocationUpdates(mLocationListener);
 
@@ -275,10 +292,16 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
         boolean success = mLocationListener.await();
 
         List<Location> receivedLocationList = mLocationListener.getReceivedLocationList();
-        assertTrue("Time elapsed without getting enough location fixes."
+        SoftAssert softAssert = new SoftAssert(TAG);
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Time elapsed without getting enough location fixes."
                         + " Possibly, the test has been run deep indoors."
                         + " Consider retrying test outdoors.",
-                success && receivedLocationList.size() > 0);
+            success && receivedLocationList.size() > 0);
+        if (!success || receivedLocationList.size() == 0) {
+            return;
+        }
         Location locationFromApi = receivedLocationList.get(0);
 
         // Since we are checking the eventCount later, there is no need to check the return value
@@ -288,8 +311,9 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
         List<GnssMeasurementsEvent> events = mMeasurementListener.getEvents();
         int eventCount = events.size();
         Log.i(TAG, "Number of Gps Event received = " + eventCount);
-
-        assertTrue("GnssMeasurementEvent count: expected > 0, received = " + eventCount,
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "GnssMeasurementEvent count: expected > 0, received = " + eventCount,
                 eventCount > 0);
 
         PseudorangePositionVelocityFromRealTimeEvents mPseudorangePositionFromRealTimeEvents
@@ -359,14 +383,15 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
 
                 Log.i(TAG, "Calculated Location Offset: " + horizontalOffset
                         + ", Threshold: " + horizontalOffsetThresholdMeters);
-                assertTrue("Latitude & Longitude calculated from pseudoranges should be close to "
+                softAssert.assertOrWarnTrue(
+                        !isAutomotive,
+                        "Latitude & Longitude calculated from pseudoranges should be close to "
                                 + "those reported from Location Manager.  Offset = "
                                 + horizontalOffset + " meters. Threshold = "
                                 + horizontalOffsetThresholdMeters + " meters ",
                         horizontalOffset < horizontalOffsetThresholdMeters);
 
                 //TODO: Check for the altitude offset
-
                 // This 2D velocity uncertainty is conservatively larger than speed uncertainty
                 // as it also contains the effect of bearing uncertainty at a constant speed
                 double horizontalVelocityUncertaintyMps =
@@ -397,7 +422,9 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
                 Log.i(TAG, "Calculated Speed: " + calculatedHorizontalSpeedMps
                         + ", Reported Speed: " + locationFromApi.getSpeed()
                         + ", Threshold: " + horizontalSpeedOffsetThresholdMps);
-                assertTrue("Speed (" + calculatedHorizontalSpeedMps + " m/s) calculated from"
+                softAssert.assertOrWarnTrue(
+                        !isAutomotive,
+                        "Speed (" + calculatedHorizontalSpeedMps + " m/s) calculated from"
                                 + " pseudoranges should be close to the speed ("
                                 + locationFromApi.getSpeed() + " m/s) reported from"
                                 + " Location Manager.",
@@ -406,12 +433,18 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
             }
         }
 
-        assertTrue("Calculated Location Count should be greater than 0.",
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Calculated Location Count should be greater than 0.",
                 totalCalculatedLocationCnt > 0);
-        assertTrue("Calculated Horizontal Location Uncertainty should at least once be less than "
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Calculated Horizontal Location Uncertainty should at least once be less than "
                         + LOW_ENOUGH_POSITION_UNCERTAINTY_METERS,
                 someLocationsHaveLowPosUnc);
-        assertTrue("Calculated Horizontal Velocity Uncertainty should at least once be less than "
+        softAssert.assertOrWarnTrue(
+                !isAutomotive,
+                "Calculated Horizontal Velocity Uncertainty should at least once be less than "
                         + LOW_ENOUGH_VELOCITY_UNCERTAINTY_MPS,
                 someLocationsHaveLowVelUnc);
     }
