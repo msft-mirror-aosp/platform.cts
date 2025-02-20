@@ -76,7 +76,9 @@ class DeviceLockSession implements AutoCloseable {
         for (int i = 0; i < 25 && keyguardManager.isDeviceLocked(); i++) {
             SystemClock.sleep(200);
         }
-        assertFalse(keyguardManager.isDeviceLocked());
+        assertFalse(
+                "Device never became unlocked after sending the inputs to unlock it",
+                keyguardManager.isDeviceLocked());
     }
 
     @Override
