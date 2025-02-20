@@ -43,7 +43,8 @@ import java.util.regex.Pattern;
 public class PackageSignatureTest extends AndroidTestCase {
 
     private static final String TAG = PackageSignatureTest.class.getSimpleName();
-    private static final Pattern TEST_PACKAGE_PATTERN = Pattern.compile("android\\.[^\\.]+\\.cts");
+    private static final Pattern TEST_PACKAGE_PATTERN =
+            Pattern.compile("android\\.[^\\.]+\\.cts(\\..*)?");
 
     @RestrictedBuildTest
     public void testPackageSignatures() throws Exception {
