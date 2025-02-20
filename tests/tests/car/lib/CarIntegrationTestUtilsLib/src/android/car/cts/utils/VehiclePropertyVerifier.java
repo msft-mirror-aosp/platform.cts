@@ -130,6 +130,9 @@ public class VehiclePropertyVerifier<T> {
             VehicleAreaDoor.DOOR_HOOD, VehicleAreaDoor.DOOR_REAR);
     private static final ImmutableSet<Integer> ALL_POSSIBLE_DOOR_AREA_IDS =
             generateAllPossibleAreaIds(DOOR_AREAS);
+    private static final List<Integer> VALID_CAR_PROPERTY_VALUE_STATUSES = Arrays.asList(
+            CarPropertyValue.STATUS_AVAILABLE, CarPropertyValue.STATUS_UNAVAILABLE,
+            CarPropertyValue.STATUS_ERROR);
     private static final ImmutableSet<Integer> PROPERTY_NOT_AVAILABLE_ERROR_CODES =
             ImmutableSet.of(
                     PropertyNotAvailableErrorCode.NOT_AVAILABLE,
@@ -1878,9 +1881,6 @@ public class VehiclePropertyVerifier<T> {
             int propertyId, int areaId, int status, long timestampNanos, T value,
             int expectedAreaId, String source) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        mCarPropertyValueVerifier.ifPresent(
-                propertyValueVerifier -> propertyValueVerifier.verify(carPropertyConfig, propertyId,
-                        areaId, timestampNanos, value));
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -1910,9 +1910,10 @@ public class VehiclePropertyVerifier<T> {
                                 + areaId
                                 + " - source: "
                                 + source
-                                + " value must have AVAILABLE status")
-                .that(status)
-                .isEqualTo(CarPropertyValue.STATUS_AVAILABLE);
+                                + " value must have a valid status: "
+                                + VALID_CAR_PROPERTY_VALUE_STATUSES)
+                .that(VALID_CAR_PROPERTY_VALUE_STATUSES)
+                .contains(status);
         assertWithMessage(
                         mPropertyName
                                 + " - areaId: "
@@ -1944,6 +1945,20 @@ public class VehiclePropertyVerifier<T> {
                                 + " type value")
                 .that(value.getClass())
                 .isEqualTo(mPropertyType);
+
+        // Only validate value if STATUS_AVAILABLE
+        if (status != CarPropertyValue.STATUS_AVAILABLE) {
+            return;
+        }
+
+        mCarPropertyValueVerifier.ifPresent(
+                propertyValueVerifier ->
+                        propertyValueVerifier.verify(
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                value));
 
         if (mRequirePropertyValueToBeInConfigArray) {
             assertWithMessage(
