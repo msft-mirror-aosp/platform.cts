@@ -28,7 +28,6 @@ import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
 import static android.mediav2.common.cts.CodecTestBase.isFormatSupported;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
 import static android.mediav2.common.cts.CodecTestBase.isSoftwareCodec;
-import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 
 import android.media.MediaCodecInfo;
@@ -156,11 +155,12 @@ public class NativeAMediaCodecInfoTest {
 
     private static int getExpectedCodecType(String codecName) {
         if (isSoftwareCodec(codecName)) {
-            return isVendorCodec(codecName) ? SOFTWARE_WITH_DEVICE_ACCESS : SOFTWARE_ONLY;
+            return SOFTWARE_ONLY;
         } else if (isHardwareAcceleratedCodec(codecName)) {
             return HARDWARE_ACCELERATED;
+        } else {
+            return SOFTWARE_WITH_DEVICE_ACCESS;
         }
-        return -1;
     }
 
     private static int getExpectedCodecKind(boolean isEncoder) {
