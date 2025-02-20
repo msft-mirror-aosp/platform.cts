@@ -46,6 +46,6 @@
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
-        <option name="package" value="android.car"/>
+        <option name="package" value="android.car.cts"/>
     </test>
 </configuration>
