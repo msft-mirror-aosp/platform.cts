@@ -387,7 +387,7 @@ public final class Packages {
 
                 return null;
             }
-
+            // Always use ADB to install so package verification can be correctly disabled.
             if (true || !Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
                 // We can't make use of -r when using SessionParams
                 return installUsingAdb(user, apkFile);
