@@ -348,6 +348,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             logd("Provision satellite");
             assertTrue(provisionSatelliteSubscription());
         }
+        logd("Satellite provisioned");
+
         if (!isSatelliteEnabled()) {
             logd("Enable satellite");
 
@@ -371,6 +373,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             mIsEnabled = true;
             mIsEnabledStateChangedLatch = new CountDownLatch(1);
         }
+        logd("Satellite enabled");
+
         revokeSatellitePermission();
     }
 
@@ -3899,6 +3903,179 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         // Restore satellite access allowed
         setUpSatelliteAccessAllowed();
+        revokeSatellitePermission();
+        unregisterTestLocationProvider();
+    }
+
+    void verifySatelliteAllowedAndEnabledForLocation(double lat, double lng) {
+        logd(
+                "verifySatelliteAllowedAndEnabledForLocation: verifying if satellite is allowed and"
+                        + " enabled for location: lat="
+                        + lat
+                        + ", lng="
+                        + lng);
+
+        // setup permission
+        grantSatellitePermission();
+
+        // set given lat, lng location
+        logd("verifySatelliteAllowedAndEnabledForLocation: setting test provider location");
+        setTestProviderLocation(lat, lng);
+
+        logd("verifySatelliteAllowedAndEnabledForLocation: Clearing satellite allowed cache");
+        assertTrue(
+                sMockSatelliteServiceManager
+                        .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
+                                "clear_cache_only"));
+
+        // verify satellite is allowed
+        logd("verifySatelliteAllowedAndEnabledForLocation: verify satellite is allowed");
+        verifyIsSatelliteAllowed(true);
+
+        logd("verifySatelliteAllowedAndEnabledForLocation: verify satellite is enabled");
+        if (!isSatelliteEnabled()) {
+            logd("verifySatelliteAllowedAndEnabledForLocation: satellite not enabled. enabling it");
+            requestSatelliteEnabled(true);
+            assertTrue(isSatelliteEnabled());
+        }
+    }
+
+    void verifySatelliteNotAllowedAndNotEnabledForLocation(double lat, double lng) {
+        logd(
+                "verifySatelliteNotAllowedAndNotEnabledForLocation: verifying if satellite is not"
+                        + " allowed and not enabled for location: lat="
+                        + lat
+                        + ", lng="
+                        + lng);
+
+        // setup permission
+        grantSatellitePermission();
+
+        // set give lat, lng location
+        logd("verifySatelliteNotAllowedAndNotEnabledForLocation: setting test provider location");
+        setTestProviderLocation(lat, lng);
+
+        logd("verifySatelliteNotAllowedAndNotEnabledForLocation: Clearing satellite allowed cache");
+        assertTrue(
+                sMockSatelliteServiceManager
+                        .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
+                                "clear_cache_only"));
+
+        // verify satellite is not allowed
+        logd("verifySatelliteNotAllowedAndNotEnabledForLocation: verify satellite is not allowed");
+        verifyIsSatelliteAllowed(false);
+
+        logd("verifySatelliteNotAllowedAndNotEnabledForLocation: verify satellite is disabled");
+        if (isSatelliteEnabled()) {
+            logd("verifySatelliteAllowedAndEnabledForLocation: satellite is enabled. disabling it");
+            requestSatelliteEnabled(false);
+            assertFalse(isSatelliteEnabled());
+        }
+    }
+
+    private void performSatelliteConfigUpdate(String contentUrl, String metadataUrl)
+            throws Exception {
+        logd(
+                "performSatelliteConfigUpdate: contentUrl: "
+                        + contentUrl
+                        + ", metadataUrl: "
+                        + metadataUrl);
+
+        Intent intent =
+                new Intent("com.google.android.configupdater.TelephonyConfigUpdate.UPDATE_CONFIG");
+        intent.setPackage("com.google.android.configupdater");
+        intent.putExtra("CONTENT_URL", contentUrl);
+        intent.putExtra("METADATA_URL", metadataUrl);
+
+        // Send the broadcast
+        logd("performSatelliteConfigUpdate: Firing broadcast to trigger satellite config update");
+        getContext().sendBroadcast(intent);
+
+        logd("performSatelliteConfigUpdate: Sleeping for satellite config to be applied");
+        // Wait for the config to be applied (3 seconds)
+        Thread.sleep(3000);
+    }
+
+    @Test
+    public void testSatelliteAccessControlWithSatelliteConfigOta() throws Exception {
+        logd("testSatelliteAccessControlWithSatelliteConfigOta");
+
+        // get rid of the overriden test satellite configs, as we are going
+        // to use actual on-device and ota'd satellite configs in this test
+        resetSatelliteAccessControlOverlayConfigs();
+
+        // setup permission
+        grantSatellitePermission();
+
+        // reset satellite allowance state
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: reset satellite allowance state");
+        assertTrue(
+                sMockSatelliteServiceManager
+                        .setIsSatelliteCommunicationAllowedForCurrentLocationCache(
+                                "cache_clear_and_not_allowed"));
+
+        double latUs = 37.7749, lngUs = -122.4194;
+        double latKr = 37.5665, lngKr = 126.9780;
+        double latTw = 25.034, lngTw = 121.565;
+
+        // register test location provider
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: register test location provider");
+        registerTestLocationProvider();
+
+        // Check satellite allowance for on device satellite config:
+        // US - allowed; KR - not allowed; TW - not allowed;
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
+                        + " on device satellite config");
+        verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw);
+
+        // perform OTA to setup v15 satellite config data
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: Perform v15 config update");
+        performSatelliteConfigUpdate(
+                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025-test-v15-telephony_config.pb",
+                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025-test-v15-telephony_config-metadata.txt");
+
+        // Check satellite allowance and enabled status for v15 satellite config:
+        // US - allowed; KR - not allowed; TW - not allowed;
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
+                        + " v15 satellite config");
+        verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw);
+
+        // perform OTA to setup v16 satellite config data
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: Perform v16 config update");
+        performSatelliteConfigUpdate(
+                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025-test-v16-telephony_config.pb",
+                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025-test-v16-telephony_config-metadata.txt");
+
+        // Check satellite allowance and enabled status for v16 satellite config:
+        // US - allowed; KR - allowed; TW - allowed;
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
+                        + " v16 satellite config");
+        verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs);
+        verifySatelliteAllowedAndEnabledForLocation(latKr, lngKr);
+        verifySatelliteAllowedAndEnabledForLocation(latTw, lngTw);
+
+        // perform OTA to setup v17 satellite config data
+        logd("testSatelliteAccessControlWithSatelliteConfigOta: Perform v17 config update");
+        performSatelliteConfigUpdate(
+                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025-test-v17-telephony_config.pb",
+                "https://www.gstatic.com/android/config_update/satelliteConfigDataTest/01212025-test-v17-telephony_config-metadata.txt");
+
+        // Check satellite allowance and enabled status for v17 satellite config:
+        // US - allowed; KR - not allowed; TW - not allowed;
+        logd(
+                "testSatelliteAccessControlWithSatelliteConfigOta: checking satellite allowance for"
+                        + " v17 satellite config");
+        verifySatelliteAllowedAndEnabledForLocation(latUs, lngUs);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latKr, lngKr);
+        verifySatelliteNotAllowedAndNotEnabledForLocation(latTw, lngTw);
+
         revokeSatellitePermission();
         unregisterTestLocationProvider();
     }
@@ -8007,16 +8184,32 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
     private void verifyIsSatelliteAllowed(boolean allowed) {
         grantSatellitePermission();
+        logd("verifyIsSatelliteAllowed: calling requestIsCommunicationAllowedForCurrentLocation");
         Pair<Boolean, Integer> result =
                 requestIsCommunicationAllowedForCurrentLocation();
+        logd(
+                "verifyIsSatelliteAllowed: result of"
+                        + " requestIsCommunicationAllowedForCurrentLocation: "
+                        + result.first
+                        + ", "
+                        + result.second);
         assertNotNull(result.first);
         assertEquals(allowed, result.first);
     }
 
     private void verifySatelliteNotAllowedErrorReason(int expectedError) {
         grantSatellitePermission();
+        logd(
+                "verifySatelliteNotAllowedErrorReason: calling"
+                        + " requestIsCommunicationAllowedForCurrentLocation");
         Pair<Boolean, Integer> result =
                 requestIsCommunicationAllowedForCurrentLocation();
+        logd(
+                "verifySatelliteNotAllowedErrorReason: result of"
+                        + " requestIsCommunicationAllowedForCurrentLocation: "
+                        + result.first
+                        + ", "
+                        + result.second);
         assertNotNull(result.second);
         assertEquals(expectedError, (int) result.second);
     }
@@ -8036,6 +8229,11 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void setTestProviderLocation(double latitude, double longitude) {
+        logd(
+                "setTestProviderLocation: setting test provider location to: latitude="
+                        + latitude
+                        + ", longitude="
+                        + longitude);
         requestMockLocationPermission(true);
         Location loc = LocationUtils.createLocation(
                 TEST_PROVIDER, latitude, longitude, LOCATION_ACCURACY);
