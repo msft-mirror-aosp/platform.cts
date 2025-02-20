@@ -189,10 +189,6 @@ android_library {
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
     ],
-
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }
 
 filegroup {
