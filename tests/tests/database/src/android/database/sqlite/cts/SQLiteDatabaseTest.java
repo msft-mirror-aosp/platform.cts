@@ -2309,10 +2309,10 @@ public class SQLiteDatabaseTest {
 
         // Compare the actual version to the permitted SQLite release.  The test can compare to
         // multiple releases here, if multiple releases are permitted.
-        final int[] expectedVersion342 = { 3, 42, 0 };
-        final int[] expectedVersion344 = { 3, 44, 3 };
-        if (versionIsOkay(expectedVersion342, actual)
-                || versionIsOkay(expectedVersion344, actual)) {
+        final int[] expectedVersion34403 = { 3, 44, 3 };
+        final int[] expectedVersion34404 = { 3, 44, 4 };
+        if (versionIsOkay(expectedVersion34403, actual)
+            || versionIsOkay(expectedVersion34404, actual)) {
             return;
         }
 
