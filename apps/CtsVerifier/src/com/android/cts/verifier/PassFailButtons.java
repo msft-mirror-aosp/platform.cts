@@ -40,8 +40,6 @@ import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.android.compatibility.common.util.ReportLog;
 
 import java.util.List;
@@ -181,7 +179,7 @@ public class PassFailButtons {
         TestResultHistoryCollection getHistoryCollection();
     }   /* class PassFailButtons.PassFailActivity */
 
-    public static class Activity extends AppCompatActivity implements PassFailActivity {
+    public static class Activity extends android.app.Activity implements PassFailActivity {
         private static final String TAG = "CtsVerifier";
         private WakeLock mWakeLock;
         private CtsVerifierReportLog mReportLog;
@@ -308,7 +306,6 @@ public class PassFailButtons {
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
-            setTheme(androidx.appcompat.R.style.Theme_AppCompat);
             ActionBar actBar = getActionBar();
             if (actBar != null) {
                 actBar.setDisplayHomeAsUpEnabled(true);
