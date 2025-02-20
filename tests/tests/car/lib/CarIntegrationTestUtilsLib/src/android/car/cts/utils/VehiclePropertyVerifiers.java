@@ -1564,6 +1564,18 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS);
     }
 
+    public static VehiclePropertyVerifier.Builder<Boolean> getEvChargePortOpenVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.EV_CHARGE_PORT_OPEN,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class)
+                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
+                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
+                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
+    }
+
     public static VehiclePropertyVerifier.Builder<Float> getFuelLevelVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.FUEL_LEVEL,

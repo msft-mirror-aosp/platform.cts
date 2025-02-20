@@ -25,6 +25,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifie
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortConnectedVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
@@ -3883,18 +3884,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     verifierContext.getCarPropertyManager(),
                                     VehiclePropertyIds.FUEL_DOOR_OPEN);
                         })
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getEvChargePortOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
                 .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
                 .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
                 .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
