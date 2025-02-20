@@ -1110,7 +1110,7 @@ public class PerformanceTest {
                         CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
                 previewBuilder.set(CaptureRequest.CONTROL_SETTINGS_OVERRIDE,
                         CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM);
-                if (Flags.zoomMethod()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
                     previewBuilder.set(CaptureRequest.CONTROL_ZOOM_METHOD,
                             CameraMetadata.CONTROL_ZOOM_METHOD_ZOOM_RATIO);
                 }
