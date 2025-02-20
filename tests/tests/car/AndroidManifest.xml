@@ -36,6 +36,8 @@
 
     <application>
         <uses-library android:name="android.test.runner" />
+        <service android:name=".CarProjectionManagerTest$TestService"
+            android:exported="true"/>
         <activity android:name=".drivingstate.DistractionOptimizedActivity">
             <meta-data android:name="distractionOptimized" android:value="true"/>
         </activity>

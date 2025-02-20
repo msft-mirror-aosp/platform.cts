@@ -21,6 +21,7 @@ import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionI
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.timeout;
@@ -33,6 +34,7 @@ import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.car.Car;
 import android.car.CarProjectionManager;
 import android.car.feature.Flags;
+import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -82,6 +84,7 @@ public final class CarProjectionManagerTest extends AbstractCarTestCase {
 
     private static final String BT_DEVICE_ADDRESS = "00:11:22:33:AA:BB";
     private static final Duration PROXY_CONNECTION_TIMEOUT = Duration.ofSeconds(3);
+    private final CarProjectionManager.CarProjectionListener mListener = (fromLongPress) -> {};
 
     // Bluetooth Core objects
     private final BluetoothAdapter mBluetoothAdapter = BlockingBluetoothAdapter.getAdapter();
@@ -162,5 +165,29 @@ public final class CarProjectionManagerTest extends AbstractCarTestCase {
             assertThat(mCarProjectionManager.isBluetoothProfileInhibited(mBluetoothDevice,
                     A2DP_SINK)).isFalse();
         });
+    }
+
+    @ApiTest(
+            apis = {
+                "android.car.CarProjectionManager#registerProjectionListener",
+                "android.car.CarProjectionManager#unregisterProjectionListener"
+            })
+    @EnsureHasPermission(Car.PERMISSION_CAR_PROJECTION)
+    @Test
+    public void testSetUnsetListeners() throws Exception {
+        mCarProjectionManager.registerProjectionListener(
+                mListener, CarProjectionManager.PROJECTION_VOICE_SEARCH);
+        mCarProjectionManager.unregisterProjectionListener();
+    }
+
+    @ApiTest(apis = {"android.car.CarProjectionManager#registerProjectionListener"})
+    @EnsureHasPermission(Car.PERMISSION_CAR_PROJECTION)
+    @Test
+    public void testRegisterListenersHandleBadInput() throws Exception {
+        assertThrows(
+                NullPointerException.class,
+                () ->
+                        mCarProjectionManager.registerProjectionListener(
+                                null, CarProjectionManager.PROJECTION_VOICE_SEARCH));
     }
 }
