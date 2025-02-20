@@ -266,9 +266,9 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             performCreateSharedSessionUnsupportedOperationsJavaClient();
             ArrayList<Integer> sharedStreamArray = new ArrayList<>();
             if (imageReaderIdx != -1) {
-                sharedStreamArray.add(imageReaderIdx);
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
             } else if (surfaceViewIdx != -1) {
-                sharedStreamArray.add(surfaceViewIdx);
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
             }
             createSharedSessionJavaClient(sharedStreamArray);
             performUnsupportedCaptureSessionCommandsJavaClient();
@@ -339,9 +339,9 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                     /*expectedFail*/ false,
                     mRemoteMessenger2);
             ArrayList<Integer> sharedStreamArray = new ArrayList<>();
-            sharedStreamArray.add(imageReaderIdx);
+            sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
             createSharedSessionJavaClient(sharedStreamArray, mRemoteMessenger2);
-            startPreviewJavaClient(mRemoteMessenger2);
+            startPreviewJavaClient(sharedStreamArray, mRemoteMessenger2);
             // TODO (b/394088185): This test is failing, investigate and fix.
             //            createSharedSessionJavaClient(sharedStreamArray);
             //            startPreviewJavaClient();
@@ -483,9 +483,9 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             long nativeSharedTest =
                     openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/ false);
             ArrayList<Integer> sharedStreamArray = new ArrayList<>();
-            sharedStreamArray.add(surfaceViewIdx);
+            sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
             createSharedSessionJavaClient(sharedStreamArray);
-            startPreviewJavaClient();
+            startPreviewJavaClient(sharedStreamArray);
             SystemClock.sleep(PREVIEW_TIME_MS);
             createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
             startSharedStreamingNative(nativeSharedTest);
@@ -516,13 +516,13 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
             ArrayList<Integer> sharedStreamArray = new ArrayList<>();
             if (surfaceViewIdx != -1) {
-                sharedStreamArray.add(surfaceViewIdx);
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
             }
             int imgWidth = -1;
             int imgHeight = -1;
             int imgFormat = -1;
             if (imageReaderIdx != -1) {
-                sharedStreamArray.add(imageReaderIdx);
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
                 SharedOutputConfiguration imgReaderConfig =
                         sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
                 imgWidth = imgReaderConfig.getSize().getWidth();
@@ -533,7 +533,7 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             long nativeSharedTest = openSharedCameraNativeClient(mCameraId,
                     /*isPrimaryClient*/false);
             createSharedSessionJavaClient(sharedStreamArray);
-            startPreviewJavaClient();
+            startPreviewJavaClient(sharedStreamArray);
             SystemClock.sleep(PREVIEW_TIME_MS);
             createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
             startSharedStreamingNative(nativeSharedTest);
@@ -564,13 +564,12 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             int imageReaderIdx = getImageReaderStreamIdx(sharedSessionConfig);
             ArrayList<Integer> sharedStreamArray = new ArrayList<>();
             if (surfaceViewIdx != -1) {
-                sharedStreamArray.add(surfaceViewIdx);
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
             }
             int imgWidth = -1;
             int imgHeight = -1;
             int imgFormat = -1;
             if (imageReaderIdx != -1) {
-                sharedStreamArray.add(imageReaderIdx);
                 SharedOutputConfiguration imgReaderConfig =
                         sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
                 imgWidth = imgReaderConfig.getSize().getWidth();
@@ -585,14 +584,14 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             SystemClock.sleep(PREVIEW_TIME_MS);
             stopSharedStreamingNative(nativeSharedTest);
             createSharedSessionJavaClient(sharedStreamArray);
-            startPreviewJavaClient();
+            startPreviewJavaClient(sharedStreamArray);
             startSharedStreamingNative(nativeSharedTest);
             SystemClock.sleep(PREVIEW_TIME_MS);
             stopSharedStreamingNative(nativeSharedTest);
             closeSessionNative(nativeSharedTest);
-            closeNativeClient(nativeSharedTest);
             stopPreviewJavaClient();
             closeCameraJavaClient();
+            closeNativeClient(nativeSharedTest);
         }
     }
 
@@ -685,12 +684,15 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
         assertTrue(eventTagCountMap.containsKey(expectedEvent));
     }
 
-    private void startPreviewJavaClient() throws Exception {
-        startPreviewJavaClient(mRemoteMessenger);
+    private void startPreviewJavaClient(ArrayList<Integer> sharedStreamArray) throws Exception {
+        startPreviewJavaClient(sharedStreamArray, mRemoteMessenger);
     }
 
-    private void startPreviewJavaClient(Messenger remoteMessenger) throws Exception {
+    private void startPreviewJavaClient(ArrayList<Integer> sharedStreamArray,
+            Messenger remoteMessenger) throws Exception {
         Message msg = Message.obtain(null, TestConstants.OP_START_PREVIEW);
+        msg.getData()
+                .putIntegerArrayList(TestConstants.EXTRA_SHARED_STREAM_ARRAY, sharedStreamArray);
         boolean remoteExceptionHit = false;
         try {
             remoteMessenger.send(msg);
