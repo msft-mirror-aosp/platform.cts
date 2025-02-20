@@ -64,7 +64,7 @@ public class TestLooperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.os.Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
+    @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void testCustomThread() throws Exception {
         final HandlerThread thread = new HandlerThread(TAG);
         thread.start();
@@ -72,7 +72,7 @@ public class TestLooperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.os.Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
+    @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void testOnMainThread() {
         InstrumentationRegistry.getInstrumentation()
                 .runOnMainSync(
@@ -86,7 +86,7 @@ public class TestLooperManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.os.Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
+    @RequiresFlagsEnabled(Flags.FLAG_MESSAGE_QUEUE_TESTABILITY)
     public void peekWhen_future() {
         final HandlerThread thread = new HandlerThread(TAG);
         thread.start();
