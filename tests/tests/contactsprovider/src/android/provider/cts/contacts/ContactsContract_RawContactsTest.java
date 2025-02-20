@@ -18,6 +18,7 @@ package android.provider.cts.contacts;
 
 
 import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -26,6 +27,8 @@ import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.StructuredName;
 import android.provider.ContactsContract.RawContacts;
+import android.provider.ContactsContract.RawContacts.DefaultAccount;
+import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestContact;
 import android.provider.cts.contacts.ContactsContract_TestDataBuilder.TestRawContact;
 import android.provider.cts.contacts.account.StaticAccountAuthenticator;
@@ -33,10 +36,13 @@ import android.test.AndroidTestCase;
 import android.test.MoreAsserts;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 public class ContactsContract_RawContactsTest extends AndroidTestCase {
     private ContentResolver mResolver;
     private ContactsContract_TestDataBuilder mBuilder;
+
+    private AccountManager mAccountManager;
 
     private static final String[] RAW_CONTACTS_PROJECTION = new String[]{
             RawContacts._ID,
@@ -78,6 +84,8 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
         ContentProviderClient provider =
                 mResolver.acquireContentProviderClient(ContactsContract.AUTHORITY);
         mBuilder = new ContactsContract_TestDataBuilder(provider);
+
+        mAccountManager = AccountManager.get(getContext());
     }
 
     @Override
@@ -242,10 +250,88 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
                         RawContacts.ACCOUNT_NAME, RawContacts.ACCOUNT_TYPE
                 });
 
-        // When the raw contact is inserted into the default local account the contact is created
-        // in the local account.
+        // When the raw contact is inserted with null account specified, the contact is created
+        // in the custom local account.
         assertEquals(RawContacts.getLocalAccountName(mContext), row[0]);
         assertEquals(RawContacts.getLocalAccountType(mContext), row[1]);
+    }
+
+    /**
+     * The local account is set as the default account: if a raw contact insert does not specify a
+     * value for {@link RawContacts#ACCOUNT_NAME} and {@link RawContacts#ACCOUNT_TYPE}, it will be
+     * saved to the local account.
+     *
+     * <p>The values returned by {@link RawContacts#getLocalAccountName()} and {@link
+     * RawContacts#getLocalAccountType()} can be customized by overriding the
+     * config_rawContactsLocalAccountName and config_rawContactsLocalAccountType resource strings
+     * defined in platform/frameworks/base/core/res/res/values/config.xml.
+     */
+    @CddTest(requirement = "3.18/C-1-1,C-1-2,C-1-3")
+    public void testRawContactCreate_defaultAccountIsLocal_noAccountUsesLocalAccount() {
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    setDefaultAccountForNewContacts(DefaultAccountAndState.ofLocal());
+                });
+
+        // Save a raw contact without an account.
+        long rawContactId = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver, null);
+
+        String[] row =
+                RawContactUtil.queryByRawContactId(
+                        mResolver,
+                        rawContactId,
+                        new String[] {RawContacts.ACCOUNT_NAME, RawContacts.ACCOUNT_TYPE});
+
+        // When no account is specified the contact is created in the custom local account.
+        assertEquals(RawContacts.getLocalAccountName(mContext), row[0]);
+        assertEquals(RawContacts.getLocalAccountType(mContext), row[1]);
+
+        // Clean up
+        RawContactUtil.delete(mResolver, rawContactId, true);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    setDefaultAccountForNewContacts(DefaultAccountAndState.ofNotSet());
+                });
+    }
+
+    /**
+     * A cloud account is set as the default account: if a raw contact insert does not specify a
+     * value for {@link RawContacts#ACCOUNT_NAME} and {@link RawContacts#ACCOUNT_TYPE}, it will be
+     * saved to that cloud account.
+     */
+    @CddTest(requirement = "3.18/C-1-1,C-1-2,C-1-3")
+    public void testRawContactCreate_defaultAccountIsCloud_noAccountUsesDefaultAccount() {
+        Account cloudAccount =
+                new Account(
+                        "ContactsContract_DefaultAccountTest1", StaticAccountAuthenticator.TYPE);
+        mAccountManager.addAccountExplicitly(cloudAccount, null, null);
+
+        // Set CLOUD_ACCOUNT_1 as the default account.
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    setDefaultAccountForNewContacts(DefaultAccountAndState.ofCloud(cloudAccount));
+                });
+
+        // Save a raw contact without an account.
+        long rawContactId = RawContactUtil.insertRawContactIgnoringNullAccount(mResolver, null);
+
+        String[] row =
+                RawContactUtil.queryByRawContactId(
+                        mResolver,
+                        rawContactId,
+                        new String[] {RawContacts.ACCOUNT_NAME, RawContacts.ACCOUNT_TYPE});
+
+        // When no account is specified the contact is created in the default account.
+        assertEquals(cloudAccount.name, row[0]);
+        assertEquals(cloudAccount.type, row[1]);
+
+        // Clean up
+        RawContactUtil.delete(mResolver, rawContactId, true);
+        mAccountManager.removeAccount(cloudAccount, null, null);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    setDefaultAccountForNewContacts(DefaultAccountAndState.ofNotSet());
+                });
     }
 
     public void testRawContactUpdate_updatesContactUpdatedTimestamp() {
@@ -482,5 +568,9 @@ public class ContactsContract_RawContactsTest extends AndroidTestCase {
                 null)) {
             assertEquals(0, c.getCount());
         }
+    }
+
+    private void setDefaultAccountForNewContacts(DefaultAccountAndState defaultAccountAndState) {
+        DefaultAccount.setDefaultAccountForNewContacts(mResolver, defaultAccountAndState);
     }
 }
