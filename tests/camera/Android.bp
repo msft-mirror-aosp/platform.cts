@@ -49,10 +49,6 @@ android_library {
         "android.test.runner.stubs",
         "android.test.base.stubs",
     ],
-
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }
 
 // CtsCameraTestCases package
