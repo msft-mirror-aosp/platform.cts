@@ -166,6 +166,11 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue(1);
         setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
         AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+        int originalRingVolume = audioManager.getStreamVolume(AudioManager.STREAM_RING);
+        // Set ring stream volume if it's zero.
+        if (originalRingVolume == 0) {
+            audioManager.setStreamVolume(AudioManager.STREAM_RING, 1, 0);
+        }
         AudioManager.AudioPlaybackCallback callback = new AudioManager.AudioPlaybackCallback() {
             @Override
             public void onPlaybackConfigChanged(List<AudioPlaybackConfiguration> configs) {
@@ -189,6 +194,8 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
                 ringing);
         assertTrue("Telecom should have played a ringtone.", ringing);
         audioManager.unregisterAudioPlaybackCallback(callback);
+        // Reset the ring stream volume.
+        audioManager.setStreamVolume(AudioManager.STREAM_RING, originalRingVolume, 0);
     }
 
     /**
