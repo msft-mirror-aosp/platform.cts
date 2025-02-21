@@ -97,6 +97,7 @@ public class SensorHeadTrackerTest extends SensorTestCase {
         mVirtualHeadTracker.closeDevice();
         mCallback.waitForDisconnection();
         configureHtSensorAccess(false);
+        mSensorManager.unregisterDynamicSensorCallback(mCallback);
     }
 
     @CddTest(requirements = {"7.3"})
@@ -222,7 +223,11 @@ public class SensorHeadTrackerTest extends SensorTestCase {
         } finally {
             if (Objects.nonNull(virtualHeadTrackerTwo)) {
                 virtualHeadTrackerTwo.closeDevice();
+                assertTrue(
+                        "Did not get disconnect callback from the second sensor.",
+                        secondCallback.waitForDisconnection());
             }
+            mSensorManager.unregisterDynamicSensorCallback(secondCallback);
         }
     }
 
