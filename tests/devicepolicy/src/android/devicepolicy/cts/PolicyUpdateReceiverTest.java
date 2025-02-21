@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static android.app.admin.DevicePolicyIdentifiers.MEMORY_TAGGING_POLICY;
 import static android.app.admin.PolicyUpdateReceiver.ACTION_DEVICE_POLICY_CHANGED;
 import static android.app.admin.PolicyUpdateReceiver.ACTION_DEVICE_POLICY_SET_RESULT;
 import static android.app.admin.PolicyUpdateReceiver.EXTRA_POLICY_BUNDLE_KEY;
@@ -31,6 +32,10 @@ import android.app.admin.TargetUser;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -48,6 +53,9 @@ public final class PolicyUpdateReceiverTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final Context sContext = TestApis.context().instrumentedContext();
 
@@ -96,9 +104,91 @@ public final class PolicyUpdateReceiverTest {
         assertPolicyUpdateCallbackParams(receiver);
     }
 
+    @Test
+    @ApiTest(
+            apis = {
+                "android.app.admin.PolicyUpdateReceiver#onReceive",
+                "android.app.admin.PolicyUpdateReceiver#onPolicyChanged",
+            })
+    @RequiresFlagsDisabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    public void onReceive_DevicePolicyChangedReceived_DoesNotCallForMemoryTagging() {
+        Intent intent =
+                createPolicyUpdateIntentWithKey(
+                        ACTION_DEVICE_POLICY_CHANGED, MEMORY_TAGGING_POLICY);
+        PolicyUpdateReceiverImpl receiver = new PolicyUpdateReceiverImpl();
+
+        receiver.onReceive(sContext, intent);
+
+        assertThat(receiver.mPolicyChangedCalled).isFalse();
+        assertThat(receiver.mPolicySetResultCalled).isFalse();
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.app.admin.PolicyUpdateReceiver#onReceive",
+                "android.app.admin.PolicyUpdateReceiver#onPolicySetResult",
+            })
+    @RequiresFlagsDisabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    public void onReceive_DevicePolicySetResultReceived_DoesNotCallForMemoryTagging() {
+        Intent intent =
+                createPolicyUpdateIntentWithKey(
+                        ACTION_DEVICE_POLICY_SET_RESULT, MEMORY_TAGGING_POLICY);
+        PolicyUpdateReceiverImpl receiver = new PolicyUpdateReceiverImpl();
+
+        receiver.onReceive(sContext, intent);
+
+        assertThat(receiver.mPolicyChangedCalled).isFalse();
+        assertThat(receiver.mPolicySetResultCalled).isFalse();
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.app.admin.PolicyUpdateReceiver#onReceive",
+                "android.app.admin.PolicyUpdateReceiver#onPolicyChanged",
+            })
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    public void onReceive_DevicePolicyChangedReceived_CallsForMemoryTagging() {
+        Intent intent =
+                createPolicyUpdateIntentWithKey(
+                        ACTION_DEVICE_POLICY_CHANGED, MEMORY_TAGGING_POLICY);
+        PolicyUpdateReceiverImpl receiver = new PolicyUpdateReceiverImpl();
+
+        receiver.onReceive(sContext, intent);
+
+        assertThat(receiver.mPolicyChangedCalled).isTrue();
+        assertThat(receiver.mPolicySetResultCalled).isFalse();
+        assertPolicyUpdateCallbackParamsWithPolicyKey(receiver, MEMORY_TAGGING_POLICY);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.app.admin.PolicyUpdateReceiver#onReceive",
+                "android.app.admin.PolicyUpdateReceiver#onPolicySetResult",
+            })
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    public void onReceive_DevicePolicySetResultReceived_CallsForMemoryTagging() {
+        Intent intent =
+                createPolicyUpdateIntentWithKey(
+                        ACTION_DEVICE_POLICY_SET_RESULT, MEMORY_TAGGING_POLICY);
+        PolicyUpdateReceiverImpl receiver = new PolicyUpdateReceiverImpl();
+
+        receiver.onReceive(sContext, intent);
+
+        assertThat(receiver.mPolicyChangedCalled).isFalse();
+        assertThat(receiver.mPolicySetResultCalled).isTrue();
+        assertPolicyUpdateCallbackParamsWithPolicyKey(receiver, MEMORY_TAGGING_POLICY);
+    }
+
     private Intent createPolicyUpdateIntent(String action) {
+        return createPolicyUpdateIntentWithKey(action, POLICY_KEY);
+    }
+
+    private Intent createPolicyUpdateIntentWithKey(String action, String policyKey) {
         Intent intent = new Intent(action);
-        intent.putExtra(EXTRA_POLICY_KEY, POLICY_KEY);
+        intent.putExtra(EXTRA_POLICY_KEY, policyKey);
         intent.putExtra(EXTRA_POLICY_TARGET_USER_ID, TARGET_USER_ID);
         intent.putExtra(EXTRA_POLICY_UPDATE_RESULT_KEY, POLICY_UPDATE_RESULT_CODE);
         intent.putExtra(EXTRA_POLICY_BUNDLE_KEY, STRING_BUNDLE);
@@ -106,7 +196,12 @@ public final class PolicyUpdateReceiverTest {
     }
 
     private void assertPolicyUpdateCallbackParams(PolicyUpdateReceiverImpl receiver) {
-        assertThat(receiver.mPolicyIdentifier).isEqualTo(POLICY_KEY);
+        assertPolicyUpdateCallbackParamsWithPolicyKey(receiver, POLICY_KEY);
+    }
+
+    private void assertPolicyUpdateCallbackParamsWithPolicyKey(
+            PolicyUpdateReceiverImpl receiver, String policyKey) {
+        assertThat(receiver.mPolicyIdentifier).isEqualTo(policyKey);
         assertThat(receiver.mTargetUser).isEqualTo(TARGET_USER);
         assertThat(receiver.mPolicyUpdateResult.getResultCode()).isEqualTo(
                 POLICY_UPDATE_RESULT_CODE);

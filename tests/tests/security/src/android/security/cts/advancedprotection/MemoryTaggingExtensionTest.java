@@ -90,7 +90,6 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
                         .count());
     }
 
-    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
     @ApiTest(
             apis = {
                 "android.security.advancedprotection.AdvancedProtectionManager"
@@ -105,7 +104,6 @@ public class MemoryTaggingExtensionTest extends BaseAdvancedProtectionTest {
                 SystemProperties.get(MTE_CONTROL_PROPERTY));
     }
 
-    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
     @ApiTest(
             apis = {
                 "android.security.advancedprotection.AdvancedProtectionManager"
