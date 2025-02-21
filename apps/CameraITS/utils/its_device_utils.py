@@ -75,4 +75,5 @@ def start_its_test_activity(device_id):
   run(f'adb -s {device_id} shell input keyevent KEYCODE_WAKEUP')
   run(f'adb -s {device_id} shell input keyevent KEYCODE_MENU')
   run(f'adb -s {device_id} shell am start -n '
-      f'{ITS_TEST_ACTIVITY} --activity-brought-to-front')
+      f'{ITS_TEST_ACTIVITY} --activity-brought-to-front '
+      '--activity-reorder-to-front')
