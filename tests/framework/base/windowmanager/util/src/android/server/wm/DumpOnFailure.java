@@ -17,11 +17,11 @@
 package android.server.wm;
 
 import android.graphics.Bitmap;
-import android.os.Environment;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BitmapUtils;
 
@@ -32,9 +32,9 @@ import org.junit.runners.model.Statement;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * A {@code TestRule} that allows dumping data on test failure.
@@ -45,26 +45,32 @@ import java.util.Map;
  *
  * <p>To capture the output of this rule, add the following to AndroidTest.xml:
  * <pre>
- *  <!-- Collect output of DumpOnFailure. -->
+ *  <!-- Collect output of DumpOnFailure -->
  *  <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
- *    <option name="directory-keys" value="/sdcard/DumpOnFailure" />
+ *    <option name="directory-keys" value="/data/user/0/<test.target.package.name>/files" />
  *    <option name="collect-on-run-ended-only" value="true" />
+ *    <option name="clean-up" value="true" />
  *  </metrics_collector>
  * </pre>
- * <p>And disable external storage isolation:
- * <pre>
- *  <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
- *  <application ... android:requestLegacyExternalStorage="true" ... >
- * </pre>
  */
-public class DumpOnFailure implements TestRule {
+public final class DumpOnFailure implements TestRule {
 
     private static final String TAG = "DumpOnFailure";
+
+    /** Regex pattern for strings that contain at least one whitespace character. */
+    @NonNull
+    private static final Pattern PATTERN_WHITESPACE = Pattern.compile("(.*?)\\s(.*?)");
+
+    /** The output directory where the data should be dumped. */
+    @NonNull
+    private static final File OUT_DIR = InstrumentationRegistry.getInstrumentation()
+            .getTargetContext().getFilesDir();
 
     /**
      * Map of data to be dumped on test failure. The key must contain the name, followed by
      * the file extension type.
      */
+    @NonNull
     private final Map<String, DumpItem<?>> mDumpOnFailureItems = new HashMap<>();
 
     @Override
@@ -72,42 +78,40 @@ public class DumpOnFailure implements TestRule {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
-                onTestSetup(description);
+                onTestSetup();
                 try {
                     base.evaluate();
                 } catch (AssumptionViolatedException t) {
                     throw t;
                 } catch (Throwable t) {
-                    onTestFailure(description, t);
+                    onTestFailure(description);
                     throw t;
                 } finally {
-                    onTestTeardown(description);
+                    onTestTeardown();
                 }
             }
         };
     }
 
-    private void onTestSetup(@NonNull Description description) {
-        cleanDir(getDumpRoot(description).toFile());
+    private void onTestSetup() {
         mDumpOnFailureItems.clear();
     }
 
-    private void onTestTeardown(@NonNull Description description) {
+    private void onTestTeardown() {
         mDumpOnFailureItems.clear();
+        // Files are cleaned up through FilePullerLogCollector.
     }
 
-    private void onTestFailure(@NonNull Description description, @NonNull Throwable t) {
-        final Path root = getDumpRoot(description);
-        final File rootFile = root.toFile();
-        if (!rootFile.exists() && !rootFile.mkdirs()) {
-            Log.e(TAG, "onTestFailure, unable to create file: " + root);
+    private void onTestFailure(@NonNull Description description) {
+        if (!OUT_DIR.exists() && !OUT_DIR.mkdirs()) {
+            Log.e(TAG, "onTestFailure, unable to create directory: " + OUT_DIR);
             return;
         }
 
         for (var entry : mDumpOnFailureItems.entrySet()) {
             final var fileName = getFilename(description, entry.getKey());
-            Log.i(TAG, "Dumping " + root + "/" + fileName);
-            entry.getValue().writeToFile(root.toString(), fileName);
+            Log.i(TAG, "Dumping " + OUT_DIR + "/" + fileName);
+            entry.getValue().writeToFile(OUT_DIR, fileName);
         }
     }
 
@@ -119,31 +123,10 @@ public class DumpOnFailure implements TestRule {
      * @param nameAndExtension the unique dump item name, followed by the file extension.
      */
     @NonNull
-    private String getFilename(@NonNull Description description, @NonNull String nameAndExtension) {
+    private static String getFilename(@NonNull Description description,
+            @NonNull String nameAndExtension) {
         return description.getTestClass().getSimpleName() + "_" + description.getMethodName()
                 + "__" + nameAndExtension;
-    }
-
-    @NonNull
-    private Path getDumpRoot(@NonNull Description description) {
-        return new File(
-                        Environment.getExternalStorageDirectory() + "/DumpOnFailure",
-                        description.getClassName() + "_" + description.getMethodName())
-                .toPath();
-    }
-
-    private void cleanDir(@NonNull File dir) {
-        final File[] files = dir.listFiles();
-        if (files == null) {
-            return;
-        }
-        for (File file : files) {
-            if (!file.isDirectory()) {
-                if (!file.delete()) {
-                    Log.e(TAG, "Unable to delete " + file);
-                }
-            }
-        }
     }
 
     /**
@@ -155,6 +138,10 @@ public class DumpOnFailure implements TestRule {
     public void dumpOnFailure(@NonNull String name, @Nullable Bitmap bitmap) {
         if (bitmap == null) {
             Log.i(TAG, "dumpOnFailure cannot dump null bitmap");
+            return;
+        }
+        if (containsWhitespace(name)) {
+            Log.i(TAG, "dumpOnFailure name cannot contain whitespaces");
             return;
         }
 
@@ -170,6 +157,10 @@ public class DumpOnFailure implements TestRule {
     public void dumpOnFailure(@NonNull String name, @Nullable String string) {
         if (string == null) {
             Log.i(TAG, "dumpOnFailure cannot dump null string");
+            return;
+        }
+        if (containsWhitespace(name)) {
+            Log.i(TAG, "dumpOnFailure name cannot contain whitespaces");
             return;
         }
 
@@ -197,12 +188,21 @@ public class DumpOnFailure implements TestRule {
         return name + "_" + i + "." + extension;
     }
 
+    /**
+     * Whether the given string contains any whitespace characters.
+     *
+     * @param string the string to check.
+     */
+    private static boolean containsWhitespace(@NonNull String string) {
+        return PATTERN_WHITESPACE.matcher(string).matches();
+    }
+
     /** Generic item containing data to be dumped on test failure. */
     private abstract static class DumpItem<T> {
 
         /** The data to be dumped. */
         @NonNull
-        final T mData;
+        protected final T mData;
 
         private DumpItem(@NonNull T data) {
             mData = data;
@@ -211,35 +211,35 @@ public class DumpOnFailure implements TestRule {
         /**
          * Writes the given data to a file created in the given directory, with the given filename.
          *
-         * @param directoryName the name of the directory where the file should be created.
-         * @param fileName      the name of the file to be created.
+         * @param directory the directory where the file should be created.
+         * @param fileName  the name of the file to be created.
          */
-        abstract void writeToFile(@NonNull String directoryName, @NonNull String fileName);
+        abstract void writeToFile(@NonNull File directory, @NonNull String fileName);
     }
 
-    private static class BitmapItem extends DumpItem<Bitmap> {
+    private static final class BitmapItem extends DumpItem<Bitmap> {
 
         BitmapItem(@NonNull Bitmap bitmap) {
             super(bitmap);
         }
 
         @Override
-        void writeToFile(@NonNull String directoryName, @NonNull String fileName) {
-            BitmapUtils.saveBitmap(mData, directoryName, fileName);
+        void writeToFile(@NonNull File directory, @NonNull String fileName) {
+            BitmapUtils.saveBitmap(mData, directory.getPath(), fileName);
         }
     }
 
-    private static class StringItem extends DumpItem<String> {
+    private static final class StringItem extends DumpItem<String> {
 
         StringItem(@NonNull String string) {
             super(string);
         }
 
         @Override
-        void writeToFile(@NonNull String directoryName, @NonNull String fileName) {
-            Log.i(TAG, "Writing to file: " + fileName + " in directory: " + directoryName);
+        void writeToFile(@NonNull File directory, @NonNull String fileName) {
+            Log.i(TAG, "Writing to file: " + fileName + " in directory: " + directory);
 
-            final var file = new File(directoryName, fileName);
+            final var file = new File(directory, fileName);
             try (var fileStream = new FileOutputStream(file)) {
                 fileStream.write(mData.getBytes());
                 fileStream.flush();
