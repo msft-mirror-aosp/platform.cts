@@ -52,6 +52,7 @@ import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.AreaIdConfig;
 import android.car.hardware.property.AutomaticEmergencyBrakingState;
 import android.car.hardware.property.BlindSpotWarningState;
+import android.car.hardware.property.CarInternalErrorException;
 import android.car.hardware.property.CarPropertyManager;
 import android.car.hardware.property.CarPropertyManager.CarPropertyEventCallback;
 import android.car.hardware.property.CrossTrafficMonitoringWarningState;
@@ -78,6 +79,7 @@ import android.car.hardware.property.LaneDepartureWarningState;
 import android.car.hardware.property.LaneKeepAssistState;
 import android.car.hardware.property.LowSpeedAutomaticEmergencyBrakingState;
 import android.car.hardware.property.LowSpeedCollisionWarningState;
+import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableException;
 import android.car.hardware.property.Subscription;
 import android.car.hardware.property.TrailerState;
@@ -157,6 +159,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     private static final long ASYNC_WAIT_TIMEOUT_IN_SEC = 15;
     private static final int REASONABLE_FUTURE_MODEL_YEAR_OFFSET = 5;
     private static final int REASONABLE_PAST_MODEL_YEAR_OFFSET = -10;
+    private static final ImmutableSet<Integer> NO_READ_ACCESS_SET =
+            ImmutableSet.of(
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE);
     private static final ImmutableSet<Integer> PORT_LOCATION_TYPES =
             ImmutableSet.<Integer>builder()
                     .add(
@@ -6598,30 +6604,91 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE);
                         })
                 .setCarPropertyValueVerifier(
-                        (carPropertyConfig, propertyId, areaId, timestampNanos,
-                                temperatureSuggestion) -> {
-                            assertWithMessage(
-                                            "HVAC_TEMPERATURE_VALUE_SUGGESTION Float[] value"
-                                                + " must be size 4.")
-                                    .that(temperatureSuggestion.length)
-                                    .isEqualTo(4);
-
-                            Float requestedTempUnits = temperatureSuggestion[1];
-                            assertWithMessage(
-                                            "The value at index 1 must be one of"
-                                                + " {VehicleUnit#CELSIUS, VehicleUnit#FAHRENHEIT}"
-                                                + " which correspond to values {"
-                                                + (float) VehicleUnit.CELSIUS
-                                                + ", "
-                                                + (float) VehicleUnit.FAHRENHEIT
-                                                + "}.")
-                                    .that(requestedTempUnits)
-                                    .isIn(List.of((float) VehicleUnit.CELSIUS,
-                                            (float) VehicleUnit.FAHRENHEIT));
-                        })
+                        (carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                temperatureSuggestion) ->
+                                verifyHvacTemperatureValueSuggestion(temperatureSuggestion))
                 .addReadPermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .addWritePermission(Car.PERMISSION_CONTROL_CAR_CLIMATE)
                 .build();
+    }
+
+    private void verifyHvacTemperatureValueSuggestion(Float[] temperatureSuggestion) {
+        assertWithMessage(
+                "HVAC_TEMPERATURE_VALUE_SUGGESTION Float[] value"
+                        + " must be size 4.")
+                .that(temperatureSuggestion.length)
+                .isEqualTo(4);
+
+        Float requestedTempUnits = temperatureSuggestion[1];
+        assertWithMessage(
+                "The value at index 1 must be one of"
+                        + " {VehicleUnit#CELSIUS, VehicleUnit#FAHRENHEIT}"
+                        + " which correspond to values {"
+                        + (float) VehicleUnit.CELSIUS
+                        + ", "
+                        + (float) VehicleUnit.FAHRENHEIT
+                        + "}.")
+                .that(requestedTempUnits)
+                .isIn(
+                        ImmutableList.of(
+                                (float) VehicleUnit.CELSIUS,
+                                (float) VehicleUnit.FAHRENHEIT));
+
+        Float suggestedTempInCelsius = temperatureSuggestion[2];
+        Float suggestedTempInFahrenheit = temperatureSuggestion[3];
+        CarPropertyConfig<?> hvacTemperatureSetCarPropertyConfig =
+                mCarPropertyManager.getCarPropertyConfig(
+                        VehiclePropertyIds.HVAC_TEMPERATURE_SET);
+        if (hvacTemperatureSetCarPropertyConfig == null) {
+            return;
+        }
+        List<Integer> hvacTemperatureSetConfigArray =
+                hvacTemperatureSetCarPropertyConfig.getConfigArray();
+        if (hvacTemperatureSetConfigArray.isEmpty()) {
+            return;
+        }
+        Integer minTempInCelsiusTimesTen = hvacTemperatureSetConfigArray.get(0);
+        Integer maxTempInCelsiusTimesTen = hvacTemperatureSetConfigArray.get(1);
+        Integer incrementInCelsiusTimesTen =
+                hvacTemperatureSetConfigArray.get(2);
+        VehiclePropertyVerifier.verifyHvacTemperatureIsValid(
+                suggestedTempInCelsius, minTempInCelsiusTimesTen,
+                maxTempInCelsiusTimesTen, incrementInCelsiusTimesTen);
+
+        Integer minTempInFahrenheitTimesTen =
+                hvacTemperatureSetConfigArray.get(3);
+        Integer maxTempInFahrenheitTimesTen =
+                hvacTemperatureSetConfigArray.get(4);
+        Integer incrementInFahrenheitTimesTen =
+                hvacTemperatureSetConfigArray.get(5);
+        VehiclePropertyVerifier.verifyHvacTemperatureIsValid(
+                suggestedTempInFahrenheit, minTempInFahrenheitTimesTen,
+                maxTempInFahrenheitTimesTen, incrementInFahrenheitTimesTen);
+
+        int suggestedTempInCelsiusTimesTen =
+                (int) (suggestedTempInCelsius * 10f);
+        int suggestedTempInFahrenheitTimesTen =
+                (int) (suggestedTempInFahrenheit * 10f);
+        int numIncrementsCelsius =
+                Math.round(
+                        (suggestedTempInCelsiusTimesTen
+                                - minTempInCelsiusTimesTen)
+                                / incrementInCelsiusTimesTen.floatValue());
+        int numIncrementsFahrenheit =
+                Math.round(
+                        (suggestedTempInFahrenheitTimesTen
+                                - minTempInFahrenheitTimesTen)
+                                / incrementInFahrenheitTimesTen.floatValue());
+        assertWithMessage(
+                "The temperature in celsius must map to the same"
+                        + " temperature in fahrenheit using the"
+                        + " HVAC_TEMPERATURE_SET config array: "
+                        + hvacTemperatureSetConfigArray)
+                .that(numIncrementsFahrenheit)
+                .isEqualTo(numIncrementsCelsius);
     }
 
     @Test
@@ -7930,29 +7997,52 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     public void testGetAllSupportedReadablePropertiesSync() {
         runWithShellPermissionIdentity(
                 () -> {
-                    List<CarPropertyConfig> configs =
-                            mCarPropertyManager.getPropertyList(mPropertyIds);
+                    List<CarPropertyConfig> configs = mCarPropertyManager.getPropertyList();
                     for (CarPropertyConfig cfg : configs) {
-                        int propId = cfg.getPropertyId();
+                        int propertyId = cfg.getPropertyId();
                         List<AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
-                        List<AreaIdConfig<?>> filteredAreaIdConfigs = new ArrayList<>();
-                        if (Flags.areaIdConfigAccess()) {
-                            for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                                if (areaIdConfig.getAccess()
-                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                                        || areaIdConfig.getAccess()
-                                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                                    filteredAreaIdConfigs.add(areaIdConfig);
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            int areaId = areaIdConfig.getAreaId();
+                            try {
+                                if (cfg.getPropertyType() == Boolean.class) {
+                                    mCarPropertyManager.getBooleanProperty(propertyId, areaId);
+                                } else if (cfg.getPropertyType() == Integer.class) {
+                                    mCarPropertyManager.getIntProperty(propertyId, areaId);
+                                } else if (cfg.getPropertyType() == Float.class) {
+                                    mCarPropertyManager.getFloatProperty(propertyId, areaId);
+                                } else if (cfg.getPropertyType() == Integer[].class) {
+                                    mCarPropertyManager.getIntArrayProperty(propertyId, areaId);
+                                } else {
+                                    mCarPropertyManager.getProperty(
+                                            cfg.getPropertyType(), propertyId, areaId);
                                 }
+                            } catch (IllegalArgumentException e) {
+                                expectWithMessage(
+                                                "Should not throw IllegalArgumentException for"
+                                                        + " property: "
+                                                        + VehiclePropertyIds.toString(propertyId)
+                                                        + ", area ID: "
+                                                        + areaId
+                                                        + ", access: "
+                                                        + areaIdConfig.getAccess()
+                                                        + ", error: "
+                                                        + e)
+                                        .that(areaIdConfig.getAccess())
+                                        .isIn(NO_READ_ACCESS_SET);
+                                continue;
+                            } catch (PropertyNotAvailableAndRetryException
+                                    | PropertyNotAvailableException
+                                    | CarInternalErrorException e) {
+                                Log.w(
+                                        TAG,
+                                        "Failed to get property:"
+                                                + VehiclePropertyIds.toString(propertyId)
+                                                + ", area ID: "
+                                                + areaId
+                                                + ", error: "
+                                                + e);
+                                continue;
                             }
-                        } else {
-                            filteredAreaIdConfigs = areaIdConfigs;
-                        }
-                        // no guarantee if we can get values, just call and check if it throws
-                        // exception.
-                        for (AreaIdConfig<?> areaIdConfig : filteredAreaIdConfigs) {
-                            mCarPropertyManager.getProperty(cfg.getPropertyType(), propId,
-                                    areaIdConfig.getAreaId());
                         }
                     }
                 });
@@ -8200,73 +8290,73 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 () -> {
                     List<CarPropertyConfig> allConfigs = mCarPropertyManager.getPropertyList();
                     for (CarPropertyConfig cfg : allConfigs) {
-                        if (cfg.getPropertyType() != Integer[].class
-                                || (!Flags.areaIdConfigAccess() && (cfg.getAccess()
-                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE || cfg.getAccess()
-                                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE))) {
-                            // skip the test if the property is not readable or not an int array
-                            // type property.
-                            continue;
-                        }
-                        switch (cfg.getPropertyId()) {
-                            case VehiclePropertyIds.INFO_FUEL_TYPE:
-                                int[] fuelTypes =
-                                        mCarPropertyManager.getIntArrayProperty(
-                                                cfg.getPropertyId(),
-                                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
-                                verifyEnumsRange(EXPECTED_FUEL_TYPES, fuelTypes);
-                                break;
-                            case VehiclePropertyIds.INFO_MULTI_EV_PORT_LOCATIONS:
-                                int[] evPortLocations =
-                                        mCarPropertyManager.getIntArrayProperty(
-                                                cfg.getPropertyId(),
-                                                VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
-                                verifyEnumsRange(EXPECTED_PORT_LOCATIONS, evPortLocations);
-                                break;
-                            default:
-                                List<? extends AreaIdConfig<?>> areaIdConfigs =
-                                        cfg.getAreaIdConfigs();
-                                for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                                    if (Flags.areaIdConfigAccess() && (areaIdConfig.getAccess()
-                                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE
-                                            || areaIdConfig.getAccess()
-                                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
-                                        // skip the test if the property is not readable
-                                        continue;
-                                    }
-                                    mCarPropertyManager.getIntArrayProperty(
-                                            cfg.getPropertyId(), areaIdConfig.getAreaId());
-                                }
+                        int propertyId = cfg.getPropertyId();
+                        List<AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            int areaId = areaIdConfig.getAreaId();
+                            try {
+                                mCarPropertyManager.getIntArrayProperty(propertyId, areaId);
+                            } catch (IllegalArgumentException e) {
+                                expectWithMessage(
+                                                "Should not throw IllegalArgumentException for"
+                                                        + " property: "
+                                                        + VehiclePropertyIds.toString(propertyId)
+                                                        + ", area ID: "
+                                                        + areaId
+                                                        + ", access: "
+                                                        + areaIdConfig.getAccess()
+                                                        + ", error: "
+                                                        + e)
+                                        .that(
+                                                (cfg.getPropertyType() != Integer[].class)
+                                                        || (NO_READ_ACCESS_SET.contains(
+                                                                areaIdConfig.getAccess())))
+                                        .isTrue();
+                                continue;
+                            } catch (PropertyNotAvailableAndRetryException
+                                    | PropertyNotAvailableException
+                                    | CarInternalErrorException e) {
+                                Log.w(
+                                        TAG,
+                                        "Failed getIntArrayProperty for property:"
+                                                + VehiclePropertyIds.toString(propertyId)
+                                                + ", area ID: "
+                                                + areaId
+                                                + ", error: "
+                                                + e);
+                                continue;
+                            }
                         }
                     }
                 });
-    }
-
-    private void verifyEnumsRange(List<Integer> expectedResults, int[] results) {
-        assertThat(results).isNotNull();
-        // If the property is not implemented in cars, getIntArrayProperty returns an empty array.
-        if (results.length == 0) {
-            return;
-        }
-        for (int result : results) {
-            assertThat(result).isIn(expectedResults);
-        }
     }
 
     @Test
     public void testIsPropertyAvailable() {
         runWithShellPermissionIdentity(
                 () -> {
-                    List<CarPropertyConfig> configs =
-                            mCarPropertyManager.getPropertyList(mPropertyIds);
-
+                    List<CarPropertyConfig> configs = mCarPropertyManager.getPropertyList();
                     for (CarPropertyConfig cfg : configs) {
-                        int[] areaIds = getAreaIdsHelper(cfg);
-                        for (int areaId : areaIds) {
-                            assertThat(
-                                            mCarPropertyManager.isPropertyAvailable(
-                                                    cfg.getPropertyId(), areaId))
-                                    .isTrue();
+                        int propertyId = cfg.getPropertyId();
+                        List<AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            int areaId = areaIdConfig.getAreaId();
+                            try {
+                                mCarPropertyManager.isPropertyAvailable(propertyId, areaId);
+                            } catch (IllegalArgumentException e) {
+                                expectWithMessage(
+                                                "Should not throw IllegalArgumentException for"
+                                                        + " property: "
+                                                        + VehiclePropertyIds.toString(propertyId)
+                                                        + ", area ID: "
+                                                        + areaId
+                                                        + ", access: "
+                                                        + areaIdConfig.getAccess()
+                                                        + ", error: "
+                                                        + e)
+                                        .that(areaIdConfig.getAccess())
+                                        .isIn(NO_READ_ACCESS_SET);
+                            }
                         }
                     }
                 });
@@ -9874,15 +9964,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             return ONCHANGE_RATE_EVENT_COUNTER;
         } else {
             return 0;
-        }
-    }
-
-    // Returns {0} if the property is global property, otherwise query areaId for CarPropertyConfig
-    private int[] getAreaIdsHelper(CarPropertyConfig config) {
-        if (config.isGlobalProperty()) {
-            return new int[]{0};
-        } else {
-            return config.getAreaIds();
         }
     }
 
