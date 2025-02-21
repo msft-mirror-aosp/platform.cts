@@ -120,6 +120,7 @@ public class ChoreographerNativeTest {
 
         mSupportedPeriods = Arrays.stream(mDefaultDisplay.getSupportedModes())
                 .mapToLong(mode -> (long) (Duration.ofSeconds(1).toNanos() / mode.getRefreshRate()))
+                .distinct()
                 .toArray();
 
         mChoreographerPtr = nativeGetChoreographer();
