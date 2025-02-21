@@ -491,11 +491,25 @@ public final class OrgOwnedProfileOwnerTest extends BaseDevicePolicyTest {
     public void testDelegatedCertInstallerDeviceIdAttestation() throws Exception {
         installAppAsUser(CERT_INSTALLER_APK, mUserId);
 
-        runDeviceTestsAsUser(DEVICE_ADMIN_PKG, ".DelegatedCertInstallerHelper",
-                "testManualSetCertInstallerDelegate", mUserId);
+        try {
+            runDeviceTestsAsUser(
+                    DEVICE_ADMIN_PKG,
+                    ".DelegatedCertInstallerHelper",
+                    "testManualSetCertInstallerDelegate",
+                    mUserId);
 
-        runDeviceTestsAsUser(CERT_INSTALLER_PKG, ".DelegatedDeviceIdAttestationTest",
-                "testGenerateKeyPairWithDeviceIdAttestationExpectingSuccess", mUserId);
+            runDeviceTestsAsUser(
+                    CERT_INSTALLER_PKG,
+                    ".DelegatedDeviceIdAttestationTest",
+                    "testGenerateKeyPairWithDeviceIdAttestationExpectingSuccess",
+                    mUserId);
+        } finally {
+            runDeviceTestsAsUser(
+                    DEVICE_ADMIN_PKG,
+                    ".DelegatedCertInstallerHelper",
+                    "testManualClearCertInstallerDelegate",
+                    mUserId);
+        }
     }
 
     @Test
