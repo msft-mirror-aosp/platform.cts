@@ -25,7 +25,6 @@ import static android.autofillservice.cts.testcore.Helper.findAutofillIdByResour
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
-import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilFirstFillRequestAfterConnectReceived;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -250,7 +249,6 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         // Trigger auto-fill
         mUiBot.selectByRelativeId(ID_USERNAME);
         waitUntilConnected();
-        waitUntilFirstFillRequestAfterConnectReceived();
 
         // Trigger second fill request
         mActivity.forceAutofillOnUsername();
@@ -286,7 +284,6 @@ public abstract class LoginActivityCommonTestCase extends AbstractLoginActivityT
         // Trigger auto-fill
         mUiBot.selectByRelativeId(ID_USERNAME);
         waitUntilConnected();
-        waitUntilFirstFillRequestAfterConnectReceived();
 
         // Trigger second fill request
         mActivity.forceAutofillOnUsername();
