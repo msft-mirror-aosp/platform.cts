@@ -59,7 +59,7 @@ import java.util.UUID;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class BluetoothSocketSettingsTest {
-    private static final String TAG = "BluetoothSocketSettingsTest";
+    private static final String TAG = BluetoothSocketSettingsTest.class.getSimpleName();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
