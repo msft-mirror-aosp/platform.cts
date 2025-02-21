@@ -303,7 +303,7 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
 
     protected void installAppAsUser(String appFileName, boolean grantPermissions, int userId)
             throws FileNotFoundException, DeviceNotAvailableException {
-        installAppAsUser(appFileName, grantPermissions, /* dontKillApp */ false, userId);
+        installAppAsUser(appFileName, grantPermissions, /* dontKillApp */ true, userId);
     }
 
     protected void installAppAsUser(String appFileName, boolean grantPermissions,
@@ -420,7 +420,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
             RunUtil.getDefault().sleep(USER_SWITCH_WAIT);
             executeShellCommand("am switch-user " + userId);
         }
-        assertTrue("Failed to switch user after multiple retries", getDevice().getCurrentUser() == userId);
+        assertEquals(
+                "Failed to switch user after multiple retries",
+                userId,
+                getDevice().getCurrentUser());
     }
 
     protected int getMaxNumberOfUsersSupported() throws DeviceNotAvailableException {

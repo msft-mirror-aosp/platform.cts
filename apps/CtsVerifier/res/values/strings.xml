@@ -1617,7 +1617,6 @@
     <string name="ci_intents_direction_label">clockwise</string>
     <string name="ci_instruction_heading_label">Instructions:</string>
     <string name="ci_location_permissions_error">Please give CTS Verifier location permissions before clicking on the pass / fail button</string>
-    <string name="ci_location_permissions_fail_error">Please give CTS Verifier location permissions if the fail button needs to be clicked</string>
     <string name="ci_directory_creation_error">CTS Verifier debug directory could not be created, please try again</string>
     <string name="ci_instruction_text_photo_label">READ BEFORE STARTING TEST</string>
     <string name="ci_instruction_text_passfail_label">Choose \"Pass\" if the right intent is fired after taking a photo from the camera app. Otherwise, choose \"Fail\".</string>

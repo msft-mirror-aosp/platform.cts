@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -90,12 +91,23 @@ class IncompleteMotionTest {
     private lateinit var activity: IncompleteMotionActivity
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
 
+    private var lastX: Float? = null
+    private var lastY: Float? = null
+
     @Before
     fun setUp() {
         activityRule.getScenario().onActivity {
             activity = it
         }
         PollingCheck.waitFor { activity.hasWindowFocus() }
+    }
+
+    @After
+    fun tearDown() {
+        if (lastX != null && lastY != null) {
+            // Finish the gesture to clean up any dangling touches.
+            sendEvent(SystemClock.uptimeMillis(), ACTION_CANCEL, lastX!!, lastY!!, sync = true)
+        }
     }
 
     /**
@@ -167,8 +179,6 @@ class IncompleteMotionTest {
         // If we wait too long here, we will cause ANR (if the platform has a bug).
         // If the MOVE event is received, however, we can stop the test.
         PollingCheck.waitFor { activity.receivedMove() }
-        // Finish the gesture. No dangling injected pointers should remain
-        sendEvent(downTime, ACTION_CANCEL, x, y, sync = true)
         // Before finishing the test, check that no exceptions occurred while running the
         // instructions in the 'sendMoveAndFocus' thread.
         resultFuture.get()
@@ -184,6 +194,8 @@ class IncompleteMotionTest {
         event.displayId = activity.displayId
         event.source = InputDevice.SOURCE_TOUCHSCREEN
         instrumentation.uiAutomation.injectInputEvent(event, sync)
+        lastX = x
+        lastY = y
     }
 
     /**

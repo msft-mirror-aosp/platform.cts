@@ -500,11 +500,9 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.acquireAudioFocusForMusic();
     }
 
-    /**
-     * Waits to ensure that the music audio focus was one of the expected values
-     */
-    public void waitForAndVerifyMusicFocus(int... expectedValues) {
-        mBaseAppVerifierImpl.waitForAndVerifyMusicFocus(expectedValues);
+    /** Waits to ensure that the music audio focus was one of the expected values */
+    public boolean waitForAndVerifyMusicFocus(boolean verifyPresence, int... expectedValues) {
+        return mBaseAppVerifierImpl.waitForAndVerifyMusicFocus(verifyPresence, expectedValues);
     }
 
     /**

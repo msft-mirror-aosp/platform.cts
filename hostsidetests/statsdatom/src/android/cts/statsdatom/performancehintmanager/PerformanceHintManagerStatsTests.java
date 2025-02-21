@@ -99,6 +99,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     @Before
     public void setUp() throws Exception {
         checkSupportedHardware();
+        checkVirtualDevice();
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -119,8 +120,34 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
 
     private void checkSupportedHardware() throws DeviceNotAvailableException {
         String features = getDevice().executeShellCommand("pm list features");
-        assumeTrue(!features.contains("android.hardware.type.television")
-                && !features.contains("android.hardware.type.watch"));
+        assumeTrue(
+                "Unsupported hardware features: " + features,
+                !features.contains("android.hardware.type.television")
+                        && !features.contains("android.hardware.type.watch")
+                        && !features.contains("android.hardware.type.automotive"));
+    }
+
+    private String getProperty(String prop) throws Exception {
+        return getDevice().executeShellCommand("getprop " + prop).replace("\n", "");
+    }
+
+    private void checkVirtualDevice() throws Exception {
+        String device = getProperty("ro.product.device");
+        String model = getProperty("ro.product.model");
+        String name = getProperty("ro.product.name");
+        String qemu = getProperty("ro.boot.qemu");
+        String hardware = getProperty("ro.hardware");
+        boolean isVirtual =
+                device.startsWith("vsoc_")
+                        || model.startsWith("Cuttlefish ")
+                        || name.startsWith("cf_")
+                        || name.startsWith("aosp_cf_")
+                        || qemu.equals("1")
+                        || hardware.contains("goldfish")
+                        || hardware.contains("ranchu")
+                        || hardware.contains("cutf_cvm")
+                        || hardware.contains("starfish");
+        assumeFalse("Test is skipped on virtual device ", isVirtual);
     }
 
     @Override

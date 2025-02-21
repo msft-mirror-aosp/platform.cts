@@ -76,8 +76,8 @@ public class TestConstants {
     public static final String EXTRA_REMOTE_MESSENGER = "remoteMessenger";
     public static final String EXTRA_SHARED_STREAM_ARRAY = "sharedStreamArray";
 
-    public static final byte SURFACE_TYPE_SURFACE_VIEW = 0;
-    public static final byte SURFACE_TYPE_IMAGE_READER = 4;
+    public static final Integer SURFACE_TYPE_SURFACE_VIEW = 0;
+    public static final Integer SURFACE_TYPE_IMAGE_READER = 4;
 
     /**
      * Convert the given error code to a string.
