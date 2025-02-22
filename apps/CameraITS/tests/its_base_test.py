@@ -78,10 +78,6 @@ class ItsBaseTest(base_test.BaseTestClass):
       self.debug_mode = self.user_params['debug_mode'] == 'True'
     if self.user_params.get('scene'):
       self.scene = self.user_params['scene']
-    if self.user_params.get('log_feature_combo_support'):
-      self.log_feature_combo_support = (
-          self.user_params['log_feature_combo_support'] == 'True'
-      )
     self.parallel_execution = (
         self.user_params.get('parallel_execution') == 'True'
     )

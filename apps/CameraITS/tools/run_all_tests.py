@@ -271,6 +271,10 @@ def report_result(device_id, camera_id, tablet_name, results):
       its_device_utils.run(
           f'{adb} push {results[scene][SUMMARY_KEY]} {device_summary_path}')
       results[scene][SUMMARY_KEY] = device_summary_path
+    if FEATURE_QUERY_KEY in results[scene]:
+      for proto_file in results[scene][FEATURE_QUERY_KEY]:
+        its_device_utils.run(
+            f'{adb} push {proto_file} /sdcard/')
 
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"

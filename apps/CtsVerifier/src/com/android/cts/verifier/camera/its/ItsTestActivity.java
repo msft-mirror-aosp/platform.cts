@@ -464,7 +464,9 @@ public class ItsTestActivity extends DialogTestListActivity {
                             mEndTime = sceneResult.getLong("end");
                             setTestResult(testId(cameraId, scene), pass ?
                                     TestResult.TEST_RESULT_PASSED : TestResult.TEST_RESULT_FAILED);
-                            Log.e(TAG, "setTestResult for " + testId(cameraId, scene) + ": " + result);
+                            Log.e(
+                                    TAG,
+                                    "setTestResult for " + testId(cameraId, scene) + ": " + result);
                             String summary = sceneResult.optString("summary");
                             if (!summary.equals("")) {
                                 mSummaryMap.put(key, summary);
@@ -512,10 +514,16 @@ public class ItsTestActivity extends DialogTestListActivity {
                         }
 
                         JSONArray featureQueryProtos =
-                            sceneResult.getJSONArray(FEATURE_COMBINATION_QUERY_KEY);
+                                sceneResult.getJSONArray(FEATURE_COMBINATION_QUERY_KEY);
                         if (featureQueryProtos != null && featureQueryProtos.length() > 0) {
-                            String featureQueryProtoStr = featureQueryProtos.getString(0);
-                            camJsonObj.put(FEATURE_COMBINATION_QUERY_KEY, featureQueryProtoStr);
+                            String featureQueryProtoFileName = featureQueryProtos.getString(0);
+                            StringBuilder protoStrBuilder = new StringBuilder();
+                            appendFileContentToSummary(
+                                    protoStrBuilder,
+                                    "/sdcard/" + featureQueryProtoFileName,
+                                    /*deleteFile*/ true);
+                            camJsonObj.put(
+                                    FEATURE_COMBINATION_QUERY_KEY, protoStrBuilder.toString());
                         }
                     }
                     // Add performance metrics for all scenes along with camera_id as json arr
@@ -536,7 +544,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                     // Save test summary
                     StringBuilder summary = new StringBuilder();
                     for (String path : mSummaryMap.values()) {
-                        appendFileContentToSummary(summary, path);
+                        appendFileContentToSummary(summary, path, /*deleteFile*/ false);
                     }
                     if (summary.length() > MAX_SUMMARY_LEN) {
                         Log.w(TAG, "ITS summary report too long: len: " + summary.length());
@@ -580,10 +588,13 @@ public class ItsTestActivity extends DialogTestListActivity {
             }
         }
 
-        private void appendFileContentToSummary(StringBuilder summary, String path) {
+        private void appendFileContentToSummary(
+                StringBuilder summary, String path, boolean deleteFile) {
             BufferedReader reader = null;
+            File file = null;
             try {
-                reader = new BufferedReader(new FileReader(path));
+                file = new File(path);
+                reader = new BufferedReader(new FileReader(file));
                 String line = null;
                 do {
                     line = reader.readLine();
@@ -603,6 +614,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                         reader.close();
                     } catch (IOException e) {
                     }
+                }
+
+                if (deleteFile) {
+                    file.delete();
                 }
             }
         }
