@@ -847,7 +847,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestNtnSignalStrength() {
         if (!shouldTestSatellite()) return;
 
@@ -874,7 +873,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForNtnSignalStrengthChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -892,7 +890,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testUnregisterForNtnSignalStrengthChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -917,7 +914,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForSatelliteCapabilitiesChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -931,7 +927,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testUnregisterForSatelliteCapabilitiesChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -957,7 +952,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForSatelliteSupportedStateChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -971,7 +965,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForCommunicationAccessStateChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -988,7 +981,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testUnregisterForCommunicationAccessStateChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -1120,7 +1112,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRegisterForSatelliteDisallowedReasonsChanged() {
         if (!shouldTestSatellite()) return;
 
@@ -1138,7 +1129,6 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testUnregisterForSatelliteDisallowedReasonsChanged() {
         if (!shouldTestSatellite()) return;
 

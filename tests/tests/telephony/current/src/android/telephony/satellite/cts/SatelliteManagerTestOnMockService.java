@@ -5877,7 +5877,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     public void testRequestSatelliteEnabled_ModemCrashDuringDisable() {
         /*
          * Test scenario:

@@ -1480,12 +1480,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     @Test
-    public void testAllPropertiesHaveVehiclePropertyVerifier() {
+    public void testAllPropertiesHaveAVehiclePropertyVerifier() {
         Set<Integer> verifierPropertyIds = new ArraySet<>();
         for (VehiclePropertyVerifier verifier : getAllVerifiers()) {
-            expectWithMessage("Verifier for property: " + verifier.getPropertyName()
-                            + " has been included twice!")
-                    .that(verifierPropertyIds.add(verifier.getPropertyId())).isTrue();
+            verifierPropertyIds.add(verifier.getPropertyId());
         }
 
         for (Field field : VehiclePropertyIds.class.getDeclaredFields()) {

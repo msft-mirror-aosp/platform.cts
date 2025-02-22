@@ -40,6 +40,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -53,6 +54,8 @@ import android.platform.test.annotations.SecurityTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.server.wm.LockScreenSession;
+import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -109,6 +112,8 @@ public final class InputMethodManagerTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = new CheckFlagsRule(mFlagsValueProvider);
+
+    private final WindowManagerStateHelper mWmStateHelper = new WindowManagerStateHelper();
 
     private Instrumentation mInstrumentation;
     private Context mContext;
@@ -222,7 +227,7 @@ public final class InputMethodManagerTest {
     }
 
     @Test
-    public void testGetInputMethodList() throws Exception {
+    public void testGetInputMethodList() {
         final List<InputMethodInfo> enabledImes = mImManager.getEnabledInputMethodList();
         assertNotNull(enabledImes);
         final List<InputMethodInfo> imes = mImManager.getInputMethodList();
@@ -238,7 +243,7 @@ public final class InputMethodManagerTest {
     }
 
     @Test
-    public void testGetEnabledInputMethodList() throws Exception {
+    public void testGetEnabledInputMethodList() {
         enableImes(HIDDEN_FROM_PICKER_IME_ID);
         final List<InputMethodInfo> enabledImes = mImManager.getEnabledInputMethodList();
         assertThat(enabledImes).isNotNull();
@@ -289,7 +294,7 @@ public final class InputMethodManagerTest {
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
 
-        startActivityAndShowInputMethodPicker();
+        startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
 
         final UiDevice uiDevice = getUiDevice();
         if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP)) {
@@ -345,7 +350,7 @@ public final class InputMethodManagerTest {
                 mInstrumentation.getUiAutomation(),
                 new ImeSettings.Builder()
                         .setSuppressSetIme(true))) {
-            startActivityAndShowInputMethodPicker();
+            startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
 
             final var info = mImManager.getCurrentInputMethodInfo();
             assertNotEquals(MOCK_IME_ID, info != null ? info.getId() : null);
@@ -393,7 +398,7 @@ public final class InputMethodManagerTest {
                         mInstrumentation.getContext(),
                         mInstrumentation.getUiAutomation(),
                     new ImeSettings.Builder())) {
-            final var activity = startActivityAndShowInputMethodPicker();
+            final var activity = startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
 
             final var info = mImManager.getCurrentInputMethodInfo();
             assertEquals(MOCK_IME_ID, info != null ? info.getId() : null);
@@ -427,6 +432,53 @@ public final class InputMethodManagerTest {
 
     /**
      * Shows the Input Method Picker menu and verifies the IME Language Settings button is not
+     * visible when the screen is locked.
+     */
+    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
+    @Test
+    public void testInputMethodPickerNoLanguageSettingsWhenScreenLocked() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_INPUT_METHODS));
+
+        try (var lockScreenSession = new LockScreenSession(mInstrumentation, mWmStateHelper);
+                var ignored = MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                        new ImeSettings.Builder())) {
+
+            lockScreenSession.setLockCredential().gotoKeyguard();
+
+            final var km = mContext.getSystemService(KeyguardManager.class);
+            assertNotNull("KeyguardManager must be found", km);
+            assertTrue("keyguard is locked", km.isKeyguardLocked());
+            assertTrue("keyguard is secure", km.isKeyguardSecure());
+
+            startActivityAndShowInputMethodPicker(true /* showWhenLocked */);
+
+            final UiDevice uiDevice = getUiDevice();
+
+            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
+                    TIMEOUT);
+            assertNotNull("Container view should be found.", container);
+
+            // Make sure the container starts at the top.
+            container.scroll(Direction.UP, 100f);
+            final boolean hasButton = container.scrollUntil(Direction.DOWN,
+                    Until.hasObject(By.res("android:id/button1")));
+            assertFalse("Language settings button should not be found", hasButton);
+
+            mContext.sendBroadcast(
+                    new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
+            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                    "InputMethod picker should be closed");
+        }
+    }
+
+    /**
+     * Shows the Input Method Picker menu and verifies the IME Language Settings button is not
      * visible when the device is not provisioned.
      */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
@@ -443,7 +495,7 @@ public final class InputMethodManagerTest {
                         mInstrumentation.getContext(),
                         mInstrumentation.getUiAutomation(),
                      new ImeSettings.Builder())) {
-            startActivityAndShowInputMethodPicker();
+            startActivityAndShowInputMethodPicker(false /* showWhenLocked */);
 
             final UiDevice uiDevice = getUiDevice();
 
@@ -491,14 +543,23 @@ public final class InputMethodManagerTest {
         waitForWithGc(() -> receivedSignalCleaned.getCount() == 0);
     }
 
+    /**
+     * Creates the test activity and waits for it to start, and then shows the IME Switcher menu.
+     *
+     * @param showWhenLocked whether the test activity should be shown when the screen is locked.
+     * @return the started test activity.
+     */
     @NonNull
-    private TestActivity startActivityAndShowInputMethodPicker() throws Exception {
+    private TestActivity startActivityAndShowInputMethodPicker(boolean showWhenLocked)
+            throws Exception {
         final var testActivity = TestActivity.startSync(activity -> {
             final View view = new View(activity);
             view.setLayoutParams(new LayoutParams(
                     LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            activity.setShowWhenLocked(showWhenLocked);
             return view;
         });
+        waitOnMainUntil(testActivity::hasWindowFocus, TIMEOUT, "TestActivity should be focused");
 
         // Make sure that InputMethodPicker is not shown in the initial state.
         mContext.sendBroadcast(

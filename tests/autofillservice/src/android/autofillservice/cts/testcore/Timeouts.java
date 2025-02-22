@@ -32,24 +32,11 @@ public final class Timeouts {
     public static final long LONG_PRESS_MS = 3000;
     public static final long RESPONSE_DELAY_MS = 1000;
 
-    public static final long FIRST_FILL_REQUEST_INITIAL_TIMEOUT_MS = 50;
-    public static final long FIRST_FILL_REQUEST_MAX_TIMEOUT_MS = 1_000;
-
-    /** Timeout for receiving first fill request. */
-    public static final Timeout FIRST_FILL_REQUEST_TIMEOUT =
-            new Timeout(
-                    "FIRST_FILL_REQUEST_TIMEOUT",
-                    FIRST_FILL_REQUEST_INITIAL_TIMEOUT_MS,
-                    2F,
-                    FIRST_FILL_REQUEST_MAX_TIMEOUT_MS);
-
-    /** Timeout until framework binds / unbinds from service. */
-    public static final Timeout CONNECTION_TIMEOUT =
-            new Timeout(
-                    "CONNECTION_TIMEOUT",
-                    ONE_TIMEOUT_TO_RULE_THEN_ALL_MS,
-                    2F,
-                    ONE_TIMEOUT_TO_RULE_THEN_ALL_MS);
+    /**
+     * Timeout until framework binds / unbinds from service.
+     */
+    public static final Timeout CONNECTION_TIMEOUT = new Timeout("CONNECTION_TIMEOUT",
+            ONE_TIMEOUT_TO_RULE_THEN_ALL_MS, 2F, ONE_TIMEOUT_TO_RULE_THEN_ALL_MS);
 
     /**
      * Timeout for {@link MyAutofillCallback#assertNotCalled()} - test will sleep for that amount of
