@@ -25,7 +25,7 @@ import android.util.Log;
 import java.util.concurrent.CountDownLatch;
 
 public class BluetoothScanReceiver extends BroadcastReceiver {
-    private static final String TAG = "BluetoothScanReceiver";
+    private static final String TAG = BluetoothScanReceiver.class.getSimpleName();
 
     private static CountDownLatch sCountDownLatch;
 

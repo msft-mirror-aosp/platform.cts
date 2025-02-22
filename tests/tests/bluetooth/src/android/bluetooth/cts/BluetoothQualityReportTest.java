@@ -50,7 +50,7 @@ import java.nio.ByteOrder;
 
 @RunWith(AndroidJUnit4.class)
 public final class BluetoothQualityReportTest {
-    private static final String TAG = "BluetoothQualityReportTest";
+    private static final String TAG = BluetoothQualityReportTest.class.getSimpleName();
 
     @Rule public final Expect expect = Expect.create();
 
