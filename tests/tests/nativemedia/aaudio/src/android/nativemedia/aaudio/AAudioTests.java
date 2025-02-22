@@ -23,6 +23,7 @@ import android.app.UiAutomation;
 import android.media.AudioDeviceInfo;
 import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioSystem;
 import android.os.IBinder;
 import android.os.ServiceManager;
 
@@ -103,5 +104,9 @@ public class AAudioTests {
                                .getContext()
                                .getSystemService(AudioManager.class)
                                .permissionUpdateBarrier();
+    }
+
+    static int getOutChannelCountMax() {
+        return AudioSystem.OUT_CHANNEL_COUNT_MAX;
     }
 }
