@@ -17,15 +17,14 @@
 #define LOG_NDEBUG 0
 #define LOG_TAG "AAudioTest"
 
+#include <aaudio/AAudio.h>
+#include <android-base/properties.h>
+#include <android/log.h>
+#include <gtest/gtest.h>
+
 #include <cstring>
 #include <sstream>
 #include <utility>
-
-#include <aaudio/AAudio.h>
-#include <android/log.h>
-#include <android-base/properties.h>
-#include <gtest/gtest.h>
-#include <system/audio.h> /* FCC_LIMIT */
 
 #include "utils.h"
 
@@ -170,7 +169,7 @@ class AAudioStreamBuilderChannelCountTest : public ::testing::TestWithParam<int3
     }
   protected:
     static bool isValidChannelCount(int32_t cc) {
-        return cc == AAUDIO_UNSPECIFIED || (cc >= 1 && cc <= FCC_LIMIT);
+        return cc == AAUDIO_UNSPECIFIED || (cc >= 1 && cc <= getOutChannelCountMax());
     }
 };
 
@@ -184,12 +183,13 @@ TEST_P(AAudioStreamBuilderChannelCountTest, openStream) {
 }
 
 INSTANTIATE_TEST_CASE_P(CC, AAudioStreamBuilderChannelCountTest,
-        ::testing::Values(
-                // Reasonable values that should work OK.
-                AAUDIO_UNSPECIFIED, 1, 2, 3, 4, 5, 6, 7, 8, FCC_LIMIT,
-                // These values should fail.
-                AAUDIO_UNSPECIFIED - 1, (FCC_LIMIT + 1), 1000, 1000000),
-        &AAudioStreamBuilderChannelCountTest::getTestName);
+                        ::testing::Values(
+                                // Reasonable values that should work OK.
+                                AAUDIO_UNSPECIFIED, 1, 2, 3, 4, 5, 6, 7, 8, getOutChannelCountMax(),
+                                // These values should fail.
+                                AAUDIO_UNSPECIFIED - 1, (getOutChannelCountMax() + 1), 1000,
+                                1000000),
+                        &AAudioStreamBuilderChannelCountTest::getTestName);
 
 class AAudioStreamBuilderFormatTest : public ::testing::TestWithParam<aaudio_format_t> {
   public:
@@ -364,7 +364,7 @@ protected:
             return true;
         }
 
-        if (__builtin_popcount(channelMask) > FCC_LIMIT) {
+        if (__builtin_popcount(channelMask) > getOutChannelCountMax()) {
             return false;
         }
 
