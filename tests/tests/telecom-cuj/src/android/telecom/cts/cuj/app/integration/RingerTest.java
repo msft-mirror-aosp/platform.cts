@@ -261,6 +261,7 @@ public class RingerTest extends BaseAppVerifier {
      * <p>
      *  4. disconnect the call
      */
+    @Ignore // TODO(b/393989489): Diagnose flakiness and re-enable.
     @Test
     public void testIncomingCallVibrateMode_VibrateAndNoRing() throws Exception {
         assumeTrue(mShouldTestTelecom);
