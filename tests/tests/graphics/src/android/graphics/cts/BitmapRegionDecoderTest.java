@@ -33,8 +33,10 @@ import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.ColorSpace;
 import android.graphics.Rect;
+import android.hardware.HardwareBuffer;
 import android.media.MediaFormat;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
@@ -433,6 +435,7 @@ public class BitmapRegionDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testDecodeHardwareBitmap() throws IOException {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.HARDWARE;
@@ -642,6 +645,7 @@ public class BitmapRegionDecoderTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testHardwareBitmapIn() throws IOException {
         Options opts = new BitmapFactory.Options();
         Bitmap bitmap = Bitmap.createBitmap(TILE_SIZE, TILE_SIZE, Config.ARGB_8888)
@@ -667,6 +671,7 @@ public class BitmapRegionDecoderTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = MediaUtils.class)
     public void testHeif() throws IOException {
         if (!MediaUtils.hasDecoder(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
             // HEIF support is optional when HEVC decoder is not supported.

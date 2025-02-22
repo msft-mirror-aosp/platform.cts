@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Copyright (C) 2024 The Android Open Source Project
   ~
@@ -14,21 +14,17 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
 
-<tunerCtsConfiguration>
-    <!-- The index of the frontend in available frontends return from HAL level-->
-    <targetFrontendId>0</targetFrontendId>
+    <android.media.tv.ad.TvAdView
+        android:id="@+id/tvadview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
 
-    <!-- The capability of lnb. (Optional) -->
-    <lnbCapability>
-        <supportedVoltages>
-            <voltage>VOLTAGE_NONE</voltage>
-            <voltage>VOLTAGE_5V</voltage>
-        </supportedVoltages>
-    </lnbCapability>
-
-    <!-- The capability of dvbs. (Optional) -->
-    <dvbsCapability>
-        <targetSymbolRate>25000000</targetSymbolRate>
-    </dvbsCapability>
-</tunerCtsConfiguration>
+    <android.media.tv.TvView
+        android:id="@+id/tvad_tvview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>

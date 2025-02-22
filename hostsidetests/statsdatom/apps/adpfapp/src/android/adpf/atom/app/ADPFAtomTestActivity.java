@@ -33,6 +33,8 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PerformanceHintManager;
 import android.os.Process;
 import android.util.ArrayMap;
@@ -81,8 +83,13 @@ public class ADPFAtomTestActivity extends Activity {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                moveTaskToBack(true);
-                Log.i(TAG, "Moved task ADPFHintSessionDeviceActivity to back");
+                Handler handler = new Handler(Looper.getMainLooper());
+                handler.postDelayed(
+                        () -> {
+                            moveTaskToBack(true);
+                            Log.i(TAG, "Moved task ADPFHintSessionDeviceActivity to back after 1s");
+                        },
+                        1000);
                 break;
             case ACTION_CREATE_REGULAR_HINT_SESSIONS:
                 PerformanceHintManager.Session session = createPerformanceHintSession();

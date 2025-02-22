@@ -74,8 +74,8 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
             testItems.add(new ProgressStyleProgressTrackerIconTest());
             testItems.add(new ProgressStyleLargeIconTest());
             testItems.add(new ProgressStyleNotStyledByProgressTest());
-            testItems.add(new ProgressStyleRTLTest());
             testItems.add(new ProgressStyleManySegmentsSameColor());
+            testItems.add(new ProgressStyleRTLTest());
         }
 
         return Collections.unmodifiableList(testItems);
@@ -123,6 +123,7 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
 
         @Override
         protected void test() {
+            setButtonsEnabled(mView, true);
             // In all tests we post a notification and ask the user to confirm that its appearance
             // matches expectations.
             status = WAIT_FOR_USER;

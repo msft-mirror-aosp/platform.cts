@@ -39,8 +39,6 @@ import android.graphics.Typeface;
 import android.os.LocaleList;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.text.GetChars;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -60,7 +58,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -76,9 +73,6 @@ import java.util.regex.Pattern;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class TextUtilsTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
     private Context mContext;
     private String mEllipsis;
     private int mStart;
@@ -86,9 +80,7 @@ public class TextUtilsTest {
 
     @Before
     public void setup() {
-        if (!RavenwoodRule.isOnRavenwood()) {
-            mEllipsis = getEllipsis();
-        }
+        mEllipsis = getEllipsis();
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         resetRange();
     }
@@ -124,7 +116,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = TextPaint.class)
     public void testListEllipsize() {
         final TextPaint paint = new TextPaint();
         // "one more" for 1, "%d more" for other
@@ -184,7 +175,6 @@ public class TextUtilsTest {
 }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = TextPaint.class)
     public void testListEllipsize_rtl() {
         final Resources res = mContext.getResources();
         final Configuration newConfig = new Configuration(res.getConfiguration());
@@ -221,7 +211,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = TextPaint.class)
     public void testCommaEllipsize() {
         TextPaint p = new TextPaint();
         String text = "long, string, to, truncate";
@@ -230,8 +219,10 @@ public class TextUtilsTest {
         // avail is shorter than text width for only one item plus the appropriate ellipsis.
         // issue 1688347, the expected result for this case does not be described
         // in the javadoc of commaEllipsize().
-        assertEquals("",
-                TextUtils.commaEllipsize(text, p, textWidth - 1.4f, "plus 1", "%d plus").toString());
+        assertEquals(
+                "",
+                TextUtils.commaEllipsize(text, p, textWidth - 1.4f, "plus 1", "%d plus")
+                        .toString());
         // avail is long enough for only one item plus the appropriate ellipsis.
         assertEquals("long, 3 plus",
                 TextUtils.commaEllipsize(text, p, textWidth, "plus 1", "%d plus").toString());
@@ -275,7 +266,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testConcat() {
         assertEquals("", TextUtils.concat().toString());
 
@@ -311,13 +301,11 @@ public class TextUtilsTest {
     }
 
     @Test(expected = NullPointerException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testConcat_NullArray() {
         TextUtils.concat((CharSequence[]) null);
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testConcat_NullParameters() {
         assertEquals("nullA", TextUtils.concat(null, "A"));
         assertEquals("Anull", TextUtils.concat("A", null));
@@ -336,7 +324,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testConcat_twoParagraphSpans() {
         // Two paragraph spans. The first will get extended to cover the whole string and the second
         // will be dropped.
@@ -357,7 +344,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testConcat_oneParagraphSpanAndOneInclusiveSpan() {
         // One paragraph span and one double-inclusive span. The first will get extended to cover
         // the whole string and the second will be kept.
@@ -381,7 +367,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testCopySpansFrom() {
         Object[] spans;
         String text = "content";
@@ -525,7 +510,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = TextPaint.class)
     public void testEllipsize() {
         TextPaint p = new TextPaint();
 
@@ -579,7 +563,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = TextPaint.class)
     public void testEllipsize_emoji() {
         // 2 family emojis (11 code units + 11 code units).
         final String text = "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66"
@@ -603,7 +586,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = TextPaint.class)
     public void testEllipsizeCallback() {
         TextPaint p = new TextPaint();
 
@@ -755,7 +737,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testEquals() {
         // compare with itself.
         // String is a subclass of CharSequence and overrides equals().
@@ -796,7 +777,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplate() {
         // ^1 at the start of template string.
         assertEquals("value1 template to be expanded",
@@ -850,42 +830,36 @@ public class TextUtilsTest {
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateCaret0WithValue() {
         // template string is ^0
         TextUtils.expandTemplate("template ^0 to be expanded", "value1");
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateCaret0NoValues() {
         // template string is ^0
         TextUtils.expandTemplate("template ^0 to be expanded");
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateNotEnoughValues() {
         // the template requests 2 values but only 1 is provided
         TextUtils.expandTemplate("template ^2 to be expanded", "value1");
     }
 
     @Test(expected=NullPointerException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateNullValues() {
         // values is null
         TextUtils.expandTemplate("template ^2 to be expanded", (CharSequence[]) null);
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateNotEnoughValuesAndFirstIsNull() {
         // the template requests 2 values but only one null value is provided
         TextUtils.expandTemplate("template ^2 to be expanded", (CharSequence) null);
     }
 
     @Test(expected=NullPointerException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateAllValuesAreNull() {
         // the template requests 2 values and 2 values is provided, but all values are null.
         TextUtils.expandTemplate("template ^2 to be expanded",
@@ -893,14 +867,12 @@ public class TextUtilsTest {
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateNoValues() {
         // the template requests 2 values but no value is provided.
         TextUtils.expandTemplate("template ^2 to be expanded");
     }
 
     @Test(expected=NullPointerException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testExpandTemplateNullTemplate() {
         // template is null
         TextUtils.expandTemplate(null, "value1");
@@ -1143,7 +1115,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testGetOffsetAfter() {
         // the first '\uD800' is index 9, the second 'uD800' is index 16
         // the '\uDBFF' is index 26
@@ -1192,7 +1163,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testGetOffsetBefore() {
         // the first '\uDC00' is index 10, the second 'uDC00' is index 17
         // the '\uDFFF' is index 27
@@ -1241,7 +1211,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(reason = "deprecated")
     public void testGetReverse() {
         String source = "string to be reversed";
         assertEquals("gnirts", TextUtils.getReverse(source, 0, "string".length()).toString());
@@ -1637,7 +1606,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testJoinIterable() {
         ArrayList<CharSequence> charTokens = new ArrayList<>();
         charTokens.add("string1");
@@ -1660,13 +1628,11 @@ public class TextUtilsTest {
     }
 
     @Test(expected=NullPointerException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testJoinIterableNull() {
         TextUtils.join("|", (Iterable) null);
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testJoinArray() {
         CharSequence[] charTokens = new CharSequence[] { "string1", "string2", "string3" };
         assertEquals("string1|string2|string3", TextUtils.join("|", charTokens));
@@ -1686,7 +1652,6 @@ public class TextUtilsTest {
     }
 
     @Test(expected=NullPointerException.class)
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testJoinArrayNull() {
         TextUtils.join("|", (Object[]) null);
     }
@@ -1865,7 +1830,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testReplace() {
         String template = "this is a string to be as the template for replacement";
 
@@ -2000,7 +1964,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testStringOrSpannedString() {
         assertNull(TextUtils.stringOrSpannedString(null));
 
@@ -2079,7 +2042,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testWriteToParcel() {
         Parcelable.Creator<CharSequence> creator = TextUtils.CHAR_SEQUENCE_CREATOR;
         String string = "String";
@@ -2280,7 +2242,6 @@ public class TextUtilsTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = SpannableString.class)
     public void testDumpSpans() {
         StringBuilder builder = new StringBuilder();
         StringBuilderPrinter printer = new StringBuilderPrinter(builder);

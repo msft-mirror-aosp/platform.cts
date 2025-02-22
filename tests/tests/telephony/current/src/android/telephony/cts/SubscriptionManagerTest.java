@@ -1511,6 +1511,10 @@ public class SubscriptionManagerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsNtn_enableFlag() throws Exception {
+        if (!InstrumentationRegistry.getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE)) {
+            return;
+        }
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
         boolean unused = info.isOnlyNonTerrestrialNetwork();
@@ -1519,6 +1523,10 @@ public class SubscriptionManagerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsNtn_disableFlag() throws Exception {
+        if (!InstrumentationRegistry.getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_SATELLITE)) {
+            return;
+        }
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
         assertThat(info.isOnlyNonTerrestrialNetwork()).isFalse();

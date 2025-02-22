@@ -49,7 +49,6 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.After;
@@ -68,11 +67,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.function.Function;
-import java.util.function.BiFunction;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Helper class for running mediacodec in asynchronous mode with resource tracking enabled. All
@@ -298,7 +297,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                         + " codec\n" + mTestEnv + mTestConfig,
                 asyncHandleResource.hasRequiredResourceChangeCbReceived());
         mCodec.stop();
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
+        validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
         mCodec.reset();
         validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
@@ -540,7 +539,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
                         + " is expected to consume more resources than format : " + currentFormat
-                        + testLogs + mTestEnv + mTestConfig, LHS_RESOURCE_GE, result);
+                        + testLogs + mTestEnv + mTestConfig, RHS_RESOURCE_GE, result);
                 lastGlobalResourceForFormat = currentGlobalResourcesForFormat;
                 lastFormat = currentFormat;
             }
@@ -632,7 +631,7 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         if (obj != null) {
             mDynamicActivity.markSurface(obj.first, true);
         }
-        if (asyncHandleResource.getResourceChangeCbCount() >= resFiles.size()) {
+        if (asyncHandleResource.getResourceChangeCbCount() < resFiles.size()) {
             Assert.fail(String.format("number of resource change callbacks received is less than"
                             + " number of files tried in apb test. exp >= %d, got %d \n",
                     resFiles.size(),

@@ -158,7 +158,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     @BeforeClass
     public static void beforeAllTests() throws Exception {
-        if (!hasFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
             return;
         }
 
@@ -222,7 +222,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        if (!hasFeature(PackageManager.FEATURE_TELEPHONY)) {
+        if (!hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
             return;
         }
 
@@ -254,7 +254,7 @@ public class EmergencyCallDomainSelectionTestOnMockModem extends ImsCallingBase 
 
     @Before
     public void beforeTest() throws Exception {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY));
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assumeTrue(ImsUtils.shouldTestImsService());
         assumeTrue(sSupportDomainSelection);
 

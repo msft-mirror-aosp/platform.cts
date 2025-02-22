@@ -264,7 +264,6 @@ public class TypedArrayTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetTypefaceAttributes() {
         final TypedArray t = getContext().getTheme().obtainStyledAttributes(
                 R.style.Whatever, R.styleable.style1);

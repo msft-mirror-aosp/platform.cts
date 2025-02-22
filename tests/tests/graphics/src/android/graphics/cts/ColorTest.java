@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.ArraySet;
 import android.util.Log;
 import android.util.TypedValue;
@@ -30,7 +29,6 @@ import android.util.TypedValue;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -46,9 +44,6 @@ import java.util.Set;
 public class ColorTest {
 
     private static final String LOG_TAG = ColorTest.class.getSimpleName();
-
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
 
     @Test
     public void resourceColor() {

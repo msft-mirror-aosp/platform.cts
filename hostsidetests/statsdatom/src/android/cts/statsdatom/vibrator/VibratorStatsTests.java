@@ -17,12 +17,20 @@ package android.cts.statsdatom.vibrator;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 import static java.util.stream.Collectors.toList;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.os.vibrator.Flags;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto.Atom;
@@ -30,9 +38,16 @@ import com.android.os.AtomsProto.VibrationReported;
 import com.android.os.AtomsProto.VibratorStateChanged;
 import com.android.os.StatsLog.EventMetricData;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -40,13 +55,19 @@ import java.util.List;
 import java.util.function.Function;
 
 /** Statsd atoms tests done via app for vibrator atoms. */
-@NonApiTest(exemptionReasons = {}, justification = "METRIC")
-public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver {
+@NonApiTest(
+        exemptionReasons = {},
+        justification = "METRIC")
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class VibratorStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private IBuildInfo mCtsBuild;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -54,12 +75,11 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -67,10 +87,9 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
         mCtsBuild = buildInfo;
     }
 
+    @Test
     public void testVibratorStateChanged() throws Exception {
-        if (!isVibratorSupportedOnDevice()) {
-            return;
-        }
+        assumeTrue(isVibratorSupportedOnDevice());
 
         List<Integer> expectedStates = Arrays.asList(
                 VibratorStateChanged.State.ON_VALUE, VibratorStateChanged.State.OFF_VALUE);
@@ -84,10 +103,9 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
                 atom -> atom.getVibratorStateChanged().getState().getNumber());
     }
 
+    @Test
     public void testVibrationReportedSingleVibration() throws Exception {
-        if (!isVibratorSupportedOnDevice()) {
-            return;
-        }
+        assumeTrue(isVibratorSupportedOnDevice());
 
         List<EventMetricData> data = runVibratorDeviceTests(
                 Atom.VIBRATION_REPORTED_FIELD_NUMBER, "testOneShotVibration");
@@ -96,10 +114,9 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
                 atom -> atom.getVibrationReported().getVibrationType().getNumber());
     }
 
+    @Test
     public void testVibrationReportedRepeatedVibration() throws Exception {
-        if (!isVibratorSupportedOnDevice()) {
-            return;
-        }
+        assumeTrue(isVibratorSupportedOnDevice());
 
         List<EventMetricData> data = runVibratorDeviceTests(
                 Atom.VIBRATION_REPORTED_FIELD_NUMBER, "testRepeatedWaveformVibration");
@@ -108,10 +125,10 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
                 atom -> atom.getVibrationReported().getVibrationType().getNumber());
     }
 
-    public void testVibrationReportedComposedVibration() throws Exception {
-        if (!isVibratorSupportedOnDevice()) {
-            return;
-        }
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testVibrationReportedComposedVibrationWithFeatureFlagDisabled() throws Exception {
+        assumeTrue(isVibratorSupportedOnDevice());
 
         List<EventMetricData> data = runVibratorDeviceTests(
                 Atom.VIBRATION_REPORTED_FIELD_NUMBER, "testComposedTickThenClickVibration");
@@ -124,6 +141,54 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
                 atom -> atom.getVibrationReported().getHalCompositionSize());
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testVibrationReportedComposedVibration() throws Exception {
+        assumeTrue(isTickAndClickPrimitivesSupportedOnDevice());
+
+        List<EventMetricData> data =
+                runVibratorDeviceTests(
+                        Atom.VIBRATION_REPORTED_FIELD_NUMBER, "testComposedTickThenClickVibration");
+
+        assertSingleValueOccurred(
+                VibrationReported.VibrationType.SINGLE_VALUE,
+                data,
+                atom -> atom.getVibrationReported().getVibrationType().getNumber());
+        assertSingleValueOccurred(
+                /* expectedValue= */ 1,
+                data,
+                atom -> atom.getVibrationReported().getHalComposeCount());
+        assertSingleValueOccurred(
+                /* expectedValue= */ 2,
+                data,
+                atom -> atom.getVibrationReported().getHalCompositionSize());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    public void testVibrationReportedComposedVibration_noSupportForPrimitives() throws Exception {
+        assumeTrue(isVibratorSupportedOnDevice());
+        assumeFalse(isTickAndClickPrimitivesSupportedOnDevice());
+
+        List<EventMetricData> data =
+                runVibratorDeviceTests(
+                        Atom.VIBRATION_REPORTED_FIELD_NUMBER, "testComposedTickThenClickVibration");
+
+        assertSingleValueOccurred(
+                VibrationReported.VibrationType.SINGLE_VALUE,
+                data,
+                atom -> atom.getVibrationReported().getVibrationType().getNumber());
+        assertSingleValueOccurred(
+                /* expectedValue= */ 0,
+                data,
+                atom -> atom.getVibrationReported().getHalComposeCount());
+        assertSingleValueOccurred(
+                /* expectedValue= */ 0,
+                data,
+                atom -> atom.getVibrationReported().getHalCompositionSize());
+    }
+
+    @Test
     public void testVibrationReportedPredefinedVibration() throws Exception {
         if (!isVibratorSupportedOnDevice()) {
             return;
@@ -140,6 +205,11 @@ public class VibratorStatsTests extends DeviceTestCase implements IBuildReceiver
 
     private boolean isVibratorSupportedOnDevice() throws Exception {
         return DeviceUtils.checkDeviceFor(getDevice(), "checkVibratorSupported");
+    }
+
+    private boolean isTickAndClickPrimitivesSupportedOnDevice() throws Exception {
+        return DeviceUtils.checkDeviceFor(
+                getDevice(), "checkVibratorPrimitivesTickAndClickAreSupported");
     }
 
     private List<EventMetricData> runVibratorDeviceTests(int atomTag, String testMethodName)

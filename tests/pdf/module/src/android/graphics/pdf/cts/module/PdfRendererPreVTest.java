@@ -838,8 +838,8 @@ public class PdfRendererPreVTest {
         try (PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
                 PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
             List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
-            int stampAnnotationId = annotations.getFirst().first;
-            StampAnnotation stampAnnotation = (StampAnnotation) annotations.getFirst().second;
+            int stampAnnotationId = annotations.get(0).first;
+            StampAnnotation stampAnnotation = (StampAnnotation) annotations.get(0).second;
             List<PdfPageObject> pageObjects = stampAnnotation.getObjects();
             assertThat(pageObjects).hasSize(2);
 
@@ -850,8 +850,7 @@ public class PdfRendererPreVTest {
             stampAnnotation.removeObject(0);
 
             // Update the path object
-            PdfPagePathObject pathObject =
-                    (PdfPagePathObject) stampAnnotation.getObjects().getFirst();
+            PdfPagePathObject pathObject = (PdfPagePathObject) stampAnnotation.getObjects().get(0);
             pathObject.setStrokeColor(Color.valueOf(Color.RED));
 
             // Remove the older path object and the updated one
@@ -861,16 +860,15 @@ public class PdfRendererPreVTest {
             firstPage.updatePageAnnotation(stampAnnotationId, stampAnnotation);
 
             annotations = firstPage.getPageAnnotations();
-            StampAnnotation updatedStampAnnotation =
-                    (StampAnnotation) annotations.getFirst().second;
+            StampAnnotation updatedStampAnnotation = (StampAnnotation) annotations.get(0).second;
 
             // check that the updated stamp annotation has one object which is a path object with
             // stroke color blue
             assertThat(updatedStampAnnotation.getObjects()).hasSize(1);
-            assertThat(updatedStampAnnotation.getObjects().getFirst().getPdfObjectType())
+            assertThat(updatedStampAnnotation.getObjects().get(0).getPdfObjectType())
                     .isEqualTo(PdfPageObjectType.PATH);
             PdfPagePathObject updatedPathObject =
-                    (PdfPagePathObject) stampAnnotation.getObjects().getFirst();
+                    (PdfPagePathObject) stampAnnotation.getObjects().get(0);
             assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.RED));
         }
     }

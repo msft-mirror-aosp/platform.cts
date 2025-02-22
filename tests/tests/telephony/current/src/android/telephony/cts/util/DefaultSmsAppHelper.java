@@ -162,6 +162,7 @@ public class DefaultSmsAppHelper {
      */
     public static boolean setDefaultSmsApp(
             @NonNull Context context, String packageName) throws Exception {
+        Log.d(TAG, "setDefaultSmsApp: packageName:" + packageName);
         RoleManager roleManager = context.getSystemService(RoleManager.class);
         Boolean result;
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);

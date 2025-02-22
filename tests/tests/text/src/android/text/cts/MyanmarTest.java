@@ -27,6 +27,7 @@ import android.graphics.fonts.Font;
 import android.graphics.fonts.SystemFonts;
 import android.icu.util.ULocale;
 import android.os.LocaleList;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.TypedValue;
 import android.widget.TextView;
 
@@ -115,6 +116,7 @@ public class MyanmarTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testMyanmarUnicodeRenders() {
         assumeTrue(sHasBurmeseLocale);
         assumeTrue(!sMymrLocales.isEmpty());
@@ -124,6 +126,7 @@ public class MyanmarTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testUnicodeRenders_withValidLocaleList() {
         assumeTrue(sHasBurmeseLocale);
         assumeTrue(!sMymrLocales.isEmpty());
@@ -148,6 +151,7 @@ public class MyanmarTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testZawgyiRenders() {
         assumeTrue(sHasBurmeseLocale);
         assumeTrue(!sZawgyiLocales.isEmpty());
@@ -157,6 +161,7 @@ public class MyanmarTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testZawgyiRenders_withValidLocaleList() {
         assumeTrue(sHasBurmeseLocale);
         assumeTrue(!sZawgyiLocales.isEmpty());
