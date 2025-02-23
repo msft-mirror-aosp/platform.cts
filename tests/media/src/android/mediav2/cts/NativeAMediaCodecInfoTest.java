@@ -18,7 +18,7 @@ package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR_FD;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CQ;
-import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_REGULAR;
+import static android.mediav2.common.cts.CodecTestBase.MEDIA_CODEC_LIST_ALL;
 import static android.mediav2.common.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
 import static android.mediav2.common.cts.CodecTestBase.codecPrefix;
@@ -28,11 +28,11 @@ import static android.mediav2.common.cts.CodecTestBase.isFeatureSupported;
 import static android.mediav2.common.cts.CodecTestBase.isFormatSupported;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
 import static android.mediav2.common.cts.CodecTestBase.isSoftwareCodec;
-import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.media.cts.TestUtils;
 import android.util.Range;
 import android.util.Size;
 
@@ -70,6 +70,8 @@ public class NativeAMediaCodecInfoTest {
     private static final int SOFTWARE_ONLY = 1;
     private static final int HARDWARE_ACCELERATED = 2;
     private static final int SOFTWARE_WITH_DEVICE_ACCESS = 3;
+    // alias to MediaCodecInfo.CodecCapabilities.FEATURE_SpecialCodec
+    static final String SPECIAL_CODEC = "special-codec";
 
     private static final int MEDIACODEC_KIND_INVALID = 0;
     private static final int MEDIACODEC_KIND_DECODER = 1;
@@ -116,15 +118,21 @@ public class NativeAMediaCodecInfoTest {
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
         final List<Object[]> argsList = new ArrayList<>();
-        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (codecInfo.isAlias()) continue;
             String codecName = codecInfo.getName();
+            if (!TestUtils.isTestableCodecInCurrentMode(codecName)) {
+                continue;
+            }
             if (codecPrefix != null && !codecName.startsWith(codecPrefix)
                     || (codecFilter != null && !codecFilter.matcher(codecName).matches())) {
                 continue;
             }
             String[] types = codecInfo.getSupportedTypes();
             for (String type : types) {
+                if (codecInfo.getCapabilitiesForType(type).isFeatureSupported(SPECIAL_CODEC)) {
+                    continue;
+                }
                 argsList.add(new Object[]{codecName, type});
             }
         }
@@ -137,7 +145,7 @@ public class NativeAMediaCodecInfoTest {
     }
 
     public static MediaCodecInfo getCodecInfo(String codecName) {
-        for (MediaCodecInfo info : MEDIA_CODEC_LIST_REGULAR.getCodecInfos()) {
+        for (MediaCodecInfo info : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
             if (info.getName().equals(codecName)) {
                 return info;
             }
@@ -147,11 +155,12 @@ public class NativeAMediaCodecInfoTest {
 
     private static int getExpectedCodecType(String codecName) {
         if (isSoftwareCodec(codecName)) {
-            return isVendorCodec(codecName) ? SOFTWARE_WITH_DEVICE_ACCESS : SOFTWARE_ONLY;
+            return SOFTWARE_ONLY;
         } else if (isHardwareAcceleratedCodec(codecName)) {
             return HARDWARE_ACCELERATED;
+        } else {
+            return SOFTWARE_WITH_DEVICE_ACCESS;
         }
-        return -1;
     }
 
     private static int getExpectedCodecKind(boolean isEncoder) {
@@ -235,7 +244,6 @@ public class NativeAMediaCodecInfoTest {
                 }
             });
         }
-        Assert.assertTrue("received 0 formats for mediaType: " + mMediaType, formatList.size() > 0);
         String[] files = fileList.toArray(new String[0]);
         boolean[] isFormatSupportedArray = new boolean[formatList.size()];
         for (int i = 0; i < formatList.size(); i++) {

@@ -70,7 +70,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 public class BluetoothLeScanTest {
-
     private static final String TAG = "BluetoothLeScanTest";
 
     private static final int SCAN_DURATION_MILLIS = 10000;

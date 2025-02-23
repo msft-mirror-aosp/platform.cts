@@ -606,8 +606,9 @@ public final class UiAutomationTest {
 
     /** Start an activity and return its accessibility window id. */
     private int startActivitySync() throws Exception {
-        mActivity = ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen(
-                getInstrumentation(), mUiAutomation, mActivityRule);
+        mActivity = ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(
+                getInstrumentation(), mUiAutomation, UiAutomationTestActivity.class,
+                mUserHelper.getMainDisplayId());
         return ActivityLaunchUtils.findWindowByTitle(mUiAutomation,
                 ActivityLaunchUtils.getActivityTitle(getInstrumentation(), mActivity)).getId();
     }

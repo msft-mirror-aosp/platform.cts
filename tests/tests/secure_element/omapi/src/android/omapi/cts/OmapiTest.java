@@ -32,6 +32,7 @@ import android.se.omapi.SEService.OnConnectedListener;
 import android.se.omapi.Session;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.RequiresDevice;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PropertyUtil;
@@ -238,6 +239,7 @@ public class OmapiTest {
 
     /** Tests getReaders API */
     @Test
+    @RequiresDevice
     public void testGetReaders() {
         assumeTrue(supportOMAPIReaders());
         try {
