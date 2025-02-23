@@ -52,6 +52,7 @@ import android.view.Display.HdrCapabilities;
 import android.webkit.cts.CtsTestServer;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -146,6 +147,8 @@ public class MediaExtractorTest {
     }
 
     @RequiresFlagsEnabled(FLAG_EXTRACTOR_MP4_ENABLE_APV)
+    //TODO(b/396702301) Replace with Build.VERSION_CODES.BAKLAVA once it is defined
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM + 1, codeName = "Baklava")
     @Test
     public void testApvMediaExtractor() throws Exception {
         TestMediaDataSource dataSource =

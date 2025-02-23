@@ -18,6 +18,7 @@ package android.hardware.multiprocess.camera.cts;
 
 import android.app.Activity;
 import android.camera.cts.R;
+import android.hardware.Camera;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.util.Log;
@@ -46,6 +47,8 @@ public class MediaRecorderCameraActivity extends Activity implements SurfaceHold
     private SurfaceView mSurfaceView;
     private ErrorLoggingService.ErrorServiceConnection mErrorServiceConnection;
     private MediaRecorder mMediaRecorder;
+
+    private Camera mCamera;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,6 +115,11 @@ public class MediaRecorderCameraActivity extends Activity implements SurfaceHold
             mMediaRecorder.stop();
             mMediaRecorder.release();
         }
+
+        if (mCamera != null) {
+            mCamera.release();
+            mCamera = null;
+        }
     }
 
     @Override
@@ -121,7 +129,10 @@ public class MediaRecorderCameraActivity extends Activity implements SurfaceHold
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         try {
+            mCamera = Camera.open();
             mOutFile = new File(mOutputPath);
+            mCamera.unlock();
+            mMediaRecorder.setCamera(mCamera);
             mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
             mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
             mMediaRecorder.setPreviewDisplay(mSurfaceView.getHolder().getSurface());

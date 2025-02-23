@@ -38,6 +38,8 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
@@ -47,6 +49,20 @@ import java.util.zip.ZipOutputStream;
 public class Utils {
     private static final Duration SOFT_REBOOT_TIMEOUT = Duration.ofMinutes(3);
     private static final Duration HOST_COMMAND_TIMEOUT = Duration.ofSeconds(10);
+
+    // Keep in sync with `ABI_TO_INSTRUCTION_SET_MAP` in
+    // libcore/libart/src/main/java/dalvik/system/VMRuntime.java.
+    // clang-format off
+    private static final Map<String, String> ABI_TO_INSTRUCTION_SET_MAP = Map.of(
+            "armeabi", "arm",
+            "armeabi-v7a", "arm",
+            "x86", "x86",
+            "x86_64", "x86_64",
+            "arm64-v8a", "arm64",
+            "arm64-v8a-hwasan", "arm64",
+            "riscv64", "riscv64"
+    );
+    // clang-format on
 
     private final TestInformation mTestInfo;
 
@@ -185,7 +201,7 @@ public class Utils {
         File dmFileCopy = new File(getDmPath(apkFile.getAbsolutePath()));
         Files.copy(dmFile.toPath(), dmFileCopy.toPath());
         dmFileCopy.deleteOnExit();
-        File sdmFileCopy = new File(getSdmPath(apkFile.getAbsolutePath()));
+        File sdmFileCopy = new File(getSdmPath(apkFile.getAbsolutePath(), abi));
         Files.copy(sdmFile.toPath(), sdmFileCopy.toPath());
         sdmFileCopy.deleteOnExit();
 
@@ -232,7 +248,7 @@ public class Utils {
     }
 
     public CompilationArtifacts generateCompilationArtifacts(
-            String apkResource, String profileResource) throws Exception {
+            String apkResource, String profileResource, IAbi abi) throws Exception {
         String tempDir = "/data/local/tmp/CtsCompilationTestCases_" + UUID.randomUUID();
         assertCommandSucceeds("mkdir", tempDir);
         String remoteApkFile = tempDir + "/app.apk";
@@ -243,10 +259,17 @@ public class Utils {
         String remoteOdexFile = tempDir + "/app.odex";
         String remoteVdexFile = tempDir + "/app.vdex";
         String remoteArtFile = tempDir + "/app.art";
-        assertCommandSucceeds("dex2oat", "--dex-file=" + remoteApkFile,
-                "--profile-file=" + remoteProfileFile, "--oat-file=" + remoteOdexFile,
-                "--output-vdex=" + remoteVdexFile, "--app-image-file=" + remoteArtFile,
-                "--compiler-filter=speed-profile", "--compilation-reason=cloud");
+        assertCommandSucceeds(
+                "dex2oat",
+                "--instruction-set="
+                        + Objects.requireNonNull(ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName())),
+                "--dex-file=" + remoteApkFile,
+                "--profile-file=" + remoteProfileFile,
+                "--oat-file=" + remoteOdexFile,
+                "--output-vdex=" + remoteVdexFile,
+                "--app-image-file=" + remoteArtFile,
+                "--compiler-filter=speed-profile",
+                "--compilation-reason=cloud");
 
         File odexFile = File.createTempFile("temp", ".odex");
         odexFile.deleteOnExit();
@@ -300,8 +323,9 @@ public class Utils {
         return apkPath.replaceAll("\\.apk$", ".dm");
     }
 
-    private String getSdmPath(String apkPath) throws Exception {
-        return apkPath.replaceAll("\\.apk$", ".sdm");
+    private String getSdmPath(String apkPath, IAbi abi) throws Exception {
+        return apkPath.replaceAll(
+                "\\.apk$", "." + ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName()) + ".sdm");
     }
 
     private static Pattern dexFileToPattern(String dexFile) {
