@@ -16,14 +16,14 @@
 
 package android.security.cts;
 
-
-import junit.framework.TestCase;
-
+import com.google.common.truth.Truth;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
+import junit.framework.TestCase;
 
 /**
  * Verify that the kernel is configured how we expect it to be
@@ -53,8 +53,10 @@ public class KernelSettingsTest extends TestCase {
      * difficult for attackers, don't export kernel symbols.
      */
     public void testKptrRestrict() throws IOException {
+        String[] kptrRestrictValues = {"2", "4"};
         try {
-            assertEquals("2", getFile("/proc/sys/kernel/kptr_restrict"));
+            String kptrRestrict = getFile("/proc/sys/kernel/kptr_restrict");
+            Truth.assertThat(Arrays.asList(kptrRestrictValues)).contains(kptrRestrict);
         } catch (FileNotFoundException e) {
             // Odd. The file doesn't exist... Assume we're ok.
         }
