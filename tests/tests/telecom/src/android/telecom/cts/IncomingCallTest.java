@@ -168,8 +168,14 @@ public class IncomingCallTest extends BaseTelecomTestWithMockServices {
         AudioManager audioManager = mContext.getSystemService(AudioManager.class);
         int originalRingVolume = audioManager.getStreamVolume(AudioManager.STREAM_RING);
         // Set ring stream volume if it's zero.
-        if (originalRingVolume == 0) {
-            audioManager.setStreamVolume(AudioManager.STREAM_RING, 1, 0);
+        try {
+            if (originalRingVolume == 0) {
+                audioManager.setStreamVolume(AudioManager.STREAM_RING, 1, 0);
+            }
+        } catch (SecurityException e) {
+            // If volume settings can't be changed due to DND config being changed,
+            // then we will just skip this test.
+            return;
         }
         AudioManager.AudioPlaybackCallback callback = new AudioManager.AudioPlaybackCallback() {
             @Override
