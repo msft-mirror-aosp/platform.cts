@@ -71,7 +71,7 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
     private static final class AudioDeviceVolumeChangedListener
             implements AudioDeviceVolumeManager.OnAudioDeviceVolumeChangedListener {
         private VolumeInfo mLastVolInfo = null;
-        private CountDownLatch mNewVolInfoLatch;
+        private final CountDownLatch mNewVolInfoLatch = new CountDownLatch(1);
 
         @Override
         public void onAudioDeviceVolumeChanged(
@@ -91,7 +91,6 @@ public class AudioDeviceVolumeManagerTest extends CtsAndroidTestCase {
         }
 
         public VolumeInfo waitForVolumeChanged(long timeout, TimeUnit timeUnit) {
-            mNewVolInfoLatch = new CountDownLatch(1);
             boolean receivedVolInfo = false;
             try {
                 receivedVolInfo = mNewVolInfoLatch.await(timeout, timeUnit);
