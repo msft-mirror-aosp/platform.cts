@@ -40,6 +40,7 @@ public class FeatureUtil {
     public static final String TELEPHONY_FEATURE = "android.hardware.telephony";
     public static final String TV_FEATURE = "android.hardware.type.television";
     public static final String WATCH_FEATURE = "android.hardware.type.watch";
+    public static final String XR_FEATURE = "android.software.xr.immersive";
 
 
     /** Returns true if the device has a given system feature */
@@ -101,6 +102,11 @@ public class FeatureUtil {
     public static boolean isVrHeadset() {
         int maskedUiMode = (getConfiguration().uiMode & Configuration.UI_MODE_TYPE_MASK);
         return (maskedUiMode == Configuration.UI_MODE_TYPE_VR_HEADSET);
+    }
+
+    /** Returns true if the device has feature XR_FEATURE */
+    public static boolean isXrHeadset() {
+        return hasSystemFeature(XR_FEATURE);
     }
 
     /** Returns true if the device is a low ram device:
