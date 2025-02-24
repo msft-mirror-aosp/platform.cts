@@ -189,6 +189,10 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         return mSkipDeviceAdminFeatureCheck;
     }
 
+    @Rule(order = -1000) // Run earlier.
+    public final DeviceResponsivenessCheckerRule mDeviceResponsivenessCheckerRule =
+            new DeviceResponsivenessCheckerRule(this);
+
     @Rule
     public final DeviceAdminFeaturesCheckerRule mFeaturesCheckerRule =
             new DeviceAdminFeaturesCheckerRule(this);
