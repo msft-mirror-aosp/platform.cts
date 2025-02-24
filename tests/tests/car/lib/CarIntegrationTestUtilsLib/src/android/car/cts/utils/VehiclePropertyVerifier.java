@@ -16,6 +16,7 @@
 
 package android.car.cts.utils;
 
+import static android.car.cts.utils.ShellPermissionUtils.CHECK_MODE_ASSUME;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
@@ -103,6 +104,9 @@ public class VehiclePropertyVerifier<T> {
     /** A step to verify {@link CarPropertyManager#getCarPropertyConfig} returns expected config. */
     public static final String STEP_VERIFY_PROPERTY_CONFIG = "verifyPropertyConfig";
 
+    /** A step to verify {@link CarPropertyManager#isPropertyAvailable}. */
+    public static final String STEP_VERIFY_IS_PROPERTY_AVAILABLE = "isPropertyAvailable";
+
     /** A step to verify that expected exceptions are thrown when missing permission. */
     public static final String STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION =
             "verifyPermissionNotGrantedException";
@@ -130,7 +134,6 @@ public class VehiclePropertyVerifier<T> {
     /** A step to verify {@link CarPropertyManager#getSupportedValuesList}. */
     public static final String STEP_VERIFY_READ_APIS_GET_SUPPORTED_VALUES_LIST =
             STEP_VERIFY_READ_APIS_PREFIX + ".getSupportedValuesList";
-
     /**
      * A step to verify {@link CarPropertyManager#registerSupportedValuesChangeCallback} and {@link
      * CarPropertyManager#unregisterSupportedValuesChangeCallback}
@@ -178,13 +181,19 @@ public class VehiclePropertyVerifier<T> {
     public static final String STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE =
             STEP_VERIFY_WRITE_APIS_PREFIX + ".turnOffHvacPowerSetNotAvailable";
 
-    /** A step to that expected exceptions are thrown when missing permissions for read APIs. */
-    public static final String STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION =
-            "verifyReadApisWithoutPermission";
+    /**
+     * A step to verify that for read/write properties, if the caller only has read permission,
+     * caller cannot write.
+     */
+    public static final String STEP_VERIFY_READ_PERMISSION_CANNOT_WRITE =
+            "verifyReadPermissionCannotWrite";
 
-    /** A step to that expected exceptions are thrown when missing permissions for write APIs. */
-    public static final String STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION =
-            "verifyWriteApisWithoutPermission";
+    /**
+     * A step to verify that for read/write properties, if the caller only has write permission,
+     * caller cannot read.
+     */
+    public static final String STEP_VERIFY_WRITE_PERMISSION_CANNOT_READ =
+            "verifyWritePermissionCannotRead";
 
     private static final String TAG = VehiclePropertyVerifier.class.getSimpleName();
     private static final String CAR_PROPERTY_VALUE_SOURCE_GETTER = "Getter";
@@ -548,6 +557,7 @@ public class VehiclePropertyVerifier<T> {
     public static ImmutableList<String> getAllSteps() {
         return ImmutableList.of(
                 STEP_VERIFY_PROPERTY_CONFIG,
+                STEP_VERIFY_IS_PROPERTY_AVAILABLE,
                 STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION,
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_SYNC,
                 STEP_VERIFY_READ_APIS_GET_PROPERTY_ASYNC,
@@ -561,8 +571,8 @@ public class VehiclePropertyVerifier<T> {
                 STEP_VERIFY_WRITE_APIS_DISABLE_ADAS_FEATURE_VERIFY_STATE,
                 STEP_VERIFY_READ_APIS_DISABLE_HVAC_GET_NOT_AVAILABLE,
                 STEP_VERIFY_WRITE_APIS_DISABLE_HVAC_SET_NOT_AVAILABLE,
-                STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION,
-                STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION);
+                STEP_VERIFY_READ_PERMISSION_CANNOT_WRITE,
+                STEP_VERIFY_WRITE_PERMISSION_CANNOT_READ);
     }
 
     /** Runs various verifications on the property. */
@@ -576,6 +586,10 @@ public class VehiclePropertyVerifier<T> {
             verifyConfig();
             return;
         }
+        if (step.equals(STEP_VERIFY_IS_PROPERTY_AVAILABLE)) {
+            verifyIsPropertyAvailable();
+            return;
+        }
         assumeTrue("Property: " + getPropertyName() + " is not supported", isSupported());
         if (step.equals(STEP_VERIFY_PERMISSION_NOT_GRANTED_EXCEPTION)) {
             verifyPermissionNotGrantedException();
@@ -583,10 +597,10 @@ public class VehiclePropertyVerifier<T> {
             verifyReadApis(step, exceptedExceptionClass);
         } else if (step.startsWith(STEP_VERIFY_WRITE_APIS_PREFIX)) {
             verifyWriteApis(step, exceptedExceptionClass);
-        } else if (step.equals(STEP_VERIFY_READ_APIS_WITHOUT_PERMISSION)) {
-            verifyReadApisWithoutPermission();
-        } else if (step.equals(STEP_VERIFY_WRITE_APIS_WITHOUT_PERMISSION)) {
-            verifyWriteApisWithoutPermission();
+        } else if (step.equals(STEP_VERIFY_READ_PERMISSION_CANNOT_WRITE)) {
+            verifyReadPermissionCannotWrite();
+        } else if (step.equals(STEP_VERIFY_WRITE_PERMISSION_CANNOT_READ)) {
+            verifyWritePermissionCannotRead();
         } else {
             throw new IllegalStateException("Unknown step: " + step);
         }
@@ -708,8 +722,8 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    /** Verifies that caller cannot call read APIs without read permission. */
-    private void verifyReadApisWithoutPermission() {
+    /** Verifies that caller cannot call write APIs with only read permissions. */
+    private void verifyReadPermissionCannotWrite() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (String readPermission : mReadPermissions) {
             if (AREA_ID_CONFIG_ACCESS_FLAG) {
@@ -725,8 +739,8 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    /** Verifies that caller cannot call write APIs without write permission. */
-    private void verifyWriteApisWithoutPermission() {
+    /** Verifies that caller cannot call read APIs with only write permissions. */
+    private void verifyWritePermissionCannotRead() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         for (ImmutableSet<String> writePermissions : mWritePermissions) {
             if (AREA_ID_CONFIG_ACCESS_FLAG) {
@@ -2923,6 +2937,11 @@ public class VehiclePropertyVerifier<T> {
                         SecurityException.class,
                         mPropertyId,
                         areaId);
+                assertThrows(
+                        SecurityException.class,
+                        () -> {
+                            mCarPropertyManager.isPropertyAvailable(mPropertyId, areaId);
+                        });
             }
             if (canWrite(access)) {
                 assertThrows(
@@ -4215,6 +4234,88 @@ public class VehiclePropertyVerifier<T> {
 
             mCarPropertyManager.unregisterSupportedValuesChangeCallback(
                     mPropertyId, areaId, callback);
+        }
+    }
+
+    private void verifyIsPropertyAvailable() {
+        runWithShellPermissionIdentity(
+                () -> verifyIsPropertyAvailableWithReadPermission(),
+                CHECK_MODE_ASSUME,
+                mReadPermissions.toArray(new String[0]));
+    }
+
+    private void verifyIsPropertyAvailableWithReadPermission() {
+        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
+        int[] areaIds;
+        if (carPropertyConfig == null) {
+            areaIds = new int[] {0};
+        } else {
+            areaIds = carPropertyConfig.getAreaIds();
+        }
+        for (int areaId : areaIds) {
+            // Before Android B, isPropertyAvailable might throw
+            // IllegalArgumentException if the property is not supported or the property is
+            // not readable.
+            if (!isAtLeastB()) {
+                boolean noReadAccess = false;
+                String reason = "";
+                if (carPropertyConfig != null) {
+                    int access = getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId);
+                    if (access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE
+                            || access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE) {
+                        noReadAccess = true;
+                        reason = "the property is not readable";
+                    }
+                } else {
+                    reason = "the property is not supported";
+                }
+
+                if (carPropertyConfig == null || noReadAccess) {
+                    String errorMsg =
+                            "carPropertyManager.isPropertyAvailable must return "
+                                    + "false or throw IllegalArgumentException if "
+                                    + reason
+                                    + ", propertyId: "
+                                    + mPropertyName
+                                    + ", areaId: "
+                                    + areaId;
+                    try {
+                        boolean result =
+                                mCarPropertyManager.isPropertyAvailable(mPropertyId, areaId);
+                        assertWithMessage(errorMsg).that(result).isFalse();
+                    } catch (Exception e) {
+                        assertWithMessage(errorMsg)
+                                .that(e.getClass())
+                                .isEqualTo(IllegalArgumentException.class);
+                    }
+                    return;
+                }
+            }
+
+            boolean result = false;
+            try {
+                result = mCarPropertyManager.isPropertyAvailable(mPropertyId, areaId);
+            } catch (Exception e) {
+                assertWithMessage(
+                                "carPropertyManager.isPropertyAvailable must not throw any"
+                                        + " exception, propertyId: "
+                                        + mPropertyName
+                                        + ", areaId: "
+                                        + areaId
+                                        + ", exception: "
+                                        + e)
+                        .fail();
+            }
+            if (carPropertyConfig == null) {
+                assertWithMessage(
+                                "carPropertyManager.isPropertyAvailable must return false "
+                                        + "if the property is not supported, propertyId: "
+                                        + mPropertyName
+                                        + ", areaId: "
+                                        + areaId)
+                        .that(result)
+                        .isFalse();
+            }
         }
     }
 
