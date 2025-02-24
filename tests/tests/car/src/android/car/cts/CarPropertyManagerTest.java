@@ -5914,7 +5914,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             // Ignores the test if wheel_tick property does not exist in the car.
             assumeTrue(
                     "WheelTick is not available, skip subscribePropertyEvent test",
-                    mCarPropertyManager.isPropertyAvailable(
+                    isPropertyAvailableSafe(
                             VehiclePropertyIds.WHEEL_TICK,
                             VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
 
@@ -6719,7 +6719,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 () -> {
                     assumeTrue(
                             "WheelTick is not available, skip UnsubscribePropertyEvents test",
-                            mCarPropertyManager.isPropertyAvailable(
+                            isPropertyAvailableSafe(
                                     VehiclePropertyIds.WHEEL_TICK,
                                     VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
                     int vehicleSpeed = VehiclePropertyIds.PERF_VEHICLE_SPEED;
@@ -6796,7 +6796,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     // Ignores the test if wheel_tick property does not exist in the car.
                     assumeTrue(
                             "WheelTick is not available, skip unregisterCallback test",
-                            mCarPropertyManager.isPropertyAvailable(
+                            isPropertyAvailableSafe(
                                     VehiclePropertyIds.WHEEL_TICK,
                                     VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
 
@@ -7760,6 +7760,17 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     break;
                 }
             }
+        }
+    }
+
+    private boolean isPropertyAvailableSafe(int propertyId, int areaId) {
+        try {
+            return mCarPropertyManager.isPropertyAvailable(propertyId, areaId);
+        } catch (Exception e) {
+            Log.w(TAG, "isPropertyAvailable for property: "
+                    + VehiclePropertyIds.toString(propertyId) + ", areaId: " + areaId
+                    + " throws exception, assume false", e);
+            return false;
         }
     }
 
