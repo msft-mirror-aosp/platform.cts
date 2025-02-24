@@ -24,11 +24,13 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.utils.Poll;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -41,6 +43,7 @@ public final class AccountBuilder {
     private String mName = UUID.randomUUID().toString();
     private Set<String> mFeatures = new HashSet<>();
     private Consumer<AccountReference> mRemoveFunction;
+    private Duration mTimeout = Duration.ofMinutes(1);
 
     AccountBuilder(AccountManager<?> accountManager) {
         mAccountManager = accountManager;
@@ -107,6 +110,12 @@ public final class AccountBuilder {
         return this;
     }
 
+    /** Set the timeout for the account add operation. Defaults to 1 minute. */
+    public AccountBuilder timeout(Duration timeout) {
+        mTimeout = timeout;
+        return this;
+    }
+
     /**
      * Add this account.
      */
@@ -130,13 +139,16 @@ public final class AccountBuilder {
         Bundle options = new Bundle();
         options.putString("name", mName);
         options.putStringArrayList("features", new ArrayList<>(mFeatures));
-        return mAccountManager.accountManager().addAccount(
-                mType,
-                /* authTokenType= */ null,
-                /* requiredFeatures= */ null,
-                /* addAccountOptions= */ options,
-                /* activity= */ null,
-                /* callback= */ null,
-                /* handler= */ null).getResult();
+        return mAccountManager
+                .accountManager()
+                .addAccount(
+                        mType,
+                        /* authTokenType= */ null,
+                        /* requiredFeatures= */ null,
+                        /* addAccountOptions= */ options,
+                        /* activity= */ null,
+                        /* callback= */ null,
+                        /* handler= */ null)
+                .getResult(mTimeout.toMillis(), TimeUnit.MILLISECONDS);
     }
 }
