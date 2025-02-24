@@ -1679,11 +1679,15 @@ public class TelephonyManagerTest {
 
     private void verifyDeviceId(String deviceId) {
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            // Either IMEI or MEID need to be valid.
-            try {
+            if (Flags.cleanupCdma()) {
                 assertImei(deviceId);
-            } catch (AssertionError e) {
-                assertMeidEsn(deviceId);
+            } else {
+                // Either IMEI or MEID need to be valid.
+                try {
+                    assertImei(deviceId);
+                } catch (AssertionError e) {
+                    assertMeidEsn(deviceId);
+                }
             }
         } else if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
             assertSerialNumber();
