@@ -32,9 +32,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.app.PictureInPictureParams;
 import android.content.Intent;
-import android.server.wm.NestedShellPermission;
 import android.server.wm.RotationSession;
-import android.server.wm.TestTaskOrganizer;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
@@ -70,16 +68,6 @@ import java.util.concurrent.TimeUnit;
 public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     private static final String ACTIVITY_A_ID = "activityA";
     private static final String ACTIVITY_B_ID = "activityB";
-
-    private TestTaskOrganizer mTaskOrganizer;
-
-    @Override
-    public void tearDown() throws Throwable {
-        super.tearDown();
-        if (mTaskOrganizer != null) {
-            mTaskOrganizer.unregisterOrganizerIfNeeded();
-        }
-    }
 
     /**
      * Verifies whether setting and clearing splitAttributes calculator function is expected.
@@ -349,7 +337,6 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
                 + " split pair launch.");
 
         // Make the host task go to split screen.
-        NestedShellPermission.run(() -> mTaskOrganizer = new TestTaskOrganizer());
         mTaskOrganizer.putTaskInSplitPrimary(activityA.getTaskId());
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called because"
