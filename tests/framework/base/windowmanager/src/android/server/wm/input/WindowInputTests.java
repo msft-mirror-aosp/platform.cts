@@ -40,6 +40,7 @@ import static junit.framework.Assert.assertTrue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -70,6 +71,7 @@ import android.window.WindowInfosListenerForTest.WindowInfo;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
@@ -341,6 +343,10 @@ public class WindowInputTests {
 
     @Test
     public void testFilterTouchesWhenObscuredByWindowFromDifferentUid() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         final AtomicBoolean touchReceived = new AtomicBoolean(false);
 
         // Set up a touchable window (similar to before)
@@ -372,6 +378,10 @@ public class WindowInputTests {
 
     @Test
     public void testFlagTouchesWhenObscuredByWindowFromDifferentUid() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         final AtomicBoolean touchReceived = new AtomicBoolean(false);
         final CompletableFuture<Integer> eventFlags = new CompletableFuture<>();
 
@@ -441,6 +451,10 @@ public class WindowInputTests {
 
     @Test
     public void testFlagTouchesWhenObscuredByMinPositiveOpacityWindow() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         final CompletableFuture<Integer> eventFlags = new CompletableFuture<>();
         final AtomicBoolean touchReceived = new AtomicBoolean(false);
 
@@ -475,6 +489,10 @@ public class WindowInputTests {
 
     @Test
     public void testFlagTouchesWhenPartiallyObscuredByZeroOpacityWindow() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         final CompletableFuture<Integer> eventFlags = new CompletableFuture<>();
         final AtomicBoolean touchReceived = new AtomicBoolean(false);
 
