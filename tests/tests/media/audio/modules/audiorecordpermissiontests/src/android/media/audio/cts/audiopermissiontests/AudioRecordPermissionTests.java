@@ -30,6 +30,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -430,6 +431,15 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
 
         // This recording will be silenced, since the activity state doesn't permit recording
         assertFalse(startServiceRecording(TEST_PACKAGE, 1));
+        try {
+            silenceFirstTrackFuture.get(FALSE_NEG_SECS, TimeUnit.SECONDS);
+             // fail assumption if the future succeeds, this can happen if the first track is
+             // invalidated. if this happens, it isn't possible to verify the behavior when the
+             // records have different silence states.
+            assumeTrue(false);
+        } catch (TimeoutException e) {
+            // expected
+        }
         assertTrue(getOpState(TEST_PACKAGE));
 
         // For manual testing of the mic indicator
