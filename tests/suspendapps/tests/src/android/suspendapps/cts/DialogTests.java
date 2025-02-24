@@ -32,12 +32,17 @@ import android.content.Intent;
 import android.content.pm.SuspendDialogInfo;
 import android.os.Bundle;
 import android.platform.test.rule.ScreenRecordRule;
+import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
@@ -48,14 +53,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @RunWith(AndroidJUnit4.class)
 public class DialogTests {
+    private static final String TAG = "DialogTests";
     private static final String TEST_APP_LABEL = "Suspend Test App";
-    private static final long UI_TIMEOUT_MS = 60_000;
+    private static final long UI_TIMEOUT_MS = 20 * 1000L;
 
     /** Used to poll for the intents sent by the system to this package */
     static final SynchronousQueue<Intent> sIncomingIntent = new SynchronousQueue<>();
@@ -103,25 +112,7 @@ public class DialogTests {
         assertNull("Test activity started while suspended",
                 mTestAppInterface.awaitTestActivityStart(5_000));
 
-        final String expectedTitle = mContext.getResources().getString(R.string.dialog_title);
-        final String expectedButtonText = mContext.getResources().getString(
-                R.string.unsuspend_button_text);
-
-        assertNotNull("Given dialog title \"" + expectedTitle + "\" not shown",
-                mUiDevice.wait(Until.findObject(By.text(expectedTitle)), UI_TIMEOUT_MS));
-
-        // Sometimes, button texts can have styles that override case (e.g. b/134033532)
-        final Pattern buttonTextIgnoreCase = Pattern.compile(Pattern.quote(expectedButtonText),
-                Pattern.CASE_INSENSITIVE);
-        final UiObject2 unsuspendButton = mUiDevice.findObject(
-                By.clickable(true).text(buttonTextIgnoreCase));
-        assertNotNull("\"" + expectedButtonText + "\" button not shown", unsuspendButton);
-
-        // Tapping on the neutral button should:
-        // 1. Tell the suspending package that the test app was unsuspended
-        // 2. Launch the previously intercepted intent
-        // 3. Unsuspend the test app
-        unsuspendButton.click();
+        verifyDialogAndPressUnsuspend(mContext, mUiDevice);
 
         final Intent incomingIntent = sIncomingIntent.poll(30, TimeUnit.SECONDS);
         assertNotNull(incomingIntent);
@@ -133,6 +124,29 @@ public class DialogTests {
         assertNotNull("Test activity did not start on neutral button tap", activityIntent);
         // TODO(b/237707107): Verify that activityIntent has the expected extras.
         assertFalse("Test package still suspended", mTestAppInterface.isTestAppSuspended());
+    }
+
+    public static void verifyDialogAndPressUnsuspend(Context context, UiDevice uiDevice)
+            throws Exception {
+        final String expectedTitle = context.getResources().getString(R.string.dialog_title);
+        final String expectedButtonText = context.getResources().getString(
+                R.string.unsuspend_button_text);
+
+        assertNotNull("Given dialog title \"" + expectedTitle + "\" not shown",
+                findObject(uiDevice, By.text(expectedTitle)));
+
+        // Sometimes, button texts can have styles that override case (e.g. b/134033532)
+        final Pattern buttonTextIgnoreCase = Pattern.compile(Pattern.quote(expectedButtonText),
+                Pattern.CASE_INSENSITIVE);
+        UiObject2 unsuspendButton = findObject(uiDevice,
+                By.clickable(true).text(buttonTextIgnoreCase));
+        assertNotNull("\"" + expectedButtonText + "\" button not shown", unsuspendButton);
+
+        // Tapping on the neutral button should:
+        // 1. Tell the suspending package that the test app was unsuspended
+        // 2. Launch the previously intercepted intent
+        // 3. Unsuspend the test app
+        unsuspendButton.click();
     }
 
     @Test
@@ -160,13 +174,13 @@ public class DialogTests {
                 R.string.more_details_button_text);
 
         assertNotNull("Given dialog title: " + expectedTitle + " not shown",
-                mUiDevice.wait(Until.findObject(By.text(expectedTitle)), UI_TIMEOUT_MS));
+                findObject(mUiDevice, By.text(expectedTitle)));
         assertNotNull("Given dialog message: " + expectedMessage + " not shown",
-                mUiDevice.findObject(By.text(expectedMessage)));
+                findObject(mUiDevice, By.text(expectedMessage)));
         // Sometimes, button texts can have styles that override case (e.g. b/134033532)
         final Pattern buttonTextIgnoreCase = Pattern.compile(Pattern.quote(expectedButtonText),
                 Pattern.CASE_INSENSITIVE);
-        final UiObject2 moreDetailsButton = mUiDevice.findObject(
+        final UiObject2 moreDetailsButton = findObject(mUiDevice,
                 By.clickable(true).text(buttonTextIgnoreCase));
         assertNotNull(expectedButtonText + " button not shown", moreDetailsButton);
 
@@ -203,15 +217,71 @@ public class DialogTests {
 
 
         assertNotNull("Given dialog title: " + expectedTitle + " not shown",
-                mUiDevice.wait(Until.findObject(By.text(expectedTitle)), UI_TIMEOUT_MS));
+                findObject(mUiDevice, By.text(expectedTitle)));
         assertNotNull("Given dialog message: " + expectedMessage + " not shown",
-                mUiDevice.findObject(By.text(expectedMessage)));
+                findObject(mUiDevice, By.text(expectedMessage)));
         // Sometimes, button texts can have styles that override case (e.g. b/134033532)
         final Pattern buttonTextIgnoreCase = Pattern.compile(Pattern.quote(expectedButtonText),
                 Pattern.CASE_INSENSITIVE);
-        final UiObject2 moreDetailsButton = mUiDevice.findObject(
+        final UiObject2 moreDetailsButton = findObject(mUiDevice,
                 By.clickable(true).text(buttonTextIgnoreCase));
         assertNotNull(expectedButtonText + " button not shown", moreDetailsButton);
+    }
+
+    /**
+     * Find the UiObject2 with the {@code bySelector} via {@code uiDevice}.
+     */
+    @Nullable
+    public static UiObject2 findObject(UiDevice uiDevice, BySelector bySelector)
+            throws Exception {
+        uiDevice.waitForIdle();
+
+        UiObject2 object = null;
+        long endTime = System.currentTimeMillis() + UI_TIMEOUT_MS;
+        while (endTime > System.currentTimeMillis()) {
+            try {
+                uiDevice.waitForIdle();
+                object = uiDevice.wait(Until.findObject(bySelector), /* timeout= */ 2 * 1000);
+                if (object != null) {
+                    Log.d(TAG, "Found bounds: " + object.getVisibleBounds()
+                            + " of object: " + bySelector + ", text: " + object.getText()
+                            + " package: " + object.getApplicationPackage() + ", enabled: "
+                            + object.isEnabled() + ", clickable: " + object.isClickable()
+                            + ", contentDescription: " + object.getContentDescription()
+                            + ", resourceName: " + object.getResourceName() + ", visibleCenter: "
+                            + object.getVisibleCenter());
+                    return object;
+                } else {
+                    // Maybe the screen is small. Scroll forward.
+                    new UiScrollable(new UiSelector().scrollable(true)).scrollForward();
+                }
+            } catch (Exception ignored) {
+                // do nothing
+            }
+        }
+
+        // dump window hierarchy for debug
+        if (object == null) {
+            dumpWindowHierarchy(uiDevice);
+        }
+
+        return object;
+    }
+
+    /**
+     * Dump current window hierarchy to help debug UI
+     */
+    public static void dumpWindowHierarchy(UiDevice uiDevice)
+            throws InterruptedException, IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        uiDevice.dumpWindowHierarchy(outputStream);
+        String windowHierarchy = outputStream.toString(StandardCharsets.UTF_8);
+
+        Log.w(TAG, "Window hierarchy:");
+        for (String line : windowHierarchy.split("\n")) {
+            Thread.sleep(10);
+            Log.w(TAG, line);
+        }
     }
 
     @After
