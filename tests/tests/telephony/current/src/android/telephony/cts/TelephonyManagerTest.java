@@ -1649,12 +1649,7 @@ public class TelephonyManagerTest {
 
     private void verifyDeviceId(String deviceId) {
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            // Either IMEI or MEID need to be valid.
-            try {
-                assertImei(deviceId);
-            } catch (AssertionError e) {
-                assertMeidEsn(deviceId);
-            }
+            assertImei(deviceId);
         } else if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
             assertSerialNumber();
             assertMacAddress(getWifiMacAddress());
