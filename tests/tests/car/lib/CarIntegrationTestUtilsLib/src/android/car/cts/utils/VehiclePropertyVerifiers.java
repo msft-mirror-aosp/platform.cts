@@ -1688,6 +1688,17 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
+    public static VehiclePropertyVerifier.Builder<Boolean> getNightModeVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.NIGHT_MODE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
+                        Boolean.class)
+                .requireProperty()
+                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
+    }
+
     private static void verifyHvacTemperatureValueSuggestion(
             VehiclePropertyVerifier.VerifierContext verifierContext,
             Float[] temperatureSuggestion) {
