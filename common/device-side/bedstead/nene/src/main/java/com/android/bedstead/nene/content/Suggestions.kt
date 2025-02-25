@@ -22,11 +22,13 @@ import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.UndoableContext
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
 import com.android.bedstead.permissions.CommonPermissions.MANAGE_CONTENT_SUGGESTIONS
-
 import com.google.errorprone.annotations.CanIgnoreReturnValue
+import java.time.Duration
 
 /**
  * Helper methods related to content suggestions.
@@ -40,21 +42,28 @@ object Suggestions {
 
     @CanIgnoreReturnValue
     @JvmOverloads
-    fun setDefaultServiceEnabled(user: UserReference = TestApis.users().instrumented(),
-                                 value: Boolean): UndoableContext {
+    fun setDefaultServiceEnabled(
+        user: UserReference = TestApis.users().instrumented(),
+        value: Boolean
+    ): UndoableContext {
         val currentValue = defaultServiceEnabled(user)
         if (currentValue == value) {
             // Nothing to do
             return UndoableContext.EMPTY
         }
-        TestApis.permissions().withPermission(MANAGE_CONTENT_SUGGESTIONS).use {
-            contentSuggestionsManager.setDefaultServiceEnabled(user.id(),
-                    value)
+        TestApis.permissions().withPermission(
+            INTERACT_ACROSS_USERS_FULL,
+            MANAGE_CONTENT_SUGGESTIONS
+        ).use {
+            contentSuggestionsManager.setDefaultServiceEnabled(user.id(), value)
+            Poll.forValue { defaultServiceEnabled(user) }
+                .toBeEqualTo(value)
+                .timeout(Duration.ofSeconds(2))
+                .errorOnFail()
+                .await()
         }
         return UndoableContext {
-            TestApis.permissions().withPermission(MANAGE_CONTENT_SUGGESTIONS).use {
-                contentSuggestionsManager.setDefaultServiceEnabled(user.id(), currentValue)
-            }
+            setDefaultServiceEnabled(user, currentValue)
         }
     }
 
