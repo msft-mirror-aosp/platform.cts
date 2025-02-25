@@ -843,7 +843,7 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
         if (isVisibleBackgroundUser()) {
             findPlayButton(getMainDisplayId(), 1000).swipe(Direction.LEFT, 1.0f);
         } else {
-            swipeLeftAndWait();
+            findPlayButton().swipeLeft(5);
         }
         findPauseButton().waitForExists(SHORT_TIMEOUT);
         // Video preview is now in unmute mode. Hence, PhotoPicker will request audio focus. Verify
