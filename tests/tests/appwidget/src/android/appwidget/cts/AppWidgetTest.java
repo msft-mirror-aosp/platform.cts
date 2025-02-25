@@ -1517,6 +1517,7 @@ public class AppWidgetTest extends AppWidgetTestCase {
         getAppWidgetManager().removeWidgetPreview(provider, WIDGET_CATEGORY_HOME_SCREEN);
     }
 
+    @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
     @Test
     public void testCheckRemoteViewsUri() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
