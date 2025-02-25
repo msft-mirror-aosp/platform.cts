@@ -22,7 +22,6 @@ import static android.service.chooser.ChooserResult.CHOOSER_RESULT_SELECTED_COMP
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
-import android.service.chooser.ChooserResult;
 
 import com.android.cts.verifier.R;
 
@@ -62,9 +61,8 @@ public final class SharesheetChooserResultComponentActivity extends SharesheetCh
                 R.string.sharesheet_result_test_component_not_found);
 
         setExpectedResult(
-                new ChooserResult(CHOOSER_RESULT_SELECTED_COMPONENT,
-                    new ComponentName(this, SharesheetChooserResultComponentActivity.class),
-                    false)
-        );
+                CHOOSER_RESULT_SELECTED_COMPONENT,
+                new ComponentName(this, SharesheetChooserResultComponentActivity.class),
+                false);
     }
 }

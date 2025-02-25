@@ -22,7 +22,6 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.service.chooser.ChooserResult;
 
 import com.android.cts.verifier.R;
 
@@ -67,6 +66,6 @@ public final class SharesheetChooserResultEditActivity extends SharesheetChooser
                 R.string.sharesheet_result_test_edit_pressed,
                 R.string.sharesheet_result_test_edit_not_found);
 
-        setExpectedResult(new ChooserResult(CHOOSER_RESULT_EDIT, null, false));
+        setExpectedResult(CHOOSER_RESULT_EDIT, null, false);
     }
 }
