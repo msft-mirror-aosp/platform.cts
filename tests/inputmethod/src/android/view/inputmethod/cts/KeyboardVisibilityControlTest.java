@@ -1700,10 +1700,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     //  input focus changes, so we have to wait for that and tap again.
                     TestUtils.waitOnMainUntil(editText::hasWindowFocus, TIMEOUT);
                     touch.tapOnViewCenter(editText);
+                    // wait on event to make sure touch event is injected.
+                    expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                    expectImeVisible(TIMEOUT);
                 }
-
-                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
-                expectImeVisible(TIMEOUT);
             } finally {
                 // dismiss dialog, in case it wasn't closed properly
                 if (dialogRef.get() != null) {
