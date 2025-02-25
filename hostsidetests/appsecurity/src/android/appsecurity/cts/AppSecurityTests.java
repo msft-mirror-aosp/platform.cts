@@ -338,7 +338,11 @@ public class AppSecurityTests extends BaseAppSecurityTest {
 
             runDeviceTests(DUPLICATE_DECLARE_PERMISSION_PKG, null);
 
-            // make sure behavior is preserved after reboot
+            // Make sure behavior is preserved after reboot
+            // Wait for a few seconds so that the system states can be persisted to disk, otherwise
+            // the system may assign permission ownership based on a random scanning order between
+            // the two apps upon the next boot
+            Thread.sleep(5000);
             getDevice().reboot();
             waitForBootCompleted(getDevice());
             runDeviceTests(DUPLICATE_DECLARE_PERMISSION_PKG, null);
