@@ -16,6 +16,7 @@
 import concurrent.futures
 from datetime import datetime  # pylint: disable=g-importing-member
 from google.protobuf import text_format
+import gc
 import logging
 import os
 import threading
@@ -183,6 +184,31 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       failures['required'].append(msg)
     else:
       failures['optional'].append(msg)
+
+  def _handle_one_completed_future(self, pending_futures, future, database):
+    result = future.result()
+    pending_futures.remove(future)
+    logging.debug('Verification result: %s', result)
+    if 'stabilization_failure' in result:
+      failure_msg = f"{result['name']}: {result['stabilization_failure']}"
+      self._append_test_failure(
+          test_failures, result['support_claimed'], failure_msg
+      )
+
+    self._add_feature_combo_entry_to_proto(
+        database, result['output_surfaces'], result['support_claimed'],
+        result['passed'], result['fps_range'], result['is_stabilized']
+    )
+    gc.collect()
+
+  def _handle_completed_futures(self, verifications, database):
+    for future in verifications[:]:
+      if future.done():
+        self._handle_one_completed_future(verifications, future, database)
+
+  def _drain_feature_verification_futures(self, verifications, database):
+    for future in concurrent.futures.as_completed(verifications):
+        self._handle_one_completed_future(verifications, future, database)
 
   def _test_feature_combination(self, executor):
     """Tests features using an injected ThreadPoolExecutor for analysis.
@@ -479,7 +505,6 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 )
                 passed = False
 
-              # Schedule finishing up of verification to run asynchronously
               if not self.parallel_execution:
                 self._finish_combination(
                     combination_name, is_stabilized,
@@ -494,21 +519,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     log_path, facing, output_surfaces, fps_range, hlg10,
                     features_passed, streams_name, fps_range_tuple
                 )
+                # Handle completed feature verification futures
+                self._handle_completed_futures(
+                    feature_verification_futures, database)
                 feature_verification_futures.append(future)
 
-      # Verify feature combination results
-      for future in feature_verification_futures:
-        result = future.result()
-        logging.debug('Verification result: %s', result)
-        if 'stabilization_failure' in result:
-          failure_msg = f"{result['name']}: {result['stabilization_failure']}"
-          self._append_test_failure(
-              test_failures, result['support_claimed'], failure_msg
-          )
-
-        self._add_feature_combo_entry_to_proto(
-            database, result['output_surfaces'], result['support_claimed'],
-            result['passed'], result['fps_range'], result['is_stabilized'])
+      # Drain the remaining feature combination results
+      self._drain_feature_verification_futures(
+          feature_verification_futures, database)
 
       # Output the feature combination proto to ItsService and optionally to
       # file
