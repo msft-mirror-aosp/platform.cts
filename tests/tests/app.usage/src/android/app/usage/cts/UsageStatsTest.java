@@ -2254,8 +2254,12 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     private void testReportChooserSelectionNoPermissionCheck() throws Exception {
         // attempt to report an event with a null package, should fail.
         try {
-            mUsageStatsManager.reportChooserSelection(null, 0,
-                    "text/plain", null, "android.intent.action.SEND");
+            mUsageStatsManager.reportChooserSelection(
+                    null,
+                    /* userId= */ mContext.getUserId(),
+                    "text/plain",
+                    null,
+                    "android.intent.action.SEND");
             fail("Able to report a chooser selection with a null package");
         } catch (IllegalArgumentException expected) { }
 
@@ -2275,10 +2279,18 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
 
         // attempt to report an event with a null/empty contentType, should fail.
         startTime = System.currentTimeMillis();
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                null, null, "android.intent.action.SEND");
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                " ", null, "android.intent.action.SEND");
+        mUsageStatsManager.reportChooserSelection(
+                TEST_APP_PKG,
+                /* userId= */ mContext.getUserId(),
+                null,
+                null,
+                "android.intent.action.SEND");
+        mUsageStatsManager.reportChooserSelection(
+                TEST_APP_PKG,
+                /* userId= */ mContext.getUserId(),
+                " ",
+                null,
+                "android.intent.action.SEND");
         events = mUsageStatsManager.queryEvents(
                 startTime - 1000, System.currentTimeMillis() + 1000);
         while (events.hasNextEvent()) {
@@ -2291,10 +2303,10 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
 
         // attempt to report an event with a null/empty action, should fail.
         startTime = System.currentTimeMillis();
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                "text/plain", null, null);
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                "text/plain", null, " ");
+        mUsageStatsManager.reportChooserSelection(
+                TEST_APP_PKG, /* userId= */ mContext.getUserId(), "text/plain", null, null);
+        mUsageStatsManager.reportChooserSelection(
+                TEST_APP_PKG, /* userId= */ mContext.getUserId(), "text/plain", null, " ");
         events = mUsageStatsManager.queryEvents(
                 startTime - 1000, System.currentTimeMillis() + 1000);
         while (events.hasNextEvent()) {
@@ -2307,8 +2319,12 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
 
         // report an event with valid args - event should be found.
         startTime = System.currentTimeMillis();
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                "text/plain", null, "android.intent.action.SEND");
+        mUsageStatsManager.reportChooserSelection(
+                TEST_APP_PKG,
+                /* userId= */ mContext.getUserId(),
+                "text/plain",
+                null,
+                "android.intent.action.SEND");
         Thread.sleep(500); // wait a little for the event to report via the handler.
         events = mUsageStatsManager.queryEvents(
                 startTime - 1000, System.currentTimeMillis() + 1000);
@@ -2330,14 +2346,22 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     public void testReportChooserSelectionAccess() throws Exception {
         try {
             // only system uid or holders of the REPORT_USAGE_EVENTS should be able to report events
-            mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                    "text/plain", null, "android.intent.action.SEND");
+            mUsageStatsManager.reportChooserSelection(
+                    TEST_APP_PKG,
+                    /* userId= */ mContext.getUserId(),
+                    "text/plain",
+                    null,
+                    "android.intent.action.SEND");
             fail("Able to report a chooser selection from CTS test");
         } catch (SecurityException expected) { }
 
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
-        mUsageStatsManager.reportChooserSelection(TEST_APP_PKG, 0,
-                "text/plain", null, "android.intent.action.SEND");
+        mUsageStatsManager.reportChooserSelection(
+                TEST_APP_PKG,
+                /* userId= */ mContext.getUserId(),
+                "text/plain",
+                null,
+                "android.intent.action.SEND");
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
@@ -2346,12 +2370,12 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
     public void testReportUserInteractionAccess() throws Exception {
         try {
             // only system uid or holders of the REPORT_USAGE_EVENTS should be able to report events
-            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, 0);
+            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, mContext.getUserId());
             fail("Able to report a user interaction from CTS test");
         } catch (SecurityException expected) { }
 
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
-        mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, 0);
+        mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, mContext.getUserId());
     }
 
     @AppModeFull(reason = "No usage events access in instant apps")
@@ -2393,12 +2417,13 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         extras.putString(UsageStatsManager.EXTRA_EVENT_ACTION, "fakeaction");
         try {
             // only system uid or holders of the REPORT_USAGE_EVENTS should be able to report events
-            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, /* userId */0, extras);
+            mUsageStatsManager.reportUserInteraction(
+                    TEST_APP_PKG, /* userId= */ mContext.getUserId(), extras);
             fail("Able to report a user interaction from CTS test");
         } catch (SecurityException expected) { }
 
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
-        mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, 0, extras);
+        mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, mContext.getUserId(), extras);
     }
 
     /**
@@ -2414,8 +2439,10 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.REPORT_USAGE_STATS);
         // attempt to report an event with a null package, should fail.
         try {
-            mUsageStatsManager.reportUserInteraction(null, /* userId= */ 0,
-                    /* extras=*/ PersistableBundle.EMPTY);
+            mUsageStatsManager.reportUserInteraction(
+                    null,
+                    /* userId= */ mContext.getUserId(),
+                    /* extras= */ PersistableBundle.EMPTY);
             fail("able to report a user interaction with a null package");
         } catch (NullPointerException expected) { }
 
@@ -2426,14 +2453,18 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         extras.putString(UsageStatsManager.EXTRA_EVENT_CATEGORY, interactionCategoryValue);
         extras.putString(UsageStatsManager.EXTRA_EVENT_ACTION, interactionActionValue);
         try {
-            mUsageStatsManager.reportUserInteraction("android.app.usage.cts.nonexistent.pkg", 0,
+            mUsageStatsManager.reportUserInteraction(
+                    "android.app.usage.cts.nonexistent.pkg",
+                    /* userId= */ mContext.getUserId(),
                     extras);
             fail("able to report a user interaction with non-existent package name");
         } catch (IllegalArgumentException expected) { }
 
         // attempt to report an event with an empty extras, should fail.
         try {
-            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, /* userId= */ 0,
+            mUsageStatsManager.reportUserInteraction(
+                    TEST_APP_PKG,
+                    /* userId= */ mContext.getUserId(),
                     /* extras= */ PersistableBundle.EMPTY);
             fail("able to report a user interaction with empty extras");
         } catch (IllegalArgumentException expected) { }
@@ -2442,16 +2473,16 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         extras.putString(UsageStatsManager.EXTRA_EVENT_CATEGORY, "");
         extras.putString(UsageStatsManager.EXTRA_EVENT_ACTION, interactionActionValue);
         try {
-            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, /* userId= */ 0,
-                    /* extras= */ extras);
+            mUsageStatsManager.reportUserInteraction(
+                    TEST_APP_PKG, /* userId= */ mContext.getUserId(), /* extras= */ extras);
             fail("able to report a user interaction with empty category");
         } catch (IllegalArgumentException expected) { }
 
         extras.putString(UsageStatsManager.EXTRA_EVENT_CATEGORY, interactionCategoryValue);
         extras.putString(UsageStatsManager.EXTRA_EVENT_ACTION, "");
         try {
-            mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, /* userId= */ 0,
-                    /* extras= */ extras);
+            mUsageStatsManager.reportUserInteraction(
+                    TEST_APP_PKG, /* userId= */ mContext.getUserId(), /* extras= */ extras);
             fail("able to report a user interaction with empty action");
         } catch (IllegalArgumentException expected) { }
 
@@ -2459,7 +2490,8 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         extras.putString(UsageStatsManager.EXTRA_EVENT_CATEGORY, interactionCategoryValue);
         extras.putString(UsageStatsManager.EXTRA_EVENT_ACTION, interactionActionValue);
         long startTime = System.currentTimeMillis();
-        mUsageStatsManager.reportUserInteraction(TEST_APP_PKG, /* userId */ 0, extras);
+        mUsageStatsManager.reportUserInteraction(
+                TEST_APP_PKG, /* userId */ mContext.getUserId(), extras);
         Thread.sleep(500); // wait for a while for the event to report via the handler.
         UsageEvents userInteractionEvents = mUsageStatsManager.queryEvents(
                 startTime - 1000, System.currentTimeMillis() + 1000);
