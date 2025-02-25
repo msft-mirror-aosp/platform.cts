@@ -356,6 +356,8 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     @Test
     public void testSplitAttributesCalculatorInvocation_acrossDisplays()
             throws InterruptedException {
+        assumeTrue(supportsMultiDisplay());
+
         final String tag = "testSplitAttributesCalculatorInvocation_acrossDisplays";
         final InvocationVerifier verifier = new InvocationVerifier(tag);
 
