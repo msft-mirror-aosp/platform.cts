@@ -31,8 +31,6 @@ import android.service.euicc.GetDownloadableSubscriptionMetadataResult;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,9 +46,7 @@ public final class GetDownloadableSubscriptionMetadataResultTest {
 
     @Before
     public void setUp() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(EuiccUtil.hasEuiccFeature());
-        }
+        assumeTrue(EuiccUtil.hasEuiccFeature());
 
         mSubMetadataResult =
                 new GetDownloadableSubscriptionMetadataResult(

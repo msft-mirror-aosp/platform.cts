@@ -31,8 +31,6 @@ import android.telephony.UiccAccessRule;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,9 +51,7 @@ public class EuiccProfileInfoTest {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(EuiccUtil.hasEuiccFeature());
-        }
+        assumeTrue(EuiccUtil.hasEuiccFeature());
     }
 
     @Test

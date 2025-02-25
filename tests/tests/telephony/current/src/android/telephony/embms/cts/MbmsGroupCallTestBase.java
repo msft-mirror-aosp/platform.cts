@@ -40,8 +40,6 @@ import android.telephony.cts.embmstestapp.CtsGroupCallService;
 import android.telephony.cts.embmstestapp.ICtsGroupCallMiddlewareControl;
 import android.telephony.mbms.MbmsGroupCallSessionCallback;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -151,9 +149,7 @@ public class MbmsGroupCallTestBase {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(MbmsUtil.hasMbmsFeature());
-        }
+        assumeTrue(MbmsUtil.hasMbmsFeature());
 
         mContext = getContext();
         mHandlerThread = new HandlerThread("EmbmsCtsTestWorker");
@@ -166,23 +162,17 @@ public class MbmsGroupCallTestBase {
 
     @After
     public void tearDown() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (mHandlerThread != null) {
-                mHandlerThread.quit();
-                mHandlerThread = null;
-            }
-            if (mGroupCallSession != null) {
-                mGroupCallSession.close();
-                mGroupCallSession = null;
-            }
-            if (mMiddlewareControl != null) {
-                mMiddlewareControl.reset();
-                mMiddlewareControl = null;
-            }
-        } else {
+        if (mHandlerThread != null) {
             mHandlerThread.quit();
+            mHandlerThread = null;
+        }
+        if (mGroupCallSession != null) {
             mGroupCallSession.close();
+            mGroupCallSession = null;
+        }
+        if (mMiddlewareControl != null) {
             mMiddlewareControl.reset();
+            mMiddlewareControl = null;
         }
     }
 

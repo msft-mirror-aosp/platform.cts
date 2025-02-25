@@ -28,8 +28,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.cts.embmstestapp.CtsDownloadService;
 import android.telephony.mbms.DownloadRequest;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,9 +41,7 @@ public class DownloadRequestTest {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(MbmsUtil.hasMbmsFeature());
-        }
+        assumeTrue(MbmsUtil.hasMbmsFeature());
     }
 
     @Test

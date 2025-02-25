@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
@@ -121,26 +120,17 @@ public class EuiccManagerTest {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(EuiccUtil.hasEuiccFeature());
-        }
+        assumeTrue(EuiccUtil.hasEuiccFeature());
 
         mEuiccManager = getContext().getSystemService(EuiccManager.class);
         mTelephonyManager = getContext().getSystemService(TelephonyManager.class);
-
-        if (!Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeNotNull(mEuiccManager);
-        }
     }
 
     @After
     public void tearDown() throws Exception {
         if (mCallbackReceiver != null) {
             getContext().unregisterReceiver(mCallbackReceiver);
-
-            if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-                mCallbackReceiver = null;
-            }
+            mCallbackReceiver = null;
         }
     }
 

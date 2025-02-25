@@ -31,8 +31,6 @@ import android.telephony.euicc.DownloadableSubscription;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,10 +48,7 @@ public class DownloadableSubscriptionTest {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(EuiccUtil.hasEuiccFeature());
-        }
-
+        assumeTrue(EuiccUtil.hasEuiccFeature());
         mDownloadableSubscription = DownloadableSubscription.forActivationCode(ACTIVATION_CODE);
     }
 

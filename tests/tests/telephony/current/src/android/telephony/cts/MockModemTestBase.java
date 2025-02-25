@@ -24,7 +24,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.TelephonyManager;
@@ -32,8 +31,6 @@ import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -114,7 +111,6 @@ public class MockModemTestBase {
         return true;
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
     protected static boolean hasTelephonyFeature(String featureName) {
         final PackageManager pm = getContext().getPackageManager();
         if (!pm.hasSystemFeature(featureName)) {

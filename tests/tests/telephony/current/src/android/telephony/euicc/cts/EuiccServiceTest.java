@@ -179,9 +179,7 @@ public class EuiccServiceTest {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(EuiccUtil.hasEuiccFeature());
-        }
+        assumeTrue(EuiccUtil.hasEuiccFeature());
 
         mCallback = new MockEuiccServiceCallback();
         MockEuiccService.setCallback(mCallback);
@@ -195,10 +193,8 @@ public class EuiccServiceTest {
 
     @After
     public void tearDown() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (!EuiccUtil.hasEuiccFeature()) {
-                return;
-            }
+        if (!EuiccUtil.hasEuiccFeature()) {
+            return;
         }
 
         mServiceTestRule.unbindService();

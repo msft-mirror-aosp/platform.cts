@@ -59,7 +59,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -254,15 +253,9 @@ public class SipDelegateManagerTest {
 
     @Before
     public void beforeTest() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            // If the device does not have FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION,
-            // skip the all tests
-            assumeTrue(ImsUtils.shouldTestImsSingleRegistration());
-        } else {
-            if (!ImsUtils.shouldTestTelephony()) {
-                return;
-            }
-        }
+        // If the device does not have FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION,
+        // skip the all tests
+        assumeTrue(ImsUtils.shouldTestImsSingleRegistration());
         TelephonyManager tm = (TelephonyManager) InstrumentationRegistry.getInstrumentation()
                 .getContext().getSystemService(Context.TELEPHONY_SERVICE);
         if (tm.getSimState(sTestSlot) != TelephonyManager.SIM_STATE_READY) {
