@@ -1336,6 +1336,28 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
+    public static VehiclePropertyVerifier.Builder<Float> getInfoEvBatteryCapacityVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Float.class)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                evBatteryCapacity) ->
+                                assertWithMessage(
+                                                "INFO_EV_BATTERY_CAPACITY Float value must"
+                                                        + " be greater than or equal to 0")
+                                        .that(evBatteryCapacity)
+                                        .isAtLeast(0))
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
     public static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoVehicleSizeClassVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
