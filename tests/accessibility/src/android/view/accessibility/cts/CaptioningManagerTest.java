@@ -21,8 +21,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyFloat;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.anyFloat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -113,10 +113,10 @@ public class CaptioningManagerTest {
         // Style change gets posted in a Runnable, so we need to wait for idle.
         putSecureSetting("accessibility_captioning_preset", "-1");
         mInstrumentation.waitForIdleSync();
-        verify(mockListener, timeout(LISTENER_TIMEOUT)).onUserStyleChanged(anyObject());
+        verify(mockListener, timeout(LISTENER_TIMEOUT)).onUserStyleChanged(any());
 
         putSecureSetting("accessibility_captioning_locale", "ja_JP");
-        verify(mockListener, timeout(LISTENER_TIMEOUT)).onLocaleChanged(anyObject());
+        verify(mockListener, timeout(LISTENER_TIMEOUT)).onLocaleChanged(any());
 
         putSecureSetting("accessibility_captioning_font_scale", "2.0");
         verify(mockListener, timeout(LISTENER_TIMEOUT)).onFontScaleChanged(anyFloat());

@@ -17,7 +17,7 @@ package android.transition.cts;
 
 import static com.android.compatibility.common.util.CtsMockitoUtils.within;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
