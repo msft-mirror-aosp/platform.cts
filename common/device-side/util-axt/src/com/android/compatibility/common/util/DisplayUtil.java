@@ -17,9 +17,13 @@
 package com.android.compatibility.common.util;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.hardware.display.DisplayManager;
 import android.hardware.hdmi.HdmiControlManager;
 import android.view.Display;
+
+import androidx.test.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -94,5 +98,34 @@ public class DisplayUtil {
             default:
                 return -1;
         }
+    }
+
+    private static boolean hasDeviceFeature(final String requiredFeature) {
+        return InstrumentationRegistry.getContext()
+                .getPackageManager()
+                .hasSystemFeature(requiredFeature);
+    }
+
+    private static boolean isSystemConfigSupported(final String configName) {
+        try {
+            return InstrumentationRegistry.getContext().getResources().getBoolean(
+                    Resources.getSystem().getIdentifier(
+                            configName, "bool", "android"));
+        } catch (Resources.NotFoundException e) {
+            // Assume this device supports the config.
+            return true;
+        }
+    }
+
+    /**
+     * Gets whether the device supports auto rotation. In general such a
+     * device has an accelerometer, has the portrait and landscape features, and
+     * has the config_supportAutoRotation resource.
+     */
+    public static boolean supportsAutoRotation() {
+        return hasDeviceFeature(PackageManager.FEATURE_SENSOR_ACCELEROMETER)
+                && hasDeviceFeature(PackageManager.FEATURE_SCREEN_PORTRAIT)
+                && hasDeviceFeature(PackageManager.FEATURE_SCREEN_LANDSCAPE)
+                && isSystemConfigSupported("config_supportAutoRotation");
     }
 }
