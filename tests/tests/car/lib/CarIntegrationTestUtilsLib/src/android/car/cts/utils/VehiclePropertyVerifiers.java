@@ -24,6 +24,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.Car;
 import android.car.FuelType;
+import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
 import android.car.VehiclePropertyIds;
 import android.car.VehicleSeatOccupancyState;
@@ -1304,6 +1305,34 @@ public class VehiclePropertyVerifiers {
                         VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         String.class)
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Integer> getInfoDriverSeatVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_DRIVER_SEAT,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer.class)
+                .setAllPossibleEnumValues(
+                        ImmutableSet.of(
+                                VehicleAreaSeat.SEAT_UNKNOWN,
+                                VehicleAreaSeat.SEAT_ROW_1_LEFT,
+                                VehicleAreaSeat.SEAT_ROW_1_CENTER,
+                                VehicleAreaSeat.SEAT_ROW_1_RIGHT))
+                .setAreaIdsVerifier(
+                        (verifierContext, areaIds) ->
+                                assertWithMessage(
+                                                "Even though INFO_DRIVER_SEAT is"
+                                                    + " VEHICLE_AREA_TYPE_SEAT, it is meant to be"
+                                                    + " VEHICLE_AREA_TYPE_GLOBAL, so its AreaIds"
+                                                    + " must contain a single 0")
+                                        .that(areaIds)
+                                        .isEqualTo(
+                                                new int[] {
+                                                    VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL
+                                                }))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 

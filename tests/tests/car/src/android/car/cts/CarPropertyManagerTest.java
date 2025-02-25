@@ -51,6 +51,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureC
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureDisplayUnitsVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
@@ -75,7 +76,6 @@ import android.car.Car;
 import android.car.FuelType;
 import android.car.GsrComplianceType;
 import android.car.PortLocationType;
-import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
 import android.car.VehicleAreaWheel;
 import android.car.VehicleGear;
@@ -2863,33 +2863,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isIn(PORT_LOCATION_TYPES);
                             }
                         })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoDriverSeatVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_DRIVER_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(
-                        ImmutableSet.of(
-                                VehicleAreaSeat.SEAT_UNKNOWN,
-                                SEAT_ROW_1_LEFT,
-                                VehicleAreaSeat.SEAT_ROW_1_CENTER,
-                                VehicleAreaSeat.SEAT_ROW_1_RIGHT))
-                .setAreaIdsVerifier(
-                        (verifierContext, areaIds) ->
-                                assertWithMessage("Even though INFO_DRIVER_SEAT is"
-                                        + " VEHICLE_AREA_TYPE_SEAT, it is meant to be"
-                                        + " VEHICLE_AREA_TYPE_GLOBAL, so its AreaIds"
-                                        + " must contain a single 0")
-                                        .that(areaIds)
-                                        .isEqualTo(
-                                                new int[] {
-                                                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL
-                                                }))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
