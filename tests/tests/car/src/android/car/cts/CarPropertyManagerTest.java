@@ -20,6 +20,7 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+import static android.car.cts.utils.VehiclePropertyVerifiers.PORT_LOCATION_TYPES;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEnvOutsideTemperatureVerifierBuilder;
@@ -54,6 +55,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureV
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCapacityVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
@@ -77,7 +79,6 @@ import static org.junit.Assume.assumeTrue;
 import android.car.Car;
 import android.car.FuelType;
 import android.car.GsrComplianceType;
-import android.car.PortLocationType;
 import android.car.VehicleAreaType;
 import android.car.VehicleAreaWheel;
 import android.car.VehicleGear;
@@ -207,17 +208,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             ImmutableSet.of(
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE);
-    private static final ImmutableSet<Integer> PORT_LOCATION_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add(
-                            PortLocationType.UNKNOWN,
-                            PortLocationType.FRONT_LEFT,
-                            PortLocationType.FRONT_RIGHT,
-                            PortLocationType.REAR_RIGHT,
-                            PortLocationType.REAR_LEFT,
-                            PortLocationType.FRONT,
-                            PortLocationType.REAR)
-                    .build();
     private static final ImmutableSet<Integer> VEHICLE_GEARS =
             ImmutableSet.<Integer>builder()
                     .add(
@@ -2757,17 +2747,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_PORT_LOCATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoMultiEvPortLocationsVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -2777,7 +2756,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         Integer[].class)
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 evPortLocations) -> {
                             assertWithMessage(
                                             "INFO_MULTI_EV_PORT_LOCATIONS must specify at least 1"

@@ -24,6 +24,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.Car;
 import android.car.FuelType;
+import android.car.PortLocationType;
 import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
 import android.car.VehiclePropertyIds;
@@ -58,6 +59,19 @@ public class VehiclePropertyVerifiers {
     private VehiclePropertyVerifiers() {
         throw new UnsupportedOperationException("Should only be used as a static class");
     }
+
+    /** Used for EV and fuel door port locations. */
+    public static final ImmutableSet<Integer> PORT_LOCATION_TYPES =
+            ImmutableSet.<Integer>builder()
+                    .add(
+                            PortLocationType.UNKNOWN,
+                            PortLocationType.FRONT_LEFT,
+                            PortLocationType.FRONT_RIGHT,
+                            PortLocationType.REAR_RIGHT,
+                            PortLocationType.REAR_LEFT,
+                            PortLocationType.FRONT,
+                            PortLocationType.REAR)
+                    .build();
 
     private static final int LOCATION_CHARACTERIZATION_VALID_VALUES_MASK =
             LocationCharacterization.PRIOR_LOCATIONS
@@ -1295,10 +1309,7 @@ public class VehiclePropertyVerifiers {
         return allPossibleFanDirectionsBuilder.build();
     }
 
-
-    /**
-     * Gets the verifier for {@link VehiclePropertyIds#INFO_MODEL_TRIM}.
-     */
+    /** Gets the verifier for {@link VehiclePropertyIds#INFO_MODEL_TRIM}. */
     public static VehiclePropertyVerifier.Builder<String> getInfoModelTrimVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.INFO_MODEL_TRIM,
@@ -1412,6 +1423,17 @@ public class VehiclePropertyVerifiers {
                                                         .build());
                             }
                         })
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_EV_PORT_LOCATION,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer.class)
+                .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
