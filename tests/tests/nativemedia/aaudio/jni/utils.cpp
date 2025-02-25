@@ -442,3 +442,10 @@ int getDeviceTypeFromId(int32_t deviceId) {
     return callJavaStaticIntFunction(nullptr, "android/nativemedia/aaudio/AAudioTests",
                                      "getDeviceTypeFromId", "(I)I", (jint)deviceId);
 }
+
+int getOutChannelCountMax() {
+    static int outChannelCountMax =
+            (int)callJavaStaticIntFunction(nullptr, "android/nativemedia/aaudio/AAudioTests",
+                                           "getOutChannelCountMax", "()I");
+    return outChannelCountMax;
+}
