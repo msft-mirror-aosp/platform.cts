@@ -299,7 +299,14 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         return activity.getWindowManager().getMaximumWindowMetrics().getBounds();
     }
 
-    public static void enterPipActivityHandlesConfigChanges(TestActivity activity) {
+    /**
+     * Move an {@link Activity} into PiP windowing mode. Returns {@code true} if the {@link
+     * Activity} entered PiP within the timeout, {@code false} otherwise.
+     *
+     * @param activity to be moved into PiP
+     * @return {@code true} if the activity successfully entered PiP.
+     */
+    public static boolean enterPipActivityHandlesConfigChanges(TestActivity activity) {
         if (activity.isInPictureInPictureMode()) {
             throw new IllegalStateException("Activity must not be in PiP");
         }
@@ -307,10 +314,17 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         // Change the orientation
         PictureInPictureParams params = (new PictureInPictureParams.Builder()).build();
         activity.enterPictureInPictureMode(params);
-        activity.waitForConfigurationChange();
+        return activity.waitForConfigurationChange();
     }
 
-    public static void exitPipActivityHandlesConfigChanges(TestActivity activity) {
+    /**
+     * Move an {@link Activity} out of PiP windowing mode. Returns {@code true} if the {@link
+     * Activity} exited PiP within the timeout, {@code false} otherwise.
+     *
+     * @param activity to be moved out of PiP
+     * @return {@code true} if the activity successfully exited PiP.
+     */
+    public static boolean exitPipActivityHandlesConfigChanges(TestActivity activity) {
         if (!activity.isInPictureInPictureMode()) {
             throw new IllegalStateException("Activity must be in PiP");
         }
@@ -318,7 +332,7 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         Intent intent = new Intent(activity, activity.getClass());
         intent.addFlags(FLAG_ACTIVITY_SINGLE_TOP);
         activity.startActivity(intent);
-        activity.waitForConfigurationChange();
+        return activity.waitForConfigurationChange();
     }
 
     public void setActivityOrientationActivityHandlesOrientationChanges(
