@@ -23,6 +23,7 @@ import static com.android.compatibility.common.util.FeatureUtil.isTV;
 import static com.android.compatibility.common.util.FeatureUtil.isWatch;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
@@ -71,10 +72,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.MockitoAnnotations;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 /**
  * Test {@link MediaProjection} stopping behavior.
@@ -114,7 +115,7 @@ public class MediaProjectionStoppingTest {
     private TestCallStateListener mTestCallStateListener;
 
     @Before
-    public void setUp() {
+    public void setUp() throws InterruptedException {
         MockitoAnnotations.initMocks(this);
 
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
@@ -128,24 +129,16 @@ public class MediaProjectionStoppingTest {
                 });
         mTimeoutMs = 1000 * HW_TIMEOUT_MULTIPLIER;
 
-        mTelecomManager = mContext.getSystemService(TelecomManager.class);
-        mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
         final WindowManagerStateHelper wmState = new WindowManagerStateHelper();
         mLockScreenSession = new LockScreenSession(InstrumentationRegistry.getInstrumentation(),
                 wmState);
 
-        mTestCallStateListener = new TestCallStateListener();
-        runWithShellPermissionIdentity(
-                () ->
-                        mTelephonyManager.registerTelephonyCallback(
-                                mContext.getMainExecutor(), mTestCallStateListener));
+        mTestCallStateListener = new TestCallStateListener(mContext);
     }
 
     @After
     public void cleanup() {
-        runWithShellPermissionIdentity(
-                () -> mTelephonyManager.unregisterTelephonyCallback(mTestCallStateListener));
-        mTestCallStateListener.setCallStateConsumer(null);
+        mTestCallStateListener.release();
         if (mMediaProjection != null) {
             if (mCallback != null) {
                 mMediaProjection.unregisterCallback(mCallback);
@@ -326,52 +319,15 @@ public class MediaProjectionStoppingTest {
     }
 
     private void startPhoneCall() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        onCallStateChanged(
-                () -> {
-                    if (isInCall()) {
-                        latch.countDown();
-                        return true;
-                    }
-                    return false;
-                });
+        mTestCallStateListener.assertCallState(false);
         mContext.startActivity(getCallHelperIntent(CALL_HELPER_START_CALL));
-
-        assertWithMessage("Call was not started after timeout")
-                .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS))
-                .isTrue();
+        mTestCallStateListener.waitForNextCallState(true, mTimeoutMs, TimeUnit.MILLISECONDS);
     }
 
     private void endPhoneCall() throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(1);
-        onCallStateChanged(
-                () -> {
-                    if (!isInCall()) {
-                        latch.countDown();
-                        return true;
-                    }
-                    return false;
-                });
+        mTestCallStateListener.assertCallState(true);
         mContext.startActivity(getCallHelperIntent(CALL_HELPER_STOP_CALL));
-
-        assertWithMessage("Call was not ended after timeout")
-                .that(latch.await(mTimeoutMs, TimeUnit.MILLISECONDS))
-                .isTrue();
-    }
-
-    private void onCallStateChanged(BooleanSupplier supplier) {
-        mTestCallStateListener.setCallStateConsumer(
-                __ -> {
-                    if (supplier.getAsBoolean()) {
-                        mTestCallStateListener.setCallStateConsumer(null);
-                    }
-                });
-    }
-
-    private boolean isInCall() {
-        synchronized (this) {
-            return runWithShellPermissionIdentity(() -> mTelecomManager.isInCall());
-        }
+        mTestCallStateListener.waitForNextCallState(false, mTimeoutMs, TimeUnit.MILLISECONDS);
     }
 
     private Intent getCallHelperIntent(String action) {
@@ -428,19 +384,53 @@ public class MediaProjectionStoppingTest {
 
     private static final class TestCallStateListener extends TelephonyCallback
             implements TelephonyCallback.CallStateListener {
-        private Consumer<Integer> mCallStateConsumer;
+        private final BlockingQueue<Boolean> mCallStates = new LinkedBlockingQueue<>();
+        private final TelecomManager mTelecomManager;
+        private final TelephonyManager mTelephonyManager;
 
-        private TestCallStateListener() {}
+        private TestCallStateListener(Context context) throws InterruptedException {
+            mTelecomManager = context.getSystemService(TelecomManager.class);
+            mTelephonyManager = context.getSystemService(TelephonyManager.class);
+            mCallStates.offer(isInCall());
 
-        public void setCallStateConsumer(Consumer<Integer> consumer) {
-            mCallStateConsumer = consumer;
+            assertThat(mCallStates.take()).isFalse();
+
+            runWithShellPermissionIdentity(
+                    () ->
+                            mTelephonyManager.registerTelephonyCallback(
+                                    context.getMainExecutor(), this));
+        }
+
+        public void release() {
+            runWithShellPermissionIdentity(
+                    () -> mTelephonyManager.unregisterTelephonyCallback(this));
         }
 
         @Override
         public void onCallStateChanged(int state) {
-            if (mCallStateConsumer != null) {
-                mCallStateConsumer.accept(state);
-            }
+            mCallStates.offer(isInCall());
+        }
+
+        public void waitForNextCallState(boolean expectedCallState, long timeout, TimeUnit unit)
+                throws InterruptedException {
+            String message =
+                    String.format(
+                            "Call was not %s after timeout",
+                            expectedCallState ? "started" : "ended");
+
+            boolean value;
+            do {
+                value = mCallStates.poll(timeout, unit);
+            } while (value != expectedCallState);
+            assertWithMessage(message).that(value).isEqualTo(expectedCallState);
+        }
+
+        private boolean isInCall() {
+            return runWithShellPermissionIdentity(mTelecomManager::isInCall);
+        }
+
+        public void assertCallState(boolean expected) {
+            assertWithMessage("Unexpected call state").that(isInCall()).isEqualTo(expected);
         }
     }
 }
