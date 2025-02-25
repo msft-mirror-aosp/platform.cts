@@ -14,26 +14,21 @@
  * limitations under the License.
  */
 
-package com.android.cts.apimap;
+package com.android.cts.apimap.output;
 
-/** Represents the static analysis mode. */
-public enum ModeType {
+import com.android.cts.ctsprofiles.ModuleProfile;
 
-    // Represents xTS test annotation analysis.
-    XTS_ANNOTATION(1),
+import org.w3c.dom.Document;
 
-    // Represents API map (API coverage) analysis.
-    API_MAP(2),
+/**
+ * Abstract base class for XML generators specifically designed for an xTS module.
+ *
+ * <p>Concrete subclasses of this class are responsible for implementing the specific logic to
+ * generate XML elements for a given {@link ModuleProfile}.
+ */
+abstract class XtsXmlGenerator extends XmlGenerator<ModuleProfile> {
 
-    XTS_API_INHERIT(3);
-
-    private final int mValue;
-
-    ModeType(int value) {
-        mValue = value;
-    }
-
-    public int getValue() {
-        return mValue;
+    XtsXmlGenerator(Document doc) {
+        super(doc);
     }
 }

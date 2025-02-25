@@ -117,6 +117,14 @@ public class ClassProfile {
         return mModule;
     }
 
+    public ClassProfile getSuperClass() {
+        return mSuperClass;
+    }
+
+    public List<ClassProfile> getInterfaces() {
+        return mInterfaces;
+    }
+
     public Map<String, MethodProfile> getMethods() {
         return mMethods;
     }
