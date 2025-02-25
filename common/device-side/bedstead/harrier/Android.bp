@@ -25,6 +25,7 @@ java_library_host {
         "common/src/main/java/com/android/bedstead/harrier/annotations/UsesAnnotationExecutor.kt",
         "common/src/main/java/com/android/bedstead/harrier/annotations/AnnotationPriorityRunPrecedence.java",
         "common/src/main/java/com/android/bedstead/harrier/annotations/enterprise/DevicePolicyRelevant.java",
+        "common/src/main/java/com/android/bedstead/harrier/annotations/FailureMode.java",
     ],
 
     libs: [

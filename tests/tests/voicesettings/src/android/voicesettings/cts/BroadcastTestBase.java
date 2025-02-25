@@ -39,11 +39,13 @@ import android.util.Log;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
 import com.android.compatibility.common.util.BroadcastUtils;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
@@ -64,6 +66,7 @@ public abstract class BroadcastTestBase {
     private BroadcastTestStartActivity mActivity;
     private BroadcastUtils.TestcaseType mTestCaseType;
     protected boolean mHasFeature;
+    @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
 
     private final SettingsStateChangerRule mServiceSetterRule = new SettingsStateChangerRule(
             mContext, Settings.Secure.VOICE_INTERACTION_SERVICE,

@@ -1023,8 +1023,7 @@ def version_agnostic_detect_markers(image):
 
 def find_aruco_markers(
     input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT,
-    force_greyscale=False,
-    save_images=True):
+    force_greyscale=False, save_images=True):
   """Detects ArUco markers in the input_img.
 
   Finds ArUco markers in the input_img and draws the contours
@@ -1058,11 +1057,16 @@ def find_aruco_markers(
   corners, ids, rejected_params = version_agnostic_detect_markers(bw_img)
   if ids is not None and len(ids) >= aruco_marker_count:
     logging.debug('All ArUco markers detected with greyscale image.')
-  # Handle case where no markers are found
-  if ids is None:
+  # Handle case where markers are not found
+  else:
     if save_images:
       image_processing_utils.write_image(normalized_input_img, output_img_path)
-    raise AssertionError('ArUco markers not detected.')
+    assertion_err_msg = ('Not enough markers detected. Check setup & scene. ')
+    if ids is not None:
+      assertion_err_msg += f'Found: {len(ids)}, Expected: {aruco_marker_count}.'
+    else:
+      assertion_err_msg += f'Found: 0, Expected: {aruco_marker_count}.'
+    raise AssertionError(assertion_err_msg)
   # Log and save results
   logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)

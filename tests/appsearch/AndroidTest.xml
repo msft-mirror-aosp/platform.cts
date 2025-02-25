@@ -48,6 +48,8 @@
             value="CtsAppSearchIndexerTestAppBDynamicSchema.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppBDynamicSchema.apk" />
         <option name="push"
             value="CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk->/data/local/tmp/cts/appsearch/CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">

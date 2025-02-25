@@ -97,7 +97,8 @@ public class SatelliteManagerTestBase {
     protected static String TAG = "SatelliteManagerTestBase";
 
     protected static final String TOKEN = "TEST_TOKEN";
-    protected static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    protected static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10);
+
     /**
      * Since SST sets waiting time up to 10 seconds for the power off radio, the timer waiting for
      * radio power state change should be greater than 10 seconds.
@@ -1181,6 +1182,9 @@ public class SatelliteManagerTestBase {
     }
 
     protected static boolean isSatelliteEnabled() {
+        logd("isSatelliteEnabled");
+        grantSatellitePermission();
+
         final AtomicReference<Boolean> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -1188,18 +1192,22 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
+                        logd("isSatelliteEnabled: satellite enablement result: " + result);
                         enabled.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
+                        logd(
+                                "isSatelliteEnabled: satellite enablement error: "
+                                        + exception.getErrorCode());
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
                 };
 
-
+        logd("isSatelliteEnabled: requesting satellite to be enabled");
         sSatelliteManager.requestIsEnabled(
                 getContext().getMainExecutor(), receiver);
         try {
@@ -1262,7 +1270,11 @@ public class SatelliteManagerTestBase {
     }
 
     protected static void requestSatelliteEnabled(boolean enabled) {
+        logd("requestSatelliteEnabled: enabled=" + enabled);
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        logd(
+                "requestSatelliteEnabled: requesting satellite to be "
+                        + (enabled ? "enabled" : "disabled"));
         sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
                 getContext().getMainExecutor(), error::offer);
         Integer errorCode;
@@ -1313,6 +1325,11 @@ public class SatelliteManagerTestBase {
     }
 
     protected static int requestSatelliteEnabledWithResult(boolean enabled, long timeoutMillis) {
+        logd(
+                "requestSatelliteEnabledWithResult: enabled="
+                        + enabled
+                        + ", timeoutMillis="
+                        + timeoutMillis);
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
         sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
                 getContext().getMainExecutor(), error::offer);
