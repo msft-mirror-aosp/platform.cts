@@ -21,6 +21,7 @@ import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
 import static android.mediav2.cts.AdaptivePlaybackTest.createInputList;
 import static android.mediav2.cts.AdaptivePlaybackTest.getSupportedFiles;
+import static android.mediav2.cts.CodecResourceUtils.CodecState;
 import static android.mediav2.cts.CodecResourceUtils.LHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.RHS_RESOURCE_GE;
 import static android.mediav2.cts.CodecResourceUtils.compareResources;
@@ -263,9 +264,10 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         CodecAsyncHandlerResource asyncHandleResource = new CodecAsyncHandlerResource();
         mAsyncHandle = asyncHandleResource;
         mCodec = MediaCodec.createByCodecName(mCodecName);
-        validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() succeeded in uninitialized state \n" + mTestEnv
-                        + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.UNINITIALIZED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded in %s state \n", CodecState.UNINITIALIZED)
+                        + mTestEnv + mTestConfig);
         MediaFormat format = setUpSource(mSrcFiles[0]);
         List<MediaFormat> formats = new ArrayList<>();
         formats.add(format);
@@ -273,23 +275,33 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                 areFormatsSupported(mCodecName, mMediaType, formats));
         mOutputBuff = new OutputManager();
         configureCodec(format, true, true, false);
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in configured state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.CONFIGURED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() failed in %s state \n", CodecState.CONFIGURED)
+                        + mTestEnv + mTestConfig);
         mCodec.start();
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in running state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.RUNNING)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() failed in %s state \n", CodecState.RUNNING)
+                        + mTestEnv + mTestConfig);
         doWork(10);
         queueEOS();
         waitForAllOutputs();
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in eos state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.EOS)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() failed in %s state \n", CodecState.EOS)
+                        + mTestEnv + mTestConfig);
         mCodec.flush();
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in flushed state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.FLUSHED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() failed in %s state \n", CodecState.FLUSHED)
+                        + mTestEnv + mTestConfig);
         mCodec.start();
         mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in running state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.RUNNING)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() failed in %s state \n", CodecState.RUNNING)
+                        + mTestEnv + mTestConfig);
         doWork(5);
         queueEOS();
         waitForAllOutputs();
@@ -297,15 +309,20 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
                         + " codec\n" + mTestEnv + mTestConfig,
                 asyncHandleResource.hasRequiredResourceChangeCbReceived());
         mCodec.stop();
-        validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.STOPPED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded in %s state \n", CodecState.STOPPED)
+                        + mTestEnv + mTestConfig);
         mCodec.reset();
-        validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() succeeded in uninitialized state \n" + mTestEnv
-                        + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.UNINITIALIZED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded in %s state \n", CodecState.UNINITIALIZED)
+                        + mTestEnv + mTestConfig);
         mCodec.release();
-        validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() succeeded in released state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mCodec, CodecState.RELEASED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded in %s state \n", CodecState.RELEASED)
+                        + mTestEnv + mTestConfig);
     }
 
     static Size estimateVideoSizeFromPerformancePoint(PerformancePoint pp) {
@@ -450,16 +467,17 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
         List<Pair<Integer, Surface>> surfaces = new ArrayList<>();
         MediaCodec codec = null;
         int numInstances;
-        List<CodecResource> lastGlobalResources = getCurrentGlobalCodecResources();
+        List<CodecResource> lastGlobalResources;
         List<CodecResource> currentGlobalResources;
         MediaFormat lastFormat = null;
         MediaFormat currentFormat = null;
-        List<CodecResource> lastGlobalResourceForFormat = lastGlobalResources;
+        List<CodecResource> lastGlobalResourceForFormat = null;
         List<CodecResource> currentGlobalResourcesForFormat = null;
         StringBuilder testLogs = new StringBuilder();
         int maxInstances = getMaxCodecInstances(codecName, mediaType);
         for (List<MediaFormat> formats : testableFormats) {
             numInstances = 0;
+            lastGlobalResources = getCurrentGlobalCodecResources();
             while (numInstances < maxInstances) {
                 Pair<Integer, Surface> obj = null;
                 try {
@@ -534,15 +552,15 @@ public class VideoDecoderAvailabilityTest extends CodecDecoderTestBase {
             }
             surfaces.clear();
             codecs.clear();
-            if (currentGlobalResourcesForFormat != null) {
+            if (lastGlobalResourceForFormat != null) {
                 int result = compareResources(lastGlobalResourceForFormat,
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
                         + " is expected to consume more resources than format : " + currentFormat
                         + testLogs + mTestEnv + mTestConfig, RHS_RESOURCE_GE, result);
-                lastGlobalResourceForFormat = currentGlobalResourcesForFormat;
-                lastFormat = currentFormat;
             }
+            lastGlobalResourceForFormat = currentGlobalResourcesForFormat;
+            lastFormat = currentFormat;
         }
     }
 
