@@ -53,6 +53,7 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureS
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCapacityVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
@@ -107,7 +108,6 @@ import android.car.hardware.property.ElectronicStabilityControlState;
 import android.car.hardware.property.EmergencyLaneKeepAssistState;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.EvChargeState;
-import android.car.hardware.property.EvChargingConnectorType;
 import android.car.hardware.property.EvRegenerativeBrakingState;
 import android.car.hardware.property.EvStoppingMode;
 import android.car.hardware.property.ForwardCollisionWarningState;
@@ -2733,58 +2733,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                                                 FuelType.ELECTRIC,
                                                                 FuelType.HYDROGEN,
                                                                 FuelType.OTHER)
-                                                        .build());
-                            }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer[]>
-            getInfoEvConnectorTypeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                evConnectorTypes) -> {
-                            assertWithMessage(
-                                            "INFO_EV_CONNECTOR_TYPE must specify at least 1"
-                                                    + " connection type")
-                                    .that(evConnectorTypes.length)
-                                    .isGreaterThan(0);
-                            for (Integer evConnectorType : evConnectorTypes) {
-                                assertWithMessage(
-                                                "INFO_EV_CONNECTOR_TYPE must be a defined"
-                                                        + " connection type: "
-                                                        + evConnectorType)
-                                        .that(evConnectorType)
-                                        .isIn(
-                                                ImmutableSet.builder()
-                                                        .add(
-                                                                EvChargingConnectorType.UNKNOWN,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_1_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_2_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_3_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_4_DC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_1_CCS_DC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_2_CCS_DC,
-                                                                EvChargingConnectorType
-                                                                        .TESLA_ROADSTER,
-                                                                EvChargingConnectorType.TESLA_HPWC,
-                                                                EvChargingConnectorType
-                                                                        .TESLA_SUPERCHARGER,
-                                                                EvChargingConnectorType.GBT_AC,
-                                                                EvChargingConnectorType.GBT_DC,
-                                                                EvChargingConnectorType.OTHER)
                                                         .build());
                             }
                         })

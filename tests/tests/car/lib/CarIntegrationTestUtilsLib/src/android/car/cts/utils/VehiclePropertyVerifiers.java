@@ -34,6 +34,7 @@ import android.car.hardware.CarHvacFanDirection;
 import android.car.hardware.CarPropertyConfig;
 import android.car.hardware.CarPropertyValue;
 import android.car.hardware.property.CarPropertyManager;
+import android.car.hardware.property.EvChargingConnectorType;
 import android.car.hardware.property.LocationCharacterization;
 import android.car.hardware.property.VehicleAutonomousState;
 import android.car.hardware.property.VehicleSizeClass;
@@ -1359,6 +1360,62 @@ public class VehiclePropertyVerifiers {
     }
 
     public static VehiclePropertyVerifier.Builder<Integer[]>
+            getInfoEvConnectorTypeVerifierBuilder() {
+        return VehiclePropertyVerifier.newBuilder(
+                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
+                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
+                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
+                        Integer[].class)
+                .setCarPropertyValueVerifier(
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
+                                evConnectorTypes) -> {
+                            assertWithMessage(
+                                            "INFO_EV_CONNECTOR_TYPE must specify at least 1"
+                                                    + " connection type")
+                                    .that(evConnectorTypes.length)
+                                    .isGreaterThan(0);
+                            for (Integer evConnectorType : evConnectorTypes) {
+                                assertWithMessage(
+                                                "INFO_EV_CONNECTOR_TYPE must be a defined"
+                                                        + " connection type: "
+                                                        + evConnectorType)
+                                        .that(evConnectorType)
+                                        .isIn(
+                                                ImmutableSet.builder()
+                                                        .add(
+                                                                EvChargingConnectorType.UNKNOWN,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_1_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_2_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_3_AC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_4_DC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_1_CCS_DC,
+                                                                EvChargingConnectorType
+                                                                        .IEC_TYPE_2_CCS_DC,
+                                                                EvChargingConnectorType
+                                                                        .TESLA_ROADSTER,
+                                                                EvChargingConnectorType.TESLA_HPWC,
+                                                                EvChargingConnectorType
+                                                                        .TESLA_SUPERCHARGER,
+                                                                EvChargingConnectorType.GBT_AC,
+                                                                EvChargingConnectorType.GBT_DC,
+                                                                EvChargingConnectorType.OTHER)
+                                                        .build());
+                            }
+                        })
+                .addReadPermission(Car.PERMISSION_CAR_INFO);
+    }
+
+    public static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoVehicleSizeClassVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.INFO_VEHICLE_SIZE_CLASS,
@@ -1500,8 +1557,7 @@ public class VehiclePropertyVerifiers {
                 .addReadPermission(Car.PERMISSION_READ_BRAKE_INFO);
     }
 
-    public static VehiclePropertyVerifier.Builder<Boolean>
-            getBrakeFluidLevelLowVerifierBuilder() {
+    public static VehiclePropertyVerifier.Builder<Boolean> getBrakeFluidLevelLowVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.BRAKE_FLUID_LEVEL_LOW,
                         CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
