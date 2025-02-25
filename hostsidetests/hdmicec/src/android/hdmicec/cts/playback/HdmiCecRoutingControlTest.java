@@ -66,7 +66,7 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
     @Test
     public void cect_11_1_2_2_RequestActiveSource() throws Exception {
         ITestDevice device = getDevice();
-        hdmiCecClient.sendCecMessage(LogicalAddress.PLAYBACK_2, LogicalAddress.BROADCAST,
+        hdmiCecClient.sendCecMessage(getAlternativeLogicalAddress(), LogicalAddress.BROADCAST,
                 CecOperand.ACTIVE_SOURCE, CecMessage.formatParams(
                         getAlternativePhysicalAddress(getDumpsysPhysicalAddress())));
 
@@ -95,7 +95,7 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
          * Switch to HDMI port whose physical address is alternateAddress. DUT is connected to HDMI
          * port whose physical address is dumpsysPhysicalAddress.
          */
-        hdmiCecClient.sendCecMessage(LogicalAddress.PLAYBACK_2, LogicalAddress.BROADCAST,
+        hdmiCecClient.sendCecMessage(getAlternativeLogicalAddress(), LogicalAddress.BROADCAST,
                 CecOperand.ACTIVE_SOURCE, CecMessage.formatParams(
                         getAlternativePhysicalAddress(dumpsysPhysicalAddress)));
         TimeUnit.SECONDS.sleep(3);
@@ -164,8 +164,8 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
             device.executeShellCommand("input keyevent KEYCODE_HOME");
             TimeUnit.SECONDS.sleep(HdmiCecConstants.DEVICE_WAIT_TIME_SECONDS);
             WakeLockHelper.acquirePartialWakeLock(device);
-            // Now make the playback 2 the active source
-            hdmiCecClient.sendCecMessage(LogicalAddress.PLAYBACK_2, LogicalAddress.BROADCAST,
+            // Now make the other playback device the active source
+            hdmiCecClient.sendCecMessage(getAlternativeLogicalAddress(), LogicalAddress.BROADCAST,
                     CecOperand.ACTIVE_SOURCE, CecMessage.formatParams(
                             getAlternativePhysicalAddress(getDumpsysPhysicalAddress())));
             TimeUnit.SECONDS.sleep(
@@ -192,8 +192,8 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
             device.executeShellCommand("input keyevent KEYCODE_HOME");
             TimeUnit.SECONDS.sleep(HdmiCecConstants.DEVICE_WAIT_TIME_SECONDS);
             WakeLockHelper.acquirePartialWakeLock(device);
-            // Now make the playback 2 the active source
-            hdmiCecClient.sendCecMessage(LogicalAddress.PLAYBACK_2, LogicalAddress.BROADCAST,
+            // Now make the other playback device the active source
+            hdmiCecClient.sendCecMessage(getAlternativeLogicalAddress(), LogicalAddress.BROADCAST,
                     CecOperand.ACTIVE_SOURCE, CecMessage.formatParams(
                             getAlternativePhysicalAddress(getDumpsysPhysicalAddress())));
             TimeUnit.SECONDS.sleep(
@@ -211,6 +211,14 @@ public final class HdmiCecRoutingControlTest extends BaseHdmiCecCtsTest {
             return 0x1200;
         } else {
             return 0x1000;
+        }
+    }
+
+    private LogicalAddress getAlternativeLogicalAddress() {
+        if (hasLogicalAddress(LogicalAddress.PLAYBACK_1)) {
+            return LogicalAddress.PLAYBACK_2;
+        } else {
+            return LogicalAddress.PLAYBACK_1;
         }
     }
 }
