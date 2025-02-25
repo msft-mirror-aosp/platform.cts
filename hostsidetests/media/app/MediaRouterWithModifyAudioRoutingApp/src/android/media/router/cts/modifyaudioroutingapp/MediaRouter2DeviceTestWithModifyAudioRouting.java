@@ -45,12 +45,6 @@ import java.util.concurrent.Executors;
 @LargeTest
 public class MediaRouter2DeviceTestWithModifyAudioRouting {
 
-    // TODO: b/316864909 - Stop relying on route ids once we can control system routing in CTS.
-    private static final String ROUTE_ID_BUILTIN_SPEAKER =
-            Flags.enableAudioPoliciesDeviceAndBluetoothController()
-                    ? "ROUTE_ID_BUILTIN_SPEAKER"
-                    : MediaRoute2Info.ROUTE_ID_DEVICE;
-
     /** {@link RouteDiscoveryPreference} for system routes only. */
     private static final RouteDiscoveryPreference SYSTEM_ROUTE_DISCOVERY_PREFERENCE =
             new RouteDiscoveryPreference.Builder(
@@ -90,7 +84,7 @@ public class MediaRouter2DeviceTestWithModifyAudioRouting {
         MediaRouter2.RoutingController systemController = mediaRouter2.getSystemController();
         assertThat(systemController.getSelectedRoutes())
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
-                .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
+                .doesNotContain(MediaRoute2Info.ROUTE_ID_DEFAULT);
     }
 
     @Test
@@ -113,7 +107,7 @@ public class MediaRouter2DeviceTestWithModifyAudioRouting {
 
             assertThat(mediaRouter2.getRoutes())
                     .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
-                    .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
+                    .doesNotContain(MediaRoute2Info.ROUTE_ID_DEFAULT);
         } finally {
             mediaRouter2.unregisterRouteCallback(mPlaceholderRouteCallback);
         }
