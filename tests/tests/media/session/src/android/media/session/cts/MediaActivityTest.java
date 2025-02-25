@@ -103,11 +103,6 @@ public class MediaActivityTest {
         mContext = mInstrumentation.getContext();
         mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
         mUseFixedVolume = mAudioManager.isVolumeFixed();
-        mHdmiControlManager = mContext.getSystemService(HdmiControlManager.class);
-        if (mHdmiControlManager != null) {
-            mHdmiEnableStatus = mHdmiControlManager.getHdmiCecEnabled();
-            mHdmiControlManager.setHdmiCecEnabled(HdmiControlManager.HDMI_CEC_CONTROL_DISABLED);
-        }
 
         mStreamVolumeMap.clear();
         for (Integer stream : ALL_VOLUME_STREAMS) {
@@ -133,6 +128,13 @@ public class MediaActivityTest {
         // Add permission after runWithShellPermissionIdentity else it gets removed.
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.HDMI_CEC);
+
+        mHdmiControlManager = mContext.getSystemService(HdmiControlManager.class);
+        if (mHdmiControlManager != null) {
+            mHdmiEnableStatus = mHdmiControlManager.getHdmiCecEnabled();
+            mHdmiControlManager.setHdmiCecEnabled(HdmiControlManager.HDMI_CEC_CONTROL_DISABLED);
+        }
+
         ConditionVariable activityReferenceObtained = new ConditionVariable();
         mActivityScenario.onActivity(activity -> {
             mActivity = activity;
