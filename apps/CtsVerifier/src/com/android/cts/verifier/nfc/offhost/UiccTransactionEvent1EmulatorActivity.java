@@ -21,7 +21,12 @@ import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Window;
 import android.widget.TextView;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
@@ -35,6 +40,20 @@ public class UiccTransactionEvent1EmulatorActivity extends PassFailButtons.Activ
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Window window = getWindow();
+        WindowCompat.setDecorFitsSystemWindows(window, /* decorFitsSystemWindows= */ false);
+        ViewCompat.setOnApplyWindowInsetsListener(
+                window.getDecorView(),
+                (v, insets) -> {
+                    v.setPadding(
+                            0,
+                            insets.getInsets(WindowInsetsCompat.Type.statusBars()).top,
+                            0,
+                            insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom);
+                    return insets;
+                });
+        ViewCompat.requestApplyInsets(window.getDecorView());
 
         setContentView(R.layout.pass_fail_text);
         setPassFailButtonClickListeners();
@@ -61,6 +80,7 @@ public class UiccTransactionEvent1EmulatorActivity extends PassFailButtons.Activ
 
         mTextView = (TextView) findViewById(R.id.text);
         mTextView.setTextSize(12.0f);
+        mTextView.setPadding(0, 300, 0, 0);
 
         setIntent(intent);
         initProcess();
@@ -93,23 +113,34 @@ public class UiccTransactionEvent1EmulatorActivity extends PassFailButtons.Activ
         if (bundle != null && getIntent().getAction() != null) {
             byte[] transactionData = bundle.getByteArray(NfcAdapter.EXTRA_DATA);
             if (transactionData != null) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mTextView.setText("Pass - NFC Action:" + getIntent().getAction() + " uri:" + getIntent().getDataString()
-                            + " data:" + HceUtils.getHexBytes(null, transactionData));
-                        getPassButton().setEnabled(true);
-                    }
-                });
+                runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                mTextView.setText(
+                                        "Pass - NFC Action:"
+                                                + getIntent().getAction()
+                                                + " uri:"
+                                                + getIntent().getDataString()
+                                                + " data:"
+                                                + HceUtils.getHexBytes(null, transactionData));
+                                getPassButton().setEnabled(true);
+                            }
+                        });
             } else {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mTextView.setText("Fail - Action:" + getIntent().getAction() + " uri:" + getIntent().getDataString()
-                            + " data: null");
-                        getPassButton().setEnabled(false);
-                    }
-                });
+                runOnUiThread(
+                        new Runnable() {
+                            @Override
+                            public void run() {
+                                mTextView.setText(
+                                        "Fail - Action:"
+                                                + getIntent().getAction()
+                                                + " uri:"
+                                                + getIntent().getDataString()
+                                                + " data: null");
+                                getPassButton().setEnabled(false);
+                            }
+                        });
             }
         }
     }
