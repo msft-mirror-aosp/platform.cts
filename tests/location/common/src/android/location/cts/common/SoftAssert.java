@@ -16,6 +16,7 @@
 
 package android.location.cts.common;
 
+import android.annotation.Nullable;
 import android.util.Log;
 
 import junit.framework.Assert;
@@ -136,14 +137,27 @@ public class SoftAssert {
     public void assertOrWarnTrue(
             boolean strict,
             String message,
-            long eventTimeInNs,
+            @Nullable Long eventTimeInNs,
             String expectedResult,
             String actualResult,
             boolean condition) {
-        String formattedMessage =
-                String.format(
-                        "At time = %d ns, %s (actual : %s, expected : %s).",
-                        eventTimeInNs, message, actualResult, expectedResult);
+        String formattedMessage;
+        if (eventTimeInNs != null) {
+            formattedMessage =
+                    String.format(
+                            "At time = %d ns, %s (actual : %s, expected : %s).",
+                            eventTimeInNs,
+                            message,
+                            actualResult,
+                            expectedResult);
+        } else {
+            formattedMessage =
+                    String.format(
+                            "%s (actual : %s, expected : %s).",
+                            message,
+                            actualResult,
+                            expectedResult);
+        }
         assertOrWarnTrue(strict, formattedMessage, condition);
     }
 
