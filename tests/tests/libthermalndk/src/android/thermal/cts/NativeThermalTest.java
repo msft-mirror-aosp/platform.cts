@@ -51,6 +51,9 @@ public class NativeThermalTest {
     private native String nativeTestThermalStatusListenerDoubleRegistration();
     private native String nativeTestGetThermalHeadroom();
     private native String nativeTestGetThermalHeadroomThresholds();
+    private native String nativeTestRegisterThermalHeadroomListener();
+    private native String nativeTestThermalHeadroomRegisterNullListener();
+    private native String nativeTestThermalHeadroomListenerDoubleRegistration();
 
     @Before
     public void setUp() throws Exception {
@@ -134,6 +137,39 @@ public class NativeThermalTest {
     @Test
     public void testGetThermalHeadroomThresholds() throws Exception {
         final String failureMessage = nativeTestGetThermalHeadroomThresholds();
+        if (!Strings.isNullOrEmpty(failureMessage)) {
+            fail(failureMessage);
+        }
+    }
+
+    /**
+     * Confirm that we can register thermal headroom listener and get callback.
+     */
+    @Test
+    public void testRegisterThermalHeadroomListener() throws Exception {
+        final String failureMessage = nativeTestRegisterThermalHeadroomListener();
+        if (!Strings.isNullOrEmpty(failureMessage)) {
+            fail(failureMessage);
+        }
+    }
+
+    /**
+     * Confirm that register null thermal headroom listener fails with error.
+     */
+    @Test
+    public void testThermalHeadroomRegisterNullListener() throws Exception {
+        final String failureMessage = nativeTestThermalHeadroomRegisterNullListener();
+        if (!Strings.isNullOrEmpty(failureMessage)) {
+            fail(failureMessage);
+        }
+    }
+
+    /**
+     * Confirm that double register and unregister same thermal headroom listener fails with error.
+     */
+    @Test
+    public void testThermalHeadroomListenerDoubleRegistration() throws Exception {
+        final String failureMessage = nativeTestThermalHeadroomListenerDoubleRegistration();
         if (!Strings.isNullOrEmpty(failureMessage)) {
             fail(failureMessage);
         }

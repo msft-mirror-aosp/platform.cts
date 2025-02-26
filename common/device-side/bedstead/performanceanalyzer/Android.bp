@@ -23,7 +23,7 @@ android_test {
     ],
     static_libs: [
         "bedstead-performance-analyzer",
-        "Harrier",
+        "bedstead",
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",

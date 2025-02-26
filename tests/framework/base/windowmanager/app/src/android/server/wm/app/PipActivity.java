@@ -81,6 +81,7 @@ import android.os.SystemClock;
 import android.server.wm.CommandSession;
 import android.util.Log;
 import android.util.Rational;
+import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.Nullable;
 
@@ -324,6 +325,8 @@ public class PipActivity extends AbstractLifecycleLogActivity {
         }
 
         mEnterPipOnBackPressed = parseBooleanExtra(EXTRA_ENTER_PIP_ON_BACK_PRESSED);
+        getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::onBackInvoked);
     }
 
     @Override
@@ -428,12 +431,11 @@ public class PipActivity extends AbstractLifecycleLogActivity {
         dumpConfigInfo();
     }
 
-    @Override
-    public void onBackPressed() {
+    private void onBackInvoked() {
         if (mEnterPipOnBackPressed) {
             enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
         } else {
-            super.onBackPressed();
+            finish();
         }
     }
 

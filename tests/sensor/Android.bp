@@ -104,6 +104,10 @@ android_test {
         "cts-sensors-tests",
     ],
 
+    flags_packages: [
+        "android.permission.flags-aconfig",
+    ],
+
     jni_libs: ["libcts-sensors-ndk-jni"],
 
     sdk_version: "test_current",

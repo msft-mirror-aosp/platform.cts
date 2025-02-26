@@ -55,8 +55,9 @@ import java.util.concurrent.TimeUnit;
 public class AudioFocusWithVdmTest {
 
     private static final VirtualDeviceParams VIRTUAL_DEVICE_PARAMS_CUSTOM_POLICY =
-            new VirtualDeviceParams.Builder().setDevicePolicy(POLICY_TYPE_AUDIO,
-                    DEVICE_POLICY_CUSTOM).build();
+            new VirtualDeviceParams.Builder()
+                    .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
+                    .build();
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(

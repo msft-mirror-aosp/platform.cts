@@ -29,6 +29,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.AppOpsManager;
+import android.app.job.Flags;
 import android.app.job.JobInfo;
 import android.app.job.JobParameters;
 import android.content.Context;
@@ -39,6 +40,10 @@ import android.os.SystemClock;
 import android.os.Temperature;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.util.Log;
@@ -76,6 +81,11 @@ public class JobThrottlingTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
 
     private static final String TAG = JobThrottlingTest.class.getSimpleName();
     private static final long BACKGROUND_JOBS_EXPECTED_DELAY = 3_000;
@@ -192,16 +202,32 @@ public class JobThrottlingTest {
     }
 
     @Test
-    public void testAllowWhileIdleJobInTempwhitelist() throws Exception {
+    @RequiresFlagsDisabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
+    public void testAllowWhileIdleJobInTempallowlist_Legacy() throws Exception {
         assumeTrue("device idle not enabled", mDeviceIdleEnabled);
 
         toggleDozeState(true);
         Thread.sleep(DEFAULT_WAIT_TIMEOUT);
         sendScheduleJobBroadcast(true);
-        assertFalse("Job started without being tempwhitelisted",
+        assertFalse("Job started without being tempallowlisted",
                 mTestAppInterface.awaitJobStart(5_000));
-        tempWhitelistTestApp(5_000);
-        assertTrue("Job with allow_while_idle flag did not start when the app was tempwhitelisted",
+        tempAllowlistTestApp(5_000);
+        assertTrue("Job with allow_while_idle flag did not start when the app was tempallowlisted",
+                mTestAppInterface.awaitJobStart(5_000));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_IGNORE_IMPORTANT_WHILE_FOREGROUND)
+    public void testAllowWhileIdleJobInTempallowlist_Ignore() throws Exception {
+        assumeTrue("device idle not enabled", mDeviceIdleEnabled);
+
+        toggleDozeState(true);
+        Thread.sleep(DEFAULT_WAIT_TIMEOUT);
+        sendScheduleJobBroadcast(true);
+        assertFalse("Job started without being tempallowlisted",
+                mTestAppInterface.awaitJobStart(5_000));
+        tempAllowlistTestApp(5_000);
+        assertFalse("Job with allow_while_idle flag got start when the app was tempallowlisted",
                 mTestAppInterface.awaitJobStart(5_000));
     }
 
@@ -725,7 +751,7 @@ public class JobThrottlingTest {
 
         setChargingState(false);
         setTestPackageStandbyBucket(Bucket.NEVER);
-        tempWhitelistTestApp(6_000);
+        tempAllowlistTestApp(6_000);
         Thread.sleep(DEFAULT_WAIT_TIMEOUT);
         sendScheduleJobBroadcast(false);
         assertTrue("New job in uid-active app failed to start in NEVER standby",
@@ -760,7 +786,7 @@ public class JobThrottlingTest {
 
         setChargingState(false);
         BatteryUtils.enableBatterySaver(true);
-        tempWhitelistTestApp(6_000);
+        tempAllowlistTestApp(6_000);
         sendScheduleJobBroadcast(false);
         assertTrue("New job in uid-active app failed to start with battery saver ON",
                 mTestAppInterface.awaitJobStart(3_000));
@@ -778,7 +804,7 @@ public class JobThrottlingTest {
                 mTestAppInterface.awaitJobStart(3_000));
 
         // Then make the UID active. Now the job should run.
-        tempWhitelistTestApp(120_000);
+        tempAllowlistTestApp(120_000);
         assertTrue("New job in uid-active app failed to start with battery saver OFF",
                 mTestAppInterface.awaitJobStart(120_000));
     }
@@ -1412,7 +1438,7 @@ public class JobThrottlingTest {
                 }));
     }
 
-    private void tempWhitelistTestApp(long duration) throws Exception {
+    private void tempAllowlistTestApp(long duration) throws Exception {
         mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist -d " + duration
                 + " -u " + UserHandle.myUserId()
                 + " " + TEST_APP_PACKAGE);

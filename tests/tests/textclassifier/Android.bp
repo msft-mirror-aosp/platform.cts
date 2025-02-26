@@ -38,6 +38,7 @@ android_test {
         "truth",
         "androidx.test.ext.junit",
         "androidx.test.uiautomator_uiautomator",
+        "android.permission.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",
@@ -71,6 +72,7 @@ android_test {
         "truth",
         "androidx.test.ext.junit",
         "androidx.test.uiautomator_uiautomator",
+        "android.permission.flags-aconfig-java",
     ],
     srcs: [
         "src/**/*.java",

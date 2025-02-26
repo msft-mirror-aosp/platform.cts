@@ -167,7 +167,7 @@ class AutoRevokeTest {
 
     @After
     fun cleanUp() {
-        goHome()
+        goBack()
     }
 
     @AppModeFull(reason = "Uses separate apps for testing")

@@ -89,7 +89,6 @@ import android.widget.LinearLayout;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -111,7 +110,6 @@ import com.google.common.truth.Correspondence;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -134,9 +132,8 @@ import java.util.function.IntConsumer;
  * <p>TODO(b/193535269): Clean up boilerplate code around mocking InputConnection.</p>
  */
 @LargeTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputConnectionEndToEndTest extends EndToEndImeTestBase {
+public final class InputConnectionEndToEndTest extends EndToEndImeTestBase {
     private static final long TIME_SLICE = TimeUnit.MILLISECONDS.toMillis(125);
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long EXPECTED_NOT_CALLED_TIMEOUT = TimeUnit.SECONDS.toMillis(1);

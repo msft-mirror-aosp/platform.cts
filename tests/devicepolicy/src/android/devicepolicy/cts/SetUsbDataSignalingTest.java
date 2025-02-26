@@ -20,6 +20,8 @@ import static android.app.admin.DevicePolicyIdentifiers.USB_DATA_SIGNALING_POLIC
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
 import static android.devicepolicy.cts.utils.PolicyEngineUtils.FALSE_MORE_RESTRICTIVE;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -56,7 +58,7 @@ public final class SetUsbDataSignalingTest {
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void setUsbDataSignalingEnabled_setFalse_loseConnection() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(false);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(false);
 
         // Expect usb connection to be killed - Factory reset to re-enable
     }
@@ -65,13 +67,13 @@ public final class SetUsbDataSignalingTest {
     @CannotSetPolicyTest(policy = SetUsbDataSignaling.class)
     public void setUsbDataSignalingEnabled_notPermitted_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(false));
+                () -> dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(false));
     }
 
     @RequireUsbDataSignalingCanBeDisabled
     @CanSetPolicyTest(policy = SetUsbDataSignaling.class)
     public void getDevicePolicyState_setUsbDataSignalingEnabled_returnsCorrectResolutionMechanism() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(true);
 
         PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
                 new NoArgsPolicyKey(USB_DATA_SIGNALING_POLICY),
@@ -84,7 +86,7 @@ public final class SetUsbDataSignalingTest {
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void getDevicePolicyState_setUsbDataSignalingEnabled_returnsPolicy() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(true);
 
         PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
                 new NoArgsPolicyKey(USB_DATA_SIGNALING_POLICY),
@@ -96,7 +98,7 @@ public final class SetUsbDataSignalingTest {
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void policyUpdateReceiver_setUsbDataSignaling_receivedPolicySetBroadcast() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(true);
 
         PolicySetResultUtils.assertPolicySetResultReceived(
                 sDeviceState,
@@ -107,7 +109,7 @@ public final class SetUsbDataSignalingTest {
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void usbDataSignaling_serialisation_loadsPolicy() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(true);
 
         // TODO(b/277071699): Add test API to trigger reloading from disk. Currently I've tested
         //  this locally by triggering the loading in DPM#getDevicePolicyState in my local
@@ -123,17 +125,17 @@ public final class SetUsbDataSignalingTest {
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void setUsbDataSignalingEnabled_setTrue_testGetter() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(true);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().isUsbDataSignalingEnabled()).isTrue();
+        assertThat(dpc(sDeviceState).devicePolicyManager().isUsbDataSignalingEnabled()).isTrue();
     }
 
     @Ignore("b/287191149")
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void setUsbDataSignalingEnabled_setFalse_testGetter() {
-        sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(false);
+        dpc(sDeviceState).devicePolicyManager().setUsbDataSignalingEnabled(false);
 
-        assertThat(sDeviceState.dpc().devicePolicyManager().isUsbDataSignalingEnabled()).isFalse();
+        assertThat(dpc(sDeviceState).devicePolicyManager().isUsbDataSignalingEnabled()).isFalse();
     }
 }

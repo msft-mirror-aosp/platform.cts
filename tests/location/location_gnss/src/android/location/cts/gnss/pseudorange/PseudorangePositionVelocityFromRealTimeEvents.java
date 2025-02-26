@@ -53,7 +53,8 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
   private static final int MAX_NUMBER_OF_SATELLITES = 32;
 
   private static final String SUPL_SERVER_NAME = "supl.google.com";
-  private static final int SUPL_SERVER_PORT = 7276;
+  /** Dev non-SSL port */
+  private static final int SUPL_SERVER_PORT = 7280;
 
   private static final double GPS_L5_FREQ_HZ_LOWER_BOUND = 1.164e9;
   private static final double GPS_L5_FREQ_HZ_UPPER_BOUND = 1.189e9;
@@ -99,7 +100,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
       mUsefulSatellitesToReceiverMeasurements[i] = null;
       mUsefulSatellitesToTowNs[i] = null;
     }
-    
+
       GnssClock gnssClock = event.getClock();
     mArrivalTimeSinceGpsEpochNs = gnssClock.getTimeNanos() - gnssClock.getFullBiasNanos();
       for (GnssMeasurement measurement : event.getMeasurements()) {
@@ -170,7 +171,7 @@ public class PseudorangePositionVelocityFromRealTimeEvents {
         mUsefulSatellitesToTowNs[i] = null;
       }
     }
-      
+
       // calculate the number of useful satellites
       int numberOfUsefulSatellites = 0;
       for (int i = 0; i < mUsefulSatellitesToReceiverMeasurements.length; i++) {

@@ -134,7 +134,6 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       else:
         raise e
 
-
   def test_night_extension(self):
     # Handle subdirectory
     self.scene = 'scene_low_light'

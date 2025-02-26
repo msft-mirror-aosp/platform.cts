@@ -39,10 +39,11 @@ android_test {
         "androidx.test.rules",
         "androidx.test.ext.junit",
         "androidx.test.uiautomator_uiautomator",
+        "cts-input-lib",
         "cts-wm-util",
         "permission-test-util-lib",
         "androidx.test.uiautomator_uiautomator",
-        "settingslib_flags_lib",
+        "aconfig_settingslib_flags_java_lib",
     ],
     srcs: [
         "src/**/*.java",

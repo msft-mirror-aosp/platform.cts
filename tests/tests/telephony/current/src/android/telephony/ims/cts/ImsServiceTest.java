@@ -495,13 +495,15 @@ public class ImsServiceTest {
                 .build()));
         // The MmTelFeature is created when the ImsService is bound. If it wasn't created, then the
         // Framework did not call it.
-        sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_CREATE_MMTEL);
+        assertTrue("Timed out waiting for createMmTelFeature to be called",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                        TestImsService.LATCH_CREATE_MMTEL));
         assertNotNull("ImsService created, but ImsService#createMmTelFeature was not called!",
                 sServiceConnector.getCarrierService().getMmTelFeature());
         // Wait for the framework to set the capabilities on the ImsService
-        sServiceConnector.getCarrierService().waitForLatchCountdown(
-                TestImsService.LATCH_MMTEL_CAP_SET);
+        assertTrue("Timed out waiting for changeEnabledCapabilities to be called",
+                sServiceConnector.getCarrierService().waitForLatchCountdown(
+                TestImsService.LATCH_MMTEL_CAP_SET));
         assertTrue("Not expected subId received!",
                 isExpectedSubId(sServiceConnector.getCarrierService().getSubIDs()));
     }

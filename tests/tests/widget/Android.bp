@@ -41,7 +41,7 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "flag-junit",
-        "Harrier",
+        "bedstead",
     ],
 
     libs: ["android.test.runner.stubs.system"],

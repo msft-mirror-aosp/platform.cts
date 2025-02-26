@@ -73,6 +73,7 @@ import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
+import com.android.wm.shell.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -304,7 +305,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assertTrue(ActivityManagerTestBase.isDisplayOn(DEFAULT_DISPLAY));
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testEnterPipOverKeyguard() {
         assumeTrue(supportsPip());
 
@@ -333,7 +336,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 ACTIVITY_TYPE_STANDARD);
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedActivityAndPipActivity() {
         assumeTrue(supportsPip());
 
@@ -361,7 +366,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testShowWhenLockedPipActivity() {
         assumeTrue(supportsPip());
 
@@ -383,7 +390,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         mWmState.assertVisibility(PIP_ACTIVITY, false);
     }
 
+    // TODO (b/379758804): Re-enable for PiP2 once these keyguard CUJs are implemented there.
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PIP2)
     public void testDismissKeyguardPipActivity() {
         assumeTrue(supportsPip());
 
@@ -522,6 +531,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 activity.getClass().getName()
                         + "/" + Long.toString(SystemClock.elapsedRealtimeNanos()));
         final LinearLayout layout = new LinearLayout(activity);
+        layout.setFitsSystemWindows(true);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.addView(editor);
         activity.setContentView(layout);

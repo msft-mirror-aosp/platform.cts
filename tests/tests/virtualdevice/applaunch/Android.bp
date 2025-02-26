@@ -22,8 +22,6 @@ android_test {
     sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
-    target_sdk_version: "35",
-
     libs: [
         "android.test.runner.stubs.system",
         "android.test.base.stubs.system",
@@ -31,6 +29,7 @@ android_test {
 
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "CtsDefaultCameraAccessTestBaseLib",
     ],
 
     srcs: [

@@ -58,8 +58,8 @@ import android.util.Log;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.BatteryUtils;
 import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.TestUtils;

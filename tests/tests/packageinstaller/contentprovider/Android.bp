@@ -76,3 +76,32 @@ android_test {
     test_config: "AndroidTestVisibility.xml",
     sdk_version: "test_current",
 }
+
+android_test {
+    name: "CtsContentProviderMultiUserTest",
+    srcs: [
+        "src/**/multiuser/*.kt",
+    ],
+    manifest: "AndroidManifestMultiUser.xml",
+    static_libs: [
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "androidx.test.runner",
+        "junit",
+        "kotlin-test",
+        "truth",
+        "androidx.test.uiautomator_uiautomator",
+        "bedstead",
+    ],
+    platform_apis: false,
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    data: [
+        ":CtsMultiuserContentProviderInitial",
+        ":CtsMultiuserContentProviderOther",
+    ],
+    test_config: "AndroidTestMultiUser.xml",
+    sdk_version: "test_current",
+}

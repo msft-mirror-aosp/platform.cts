@@ -86,7 +86,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 @Presubmit
 public class ServiceTest extends ActivityTestsBase {
@@ -1714,7 +1714,7 @@ public class ServiceTest extends ActivityTestsBase {
             if (mConnection != null) {
                 return true;
             }
-            Log.i("XXXXXXX", "Binding " + mLabel + ": conn=" + mConnection
+            Log.i(TAG, "Binding " + mLabel + ": conn=" + mConnection
                     + " context=" + context);
             mConnection = new IsolatedConnection();
             boolean result = context.bindIsolatedService(
@@ -1734,7 +1734,7 @@ public class ServiceTest extends ActivityTestsBase {
 
         void unbind(Context context) {
             if (mConnection != null) {
-                Log.i("XXXXXXX", "Unbinding " + mLabel + ": conn=" + mConnection
+                Log.i(TAG, "Unbinding " + mLabel + ": conn=" + mConnection
                         + " context=" + context);
                 context.unbindService(mConnection);
                 mConnection = null;
@@ -1808,6 +1808,16 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    private void doBindAndWaitForService(Context context, IsolatedConnectionInfo[] connections,
+            int group, int strong) {
+        for (IsolatedConnectionInfo ci : connections) {
+            if (ci.match(group, strong)) {
+                ci.bind(context);
+                ci.mConnection.waitForService(DELAY);
+            }
+        }
+    }
+
     private void doWaitForService(IsolatedConnectionInfo[] connections, int group,
             int strong) {
         for (IsolatedConnectionInfo ci : connections) {
@@ -1815,6 +1825,17 @@ public class ServiceTest extends ActivityTestsBase {
                 ci.mConnection.waitForService(DELAY);
             }
         }
+    }
+
+    private boolean doWaitWhile(BooleanSupplier condition, long pause, long timeout) {
+        final long endTime = System.currentTimeMillis() + timeout;
+        while (condition.getAsBoolean()) {
+            if (System.currentTimeMillis() > endTime) {
+                return false;
+            }
+            SystemClock.sleep(pause);
+        }
+        return true;
     }
 
     private void doUpdateServiceGroup(Context context, IsolatedConnectionInfo[] connections,
@@ -1862,18 +1883,18 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     private void logProc(int i, ProcessRecordProto proc) {
-        Log.i("XXXXXXXX", printProc(i, proc));
+        Log.i(TAG, printProc(i, proc));
     }
 
     private void verifyLruOrder(LruOrderItem[] orderItems) {
         List<ProcessRecordProto> procs = getLruProcesses();
-        Log.i("XXXXXXXX", "Processes:");
+        Log.i(TAG, "Processes:");
         int orderI = 0;
         for (int i = procs.size() - 1; i >= 0; i--) {
             ProcessRecordProto proc = procs.get(i);
             logProc(i, proc);
             final LruOrderItem lru = orderItems[orderI];
-            Log.i("XXXXXXXX", "Expecting uid: " + lru.getUid());
+            Log.i(TAG, "Expecting uid: " + lru.getUid());
             if (!lru.isEquivalentTo(proc)) {
                 if ((lru.getFlags() & LruOrderItem.FLAG_SKIP_UNKNOWN) != 0) {
                     while (i > 0) {
@@ -2056,32 +2077,46 @@ public class ServiceTest extends ActivityTestsBase {
         boolean passed = false;
 
         try {
-            // Strong connections should be in order with respect to each other.
-            LruOrderItem[] expectedOrderOfGroup0StrongConnections = new LruOrderItem[]{
+            // Start the group 0 processes and wait for them to come up.
+            doBindAndWaitForService(a, connections, 0, BINDING_ANY);
+
+            verifyLruOrder(new LruOrderItem[]{
                     new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_0_0_S_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_2], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_1], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_0], LruOrderItem.FLAG_SKIP_UNKNOWN),
-            };
-            // Weak connections should be in order with respect to each other.
-            LruOrderItem[] expectedOrderOfGroup0WeakConnections = new LruOrderItem[]{
-                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
                     new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_2], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_1], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_0], LruOrderItem.FLAG_SKIP_UNKNOWN),
-            };
+                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
+            });
 
-            // Start the group 0 processes.
-            doBind(a, connections, 0, BINDING_ANY);
+            // send the app to background
+            assertTrue("Failed to send the app to background", a.moveTaskToBack(true));
+            // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
+            assertTrue("App is still at the top of the LRU list after getting moved to background",
+                    doWaitWhile(() -> new LruOrderItem(Process.myUid(), 0)
+                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
 
-            // Wait for them to come up.
-            doWaitForService(connections, 0, BINDING_ANY);
+            // bring the app back to foreground
+            a.startActivity(a.getIntent());
+            // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
+            assertTrue("App hasn't come to the top of LRU list after getting back to foreground",
+                    doWaitWhile(() -> !new LruOrderItem(Process.myUid(), 0)
+                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
 
-            // Verify the order of strong and weak connections.
-            verifyLruOrder(expectedOrderOfGroup0StrongConnections);
-            verifyLruOrder(expectedOrderOfGroup0WeakConnections);
+            verifyLruOrder(new LruOrderItem[]{
+                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
+            });
 
             // Stop the group 0 processes.
             doUnbind(a, connections, 0, BINDING_ANY);
@@ -2173,7 +2208,7 @@ public class ServiceTest extends ActivityTestsBase {
         } finally {
             if (!passed) {
                 List<ProcessRecordProto> procs = getLruProcesses();
-                Log.i("XXXXXXXX", "Processes:");
+                Log.i(TAG, "Processes:");
                 for (int i = procs.size() - 1; i >= 0; i--) {
                     ProcessRecordProto proc = procs.get(i);
                     logProc(i, proc);

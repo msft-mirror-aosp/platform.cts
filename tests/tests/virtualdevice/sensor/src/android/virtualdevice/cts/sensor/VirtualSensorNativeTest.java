@@ -26,7 +26,6 @@ import static org.junit.Assume.assumeNotNull;
 
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.content.Context;
@@ -34,7 +33,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 import android.virtualdevice.cts.sensor.util.NativeSensorTestActivity;
@@ -97,7 +95,6 @@ public class VirtualSensorNativeTest {
     }
 
     /** Activity running on the virtual device should get the virtual device sensors by default. */
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NATIVE_VDM)
     @Test
     public void activityOnVirtualDisplayGetsVirtualDeviceSensor() {
         VirtualDisplay virtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(

@@ -455,7 +455,10 @@ public final class ForceStopTest {
     public void testApplicationStartInfoWasForceStopped_activity() throws Exception {
         clearHistoricalStartInfo();
 
-        // Check startActivity after a force-stop
+        // Trigger an app start via service binding
+        final int firstStartReason = getStartReasonFromAppPackageService();
+
+        // Force-stop the app
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
 
@@ -475,6 +478,7 @@ public final class ForceStopTest {
         filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
         mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
 
+        // Check startActivity after a force-stop
         mTargetContext.startActivity(intent);
         assertTrue("Activity didn't start", gotActivityStarted.block(DELAY_MILLIS));
 

@@ -16,6 +16,8 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.cloneProfile;
+
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -26,7 +28,7 @@ import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.nene.users.UserReference;
 
 import org.junit.After;
@@ -66,7 +68,7 @@ public class UninstallationWithCloneProfileTest extends UninstallationTestBase {
 
         // Prepare the users and the user contexts
         mPrimaryUser = sDeviceState.initialUser();
-        mCloneUser = sDeviceState.cloneProfile();
+        mCloneUser = cloneProfile(sDeviceState);
 
         installExistingPackageOnUser(getContext().getPackageName(), mCloneUser.id());
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(

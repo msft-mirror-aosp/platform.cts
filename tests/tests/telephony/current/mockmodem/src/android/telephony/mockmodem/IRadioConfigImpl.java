@@ -24,6 +24,8 @@ import android.hardware.radio.config.IRadioConfigIndication;
 import android.hardware.radio.config.IRadioConfigResponse;
 import android.hardware.radio.config.PhoneCapability;
 import android.hardware.radio.config.SimSlotStatus;
+import android.hardware.radio.config.SimType;
+import android.hardware.radio.config.SimTypeInfo;
 import android.hardware.radio.config.SlotPortMapping;
 import android.os.AsyncResult;
 import android.os.Build;
@@ -56,6 +58,7 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     private PhoneCapability mPhoneCapability = new PhoneCapability();
     private SimSlotStatus[] mSimSlotStatus;
     private int[] mEnabledLogicalSlots = {};
+    private SimTypeInfo[] mSimTypeInfos;
 
     MockCentralizedNetworkAgent mMockCentralizedNetworkAgent;
 
@@ -73,6 +76,7 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
         mHandler = new IRadioConfigHandler();
         mSubId = instanceId;
         mMockCentralizedNetworkAgent = centralizedNetworkAgent;
+        mSimTypeInfos = new SimTypeInfo[mSlotNum];
 
         // Register events
         mMockModemConfigInterface.registerForNumOfLiveModemChanged(
@@ -288,6 +292,36 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
             mRadioConfigResponse.setSimSlotsMappingResponse(rsp);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to invoke setSimSlotsMappingResponse from AIDL. Exception" + ex);
+        }
+    }
+
+    @Override
+    public void getSimTypeInfo(int serial) {
+        Log.d(mTag, "getSimTypeInfo");
+        SimTypeInfo[] simTypeInfos;
+
+        synchronized (mCacheUpdateMutex) {
+            simTypeInfos = mSimTypeInfos;
+        }
+
+        RadioResponseInfo rsp = mService.makeSolRsp(serial);
+        try {
+            mRadioConfigResponse.getSimTypeInfoResponse(rsp, simTypeInfos);
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to invoke getSimTypeInfoResponse from AIDL. "
+                    + "Exception" + ex);
+        }
+    }
+
+    @Override
+    public void setSimType(int serial, @SimType int[] simTypes) {
+        Log.d(mTag, "setSimType");
+        RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
+        try {
+            mRadioConfigResponse.setSimTypeResponse(rsp);
+        } catch (RemoteException ex) {
+            Log.e(mTag, "Failed to invoke setSimTypeResponse from AIDL. "
+                    + "Exception" + ex);
         }
     }
 

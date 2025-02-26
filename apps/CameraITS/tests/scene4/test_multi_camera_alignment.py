@@ -110,7 +110,9 @@ def select_ids_to_test(ids, props, chart_distance):
         opencv_processing_utils.FOV_THRESH_UW):
       test_ids.append(i)  # RFoV camera
     elif fov < opencv_processing_utils.FOV_THRESH_TELE40:
-      logging.debug('Skipping camera. Not appropriate multi-camera testing.')
+      logging.debug(
+          'Skipping camera %s. FoV < %s is too small for testing.',
+          i, opencv_processing_utils.FOV_THRESH_TELE40)
       continue  # super-TELE camera
     elif (fov <= opencv_processing_utils.FOV_THRESH_TELE and
           math.isclose(chart_distance,
@@ -123,7 +125,7 @@ def select_ids_to_test(ids, props, chart_distance):
                        rel_tol=_CHART_DISTANCE_RTOL)):
       test_ids.append(i)  # WFoV camera in WFoV rig
     else:
-      logging.debug('Skipping camera. Not appropriate for test rig.')
+      logging.debug('Skipping camera %s. Not appropriate for test rig.', i)
 
   if len(test_ids) < 2:
     raise AssertionError('Error: started with 2+ cameras, reduced to <2 based '
@@ -563,7 +565,8 @@ class MultiCameraAlignmentTest(its_base_test.ItsBaseTest):
       # Check center locations
       err_mm = np.linalg.norm(np.array([x_w[i_ref], y_w[i_ref]]) -
                               np.array([x_w[i_2nd], y_w[i_2nd]])) * _M_TO_MM
-      logging.debug('Center location err (mm): %.2f', err_mm)
+      logging.debug('Center location err (mm): %.2f ATOL: %.2f',
+                    err_mm, _ALIGN_ATOL_MM)
       if err_mm > _ALIGN_ATOL_MM:
         raise AssertionError(
             f'Centers {i_ref} <-> {i_2nd} too different! '

@@ -66,6 +66,7 @@ import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.Stat;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 import com.android.ex.camera2.exceptions.TimeoutRuntimeException;
+import com.android.internal.camera.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -1007,7 +1008,7 @@ public class PerformanceTest {
             // equal pieces.
             for (int i = 0; i <= NUM_ZOOM_STEPS; i++) {
                 double ratio = startRatio + (endRatio - startRatio) * i / NUM_ZOOM_STEPS;
-                zoomRatios.add(roundAwayFrom1(ratio));
+                zoomRatios.add(adjustZoomRatio(ratio));
             }
         } else {
             // If checking smooth zoom:
@@ -1018,13 +1019,13 @@ public class PerformanceTest {
             // Add zoom-out ratios
             for (double logRatio = 0.0f; logRatio >= Math.log(startRatio);
                     logRatio -= stepLog) {
-                zoomRatios.add(roundAwayFrom1(Math.exp(logRatio)));
+                zoomRatios.add(adjustZoomRatio(Math.exp(logRatio)));
             }
             Collections.reverse(zoomRatios);
             // Add zoom-in ratios
             for (double logRatio = stepLog; logRatio <= Math.log(endRatio);
                     logRatio += stepLog) {
-                zoomRatios.add(roundAwayFrom1(Math.exp(logRatio)));
+                zoomRatios.add(adjustZoomRatio(Math.exp(logRatio)));
             }
         }
 
@@ -1035,14 +1036,16 @@ public class PerformanceTest {
     }
 
     /**
-     * Round the given zoom ratio so that it is not equal to 1.0
+     * If needed, adjust the given zoom ratio so that it is not equal to 1.0
      *
-     * TODO: b/350076823: Stay away from 1.0x so that camera framework doesn't
-     * move the effective zoom rate to SCALER_CROP_REGION.
      */
-    private double roundAwayFrom1(double zoomRatio) {
-        final double kZoomRatioAt1x = 1.01f;
-        return zoomRatio == 1.0 ? kZoomRatioAt1x : zoomRatio;
+    private double adjustZoomRatio(double zoomRatio) {
+        if (Flags.zoomMethod()) {
+            return zoomRatio;
+        } else {
+            final double kZoomRatioAt1x = 1.01f;
+            return zoomRatio == 1.0 ? kZoomRatioAt1x : zoomRatio;
+        }
     }
 
     /**
@@ -1102,6 +1105,10 @@ public class PerformanceTest {
                         CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
                 previewBuilder.set(CaptureRequest.CONTROL_SETTINGS_OVERRIDE,
                         CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM);
+                if (Flags.zoomMethod()) {
+                    previewBuilder.set(CaptureRequest.CONTROL_ZOOM_METHOD,
+                            CameraMetadata.CONTROL_ZOOM_METHOD_ZOOM_RATIO);
+                }
                 float startZoomRatio = (float) ratiosToTest[0];
                 previewBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, startZoomRatio);
                 SimpleCaptureCallback resultListener = new SimpleCaptureCallback();
@@ -1176,7 +1183,7 @@ public class PerformanceTest {
                 int maxVariation = checkSmoothZoomForV ? 0 : MAX_IMPROVEMENT_VARIATION;
                 assertTrue(
                         String.format("Zoom latency improvement variation %d must not exceed %d",
-                                variation, MAX_IMPROVEMENT_VARIATION), variation <= maxVariation);
+                                variation, maxVariation), variation <= maxVariation);
 
                 mReportLog.addValues("Camera zoom ratios", ratiosToTest, ResultType.NEUTRAL,
                         ResultUnit.NONE);

@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyManager.MTE_DISABLED;
 import static android.app.admin.DevicePolicyManager.MTE_ENABLED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -62,14 +63,14 @@ public final class MtePolicyTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMtePolicy")
     public void setMtePolicy_MTE_ENABLED_applies() {
         skipIfUnsupported();
-        int originalValue = sDeviceState.dpc().devicePolicyManager().getMtePolicy();
+        int originalValue = dpc(sDeviceState).devicePolicyManager().getMtePolicy();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(MTE_ENABLED);
-            assertThat(sDeviceState.dpc().devicePolicyManager().getMtePolicy())
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(MTE_ENABLED);
+            assertThat(dpc(sDeviceState).devicePolicyManager().getMtePolicy())
                     .isEqualTo(MTE_ENABLED);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(originalValue);
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(originalValue);
         }
     }
 
@@ -78,20 +79,20 @@ public final class MtePolicyTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMtePolicy")
     public void setMtePolicy_MTE_ENABLED_logsEvent() {
         skipIfUnsupported();
-        int originalValue = sDeviceState.dpc().devicePolicyManager().getMtePolicy();
+        int originalValue = dpc(sDeviceState).devicePolicyManager().getMtePolicy();
 
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(MTE_ENABLED);
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(MTE_ENABLED);
             assertThat(metrics.query()
                                .whereType()
                                .isEqualTo(EventId.SET_MTE_POLICY_VALUE)
                                .whereInteger()
                                .isEqualTo(MTE_ENABLED)
                                .whereAdminPackageName()
-                               .isEqualTo(sDeviceState.dpc().componentName().getPackageName()))
+                               .isEqualTo(dpc(sDeviceState).componentName().getPackageName()))
                     .wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(originalValue);
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(originalValue);
         }
     }
 
@@ -100,14 +101,14 @@ public final class MtePolicyTest {
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setMtePolicy", "android.app.admin.DevicePolicyManager#getMtePolicy"})
     public void setMtePolicy_MTE_DISABLED_applies() {
         skipIfUnsupported();
-        int originalValue = sDeviceState.dpc().devicePolicyManager().getMtePolicy();
+        int originalValue = dpc(sDeviceState).devicePolicyManager().getMtePolicy();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(MTE_DISABLED);
-            assertThat(sDeviceState.dpc().devicePolicyManager().getMtePolicy())
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(MTE_DISABLED);
+            assertThat(dpc(sDeviceState).devicePolicyManager().getMtePolicy())
                     .isEqualTo(MTE_DISABLED);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(originalValue);
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(originalValue);
         }
     }
 
@@ -116,20 +117,20 @@ public final class MtePolicyTest {
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMtePolicy")
     public void setMtePolicy_MTE_DISABLED_logsEvent() {
         skipIfUnsupported();
-        int originalValue = sDeviceState.dpc().devicePolicyManager().getMtePolicy();
+        int originalValue = dpc(sDeviceState).devicePolicyManager().getMtePolicy();
 
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(MTE_DISABLED);
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(MTE_DISABLED);
             assertThat(metrics.query()
                                .whereType()
                                .isEqualTo(EventId.SET_MTE_POLICY_VALUE)
                                .whereInteger()
                                .isEqualTo(MTE_DISABLED)
                                .whereAdminPackageName()
-                               .isEqualTo(sDeviceState.dpc().componentName().getPackageName()))
+                               .isEqualTo(dpc(sDeviceState).componentName().getPackageName()))
                     .wasLogged();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setMtePolicy(originalValue);
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(originalValue);
         }
     }
 
@@ -140,7 +141,7 @@ public final class MtePolicyTest {
         skipIfUnsupported();
         assertThrows(
                 SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setMtePolicy(MTE_ENABLED));
+                () -> dpc(sDeviceState).devicePolicyManager().setMtePolicy(MTE_ENABLED));
     }
 
     @CannotSetPolicyTest(policy = MteForceOff.class)
@@ -150,6 +151,6 @@ public final class MtePolicyTest {
         skipIfUnsupported();
         assertThrows(
                 SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setMtePolicy(MTE_DISABLED));
+                () -> dpc(sDeviceState).devicePolicyManager().setMtePolicy(MTE_DISABLED));
     }
 }

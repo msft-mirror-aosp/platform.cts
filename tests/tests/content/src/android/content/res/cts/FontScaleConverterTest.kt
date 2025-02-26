@@ -19,7 +19,6 @@ package android.content.res.cts
 import android.content.res.Flags
 import android.content.res.FontScaleConverter
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest

@@ -134,32 +134,6 @@ public class ResourcesProviderTest {
     }
 
     @Test
-    public void loaderOverlay_withNullOverlayableName_shouldFail() {
-        final OverlayInfo overlayInfo =
-                mockOverlayInfo(
-                        "overlayName",
-                        null /* targetOverlayableName */,
-                        "baseCodePath",
-                        true /* isFabricated */);
-
-        assertThrows(
-                IllegalArgumentException.class, () -> ResourcesProvider.loadOverlay(overlayInfo));
-    }
-
-    @Test
-    public void loaderOverlay_withEmptyOverlayableName_shouldFail() {
-        final OverlayInfo overlayInfo =
-                mockOverlayInfo(
-                        "overlayName",
-                        "" /* targetOverlayableName */,
-                        "baseCodePath",
-                        true /* isFabricated */);
-
-        assertThrows(
-                IllegalArgumentException.class, () -> ResourcesProvider.loadOverlay(overlayInfo));
-    }
-
-    @Test
     public void loaderOverlay_withNullOverlayName_shouldFail() {
         final OverlayInfo overlayInfo =
                 mockOverlayInfo(

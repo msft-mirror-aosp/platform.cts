@@ -18,12 +18,17 @@ package android.media.router.cts;
 
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_CLASS;
 import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_CLASS_WITH_MODIFY_AUDIO_ROUTING;
+import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_APK;
+import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS;
+import static android.media.cts.MediaRouterTestConstants.DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_1_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_2_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_3_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_3_PACKAGE;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_APK;
+import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_PROVIDER_WITH_PACKAGE_MANAGER_SPAM_APK;
@@ -95,8 +100,10 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_2_APK);
         installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_3_APK);
         installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_APK);
+        installTestApp(testInfo, MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_APK);
         installTestApp(testInfo, MEDIA_ROUTER_TEST_APK);
         installTestApp(testInfo, MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_APK);
+        installTestApp(testInfo, DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_APK);
     }
 
     @AfterClassWithInfo
@@ -106,8 +113,12 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_2_PACKAGE)).isNull();
         expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_3_PACKAGE)).isNull();
         expect.that(device.uninstallPackage(MEDIA_ROUTER_PROVIDER_SELF_SCAN_ONLY_PACKAGE)).isNull();
+        expect.that(device.uninstallPackage(
+                MEDIA_ROUTER_PROVIDER_REQUIRES_PERMISSIONS_PACKAGE)).isNull();
         expect.that(device.uninstallPackage(MEDIA_ROUTER_TEST_PACKAGE)).isNull();
         expect.that(device.uninstallPackage(MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE))
+                .isNull();
+        expect.that(device.uninstallPackage(DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE))
                 .isNull();
     }
 
@@ -224,6 +235,81 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
                 "visibilityAndAllowedPackages_propagateAcrossApps");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeVisibleWhenOnePermissionIsHeld() throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeVisibleWhenOnePermissionIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeNotVisibleWhenOnePermissionNotHeld()
+            throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeNotVisibleWhenOnePermissionNotHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld()
+            throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeNotVisibleWhenNoEntryInAnySetIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeVisibleWhenFirstSetInListIsHeld() throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeVisibleWhenFirstSetInListIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeVisibleWhenSecondSetInListIsHeld() throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeVisibleWhenSecondSetInListIsHeld");
+    }
+
+    @ApiTest(apis = {"android.media.MediaRoute2Info.Builder#setRequiredPermissions(Set)"})
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_ROUTE_VISIBILITY_CONTROL_API)
+    @Test
+    public void testRequiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld()
+            throws Exception {
+        runDeviceTests(
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_PACKAGE,
+                DEVICE_SIDE_TEST_REQUIRED_PERMISSIONS_CLASS,
+                "requiredPermissions_routeNotVisibleWhenSecondOfThirdSetIsNotHeld");
     }
 
     @ApiTest(apis = {"android.media.RouteDiscoveryPreference, android.media.MediaRouter2"})

@@ -22,14 +22,14 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.components.TestAppsComponent
-import com.android.bedstead.multiuser.UserTypeResolver
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.remotedpc.RemoteDeviceAdmin
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapp.TestAppQueryBuilder
+import com.android.bedstead.testapps.TestAppsComponent
 
 /**
  * Manages device admins for device state tests.
@@ -118,16 +118,16 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
     /**
      * See [DeviceState.deviceAdmin].
      */
-    fun deviceAdmin(): RemoteDeviceAdmin? {
+    fun deviceAdmin(): RemoteDeviceAdmin {
         return deviceAdmin(EnsureHasDeviceAdmin.DEFAULT_KEY)
     }
 
     /**
      * See [DeviceState.deviceAdmin(key)].
      */
-    fun deviceAdmin(key: String?): RemoteDeviceAdmin? {
+    fun deviceAdmin(key: String?): RemoteDeviceAdmin {
         if (mAddedDeviceAdmins.containsKey(key)) {
-            return RemoteDeviceAdmin.forDevicePolicyController(mAddedDeviceAdmins.get(key))
+            return RemoteDeviceAdmin.forDevicePolicyController(mAddedDeviceAdmins[key])
         }
         throw IllegalStateException(
             "No Harrier-managed device admin exists for the given key. This method should only " +

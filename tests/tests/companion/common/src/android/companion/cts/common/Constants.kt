@@ -53,8 +53,10 @@ val MAC_ADDRESS_C = MacAddress.fromString("00:00:00:00:00:CC")
 val UUID_A: ParcelUuid = ParcelUuid.fromString("bc4990b9-698c-473d-8498-2a5c4119f73d")
 val UUID_B: ParcelUuid = ParcelUuid.fromString("ba6d2f1e-9adc-11ee-b9d1-0242ac120002")
 
-const val ASSOCIATION_TAG = "00:00:00:00:00:AA"
-var ASSOCIATION_TAG_INVALID = "A".repeat(1025)
+const val CUSTOM_ID_A = "00:00:00:00:00:AA"
+const val CUSTOM_ID_B = "00:00:00:00:00:BB"
+
+var CUSTOM_ID_INVALID = "A".repeat(1025)
 
 const val DEVICE_DISPLAY_NAME_A = "Device A"
 const val DEVICE_DISPLAY_NAME_B = "Device B"

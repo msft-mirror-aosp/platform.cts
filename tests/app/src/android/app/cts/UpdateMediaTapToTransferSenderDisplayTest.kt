@@ -28,7 +28,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.SystemUtil.eventually
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity

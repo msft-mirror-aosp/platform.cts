@@ -302,8 +302,25 @@ public class VirtualDisplayTest {
                 .isEqualTo(Display.FLAG_OWN_FOCUS);
     }
 
+    /** Untrusted display goes in the default display group, so it can't be always unlocked. */
     @Test
-    public void createVirtualDisplay_alwaysUnlocked_shouldSpecifyAlwaysUnlockedFlag() {
+    public void createVirtualDisplay_alwaysUnlocked_untrusted_shouldNotSpecifyAlwaysUnlockedFlag() {
+        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
+                        .build());
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(virtualDevice);
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        int displayFlags = display.getFlags();
+        assertThat(displayFlags & Display.FLAG_ALWAYS_UNLOCKED).isEqualTo(0);
+    }
+
+    /** A trusted display goes in the virtual device display group, so it can be always unlocked. */
+    @Test
+    public void createVirtualDisplay_alwaysUnlocked_trusted_shouldSpecifyAlwaysUnlockedFlag() {
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
                 new VirtualDeviceParams.Builder()
                         .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
@@ -420,6 +437,28 @@ public class VirtualDisplayTest {
         getInstrumentation().runOnMainSync(() -> windowManager.addView(statusBar, lp));
 
         mRule.getWmState().assertWindowDisplayed(STATUS_BAR_NAME);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STATUS_BAR_AND_INSETS)
+    public void addStatusBarAndInsetsOnDisplayOwnedByVirtualDevice_nonTrustedDisplay_throws() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
+                VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());
+        Context context = getInstrumentation().getContext().createDisplayContext(
+                virtualDisplay.getDisplay());
+
+        WindowManager.LayoutParams lp =
+                new WindowManager.LayoutParams(WindowManager.LayoutParams.TYPE_STATUS_BAR);
+        lp.setTitle(STATUS_BAR_NAME);
+        lp.packageName = context.getPackageName();
+        lp.setInsetsParams(List.of(
+                new WindowManager.InsetsParams(WindowInsets.Type.statusBars())
+                        .setInsetsSize(Insets.of(0, STATUS_BAR_HEIGHT, 0, 0))));
+
+        WindowManager windowManager = context.getSystemService(WindowManager.class);
+        View statusBar = new View(context);
+        assertThrows(RuntimeException.class, () ->
+                getInstrumentation().runOnMainSync(() -> windowManager.addView(statusBar, lp)));
     }
 
     private void verifyDisplay(VirtualDisplay virtualDisplay) {

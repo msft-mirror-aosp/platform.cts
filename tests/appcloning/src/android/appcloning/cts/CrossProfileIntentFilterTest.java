@@ -29,7 +29,7 @@ import android.os.UserManager;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;

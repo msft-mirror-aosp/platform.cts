@@ -27,7 +27,9 @@ import static android.content.pm.PackageManager.FEATURE_SCREEN_LANDSCAPE;
 import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
+import static android.view.Display.INVALID_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_90;
@@ -140,11 +142,23 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 false /* isFullScreen */, launchDisplayId);
     }
 
+    /**
+     * Starts an {@link Activity} with {@code activityId}, of which the windowing mode and launched
+     * display follows system default.
+     */
     public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId) {
-        return launcherForActivityNewTask(activityClass, activityId, false /* isFullScreen */,
-                null /* launchDisplayId */)
-                .launch(mInstrumentation);
+        return startActivityNewTask(activityClass, activityId, null /* displayId */);
+    }
+
+    /**
+     * Starts an {@link Activity} on given {@code displayId}, of which the windowing mode follows
+     * system default.
+     */
+    public <T extends Activity> T startActivityNewTask(@NonNull Class<T> activityClass,
+            @Nullable String activityId, @Nullable Integer displayId) {
+        return startActivityNewTaskInternal(activityClass, activityId, false /* isFullscreen */,
+                displayId);
     }
 
     public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass) {
@@ -153,9 +167,17 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
 
     public <T extends  Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass,
             @Nullable String activityId) {
-        return launcherForActivityNewTask(activityClass, activityId, true/* isFullScreen */,
-                null /* launchDisplayId */)
-                .launch(mInstrumentation);
+        return startFullScreenActivityNewTask(activityClass, activityId,
+                null /* displayId */);
+    }
+
+    /**
+     * Starts a fullscreen {@link Activity} on given {@code displayId}.
+     */
+    public <T extends Activity> T startFullScreenActivityNewTask(@NonNull Class<T> activityClass,
+            @Nullable String activityId, @Nullable Integer displayId) {
+        return startActivityNewTaskInternal(activityClass, activityId, true /* isFullscreen */,
+                displayId);
     }
 
     public static void waitForOrFail(String message, BooleanSupplier condition) {
@@ -165,15 +187,39 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 .setOnFailure(unusedResult -> fail("FAILED because unsatisfied: " + message)));
     }
 
+    /**
+     * Starts an activity to front and returns the activity instance.
+     *
+     * @param activityClass the activity class to launch
+     * @param activityId the Activity ID to identify the activity
+     * @param isFullScreen {@code true} to launch in fullscreen, or {@code false} to follow the
+     *                      system default windowing mode
+     * @param displayId the display to launch the activity, or {@code null} to follow system default
+     * @return the launch activity instance
+     * @param <T> A activity type
+     */
+    private  <T extends Activity> T startActivityNewTaskInternal(@NonNull Class<T> activityClass,
+            @Nullable String activityId, boolean isFullScreen, @Nullable Integer displayId) {
+        final T activity = launcherForActivityNewTask(activityClass, activityId, isFullScreen,
+                displayId)
+                .launch(mInstrumentation);
+        if (displayId != null) {
+            waitAndAssertActivityStateOnDisplay(activity.getComponentName(), STATE_RESUMED,
+                    displayId, "Activity must be launched on display#" + displayId);
+        }
+        return activity;
+    }
+
     private <T extends Activity> TestActivityLauncher<T> launcherForActivityNewTask(
             @NonNull Class<T> activityClass, @Nullable String activityId, boolean isFullScreen,
             @Nullable Integer launchDisplayId) {
         final int windowingMode = isFullScreen ? WINDOWING_MODE_FULLSCREEN :
                 WINDOWING_MODE_UNDEFINED;
-        final TestActivityLauncher launcher = new TestActivityLauncher<>(mContext, activityClass)
-                .addIntentFlag(FLAG_ACTIVITY_NEW_TASK)
-                .setActivityId(activityId)
-                .setWindowingMode(windowingMode);
+        final TestActivityLauncher<T> launcher =
+                new TestActivityLauncher<>(mContext, activityClass)
+                        .addIntentFlag(FLAG_ACTIVITY_NEW_TASK)
+                        .setActivityId(activityId)
+                        .setWindowingMode(windowingMode);
         if (launchDisplayId != null) {
             launcher.setLaunchDisplayId(launchDisplayId);
         }
@@ -476,10 +522,20 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
 
     @Nullable
     public static TestActivityWithId getResumedActivityById(@NonNull String activityId) {
+        return getResumedActivityById(activityId, INVALID_DISPLAY);
+    }
+
+    /**
+     * Gets the activity with specified {@code activityId} on the display with {@code displayId}.
+     */
+    @Nullable
+    public static TestActivityWithId getResumedActivityById(@NonNull String activityId,
+            int displayId) {
         synchronized (sResumedActivities) {
             for (Activity activity : sResumedActivities) {
                 if (activity instanceof TestActivityWithId
-                        && activityId.equals(((TestActivityWithId) activity).getId())) {
+                        && activityId.equals(((TestActivityWithId) activity).getId())
+                        && (displayId == INVALID_DISPLAY || displayId == activity.getDisplayId())) {
                     return (TestActivityWithId) activity;
                 }
             }

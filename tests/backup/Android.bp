@@ -38,6 +38,7 @@ android_test {
         "permission-test-util-lib",
         "testng",
         "device-time-shell-utils",
+        "backup_flags_lib",
     ],
     host_required: ["CtsBackupHostTestCases"],
     srcs: ["src/**/*.java"],
@@ -55,6 +56,10 @@ android_test {
         ":CtsBackupRestoreEventLoggerApp",
         ":CtsFullBackupApp",
         ":CtsKeyValueBackupApp",
+        ":CtsRestrictedModeOptedInApp",
+        ":CtsRestrictedModeOptedOutApp",
+        ":CtsRestrictedModeNoActionApp1",
+        ":CtsRestrictedModeNoActionApp2",
     ],
     per_testcase_directory: true,
 }

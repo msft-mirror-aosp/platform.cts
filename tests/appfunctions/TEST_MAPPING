@@ -1,7 +1,7 @@
 {
-  "postsubmit": [
+  "imports": [
     {
-      "name": "CtsAppFunctionTestCases"
+      "path": "frameworks/base/services/appfunctions/TEST_MAPPING"
     }
   ]
 }

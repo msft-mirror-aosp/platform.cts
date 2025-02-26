@@ -18,6 +18,9 @@ package android.devicepolicy.cts;
 
 import static android.security.KeyChain.ACTION_KEYCHAIN_CHANGED;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpcOnly;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -126,13 +129,13 @@ public final class KeyManagementTest {
     public void installKeyPair_validRsaKeyPair_success() {
         try {
             // Install keypair
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .installKeyPair(sDeviceState.dpc().componentName(), PRIVATE_KEY, CERTIFICATE,
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .installKeyPair(dpc(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATE,
                             RSA_ALIAS)).isTrue();
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -140,8 +143,8 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeyManagement.class, singleTestOnly = true)
     public void installKeyPair_nullPrivateKey_throwException() {
         assertThrows(NullPointerException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                        sDeviceState.dpc().componentName(),
+                () -> dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                        dpc(sDeviceState).componentName(),
                         /* privKey = */ null, CERTIFICATE, RSA_ALIAS));
     }
 
@@ -149,8 +152,8 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeyManagement.class, singleTestOnly = true)
     public void installKeyPair_nullCertificate_throwException() {
         assertThrows(NullPointerException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                        sDeviceState.dpc().componentName(),
+                () -> dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                        dpc(sDeviceState).componentName(),
                         PRIVATE_KEY, /* cert = */ null, RSA_ALIAS));
     }
 
@@ -158,7 +161,7 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeyManagement.class, singleTestOnly = true)
     public void installKeyPair_nullAdminComponent_throwException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().installKeyPair(
+                () -> dpc(sDeviceState).devicePolicyManager().installKeyPair(
                         /* admin = */ null, PRIVATE_KEY, CERTIFICATE, RSA_ALIAS));
     }
 
@@ -168,17 +171,17 @@ public final class KeyManagementTest {
     public void installKeyPair_withAutomatedAccess_aliasIsGranted() throws Exception {
         try {
             // Install keypair with automated access
-            sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpc().componentName(), PRIVATE_KEY,
+            dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpc(sDeviceState).componentName(), PRIVATE_KEY,
                     CERTIFICATES, RSA_ALIAS, /* requestAccess = */ true);
 
             // TODO(b/204544478): Remove the null context
-            assertThat(sDeviceState.dpc().keyChain().getPrivateKey(/* context= */ null, RSA_ALIAS))
+            assertThat(dpc(sDeviceState).keyChain().getPrivateKey(/* context= */ null, RSA_ALIAS))
                     .isNotNull();
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager().removeKeyPair(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().removeKeyPair(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -187,17 +190,17 @@ public final class KeyManagementTest {
     public void installKeyPair_withoutAutomatedAccess_aliasIsNotGranted() throws Exception {
         try {
             // Install keypair with automated access
-            sDeviceState.dpc().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpc().componentName(), PRIVATE_KEY,
+            dpc(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpc(sDeviceState).componentName(), PRIVATE_KEY,
                     CERTIFICATES, RSA_ALIAS, /* requestAccess = */ false);
 
             // TODO(b/204544478): Remove the null context
-            assertThat(sDeviceState.dpc().keyChain().getPrivateKey(/* context= */ null, RSA_ALIAS))
+            assertThat(dpc(sDeviceState).keyChain().getPrivateKey(/* context= */ null, RSA_ALIAS))
                     .isNull();
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager().removeKeyPair(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().removeKeyPair(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -206,14 +209,14 @@ public final class KeyManagementTest {
     public void removeKeyPair_validRsaKeyPair_success() {
         try {
             // Install keypair
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .installKeyPair(
-                            sDeviceState.dpc().componentName(),
+                            dpc(sDeviceState).componentName(),
                             PRIVATE_KEY, CERTIFICATE, RSA_ALIAS);
         } finally {
             // Remove keypair
-            assertThat(sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS)).isTrue();
+            assertThat(dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS)).isTrue();
         }
     }
 
@@ -222,14 +225,14 @@ public final class KeyManagementTest {
     @CannotSetPolicyTest(policy = KeyManagement.class)
     public void hasKeyPair_notAllowed_throwsException() {
         assertThrows(SecurityException.class, () ->
-                sDeviceState.dpc().devicePolicyManager().hasKeyPair(RSA_ALIAS));
+                dpc(sDeviceState).devicePolicyManager().hasKeyPair(RSA_ALIAS));
     }
 
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = KeyManagement.class)
     public void hasKeyPair_nonExistentAlias_false() {
         assertThat(
-                sDeviceState.dpc().devicePolicyManager().hasKeyPair(NON_EXISTENT_ALIAS)).isFalse();
+                dpc(sDeviceState).devicePolicyManager().hasKeyPair(NON_EXISTENT_ALIAS)).isFalse();
     }
 
     @Postsubmit(reason = "new test")
@@ -237,15 +240,15 @@ public final class KeyManagementTest {
     public void hasKeyPair_installedAlias_true() {
         try {
             // Install keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .installKeyPair(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .installKeyPair(dpc(sDeviceState).componentName(),
                             PRIVATE_KEY, CERTIFICATE, RSA_ALIAS);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().hasKeyPair(RSA_ALIAS)).isTrue();
+            assertThat(dpc(sDeviceState).devicePolicyManager().hasKeyPair(RSA_ALIAS)).isTrue();
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -254,17 +257,17 @@ public final class KeyManagementTest {
     public void hasKeyPair_removedAlias_false() {
         try {
             // Install keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .installKeyPair(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .installKeyPair(dpc(sDeviceState).componentName(),
                             PRIVATE_KEY, CERTIFICATE, RSA_ALIAS);
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().hasKeyPair(RSA_ALIAS)).isFalse();
+            assertThat(dpc(sDeviceState).devicePolicyManager().hasKeyPair(RSA_ALIAS)).isFalse();
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -276,8 +279,8 @@ public final class KeyManagementTest {
 
         try {
             // Install keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .installKeyPair(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .installKeyPair(dpc(sDeviceState).componentName(),
                             PRIVATE_KEY, CERTIFICATE, RSA_ALIAS);
             KeyChainAliasCallback callback = new KeyChainAliasCallback();
 
@@ -287,8 +290,8 @@ public final class KeyManagementTest {
                     .isEqualTo(RSA_ALIAS);
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -331,8 +334,8 @@ public final class KeyManagementTest {
 
         try {
             // Install keypair which is not user selectable
-            sDeviceState.dpc().devicePolicyManager()
-                    .installKeyPair(sDeviceState.dpc().componentName(), PRIVATE_KEY,
+            dpc(sDeviceState).devicePolicyManager()
+                    .installKeyPair(dpc(sDeviceState).componentName(), PRIVATE_KEY,
                     CERTIFICATES, RSA_ALIAS, /* flags = */ 0);
             KeyChainAliasCallback callback = new KeyChainAliasCallback();
 
@@ -342,8 +345,8 @@ public final class KeyManagementTest {
                     .isEqualTo(RSA_ALIAS);
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -359,8 +362,8 @@ public final class KeyManagementTest {
             try (BlockingBroadcastReceiver broadcastReceiver =
                          sDeviceState.registerBroadcastReceiver(ACTION_KEYCHAIN_CHANGED)
                                  .register()) {
-                sDeviceState.dpc().devicePolicyManager()
-                        .installKeyPair(sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager()
+                        .installKeyPair(dpc(sDeviceState).componentName(),
                                 PRIVATE_KEY, CERTIFICATE, RSA_ALIAS);
             }
 
@@ -379,8 +382,8 @@ public final class KeyManagementTest {
 
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -389,25 +392,25 @@ public final class KeyManagementTest {
     public void install_wasPreviouslyGrantedOnPreviousInstall_grantDoesNotPersist()
             throws Exception {
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .installKeyPair(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .installKeyPair(dpc(sDeviceState).componentName(),
                             PRIVATE_KEY, CERTIFICATES, RSA_ALIAS, true);
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
 
-            sDeviceState.dpc().devicePolicyManager()
+            dpc(sDeviceState).devicePolicyManager()
                     .installKeyPair(
-                            sDeviceState.dpc().componentName(),
+                            dpc(sDeviceState).componentName(),
                             PRIVATE_KEY, CERTIFICATES, RSA_ALIAS,
                             false);
 
-            assertThat(sDeviceState.dpc().keyChain().getPrivateKey(
+            assertThat(dpc(sDeviceState).keyChain().getPrivateKey(
                     TestApis.context().instrumentedContext(), RSA_ALIAS))
                     .isNull();
         } finally {
             // Remove keypair
-            sDeviceState.dpc().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpc().componentName(), RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpc(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -415,7 +418,7 @@ public final class KeyManagementTest {
     @CannotSetPolicyTest(policy = KeySelection.class)
     public void getKeyPairGrants_notAllowed_throwsException() {
         Assert.assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .getKeyPairGrants(RSA_ALIAS));
     }
 
@@ -423,7 +426,7 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class, singleTestOnly = true)
     public void getKeyPairGrants_nonExistent_throwsIllegalArgumentException() {
         Assert.assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .getKeyPairGrants(NON_EXISTENT_ALIAS));
     }
 
@@ -431,16 +434,16 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class)
     public void getKeyPairGrants_doesNotIncludeNotGranted() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().getKeyPairGrants(RSA_ALIAS)).isEmpty();
+                    dpc(sDeviceState).devicePolicyManager().getKeyPairGrants(RSA_ALIAS)).isEmpty();
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -448,22 +451,22 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class)
     public void getKeyPairGrants_includesGrantedAtInstall() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ true);
             ProcessReference dpcProcess =
-                    Poll.forValue("DPC Uid", () -> sDeviceState.dpcOnly().process())
+                    Poll.forValue("DPC Uid", () -> dpcOnly(sDeviceState).process())
                             .toNotBeNull()
                             .errorOnFail()
                             .await();
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getKeyPairGrants(RSA_ALIAS))
+            assertThat(dpc(sDeviceState).devicePolicyManager().getKeyPairGrants(RSA_ALIAS))
                     .isEqualTo(Map.of(dpcProcess.uid(),
-                            singleton(sDeviceState.dpcOnly().packageName())));
+                            singleton(dpcOnly(sDeviceState).packageName())));
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -471,20 +474,20 @@ public final class KeyManagementTest {
     @PolicyAppliesTest(policy = KeySelection.class)
     public void getKeyPairGrants_includesGrantedExplicitly() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToApp(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS,
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToApp(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS,
                     sContext.getPackageName());
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getKeyPairGrants(RSA_ALIAS))
+            assertThat(dpc(sDeviceState).devicePolicyManager().getKeyPairGrants(RSA_ALIAS))
                     .isEqualTo(Map.of(Process.myUid(),
                             singleton(sContext.getPackageName())));
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -492,19 +495,19 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class)
     public void getKeyPairGrants_doesNotIncludeRevoked() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ true);
-            sDeviceState.dpc().devicePolicyManager().revokeKeyPairFromApp(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS,
-                    sDeviceState.dpcOnly().packageName());
+            dpc(sDeviceState).devicePolicyManager().revokeKeyPairFromApp(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS,
+                    dpcOnly(sDeviceState).packageName());
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().getKeyPairGrants(RSA_ALIAS)).isEmpty();
+                    dpc(sDeviceState).devicePolicyManager().getKeyPairGrants(RSA_ALIAS)).isEmpty();
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -513,7 +516,7 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class, singleTestOnly = true)
     public void grantKeyPairToWifiAuth_nonExistent_throwsIllegalArgumentException() {
         Assert.assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
+                () -> dpc(sDeviceState).devicePolicyManager()
                         .grantKeyPairToWifiAuth(NON_EXISTENT_ALIAS));
     }
 
@@ -521,7 +524,7 @@ public final class KeyManagementTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = KeySelection.class, singleTestOnly = true)
     public void grantKeyPairToWifiAuth_nonExistent_returnsFalse() {
-        assertThat(sDeviceState.dpc().devicePolicyManager()
+        assertThat(dpc(sDeviceState).devicePolicyManager()
                 .grantKeyPairToWifiAuth(NON_EXISTENT_ALIAS)).isFalse();
     }
 
@@ -529,17 +532,17 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class)
     public void isKeyPairGrantedToWifiAuth_default_returnsFalse() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().isKeyPairGrantedToWifiAuth(RSA_ALIAS))
+                    dpc(sDeviceState).devicePolicyManager().isKeyPairGrantedToWifiAuth(RSA_ALIAS))
                     .isFalse();
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -547,18 +550,18 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class)
     public void isKeyPairGrantedToWifiAuth_granted_returnsTrue() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToWifiAuth(RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToWifiAuth(RSA_ALIAS);
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().isKeyPairGrantedToWifiAuth(RSA_ALIAS))
+                    dpc(sDeviceState).devicePolicyManager().isKeyPairGrantedToWifiAuth(RSA_ALIAS))
                     .isTrue();
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -566,19 +569,19 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class)
     public void isKeyPairGrantedToWifiAuth_revoked_returnsFalse() {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToWifiAuth(RSA_ALIAS);
-            sDeviceState.dpc().devicePolicyManager().revokeKeyPairFromWifiAuth(RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToWifiAuth(RSA_ALIAS);
+            dpc(sDeviceState).devicePolicyManager().revokeKeyPairFromWifiAuth(RSA_ALIAS);
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().isKeyPairGrantedToWifiAuth(RSA_ALIAS))
+                    dpc(sDeviceState).devicePolicyManager().isKeyPairGrantedToWifiAuth(RSA_ALIAS))
                     .isFalse();
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
     // TODO(b/199148889): To be tested with targetSDKVersion U+.
@@ -586,8 +589,8 @@ public final class KeyManagementTest {
     @CanSetPolicyTest(policy = KeySelection.class, singleTestOnly = true)
     public void grantKeyPairToApp_nonExistent_throwsIllegalArgumentException() {
         Assert.assertThrows(IllegalArgumentException.class,
-                () -> sDeviceState.dpc().devicePolicyManager()
-                        .grantKeyPairToApp(sDeviceState.dpc().componentName(), NON_EXISTENT_ALIAS,
+                () -> dpc(sDeviceState).devicePolicyManager()
+                        .grantKeyPairToApp(dpc(sDeviceState).componentName(), NON_EXISTENT_ALIAS,
                                 sContext.getPackageName()));
     }
 
@@ -595,8 +598,8 @@ public final class KeyManagementTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = KeySelection.class, singleTestOnly = true)
     public void grantKeyPairToApp_nonExistent_returnsFalse() {
-        assertThat(sDeviceState.dpc().devicePolicyManager()
-                        .grantKeyPairToApp(sDeviceState.dpc().componentName(), NON_EXISTENT_ALIAS,
+        assertThat(dpc(sDeviceState).devicePolicyManager()
+                        .grantKeyPairToApp(dpc(sDeviceState).componentName(), NON_EXISTENT_ALIAS,
                                 sContext.getPackageName())).isFalse();
     }
 
@@ -604,11 +607,11 @@ public final class KeyManagementTest {
     @PolicyAppliesTest(policy = KeySelection.class)
     public void grantKeyPair_keyUsable() throws Exception {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToApp(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS, sContext.getPackageName()
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToApp(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS, sContext.getPackageName()
             );
 
             PrivateKey key = KeyChain.getPrivateKey(sContext, RSA_ALIAS);
@@ -616,8 +619,8 @@ public final class KeyManagementTest {
             signDataWithKey("SHA256withRSA", key); // Doesn't throw exception
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -625,11 +628,11 @@ public final class KeyManagementTest {
     @PolicyAppliesTest(policy = KeySelection.class)
     public void grantKeyPair_validCertificate() throws Exception {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToApp(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS, sContext.getPackageName()
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToApp(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS, sContext.getPackageName()
             );
 
             Certificate[] certificates = KeyChain.getCertificateChain(sContext, RSA_ALIAS);
@@ -637,8 +640,8 @@ public final class KeyManagementTest {
             assertThat(certificates).asList().containsExactly(CERTIFICATE);
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -646,25 +649,25 @@ public final class KeyManagementTest {
     @PolicyAppliesTest(policy = KeySelection.class)
     public void revokeKeyPairFromApp_keyNotUsable() throws Exception {
         try {
-            sDeviceState.dpcOnly().devicePolicyManager().installKeyPair(
-                    sDeviceState.dpcOnly().componentName(), PRIVATE_KEY, CERTIFICATES,
+            dpcOnly(sDeviceState).devicePolicyManager().installKeyPair(
+                    dpcOnly(sDeviceState).componentName(), PRIVATE_KEY, CERTIFICATES,
                     RSA_ALIAS, /* requestAccess= */ false);
-            sDeviceState.dpc().devicePolicyManager().grantKeyPairToApp(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS, sContext.getPackageName()
+            dpc(sDeviceState).devicePolicyManager().grantKeyPairToApp(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS, sContext.getPackageName()
             );
             // Key is requested from KeyChain prior to revoking the grant.
             PrivateKey key = KeyChain.getPrivateKey(sContext, RSA_ALIAS);
 
-            sDeviceState.dpc().devicePolicyManager().revokeKeyPairFromApp(
-                    sDeviceState.dpc().componentName(), RSA_ALIAS, sContext.getPackageName());
+            dpc(sDeviceState).devicePolicyManager().revokeKeyPairFromApp(
+                    dpc(sDeviceState).componentName(), RSA_ALIAS, sContext.getPackageName());
 
             // Key shouldn't be valid after the grant is revoked.
             Assert.assertThrows(
                     InvalidKeyException.class, () -> signDataWithKey("SHA256withRSA", key));
         } finally {
             // Remove keypair
-            sDeviceState.dpcOnly().devicePolicyManager()
-                    .removeKeyPair(sDeviceState.dpcOnly().componentName(), RSA_ALIAS);
+            dpcOnly(sDeviceState).devicePolicyManager()
+                    .removeKeyPair(dpcOnly(sDeviceState).componentName(), RSA_ALIAS);
         }
     }
 
@@ -688,6 +691,6 @@ public final class KeyManagementTest {
     // Returns true if the test is currently running as (user 0) DO on a HSUM build.
     private boolean isHeadlessDoMode() {
         return TestApis.users().isHeadlessSystemUserMode()
-                && sDeviceState.dpc().user().equals(TestApis.users().system());
+                && dpc(sDeviceState).user().equals(TestApis.users().system());
     }
 }

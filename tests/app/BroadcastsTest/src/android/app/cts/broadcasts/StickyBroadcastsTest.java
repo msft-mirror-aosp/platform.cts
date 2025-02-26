@@ -18,6 +18,8 @@ package android.app.cts.broadcasts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.fail;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,11 +30,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(BroadcastsTestRunner.class)
 public class StickyBroadcastsTest extends BaseBroadcastTest {
     @Test
-    public void testBroadcastQueries() {
+    public void testBroadcastQueries() throws Exception {
         final int batteryStatus = getBatteryStatusFromQueryApi();
 
         assertThat(batteryStatus).isEqualTo(getBatteryStatusFromBroadcast());
@@ -67,7 +70,7 @@ public class StickyBroadcastsTest extends BaseBroadcastTest {
         return batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_STATUS);
     }
 
-    private void waitForBatteryStatusChange(int expectedStatus) {
+    private void waitForBatteryStatusChange(int expectedStatus) throws Exception {
         final CountDownLatch latch = new CountDownLatch(1);
         final IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         mContext.registerReceiver(new BroadcastReceiver() {
@@ -80,5 +83,8 @@ public class StickyBroadcastsTest extends BaseBroadcastTest {
                 }
             }
         }, filter);
+        if (!latch.await(BROADCAST_RECEIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            fail("Timed out waiting for the battery_changed broadcast");
+        }
     }
 }

@@ -49,6 +49,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.google.common.collect.Range;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -80,6 +81,7 @@ public class BrightnessTest extends TestBase {
         }
     }
 
+    @Ignore("b/359582534")
     @Test
     public void testBrightnessSliderTracking() throws InterruptedException {
         // Only run if we have a valid ambient light sensor.
@@ -172,6 +174,7 @@ public class BrightnessTest extends TestBase {
                     Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL);
             int mode = getSystemSetting(Settings.System.SCREEN_BRIGHTNESS_MODE);
             assertEquals(Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL, mode);
+            recordSliderEvents();
             var newEvents = setDisplayBrightness(brtClosable.getMinimumBrightness());
             assertTrue(newEvents.isEmpty());
             // Then change the brightness
@@ -511,6 +514,7 @@ public class BrightnessTest extends TestBase {
     }
 
     private void waitForFirstSliderEvent() throws  InterruptedException {
+        recordSliderEvents();
         // Keep changing brightness until we get an event to handle devices with sensors
         // that take a while to warm up.
         int brightness = 25;

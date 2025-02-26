@@ -91,7 +91,7 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
         }
     }
 
-    static final String TAG = "SampleIntelligenceService";
+    static final String TAG = "CtsIntelligenceService";
 
     @Override
     public void onInferenceServiceConnected() {
@@ -102,7 +102,7 @@ public class CtsIntelligenceService extends OnDeviceIntelligenceService {
                 populateTestContent(testFile);
                 populateTestContent(testFile2);
             } catch (IOException e) {
-                Log.i(TAG, "Received failure when creating file.");
+                Log.w(TAG, "Received failure when creating file.", e);
             }
         });
         Log.i(TAG, "Received onInferenceServiceStarted");

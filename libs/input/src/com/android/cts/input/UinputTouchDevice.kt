@@ -21,6 +21,7 @@ import android.graphics.Matrix
 import android.graphics.Point
 import android.server.wm.CtsWindowInfoUtils
 import android.view.Display
+import android.view.Surface
 import android.view.View
 import kotlin.math.round
 
@@ -46,10 +47,21 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
     val inverseTransform = Matrix()
     displayTransform.invert(inverseTransform)
 
-    val point = floatArrayOf(x.toFloat(), y.toFloat())
-    inverseTransform.mapPoints(point)
+    val p = floatArrayOf(x.toFloat(), y.toFloat())
+    inverseTransform.mapPoints(p)
 
-    return Point(round(point[0]).toInt(), round(point[1]).toInt())
+    val point = Point(round(p[0]).toInt(), round(p[1]).toInt())
+
+    // We need to apply offset to correctly map the point to discrete coordinate space, this is done
+    // to account for the disparity between continuous and discrete coordinates during rotation
+    // Refer to frameworks/native/services/inputflinger/docs/input_coordinates.md
+    return when (display.rotation) {
+        Surface.ROTATION_0 -> point
+        Surface.ROTATION_90 -> point.apply { offset(-1, 0) }
+        Surface.ROTATION_180 -> point.apply { offset(-1, -1) }
+        Surface.ROTATION_270 -> point.apply { offset(0, -1) }
+        else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
+    }
 }
 
 /**
@@ -250,9 +262,11 @@ open class UinputTouchDevice(
         const val ABS_MT_TOOL_TYPE = 0x37
         const val ABS_MT_TRACKING_ID = 0x39
         const val ABS_MT_PRESSURE = 0x3a
+        const val BTN_MOUSE = 0x110 // aka BTN_LEFT
         const val BTN_TOUCH = 0x14a
         const val BTN_TOOL_PEN = 0x140
         const val BTN_TOOL_FINGER = 0x145
+        const val BTN_TOOL_MOUSE = 0x146
         const val BTN_TOOL_DOUBLETAP = 0x14d
         const val BTN_TOOL_TRIPLETAP = 0x14e
         const val BTN_TOOL_QUADTAP = 0x14f

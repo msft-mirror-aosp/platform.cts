@@ -30,13 +30,12 @@ android_test {
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
-        "Nene",
-        "Harrier",
-        "TestApp",
+        "bedstead-enterprise",
         "android.multiuser.flags-aconfig-java",
         "android.os.flags-aconfig-java",
         "flag-junit",
     ],
     libs: ["android.test.base.stubs.test"],
+    min_sdk_version: "29",
     sdk_version: "test_current",
 }

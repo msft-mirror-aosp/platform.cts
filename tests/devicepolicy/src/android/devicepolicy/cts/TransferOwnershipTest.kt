@@ -18,31 +18,30 @@ package android.devicepolicy.cts
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.os.PersistableBundle
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest
+import com.android.bedstead.enterprise.dpc
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.policies.TransferOwnership
 import com.android.bedstead.harrier.policies.TransferOwnershipForDeviceOwner
 import com.android.bedstead.harrier.policies.TransferOwnershipForProfileOwner
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.testapps.testApps
 import com.android.compatibility.common.util.ApiTest
-import com.android.eventlib.truth.EventLogsSubject
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.android.queryable.queries.BundleQuery
 import com.android.queryable.queries.ReceiverQuery
-import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert
 import org.testng.Assert.assertThrows
 
 // TODO(b/298202673: Add tests for behavior for all policies)

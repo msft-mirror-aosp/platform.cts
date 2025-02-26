@@ -19,6 +19,9 @@ package {
 java_library {
     name: "CtsAppSearchTestUtils",
     srcs: ["src/**/*.java"],
+    static_libs: [
+        "flag-junit",
+    ],
     libs: [
         "androidx.test.ext.junit",
         "framework-annotations-lib",

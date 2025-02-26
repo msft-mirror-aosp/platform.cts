@@ -24,6 +24,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
@@ -43,10 +44,13 @@ import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
 import android.os.vibrator.Flags;
+import android.os.vibrator.VibratorEnvelopeEffectInfo;
+import android.os.vibrator.VibratorFrequencyProfile;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
+import android.util.SparseArray;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -390,6 +394,30 @@ public class VibratorTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_PRIMITIVE_COMPOSITION_ABSOLUTE_DELAY)
+    @Test
+    public void testVibrateComposedWithRelativeDelays() {
+        boolean[] supported = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);
+        int[] durations = mVibrator.getPrimitiveDurations(PRIMITIVE_EFFECTS);
+        for (int i = 0; i < PRIMITIVE_EFFECTS.length; i++) {
+            mVibrator.vibrate(VibrationEffect.startComposition()
+                    // Starts after 10ms default delay
+                    .addPrimitive(PRIMITIVE_EFFECTS[i], 1.0f, 10)
+                    // Starts at the same time as previous one
+                    .addPrimitive(PRIMITIVE_EFFECTS[i], 0.5f, 0,
+                            VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
+                    // Starts right after previous one
+                    .addPrimitive(PRIMITIVE_EFFECTS[i], 0.5f, durations[i],
+                            VibrationEffect.Composition.DELAY_TYPE_RELATIVE_START_OFFSET)
+                    .compose());
+            if (supported[i]) {
+                // Plays only one primitive after 10ms initial pause
+                assertStartsThenStopsVibrating(
+                        durations[i] * 2 + 10, "primitive id=" + PRIMITIVE_EFFECTS[i]);
+            }
+        }
+    }
+
     @Test
     public void testVibrateWithAttributes() {
         mVibrator.vibrate(VibrationEffect.createOneShot(10, 10), VIBRATION_ATTRIBUTES);
@@ -560,11 +588,112 @@ public class VibratorTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorFrequencyProfileGetFrequenciesOutputAcceleration() {
+        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
+        assumeNotNull(frequencyProfile);
+
+        SparseArray<Float> frequenciesOutputAcceleration =
+                frequencyProfile.getFrequenciesOutputAcceleration();
+        assertThat(frequenciesOutputAcceleration).isNotNull();
+        assertThat(frequenciesOutputAcceleration.size()).isGreaterThan(0);
+
+        for (int i = 0; i < frequenciesOutputAcceleration.size(); i++) {
+            int frequency = frequenciesOutputAcceleration.keyAt(i);
+            assertThat((float) frequency).isIn(Range.open(0f, MAXIMUM_ACCEPTED_FREQUENCY));
+            assertThat((float) frequency).isIn(Range.closed(frequencyProfile.getMinFrequencyHz(),
+                    frequencyProfile.getMaxFrequencyHz()));
+            // The frequency to output acceleration map should not include frequencies that produce
+            // no vibration
+            assertThat(frequenciesOutputAcceleration.get(frequency)).isGreaterThan(0);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorFrequencyProfileGetMaxOutputAcceleration() {
+        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
+        assumeNotNull(frequencyProfile);
+
+        float maxOutputAcceleration = frequencyProfile.getMaxOutputAccelerationGs();
+        assertThat(maxOutputAcceleration).isGreaterThan(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorFrequencyProfileGetFrequencyRange() {
+        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
+        assumeNotNull(frequencyProfile);
+
+        android.util.Range<Float> frequencyRange = frequencyProfile.getFrequencyRange(
+                frequencyProfile.getMaxOutputAccelerationGs());
+        assertThat(frequencyRange).isNotNull();
+
+        frequencyRange = frequencyProfile.getFrequencyRange(
+                frequencyProfile.getMaxOutputAccelerationGs()
+                        + 1); // +1 to be above the max output acceleration range
+        assertThat(frequencyRange).isNull();
+
+        frequencyRange = frequencyProfile.getFrequencyRange(0f);
+        assertThat(frequencyRange).isNotNull();
+        assertThat(frequencyRange.getLower()).isEqualTo(frequencyProfile.getMinFrequencyHz());
+        assertThat(frequencyRange.getUpper()).isEqualTo(frequencyProfile.getMaxFrequencyHz());
+
+        frequencyRange = frequencyProfile.getFrequencyRange(-1f);
+        assertThat(frequencyRange).isNotNull();
+        assertThat(frequencyRange.getLower()).isEqualTo(frequencyProfile.getMinFrequencyHz());
+        assertThat(frequencyRange.getUpper()).isEqualTo(frequencyProfile.getMaxFrequencyHz());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorFrequencyProfileGetOutputAccelerationGs() {
+        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
+        assumeNotNull(frequencyProfile);
+
+        float outputAccelerationGs;
+        SparseArray<Float> frequencyToOutputAccelerationMap =
+                frequencyProfile.getFrequenciesOutputAcceleration();
+
+        for (int i = 0; i < frequencyToOutputAccelerationMap.size(); i++) {
+            int frequency = frequencyToOutputAccelerationMap.keyAt(i);
+            float expectedOutputAcceleration = frequencyToOutputAccelerationMap.get(frequency);
+            outputAccelerationGs = frequencyProfile.getOutputAccelerationGs(frequency);
+            assertThat(outputAccelerationGs).isEqualTo(expectedOutputAcceleration);
+        }
+
+        outputAccelerationGs = frequencyProfile.getOutputAccelerationGs(
+                frequencyProfile.getMinFrequencyHz() - 1); // -1 to be outside the supported range
+        assertThat(outputAccelerationGs).isEqualTo(0);
+
+        outputAccelerationGs = frequencyProfile.getOutputAccelerationGs(
+                frequencyProfile.getMaxFrequencyHz() + 1); // +1 to be outside the supported range
+        assertThat(outputAccelerationGs).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorFrequencyProfileGetMinMaxFrequency() {
+        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
+        assumeNotNull(frequencyProfile);
+
+        float minFrequency = frequencyProfile.getMinFrequencyHz();
+        float maxFrequency = frequencyProfile.getMaxFrequencyHz();
+        float resonantFrequency = mVibrator.getResonantFrequency();
+
+        assertThat(minFrequency).isGreaterThan(0);
+        assertThat(maxFrequency).isGreaterThan(minFrequency);
+        if (!Float.isNaN(resonantFrequency)) {
+            assertThat(maxFrequency).isAtLeast(resonantFrequency);
+            assertThat(minFrequency).isAtMost(resonantFrequency);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
     public void testHasNoVibrator() {
         assumeFalse(mVibrator.hasVibrator());
 
         assertThat(mVibrator.areEnvelopeEffectsSupported()).isFalse();
-        assertThat(mVibrator.hasFrequencyControl()).isFalse();
         assertThat(mVibrator.hasAmplitudeControl()).isFalse();
 
         boolean[] supportedPrimitives = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);
@@ -589,22 +718,22 @@ public class VibratorTest {
 
     @Test
     @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorMaxEnvelopeEffectDurationMillis() {
+    public void testVibratorFrequencyProfileAvailableWhenEnvelopeEffectsSupported() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectDurationMillis();
-        int expectedMaxDurationMS = mVibrator.getMaxEnvelopeEffectSize()
-                * mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
-        assertThat(durationMs).isEqualTo(expectedMaxDurationMS);
+        assertThat(mVibrator.getFrequencyProfile()).isNotNull();
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorMaxEnvelopeEffectDurationMillisUnsupported() {
-        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
+    public void testVibratorMaxEnvelopeEffectDurationMillis() {
+        assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectDurationMillis();
-        assertThat(durationMs).isEqualTo(0);
+        VibratorEnvelopeEffectInfo envelopeEffectInfo = mVibrator.getEnvelopeEffectInfo();
+        long durationMs = envelopeEffectInfo.getMaxDurationMillis();
+        long expectedMaxDurationMS = envelopeEffectInfo.getMaxSize()
+                * envelopeEffectInfo.getMaxControlPointDurationMillis();
+        assertThat(durationMs).isEqualTo(expectedMaxDurationMS);
     }
 
     @Test
@@ -612,17 +741,8 @@ public class VibratorTest {
     public void testVibratorGetMaxEnvelopeEffectSize() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int controlPointsMax = mVibrator.getMaxEnvelopeEffectSize();
+        int controlPointsMax = mVibrator.getEnvelopeEffectInfo().getMaxSize();
         assertThat(controlPointsMax).isAtLeast(ENVELOPE_EFFECT_MIN_REQUIRED_SIZE);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorGetMaxEnvelopeEffectSizeUnsupported() {
-        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
-
-        int controlPointsMax = mVibrator.getMaxEnvelopeEffectSize();
-        assertThat(controlPointsMax).isEqualTo(0);
     }
 
     @Test
@@ -630,18 +750,9 @@ public class VibratorTest {
     public void testVibratorGetMinEnvelopeEffectControlPointDurationMillis() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMinEnvelopeEffectControlPointDurationMillis();
+        long durationMs = mVibrator.getEnvelopeEffectInfo().getMinControlPointDurationMillis();
         assertThat(durationMs).isGreaterThan(0);
         assertThat(durationMs).isAtMost(ENVELOPE_EFFECT_MAX_ALLOWED_CONTROL_POINT_MIN_DURATION_MS);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorGetMinEnvelopeEffectControlPointDurationMillisUnsupported() {
-        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
-
-        int durationMs = mVibrator.getMinEnvelopeEffectControlPointDurationMillis();
-        assertThat(durationMs).isEqualTo(0);
     }
 
     @Test
@@ -649,18 +760,29 @@ public class VibratorTest {
     public void testVibratorGetMaxEnvelopeEffectControlPointDurationMillis() {
         assumeTrue(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
+        long durationMs = mVibrator.getEnvelopeEffectInfo().getMaxControlPointDurationMillis();
         assertThat(durationMs).isAtLeast(
                 ENVELOPE_EFFECT_MIN_REQUIRED_CONTROL_POINT_MAX_DURATION_MS);
     }
 
     @Test
     @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
-    public void testVibratorGetMaxEnvelopeEffectControlPointDurationMillisUnsupported() {
+    public void testVibratorGetEnvelopeEffectInfoUnsupported() {
         assumeFalse(mVibrator.areEnvelopeEffectsSupported());
 
-        int durationMs = mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
-        assertThat(durationMs).isEqualTo(0);
+        int controlPointsMax = mVibrator.getEnvelopeEffectInfo().getMaxSize();
+        assertThat(controlPointsMax).isEqualTo(0);
+
+        long maxDurationMs = mVibrator.getEnvelopeEffectInfo().getMaxDurationMillis();
+        assertThat(maxDurationMs).isEqualTo(0L);
+
+        long minControlPointDurationMs =
+                mVibrator.getEnvelopeEffectInfo().getMinControlPointDurationMillis();
+        assertThat(minControlPointDurationMs).isEqualTo(0L);
+
+        long maxControlPointDurationMs =
+                mVibrator.getEnvelopeEffectInfo().getMaxControlPointDurationMillis();
+        assertThat(maxControlPointDurationMs).isEqualTo(0L);
     }
 
     private boolean isSystemVibrator() {

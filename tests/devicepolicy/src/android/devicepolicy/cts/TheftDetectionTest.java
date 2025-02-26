@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.admin.flags.Flags;
@@ -54,6 +56,6 @@ public final class TheftDetectionTest {
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_THEFT_IMPL_ENABLED)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#isTheftDetectionTriggered")
     public void isDevicePotentiallyStolen_defaultToFalse() {
-        assertThat(sDeviceState.dpc().devicePolicyManager().isDevicePotentiallyStolen()).isFalse();
+        assertThat(dpc(sDeviceState).devicePolicyManager().isDevicePotentiallyStolen()).isFalse();
     }
 }

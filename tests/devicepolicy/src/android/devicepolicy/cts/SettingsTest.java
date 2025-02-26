@@ -26,6 +26,8 @@ import static android.provider.Settings.Global.BLUETOOTH_ON;
 import static android.provider.Settings.Secure.LOCATION_MODE;
 import static android.provider.Settings.Secure.SKIP_FIRST_USE_HINTS;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -76,8 +78,8 @@ public final class SettingsTest {
         int newValue = originalValue + 1;
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setGlobalSetting(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setGlobalSetting(
+                    dpc(sDeviceState).componentName(),
                     DEPRECATED_GLOBAL_SETTING, String.valueOf(newValue));
 
             assertThat(TestApis.settings().global().getInt(DEPRECATED_GLOBAL_SETTING))
@@ -91,8 +93,8 @@ public final class SettingsTest {
     @Postsubmit(reason = "new test")
     public void setGlobalSetting_invalidAdmin_throwsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setGlobalSetting(
-                        sDeviceState.dpc().componentName(),
+                () -> dpc(sDeviceState).devicePolicyManager().setGlobalSetting(
+                        dpc(sDeviceState).componentName(),
                         SUPPORTED_GLOBAL_SETTING, "1"));
     }
 
@@ -101,8 +103,8 @@ public final class SettingsTest {
     @EnsureNotDemoMode // retail demo mode bypasses global setting allowlist
     public void setGlobalSetting_unsupported_throwsSecurityException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setGlobalSetting(
-                        sDeviceState.dpc().componentName(),
+                () -> dpc(sDeviceState).devicePolicyManager().setGlobalSetting(
+                        dpc(sDeviceState).componentName(),
                         UNSUPPORTED_GLOBAL_SETTING, "1"));
     }
 
@@ -113,8 +115,8 @@ public final class SettingsTest {
         int newValue = originalValue + 1;
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setGlobalSetting(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().setGlobalSetting(
+                    dpc(sDeviceState).componentName(),
                     SUPPORTED_GLOBAL_SETTING, String.valueOf(newValue));
 
             assertThat(TestApis.settings().global().getInt(SUPPORTED_GLOBAL_SETTING))
@@ -132,15 +134,15 @@ public final class SettingsTest {
         int newValue = originalValue + 1;
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setSecureSetting(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setSecureSetting(dpc(sDeviceState).componentName(),
                             SECURE_SETTING, String.valueOf(newValue));
 
             assertThat(TestApis.settings().secure()
                     .getInt(SECURE_SETTING, /* defaultValue= */  0)).isEqualTo(newValue);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setSecureSetting(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setSecureSetting(dpc(sDeviceState).componentName(),
                             SECURE_SETTING, String.valueOf(originalValue));
 
         }
@@ -159,15 +161,15 @@ public final class SettingsTest {
         int newValue = originalValue + 1;
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setSecureSetting(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setSecureSetting(dpc(sDeviceState).componentName(),
                             DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, String.valueOf(newValue));
 
             assertThat(TestApis.settings().secure().getInt(
                     DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING)).isEqualTo(newValue);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setSecureSetting(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setSecureSetting(dpc(sDeviceState).componentName(),
                             DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING,
                             String.valueOf(originalValue));
 
@@ -182,8 +184,8 @@ public final class SettingsTest {
                 .getInt(DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, /* defaultValue= */ 0);
         int newValue = originalValue + 1;
 
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager()
-                .setSecureSetting(sDeviceState.dpc().componentName(),
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
+                .setSecureSetting(dpc(sDeviceState).componentName(),
                         DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, String.valueOf(newValue)));
     }
 
@@ -198,8 +200,8 @@ public final class SettingsTest {
                 .getInt(DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, /* defaultValue= */ 0);
         int newValue = originalValue + 1;
 
-        assertThrows(UnsupportedOperationException.class, () -> sDeviceState.dpc()
-                .devicePolicyManager().setSecureSetting(sDeviceState.dpc().componentName(),
+        assertThrows(UnsupportedOperationException.class, () -> dpc(sDeviceState)
+                .devicePolicyManager().setSecureSetting(dpc(sDeviceState).componentName(),
                         DEPRECATED_DEVICE_OWNER_ONLY_SECURE_SETTING, String.valueOf(newValue)));
     }
 
@@ -208,20 +210,20 @@ public final class SettingsTest {
     public void setSecureSetting_doesNotApplyToUser_isNotSet() {
         int originalValue = TestApis.settings().secure()
                 .getInt(SECURE_SETTING, /* defaultValue= */  0);
-        int originalDpcValue = TestApis.settings().secure().getInt(sDeviceState.dpc().user(),
+        int originalDpcValue = TestApis.settings().secure().getInt(dpc(sDeviceState).user(),
                 SECURE_SETTING, /* defaultValue= */ 0);
         int newValue = originalValue + 1;
 
         try {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setSecureSetting(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setSecureSetting(dpc(sDeviceState).componentName(),
                             SECURE_SETTING, String.valueOf(newValue));
 
             assertThat(TestApis.settings().secure().getInt(SECURE_SETTING, /* defaultValue= */  0))
                     .isEqualTo(originalValue);
         } finally {
-            sDeviceState.dpc().devicePolicyManager()
-                    .setSecureSetting(sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager()
+                    .setSecureSetting(dpc(sDeviceState).componentName(),
                             SECURE_SETTING, String.valueOf(originalDpcValue));
 
         }

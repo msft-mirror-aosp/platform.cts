@@ -21,7 +21,6 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
-import android.media.audio.Flags;
 import android.util.Log;
 
 import java.util.Collection;
@@ -154,9 +153,6 @@ public class AudioDeviceUtils {
         if (LOG) {
             Log.d(TAG, "supportsAnalogHeadset()");
         }
-        if (!Flags.supportedDeviceTypesApi()) {
-            return SUPPORTSDEVICE_UNDETERMINED;
-        }
 
         // TYPE_LINE_ANALOG?
         AudioManager audioManager = context.getSystemService(AudioManager.class);
@@ -182,9 +178,6 @@ public class AudioDeviceUtils {
         if (LOG) {
             Log.d(TAG, "supportsUsbAudioInterface()");
         }
-        if (!Flags.supportedDeviceTypesApi()) {
-            return SUPPORTSDEVICE_UNDETERMINED;
-        }
 
         AudioManager audioManager = context.getSystemService(AudioManager.class);
         Set<Integer> deviceTypeIds =
@@ -207,9 +200,6 @@ public class AudioDeviceUtils {
     public static int supportsUsbHeadset(Context context) {
         if (LOG) {
             Log.d(TAG, "supportsUsbHeadset()");
-        }
-        if (!Flags.supportedDeviceTypesApi()) {
-            return SUPPORTSDEVICE_UNDETERMINED;
         }
 
         AudioManager audioManager = context.getSystemService(AudioManager.class);

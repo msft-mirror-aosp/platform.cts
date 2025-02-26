@@ -152,20 +152,6 @@ public class MidiJavaTestActivity extends MidiTestActivityBase {
             mUSBLoopbackDevice.scanDevices(devInfos);
         }
 
-        private void openUSBEchoDevice(MidiDevice device) {
-            MidiDeviceInfo deviceInfo = device.getInfo();
-            int numOutputs = deviceInfo.getOutputPortCount();
-            if (numOutputs > 0) {
-                mUSBLoopbackDevice.mReceivePort = device.openOutputPort(0);
-                mUSBLoopbackDevice.mReceivePort.connect(new USBMidiEchoReceiver());
-            }
-
-            int numInputs = deviceInfo.getInputPortCount();
-            if (numInputs != 0) {
-                mUSBLoopbackDevice.mSendPort = device.openInputPort(0);
-            }
-        }
-
         protected void closePorts() {
             super.closePorts();
             mUSBLoopbackDevice.closePorts();

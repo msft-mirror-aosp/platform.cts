@@ -670,6 +670,12 @@ public final class CameraDeviceInfo extends DeviceInfo {
     private static HashSet<String> getAllCharacteristicsKeyNames() {
         HashSet<String> charsKeyNames = new HashSet<String>();
         charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_ABERRATION_MODES.getName());
+        if (Flags.colorTemperature()) {
+            charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_COLOR_TEMPERATURE_RANGE.getName());
+        }
+        if (Flags.colorTemperature()) {
+            charsKeyNames.add(CameraCharacteristics.COLOR_CORRECTION_AVAILABLE_MODES.getName());
+        }
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_ANTIBANDING_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES.getName());
@@ -693,6 +699,9 @@ public final class CameraDeviceInfo extends DeviceInfo {
         charsKeyNames.add(CameraCharacteristics.CONTROL_AUTOFRAMING_AVAILABLE.getName());
         if (Flags.cameraAeModeLowLightBoost()) {
             charsKeyNames.add(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE.getName());
+        }
+        if (Flags.aePriority()) {
+            charsKeyNames.add(CameraCharacteristics.CONTROL_AE_AVAILABLE_PRIORITY_MODES.getName());
         }
         charsKeyNames.add(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL.getName());

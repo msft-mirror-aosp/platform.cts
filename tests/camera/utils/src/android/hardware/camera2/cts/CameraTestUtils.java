@@ -1821,7 +1821,8 @@ public class CameraTestUtils extends Assert {
         // Same goes for DEPTH_POINT_CLOUD, RAW_PRIVATE, DEPTH_JPEG, and HEIC
         if (format == ImageFormat.JPEG || format == ImageFormat.DEPTH_POINT_CLOUD ||
                 format == ImageFormat.RAW_PRIVATE || format == ImageFormat.DEPTH_JPEG ||
-                format == ImageFormat.HEIC || format == ImageFormat.JPEG_R) {
+                format == ImageFormat.HEIC || format == ImageFormat.JPEG_R ||
+                format == ImageFormat.HEIC_ULTRAHDR) {
             buffer = planes[0].getBuffer();
             assertNotNull("Fail to get jpeg/depth/heic ByteBuffer", buffer);
             data = new byte[buffer.remaining()];
@@ -1972,6 +1973,7 @@ public class CameraTestUtils extends Assert {
             case ImageFormat.DEPTH_JPEG:
             case ImageFormat.Y8:
             case ImageFormat.HEIC:
+            case ImageFormat.HEIC_ULTRAHDR:
             case ImageFormat.JPEG_R:
                 assertEquals("JPEG/RAW/depth/Y8 Images should have one plane", 1, planes.length);
                 break;
@@ -2733,7 +2735,10 @@ public class CameraTestUtils extends Assert {
                 validateY8Data(data, width, height, format, image.getTimestamp(), filePath);
                 break;
             case ImageFormat.HEIC:
-                validateHeicData(data, width, height, filePath);
+                validateHeicData(data, width, height, filePath, false /*gainmapPresent*/);
+                break;
+            case ImageFormat.HEIC_ULTRAHDR:
+                validateHeicData(data, width, height, filePath, true /*gainmapPresent*/);
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported format for validation: "
@@ -2969,7 +2974,8 @@ public class CameraTestUtils extends Assert {
 
     }
 
-    private static void validateHeicData(byte[] heicData, int width, int height, String filePath) {
+    private static void validateHeicData(byte[] heicData, int width, int height, String filePath,
+            boolean gainMapPresent) {
         BitmapFactory.Options bmpOptions = new BitmapFactory.Options();
         // DecodeBound mode: only parse the frame header to get width/height.
         // it doesn't decode the pixel.
@@ -2980,12 +2986,19 @@ public class CameraTestUtils extends Assert {
 
         // Pixel decoding mode: decode whole image. check if the image data
         // is decodable here.
-        assertNotNull("Decoding heic failed",
-                BitmapFactory.decodeByteArray(heicData, 0, heicData.length));
+        Bitmap bitmapImage = BitmapFactory.decodeByteArray(heicData, 0, heicData.length);
+        assertNotNull("Decoding heic failed", bitmapImage);
+
         if (DEBUG && filePath != null) {
             String fileName =
                     filePath + "/" + width + "x" + height + ".heic";
             dumpFile(fileName, heicData);
+        }
+
+        if (gainMapPresent) {
+            Gainmap gainMap = bitmapImage.getGainmap();
+            assertNotNull(gainMap);
+            assertNotNull(gainMap.getGainmapContents());
         }
     }
 

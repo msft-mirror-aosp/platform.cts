@@ -32,11 +32,13 @@ android_test {
     libs: [
         "android.test.runner.stubs",
         "android.test.base.stubs",
+        "android.view.flags-aconfig-java",
     ],
 
     static_libs: [
         "androidx.test.rules",
         "androidx.test.ext.junit",
+        "android.hardware.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
@@ -55,6 +57,7 @@ android_test {
         "com.android.window.flags.window-aconfig-java",
         "hwui_flags_java_lib",
         "ui-trace-collector",
+        "collector-device-lib",
     ],
 
     jni_libs: [

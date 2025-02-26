@@ -22,11 +22,12 @@ import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellUtils
+import com.android.cts.input.CaptureEventActivity
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.Assert.assertEquals
 
 /**
  * Tests for the common key combinations should be consumed by app first.

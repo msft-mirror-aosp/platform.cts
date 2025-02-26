@@ -438,7 +438,7 @@ def capture_stats_images(
 
         # Set the starting iso to the last iso in saved stats file.
         if iso_to_stats_dict.keys():
-          pre_iso_cap = sorted(iso_to_stats_dict.keys())[-1]
+          pre_iso_cap = max(iso_to_stats_dict.keys())
           iso = get_next_iso(pre_iso_cap, sens_max_meas, iso_multiplier)
       except OSError as e:
         logging.exception(

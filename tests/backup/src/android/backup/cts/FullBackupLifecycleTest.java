@@ -18,12 +18,16 @@ package android.backup.cts;
 
 import static com.android.compatibility.common.util.BackupUtils.LOCAL_TRANSPORT_TOKEN;
 
-import android.platform.test.annotations.AppModeFull;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Verifies that key methods are called in expected order during backup / restore.
  */
-@AppModeFull
+@RunWith(AndroidJUnit4.class)
 public class FullBackupLifecycleTest extends BaseBackupCtsTest {
 
     private static final String BACKUP_APP_NAME = "android.backup.app";
@@ -32,6 +36,12 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
 
     private static final int TIMEOUT_SECONDS = 30;
 
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @Test
     public void testExpectedMethodsCalledInOrder() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -62,5 +72,4 @@ public class FullBackupLifecycleTest extends BaseBackupCtsTest {
             "onRestoreFinished",
             "onDestroy");
     }
-
 }

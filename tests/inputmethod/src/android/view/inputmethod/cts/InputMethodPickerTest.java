@@ -43,20 +43,17 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.LinearLayout;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
-public class InputMethodPickerTest extends MultiDisplayTestBase {
+public final class InputMethodPickerTest extends MultiDisplayTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
@@ -132,8 +129,7 @@ public class InputMethodPickerTest extends MultiDisplayTestBase {
     public void testShowImePickerOnExternalDisplay() throws Exception {
         assumeTrue(supportsMultiDisplay());
 
-        try (MultiDisplayTestBase.VirtualDisplaySession session =
-                new MultiDisplayTestBase.VirtualDisplaySession()) {
+        try (VirtualDisplaySession session = new VirtualDisplaySession()) {
             // Setup a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();
             Display simulatedDisplay = mContext.getSystemService(DisplayManager.class)

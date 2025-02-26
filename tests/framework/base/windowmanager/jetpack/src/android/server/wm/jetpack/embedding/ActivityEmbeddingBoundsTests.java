@@ -79,7 +79,8 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
     public void testParentWindowMetricsPredicate() {
         // Launch primary activity
         final Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
 
         // Set split pair rule such that if the parent bounds is any smaller than it is now, then
         // the parent cannot support a split.
@@ -161,8 +162,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start activities in a split and verify that the layout direction is LEFT_TO_RIGHT,
         // which is checked in {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }
@@ -183,8 +185,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start activities in a split and verify that the layout direction is RIGHT_TO_LEFT,
         // which is checked in {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }
@@ -204,8 +207,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start activities in a split and verify that the layout direction is the device locale,
         // which is checked in {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }
@@ -222,8 +226,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start activities in a split and verify that the layout direction is TOP_TO_BOTTOM,
         // which is checked in {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }
@@ -240,8 +245,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start activities in a split and verify that the layout direction is BOTTOM_TO_TOP,
         // which is checked in {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }
@@ -286,7 +292,8 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Launch the activity A and B split and verify that the split ratio is 0.37 in
         // {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class, activityAId);
+        final Activity activityA = startFullScreenActivityNewTask(
+                TestActivityWithId.class, activityAId, getLaunchingDisplayId());
         Activity activityB = startActivityAndVerifySplitAttributes(activityA,
                 TestActivityWithId.class, splitPairRuleAB, activityBId, mSplitInfoConsumer);
 
@@ -305,9 +312,6 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
             + "#HingeSplitType"})
     @Test
     public void testHingeSplitType() {
-        TestConfigChangeHandlingActivity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
-
         SplitPairRule splitPairRule = createSplitPairRuleBuilder(
                 activityActivityPair -> true,
                 activityIntentPair -> true,
@@ -318,6 +322,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start another activity to split with the primary activity and verify that the split type
         // is hinge.
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }
@@ -338,8 +345,9 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Start activities in a split and verify that the split type is expand,
         // which is checked in {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity = startFullScreenActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null /* activityId */,
+                getLaunchingDisplayId());
         startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
                 splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
     }

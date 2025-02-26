@@ -24,7 +24,6 @@ import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
 import static android.server.wm.CliIntentExtra.extraString;
 import static android.server.wm.ComponentNameUtils.getActivityName;
-import static android.server.wm.UiDeviceUtils.pressHomeButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 import static android.server.wm.app.Components.ANIMATION_TEST_ACTIVITY;
 import static android.server.wm.app.Components.ASSISTANT_ACTIVITY;
@@ -218,7 +217,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                     getActivityName(ASSISTANT_ACTIVITY) + " finished");
         }
         waitForValidStateWithActivityType(TEST_ACTIVITY, ACTIVITY_TYPE_STANDARD);
-        waitAndAssertTopResumedActivity(TEST_ACTIVITY, mAssistantDisplayId,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(TEST_ACTIVITY, mAssistantDisplayId,
                 "TestActivity should be resumed");
         mWmState.assertFocusedActivity("TestActivity should be focused", TEST_ACTIVITY);
 
@@ -248,7 +247,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
             // Go home, launch the assistant and check to see that home is visible
             stopTestPackage(TEST_APP_PACKAGE);
-            pressHomeButton();
+            launchHomeActivityNoWait();
             resumeAppSwitches();
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
                     extraString(EXTRA_ASSISTANT_IS_TRANSLUCENT, "true"));
@@ -274,7 +273,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             // Go home, launch assistant, launch app into fullscreen with activity present, and go
             // back.Ensure home is visible.
             removeRootTasksWithAssistantTypeActivity();
-            pressHomeButton();
+            launchHomeActivityNoWait();
             resumeAppSwitches();
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
                     extraString(EXTRA_ASSISTANT_IS_TRANSLUCENT, "true"),

@@ -581,7 +581,6 @@ public class AccessibilityWindowQueryTest {
     }
 
     @Test
-    @Ignore("b/325640120")
     public void testFindPictureInPictureWindow() throws Exception {
         if (!sInstrumentation.getContext().getPackageManager()
                 .hasSystemFeature(FEATURE_PICTURE_IN_PICTURE)) {

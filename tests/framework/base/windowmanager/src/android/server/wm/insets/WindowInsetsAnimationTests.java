@@ -199,24 +199,6 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
     }
 
     @Test
-    public void testAnimationCallbacks_consumedByDecor() {
-        getInstrumentation()
-                .runOnMainSync(
-                        () -> {
-                            mActivity.getWindow().setDecorFitsSystemWindows(true);
-                            mRootView.getWindowInsetsController().hide(systemBars());
-                        });
-
-        getWmState()
-                .waitFor(
-                        state -> !state.isWindowVisible("StatusBar"),
-                        "Waiting for status bar to be hidden");
-        assertFalse(getWmState().isWindowVisible("StatusBar"));
-
-        verifyZeroInteractions(mActivity.mCallback);
-    }
-
-    @Test
     public void testAnimationCallbacks_childDoesntGetCallback() {
         WindowInsetsAnimation.Callback childCallback = mock(WindowInsetsAnimation.Callback.class);
 

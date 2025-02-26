@@ -25,6 +25,8 @@ import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_TRUST_AGENT
 import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS;
 import static android.content.pm.PackageManager.FEATURE_SECURE_LOCK_SCREEN;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -83,9 +85,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_SECURE_CAMERA"
     })
     public void setKeyguardDisabledFeatures_disableSecureCamera_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_SECURE_CAMERA));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_SECURE_CAMERA));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableSecureCamera.class)
@@ -96,18 +98,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_SECURE_CAMERA"
     })
     public void setKeyguardDisabledFeatures_disableSecureCamera_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_SECURE_CAMERA);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_SECURE_CAMERA);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_SECURE_CAMERA);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -119,18 +121,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_SECURE_CAMERA"
     })
     public void setKeyguardDisabledFeatures_disableSecureCamera_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_SECURE_CAMERA);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_SECURE_CAMERA);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_SECURE_CAMERA);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -142,9 +144,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_SECURE_NOTIFICATIONS"
     })
     public void setKeyguardDisabledFeatures_disableSecureNotifications_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_SECURE_NOTIFICATIONS));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_SECURE_NOTIFICATIONS));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableSecureNotifications.class)
@@ -155,18 +157,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_SECURE_NOTIFICATIONS"
     })
     public void setKeyguardDisabledFeatures_disableSecureNotifications_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_SECURE_NOTIFICATIONS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_SECURE_NOTIFICATIONS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_SECURE_NOTIFICATIONS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -178,18 +180,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_SECURE_NOTIFICATIONS"
     })
     public void setKeyguardDisabledFeatures_disableSecureNotifications_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_SECURE_NOTIFICATIONS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_SECURE_NOTIFICATIONS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_SECURE_NOTIFICATIONS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -201,9 +203,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_TRUST_AGENTS"
     })
     public void setKeyguardDisabledFeatures_disableTrustAgents_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_TRUST_AGENTS));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_TRUST_AGENTS));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableTrustAgents.class)
@@ -214,18 +216,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_TRUST_AGENTS"
     })
     public void setKeyguardDisabledFeatures_disableTrustAgents_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_TRUST_AGENTS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -237,18 +239,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_TRUST_AGENTS"
     })
     public void setKeyguardDisabledFeatures_disableTrustAgents_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_TRUST_AGENTS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_TRUST_AGENTS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -260,9 +262,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS"
     })
     public void setKeyguardDisabledFeatures_disableUnredactedNotifications_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableUnredactedNotifications.class)
@@ -273,18 +275,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS"
     })
     public void setKeyguardDisabledFeatures_disableUnredactedNotifications_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -296,18 +298,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS"
     })
     public void setKeyguardDisabledFeatures_disableUnredactedNotifications_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -318,9 +320,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_FINGERPRINT"
     })
     public void setKeyguardDisabledFeatures_disableFingerprint_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FINGERPRINT));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FINGERPRINT));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableFingerprint.class)
@@ -331,18 +333,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_FINGERPRINT"
     })
     public void setKeyguardDisabledFeatures_disableFingerprint_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FINGERPRINT);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FINGERPRINT);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_FINGERPRINT);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -354,18 +356,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_FINGERPRINT"
     })
     public void setKeyguardDisabledFeatures_disableFingerprint_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FINGERPRINT);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FINGERPRINT);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_FINGERPRINT);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -377,9 +379,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_FACE"
     })
     public void setKeyguardDisabledFeatures_disableFace_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FACE));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FACE));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableFace.class)
@@ -390,18 +392,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_FACE"
     })
     public void setKeyguardDisabledFeatures_disableFace_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FACE);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FACE);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_FACE);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -413,18 +415,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_FACE"
     })
     public void setKeyguardDisabledFeatures_disableFace_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_FACE);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_FACE);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_FACE);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -436,9 +438,9 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_IRIS"
     })
     public void setKeyguardDisabledFeatures_disableIris_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setKeyguardDisabledFeatures(
-                        sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_IRIS));
+                        dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_IRIS));
     }
 
     @PolicyAppliesTest(policy = KeyguardDisableIris.class)
@@ -449,21 +451,21 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_IRIS"
     })
     public void setKeyguardDisabledFeatures_disableIris_featureIsSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_IRIS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_IRIS);
 
-            assertThat(sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName())).isEqualTo(KEYGUARD_DISABLE_IRIS);
+            assertThat(dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName())).isEqualTo(KEYGUARD_DISABLE_IRIS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isEqualTo(
                     KEYGUARD_DISABLE_IRIS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -475,18 +477,18 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#KEYGUARD_DISABLE_IRIS"
     })
     public void setKeyguardDisabledFeatures_disableIris_doesNotApply_featureIsNotSet() {
-        int originalFeatures = sDeviceState.dpc().devicePolicyManager().getKeyguardDisabledFeatures(
-                sDeviceState.dpc().componentName());
+        int originalFeatures = dpc(sDeviceState).devicePolicyManager().getKeyguardDisabledFeatures(
+                dpc(sDeviceState).componentName());
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), KEYGUARD_DISABLE_IRIS);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), KEYGUARD_DISABLE_IRIS);
 
             assertThat(TestApis.devicePolicy().getKeyguardDisabledFeatures()).isNotEqualTo(
                     KEYGUARD_DISABLE_IRIS);
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setKeyguardDisabledFeatures(
-                    sDeviceState.dpc().componentName(), originalFeatures);
+            dpc(sDeviceState).devicePolicyManager().setKeyguardDisabledFeatures(
+                    dpc(sDeviceState).componentName(), originalFeatures);
         }
     }
 
@@ -496,9 +498,9 @@ public final class KeyguardTest {
     @Postsubmit(reason = "New test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setTrustAgentConfiguration")
     public void setTrustAgentConfiguration_notPermitted_throwsException() {
-        assertThrows(SecurityException.class, () -> sDeviceState.dpc().devicePolicyManager()
+        assertThrows(SecurityException.class, () -> dpc(sDeviceState).devicePolicyManager()
                 .setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), TRUST_AGENT, CONFIGURATION));
+                        dpc(sDeviceState).componentName(), TRUST_AGENT, CONFIGURATION));
     }
 
     @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
@@ -508,21 +510,21 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#getTrustAgentConfiguration"})
     @Ignore // Needs trust agent testapp
     public void setTrustAgentConfiguration_trustAgentConfigurationIsSet() {
-        List<PersistableBundle> originalConfigurations = sDeviceState.dpc().devicePolicyManager()
-                .getTrustAgentConfiguration(sDeviceState.dpc().componentName(), TRUST_AGENT);
+        List<PersistableBundle> originalConfigurations = dpc(sDeviceState).devicePolicyManager()
+                .getTrustAgentConfiguration(dpc(sDeviceState).componentName(), TRUST_AGENT);
         PersistableBundle originalConfiguration = originalConfigurations == null
                 || originalConfigurations.isEmpty() ? null
                 : originalConfigurations.stream().findAny().get();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT, CONFIGURATION);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT, CONFIGURATION);
 
             assertContainsTestConfiguration(TestApis.devicePolicy().getTrustAgentConfiguration(
                     TRUST_AGENT));
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT, originalConfiguration);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT, originalConfiguration);
         }
     }
 
@@ -533,21 +535,21 @@ public final class KeyguardTest {
             "android.app.admin.DevicePolicyManager#getTrustAgentConfiguration"})
     @Ignore // Needs trust agent testapp
     public void setTrustAgentConfiguration_doesNotApply_trustAgentConfigurationIsNotSet() {
-        List<PersistableBundle> originalConfigurations = sDeviceState.dpc().devicePolicyManager()
-                .getTrustAgentConfiguration(sDeviceState.dpc().componentName(), TRUST_AGENT);
+        List<PersistableBundle> originalConfigurations = dpc(sDeviceState).devicePolicyManager()
+                .getTrustAgentConfiguration(dpc(sDeviceState).componentName(), TRUST_AGENT);
         PersistableBundle originalConfiguration = originalConfigurations == null
                 || originalConfigurations.isEmpty() ? null
                 : originalConfigurations.stream().findAny().get();
 
         try {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT, CONFIGURATION);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT, CONFIGURATION);
 
             assertThat(TestApis.devicePolicy().getTrustAgentConfiguration(
                     TRUST_AGENT)).isEmpty();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setTrustAgentConfiguration(
-                    sDeviceState.dpc().componentName(), TRUST_AGENT, originalConfiguration);
+            dpc(sDeviceState).devicePolicyManager().setTrustAgentConfiguration(
+                    dpc(sDeviceState).componentName(), TRUST_AGENT, originalConfiguration);
         }
     }
 
@@ -558,9 +560,9 @@ public final class KeyguardTest {
         ComponentName badAgent =
                 ComponentName.createRelative(VERY_LONG_STRING, TRUST_AGENT.getClassName());
 
-        assertThrows(IllegalArgumentException.class, () -> sDeviceState.dpc()
+        assertThrows(IllegalArgumentException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), badAgent, CONFIGURATION));
+                        dpc(sDeviceState).componentName(), badAgent, CONFIGURATION));
     }
 
     @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
@@ -570,9 +572,9 @@ public final class KeyguardTest {
         ComponentName badAgent =
                 ComponentName.createRelative(TRUST_AGENT.getPackageName(), VERY_LONG_STRING);
 
-        assertThrows(IllegalArgumentException.class, () -> sDeviceState.dpc()
+        assertThrows(IllegalArgumentException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), badAgent, CONFIGURATION));
+                        dpc(sDeviceState).componentName(), badAgent, CONFIGURATION));
     }
 
     @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
@@ -582,9 +584,9 @@ public final class KeyguardTest {
         PersistableBundle badConfig =
                 PersistableBundle.forPair("key", VERY_LONG_STRING);
 
-        assertThrows(IllegalArgumentException.class, () -> sDeviceState.dpc()
+        assertThrows(IllegalArgumentException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), TRUST_AGENT, badConfig));
+                        dpc(sDeviceState).componentName(), TRUST_AGENT, badConfig));
     }
 
     @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
@@ -594,9 +596,9 @@ public final class KeyguardTest {
         PersistableBundle badConfig =
                 PersistableBundle.forPair(VERY_LONG_STRING, "value");
 
-        assertThrows(IllegalArgumentException.class, () -> sDeviceState.dpc()
+        assertThrows(IllegalArgumentException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), TRUST_AGENT, badConfig));
+                        dpc(sDeviceState).componentName(), TRUST_AGENT, badConfig));
     }
 
     @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
@@ -606,9 +608,9 @@ public final class KeyguardTest {
         PersistableBundle badConfig = new PersistableBundle();
         badConfig.putStringArray("key", new String[]{VERY_LONG_STRING});
 
-        assertThrows(IllegalArgumentException.class, () -> sDeviceState.dpc()
+        assertThrows(IllegalArgumentException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), TRUST_AGENT, badConfig));
+                        dpc(sDeviceState).componentName(), TRUST_AGENT, badConfig));
     }
 
     @RequireFeature(FEATURE_SECURE_LOCK_SCREEN)
@@ -624,9 +626,9 @@ public final class KeyguardTest {
         }
         final PersistableBundle badConfig = bundle;
 
-        assertThrows(IllegalArgumentException.class, () -> sDeviceState.dpc()
+        assertThrows(IllegalArgumentException.class, () -> dpc(sDeviceState)
                 .devicePolicyManager().setTrustAgentConfiguration(
-                        sDeviceState.dpc().componentName(), TRUST_AGENT, badConfig));
+                        dpc(sDeviceState).componentName(), TRUST_AGENT, badConfig));
     }
 
     private void assertContainsTestConfiguration(Set<PersistableBundle> bundle) {

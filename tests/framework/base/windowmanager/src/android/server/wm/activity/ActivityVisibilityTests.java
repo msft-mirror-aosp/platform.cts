@@ -287,8 +287,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 WINDOWING_MODE_FULLSCREEN);
 
         mWmState.assertVisibility(TURN_SCREEN_ON_ACTIVITY, true);
-        assertTrue("Display turns on by " + (useWindowFlags ? "flags" : "APIs"),
-                isDisplayOn(DEFAULT_DISPLAY));
+        int displayId = activity.getConfigInfo().displayId;
+        assertTrue("Display " + displayId + " turns on by "
+                        + (useWindowFlags ? "flags" : "APIs"),
+                isDisplayOn(displayId));
 
         activity.finish();
         mWmState.waitForActivityRemoved(activity.getName());

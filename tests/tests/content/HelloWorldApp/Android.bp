@@ -337,6 +337,19 @@ android_test {
 
 //-----------------------------------------------------------
 android_test {
+    name: "HelloWorldUsingSdk1AndSdk1",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk_user/**/*.java"],
+    manifest: "AndroidManifestUsingSdk1AndSdk1.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
     name: "HelloWorldUsingSdk1And2",
     defaults: ["hello_world_defaults"],
     srcs: ["sdk_user/**/*.java"],
@@ -354,6 +367,19 @@ android_test {
     defaults: ["hello_world_defaults"],
     srcs: ["sdk_user/**/*.java"],
     manifest: "AndroidManifestUsingSdk3.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldUsingSdkMalformedNegativeVersion",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk_user/**/*.java"],
+    manifest: "AndroidManifestUsingSdkMalformedNegativeVersion.xml",
     test_suites: [
         "vts10",
         "general-tests",
