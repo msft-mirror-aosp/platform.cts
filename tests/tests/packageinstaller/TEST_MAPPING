@@ -1,21 +1,6 @@
 {
   "postsubmit": [
     {
-      "name": "CtsPackageSchemeTestsWithoutVisibility"
-    },
-    {
-      "name": "CtsPackageSchemeTestsWithVisibility"
-    },
-    {
-      "name": "CtsContentProviderTestsWithoutVisibility"
-    },
-    {
-      "name": "CtsContentProviderTestsWithVisibility"
-    },
-    {
-      "name": "CtsUpdateOwnershipEnforcementTestCases"
-    },
-    {
       "name": "CtsPackageInstallerCUJDeviceAdminTestCases",
       "options":[
           {
@@ -178,6 +163,24 @@
               "exclude-annotation":"org.junit.Ignore"
           }
       ]
+    },
+    {
+      "name": "CtsPackageSchemeTestsWithoutVisibility"
+    },
+    {
+      "name": "CtsPackageSchemeTestsWithVisibility"
+    },
+    {
+      "name": "CtsContentProviderTestsWithoutVisibility"
+    },
+    {
+      "name": "CtsContentProviderTestsWithVisibility"
+    },
+    {
+      "name": "CtsPackageInstallSessionTestCases"
+    },
+    {
+      "name": "CtsUpdateOwnershipEnforcementTestCases"
     }
   ],
   "imports": [
