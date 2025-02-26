@@ -747,12 +747,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testDeviceVoiceCapable() {
-        boolean isVoiceCapable = mTelephonyManager.isVoiceCapable();
         boolean isDeviceVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
         boolean hasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
 
-        assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
-                isDeviceVoiceCapable, isVoiceCapable);
         assertEquals("isDeviceVoiceCapable is not aligned with FEATURE_TELEPHONY_CALLING",
                 hasCallingFeature, isDeviceVoiceCapable);
     }
@@ -7133,14 +7130,6 @@ public class TelephonyManagerTest {
         assertNotNull("Dropbox entry content is null", content);
         entry.close();
         return entryTime;
-    }
-
-    @Test
-    @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isDeviceVoiceCapable",
-            "android.telephony.TelephonyManager#isVoiceCapable"})
-    public void testIsDeviceVoiceCapable_isIdenticalToIsVoiceCapable() {
-        assertEquals(mTelephonyManager.isDeviceVoiceCapable(), mTelephonyManager.isVoiceCapable());
     }
 
     @Test
