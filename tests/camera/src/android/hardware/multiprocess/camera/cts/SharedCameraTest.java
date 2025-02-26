@@ -231,9 +231,12 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                                 + " view or ImageReader for shared session, skipping");
                 continue;
             }
-            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
-            performCreateSharedSessionInvalidConfigsJavaClient();
-            closeCameraJavaClient();
+            try {
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
+                performCreateSharedSessionInvalidConfigsJavaClient();
+            } finally {
+                closeCameraJavaClient();
+            }
         }
     }
 
@@ -262,38 +265,42 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                                 + " image reader, skipping");
                 continue;
             }
-            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
-            performCreateSharedSessionUnsupportedOperationsJavaClient();
-            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
-            if (imageReaderIdx != -1) {
-                sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
-            } else if (surfaceViewIdx != -1) {
-                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
+            long nativeSharedTest = 0;
+            try {
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
+                performCreateSharedSessionUnsupportedOperationsJavaClient();
+                ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+                if (imageReaderIdx != -1) {
+                    sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
+                } else if (surfaceViewIdx != -1) {
+                    sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
+                }
+                createSharedSessionJavaClient(sharedStreamArray);
+                performUnsupportedCaptureSessionCommandsJavaClient();
+                if (imageReaderIdx != -1) {
+                    SharedOutputConfiguration imgReaderConfig =
+                            sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
+                    int imgWidth = imgReaderConfig.getSize().getWidth();
+                    int imgHeight = imgReaderConfig.getSize().getHeight();
+                    int imgFormat = imgReaderConfig.getFormat();
+                    assertCameraDeviceSharingSupportedNativeClient(mCameraId,
+                            /*sharingSupported*/true);
+                    nativeSharedTest = openSharedCameraNativeClient(mCameraId,
+                            /*isPrimaryClient*/false);
+                    testPerformUnsupportedOperationsNative(nativeSharedTest, imgWidth, imgHeight,
+                            imgFormat);
+                    createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+                    testUnsupportedCaptureSessionCommandsNative(nativeSharedTest);
+                }
+            } finally {
+                try {
+                    closeCameraJavaClient();
+                } finally {
+                    if (nativeSharedTest != 0) {
+                        closeNativeClient(nativeSharedTest);
+                    }
+                }
             }
-            createSharedSessionJavaClient(sharedStreamArray);
-            performUnsupportedCaptureSessionCommandsJavaClient();
-            // TODO (b/394083987): Investigate native tests failures. For now they are commented out
-            //            if (imageReaderIdx != -1) {
-            //                SharedOutputConfiguration imgReaderConfig =
-            //
-            // sharedSessionConfig.getOutputStreamsInformation().get(imageReaderIdx);
-            //                int imgWidth = imgReaderConfig.getSize().getWidth();
-            //                int imgHeight = imgReaderConfig.getSize().getHeight();
-            //                int imgFormat = imgReaderConfig.getFormat();
-            //                assertCameraDeviceSharingSupportedNativeClient(
-            //                        mCameraId, /*sharingSupported*/ true);
-            //                long nativeSharedTest =
-            //                        openSharedCameraNativeClient(mCameraId, /* isPrimaryClient */
-            // false);
-            //                 testPerformUnsupportedOperationsNative(nativeSharedTest);
-            //                 createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight,
-            // imgFormat);
-            //                 startSharedStreamingNative(nativeSharedTest);
-            //                 testUnsupportedCaptureSessionCommandsNative(nativeSharedTest);
-            //                 stopSharedStreamingNative(nativeSharedTest);
-            //                 closeNativeClient(nativeSharedTest);
-            //            }
-            closeCameraJavaClient();
         }
     }
 
@@ -370,23 +377,33 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                             + " is not a system camera.",
                     mAdoptShellPerm);
             assertCameraDeviceSharingSupportedJavaClient(mCameraId, /*sharingSupported*/true);
-            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
-            assertCameraDeviceSharingSupportedNativeClient(mCameraId, /*sharingSupported*/true);
-            long nativeSharedTest =
-                    openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/false);
-            // Verify that attempting to open the camera didn't cause anything weird to happen in
-            // the other process.
-            List<ErrorLoggingService.LogEvent> eventList2 = null;
-            boolean timeoutExceptionHit = false;
+            long nativeSharedTest = 0;
             try {
-                eventList2 = mErrorServiceConnection.getLog(EVICTION_TIMEOUT);
-            } catch (TimeoutException e) {
-                timeoutExceptionHit = true;
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+                assertCameraDeviceSharingSupportedNativeClient(mCameraId, /*sharingSupported*/true);
+                nativeSharedTest =
+                        openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/false);
+                // Verify that attempting to open the camera didn't cause anything weird to happen
+                // in the other process.
+                List<ErrorLoggingService.LogEvent> eventList2 = null;
+                boolean timeoutExceptionHit = false;
+                try {
+                    eventList2 = mErrorServiceConnection.getLog(EVICTION_TIMEOUT);
+                } catch (TimeoutException e) {
+                    timeoutExceptionHit = true;
+                }
+                TestUtils.assertNone("SharedCameraActivity received unexpected events: ",
+                        eventList2);
+                assertTrue("SharedCameraActivity error service exited early", timeoutExceptionHit);
+            } finally {
+                try {
+                    closeCameraJavaClient();
+                } finally {
+                    if (nativeSharedTest != 0) {
+                        closeNativeClient(nativeSharedTest);
+                    }
+                }
             }
-            TestUtils.assertNone("SharedCameraActivity received unexpected events: ", eventList2);
-            assertTrue("SharedCameraActivity error service exited early", timeoutExceptionHit);
-            closeCameraJavaClient();
-            closeNativeClient(nativeSharedTest);
         }
     }
 
@@ -479,22 +496,31 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
             imgWidth = imgReaderConfig.getSize().getWidth();
             imgHeight = imgReaderConfig.getSize().getHeight();
             imgFormat = imgReaderConfig.getFormat();
-            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
-            long nativeSharedTest =
-                    openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/ false);
-            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
-            sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
-            createSharedSessionJavaClient(sharedStreamArray);
-            startPreviewJavaClient(sharedStreamArray);
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
-            startSharedStreamingNative(nativeSharedTest);
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            stopSharedStreamingNative(nativeSharedTest);
-            closeSessionNative(nativeSharedTest);
-            stopPreviewJavaClient();
-            closeCameraJavaClient();
-            closeNativeClient(nativeSharedTest);
+            long nativeSharedTest = 0;
+            try {
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/ true);
+                nativeSharedTest =
+                        openSharedCameraNativeClient(mCameraId, /*isPrimaryClient*/ false);
+                ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_SURFACE_VIEW);
+                createSharedSessionJavaClient(sharedStreamArray);
+                startPreviewJavaClient(sharedStreamArray);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+                startSharedStreamingNative(nativeSharedTest);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                stopSharedStreamingNative(nativeSharedTest);
+                closeSessionNative(nativeSharedTest);
+                stopPreviewJavaClient();
+            } finally {
+                try {
+                    closeCameraJavaClient();
+                } finally {
+                    if (nativeSharedTest != 0) {
+                        closeNativeClient(nativeSharedTest);
+                    }
+                }
+            }
         }
     }
 
@@ -529,20 +555,29 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 imgHeight = imgReaderConfig.getSize().getHeight();
                 imgFormat = imgReaderConfig.getFormat();
             }
-            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
-            long nativeSharedTest = openSharedCameraNativeClient(mCameraId,
-                    /*isPrimaryClient*/false);
-            createSharedSessionJavaClient(sharedStreamArray);
-            startPreviewJavaClient(sharedStreamArray);
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
-            startSharedStreamingNative(nativeSharedTest);
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            stopSharedStreamingNative(nativeSharedTest);
-            closeSessionNative(nativeSharedTest);
-            stopPreviewJavaClient();
-            closeCameraJavaClient();
-            closeNativeClient(nativeSharedTest);
+            long nativeSharedTest = 0;
+            try {
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+                nativeSharedTest = openSharedCameraNativeClient(mCameraId,
+                        /*isPrimaryClient*/false);
+                createSharedSessionJavaClient(sharedStreamArray);
+                startPreviewJavaClient(sharedStreamArray);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+                startSharedStreamingNative(nativeSharedTest);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                stopSharedStreamingNative(nativeSharedTest);
+                closeSessionNative(nativeSharedTest);
+                stopPreviewJavaClient();
+            } finally {
+                try {
+                    closeCameraJavaClient();
+                } finally {
+                    if (nativeSharedTest != 0) {
+                        closeNativeClient(nativeSharedTest);
+                    }
+                }
+            }
         }
     }
 
@@ -576,22 +611,31 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                 imgHeight = imgReaderConfig.getSize().getHeight();
                 imgFormat = imgReaderConfig.getFormat();
             }
-            openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
-            long nativeSharedTest = openSharedCameraNativeClient(mCameraId,
-                    /*isPrimaryClient*/false);
-            createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
-            startSharedStreamingNative(nativeSharedTest);
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            stopSharedStreamingNative(nativeSharedTest);
-            createSharedSessionJavaClient(sharedStreamArray);
-            startPreviewJavaClient(sharedStreamArray);
-            startSharedStreamingNative(nativeSharedTest);
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            stopSharedStreamingNative(nativeSharedTest);
-            closeSessionNative(nativeSharedTest);
-            stopPreviewJavaClient();
-            closeCameraJavaClient();
-            closeNativeClient(nativeSharedTest);
+            long nativeSharedTest = 0;
+            try {
+                openSharedCameraJavaClient(mCameraId, /*isPrimaryClient*/true);
+                nativeSharedTest = openSharedCameraNativeClient(mCameraId,
+                        /*isPrimaryClient*/false);
+                createCaptureSessionNative(nativeSharedTest, imgWidth, imgHeight, imgFormat);
+                startSharedStreamingNative(nativeSharedTest);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                stopSharedStreamingNative(nativeSharedTest);
+                createSharedSessionJavaClient(sharedStreamArray);
+                startPreviewJavaClient(sharedStreamArray);
+                startSharedStreamingNative(nativeSharedTest);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                stopSharedStreamingNative(nativeSharedTest);
+                closeSessionNative(nativeSharedTest);
+                stopPreviewJavaClient();
+            } finally {
+                try {
+                    closeCameraJavaClient();
+                } finally {
+                    if (nativeSharedTest != 0) {
+                        closeNativeClient(nativeSharedTest);
+                    }
+                }
+            }
         }
     }
 
@@ -1013,14 +1057,10 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     private static native boolean testCloseSessionNative(long sharedTestContext);
     private static native boolean testStartSharedStreamingNative(long sharedTestContext);
     private static native boolean testStopSharedStreamingNative(long sharedTestContext);
-
-    // TODO (b/394083987): Investigate native tests failures. For now they are commented out.
-    //    private static native boolean testPerformUnsupportedOperationsNative(
-    //            long sharedTestContext, int width, int height, int format);
-
-    //    private static native boolean testUnsupportedCaptureSessionCommandsNative(
-    //            long sharedTestContext);
-
-    private static native boolean testClientAccessPriorityChangedNative(
-            long sharedTestContext, boolean primaryClient);
+    private static native boolean testPerformUnsupportedOperationsNative(long sharedTestContext,
+            int width, int height, int format);
+    private static native boolean testUnsupportedCaptureSessionCommandsNative(
+            long sharedTestContext);
+    private static native boolean testClientAccessPriorityChangedNative(long sharedTestContext,
+            boolean primaryClient);
 }
