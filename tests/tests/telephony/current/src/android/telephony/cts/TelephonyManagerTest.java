@@ -743,12 +743,9 @@ public class TelephonyManagerTest {
 
     @Test
     public void testDeviceVoiceCapable() {
-        boolean isVoiceCapable = mTelephonyManager.isVoiceCapable();
         boolean isDeviceVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
         boolean hasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
 
-        assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
-                isDeviceVoiceCapable, isVoiceCapable);
         assertEquals("isDeviceVoiceCapable is not aligned with FEATURE_TELEPHONY_CALLING",
                 hasCallingFeature, isDeviceVoiceCapable);
     }
@@ -7158,15 +7155,7 @@ public class TelephonyManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {
-            "android.telephony.TelephonyManager#isDeviceVoiceCapable",
-            "android.telephony.TelephonyManager#isVoiceCapable"})
-    public void testIsDeviceVoiceCapable_isIdenticalToIsVoiceCapable() {
-        assertEquals(mTelephonyManager.isDeviceVoiceCapable(), mTelephonyManager.isVoiceCapable());
-    }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
-    @ApiTest(apis = {
             "android.telephony.TelephonyManager#isDeviceSmsCapable",
             "android.telephony.TelephonyManager#isSmsCapable"})
     public void testIsDeviceSmsCapable_isIdenticalToIsSmsCapable() {
