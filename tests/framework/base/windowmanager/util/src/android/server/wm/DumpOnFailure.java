@@ -17,11 +17,11 @@
 package android.server.wm;
 
 import android.graphics.Bitmap;
+import android.os.Environment;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.BitmapUtils;
 
@@ -39,19 +39,27 @@ import java.util.regex.Pattern;
 /**
  * A {@code TestRule} that allows dumping data on test failure.
  *
- * <p>Note: when using other {@code TestRule}s, make sure to use a {@code RuleChain} to ensure it
- * is applied outside of other rules that can fail a test (otherwise this rule may not know that the
+ * <p>Note: when using other {@code TestRule}s, make sure to use a {@code RuleChain} to ensure it is
+ * applied outside of other rules that can fail a test (otherwise this rule may not know that the
  * test failed).
  *
  * <p>To capture the output of this rule, add the following to AndroidTest.xml:
- * <pre>
- *  <!-- Collect output of DumpOnFailure -->
- *  <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
- *    <option name="directory-keys" value="/data/user/0/<test.target.package.name>/files" />
- *    <option name="collect-on-run-ended-only" value="true" />
- *    <option name="clean-up" value="true" />
- *  </metrics_collector>
- * </pre>
+ *
+ * <pre>{@code
+ * <!-- Collect output of DumpOnFailure -->
+ * <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+ *     <option name="directory-keys" value="/sdcard/DumpOnFailure" />
+ *     <option name="collect-on-run-ended-only" value="true" />
+ *     <option name="clean-up" value="true" />
+ * </metrics_collector>
+ * }</pre>
+ *
+ * <p>And the following to AndroidManifest.xml:
+ *
+ * <pre>{@code
+ * <!-- Enable writing output of DumpOnFailure to external storage -->
+ * <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+ * }</pre>
  */
 public final class DumpOnFailure implements TestRule {
 
@@ -63,8 +71,8 @@ public final class DumpOnFailure implements TestRule {
 
     /** The output directory where the data should be dumped. */
     @NonNull
-    private static final File OUT_DIR = InstrumentationRegistry.getInstrumentation()
-            .getTargetContext().getFilesDir();
+    private static final File OUT_DIR =
+            new File(Environment.getExternalStorageDirectory(), "DumpOnFailure");
 
     /**
      * Map of data to be dumped on test failure. The key must contain the name, followed by
