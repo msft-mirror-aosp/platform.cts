@@ -33,7 +33,7 @@ python_test_host {
     test_config: "AndroidTest.xml",
     test_options: {
         unit_test: false,
-        runner: "mobly",
+        runner: "tradefed",
     },
     device_common_data: [
         ":cdm_snippet",
