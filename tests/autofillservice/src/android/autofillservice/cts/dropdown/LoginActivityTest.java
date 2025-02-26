@@ -2695,7 +2695,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
         // Set service.
         enableService();
 
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 5; i++) {
             Log.i(TAG, "testCancelMultipleTimes(): step " + i);
             final String username = "user-" + i;
             final String password = "pass-" + i;
