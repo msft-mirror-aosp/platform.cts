@@ -20,6 +20,7 @@ import static android.app.stubs.LocalForegroundServiceMedia.ACTION_START_FGSM_RE
 import static android.os.SystemClock.sleep;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.server.am.ActiveServices.MEDIA_FGS_STATE_TRANSITION;
 
 import static org.junit.Assert.assertTrue;
 
@@ -27,6 +28,8 @@ import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
+import android.app.compat.CompatChanges;
+import android.app.compat.PackageOverride;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
 import android.app.stubs.CommandReceiver;
@@ -57,6 +60,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerNotifyMediaFGSTypeTest {
@@ -104,7 +109,10 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MEDIA_CONTENT_CONTROL,
-                        Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG);
+                        Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG,
+                        Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+
+        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, true);
     }
 
     @After
@@ -114,9 +122,12 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     }
 
     private void cleanUp() {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-        });
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                    CompatChanges.removePackageOverrides(
+                            PACKAGE_NAME_APP1, Set.of(MEDIA_FGS_STATE_TRANSITION));
+                });
         // Make sure we are in Home screen.
         mInstrumentation.getUiAutomation().performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_HOME);
@@ -227,6 +238,11 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         return null;
     }
 
+    private static void setCompatOverride(long changeId, boolean enable) {
+        var override = Map.of(changeId, new PackageOverride.Builder().setEnabled(enable).build());
+        CompatChanges.putPackageOverrides(PACKAGE_NAME_APP1, override);
+    }
+
     // This test tests activity manager internal API to set media foreground service inactive.
     @Test
     @RequiresFlagsEnabled(
@@ -302,6 +318,67 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
                 extras);
         waiter.doWait(WAITFOR_MSEC);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service active --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
+    // This test tests activity manager internal API to set media foreground service active
+    // with compat change disabled.
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyInactiveMediaForegroundServiceInternalWithDisableCompatChanges()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // disable compat change.
+        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, false);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
+    // This test tests activity manager internal API to set media foreground service
+    // inactive/active with compat change disabled.
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyMediaServiceInternalWithDisableCompatChanges() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        // disable compat change.
+        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, false);
         runShellCommand(
                 mInstrumentation,
                 String.format(
