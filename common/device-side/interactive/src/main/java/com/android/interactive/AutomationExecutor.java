@@ -40,7 +40,7 @@ public class AutomationExecutor<E> implements Automation<E> {
             return (E) mObject.getClass().getMethod("automate").invoke(mObject);
         } catch (InvocationTargetException e) {
             // This can only be an exception because "automate" throws Exception
-            throw (Exception) e.getCause();
+            throw new IllegalStateException(e.getCause());
         } catch (IllegalAccessException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
