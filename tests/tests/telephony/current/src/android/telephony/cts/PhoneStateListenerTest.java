@@ -59,7 +59,6 @@ import android.util.Pair;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ShellIdentityUtils;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -186,10 +185,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnServiceStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse(mOnServiceStateChangedCalled);
 
@@ -216,10 +212,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnUnRegisterFollowedByRegister() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse(mOnServiceStateChangedCalled);
 
@@ -269,10 +262,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnSignalStrengthChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         assertFalse(mOnSignalStrengthChangedCalled);
 
@@ -342,12 +332,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnSignalStrengthsChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
-
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertTrue(mSignalStrength == null);
 
         mHandler.post(() -> {
@@ -428,12 +413,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnMessageWaitingIndicatorChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(
-                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
-        }
-
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         assertFalse(mOnMessageWaitingIndicatorChangedCalled);
 
         mHandler.post(() -> {
@@ -460,10 +440,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPreciseCallStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnPreciseCallStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -495,10 +472,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnCallDisconnectCauseChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mOnCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -527,10 +501,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnImsCallDisconnectCauseChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         assertThat(mOnImsCallDisconnectCauseChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -560,10 +531,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnPhoneStateListenerExecutorWithSrvccChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         assertThat(mSrvccStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -593,11 +561,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnRadioPowerStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertThat(mOnRadioPowerStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -627,11 +591,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnVoiceActivationStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_CALLING));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertThat(mVoiceActivationStateChangedCalled).isFalse();
 
         mHandler.post(() -> {
@@ -743,10 +703,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have READ_PHONE_STATE permission")
     public void testOnCallForwardingIndicatorChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallForwardingIndicatorChangedCalled);
 
         mHandler.post(() -> {
@@ -774,11 +731,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permission")
     public void testOnCellLocationChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnCellLocationChangedCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
@@ -807,10 +760,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have location permission")
     public void testOnCallStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         assertFalse(mOnCallStateChangedCalled);
 
         mHandler.post(() -> {
@@ -836,10 +786,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnDataConnectionStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataConnectionStateChangedCalled);
         assertFalse(mOnDataConnectionStateChangedWithNetworkTypeCalled);
 
@@ -883,10 +830,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnDataActivity() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnDataActivityCalled);
 
         mHandler.post(() -> {
@@ -913,11 +857,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have location permission")
     public void testOnCellInfoChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         assertFalse(mOnDataActivityCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
@@ -945,10 +885,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnUserMobileDataStateChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         assertFalse(mOnUserMobileDataStateChanged);
 
         mHandler.post(() -> {
@@ -975,11 +912,7 @@ public class PhoneStateListenerTest {
 
     @Test
     public void testOnOutgoingSmsEmergencyNumberChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_MESSAGING));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
 
@@ -1029,11 +962,7 @@ public class PhoneStateListenerTest {
     @Test
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnActiveDataSubscriptionIdChanged() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
-        }
-
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         assertFalse(mOnActiveDataSubscriptionIdChanged);
 
         mHandler.post(() -> {

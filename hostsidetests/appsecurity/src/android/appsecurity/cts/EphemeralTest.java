@@ -23,6 +23,7 @@ import static org.junit.Assume.assumeFalse;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
@@ -36,9 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Tests for ephemeral packages.
- */
+/** Tests for ephemeral packages. */
+@CddTest(requirements = {"3.15"})
 @RunWith(DeviceJUnit4ClassRunner.class)
 @AppModeFull(reason = "Already handles instant installs when needed")
 public class EphemeralTest extends BaseAppSecurityTest {
@@ -309,6 +309,7 @@ public class EphemeralTest extends BaseAppSecurityTest {
                 "testGetInstaller03");
     }
 
+    @CddTest(requirements = {"3.15/C-1-8"})
     @Test
     public void testExposedSystemActivities() throws Exception {
         if (mIsUnsupportedDevice) {

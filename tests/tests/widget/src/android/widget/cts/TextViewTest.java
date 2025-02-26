@@ -18,7 +18,6 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
-import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -4460,7 +4459,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Trigger insertion.
-        clickOnViewCenter(mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
 
         final boolean[] mDrawn = new boolean[3];
         mActivityRule.runOnUiThread(() -> {
@@ -6207,7 +6206,7 @@ public class TextViewTest {
         mInstrumentation.waitForIdleSync();
 
         // Tap the view to show InsertPointController.
-        clickOnViewCenter(mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         // bad workaround for waiting onStartInputView of LeanbackIme.apk done
         try {
             Thread.sleep(1000);
@@ -7591,14 +7590,14 @@ public class TextViewTest {
         assertFalse(mTextView.isInTouchMode());
 
         // First tap on the view triggers onClick() but does not focus the TextView.
-        clickOnViewCenter(mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertFalse(mTextView.isFocused());
         verify(mockOnClickListener, times(1)).onClick(mTextView);
         reset(mockOnClickListener);
         // So does the second tap.
-        clickOnViewCenter(mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertFalse(mTextView.isFocused());
@@ -7613,14 +7612,14 @@ public class TextViewTest {
 
         // First tap on the view focuses the TextView but does not trigger onClick().
         reset(mockOnClickListener);
-        clickOnViewCenter(mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertTrue(mTextView.isFocused());
         verify(mockOnClickListener, never()).onClick(mTextView);
         reset(mockOnClickListener);
         // The second tap triggers onClick() and keeps the focus.
-        clickOnViewCenter(mTextView);
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mTextView);
         SystemClock.sleep(safeDoubleTapTimeout);
         assertTrue(mTextView.isInTouchMode());
         assertTrue(mTextView.isFocused());

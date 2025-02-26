@@ -49,6 +49,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -107,6 +108,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
@@ -1417,6 +1419,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testHostInputTokenAllowsObscuredTouches() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         mTestService = getService();
         assertTrue(mTestService != null);
 
@@ -1448,6 +1454,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testNoHostInputTokenDisallowsObscuredTouches() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         mTestService = getService();
         mRemoteSurfacePackage = mTestService.getSurfacePackage(new Binder());
         assertTrue(mRemoteSurfacePackage != null);

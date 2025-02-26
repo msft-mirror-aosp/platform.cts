@@ -41,7 +41,10 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-/** Class for generating an XML report. */
+/**
+ * A class handles the creation of the XML document, the registration of generators for different
+ * {@link ModeType}s, and the serialization of the document to an output stream.
+ */
 public class XmlWriter {
 
     private final Document mDoc;
@@ -53,9 +56,15 @@ public class XmlWriter {
     private static final Map<ModeType, Class<? extends XmlGenerator<?>>> GENERATOR_CLASSES =
             Map.of(
                     ModeType.API_MAP, ApiMapXmlGenerator.class,
-                    ModeType.XTS_ANNOTATION, XtsAnnotationXmlGenerator.class
-            );
+                    ModeType.XTS_ANNOTATION, XtsAnnotationXmlGenerator.class,
+                    ModeType.XTS_API_INHERIT, XtsApiInheritGenerator.class);
 
+    /**
+     * Constructs an {@code XmlWriter}, initializing the XML document with a root element and a
+     * processing instruction for styling.
+     *
+     * @throws ParserConfigurationException If a DocumentBuilder cannot be created.
+     */
     public XmlWriter() throws ParserConfigurationException {
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = docFactory.newDocumentBuilder();
@@ -72,27 +81,40 @@ public class XmlWriter {
         mDoc.insertBefore(pi, mRootElement);
     }
 
-    /** Generates data related to APIs. */
+    /**
+     * Generates XML data for API coverage using registered {@link ApiXmlGenerator}s.
+     *
+     * @param apiCoverage The API coverage data to generate XML for.
+     */
     public void generateApiData(ApiCoverage apiCoverage) {
         mXmlGenerators.forEach(
                 xmlGenerator -> {
-                    if (xmlGenerator instanceof ApiMapXmlGenerator generator) {
+                    if (xmlGenerator instanceof ApiXmlGenerator generator) {
                         generator.generateData(apiCoverage);
                     }
                 });
     }
 
-    /** Generates data related to xTS modules. */
+    /**
+     * Generates XML data for module profiles using registered {@link XtsXmlGenerator}s.
+     *
+     * @param moduleProfile The module profile data to generate XML for.
+     */
     public void generateModuleData(ModuleProfile moduleProfile) {
         mXmlGenerators.forEach(
                 xmlGenerator -> {
-                    if (xmlGenerator instanceof XtsAnnotationXmlGenerator generator) {
+                    if (xmlGenerator instanceof XtsXmlGenerator generator) {
                         generator.generateData(moduleProfile);
                     }
                 });
     }
 
-    /** Dumps the document to an xml file. */
+    /**
+     * Dumps the generated XML document to the specified output stream.
+     *
+     * @param outputStream The output stream to write the XML to.
+     * @throws TransformerException If an error occurs during the transformation.
+     */
     public void dumpXml(OutputStream outputStream) throws TransformerException {
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         Transformer transformer = transformerFactory.newTransformer();
@@ -101,8 +123,10 @@ public class XmlWriter {
     }
 
     /**
-     * Registers XML generators for given modes.
+     * Registers XML generators for the specified modes. For each mode, it instantiates the
+     * corresponding {@link XmlGenerator}.
      *
+     * @param modes A list of {@link ModeType}s for which to register generators.
      * @throws RuntimeException if the mode is not supported.
      */
     public void registerXmlGenerators(List<ModeType> modes) {

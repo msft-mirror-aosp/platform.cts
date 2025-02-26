@@ -71,7 +71,8 @@ public class MmsTest {
     public static void ensureDefaultSmsApp() throws Exception {
         Context context = getInstrumentation().getContext();
         sOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(context);
-        if (TextUtils.isEmpty(sOriginalDefaultSmsApp)) {
+        if (TextUtils.isEmpty(sOriginalDefaultSmsApp)
+                || sOriginalDefaultSmsApp.equals("android.telephonyprovider.cts")) {
             sSetDefaultSmsAppSuccessful = DefaultSmsAppHelper.setDefaultSmsApp(
                     context, "com.google.android.apps.messaging");
         }

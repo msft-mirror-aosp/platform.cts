@@ -299,7 +299,6 @@ public class SdkSandboxWebViewTest {
     }
 
     @Test
-    @Ignore("b/368230178 - re-enable when WebView M131 is available in Android main branch")
     public void testSetSafeBrowsingAllowlistWithValidList() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testSetSafeBrowsingAllowlistWithValidList");
     }

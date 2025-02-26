@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A class to generate an XML element containing annotations marked by xTS tests.
+ * A class to generate an XML element containing xTS annotations marked by xTS tests.
  *
  * <p>The element structure is:
  * <xts-annotation>
@@ -47,7 +47,7 @@ import java.util.Set;
  *     </test-module>
  * </xts-annotation>
  */
-public final class XtsAnnotationXmlGenerator extends XmlGenerator<ModuleProfile> {
+public final class XtsAnnotationXmlGenerator extends XtsXmlGenerator {
 
     private static final String TOP_ELEMENT_NAME = "xts-annotation";
 

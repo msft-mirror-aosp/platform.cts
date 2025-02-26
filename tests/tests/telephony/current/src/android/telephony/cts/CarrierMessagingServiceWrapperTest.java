@@ -39,8 +39,6 @@ import android.telephony.cts.util.TelephonyUtils;
 
 import androidx.test.InstrumentationRegistry;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -85,13 +83,10 @@ public class CarrierMessagingServiceWrapperTest {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(getContext().getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_MESSAGING));
-        } else {
-            assumeTrue(getContext().getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY));
-        }
+        assumeTrue(
+                getContext()
+                        .getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING));
 
         MockitoAnnotations.initMocks(this);
         mContext = getContext();

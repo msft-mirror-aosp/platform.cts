@@ -46,7 +46,6 @@ import android.telephony.mbms.MbmsDownloadSessionCallback;
 import android.util.Log;
 
 import com.android.internal.os.SomeArgs;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -140,9 +139,7 @@ public class MbmsDownloadTestBase {
 
     @Before
     public void setUp() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(MbmsUtil.hasMbmsFeature());
-        }
+        assumeTrue(MbmsUtil.hasMbmsFeature());
 
         mContext = getContext();
         mHandlerThread = new HandlerThread("EmbmsCtsTestWorker");
@@ -163,10 +160,8 @@ public class MbmsDownloadTestBase {
 
     @After
     public void tearDown() throws Exception {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (!MbmsUtil.hasMbmsFeature()) {
-                return;
-            }
+        if (!MbmsUtil.hasMbmsFeature()) {
+            return;
         }
 
         mHandlerThread.quit();

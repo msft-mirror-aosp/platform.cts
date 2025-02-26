@@ -201,9 +201,14 @@ class DeviceOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -240,9 +245,14 @@ class DeviceOwnerTest {
                 TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
             }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -280,9 +290,14 @@ class DeviceOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -339,23 +354,31 @@ class DeviceOwnerTest {
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
                     .toMeet { i: Set<DeviceAdmin> -> !i.contains(
-                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                            DeviceAdmin.of(
+                                TEST_ONLY_DPC.packageName(),
                                     ComponentName(
-                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                                            TEST_ONLY_DPC.packageName(),
+                                        "DeviceAdminReceiver"
+                                    )
+                            )
+                    )
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
         }
     }
 
-
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#ACTION_DEVICE_OWNER_CHANGED"])
     @EnsureHasNoDpc
-    //Not allowed to set the device owner as long as there are already some accounts on the device. (b/347418954)
+    // Not allowed to set the device owner as long as there are already some accounts on the device. (b/347418954)
     @EnsureHasNoAccounts(
         onUser = UserType.ANY,
         failureMode = FailureMode.SKIP
     )
+    // For HSUM devices, the management mode by default used in tests is affiliated. Affiliated
+    // mode wants the DO in user 0. Only the user the DO is set in receives the broadcast.
+    // Hence, we need to run the test in user 0 on HSUM and non-HSUM.
+    @RequireRunOnSystemUser
     @Postsubmit(reason = "new test")
     @Test
     fun setDeviceOwner_receivesOwnerChangedBroadcast() {

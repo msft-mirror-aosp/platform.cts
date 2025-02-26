@@ -55,6 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -69,8 +70,7 @@ public class DisplayEventTest extends TestBase {
 
     private static final int MESSAGE_CALLBACK = 1;
 
-    private static final long TEST_FAILURE_TIMEOUT_MSEC = 10000;
-
+    private static final long TEST_FAILURE_TIMEOUT_MSEC = 5000;
 
     private static final int DISPLAY_ADDED = 1;
     private static final int DISPLAY_CHANGED = 2;
@@ -150,6 +150,7 @@ public class DisplayEventTest extends TestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_LISTENER_PERFORMANCE_IMPROVEMENTS)
     public void testDisplayRefreshRateChangedEvent() throws InterruptedException {
+        assumeTrue(notInConcurrentDisplayState());
         registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_REFRESH_RATE);
 
         switchRefreshRate();
@@ -159,6 +160,7 @@ public class DisplayEventTest extends TestBase {
 
     @Test
     public void testNoDisplayRefreshRateChangedEvent() throws InterruptedException {
+        assumeTrue(notInConcurrentDisplayState());
         registerDisplayListener((int) DisplayManager.EVENT_TYPE_DISPLAY_CHANGED);
 
         switchRefreshRate();
@@ -170,6 +172,7 @@ public class DisplayEventTest extends TestBase {
     @RequiresFlagsDisabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
     public void test_displayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedDisabled()
             throws InterruptedException {
+        assumeTrue(notInConcurrentDisplayState());
         registerDisplayListener();
 
         switchRefreshRate();
@@ -181,6 +184,8 @@ public class DisplayEventTest extends TestBase {
     @RequiresFlagsEnabled(Flags.FLAG_DELAY_IMPLICIT_RR_REGISTRATION_UNTIL_RR_ACCESSED)
     public void test_noDisplayRrChangedEvent_delayImplicitRegistrationUntilRrAccessedEnabled()
             throws InterruptedException {
+        assumeTrue(notInConcurrentDisplayState());
+
         // Reset the implicit RR callbacks registration
         mDisplayManager.resetImplicitRefreshRateCallbackStatus();
 
@@ -193,6 +198,16 @@ public class DisplayEventTest extends TestBase {
         mDisplay.getRefreshRate();
         switchRefreshRate();
         waitDisplayEvent(Display.DEFAULT_DISPLAY, DISPLAY_CHANGED);
+    }
+
+    boolean notInConcurrentDisplayState() {
+        long invalidDisplayStatesCount = Arrays.stream(mDisplayManager.getDisplays())
+                .filter(display -> (display.getDisplayId() == Display.DEFAULT_DISPLAY
+                        && display.getState() != Display.STATE_ON)
+                        || (display.getDisplayId() != Display.DEFAULT_DISPLAY
+                        && display.getState() == Display.STATE_ON))
+                .count();
+        return invalidDisplayStatesCount == 0;
     }
 
     private void registerDisplayListener(int eventFlagMask) {
