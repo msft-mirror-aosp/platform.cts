@@ -1140,6 +1140,7 @@ public class TelephonyManagerTest {
         mTelephonyManager.getLine1Number();
         mTelephonyManager.getPhoneCount();
         mTelephonyManager.isVoiceCapable();
+        mTelephonyManager.isDeviceVoiceCapable();
         mTelephonyManager.isSmsCapable();
         mTelephonyManager.getDeviceSoftwareVersion();
 
@@ -1527,7 +1528,7 @@ public class TelephonyManagerTest {
 
     @Test
     public void testCreateForPhoneAccountHandle() {
-        if (!mTelephonyManager.isVoiceCapable()) {
+        if (!mTelephonyManager.isDeviceVoiceCapable()) {
             Log.d(TAG, "Skipping test that requires device to be voice capable");
             return;
         }
@@ -7144,7 +7145,7 @@ public class TelephonyManagerTest {
         List<String> emergencyRoleHolders = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 getContext().getSystemService(RoleManager.class),
                 (rm) -> rm.getRoleHolders(RoleManager.ROLE_EMERGENCY));
-        if (mTelephonyManager.isVoiceCapable()
+        if (mTelephonyManager.isDeviceVoiceCapable()
             && ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isEmergencyAssistanceEnabled())) {
             String emergencyAssistancePackageName =
