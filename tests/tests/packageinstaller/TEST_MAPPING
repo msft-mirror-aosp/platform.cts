@@ -38,6 +38,28 @@
       ]
     },
     {
+      "name": "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaSessionTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
       "name": "CtsPackageInstallerCUJMultiUsersTestCases",
       "options":[
           {
@@ -126,6 +148,28 @@
     },
     {
       "name": "CtsPackageInstallerCUJInstallationTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationViaSessionTestCases",
       "options":[
           {
               "exclude-annotation":"androidx.test.filters.FlakyTest"
