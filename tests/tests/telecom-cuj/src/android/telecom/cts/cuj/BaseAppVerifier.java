@@ -16,6 +16,8 @@
 
 package android.telecom.cts.cuj;
 
+import static android.telecom.cts.apps.AttributesUtil.getExtrasWithPhoneAccount;
+import static android.telecom.cts.apps.AttributesUtil.isOutgoing;
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_ADDRESS;
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_CLONE_LABEL;
 import static android.telecom.cts.apps.TelecomTestApp.MANAGED_APP_CN;
@@ -39,6 +41,7 @@ import android.telecom.CallEndpoint;
 import android.telecom.CallException;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
+import android.telecom.TelecomManager;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.apps.BaseAppVerifierImpl;
 import android.telecom.cts.apps.CallStateTransitionOperation;
@@ -69,6 +72,7 @@ public class BaseAppVerifier {
     public boolean mShouldTestTelecom = true;
     public boolean mSupportsManagedCalls = false;
     private BaseAppVerifierImpl mBaseAppVerifierImpl;
+    private TelecomManager mTelecomManager;
     protected Context mContext = null;
     /***********************************************************
      /  ManagedConnectionServiceApp/ ManagedConnectionServiceAppClone - The PhoneAccountHandle and
@@ -76,29 +80,38 @@ public class BaseAppVerifier {
      /***********************************************************/
     public static final PhoneAccountHandle MANAGED_HANDLE_1 =
             new PhoneAccountHandle(MANAGED_APP_CN, MANAGED_APP_ID);
+
     private static final PhoneAccount MANAGED_DEFAULT_ACCOUNT_1 =
             PhoneAccount.builder(MANAGED_HANDLE_1, MANAGED_APP_LABEL)
-            .setAddress(Uri.parse(MANAGED_ADDRESS))
-            .setSubscriptionAddress(Uri.parse(MANAGED_ADDRESS))
-            .setCapabilities(PhoneAccount.CAPABILITY_VIDEO_CALLING
-                    | PhoneAccount.CAPABILITY_CALL_PROVIDER /* needed in order to be default sub */)
-            .setHighlightColor(Color.RED)
-            .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
-            .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
-            .addSupportedUriScheme(PhoneAccount.SCHEME_VOICEMAIL)
-            .build();
+                    .setAddress(Uri.parse(MANAGED_ADDRESS))
+                    .setSubscriptionAddress(Uri.parse(MANAGED_ADDRESS))
+                    .setCapabilities(
+                            PhoneAccount.CAPABILITY_VIDEO_CALLING
+                                    /* needed in order to be default sub */
+                                    | PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                    /* needed to place ECC */
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
+                    .setHighlightColor(Color.RED)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_VOICEMAIL)
+                    .build();
 
     public static final PhoneAccountHandle MANAGED_HANDLE_2 =
             new PhoneAccountHandle(MANAGED_APP_CN, MANAGED_APP_ID + "_2");
     private static final PhoneAccount MANAGED_DEFAULT_ACCOUNT_2 =
             PhoneAccount.builder(MANAGED_HANDLE_2, MANAGED_APP_LABEL)
-            .setAddress(Uri.parse(MANAGED_ADDRESS + "_2"))
-            .setSubscriptionAddress(Uri.parse(MANAGED_ADDRESS + "_2"))
-            .setCapabilities(PhoneAccount.CAPABILITY_VIDEO_CALLING
-                    | PhoneAccount.CAPABILITY_CALL_PROVIDER /* needed in order to be default sub */)
-            .setHighlightColor(Color.RED)
-            .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
-            .build();
+                    .setAddress(Uri.parse(MANAGED_ADDRESS + "_2"))
+                    .setSubscriptionAddress(Uri.parse(MANAGED_ADDRESS + "_2"))
+                    .setCapabilities(
+                            PhoneAccount.CAPABILITY_VIDEO_CALLING
+                                    /* needed in order to be default sub */
+                                    | PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                    /* needed to place ECC */
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
+                    .setHighlightColor(Color.RED)
+                    .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
+                    .build();
 
     public static final PhoneAccountHandle MANAGED_CLONE_HANDLE_1 =
             new PhoneAccountHandle(MANAGED_CLONE_APP_CN, MANAGED_CLONE_APP_ID);
@@ -106,8 +119,12 @@ public class BaseAppVerifier {
             PhoneAccount.builder(MANAGED_CLONE_HANDLE_1, MANAGED_APP_CLONE_LABEL)
                     .setAddress(Uri.parse(MANAGED_CLONE_ADDRESS))
                     .setSubscriptionAddress(Uri.parse(MANAGED_CLONE_ADDRESS))
-                    .setCapabilities(PhoneAccount.CAPABILITY_VIDEO_CALLING
-                            | PhoneAccount.CAPABILITY_CALL_PROVIDER /* needed in order to be default sub */)
+                    .setCapabilities(
+                            PhoneAccount.CAPABILITY_VIDEO_CALLING
+                                    /* needed in order to be default sub */
+                                    | PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                    /* needed to place ECC */
+                                    | PhoneAccount.CAPABILITY_PLACE_EMERGENCY_CALLS)
                     .setHighlightColor(Color.RED)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_SIP)
                     .addSupportedUriScheme(PhoneAccount.SCHEME_TEL)
@@ -160,6 +177,7 @@ public class BaseAppVerifier {
                     }
                 });
         mBaseAppVerifierImpl.setUp();
+        mTelecomManager = mContext.getSystemService(TelecomManager.class);
     }
 
     @After
@@ -216,9 +234,9 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.getDefaultMmiAttributes(name);
     }
 
-    public CallAttributes getRandomAttributes(TelecomTestApp name, boolean isOutgoing)
-            throws Exception {
-        return mBaseAppVerifierImpl.getRandomAttributes(name, isOutgoing, true);
+    public CallAttributes getRandomAttributes(
+            TelecomTestApp name, boolean isOutgoing, boolean isHoldable) throws Exception {
+        return mBaseAppVerifierImpl.getRandomAttributes(name, isOutgoing, isHoldable);
     }
 
     public String addOutgoingCallAndVerify(AppControlWrapper appControl)
@@ -228,6 +246,26 @@ public class BaseAppVerifier {
                 true /*isOutgoing*/,
                 true /* isHoldable */);
         return mBaseAppVerifierImpl.addCallAndVerify(appControl, outgoingAttributes);
+    }
+
+    public String addEmergencyCallAndVerify(
+            AppControlWrapper appControl,
+            Consumer<CallStateTransitionOperation> consumer,
+            int numDisconnectDueToEcc)
+            throws Exception {
+        CallAttributes emergencyCallAttrs =
+                mBaseAppVerifierImpl.getDefaultAttributesForEmergency(appControl.getTelecomApps());
+        // ECC has to be placed in the same package as the system dialer (CujInCallService).
+        if (isOutgoing(emergencyCallAttrs)) {
+            mTelecomManager.placeCall(
+                    emergencyCallAttrs.getAddress(), getExtrasWithPhoneAccount(emergencyCallAttrs));
+        } else {
+            mTelecomManager.addNewIncomingCall(
+                    emergencyCallAttrs.getPhoneAccountHandle(),
+                    getExtrasWithPhoneAccount(emergencyCallAttrs));
+        }
+        return mBaseAppVerifierImpl.verifyAddEmergencyCall(
+                appControl, emergencyCallAttrs, consumer, numDisconnectDueToEcc);
     }
 
     public String addIncomingCallAndVerify(AppControlWrapper appControl)
@@ -507,5 +545,15 @@ public class BaseAppVerifier {
      */
     public void releaseAudioFocusForMusic() {
         mBaseAppVerifierImpl.releaseAudioFocusForMusic();
+    }
+
+    /** Setup required to test emergency calling in CUJ. */
+    public void setupForEmergencyCalling() throws Exception {
+        mBaseAppVerifierImpl.setupForEmergencyCalling();
+    }
+
+    /** Cleanup setup procedure done to test emergency calling. d */
+    public void tearDownEmergencyCalling() throws Exception {
+        mBaseAppVerifierImpl.tearDownEmergencyCalling();
     }
 }

@@ -65,6 +65,8 @@ import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
 import android.util.Log;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import java.util.ArrayList;
@@ -108,6 +110,8 @@ public class BaseAppVerifierImpl {
     private final InCallServiceMethods mVerifierMethods;
     private final String mCallingPackageName;
     private final AudioManager mAudioManager;
+    private boolean mIsEmergencyCallingSetup = false;
+
     public String mPreviousDefaultDialer = "";
     public PhoneAccountHandle mPreviousDefaultPhoneAccount = null;
     public boolean mEnableCallOperationCapture = false;
@@ -258,11 +262,15 @@ public class BaseAppVerifierImpl {
             throws Exception {
         if (name.equals(ManagedConnectionServiceApp)) {
             // Treat the first element in mManagedAccounts as the "default"
-            return getDefaultAttributesForManaged(mManagedAccounts.get(0).getAccountHandle(),
-                    isOutgoing);
+            return getDefaultAttributesForManaged(
+                    mManagedAccounts.get(0).getAccountHandle(),
+                    isOutgoing,
+                    false /* isEmergency */);
         } else if (name.equals(ManagedConnectionServiceAppClone)) {
-            return getDefaultAttributesForManaged(mManagedCloneAccounts.get(0).getAccountHandle(),
-                    isOutgoing);
+            return getDefaultAttributesForManaged(
+                    mManagedCloneAccounts.get(0).getAccountHandle(),
+                    isOutgoing,
+                    false /* isEmergency */);
         }
         return getDefaultAttributesForApp(name, isOutgoing);
     }
@@ -272,9 +280,25 @@ public class BaseAppVerifierImpl {
             throws Exception {
         if (name.equals(ManagedConnectionServiceApp)
                 || name.equals(ManagedConnectionServiceAppClone)) {
-            return getDefaultAttributesForManaged(pAH, isOutgoing);
+            return getDefaultAttributesForManaged(pAH, isOutgoing, false /* isEmergency */);
         }
         return getDefaultAttributesForApp(name, isOutgoing);
+    }
+
+    public CallAttributes getDefaultAttributesForEmergency(TelecomTestApp name) {
+        if (name.equals(ManagedConnectionServiceApp)) {
+            // Treat the first element in mManagedAccounts as the "default"
+            return getDefaultAttributesForManaged(
+                    mManagedAccounts.get(0).getAccountHandle(),
+                    true /* isOutgoing */,
+                    true /* isEmergency */);
+        } else if (name.equals(ManagedConnectionServiceAppClone)) {
+            return getDefaultAttributesForManaged(
+                    mManagedCloneAccounts.get(0).getAccountHandle(),
+                    true /* isOutgoing */,
+                    true /* isEmergency */);
+        }
+        return null;
     }
 
     public CallAttributes getDefaultMmiAttributes(TelecomTestApp name) throws Exception {
@@ -330,6 +354,19 @@ public class BaseAppVerifierImpl {
             throws Exception {
         int currentCallCount = addCall(appControl, attributes);
         waitUntilExpectedCallCount(currentCallCount + 1);
+        return mVerifierMethods.getLastAddedCall().getDetails().getId();
+    }
+
+    public String verifyAddEmergencyCall(
+            AppControlWrapper appControl,
+            CallAttributes attributes,
+            Consumer<CallStateTransitionOperation> consumer,
+            int numDisconnectDueToEcc)
+            throws Exception {
+        int currentCallCount = mVerifierMethods.getCurrentCallCount();
+        appControl.verifyAddCall(attributes, consumer);
+        waitForInCallServiceBinding(mVerifierMethods);
+        waitUntilExpectedCallCount(currentCallCount + 1 - numDisconnectDueToEcc);
         return mVerifierMethods.getLastAddedCall().getDetails().getId();
     }
 
@@ -657,6 +694,30 @@ public class BaseAppVerifierImpl {
     public void releaseAudioFocusForMusic() {
         int result = mAudioManager.abandonAudioFocusRequest(mMusicFocusRequest);
         assertEquals(AudioManager.AUDIOFOCUS_REQUEST_GRANTED, result);
+    }
+
+    public void setupForEmergencyCalling() throws Exception {
+        mIsEmergencyCallingSetup = true;
+        ShellCommandExecutor.setSystemDialerOverride(
+                InstrumentationRegistry.getInstrumentation(),
+                AttributesUtil.SYSTEM_DIALER_PKG_NAME);
+        ShellCommandExecutor.addTestEmergencyNumber(
+                InstrumentationRegistry.getInstrumentation(), AttributesUtil.TEST_EMERGENCY_NUMBER);
+        ShellCommandExecutor.setTestEmergencyPhoneAccountPackageFilter(
+                InstrumentationRegistry.getInstrumentation(),
+                AttributesUtil.TEST_EMERGENCY_MANAGED_PHONE_ACCOUNT_PKG_NAME
+                        + ","
+                        + AttributesUtil.TEST_EMERGENCY_MANAGED_CLONE_PHONE_ACCOUNT_PKG_NAME);
+    }
+
+    public void tearDownEmergencyCalling() throws Exception {
+        if (!mIsEmergencyCallingSetup) return;
+        ShellCommandExecutor.clearSystemDialerOverride(
+                InstrumentationRegistry.getInstrumentation());
+        ShellCommandExecutor.clearTestEmergencyNumbers(
+                InstrumentationRegistry.getInstrumentation());
+        ShellCommandExecutor.clearTestEmergencyPhoneAccountPackageFilter(
+                InstrumentationRegistry.getInstrumentation());
     }
 
     private Call findTargetCall(String id) {

@@ -34,6 +34,13 @@ public class AttributesUtil {
     private static final Uri TEST_URI_IN = Uri.parse("tel:456-TEST");
     private static final String TEST_NAME_IN = "Alan Turing";
     private static final Uri TEST_MMI_URI = Uri.parse("tel:0");
+    public static final String TEST_EMERGENCY_NUMBER = "5553637";
+    private static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
+    public static final String SYSTEM_DIALER_PKG_NAME = "android.telecom.cts.cuj/.CujInCallService";
+    public static final String TEST_EMERGENCY_MANAGED_PHONE_ACCOUNT_PKG_NAME =
+            "android.telecom.cts.apps.managedapp";
+    public static final String TEST_EMERGENCY_MANAGED_CLONE_PHONE_ACCOUNT_PKG_NAME =
+            "android.telecom.cts.apps.managedappclone";
 
     /**
      * @return true if the call is holdable according to the CallAttributes
@@ -76,15 +83,18 @@ public class AttributesUtil {
     }
 
     /**
-     * @return a CallAttributes object for the MANAGED_APP. The Name and Address are
-     * defaulted depending on the direction.
+     * @return a CallAttributes object for the MANAGED_APP. The Name and Address are defaulted
+     *     depending on the direction.
      */
-    public static CallAttributes getDefaultAttributesForManaged(PhoneAccountHandle handle,
-            boolean isOutgoing) {
+    public static CallAttributes getDefaultAttributesForManaged(
+            PhoneAccountHandle handle, boolean isOutgoing, boolean isEmergency) {
         return new CallAttributes.Builder(
-                handle,
-                getDirectionFromBool(isOutgoing),
-                TEST_NAME_IN, getDefaultAddress(isOutgoing))
+                        handle,
+                        getDirectionFromBool(isOutgoing),
+                        TEST_NAME_IN,
+                        isEmergency
+                                ? getDefaultAddressForEmergency()
+                                : getDefaultAddress(isOutgoing))
                 .setCallType(CallAttributes.AUDIO_CALL)
                 .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                 .build();
@@ -190,6 +200,10 @@ public class AttributesUtil {
 
     private static Uri getDefaultAddress(boolean isOutgoing) {
         return isOutgoing ? TEST_URI_OUT : TEST_URI_IN;
+    }
+
+    private static Uri getDefaultAddressForEmergency() {
+        return TEST_EMERGENCY_URI;
     }
 
     private static Uri getDefaultMmiAddress() {

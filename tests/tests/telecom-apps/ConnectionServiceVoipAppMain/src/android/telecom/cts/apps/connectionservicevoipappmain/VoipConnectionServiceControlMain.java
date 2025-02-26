@@ -230,6 +230,13 @@ public class VoipConnectionServiceControlMain extends Service {
                     }
                 }
 
+                @Override
+                public NoDataTransaction verifyCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer consumer) {
+                    // Not supported for self-managed app for now
+                    return new NoDataTransaction(TestAppTransaction.Success);
+                }
+
                 private void trackConnection(
                         VoipConnection connection,
                         CallAttributes callAttributes,
