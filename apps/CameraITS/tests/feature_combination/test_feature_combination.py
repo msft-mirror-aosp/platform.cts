@@ -471,16 +471,19 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 passed = False
 
               # Schedule finishing up of verification to run asynchronously
-              future = executor.submit(
+              if not self.parallel_execution:
+                self._finish_combination(combination_name, is_stabilized,
+                    support_claimed, passed, recording_obj, gyro_events, _NAME,
+                    log_path, facing, output_surfaces, fps_range, hlg10,
+                    features_passed, streams_name, fps_range_tuple)
+              else:
+                future = executor.submit(
                   self._finish_combination, combination_name, is_stabilized,
                   support_claimed, passed, recording_obj, gyro_events, _NAME,
                   log_path, facing, output_surfaces, fps_range, hlg10,
                   features_passed, streams_name, fps_range_tuple
-              )
-              # Get result from future before continuing if desired
-              if not self.parallel_execution:
-                future.result()
-              feature_verification_futures.append(future)
+                )
+                feature_verification_futures.append(future)
 
       # Verify feature combination results
       for future in feature_verification_futures:
