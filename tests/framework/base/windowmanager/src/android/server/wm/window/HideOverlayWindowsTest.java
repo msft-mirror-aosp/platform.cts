@@ -28,6 +28,8 @@ import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -52,6 +54,7 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -208,7 +211,11 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testApplicationOverlay_touchIsObscuredWithoutCorrectPermission() {
+    public void testApplicationOverlay_touchIsObscuredWithoutCorrectPermission() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         String windowName = "SYSTEM_APPLICATION_OVERLAY";
         ComponentName componentName = new ComponentName(
                 mContext, SystemWindowActivity.class);
