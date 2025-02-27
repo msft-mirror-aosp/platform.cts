@@ -79,7 +79,10 @@ public class DynamicInstrumentationManagerTest {
                 PARAMS_IN_ART_PROFILE);
         assertThat(result.statusCode).isEqualTo(0);
         assertThat(result.offsets).isNotNull();
-        assertThat(result.offsets.containerPath).endsWith("services.odex");
+        // Normally, the container path is a path ending in services.odex, but
+        // it is occasionally some other cache file e.g. ...@services.jar@classes.odex.
+        assertThat(result.offsets.containerPath).contains("services");
+        assertThat(result.offsets.containerPath).endsWith(".odex");
         assertThat(result.offsets.containerOffset).isGreaterThan(0);
         assertThat(result.offsets.methodOffset).isGreaterThan(0);
     }
