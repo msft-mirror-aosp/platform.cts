@@ -23,7 +23,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
-    <application android:label="TransactionalVoipAppClone">
+    <application  android:debuggable="true"
+        android:label="TransactionalVoipAppClone">
         <service
             android:name=".TransactionalVoipAppControlClone"
             android:launchMode="singleInstance"
