@@ -17,6 +17,7 @@
 package com.android.xts.apimapper.adapter
 
 import com.android.xts.apimapper.asm.ClassNodes
+import com.android.xts.apimapper.config.Configuration
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
 import org.objectweb.asm.tree.AnnotationNode
@@ -30,13 +31,13 @@ private val JUNIT3_TEST_CLASS_NAMES = setOf(
     "android/test/InstrumentationTestCase",
     "android/test/ActivityInstrumentationTestCase2",
 )
-private val JUNIT4_ANNOTATION_PREFIXED = arrayOf("org.junit")
+private val JUNIT4_ANNOTATION_PREFIXED = listOf("org.junit")
 
 private const val API_MAPPER_CLASS_PREFIX = "com/android/xts/apimapper/"
 
 // Assume only classes (android.* or com.android.*) or jetpack libs will call android APIs.
 // TODO(slotus): Use more general rule.
-private val API_CALLER_CLASS_PREFIXES = arrayOf(
+private val API_CALLER_CLASS_PREFIXES = listOf(
     "android/",
     "com/android/",
     "com/google/",
@@ -46,22 +47,20 @@ private val API_CALLER_CLASS_PREFIXES = arrayOf(
 )
 
 // Ignore classes that could introduce a lot of meaningless logs.
-private val MEANINGLESS_API_CALLER_CLASS_PREFIXES = arrayOf(
+private val MEANINGLESS_API_CALLER_CLASS_PREFIXES = listOf(
     "androidx/test/",
     "androidx/tracing/Trace",
     "com/android/tradefed",
 )
 
 // Potential Android API classes.
-private val API_CLASS_PREFIXES = arrayOf(
+private val API_CLASS_PREFIXES = listOf(
     "android/",
-    "com/android/",
-    "dalvik/",
-    "libcore/",
+    "com/android/"
 )
 
 // Android API classes that are meaningless to log.
-private val MEANINGLESS_API_CLASS_PREFIXES = arrayOf(
+private val MEANINGLESS_API_CLASS_PREFIXES = listOf(
     "org/junit/",
     "junit/",
     "org/mockito/",
@@ -72,8 +71,18 @@ private val MEANINGLESS_API_CLASS_PREFIXES = arrayOf(
 )
 
 /** Decide whether the given class should be injected. */
-fun shouldProcessClass(className: String): Boolean {
-    return className.mayAndroidApiCallerClass()
+fun shouldProcessClass(
+    className: String,
+    jarFile: String,
+    configuration: Configuration
+): Boolean {
+    configuration.getInjectRules().forEach({
+            rule ->
+        if (jarFile.matches(rule.pattern)) {
+            return className.mayAndroidApiCallerClass(rule.callerPrefixes)
+        }
+    })
+    return className.mayAndroidApiCallerClass(API_CLASS_PREFIXES)
 }
 
 /** Decide whether the class is a test class. */
@@ -110,7 +119,7 @@ interface HookSettings {
     ): Boolean
 }
 
-class AndroidApiInjectionSettings : HookSettings {
+class AndroidApiInjectionSettings(private val configuration: Configuration) : HookSettings {
 
     override fun shouldInjectHook(
         classNodes: ClassNodes,
@@ -123,27 +132,32 @@ class AndroidApiInjectionSettings : HookSettings {
         if (classNodes.findMethod(apiClass, apiMethod, apiDesc) != null) {
             return false
         }
-        if (!callerClass.mayAndroidApiCallerClass()) {
-            return false
-        }
-        // Never hook array methods.
-        if (apiClass.startsWith("[")) {
-            return false
-        }
         // Don't call methods from Object.
         // This is because handling it correctly would be painful when calling into, e.g. clone(),
         // onto an array class.
         if (apiClass == "java/lang/Object") {
             return false
         }
+        // Never hook array methods.
+        if (apiClass.startsWith("[")) {
+            return false
+        }
         if (apiClass.isMeaninglessAndroidApiClass()) {
             return false
         }
-        return apiClass.mayAndroidApiClass()
+        configuration.getInjectRules().forEach({
+            rule ->
+            if (classNodes.sourceJarFile.matches(rule.pattern)) {
+                return apiClass.mayAndroidApiClass(rule.apiPrefixes) &&
+                        callerClass.mayAndroidApiCallerClass(rule.callerPrefixes)
+            }
+        })
+        return apiClass.mayAndroidApiClass(API_CLASS_PREFIXES) &&
+                callerClass.mayAndroidApiCallerClass(API_CALLER_CLASS_PREFIXES)
     }
 }
 
-private fun String.startsWithAny(prefixes: Array<String>): Boolean {
+private fun String.startsWithAny(prefixes: List<String>): Boolean {
     prefixes.forEach {
         if (this.startsWith(it)) {
             return true
@@ -156,7 +170,7 @@ private fun String.isApiMapperClass(): Boolean {
     return this.startsWith(API_MAPPER_CLASS_PREFIX)
 }
 
-private fun String.mayAndroidApiCallerClass(): Boolean {
+private fun String.mayAndroidApiCallerClass(prefixes: List<String>): Boolean {
     // Hooking in this package could cause unexpected errors.
     if (this.startsWithAny(MEANINGLESS_API_CALLER_CLASS_PREFIXES)) {
         return false
@@ -165,14 +179,14 @@ private fun String.mayAndroidApiCallerClass(): Boolean {
     if (this.isApiMapperClass()) {
         return false
     }
-    return this.startsWithAny(API_CALLER_CLASS_PREFIXES)
+    return prefixes.isEmpty() || this.startsWithAny(prefixes)
 }
 
-private fun String.mayAndroidApiClass(): Boolean {
+private fun String.mayAndroidApiClass(prefixes: List<String>): Boolean {
     if (this.isApiMapperClass()) {
         return false
     }
-    return this.startsWithAny(API_CLASS_PREFIXES)
+    return prefixes.isEmpty() || this.startsWithAny(prefixes)
 }
 
 private fun String.isMeaninglessAndroidApiClass(): Boolean {

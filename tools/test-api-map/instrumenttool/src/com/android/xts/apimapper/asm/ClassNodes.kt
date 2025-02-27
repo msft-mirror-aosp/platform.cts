@@ -25,7 +25,7 @@ import org.objectweb.asm.tree.MethodNode
 
 /** Load all classes from a .jar file. */
 fun loadClassStructure(inJar: String): ClassNodes {
-    val allClasses = ClassNodes()
+    val allClasses = ClassNodes(inJar)
 
     ZipFile(inJar).use { inZip ->
         val inEntries = inZip.entries()
@@ -48,7 +48,7 @@ fun loadClassStructure(inJar: String): ClassNodes {
 }
 
 /** Store all classes loaded from a jar file. */
-class ClassNodes {
+class ClassNodes(val sourceJarFile: String) {
 
     private val mClasses: MutableMap<String, ClassNode> = HashMap()
 
