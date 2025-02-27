@@ -179,6 +179,8 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String PERF_METRICS_KEY_PREFIX_NOISE_LUMA = "noise_luma";
     private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U = "noise_chroma_u";
     private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V = "noise_chroma_v";
+    private static final String PERF_METRICS_KEY_PREFIX_REDUCTION_PERCENTAGE =
+            "reduction_percentage";
 
     private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
             Pattern.compile("test_preview_distortion_.*");
@@ -206,6 +208,9 @@ public class ItsTestActivity extends DialogTestListActivity {
             "preview_frame_drop";
     private static final Pattern SCENE_IP_METRICS_PATTERN =
             Pattern.compile("test_default_jca_ip_.*");
+
+    private static final Pattern PERF_METRICS_PREVIEW_STABILIZATION_FOV_PATTERN =
+            Pattern.compile("test_preview_stabilization_fov_.*");
 
     private final ResultReceiver mResultsReceiver = new ResultReceiver();
     private final BroadcastReceiver mCommandReceiver = new BroadcastReceiver() {
@@ -759,6 +764,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                     PERF_METRICS_PREVIEW_FRAME_DROP_PATTERN.matcher(perfMetricsResult);
             boolean previewFrameDropMetricsMatches = previewFrameDropMetricsMatcher.matches();
 
+            Matcher previewStabilizationFovMetricsMatcher =
+                    PERF_METRICS_PREVIEW_STABILIZATION_FOV_PATTERN.matcher(perfMetricsResult);
+            boolean previewStabilizationFovMetricsMatches = previewStabilizationFovMetricsMatcher.matches();
+
 
             if (!yuvPlusJpegMetricsMatches && !yuvPlusRawMetricsMatches
                         && !imuDriftMetricsMatches && !sensorFusionMetricsMatches
@@ -766,7 +775,7 @@ public class ItsTestActivity extends DialogTestListActivity {
                         && !intrinsicMetricsMatches && !lowLightBoostMetricsMatches
                         && !nightModeExtensionMetricsMatches && !aeAwbMetricsMatches
                         && !multiCamMetricsMatches && !previewFrameDropMetricsMatches
-                        && !previewZoomMetricsMatches) {
+                        && !previewZoomMetricsMatches && !previewStabilizationFovMetricsMatches) {
                 return false;
             }
 
@@ -858,6 +867,13 @@ public class ItsTestActivity extends DialogTestListActivity {
                     addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP,
                             perfMetricsResult, obj);
                 }
+
+                if (previewStabilizationFovMetricsMatches) {
+                    Log.i(TAG, "preview stabilization fov matches");
+                    addPerfMetricsResult(PERF_METRICS_KEY_PREFIX_PREVIEW_FRAME_DROP,
+                            perfMetricsResult, obj);
+                }
+
             } catch (org.json.JSONException e) {
                 Log.e(TAG, "Error when serializing the metrics into a JSONObject", e);
             }
@@ -936,6 +952,9 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_MAX_DELTA)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_MAX_DELTA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_REDUCTION_PERCENTAGE)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_REDUCTION_PERCENTAGE, floatValue);
         }
     }
 
