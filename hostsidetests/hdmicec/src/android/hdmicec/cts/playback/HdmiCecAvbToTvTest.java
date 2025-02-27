@@ -197,9 +197,10 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
         // Calling AudioManager#setStreamVolume should cause the DUT to send
         // <Set Audio Volume Level> with the new volume level as a parameter
         AudioManagerHelper.setDeviceVolume(getDevice(), 80);
+        int realDeviceVolume = AudioManagerHelper.getDutAudioVolume(getDevice());
         String setAudioVolumeLevelMessage = hdmiCecClient.checkExpectedOutput(
                 hdmiCecClient.getSelfDevice(), CecOperand.SET_AUDIO_VOLUME_LEVEL);
-        assertThat(CecMessage.getParams(setAudioVolumeLevelMessage)).isEqualTo(80);
+        assertThat(CecMessage.getParams(setAudioVolumeLevelMessage)).isEqualTo(realDeviceVolume);
 
         // Calling AudioManager#adjustStreamVolume should cause the DUT to send
         // <User Control Pressed>, <User Control Released>, and <Give Audio Status>
