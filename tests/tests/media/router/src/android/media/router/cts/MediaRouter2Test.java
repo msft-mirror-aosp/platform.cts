@@ -43,6 +43,7 @@ import static com.android.media.flags.Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_M
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
@@ -1570,8 +1571,12 @@ public class MediaRouter2Test {
         assertThat(mContext.checkSelfPermission(Manifest.permission.MEDIA_ROUTING_CONTROL))
                 .isNotEqualTo(PackageManager.PERMISSION_GRANTED);
 
-        assertThrows(SecurityException.class,
-                () -> MediaRouter2.getInstance(mContext, mContext.getPackageName()));
+        try {
+            var result = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+            fail("Expected security exception was not thrown. Result: " + result);
+        } catch (SecurityException e) {
+            // Expected.
+        }
     }
 
     @Test
