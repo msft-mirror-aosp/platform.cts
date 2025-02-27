@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ExtYuvTargetRequirement;
-import android.mediapc.cts.common.Utils;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
@@ -34,7 +33,6 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -58,11 +56,6 @@ public class ExtYuvTargetSupportTest {
 
     @Rule
     public final TestName mTestName = new TestName();
-
-    @Before
-    public void isPerformanceClassCandidate() {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-    }
 
     public ExtYuvTargetSupportTest(boolean useHighBitDepth) {
         mUseHighBitDepth = useHighBitDepth;
