@@ -282,7 +282,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
                     this,
                     R.string.host_tests_dialog_title,
                     R.string.host_tests_dialog_content,
-                    /* viewId= */ 0);
+                    R.layout.host_tests_dialog);
             return;
         }
         Intent intent = new Intent(this, HostTestListActivity.class);
@@ -297,7 +297,7 @@ public class HostTestsActivity extends PassFailButtons.TestListActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.pass_fail_list);
-        setInfoResources(mTitleId, mMessageId, 0);
+        setInfoResources(mTitleId, mMessageId, R.layout.host_tests_dialog);
         setPassFailButtonClickListeners();
         getPassButton().setEnabled(false);
 
