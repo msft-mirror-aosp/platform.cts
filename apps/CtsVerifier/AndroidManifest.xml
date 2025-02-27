@@ -443,7 +443,7 @@
         -->
         <activity
             android:name=".bluetooth.HidHostActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"
             android:exported="true"
             android:label="@string/bt_hid_host" >
             <intent-filter>
@@ -460,6 +460,8 @@
                 android:value="com.android.cts.verifier.bluetooth.BluetoothTestActivity" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.bluetooth.BluetoothDevice#createBond" />
         </activity>
 
         <!--
