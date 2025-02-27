@@ -22,9 +22,13 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.provider.Settings;
 import android.util.Log;
+
 import androidx.test.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.SystemUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -65,7 +69,7 @@ public class TestUtils {
     }
 
     public static boolean waitForWithCondition(int timeInSec, Callable<Boolean> callback)
-        throws Exception {
+            throws Exception {
         long waitTimeRounds = (TimeUnit.SECONDS.toMillis(timeInSec)) / STANDARD_SLEEP_TIME_MS;
         for (int i = 0; i < waitTimeRounds; ++i) {
             Thread.sleep(STANDARD_SLEEP_TIME_MS);
@@ -109,6 +113,30 @@ public class TestUtils {
             return cm.getActiveNetworkInfo();
         }
         return null;
+    }
+
+    /** Reads the {@code assisted_gps_enabled} flag. */
+    public static int getAssistedGpsEnabled(Context context) {
+        int value =
+                Settings.Global.getInt(
+                        context.getContentResolver(), Settings.Global.ASSISTED_GPS_ENABLED, 0);
+        Log.d(TAG, "Reading assisted_gps_enabled=" + value);
+        return value;
+    }
+
+    /** Overrides the {@code assisted_gps_enabled} flag. */
+    public static void setAssistedGpsEnabled(Context context, int value) {
+        int oldValue = getAssistedGpsEnabled(context);
+        if (oldValue != value) {
+            Log.i(TAG, "Setting assisted_gps_enabled as " + value);
+            SystemUtil.runWithShellPermissionIdentity(
+                    () -> {
+                        Settings.Global.putInt(
+                                context.getContentResolver(),
+                                Settings.Global.ASSISTED_GPS_ENABLED,
+                                value);
+                    });
+        }
     }
 
     /**
@@ -189,10 +217,10 @@ public class TestUtils {
 
                 final boolean fixed =
                         (flags
-                                & (PackageManager.FLAG_PERMISSION_USER_FIXED
-                                        | PackageManager.FLAG_PERMISSION_POLICY_FIXED
-                                        | PackageManager.FLAG_PERMISSION_SYSTEM_FIXED))
-                        != 0;
+                                        & (PackageManager.FLAG_PERMISSION_USER_FIXED
+                                                | PackageManager.FLAG_PERMISSION_POLICY_FIXED
+                                                | PackageManager.FLAG_PERMISSION_SYSTEM_FIXED))
+                                != 0;
                 if (!fixed) {
                     packagesWithPermission.add(packageName);
                 }
