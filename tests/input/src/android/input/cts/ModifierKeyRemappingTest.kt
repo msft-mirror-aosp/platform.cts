@@ -19,6 +19,7 @@ package android.input.cts
 import android.Manifest
 import android.cts.input.EventVerifier
 import android.hardware.input.InputManager
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.provider.Settings
 import android.view.KeyEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
@@ -28,10 +29,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.ThrowingSupplier
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.inputeventmatchers.withKeyAction
 import com.android.cts.input.inputeventmatchers.withKeyCode
 import com.android.cts.input.inputeventmatchers.withModifierState
+import com.android.input.flags.Flags.FLAG_DEVICE_ASSOCIATIONS
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Before
@@ -45,6 +48,7 @@ import org.junit.runner.RunWith
  */
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@RequiresFlagsEnabled(FLAG_DEVICE_ASSOCIATIONS)
 class ModifierKeyRemappingTest {
 
     companion object {
@@ -69,6 +73,7 @@ class ModifierKeyRemappingTest {
             activity = it
             verifier = EventVerifier(activity::getInputEvent)
         }
+        inputManager.resetLockedModifierState()
         PollingCheck.waitFor { activity.hasWindowFocus() }
 
         // Save existing remappings
@@ -83,6 +88,9 @@ class ModifierKeyRemappingTest {
             existingRemappings.forEach { entry ->
                 remapModifierKey(entry.key, entry.value)
             }
+        }
+        if (this::inputManager.isInitialized) {
+            inputManager.resetLockedModifierState()
         }
     }
 
@@ -159,6 +167,63 @@ class ModifierKeyRemappingTest {
 
                 injectKeyUp(keyboardDevice, KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT))
+
+                clearAllModifierKeyRemappings()
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_ALT_LEFT ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
+
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
+                        withKeyAction(KeyEvent.ACTION_DOWN),
+                        withModifierState(KeyEvent.META_ALT_LEFT_ON or KeyEvent.META_ALT_ON)
+                    )
+                )
+
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
+
+                activity.assertNoEvents()
+            }
+        }
+    }
+
+    @Test
+    fun testAltToCapsLockRemapping_forKeyboardWithNoCapsLockKey() {
+        ModifierRemappingFlag(true).use {
+            UinputKeyboard(instrumentation, listOf("KEY_Q", "KEY_LEFTALT")).use { keyboardDevice ->
+                val inputDevice = inputManager.getInputDevice(keyboardDevice.deviceId)
+                remapModifierKey(KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_CAPS_LOCK)
+                PollingCheck.waitFor {
+                    KeyEvent.KEYCODE_CAPS_LOCK ==
+                            inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
+                }
+
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK))
+
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK),
+                        withModifierState(KeyEvent.META_CAPS_LOCK_ON),
+                    )
+                )
+
+                // Send second pair of key presses to reset caps lock state
+                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(
+                    allOf(
+                        withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK),
+                        withModifierState(KeyEvent.META_CAPS_LOCK_ON),
+                    )
+                )
+
+                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK))
 
                 clearAllModifierKeyRemappings()
                 PollingCheck.waitFor {

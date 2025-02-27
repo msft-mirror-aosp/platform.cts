@@ -16,11 +16,13 @@
 
 package com.android.bedstead.testapisreflection.processor.utils;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Set;
 
 /** A loader providing methods to read data from resources */
 public final class ResourceLoader {
@@ -31,11 +33,11 @@ public final class ResourceLoader {
      * @param sourcePath path to the resource file
      * @return a flow of lines in the file that are already trimmed and has blank lines filtered out
      */
-    public static ImmutableSet<String> load(String sourcePath) {
+    public static ImmutableList<String> load(String sourcePath) {
         try {
-            return ImmutableSet.copyOf(Resources.toString(
+            return ImmutableList.sortedCopyOf(Set.copyOf(Arrays.asList(Resources.toString(
                     ResourceLoader.class.getResource(sourcePath),
-                    StandardCharsets.UTF_8).split("\n"));
+                    StandardCharsets.UTF_8).split("\n"))));
         } catch (IOException e) {
             throw new IllegalStateException("Could not read file", e);
         }

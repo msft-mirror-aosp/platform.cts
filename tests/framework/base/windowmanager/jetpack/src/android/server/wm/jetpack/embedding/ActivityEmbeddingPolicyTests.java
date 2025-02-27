@@ -17,6 +17,7 @@
 package android.server.wm.jetpack.embedding;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+import static android.server.wm.jetpack.embedding.MultiDisplayTestHelper.createLandscapeLargeScreenSimulatedDisplay;
 import static android.server.wm.jetpack.second.Components.PORTRAIT_ACTIVITY;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivityEmbeddingSupportedDevice;
 import static android.view.Surface.ROTATION_0;
@@ -80,35 +81,72 @@ public class ActivityEmbeddingPolicyTests extends ActivityManagerTestBase {
     })
     @Test
     public void testIgnoreOrientationRequestForActivityEmbeddingSplits() {
+        testIgnoreOrientationRequestForActivityEmbeddingSplits(false /* useSimulatedDisplay */);
+    }
+
+    /**
+     * Verifies that the orientation request from the Activity is ignored if app uses
+     * ActivityEmbedding on a large secondary display that supports AE.
+     */
+    @ApiTest(apis = {
+            "R.attr#screenOrientation",
+            "android.view.WindowManager#PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED"
+    })
+    @Test
+    public void testIgnoreOrientationRequestForActivityEmbeddingSplitsOnSecondaryDisplay() {
+        assumeTrue(supportsMultiDisplay());
+
+        testIgnoreOrientationRequestForActivityEmbeddingSplits(true /* useSimulatedDisplay */);
+    }
+
+    private void testIgnoreOrientationRequestForActivityEmbeddingSplits(
+            boolean useSimulatedDisplay) {
         // Skip the test on devices without WM extensions.
         assumeTrue(SystemProperties.getBoolean("persist.wm.extensions.enabled", false));
 
+        final int displayId;
+        if (useSimulatedDisplay) {
+            // Create a landscape secondary display.
+            final WindowManagerState.DisplayContent secondaryDisplay =
+                    createLandscapeLargeScreenSimulatedDisplay(
+                            createManagedVirtualDisplaySession());
+
+            displayId = secondaryDisplay.mId;
+        } else {
+            displayId = getMainDisplayId();
+        }
+
         // Skip the test if this is not a large screen device
-        assumeTrue(getDisplayConfiguration().smallestScreenWidthDp
+        assumeTrue(waitAndGetDisplayConfiguration(displayId).smallestScreenWidthDp
                 >= WindowManager.LARGE_SCREEN_SMALLEST_SCREEN_WIDTH_DP);
 
-        // Rotate the device to landscape
-        final RotationSession rotationSession = createManagedRotationSession();
-        final int[] rotations = { ROTATION_0, ROTATION_90 };
-        for (final int rotation : rotations) {
-            if (getDisplayConfiguration().orientation == ORIENTATION_LANDSCAPE) {
-                break;
+        if (!useSimulatedDisplay) {
+            // Rotate the device to landscape
+            final RotationSession rotationSession = createManagedRotationSession();
+            final int[] rotations = {ROTATION_0, ROTATION_90};
+            for (final int rotation : rotations) {
+                if (waitAndGetDisplayConfiguration(displayId).orientation
+                        == ORIENTATION_LANDSCAPE) {
+                    break;
+                }
+                rotationSession.set(rotation);
             }
-            rotationSession.set(rotation);
         }
-        assumeTrue(getDisplayConfiguration().orientation == ORIENTATION_LANDSCAPE);
+
+        assumeTrue(waitAndGetDisplayConfiguration(displayId).orientation
+                == ORIENTATION_LANDSCAPE);
 
         // Launch a fixed-portrait activity
-        startActivityOnDisplay(getMainDisplayId(), PORTRAIT_ACTIVITY);
+        startActivityOnDisplay(displayId, PORTRAIT_ACTIVITY);
 
         // The display should be remained in landscape.
         assertEquals("The display should be remained in landscape", ORIENTATION_LANDSCAPE,
-                getDisplayConfiguration().orientation);
+                waitAndGetDisplayConfiguration(displayId).orientation);
     }
 
-    private Configuration getDisplayConfiguration() {
+    private Configuration waitAndGetDisplayConfiguration(int displayId) {
         mWmState.computeState();
-        WindowManagerState.DisplayContent display = mWmState.getDisplay(getMainDisplayId());
+        WindowManagerState.DisplayContent display = mWmState.getDisplay(displayId);
         return display.getFullConfiguration();
     }
 }

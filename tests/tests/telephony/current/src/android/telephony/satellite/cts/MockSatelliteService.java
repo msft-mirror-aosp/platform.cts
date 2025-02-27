@@ -45,6 +45,7 @@ import android.util.Log;
 import com.android.internal.util.FunctionalUtils;
 import com.android.telephony.Rlog;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -116,6 +117,7 @@ public class MockSatelliteService extends SatelliteImplBase {
             mRequestSatelliteDisabledErrorCallbackQueue = new LinkedList<IIntegerConsumer>();
     private final Object mRequestSatelliteEnabledLock = new Object();
     private boolean mIsEmergnecy;
+    private List<SystemSelectionSpecifier> mSystemSelectionSpecifierList = new ArrayList<>();
 
     /**
      * Create MockSatelliteService using the Executor specified for methods being called from
@@ -308,9 +310,9 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     @Override
-    public void enableCellularModemWhileSatelliteModeIsOn(
+    public void enableTerrestrialNetworkScanWhileSatelliteModeIsOn(
             boolean enabled, @NonNull IIntegerConsumer errorCallback) {
-        logd("enableCellularModemWhileSatelliteModeIsOn: enabled=" + enabled);
+        logd("enableTerrestrialNetworkScanWhileSatelliteModeIsOn: enabled=" + enabled);
         runWithExecutor(() -> errorCallback.accept(mEnableCellularScanningErrorCode));
     }
 
@@ -563,13 +565,27 @@ public class MockSatelliteService extends SatelliteImplBase {
     public void updateSystemSelectionChannels(
             @NonNull List<SystemSelectionSpecifier> systemSelectionSpecifiers,
             @NonNull IIntegerConsumer resultCallback) {
-        logd(" updateSystemSelectionChannels: "
-                + "systemSelectionSpecifiers=" + systemSelectionSpecifiers
-                + " mErrorCode=" + mErrorCode);
+        logd(" updateSystemSelectionChannels: mErrorCode=" + mErrorCode);
+
+        if (mErrorCode == SatelliteResult.SATELLITE_RESULT_SUCCESS) {
+            mSystemSelectionSpecifierList = new ArrayList<>(systemSelectionSpecifiers);
+        }
 
         if (mShouldRespondTelephony.get()) {
             runWithExecutor(() -> resultCallback.accept(mErrorCode));
         }
+    }
+
+
+    /**
+     * Returns the configured list of SystemSelectionSpecifiers.
+     *
+     * @return the list of configured system selection specifier.
+     */
+    public List<SystemSelectionSpecifier> getSystemSelectionChannels() {
+        logd("getSystemSelectionChannels: mSystemSelectionSpecifierList="
+                + mSystemSelectionSpecifierList);
+        return mSystemSelectionSpecifierList;
     }
 
     public void setLocalSatelliteListener(@NonNull ILocalSatelliteListener listener) {

@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_FUN;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -48,8 +49,8 @@ public final class FunTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_FUN")
     public void addUserRestriction_disallowFun_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_FUN));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_FUN));
     }
 
     @PolicyAppliesTest(policy = DisallowFun.class)
@@ -57,14 +58,14 @@ public final class FunTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_FUN")
     public void addUserRestriction_disallowFun_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FUN))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
         }
     }
 
@@ -73,18 +74,18 @@ public final class FunTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_FUN")
     public void clearUserRestriction_disallowFun_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_FUN);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FUN))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
         }
     }
 
@@ -97,14 +98,14 @@ public final class FunTest {
     @Ignore
     public void addUserRestrictionGlobally_disallowFun_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_FUN);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FUN))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
         }
     }
 
@@ -117,17 +118,17 @@ public final class FunTest {
     @Ignore
     public void clearGlobalUserRestriction_disallowFun_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_FUN);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_FUN))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_FUN);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_FUN);
         }
     }
 

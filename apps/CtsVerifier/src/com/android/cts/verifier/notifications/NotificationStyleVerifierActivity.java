@@ -21,9 +21,11 @@ import static android.app.NotificationManager.IMPORTANCE_HIGH;
 
 import android.annotation.DrawableRes;
 import android.annotation.StringRes;
+import android.app.Flags;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.view.View;
@@ -32,12 +34,17 @@ import android.widget.RemoteViews;
 
 import com.android.cts.verifier.R;
 
-import com.google.common.collect.ImmutableList;
-
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /** Verifier test for notification styles and custom views. */
 public class NotificationStyleVerifierActivity extends InteractiveVerifierActivity {
+
+    private static final int COLOR_ORANGE = Color.parseColor("#ff7f50");
+    private static final int  COLOR_YELLOW = Color.parseColor("#ffff00");
+    private static final int  COLOR_RED = Color.parseColor("#ff0000");
+    private static final int COLOR_BLUE = Color.parseColor("#1155cc");
 
     @Override
     protected int getTitleResource() {
@@ -51,12 +58,26 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
 
     @Override
     protected List<InteractiveTestCase> createTestItems() {
-        return ImmutableList.of(
-                new BigPictureAnimatedTest(),
-                new BigPictureAnimatedUriTest(),
-                new CustomContentViewTest(),
-                new CustomBigContentViewTest(),
-                new CustomHeadsUpContentViewTest());
+        final ArrayList<InteractiveTestCase> testItems = new ArrayList<>();
+        testItems.add(new BigPictureAnimatedTest());
+        testItems.add(new BigPictureAnimatedUriTest());
+        testItems.add(new CustomContentViewTest());
+        testItems.add(new CustomBigContentViewTest());
+        testItems.add(new CustomHeadsUpContentViewTest());
+
+        if (Flags.apiRichOngoing()) {
+            testItems.add(new ProgressStyleIndeterminateTest());
+            testItems.add(new ProgressStyleProgressTest());
+            testItems.add(new ProgressStyleMultipleSegmentsTest());
+            testItems.add(new ProgressStyleMultiplePointsTest());
+            testItems.add(new ProgressStyleStartAndEndIconsTest());
+            testItems.add(new ProgressStyleProgressTrackerIconTest());
+            testItems.add(new ProgressStyleLargeIconTest());
+            testItems.add(new ProgressStyleNotStyledByProgressTest());
+            testItems.add(new ProgressStyleRTLTest());
+        }
+
+        return Collections.unmodifiableList(testItems);
     }
 
     private abstract class NotifyTestCase extends InteractiveTestCase {
@@ -248,6 +269,395 @@ public class NotificationStyleVerifierActivity extends InteractiveVerifierActivi
                     // (otherwise, no affordance is included).
                     .setStyle(new Notification.BigTextStyle().bigText(
                             getString(R.string.ns_custom_heads_up_content_alt_text)))
+                    .build();
+        }
+    }
+
+    private class ProgressStyleIndeterminateTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.IndeterminateTest";
+
+        ProgressStyleIndeterminateTest() {
+            super(R.string.progress_style_indeterminate,
+                    R.drawable.progress_style_indeterminate);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Ride requested")
+                    .setContentText("Looking for nearby drivers")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(100)
+                                                    .setColor(COLOR_ORANGE)
+                                    ).setProgressIndeterminate(true)
+                    ).build();
+        }
+    }
+
+    private class ProgressStyleProgressTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.ProgressTest";
+
+        ProgressStyleProgressTest() {
+            super(R.string.progress_style_progress,
+                    R.drawable.progress_style_progress);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Updating Your App")
+                    .setContentText("40% complete")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(100)
+                                                    .setColor(COLOR_ORANGE)
+                                    ).setProgress(40)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleMultipleSegmentsTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.MultipleSegmentsTest";
+
+        ProgressStyleMultipleSegmentsTest() {
+            super(R.string.progress_style_multiple_segments,
+                    R.drawable.progress_style_multiple_segments);
+        }
+
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("WOD - Full Body")
+                    .setContentText("Conditioning: 100 cal Echo Bike.")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(20).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(30).setColor(
+                                                    COLOR_YELLOW)
+                                    )
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(50).setColor(
+                                                    COLOR_RED)
+                                    )
+                                    .setProgress(60)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleMultiplePointsTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.MultiplePointsTest";
+
+        ProgressStyleMultiplePointsTest() {
+            super(R.string.progress_style_multiple_points,
+                    R.drawable.progress_style_multiple_points);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Order #12345")
+                    .setContentText("Next: Courier from X is going to pick up your delivery.")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(100).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(20).setColor(
+                                                    COLOR_ORANGE))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(50).setColor(
+                                                    COLOR_YELLOW))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(80).setColor(
+                                                    COLOR_BLUE))
+                                    .setProgress(60)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleStartAndEndIconsTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.StartAndEndIconsTest";
+
+        ProgressStyleStartAndEndIconsTest() {
+            super(R.string.progress_style_start_and_end_icons,
+                    R.drawable.progress_style_start_and_end_icons);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Get on District line Upminster")
+                    .setContentText("District line departs every 11 min")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(100).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .setProgressStartIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.transit_s_icon
+                                            )
+                                    )
+                                    .setProgressEndIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.transit_e_icon
+                                            )
+                                    )
+                                    .setProgress(60)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleProgressTrackerIconTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.ProgressTrackerIconTest";
+
+        ProgressStyleProgressTrackerIconTest() {
+            super(R.string.progress_style_progress_tracker_icon,
+                    R.drawable.progress_style_progress_tracker_icon);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("20 ft")
+                    .setContentText("Grosvenor Rd toward Harvard Rd")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(100).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .setProgressTrackerIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.navigation_tracker
+                                            )
+                                    )
+                                    .setProgress(60)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleLargeIconTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.LargeIconTest";
+
+        ProgressStyleLargeIconTest() {
+            super(R.string.progress_style_large_icon,
+                    R.drawable.progress_style_large_icon);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Driver has arrived")
+                    .setContentText("Red Toyota Camry ACH023\nJustin ★4.5 • PIN 2234")
+                    .setLargeIcon(
+                            Icon.createWithResource(mContext, R.drawable.food_delivery_restaurant)
+                    )
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(100).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .setProgress(60)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleNotStyledByProgressTest extends NotifyTestCase {
+
+        private static final String CHANNEL_ID = "NPSVA.NotStyledByProgressTest";
+
+        ProgressStyleNotStyledByProgressTest() {
+            super(R.string.progress_style_not_styled_by_progress,
+                    R.drawable.progress_style_not_styled_by_progress);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Arrive 10:08 AM")
+                    .setContentText("Dominique Ansel Bakery Soho")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(20).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(30).setColor(
+                                                    COLOR_YELLOW)
+                                    )
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(50).setColor(
+                                                    COLOR_RED)
+                                    )
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(0).setColor(
+                                                    COLOR_ORANGE))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(30).setColor(
+                                                    COLOR_YELLOW))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(70).setColor(
+                                                    COLOR_ORANGE))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(100).setColor(
+                                                    COLOR_RED))
+                                    .setProgressTrackerIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.navigation_tracker
+                                            )
+                                    )
+                                    .setStyledByProgress(false)
+                                    .setProgress(60)
+                    )
+                    .build();
+        }
+    }
+
+    private class ProgressStyleRTLTest extends NotifyTestCase {
+        private static final String CHANNEL_ID = "NPSVA.RTLTest";
+
+        ProgressStyleRTLTest() {
+            super(R.string.progress_style_rtl_enabled,
+                    R.drawable.progress_style_rtl_enabled);
+        }
+
+        @Override
+        protected NotificationChannel getChannel() {
+            return new NotificationChannel(CHANNEL_ID, CHANNEL_ID, IMPORTANCE_DEFAULT);
+        }
+
+        @Override
+        protected Notification getNotification() {
+            return new Notification.Builder(mContext, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_stat_charlie)
+                    .setContentTitle("Arrive 10:08 AM")
+                    .setContentText("Dominique Ansel Bakery Soho")
+                    .setStyle(
+                            new Notification.ProgressStyle()
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(20).setColor(
+                                                    COLOR_ORANGE)
+                                    )
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(30).setColor(
+                                                    COLOR_YELLOW)
+                                    )
+                                    .addProgressSegment(
+                                            new Notification.ProgressStyle.Segment(50).setColor(
+                                                    COLOR_RED)
+                                    )
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(10).setColor(
+                                                    COLOR_ORANGE))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(30).setColor(
+                                                    COLOR_YELLOW))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(70).setColor(
+                                                    COLOR_ORANGE))
+                                    .addProgressPoint(
+                                            new Notification.ProgressStyle.Point(90).setColor(
+                                                    COLOR_RED))
+                                    .setProgressTrackerIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.navigation_tracker
+                                            )
+                                    )
+                                    .setProgressStartIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.transit_s_icon
+                                            )
+                                    )
+                                    .setProgressEndIcon(
+                                            Icon.createWithResource(
+                                                    mContext,
+                                                    R.drawable.transit_e_icon
+                                            )
+                                    )
+                                    .setStyledByProgress(false)
+                                    .setProgress(60)
+                    )
                     .build();
         }
     }

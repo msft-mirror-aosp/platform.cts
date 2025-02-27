@@ -6,6 +6,7 @@ import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.companion.CompanionDeviceManager
+import android.companion.Flags
 import android.companion.cts.common.CompanionActivity
 import android.companion.cts.common.RecordingCallback.OnAssociationCreated
 import android.content.Intent
@@ -50,11 +51,17 @@ class AssociationEndToEndSelfManagedTest(
 
     @Test
     fun test_userRejected() = super.test_userRejected(
-            singleDevice = false, selfManaged = true, displayName = DEVICE_DISPLAY_NAME)
+            singleDevice = false,
+        selfManaged = true,
+        displayName = DEVICE_DISPLAY_NAME
+    )
 
     @Test
     fun test_userDismissed() = super.test_userDismissed(
-            singleDevice = false, selfManaged = true, displayName = DEVICE_DISPLAY_NAME)
+            singleDevice = false,
+        selfManaged = true,
+        displayName = DEVICE_DISPLAY_NAME
+    )
 
     @Test
     fun test_userConfirmed() {
@@ -75,6 +82,10 @@ class AssociationEndToEndSelfManagedTest(
         assertIs<OnAssociationCreated>(associationInvocation)
         val associationFromCallback = associationInvocation.associationInfo
         assertEquals(actual = associationFromCallback.displayName, expected = DEVICE_DISPLAY_NAME)
+
+        if (Flags.associationDeviceIcon()) {
+            assertNotNull(associationFromCallback.deviceIcon, "Device Icon should not be null")
+        }
 
         // Wait until the Confirmation UI goes away.
         confirmationUi.waitUntilGone()

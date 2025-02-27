@@ -26,8 +26,8 @@ class StartForFutureActivity : Activity() {
         intent: Intent,
         future: CompletableFuture<Instrumentation.ActivityResult>
     ) {
-        startActivityForResult(intent, 1)
         StartForFutureActivity.future = future
+        startActivityForResult(intent, 1)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

@@ -19,19 +19,29 @@ package android.car.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.car.cts.utils.VehiclePropertyUtils;
+import android.car.feature.Flags;
 import android.car.hardware.property.EvChargingConnectorType;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 
 public class EvChargingConnectorTypeTest extends AbstractCarLessTestCase {
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     /**
-     * Test for {@link EvChargingConnectorType#toString()}
+     * Test for {@link EvChargingConnectorType#toString()} is B vehicle properties flag is disabled
      */
+    @RequiresFlagsDisabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
     @Test
-    public void testToString() {
+    public void testToStringAndroidBPropertiesDisabled() {
         assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.UNKNOWN))
                 .isEqualTo("UNKNOWN");
         assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_1_AC))
@@ -52,6 +62,41 @@ public class EvChargingConnectorTypeTest extends AbstractCarLessTestCase {
                 .isEqualTo("TESLA_ROADSTER");
         assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.TESLA_SUPERCHARGER))
                 .isEqualTo("TESLA_SUPERCHARGER");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.GBT_AC))
+                .isEqualTo("GBT_AC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.GBT_DC))
+                .isEqualTo("GBT_DC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.OTHER))
+                .isEqualTo("OTHER");
+        assertThat(EvChargingConnectorType.toString(0x999)).isEqualTo("0x999");
+    }
+
+    /**
+     * Test for {@link EvChargingConnectorType#toString()} is B vehicle properties flag is enabled
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_B_VEHICLE_PROPERTIES)
+    @Test
+    public void testToStringAndroidBPropertiesEnabled() {
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.UNKNOWN))
+                .isEqualTo("UNKNOWN");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_1_AC))
+                .isEqualTo("IEC_TYPE_1_AC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_2_AC))
+                .isEqualTo("IEC_TYPE_2_AC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_3_AC))
+                .isEqualTo("IEC_TYPE_3_AC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_4_DC))
+                .isEqualTo("IEC_TYPE_4_DC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_1_CCS_DC))
+                .isEqualTo("IEC_TYPE_1_CCS_DC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.IEC_TYPE_2_CCS_DC))
+                .isEqualTo("IEC_TYPE_2_CCS_DC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.SAE_J3400_AC))
+                .isEqualTo("SAE_J3400_AC");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.TESLA_ROADSTER))
+                .isEqualTo("TESLA_ROADSTER");
+        assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.SAE_J3400_DC))
+                .isEqualTo("SAE_J3400_DC");
         assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.GBT_AC))
                 .isEqualTo("GBT_AC");
         assertThat(EvChargingConnectorType.toString(EvChargingConnectorType.GBT_DC))

@@ -23,6 +23,7 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.compatibility.common.util.SystemUtil
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith

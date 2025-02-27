@@ -32,7 +32,6 @@ import static com.google.common.truth.Truth.assertThat;
 import android.Manifest;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -41,7 +40,6 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -209,7 +207,6 @@ public class VirtualDevicePermissionTest {
         verifyComponentShownAfterPermissionRequest(BLOCKED_ACTIVITY_COMPONENT);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void permissionDialogInDynamicBlocklist_streamingEnabled_showsBlockedDialog() {
         mVirtualDevice.setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_ACTIVITY,
@@ -227,7 +224,6 @@ public class VirtualDevicePermissionTest {
         verifyComponentShownAfterPermissionRequest(BLOCKED_ACTIVITY_COMPONENT);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void dynamicAllowlistPolicy_permissionDialogNotAllowlisted_showsBlockedDialog() {
         mVirtualDevice.setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_ACTIVITY,

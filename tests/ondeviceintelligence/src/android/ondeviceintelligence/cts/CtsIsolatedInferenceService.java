@@ -46,6 +46,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.concurrent.futures.CallbackToFutureAdapter;
 
+import com.google.protobuf.nano.MessageNano;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -65,6 +67,7 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
             "register_model_update_callback";
     private static final String MODEL_LOADED_BUNDLE_KEY = "model_loaded";
     public static final String DEVICE_CONFIG_UPDATE_BUNDLE_KEY = "device_config_update";
+    public static final String INFERENCE_INFO_BUNDLE_KEY = "inference_info";
 
     private final Executor mAsyncRequestExecutor = Executors.newCachedThreadPool();
 
@@ -250,6 +253,14 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
         }
 
         if (requestType
+                == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_POPULATE_INFERENCE_INFO) {
+            Bundle bundle = new Bundle();
+            bundle.putByteArray(INFERENCE_INFO_BUNDLE_KEY, getInferenceInfoBytes(1, 2, 3));
+            callback.onResult(bundle);
+            return;
+        }
+
+        if (requestType
                 == OnDeviceIntelligenceManagerTest.REQUEST_TYPE_GET_UPDATED_DEVICE_CONFIG) {
             // This needs to happen async because updateProcessingState doesn't get a chance
             // to run while we're blocking the binder thread with this method.
@@ -418,5 +429,14 @@ public class CtsIsolatedInferenceService extends OnDeviceSandboxedInferenceServi
 
     private static boolean isMainThread() {
         return Looper.myLooper() == Looper.getMainLooper();
+    }
+
+    private byte[] getInferenceInfoBytes(int uid, long startTime, long endTime) {
+        android.ondeviceintelligence.cts.nano.InferenceInfo inferenceInfo =
+                new android.ondeviceintelligence.cts.nano.InferenceInfo();
+        inferenceInfo.uid = uid;
+        inferenceInfo.startTimeMs = startTime;
+        inferenceInfo.endTimeMs = endTime;
+        return MessageNano.toByteArray(inferenceInfo);
     }
 }

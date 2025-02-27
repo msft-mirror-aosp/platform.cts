@@ -289,8 +289,12 @@ public class RemoteViewsTest {
 
         mRemoteViews.setTextViewTextSize(R.id.remoteView_text, TypedValue.COMPLEX_UNIT_SP, 18);
         mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
-        assertEquals(mContext.getResources().getDisplayMetrics().scaledDensity * 18,
-                textView.getTextSize(), 0.001f);
+        float expectedTextSizePx = TypedValue.convertDimensionToPixels(
+                TypedValue.COMPLEX_UNIT_SP,
+                18,
+                mContext.getResources().getDisplayMetrics()
+        );
+        assertEquals(expectedTextSizePx, textView.getTextSize(), 0.001f);
 
         mRemoteViews.setTextViewTextSize(R.id.remoteView_absolute, TypedValue.COMPLEX_UNIT_SP, 20);
         assertThrowsOnReapply(Throwable.class);

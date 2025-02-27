@@ -266,8 +266,9 @@ public class StartActivityTests extends ActivityManagerTestBase {
         data.putParcelable(EXTRA_INTENT, navIntent);
         activitySession3.sendCommand(COMMAND_NAVIGATE_UP_TO, data);
 
-        waitAndAssertTopResumedActivity(rootActivitySession.getActivity().getComponentName(),
-                getMainDisplayId(), "navigateUpTo should return to the first activity");
+        waitAndAssertResumedAndFocusedActivityOnDisplay(
+                rootActivitySession.getActivity().getComponentName(), getMainDisplayId(),
+                "navigateUpTo should return to the first activity");
         // Make sure the resumed first activity is the original instance.
         assertFalse("The target of navigateUpTo should not be destroyed",
                 rootActivitySession.getActivity().isDestroyed());

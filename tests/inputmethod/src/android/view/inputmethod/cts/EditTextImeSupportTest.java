@@ -50,7 +50,6 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -61,7 +60,6 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -70,9 +68,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Contains test cases for some special IME-related behaviors of {@link EditText}.
  */
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class EditTextImeSupportTest extends EndToEndImeTestBase {
+public final class EditTextImeSupportTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = 10;  // msec
 

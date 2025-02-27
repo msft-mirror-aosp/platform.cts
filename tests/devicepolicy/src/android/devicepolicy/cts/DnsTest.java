@@ -16,20 +16,21 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_PRIVATE_DNS;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DisallowConfigPrivateDns;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
@@ -54,8 +55,8 @@ public final class DnsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_PRIVATE_DNS")
     public void setUserRestriction_disallowConfigPrivateDns_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigPrivateDns.class)
@@ -63,14 +64,14 @@ public final class DnsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_PRIVATE_DNS")
     public void setUserRestriction_disallowConfigPrivateDns_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_PRIVATE_DNS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
         }
     }
 
@@ -79,15 +80,15 @@ public final class DnsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_PRIVATE_DNS")
     public void setUserRestriction_disallowConfigPrivateDns_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_PRIVATE_DNS))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_PRIVATE_DNS);
         }
     }
 

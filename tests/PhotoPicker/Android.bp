@@ -23,6 +23,7 @@ android_test {
     test_config: "AndroidTest.xml",
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
         "helper/**/*.java",
         ":CtsMediaProviderTestUtils",
     ],
@@ -49,7 +50,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "cts-install-lib",
         "flag-junit",
-        "Harrier",
+        "bedstead-enterprise",
         "modules-utils-build",
         "mediaprovider_flags_java_lib",
     ],

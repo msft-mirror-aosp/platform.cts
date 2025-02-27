@@ -43,7 +43,7 @@ public class CertificateTransparencyTest {
     @Test
     public void testCertificateTransparencyVerificationRequired() throws Exception {
         assertTrue(mInstance.isCertificateTransparencyVerificationRequired("foo.bar"));
-        assertFalse(mInstance.isCertificateTransparencyVerificationRequired("android.com"));
+        assertFalse(mInstance.isCertificateTransparencyVerificationRequired("google.com"));
         assertTrue(mInstance.isCertificateTransparencyVerificationRequired("example.com"));
         assertFalse(mInstance.isCertificateTransparencyVerificationRequired("wikipedia.org"));
     }
@@ -53,7 +53,7 @@ public class CertificateTransparencyTest {
             throws Exception {
         assertTrue(mInstance.isCertificateTransparencyVerificationRequired("now.foo.bar"));
         assertTrue(
-                mInstance.isCertificateTransparencyVerificationRequired("something.android.com"));
+                mInstance.isCertificateTransparencyVerificationRequired("mail.google.com"));
         assertTrue(
                 mInstance.isCertificateTransparencyVerificationRequired("completely.example.com"));
         assertFalse(

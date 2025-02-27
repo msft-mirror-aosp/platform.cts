@@ -4888,7 +4888,7 @@ public class ViewTest {
             view.setFrameContentVelocity(20);
             assertTrue(view.getFrameContentVelocity() == 20);
 
-            view.requestLayout();
+            view.invalidate();
         });
         mInstrumentation.waitForIdleSync();
         // the velocities should be reset once the view is drawn.
@@ -4915,7 +4915,7 @@ public class ViewTest {
             view.setFrameContentVelocity(20);
             assertTrue(view.getFrameContentVelocity() == 0);
 
-            view.requestLayout();
+            view.invalidate();
         });
         mInstrumentation.waitForIdleSync();
         // the velocities should be reset once the view is drawn.

@@ -1,0 +1,95 @@
+// Copyright (C) 2024 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+// TODO: b/372899205 - move Annotation and Rules to a common cts location.
+
+java_library {
+    name: "cts_backported_fixes_annotation",
+    srcs: [
+        "src/com/android/cts/backportedfixes/BackportedFixTest.java",
+    ],
+
+    sdk_version: "test_current",
+    host_supported: true,
+}
+
+java_library {
+    name: "cts_backported_fixes_rule",
+    srcs: [
+        "src/com/android/cts/backportedfixes/BackportedFixRule.java",
+    ],
+    static_libs: [
+        "cts_backported_fixes_annotation",
+        "cts_backported_fixes_ids",
+        "junit",
+    ],
+    sdk_version: "test_current",
+
+}
+
+java_library {
+    name: "cts_backported_fixes_proto",
+    srcs: [
+        "backported_fixes.proto",
+    ],
+    sdk_version: "test_current",
+    host_supported: true,
+}
+
+java_library {
+    name: "cts_backported_fixes_ids",
+    srcs: [
+        "src/com/android/cts/backportedfixes/ApprovedBackportedFixes.java",
+    ],
+    static_libs: [
+        "guava",
+        "cts_backported_fixes_proto",
+    ],
+    sdk_version: "test_current",
+    host_supported: true,
+    java_resources: [
+        ":cts_backported_fixes_binpb",
+    ],
+}
+
+java_library {
+    name: "cts_backported_fixes",
+    static_libs: [
+        "cts_backported_fixes_annotation",
+        "cts_backported_fixes_rule",
+        "cts_backported_fixes_ids",
+        "junit",
+        "guava",
+    ],
+    sdk_version: "test_current",
+}
+
+genrule {
+    name: "cts_backported_fixes_binpb",
+    tools: ["aprotoc"],
+    srcs: [
+        "backported_fixes.proto",
+        "approved/backported_fixes.txtpb",
+    ],
+    out: ["com/android/cts/backportedfixes/backported_fixes.binpb"],
+    cmd: "$(location aprotoc)  " +
+        " --encode=com.android.cts.backportedfixes.BackportedFixes" +
+        "  $(location backported_fixes.proto)" +
+        " < $(location approved/backported_fixes.txtpb)" +
+        " > $(location com/android/cts/backportedfixes/backported_fixes.binpb)",
+}

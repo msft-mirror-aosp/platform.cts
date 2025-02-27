@@ -32,13 +32,13 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -49,7 +49,6 @@ import android.hardware.display.VirtualDisplay;
 import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.LockScreenSession;
 import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -100,6 +99,24 @@ public class StreamedAppClipboardTest {
         for (int i = 0; i < mDeviceEnvironments.size(); ++i) {
             mDeviceEnvironments.get(i).close();
         }
+    }
+
+    @Test
+    public void createUntrustedDisplay_customClipboardPolicy_disallowed() {
+        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
+                        .build());
+        assertThrows(SecurityException.class,
+                () -> mRule.createManagedVirtualDisplay(virtualDevice));
+    }
+
+    @Test
+    public void setCustomClipboardPolicy_withUntrustedDisplay_disallowed() {
+        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
+        mRule.createManagedVirtualDisplay(virtualDevice);
+        assertThrows(SecurityException.class,
+                () -> virtualDevice.setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM));
     }
 
     /** The virtual device owner has access to its device's clipboard. */
@@ -203,7 +220,6 @@ public class StreamedAppClipboardTest {
 
 
     /** Virtual and default device's clipboards are the same if the policy is custom. */
-    @RequiresFlagsEnabled(Flags.FLAG_CROSS_DEVICE_CLIPBOARD)
     @Test
     public void customPolicy_clipboardsAreShared() {
         DeviceEnvironment defaultDevice = new DeviceEnvironment();
@@ -228,7 +244,6 @@ public class StreamedAppClipboardTest {
      * Activities running on the virtual device can read default device's clipboard if the virtual
      * device clipboard policy is custom.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_CROSS_DEVICE_CLIPBOARD)
     @Test
     public void customPolicy_streamedAppReadsFromDefaultDeviceClipboard() {
         DeviceEnvironment defaultDevice = new DeviceEnvironment();
@@ -243,7 +258,6 @@ public class StreamedAppClipboardTest {
      * Activities running on the virtual device can write default device's clipboard if the virtual
      * device clipboard policy is custom.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_CROSS_DEVICE_CLIPBOARD)
     @Test
     public void customPolicy_streamedAppWritesToDefaultDeviceClipboard() {
         DeviceEnvironment defaultDevice = new DeviceEnvironment();
@@ -303,7 +317,6 @@ public class StreamedAppClipboardTest {
      * Activities running on the default device can read virtual device's clipboard if the virtual
      * device clipboard policy is custom.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_CROSS_DEVICE_CLIPBOARD)
     @Test
     public void customPolicy_defaultDeviceAppCanReadVirtualDeviceClipboard() {
         DeviceEnvironment defaultDevice = new DeviceEnvironment();
@@ -318,7 +331,6 @@ public class StreamedAppClipboardTest {
      * Activities running on the default device can write virtual device's clipboard if the virtual
      * device clipboard policy is custom.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_CROSS_DEVICE_CLIPBOARD)
     @Test
     public void customPolicy_defaultDeviceAppCanWriteVirtualDeviceClipboard() {
         DeviceEnvironment defaultDevice = new DeviceEnvironment();

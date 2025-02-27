@@ -32,6 +32,7 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.graphics.Rect;
 import android.os.SystemClock;
+import android.server.wm.CtsWindowInfoUtils;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
@@ -132,7 +133,7 @@ public class SeekBarTest {
     }
 
     @Test
-    public void testSetOnSeekBarChangeListener() {
+    public void testSetOnSeekBarChangeListener() throws InterruptedException {
         SeekBar.OnSeekBarChangeListener mockChangeListener =
                 mock(SeekBar.OnSeekBarChangeListener.class);
 
@@ -144,7 +145,12 @@ public class SeekBarTest {
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_DOWN,
                 seekBarXY[0], seekBarXY[1], 0);
         mUserHelper.injectDisplayIdIfNeeded(event);
-        mInstrumentation.sendPointerSync(event);
+        try {
+            mInstrumentation.sendPointerSync(event);
+        } catch (IllegalArgumentException exception) {
+            CtsWindowInfoUtils.dumpWindowsOnScreen("SeekBarTest", "Injection failed");
+            throw exception;
+        }
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mSeekBar, null);
         verify(mockChangeListener, times(1)).onStartTrackingTouch(mSeekBar);
         // while starting to track, the progress is changed also

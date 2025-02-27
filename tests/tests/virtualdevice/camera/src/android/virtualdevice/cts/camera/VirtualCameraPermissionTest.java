@@ -68,9 +68,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Executor;
 
-@RequiresFlagsEnabled({android.companion.virtual.flags.Flags.FLAG_VIRTUAL_CAMERA,
-        android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_CAMERA_SERVICE_DISCOVERY,
-        android.companion.virtualdevice.flags.Flags.FLAG_CAMERA_DEVICE_AWARENESS,
+@RequiresFlagsEnabled({
         android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
         android.permission.flags.Flags.FLAG_DEVICE_AWARE_PERMISSIONS_ENABLED})
 @RunWith(AndroidJUnit4.class)
@@ -124,7 +122,7 @@ public class VirtualCameraPermissionTest {
     }
 
     @Test
-    public void openCamera_withoutPermission_fails() throws Exception {
+    public void openCamera_withoutPermission_fails() {
         assertThrows(SecurityException.class,
                 () -> mCameraManager.openCamera(FRONT_CAMERA_ID, directExecutor(),
                         mCameraStateCallback));
@@ -142,19 +140,19 @@ public class VirtualCameraPermissionTest {
     }
 
     @Test
-    public void defaultDevice_hasCameraPermissionByDefault() throws Exception {
+    public void defaultDevice_hasCameraPermissionByDefault() {
         assertThat(getPermissionState(Display.DEFAULT_DISPLAY))
                 .isEqualTo(PackageManager.PERMISSION_GRANTED);
     }
 
     @Test
-    public void virtualDevice_doesNotHaveCameraPermissionByDefault() throws Exception {
+    public void virtualDevice_doesNotHaveCameraPermissionByDefault() {
         assertThat(getPermissionState(mVirtualDisplayId))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
     }
 
     @Test
-    public void virtualDevice_cameraPermissionGranted() throws Exception {
+    public void virtualDevice_cameraPermissionGranted() {
         assertThat(getPermissionState(mVirtualDisplayId))
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
         grantCameraPermission(mVirtualDevice.getDeviceId());

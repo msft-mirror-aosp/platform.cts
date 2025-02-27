@@ -95,8 +95,7 @@ import java.util.function.Predicate;
 @PlatinumTest(focusArea = "pm")
 public class IntentFilterTest {
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private IntentFilter mIntentFilter;

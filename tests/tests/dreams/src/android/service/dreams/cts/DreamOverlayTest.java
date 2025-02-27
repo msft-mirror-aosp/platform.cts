@@ -105,7 +105,7 @@ public class DreamOverlayTest extends ActivityManagerTestBase {
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
 
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         // Wait on count down latch for overlay being added.
         assertThat(shownCountDownLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();

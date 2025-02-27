@@ -48,19 +48,16 @@ import android.view.inputmethod.InputContentInfo;
 import android.view.inputmethod.SurroundingText;
 import android.view.inputmethod.TextSnapshot;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InputConnectionWrapperTest {
+public final class InputConnectionWrapperTest {
     @Test
     public void testInputConnectionWrapper() {
         InputConnection inputConnection = mock(InputConnection.class);

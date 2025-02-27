@@ -23,44 +23,36 @@ package camera_feature_combination_proto;
 option java_multiple_files = true;
 
 enum Stabilization {
-  OFF = 0;
-  PREVIEW_STABILIZATION = 1;
-  // reserve 2-254 for future use
-  ANY_STABILIZATION = 255;  // Clients should consider this the "default" if the
-                            // field is not explicitly set.
+  STABILIZATION_ANY = 0;
+  STABILIZATION_OFF = 1;
+  STABILIZATION_PREVIEW = 2;
 }
 
+// Must match values in ImageFormat.java and PixelFormat.java
 enum ImageFormat {
-  JPEG = 0;
-  JPEG_R = 1;
-  PRIVATE = 2;
-  YUV_420_888 = 3;
-  // reserve 4-254 for future use
-  ANY_IMAGE_FORMAT = 255;  // Clients should consider this the "default" if the
-                           // field is not explicitly set.
+  FMT_ANY = 0;  // == ImageFormat.UNKNOWN
+  FMT_PRIVATE = 34;
+  FMT_YUV_420_888 = 35;
+  FMT_JPEG = 256;
+  FMT_JPEG_R = 4101;
 }
 
 enum DynamicRangeProfile {
-  HLG10 = 0;
-  HDR10 = 1;
-  HDR10_PLUS = 2;
-  STANDARD = 3;
-  // reserve 4-254 for future use
-  ANY_DYNAMIC_RANGE_PROFILE = 255;  // Clients should consider this as the
-                                    // "default" if the field is not
-                                    // explicitly set.
+  PROFILE_ANY = 0;
+  PROFILE_STANDARD = 1;
+  PROFILE_HLG10 = 2;
+  PROFILE_HDR10 = 3;
+  PROFILE_HDR10_PLUS = 4;
 }
 
 enum StreamUsecase {
-  DEFAULT = 0;
-  PREVIEW = 1;
-  STILL_CAPTURE = 2;
-  VIDEO_RECORD = 3;
-  VIDEO_CALL = 4;
-  PREVIEW_VIDEO_STILL = 5;
-  // reserve 6-254 for future use
-  ANY_STREAM_USECASE = 255;  // Clients should consider this as the "default" if
-                             // the field is not explicitly set.
+  USECASE_ANY = 0;
+  USECASE_DEFAULT = 1;
+  USECASE_PREVIEW = 2;
+  USECASE_STILL_CAPTURE = 3;
+  USECASE_VIDEO_RECORD = 4;
+  USECASE_VIDEO_CALL = 5;
+  USECASE_PREVIEW_VIDEO_STILL = 6;
 }
 
 message Size {

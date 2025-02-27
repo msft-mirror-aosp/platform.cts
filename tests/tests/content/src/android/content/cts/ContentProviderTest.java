@@ -16,6 +16,8 @@
 
 package android.content.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -384,14 +386,14 @@ public class ContentProviderTest {
     @AppModeFull
     public void createContentUriForUser_returnsCorrectUri() {
         final ContentResolver profileContentResolver =
-                TestApis.context().androidContextAsUser(sDeviceState.workProfile())
+                TestApis.context().androidContextAsUser(workProfile(sDeviceState))
                         .getContentResolver();
         final String testContentDisplayName = "testContent.mp3";
         final Uri workProfileUriWithoutUserId = createAndInsertTestAudioFile(
                 profileContentResolver, testContentDisplayName);
 
         final Uri workProfileUriWithUserId = ContentProvider.createContentUriForUser(
-                workProfileUriWithoutUserId, sDeviceState.workProfile().userHandle());
+                workProfileUriWithoutUserId, workProfile(sDeviceState).userHandle());
 
         assertThat(getAudioContentDisplayName(
                 sContext.getContentResolver(), workProfileUriWithUserId))

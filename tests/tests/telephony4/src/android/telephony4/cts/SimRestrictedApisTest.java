@@ -19,6 +19,7 @@ package android.telephony4.cts;
 import static androidx.test.InstrumentationRegistry.getContext;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -27,6 +28,8 @@ import android.os.AsyncTask;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.telephony.data.NetworkSlicingConfig;
+
+import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -236,6 +239,7 @@ public class SimRestrictedApisTest {
      */
     @Test
     public void testNvReadItem() {
+        assumeFalse(Flags.cleanupCdma());
         try {
             if (isSimCardPresent()) {
                 mTelephonyManager.nvReadItem(0);

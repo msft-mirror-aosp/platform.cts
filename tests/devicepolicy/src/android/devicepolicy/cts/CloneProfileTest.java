@@ -26,11 +26,11 @@ import android.os.UserManager;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasNoCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoCloneProfile;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;

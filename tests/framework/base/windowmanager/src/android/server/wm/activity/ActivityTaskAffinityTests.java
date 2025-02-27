@@ -82,12 +82,12 @@ public class ActivityTaskAffinityTests extends ActivityManagerTestBase {
     private void testActivitiesShouldBeInTheSameTask(ComponentName activityA,
             ComponentName activityB, boolean sameTask) {
         launchActivity(activityA);
-        waitAndAssertTopResumedActivity(activityA, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityA, getMainDisplayId(),
                 "Launched activity must be top-resumed.");
         final int firstAppTaskId = mWmState.getTaskByActivity(activityA).getTaskId();
 
         launchActivity(activityB);
-        waitAndAssertTopResumedActivity(activityB, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(activityB, getMainDisplayId(),
                 "Launched activity must be top-resumed.");
         final int secondAppTaskId = mWmState.getTaskByActivity(activityB).getTaskId();
 

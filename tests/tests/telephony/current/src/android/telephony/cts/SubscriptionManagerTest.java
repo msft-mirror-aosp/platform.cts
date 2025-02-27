@@ -488,7 +488,7 @@ public class SubscriptionManagerTest {
 
     @Test
     public void testSubscriptionInfoRecord() {
-        if (!isAutomotive()) return;
+        assumeTrue("Remote SIM is only supported on automotive", isAutomotive());
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
@@ -496,7 +496,8 @@ public class SubscriptionManagerTest {
         final String displayName = "device_name";
         uiAutomation.adoptShellPermissionIdentity();
         try {
-            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             assertNotNull(mSm.getActiveSubscriptionInfoForIcc(uniqueId));
             mSm.removeSubscriptionInfoRecord(uniqueId,
@@ -508,7 +509,8 @@ public class SubscriptionManagerTest {
 
         // Testing permission fail
         try {
-            mSm.addSubscriptionInfoRecord(uniqueId, displayName, 0,
+            mSm.addSubscriptionInfoRecord(uniqueId, displayName,
+                    SubscriptionManager.SLOT_INDEX_FOR_REMOTE_SIM_SUB,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
             mSm.removeSubscriptionInfoRecord(uniqueId,
                     SubscriptionManager.SUBSCRIPTION_TYPE_REMOTE_SIM);
@@ -1530,7 +1532,6 @@ public class SubscriptionManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {"android.telephony.SubscriptionInfo#getServiceCapabilities"})
     public void testSubscriptionInfo_getServiceCapabilities() throws Exception {
         final List<SubscriptionInfo> allSubInfos =

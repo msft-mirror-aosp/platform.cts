@@ -20,7 +20,6 @@ import static android.content.pm.PackageManager.PERMISSION_DENIED;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.cts.testapisreflection.TestApisReflectionKt.addOverridePermissionState;
 import static android.cts.testapisreflection.TestApisReflectionKt.clearOverridePermissionStates;
-import static android.cts.testapisreflection.TestApisReflectionKt.getAdoptedShellPermissions;
 import static android.cts.testapisreflection.TestApisReflectionKt.removeOverridePermissionState;
 
 import android.app.AppOpsManager;
@@ -454,10 +453,10 @@ public final class Permissions {
 
         if (removedPermissionContext != null) {
             removedPermissionContext.grantedAppOps().stream().filter(
-                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                            (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
                     .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
             removedPermissionContext.deniedAppOps().stream().filter(
-                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                            (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
                     .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
         }
 
@@ -600,7 +599,7 @@ public final class Permissions {
         // TODO: replace with dependency on bedstead-root when properly modularised
         if (Tags.hasTag("root-instrumentation")
                 && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
-             // We must reset as it may have been set previously
+            // We must reset as it may have been set previously
             resetRootPermissionState(pkg, user);
 
             for (String grantedPermission : permissionsToGrant) {
@@ -639,8 +638,7 @@ public final class Permissions {
         if (!filteredGrantedAppOps.isEmpty() || !filteredDeniedAppOps.isEmpty()) {
             // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
             // infinite loop so won't use .appOps().set()
-            Set<String> previousAdoptedShellPermissions = getAdoptedShellPermissions(
-                            ShellCommandUtils.uiAutomation());
+            Set<String> previousAdoptedShellPermissions = getAdoptedShellPermissions();
             adoptShellPermissionIdentity(CommonPermissions.MANAGE_APP_OPS_MODES);
             for (String appOp : filteredGrantedAppOps) {
                 sAppOpsManager.setMode(appOp, pkg.uid(sUser),
@@ -764,19 +762,33 @@ public final class Permissions {
     }
 
     private static boolean hasAdoptedShellPermissionIdentity = false;
-    private static void adoptShellPermissionIdentity(Collection<String> permissions) {
-        adoptShellPermissionIdentity(permissions.toArray(new String[0]));
-    }
 
     private static void adoptShellPermissionIdentity(String... permissions) {
-        if (permissions.length == 0) {
+        adoptShellPermissionIdentity(new HashSet<>(Arrays.asList(permissions)));
+    }
+
+    private static void adoptShellPermissionIdentity(Collection<String> permissions) {
+        if (permissions.isEmpty()) {
             dropShellPermissionIdentity();
             return;
         }
 
-        Log.d(LOG_TAG, "Adopting " + Arrays.toString(permissions));
+        Log.d(LOG_TAG, "Adopting " + permissions);
         hasAdoptedShellPermissionIdentity = true;
-        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(permissions);
+        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(
+                permissions.toArray(new String[0]));
+
+        if (Versions.meetsMinimumSdkVersionRequirement(Versions.S)) {
+            // b/365494315: verify if the adoption was successful - for S+ only as
+            // UiAutomation#getAdoptedShellPermissions was added in S.
+            Set<String> adoptedPermissions = getAdoptedShellPermissions();
+            if (!adoptedPermissions.containsAll(permissions)) {
+                String message = "Expected all of the following permissions to be adopted but "
+                        + "were not: " + permissions + ". Actual adopted permissions: " +
+                        adoptedPermissions + ". See the stacktrace to find the caller.";
+                throw new NeneException(message);
+            }
+        }
     }
 
     private static void adoptShellPermissionIdentity() {
@@ -801,4 +813,21 @@ public final class Permissions {
         return ShellCommand.builder("dumpsys permissionmgr").validate((s) -> !s.isEmpty())
                 .executeOrThrowNeneException("Error dumping permission state");
     }
+
+    /**
+     * Get adopted shell permissions.
+     *
+     * <p>See {@code UiAutomation#getAdoptedShellPermissions}.
+     *
+     * <p>Note: Does not compute anything for Versions < S, returns an empty set instead.
+     */
+    private static Set<String> getAdoptedShellPermissions() {
+        if (Versions.meetsMinimumSdkVersionRequirement(Versions.S)) {
+            return TestApisReflectionKt.getAdoptedShellPermissions(
+                    ShellCommandUtils.uiAutomation());
+        }
+
+        return Collections.emptySet();
+    }
 }
+

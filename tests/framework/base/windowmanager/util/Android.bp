@@ -44,12 +44,14 @@ java_test_helper_library {
     ],
 
     static_libs: [
+        "android.tracing.flags-aconfig-java",
         "platformprotosnano",
         "compatibility-device-util-axt",
         "androidx.test.rules",
         "hamcrest-library",
         "CtsMockInputMethodLib",
         "com.android.window.flags.window-aconfig-java",
+        "perfetto_winscope-lite",
     ],
 
     sdk_version: "test_current",

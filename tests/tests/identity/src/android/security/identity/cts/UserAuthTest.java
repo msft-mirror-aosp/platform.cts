@@ -27,7 +27,7 @@ import android.security.identity.WritableIdentityCredential;
 import android.security.identity.ResultData;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.security.identity.internal.Util;
 
 import static org.junit.Assert.assertEquals;

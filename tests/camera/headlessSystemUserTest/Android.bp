@@ -31,7 +31,7 @@ android_test {
         "CtsCameraUtils",
         "ctstestrunner-axt",
         "flag-junit",
-        "Harrier",
+        "bedstead",
     ],
     sdk_version: "test_current",
     stl: "c++_shared",

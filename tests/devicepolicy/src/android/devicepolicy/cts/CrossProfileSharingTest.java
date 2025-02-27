@@ -26,9 +26,13 @@ import static android.content.Intent.EXTRA_TEXT;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.os.UserManager.DISALLOW_SHARE_INTO_MANAGED_PROFILE;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.profileOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CROSS_PROFILE_COPY_PASTE;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -43,25 +47,25 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.ComponentReference;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -77,7 +81,7 @@ public final class CrossProfileSharingTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains("com.android.testapp.SOME_ACTION"),
@@ -188,7 +192,7 @@ public final class CrossProfileSharingTest {
     @Postsubmit(reason = "new test")
     @EnsureHasWorkProfile
     public void sharingFromPersonalToWork_disallowShareIntoProfile_restrictionRemoved() {
-        try (TestAppInstance testApp = sTestApp.install(sDeviceState.workProfile())) {
+        try (TestAppInstance testApp = sTestApp.install(workProfile(sDeviceState))) {
             ResolveInfo personalToWorkForwarder = getPersonalToWorkForwarder();
 
             // Enforce the restriction and wait for it to be applied, then remove it and wait again.
@@ -209,8 +213,8 @@ public final class CrossProfileSharingTest {
         try {
             IntentFilter sendIntentFilter = IntentFilter.create(ACTION_SEND, /* dataType= */ "*/*");
             sendIntentFilter.addCategory(CATEGORY_DEFAULT);
-            sDeviceState.dpc().devicePolicyManager().addCrossProfileIntentFilter(
-                    sDeviceState.dpc().componentName(), sendIntentFilter,
+            dpc(sDeviceState).devicePolicyManager().addCrossProfileIntentFilter(
+                    dpc(sDeviceState).componentName(), sendIntentFilter,
                     FLAG_MANAGED_CAN_ACCESS_PARENT | FLAG_PARENT_CAN_ACCESS_MANAGED);
             Intent switchToOtherProfileIntent = getSwitchToOtherProfileIntent();
 
@@ -230,8 +234,8 @@ public final class CrossProfileSharingTest {
                     .errorOnFail()
                     .await();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearCrossProfileIntentFilters(
-                    sDeviceState.dpc().componentName());
+            dpc(sDeviceState).devicePolicyManager().clearCrossProfileIntentFilters(
+                    dpc(sDeviceState).componentName());
         }
     }
 
@@ -292,7 +296,7 @@ public final class CrossProfileSharingTest {
     }
 
     private ResolveInfo getPersonalToWorkForwarder() {
-        return getResolveInfo(sDeviceState.workProfile(), FLAG_MANAGED_CAN_ACCESS_PARENT);
+        return getResolveInfo(workProfile(sDeviceState), FLAG_MANAGED_CAN_ACCESS_PARENT);
     }
 
     private ResolveInfo getWorkToPersonalForwarder() {
@@ -309,16 +313,16 @@ public final class CrossProfileSharingTest {
         try (TestAppInstance testApp = sTestApp.install(targetProfile)) {
             // Set up cross profile intent filters so we can resolve these to find out framework's
             // intent forwarder activity as ground truth
-            sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager()
-                    .addCrossProfileIntentFilter(sDeviceState.profileOwner(WORK_PROFILE)
+            profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager()
+                    .addCrossProfileIntentFilter(profileOwner(sDeviceState, WORK_PROFILE)
                                     .componentName(),
                             new IntentFilter(CROSS_PROFILE_ACTION), direction);
             try {
                 forwarderInfo = getCrossProfileIntentForwarder(new Intent(CROSS_PROFILE_ACTION));
             } finally {
-                sDeviceState.profileOwner(WORK_PROFILE).devicePolicyManager()
+                profileOwner(sDeviceState, WORK_PROFILE).devicePolicyManager()
                         .clearCrossProfileIntentFilters(
-                                sDeviceState.profileOwner(WORK_PROFILE).componentName());
+                                profileOwner(sDeviceState, WORK_PROFILE).componentName());
             }
         }
         return forwarderInfo;
@@ -337,7 +341,7 @@ public final class CrossProfileSharingTest {
     }
 
     private void setSharingIntoProfileEnabled(boolean enabled) {
-        RemoteDpc remoteDpc = sDeviceState.profileOwner(WORK_PROFILE);
+        RemoteDpc remoteDpc = profileOwner(sDeviceState, WORK_PROFILE);
         IntentFilter filter = new IntentFilter(ACTION_DATA_SHARING_RESTRICTION_APPLIED);
         Context remoteCtx = TestApis.context().androidContextAsUser(remoteDpc.user());
         try (PermissionContext permissionContext =

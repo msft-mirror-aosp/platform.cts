@@ -18,6 +18,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.bedstead.adb.test">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="33"/>
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
         android:targetPackage="com.android.bedstead.adb.test"
         android:label="Bedstead Adb Tests" />

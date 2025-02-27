@@ -138,7 +138,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
 
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mDreamCoordinator.stopDream();
     }
@@ -207,7 +207,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
 
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
 
         removeRootTasksWithDreamTypeActivity();
@@ -238,7 +238,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
                 ComponentName.unflattenFromString(DREAM_SERVICE_COMPONENT);
         final ComponentName dreamActivity = mDreamCoordinator.setActiveDream(dreamService);
         mDreamCoordinator.startDream();
-        waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
+        waitAndAssertResumedAndFocusedActivityOnDisplay(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
         mDreamCoordinator.stopDream();
 
@@ -291,6 +291,8 @@ public class DreamServiceTest extends ActivityManagerTestBase {
             throws InterruptedException, RemoteException {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK));
         // Set secure lock credentials
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -354,6 +356,8 @@ public class DreamServiceTest extends ActivityManagerTestBase {
             throws InterruptedException, RemoteException {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK));
         // Set secure lock credentials
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();

@@ -217,9 +217,9 @@ public class Utils {
                 + "        <!-- PRIMING -->\n"
                 + "        <waveform-entry durationMs=\"0\" amplitude=\"0\"/>\n"
                 + "        <waveform-entry durationMs=\"12\" amplitude=\"255\"/>\n"
-                + "        <waveform-entry durationMs=\"250\" amplitude=\"0\"/>\n"
+                + "        <waveform-entry durationMs=\"250\" amplitude=\"100\"/>\n"
                 + "        <waveform-entry durationMs=\"12\" amplitude=\"255\"/>\n"
-                + "        <waveform-entry durationMs=\"500\" amplitude=\"0\"/>\n"
+                + "        <waveform-entry durationMs=\"500\" amplitude=\"100\"/>\n"
                 + "    </waveform-effect>\n"
                 + "</vibration-effect>");
         writer.close();

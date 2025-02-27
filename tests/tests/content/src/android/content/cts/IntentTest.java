@@ -16,6 +16,7 @@
 
 package android.content.cts;
 
+import static android.content.Intent.EXTENDED_FLAG_MISSING_CREATOR_OR_INVALID_TOKEN;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.content.Intent.FLAG_RECEIVER_OFFLOAD;
 
@@ -32,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.PendingIntent;
+import android.app.compat.CompatChanges;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ComponentName;
@@ -57,6 +59,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
+import android.security.Flags;
 import android.test.mock.MockContext;
 import android.util.AttributeSet;
 import android.util.Xml;
@@ -82,8 +85,7 @@ import java.util.Set;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class IntentTest {
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Intent mIntent;
     private static final String TEST_ACTION = "android.content.IntentTest_test";
@@ -175,6 +177,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testReadFromParcel() {
         mIntent.setAction(TEST_ACTION);
         mIntent.setData(TEST_URI);
@@ -210,6 +213,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayListExtraTypeSafe_withMismatchingType_returnsNull() {
         final ArrayList<TestParcelable> original = new ArrayList<>();
         original.add(new TestParcelable(0));
@@ -219,6 +223,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayListExtraTypeSafe_withMatchingType_returnsObject() {
         final ArrayList<TestParcelable> original = new ArrayList<>();
         original.add(new TestParcelable(0));
@@ -230,6 +235,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayListExtraTypeSafe_withBaseType_returnsObject() {
         final ArrayList<TestParcelable> original = new ArrayList<>();
         original.add(new TestParcelable(0));
@@ -938,6 +944,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayExtraTypeSafe_withMismatchingType_returnsNull() {
         mIntent.putExtra(TEST_EXTRA_NAME, new TestParcelable[] {new TestParcelable(42)});
         roundtrip();
@@ -945,6 +952,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayExtraTypeSafe_withMatchingType_returnsObject() {
         final TestParcelable[] original = { new TestParcelable(1), new TestParcelable(2) };
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -954,6 +962,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetParcelableArrayExtraTypeSafe_withBaseType_returnsObject() {
         final TestParcelable[] original = { new TestParcelable(1), new TestParcelable(2) };
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -1572,13 +1581,8 @@ public class IntentTest {
                 mContext, 0, mIntent, PendingIntent.FLAG_IMMUTABLE).getIntentSender();
         target = Intent.createChooser(mIntent, null, sender);
 
-        if (android.service.chooser.Flags.enableChooserResult()) {
-            assertEquals(sender, target.getParcelableExtra(
-                    Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER, IntentSender.class));
-        } else {
-            assertEquals(sender, target.getParcelableExtra(
-                    Intent.EXTRA_CHOSEN_COMPONENT_INTENT_SENDER, IntentSender.class));
-        }
+        assertEquals(sender, target.getParcelableExtra(
+                Intent.EXTRA_CHOOSER_RESULT_INTENT_SENDER, IntentSender.class));
         // Asser that setting the data URI *without* a permission granting flag *doesn't* copy
         // anything to ClipData.
         Uri data = Uri.parse("some://uri");
@@ -2155,6 +2159,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetSerializableExtraTypeSafe_withMismatchingType_returnsNull() {
         mIntent.putExtra(TEST_EXTRA_NAME, new TestSerializable());
         roundtrip();
@@ -2162,6 +2167,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetSerializableExtraTypeSafe_withMatchingType_returnsObject() {
         String original = "Hello, World!";
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -2170,6 +2176,7 @@ public class IntentTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = CompatChanges.class)
     public void testGetSerializableExtraTypeSafe_withBaseType_returnsObject() {
         String original = "Hello, World!";
         mIntent.putExtra(TEST_EXTRA_NAME, original);
@@ -2271,6 +2278,17 @@ public class IntentTest {
 
         assertThat(deserialized.toInsecureString())
                 .isEqualTo(intent.toInsecureString());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_PREVENT_INTENT_REDIRECT)
+    public void testRemoveLaunchSecurityProtection() {
+        Intent intent = new Intent(TEST_ACTION);
+        intent.setCreatorToken(new Binder());
+        intent.addExtendedFlags(EXTENDED_FLAG_MISSING_CREATOR_OR_INVALID_TOKEN);
+        intent.removeLaunchSecurityProtection();
+        assertThat(intent.getExtendedFlags()).isEqualTo(0);
+        assertThat(intent.getCreatorToken()).isNull();
     }
 
     private void roundtrip() {

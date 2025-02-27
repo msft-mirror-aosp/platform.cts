@@ -74,7 +74,7 @@ def _take_captures(
   Returns:
     caps: list of capture objects as described by cam.do_capture().
   """
-  # Take base image without flash
+  # Take image without flash
   if torch_strength == 0:
     # turn OFF lights to darken scene
     lighting_control_utils.set_lighting_state(
@@ -86,6 +86,7 @@ def _take_captures(
         'android.control.captureIntent'] = _CAPTURE_INTENT_STILL_CAPTURE
     cap_req['android.control.aeMode'] = 0  # AE_MODE_OFF
     cap_req['android.control.awbLock'] = True
+    logging.debug('Capturing image without flash')
     cap = cam.do_capture(cap_req, out_surfaces, reuse_session=True)
     # turn the lights back on
     lighting_control_utils.set_lighting_state(
@@ -109,6 +110,7 @@ def _take_captures(
     cap_req['android.flash.mode'] = _TORCH_MODE
     cap_req['android.flash.strengthLevel'] = torch_strength
     reqs = [cap_req] * _BURST_LEN
+    logging.debug('Capturing burst with torch strength: %s', torch_strength)
     caps = cam.do_capture(reqs, out_surfaces, reuse_session=True)
     # turn the lights back on
     lighting_control_utils.set_lighting_state(
@@ -185,7 +187,7 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
     if (strength_means[i] >= strength_means[i+1] and
         ae_mode in _AE_MODE_FLASH_CONTROL):
       msg = (
-          f'Capture with AE_CONTROL_MODE OFF/ON. AE_MODE: {ae_mode}; '
+          f'Capture with CONTROL_AE_MODE: {_AE_MODES[ae_mode]}; '
           f'Strength {flash_strengths[i]} mean: {strength_means[i]}; '
           f'Strength {flash_strengths[i+1]} mean: {strength_means[i+1]}; '
           f'Mean of {flash_strengths[i+1]} should be brighter than '
@@ -198,7 +200,7 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
       if diff > _BRIGHTNESS_MEAN_ATOL:
         if ae_mode in _AE_MODE_FLASH_CONTROL:
           msg = (
-              f'Capture with AE_CONTROL_MODE OFF/ON. AE_MODE: {ae_mode}; '
+              f'Capture with CONTROL_AE_MODE: {_AE_MODES[ae_mode]}; '
               f'Strength {flash_strengths[i]} capture {j} mean: '
               f'{burst_means[j]},'
               f'Strength {flash_strengths[i+1]} capture {j+1} mean: '
@@ -208,7 +210,7 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
           )
         else:
           msg = (
-              f'Capture with AE_CONTROL_MODE ON_AUTO_FLASH. '
+              f'Capture with CONTROL_AE_MODE: {_AE_MODES[ae_mode]}. '
               f'Strength {flash_strengths[i]} mean: {burst_means[j]}, '
               f'Strength {flash_strengths[i+1]} mean: '
               f'{burst_means[j+1]}. '

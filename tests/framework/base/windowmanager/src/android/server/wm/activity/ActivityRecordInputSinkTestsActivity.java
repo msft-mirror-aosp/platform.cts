@@ -33,6 +33,7 @@ public class ActivityRecordInputSinkTestsActivity extends Activity {
     static final String LAUNCH_ACTIVITY_ACTION = "launch";
     static final String COMPONENT_EXTRA = "component";
     static final String EXTRA_EXTRA = "extra";
+    static final String EXTRA_OPTIONS = "options";
 
     Button mTopButton;
     Button mBottomButton;
@@ -72,12 +73,11 @@ public class ActivityRecordInputSinkTestsActivity extends Activity {
                     activityIntent.setComponent(intent.getParcelableExtra(COMPONENT_EXTRA,
                             ComponentName.class));
                     activityIntent.replaceExtras(intent.getBundleExtra(EXTRA_EXTRA));
-                    startActivity(activityIntent);
+                    startActivity(activityIntent, intent.getBundleExtra(EXTRA_OPTIONS));
                     break;
                 default:
                     throw new AssertionError("Unknown action" + intent.getAction());
             }
         }
     };
-
 }

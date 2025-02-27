@@ -16,7 +16,6 @@
 
 package android.appsecurity.cts;
 
-import com.android.tradefed.util.RunUtil;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -25,6 +24,7 @@ import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.Presubmit;
 
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
+import com.android.tradefed.util.RunUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -139,6 +139,9 @@ public class PackageVisibilityTest extends BaseAppSecurityTest {
         // It is visible for the installed user, but only if match uninstalled
         assertFalse(isAppVisibleForUser(TINY_PKG, userId, MATCH_NORMAL));
         assertTrue(isAppVisibleForUser(TINY_PKG, userId, MATCH_UNINSTALLED));
+
+        // Make sure the test app is still available on the other user
+        assertTrue(isAppVisibleForUser(TEST_PKG, userId, MATCH_NORMAL));
 
         Utils.runDeviceTests(getDevice(), TEST_PKG,
                 ".PackageAccessTest", "testPackageAccess_notInOtherUserUninstalled",

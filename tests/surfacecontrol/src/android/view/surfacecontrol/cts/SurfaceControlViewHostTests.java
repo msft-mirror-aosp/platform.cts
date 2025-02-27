@@ -109,7 +109,6 @@ import androidx.test.rule.ActivityTestRule;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.cts.input.DebugInputRule;
 import com.android.cts.input.UinputTouchDevice;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEventStream;
@@ -154,9 +153,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             }
         }
     }
-
-    @Rule
-    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     private static final String TAG = "SurfaceControlViewHostTests";
 
@@ -1279,7 +1275,6 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     }
 
     @Test
-    @DebugInputRule.DebugInput(bug = 329439551)
     public void testEmbeddedViewReceivesInputOnBottom() throws Throwable {
         mEmbeddedView = new Button(mActivity);
         mEmbeddedView.setOnClickListener((View v) -> {

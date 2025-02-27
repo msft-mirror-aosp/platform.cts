@@ -24,8 +24,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assert.fail;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -51,6 +51,7 @@ import android.view.WindowInsets;
 import android.view.WindowManager;
 
 import androidx.annotation.ColorInt;
+import androidx.annotation.Nullable;
 import androidx.core.view.WindowCompat;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.UiDevice;
@@ -143,7 +144,9 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
 
         final Rect windowFrame = getFloatingWindowFrame(blurActivity);
-        assertBackgroundBlur(takeScreenshot(), windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBackgroundBlur(screenshot, windowFrame);
+        });
     }
 
     @Test
@@ -157,38 +160,20 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
         final Rect windowFrame = getFloatingWindowFrame(blurActivity);
 
-        Bitmap screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertNoBackgroundBlur(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertNoBackgroundBlur(screenshot, windowFrame);
+        });
 
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBlurBehindRadius(0);
         });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertNoBlurBehind(screenshot, windowFrame);
-        assertNoBackgroundBlur(screenshot, windowFrame);
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.Window#setBackgroundBlurRadius"})
-    public void testNoBackgroundBlurWhenBlurDisabled() {
-        setAndAssertForceBlurDisabled(true);
-        final BlurActivity blurActivity = startTestActivity(BlurActivity.class);
-        getInstrumentation().runOnMainSync(() -> {
-            blurActivity.setBackgroundBlurRadius(BACKGROUND_BLUR_PX);
-            blurActivity.setBackgroundColor(Color.TRANSPARENT);
+        assertOnScreenshot(screenshot -> {
+            assertNoBlurBehind(screenshot, windowFrame);
+            assertNoBackgroundBlur(screenshot, windowFrame);
         });
-        waitForActivityIdle(blurActivity);
-
-        verifyOnlyBackgroundImageVisible();
-
-        setAndAssertForceBlurDisabled(false, blurActivity.mBlurEnabledListener);
-        waitForActivityIdle(blurActivity);
-
-        final Rect windowFrame = getFloatingWindowFrame(blurActivity);
-        assertBackgroundBlur(takeScreenshot(), windowFrame);
     }
 
     @Test
@@ -207,29 +192,6 @@ public class BlurTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.WindowManager.LayoutParams#setBlurBehindRadius",
                      "android.R.styleable#Window_windowBlurBehindEnabled"})
-    public void testNoBlurBehindWhenBlurDisabled() {
-        setAndAssertForceBlurDisabled(true);
-        final BlurActivity blurActivity = startTestActivity(BlurActivity.class);
-        getInstrumentation().runOnMainSync(() -> {
-            blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX);
-            blurActivity.setBackgroundColor(Color.TRANSPARENT);
-        });
-        waitForActivityIdle(blurActivity);
-
-        verifyOnlyBackgroundImageVisible();
-
-        setAndAssertForceBlurDisabled(false, blurActivity.mBlurEnabledListener);
-        waitForActivityIdle(blurActivity);
-
-        final Rect windowFrame = getFloatingWindowFrame(blurActivity);
-        final Bitmap screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertNoBackgroundBlur(screenshot, windowFrame);
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.WindowManager.LayoutParams#setBlurBehindRadius",
-                     "android.R.styleable#Window_windowBlurBehindEnabled"})
     public void testNoBlurBehindWhenFlagNotSet() {
         final BlurActivity blurActivity = startTestActivity(BadBlurActivity.class);
         getInstrumentation().runOnMainSync(() -> {
@@ -239,35 +201,6 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
 
         verifyOnlyBackgroundImageVisible();
-    }
-
-    @Test
-    @ApiTest(apis = {"android.view.Window#setBackgroundBlurRadius"})
-    public void testBackgroundBlurActivatesFallbackDynamically() {
-        final BlurActivity blurActivity = startTestActivity(BlurActivity.class);
-        getInstrumentation().runOnMainSync(() -> {
-            blurActivity.setBackgroundBlurRadius(BACKGROUND_BLUR_PX);
-        });
-        waitForActivityIdle(blurActivity);
-        final Rect windowFrame = getFloatingWindowFrame(blurActivity);
-
-        Bitmap screenshot = takeScreenshot();
-        assertBackgroundBlur(screenshot, windowFrame);
-        assertNoBlurBehind(screenshot, windowFrame);
-
-        setAndAssertForceBlurDisabled(true, blurActivity.mBlurEnabledListener);
-        waitForActivityIdle(blurActivity);
-
-        screenshot = takeScreenshot();
-        assertNoBackgroundBlur(screenshot, windowFrame);
-        assertNoBlurBehind(screenshot, windowFrame);
-
-        setAndAssertForceBlurDisabled(false, blurActivity.mBlurEnabledListener);
-        waitForActivityIdle(blurActivity);
-
-        screenshot = takeScreenshot();
-        assertBackgroundBlur(screenshot, windowFrame);
-        assertNoBlurBehind(screenshot, windowFrame);
     }
 
     @Test
@@ -281,27 +214,30 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
         final Rect windowFrame = getFloatingWindowFrame(blurActivity);
 
-        Bitmap screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertNoBackgroundBlur(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertNoBackgroundBlur(screenshot, windowFrame);
+        });
 
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBlurBehindRadius(0);
         });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertNoBackgroundBlur(screenshot, windowFrame);
-        assertNoBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertNoBackgroundBlur(screenshot, windowFrame);
+            assertNoBlurBehind(screenshot, windowFrame);
+        });
 
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX);
         });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertBlurBehind(screenshot,  windowFrame);
-        assertNoBackgroundBlur(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot,  windowFrame);
+            assertNoBackgroundBlur(screenshot, windowFrame);
+        });
     }
 
     @Test
@@ -317,9 +253,10 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
         final Rect windowFrame = getFloatingWindowFrame(blurActivity);
 
-        Bitmap screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        });
 
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBlurBehindRadius(0);
@@ -327,9 +264,10 @@ public class BlurTests extends WindowManagerTestBase {
         });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertNoBackgroundBlur(screenshot, windowFrame);
-        assertNoBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertNoBackgroundBlur(screenshot, windowFrame);
+            assertNoBlurBehind(screenshot, windowFrame);
+        });
 
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX);
@@ -337,9 +275,10 @@ public class BlurTests extends WindowManagerTestBase {
         });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        });
     }
 
     @Test
@@ -349,10 +288,11 @@ public class BlurTests extends WindowManagerTestBase {
     public void testBlurBehindAndBackgroundBlurSetWithAttributes() {
         final Activity blurAttrActivity = startTestActivity(BlurAttributesActivity.class);
         final Rect windowFrame = getFloatingWindowFrame(blurAttrActivity);
-        final Bitmap screenshot = takeScreenshot();
 
-        assertBlurBehind(screenshot, windowFrame);
-        assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        });
     }
 
     @Test
@@ -368,16 +308,22 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
         final Rect windowFrame = getFloatingWindowFrame(blurActivity);
 
-        Bitmap screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        });
 
         setAndAssertForceBlurDisabled(true, blurActivity.mBlurEnabledListener);
+        getInstrumentation().runOnMainSync(() -> {
+            blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX * 2);
+            blurActivity.setBackgroundBlurRadius(BACKGROUND_BLUR_PX * 2);
+        });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertNoBackgroundBlur(screenshot, windowFrame);
-        assertNoBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertNoBackgroundBlur(screenshot, windowFrame);
+            assertNoBlurBehind(screenshot, windowFrame);
+        });
 
         getInstrumentation().runOnMainSync(() -> {
             blurActivity.setBackgroundColor(Color.TRANSPARENT);
@@ -386,11 +332,16 @@ public class BlurTests extends WindowManagerTestBase {
         verifyOnlyBackgroundImageVisible();
 
         setAndAssertForceBlurDisabled(false, blurActivity.mBlurEnabledListener);
+        getInstrumentation().runOnMainSync(() -> {
+            blurActivity.setBlurBehindRadius(BLUR_BEHIND_PX);
+            blurActivity.setBackgroundBlurRadius(BACKGROUND_BLUR_PX);
+        });
         waitForActivityIdle(blurActivity);
 
-        screenshot = takeScreenshot();
-        assertBlurBehind(screenshot, windowFrame);
-        assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        });
     }
 
     @Test
@@ -406,10 +357,11 @@ public class BlurTests extends WindowManagerTestBase {
         waitForActivityIdle(blurActivity);
 
         final Rect windowFrame = getFloatingWindowFrame(blurActivity);
-        Bitmap screenshot = takeScreenshot();
 
-        assertBlurBehind(screenshot, windowFrame);
-        assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        assertOnScreenshot(screenshot -> {
+            assertBlurBehind(screenshot, windowFrame);
+            assertBackgroundBlurOverBlurBehind(screenshot, windowFrame);
+        });
 
         blurActivity.finish();
         mWmState.waitAndAssertActivityRemoved(blurActivity.getComponentName());
@@ -418,12 +370,6 @@ public class BlurTests extends WindowManagerTestBase {
         verifyOnlyBackgroundImageVisible();
     }
 
-    @Test
-    @ApiTest(apis = {"android.view.WindowManager#isCrossWindowBlurEnabled"})
-    public void testIsCrossWindowBlurEnabledUpdatedCorrectly() {
-        setAndAssertForceBlurDisabled(true);
-        setAndAssertForceBlurDisabled(false);
-    }
 
     @Test
     @ApiTest(apis = {"android.view.WindowManager#addCrossWindowBlurEnabledListener",
@@ -473,6 +419,14 @@ public class BlurTests extends WindowManagerTestBase {
                 );
 
                 mInsetsToBeIgnored = Insets.add(systemBarInsets, roundedCornerInsets);
+
+                // Make the insets to be ignored symmetrical horizontally so that the later
+                // computation can assume the widths of the blue area and the red area are the same.
+                mInsetsToBeIgnored = Insets.of(
+                        Math.max(mInsetsToBeIgnored.left, mInsetsToBeIgnored.right),
+                        mInsetsToBeIgnored.top,
+                        Math.max(mInsetsToBeIgnored.left, mInsetsToBeIgnored.right),
+                        mInsetsToBeIgnored.bottom);
                 return insets;
             });
         }
@@ -502,6 +456,7 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.blur_activity);
             getWindow().setDecorFitsSystemWindows(false);
+            getWindow().getAttributes().setFitInsetsSides(0);
         }
 
         @Override
@@ -567,6 +522,7 @@ public class BlurTests extends WindowManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.blur_activity);
             getWindow().setDecorFitsSystemWindows(false);
+            getWindow().getAttributes().setFitInsetsSides(0);
         }
     }
 
@@ -584,12 +540,14 @@ public class BlurTests extends WindowManagerTestBase {
         return new Rect(mWmState.getMatchingVisibleWindowState(windowName).get(0).getFrame());
     }
 
-    private void waitForActivityIdle(Activity activity) {
+    private void waitForActivityIdle(@Nullable Activity activity) {
         // This helps with the test flakiness
         getInstrumentation().runOnMainSync(() -> {});
         UiDevice.getInstance(getInstrumentation()).waitForIdle();
         getInstrumentation().getUiAutomation().syncInputTransactions();
-        mWmState.computeState(activity.getComponentName());
+        if (activity != null) {
+            mWmState.computeState(activity.getComponentName());
+        }
     }
 
     private void setAndAssertForceBlurDisabled(boolean disable) {
@@ -616,8 +574,19 @@ public class BlurTests extends WindowManagerTestBase {
         }
     }
 
+    private void assertOnScreenshot(Consumer<Bitmap> assertion) {
+        final Bitmap screenshot = takeScreenshot();
+        try {
+            assertion.accept(screenshot);
+        } catch (AssertionError failedAssertion) {
+            mDumpOnFailure.dumpOnFailure("preAssertion", screenshot);
+            waitForActivityIdle(null);
+            mDumpOnFailure.dumpOnFailure("postAssertion", takeScreenshot());
+            throw failedAssertion;
+        }
+    }
+
     private void assertBlurBehind(Bitmap screenshot, Rect windowFrame) {
-        mDumpOnFailure.dumpOnFailure("assertBlurBehind", screenshot);
         // From top of screenshot (accounting for extent on the edge) to the top of the centered
         // window.
         assertBlur(screenshot, BLUR_BEHIND_PX,
@@ -637,27 +606,20 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
     private void assertBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
-        mDumpOnFailure.dumpOnFailure("assertBackgroundBlur", screenshot);
         assertBlur(screenshot, BACKGROUND_BLUR_PX, windowFrame);
     }
 
     private void assertBackgroundBlurOverBlurBehind(Bitmap screenshot, Rect windowFrame) {
-        mDumpOnFailure.dumpOnFailure("assertBackgroundBlurOverBlurBehind", screenshot);
         assertBlur(screenshot, (int) Math.hypot(BACKGROUND_BLUR_PX, BLUR_BEHIND_PX), windowFrame);
     }
 
     private void verifyOnlyBackgroundImageVisible() {
-        final Bitmap screenshot = takeScreenshot();
-        assertNoBlurBehind(screenshot, new Rect(), "verifyOnlyBackgroundImageVisible");
+        assertOnScreenshot(screenshot -> {
+            assertNoBlurBehind(screenshot, new Rect());
+        });
     }
 
-    private void assertNoBlurBehind(Bitmap screenshot, Rect windowFrame) {
-        assertNoBlurBehind(screenshot, windowFrame, "assertNoBlurBehind");
-    }
-
-    private void assertNoBlurBehind(Bitmap screenshot, Rect excludeFrame, String debugName) {
-        mDumpOnFailure.dumpOnFailure(debugName, screenshot);
-
+    private void assertNoBlurBehind(Bitmap screenshot, Rect excludeFrame) {
         final int solidColorWidth = mBackgroundActivityBounds.width() / 2;
 
         forEachPixelInRect(screenshot, mPixelTestBounds, (x, y, actual) -> {
@@ -673,8 +635,6 @@ public class BlurTests extends WindowManagerTestBase {
     }
 
     private void assertNoBackgroundBlur(Bitmap screenshot, Rect windowFrame) {
-        mDumpOnFailure.dumpOnFailure("assertNoBackgroundBlur", screenshot);
-
         forEachPixelInRect(screenshot, windowFrame,
                 (x, y, actual) -> assertPixel(x, y, NO_BLUR_BACKGROUND_COLOR, actual));
     }

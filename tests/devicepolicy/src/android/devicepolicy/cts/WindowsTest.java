@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CREATE_WINDOWS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -48,8 +49,8 @@ public final class WindowsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CREATE_WINDOWS")
     public void addUserRestriction_disallowCreateWindows_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS));
     }
 
     @PolicyAppliesTest(policy = DisallowCreateWindows.class)
@@ -57,14 +58,14 @@ public final class WindowsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CREATE_WINDOWS")
     public void addUserRestriction_disallowCreateWindows_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CREATE_WINDOWS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
         }
     }
 
@@ -73,18 +74,18 @@ public final class WindowsTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CREATE_WINDOWS")
     public void clearUserRestriction_disallowCreateWindows_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(),
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(),
                     DISALLOW_CREATE_WINDOWS);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CREATE_WINDOWS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
         }
     }
 
@@ -97,14 +98,14 @@ public final class WindowsTest {
     @Ignore
     public void addUserRestrictionGlobally_disallowCreateWindows_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_CREATE_WINDOWS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CREATE_WINDOWS))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
         }
     }
 
@@ -117,17 +118,17 @@ public final class WindowsTest {
     @Ignore
     public void clearGlobalUserRestriction_disallowCreateWindows_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+            dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                     DISALLOW_CREATE_WINDOWS);
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CREATE_WINDOWS))
                     .isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CREATE_WINDOWS);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CREATE_WINDOWS);
         }
     }
 

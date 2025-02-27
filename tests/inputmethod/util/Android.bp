@@ -34,7 +34,7 @@ android_library {
         "testng",
         "kotlin-test",
         "statsdprotonano",
-        "Harrier",
+        "bedstead",
     ],
     srcs: [
         "src/**/*.java",

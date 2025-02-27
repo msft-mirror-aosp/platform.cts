@@ -22,6 +22,7 @@ import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.platform.test.annotations.Presubmit;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.RangeInfo;
+import android.view.accessibility.Flags;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -66,5 +67,25 @@ public class AccessibilityNodeInfo_RangeInfoTest {
         assertEquals(0.0f, r.getMin(), FLOAT_TOLERANCE);
         assertEquals(100.0f, r.getMax(), FLOAT_TOLERANCE);
         assertEquals(50.0f, r.getCurrent(), FLOAT_TOLERANCE);
+
+        if (Flags.indeterminateRangeInfo()) {
+            r = RangeInfo.obtain(RangeInfo.RANGE_TYPE_INDETERMINATE, 0.0f, 0.0f, 0.0f);
+            assertEquals(RangeInfo.RANGE_TYPE_INDETERMINATE, r.getType());
+            assertEquals(0.0f, r.getMin(), FLOAT_TOLERANCE);
+            assertEquals(0.0f, r.getMax(), FLOAT_TOLERANCE);
+            assertEquals(0.0f, r.getCurrent(), FLOAT_TOLERANCE);
+        }
+    }
+
+    @SmallTest
+    @Test
+    public void testIndeterminateRangeInfo() {
+        if (Flags.indeterminateRangeInfo()) {
+            RangeInfo r = RangeInfo.INDETERMINATE;
+            assertEquals(RangeInfo.RANGE_TYPE_INDETERMINATE, r.getType());
+            assertEquals(0.0f, r.getMin(), FLOAT_TOLERANCE);
+            assertEquals(0.0f, r.getMax(), FLOAT_TOLERANCE);
+            assertEquals(0.0f, r.getCurrent(), FLOAT_TOLERANCE);
+        }
     }
 }

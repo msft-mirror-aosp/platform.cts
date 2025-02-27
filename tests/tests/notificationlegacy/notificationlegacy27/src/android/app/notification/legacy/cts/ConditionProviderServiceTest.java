@@ -44,6 +44,8 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -51,6 +53,8 @@ import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,8 +63,15 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @RunWith(AndroidJUnit4.class)
+// TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Zen/DND does not support visible"
+        + " background users. Only CPSes for the foreground user are bound.")
 public class ConditionProviderServiceTest {
     private static String TAG = "CpsTest";
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private NotificationManager mNm;
     private Context mContext;

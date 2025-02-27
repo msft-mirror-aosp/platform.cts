@@ -23,6 +23,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
@@ -260,6 +261,65 @@ public class PhoneAccountOperationsTest extends InstrumentationTestCase {
         assertNotNull("Failed to retrieve test account.", retrievedPhoneAccount);
         assertFalse("Phone account should not be automatically enabled.",
                 retrievedPhoneAccount.isEnabled());
+    }
+
+    /**
+     * Verifies you can't register a call capable phone account that is also self managed and/or
+     * transactional.
+     * @throws Exception
+     */
+    @RequiresFlagsEnabled(
+            com.android.server.telecom.flags.Flags.FLAG_ENFORCE_TRANSACTIONAL_EXCLUSIVITY)
+    public void testRegisterPhoneAccountBadCapabilitiesCombo() throws Exception {
+        if (!shouldTestTelecom(mContext)) {
+            return;
+        }
+
+        try {
+            mTelecomManager.registerPhoneAccount(
+                    PhoneAccount.builder(
+                                    TEST_PHONE_ACCOUNT_HANDLE, ACCOUNT_LABEL)
+                            .setAddress(Uri.parse("tel:555-TEST"))
+                            .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION
+                                    | PhoneAccount.CAPABILITY_CONNECTION_MANAGER
+                                    | PhoneAccount.CAPABILITY_SUPPORTS_TRANSACTIONAL_OPERATIONS)
+                            .build());
+            fail("Should not be able to register a call provider which supports transactional "
+                    + "operations");
+        } catch (SecurityException se) {
+            // ignore, pass
+        }
+
+        try {
+            mTelecomManager.registerPhoneAccount(
+                    PhoneAccount.builder(
+                                    TEST_PHONE_ACCOUNT_HANDLE, ACCOUNT_LABEL)
+                            .setAddress(Uri.parse("tel:555-TEST"))
+                            .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION
+                                    | PhoneAccount.CAPABILITY_CONNECTION_MANAGER
+                                    | PhoneAccount.CAPABILITY_SELF_MANAGED
+                                    | PhoneAccount.CAPABILITY_SUPPORTS_TRANSACTIONAL_OPERATIONS)
+                            .build());
+            fail("Should not be able to register a call provider which is self managed and "
+                    + "supports transactional operations.");
+        } catch (SecurityException se) {
+            // ignore, pass
+        }
+
+        try {
+            mTelecomManager.registerPhoneAccount(
+                    PhoneAccount.builder(
+                                    TEST_PHONE_ACCOUNT_HANDLE, ACCOUNT_LABEL)
+                            .setAddress(Uri.parse("tel:555-TEST"))
+                            .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER
+                                    | PhoneAccount.CAPABILITY_SELF_MANAGED)
+                            .build());
+            fail("Should not be able to register a call provider which is self managed");
+        } catch (SecurityException se) {
+            // ignore, pass
+        }
     }
 
     public void testRegisterPhoneAccount_DisallowEnable() throws Exception {

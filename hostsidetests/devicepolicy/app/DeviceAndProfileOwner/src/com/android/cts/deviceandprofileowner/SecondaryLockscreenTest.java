@@ -16,6 +16,8 @@
 
 package com.android.cts.deviceandprofileowner;
 
+import static android.app.admin.flags.Flags.FLAG_SECONDARY_LOCKSCREEN_API_ENABLED;
+
 import static com.android.cts.deviceandprofileowner.BaseDeviceAdminTest.ADMIN_RECEIVER_COMPONENT;
 
 import static junit.framework.Assert.assertFalse;
@@ -29,7 +31,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.PersistableBundle;
 import android.os.Process;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.RequiresDevice;
@@ -41,6 +47,7 @@ import androidx.test.uiautomator.Until;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,6 +56,9 @@ import java.util.List;
 // TODO(b/184280023): remove @RequiresDevice and @Ignores.
 @RunWith(AndroidJUnit4.class)
 public class SecondaryLockscreenTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final int UI_AUTOMATOR_WAIT_TIME_MILLIS = 10000;
     private static final String TAG = "SecondaryLockscreenTest";
@@ -70,8 +80,7 @@ public class SecondaryLockscreenTest {
 
         // TODO(b/182994391): Replace with more generic solution to override the supervision
         // component.
-        mUiDevice.executeShellCommand("settings put global device_policy_constants "
-                + "use_test_admin_as_supervision_component=true");
+        enableSupervisionTestAdmin();
         mUiDevice.executeShellCommand("locksettings set-disabled false");
         mUiDevice.executeShellCommand("locksettings set-pin 1234");
 
@@ -85,8 +94,11 @@ public class SecondaryLockscreenTest {
 
     @After
     public void tearDown() throws Exception {
+        // Ensure that the test admin is enabled to clear the lockscreen state.
+        enableSupervisionTestAdmin();
         mDevicePolicyManager.setSecondaryLockscreenEnabled(ADMIN_RECEIVER_COMPONENT, false);
         assertFalse(mDevicePolicyManager.isSecondaryLockscreenEnabled(Process.myUserHandle()));
+        // Remove any constant set, including enabling of the test admin.
         mUiDevice.executeShellCommand("settings delete global device_policy_constants");
         mUiDevice.executeShellCommand("locksettings clear --old 1234");
         mUiDevice.executeShellCommand("locksettings set-disabled true");
@@ -105,6 +117,16 @@ public class SecondaryLockscreenTest {
         // Verify that the lockscreen is dismissed after disabling the feature
         assertFalse(mDevicePolicyManager.isSecondaryLockscreenEnabled(Process.myUserHandle()));
         verifyHomeLauncherIsShown();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_SECONDARY_LOCKSCREEN_API_ENABLED)
+    public void testSetSecondaryLockscreenEnabledWithPersistableBundle() throws Exception {
+        mDevicePolicyManager.setSecondaryLockscreenEnabled(true, new PersistableBundle());
+        assertTrue(mDevicePolicyManager.isSecondaryLockscreenEnabled(Process.myUserHandle()));
+
+        mDevicePolicyManager.setSecondaryLockscreenEnabled(false, new PersistableBundle());
+        assertFalse(mDevicePolicyManager.isSecondaryLockscreenEnabled(Process.myUserHandle()));
     }
 
     @Test
@@ -140,9 +162,25 @@ public class SecondaryLockscreenTest {
 
     @RequiresDevice
     @Test(expected = SecurityException.class)
-    public void testSetSecondaryLockscreen_ineligibleAdmin_throwsSecurityException() {
+    public void testSetSecondaryLockscreen_invalidAdmin() throws Exception {
         final ComponentName badAdmin = new ComponentName("com.foo.bar", ".NonProfileOwnerReceiver");
-        mDevicePolicyManager.setSecondaryLockscreenEnabled(badAdmin, true);
+        try {
+            disableSupervisionTestAdmin();
+            mDevicePolicyManager.setSecondaryLockscreenEnabled(badAdmin, true);
+        } finally {
+            enableSupervisionTestAdmin();
+        }
+    }
+
+    @Test(expected = SecurityException.class)
+    @RequiresFlagsEnabled(FLAG_SECONDARY_LOCKSCREEN_API_ENABLED)
+    public void testSetSecondaryLockscreen_invalidCaller() throws Exception {
+        try {
+            disableSupervisionTestAdmin();
+            mDevicePolicyManager.setSecondaryLockscreenEnabled(true, null);
+        } finally {
+            enableSupervisionTestAdmin();
+        }
     }
 
     private void enterKeyguardPin() throws Exception {
@@ -190,5 +228,15 @@ public class SecondaryLockscreenTest {
                     resolveInfo.activityInfo.name).append(", ");
         }
         return resolveInfos.isEmpty() ? null : resolveInfos.get(0).activityInfo.packageName;
+    }
+
+    private void enableSupervisionTestAdmin() throws Exception {
+        mUiDevice.executeShellCommand("settings put global device_policy_constants "
+                + "use_test_admin_as_supervision_component=true");
+    }
+
+    private void disableSupervisionTestAdmin() throws Exception {
+        mUiDevice.executeShellCommand("settings put global device_policy_constants "
+                + "use_test_admin_as_supervision_component=false");
     }
 }

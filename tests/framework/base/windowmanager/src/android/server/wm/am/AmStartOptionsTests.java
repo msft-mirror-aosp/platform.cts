@@ -82,7 +82,7 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
                 FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP | FLAG_ACTIVITY_SINGLE_TOP;
         executeShellCommand("am start --user " + mUserId + " -W -f " + flags + " -n "
                 + getActivityName(LAUNCHING_ACTIVITY));
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(LAUNCHING_ACTIVITY, getMainDisplayId(),
                 "Activity must be launched.");
     }
 
@@ -110,7 +110,7 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
         executeShellCommand("am start --user " + mUserId + " -n " + getActivityName(entryActivity)
                 + " -W " + (shouldStart ? " -d about:blank" : ""));
 
-        waitAndAssertTopResumedActivity(actualActivity, getMainDisplayId(),
+        waitAndAssertResumedAndFocusedActivityOnDisplay(actualActivity, getMainDisplayId(),
                 "Activity must be launched");
     }
 

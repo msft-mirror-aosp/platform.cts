@@ -54,7 +54,7 @@ import java.util.function.Consumer;
  * A test rule that creates a {@link CompanionDeviceManager} association with the instrumented
  * package for the duration of the test.
  */
-public class FakeAssociationRule extends ExternalResource {
+class FakeAssociationRule extends ExternalResource {
     private static final String TAG = "FakeAssociationRule";
 
     private static final String FAKE_ASSOCIATION_ADDRESS_FORMAT = "00:00:00:00:00:%02d";

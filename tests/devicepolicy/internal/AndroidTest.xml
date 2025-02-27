@@ -31,9 +31,9 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.devicepolicy.internal" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile" />
         <option name="exclude-annotation" value="com.android.interactive.annotations.Interactive" />
         <option name="hidden-api-checks" value="false" />
         <!-- test-timeout unit is ms, value = 10 min -->

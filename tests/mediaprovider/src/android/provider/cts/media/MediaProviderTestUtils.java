@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.AppOpsManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
@@ -203,14 +204,22 @@ public class MediaProviderTestUtils {
         return waitUntilExists(file);
     }
 
-    public static File createMediaInDownloads(int resId, String volumeName) throws Exception {
-        File image = new File(MediaProviderTestUtils.stageDownloadDir(volumeName),
-                "test" + System.nanoTime() + ".mp3");
-        stageFile(resId, image);
-        scanFile(image);
+    public static File createMediaInDownloads(ContentResolver resolver, String volumeName)
+            throws Exception {
+        final File dir = new File(
+                getVolumePath(resolveVolumeName(volumeName)), Environment.DIRECTORY_DOWNLOADS);
+        final File file = new File(dir, System.nanoTime() + ".png");
+
+        // Write 1 byte because 0 byte files are not valid in the db
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(1);
+        }
+        MediaStore.scanFile(resolver, file);
+
         // Sleep is needed for images to have different modified_date
         SystemClock.sleep(2000);
-        return image;
+
+        return file;
     }
 
     public static Uri stageMedia(int resId, Uri collectionUri) throws IOException {

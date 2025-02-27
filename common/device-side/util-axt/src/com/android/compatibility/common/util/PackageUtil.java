@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import android.os.Build;
 
 /**
  * Device-side utility class for PackageManager-related operations
@@ -48,6 +49,16 @@ public class PackageUtil {
         try {
             return (getPackageManager().getApplicationInfo(packageName,
                     PackageManager.GET_META_DATA) != null);
+        } catch(PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
+
+    /** Returns true if a APEX with the given name exists on the device */
+    public static boolean apexExists(String apexName) {
+        try {
+            return (getPackageManager().getPackageInfo(apexName,
+                    PackageManager.MATCH_APEX) != null);
         } catch(PackageManager.NameNotFoundException e) {
             return false;
         }
@@ -103,6 +114,18 @@ public class PackageUtil {
         }
     }
 
+    /** Returns the version string of the apex name, or null if the package can't be found */
+    public static String apexGetVersionString(String apexName) {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(apexName,
+                    PackageManager.MATCH_APEX);
+            return info.versionName;
+        } catch (PackageManager.NameNotFoundException | NullPointerException e) {
+            Log.w(TAG, "Could not find version string for apex " + apexName);
+            return null;
+        }
+    }
+
     /**
      * Returns the version code for the package name, or null if the package can't be found.
      * If before API Level 28, return a long version of the (otherwise deprecated) versionCode.
@@ -117,6 +140,24 @@ public class PackageUtil {
                     info.getLongVersionCode() : (long) info.versionCode;
         } catch (PackageManager.NameNotFoundException | NullPointerException e) {
             Log.w(TAG, "Could not find version string for package " + packageName);
+            return null;
+        }
+    }
+
+    /**
+     * Returns the version code for the apex name, or null if the package can't be found.
+     * If before API Level 28, return a long version of the (otherwise deprecated) versionCode.
+     */
+    public static Long apexGetLongVersionCode(String apexName) {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(apexName,
+                    PackageManager.MATCH_APEX);
+            // Make no assumptions about the device's API level, and use the (now deprecated)
+            // versionCode for older devices.
+            return (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) ?
+                    info.getLongVersionCode() : (long) info.versionCode;
+        } catch (PackageManager.NameNotFoundException | NullPointerException e) {
+            Log.w(TAG, "Could not find version string for apex " + apexName);
             return null;
         }
     }

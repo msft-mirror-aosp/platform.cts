@@ -34,7 +34,6 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -44,13 +43,11 @@ import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);

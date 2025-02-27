@@ -44,6 +44,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "truth",
+        "GameManagerTestLib",
     ],
     sdk_version: "test_current",
     test_suites: [

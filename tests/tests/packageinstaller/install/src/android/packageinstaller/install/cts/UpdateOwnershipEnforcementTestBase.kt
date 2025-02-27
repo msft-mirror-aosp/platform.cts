@@ -35,6 +35,7 @@ open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
     private fun assumeRunOnPrimaryUser(): String {
         val um = instrumentation.targetContext.getSystemService(UserManager::class.java)
         val userType = um.userType
+        android.util.Log.d(TAG, "userType = $userType")
         Assume.assumeTrue(
             "Don't support to run the test cases in a profile.",
             TextUtils.equals(userType, UserManager.USER_TYPE_FULL_SYSTEM)

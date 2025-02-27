@@ -76,6 +76,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import com.android.compatibility.common.util.PropertyUtil;
+import com.android.internal.camera.flags.Flags;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 
 import org.junit.Rule;
@@ -607,6 +608,25 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                 openDevice(id);
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.HEIC, /*repeating*/false);
+                bufferFormatTestByCamera(params);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HEIF_GAINMAP)
+    public void testHeicUltraHdr() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                Log.v(TAG, "Testing Heic UltraHDR capture for Camera " + id);
+                openDevice(id);
+                BufferFormatTestParam params = new BufferFormatTestParam(
+                        ImageFormat.HEIC_ULTRAHDR, /*repeating*/false);
+                params.mUseDataSpace = true;
+                params.mDataSpace = DataSpace.DATASPACE_HEIF_ULTRAHDR;
+                params.mHardwareBufferFormat = HardwareBuffer.BLOB;
                 bufferFormatTestByCamera(params);
             } finally {
                 closeDevice(id);
@@ -1752,6 +1772,9 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
         public ColorSpace.Named mColorSpace;
         public boolean mUseColorSpace = false;
         public int mTimestampBase = OutputConfiguration.TIMESTAMP_BASE_DEFAULT;
+        public boolean mUseDataSpace = false;
+        public int mDataSpace = DataSpace.DATASPACE_UNKNOWN;
+        public int mHardwareBufferFormat = HardwareBuffer.BLOB;
 
         BufferFormatTestParam(int format, boolean repeating) {
             mFormat = format;
@@ -1806,7 +1829,10 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 // Create ImageReader.
                 mListener  = new SimpleImageListener();
-                if (setUsageFlag) {
+                if (params.mUseDataSpace) {
+                    createDefaultImageReader(sz, params.mHardwareBufferFormat, MAX_NUM_IMAGES,
+                            usageFlag, params.mDataSpace, mListener);
+                } else if (setUsageFlag) {
                     createDefaultImageReader(sz, format, MAX_NUM_IMAGES, usageFlag, mListener);
                 } else {
                     createDefaultImageReader(sz, format, MAX_NUM_IMAGES, mListener);
@@ -2219,5 +2245,5 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
      * Returns false if the dynamic depth has validation errors. Validation warnings/errors
      * will be printed to logcat.
      */
-    private static native boolean validateDynamicDepthNative(byte[] dynamicDepthBuffer);
+    public static native boolean validateDynamicDepthNative(byte[] dynamicDepthBuffer);
 }

@@ -43,6 +43,7 @@ import android.util.Size;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
@@ -69,8 +70,8 @@ import java.util.function.Predicate;
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase {
 
-    private static final String PRIMARY_ACTIVITY_ID = "primaryActivity";
-    private static final String PLACEHOLDER_ACTIVITY_ID = "placeholderActivity";
+    static final String PRIMARY_ACTIVITY_ID = "primaryActivity";
+    static final String PLACEHOLDER_ACTIVITY_ID = "placeholderActivity";
 
     /**
      * Tests that an activity with a matching {@link SplitPlaceholderRule} is successfully able to
@@ -258,7 +259,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         // Launch activity and verify that it fills the task and that a placeholder activity is
         // not launched
         Activity primaryActivity = startFullScreenActivityNewTask(TestActivityWithId.class,
-                PRIMARY_ACTIVITY_ID);
+                PRIMARY_ACTIVITY_ID, getLaunchingDisplayId());
         waitAndAssertResumedAndFillsTask(primaryActivity);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
@@ -348,7 +349,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
     /**
      * Convenience builder for a SplitPlaceholderRule with default values.
      */
-    private class SplitPlaceholderRuleBuilderWithDefaults {
+    class SplitPlaceholderRuleBuilderWithDefaults {
         private final String mPrimaryActivityId;
         private final String mPlaceholderActivityId;
 
@@ -418,11 +419,12 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
      * the side of the activity.
      */
     @NonNull
-    private Pair<Activity, Activity> launchActivityWithPlaceholderAndVerifySplit(
+    protected Pair<Activity, Activity> launchActivityWithPlaceholderAndVerifySplit(
             @NonNull String primaryActivityId, @NonNull String placeholderActivityId,
             @NonNull SplitPlaceholderRule splitPlaceholderRule) {
         // Launch the primary activity
-        startFullScreenActivityNewTask(TestActivityWithId.class, primaryActivityId);
+        startFullScreenActivityNewTask(TestActivityWithId.class, primaryActivityId,
+                getLaunchingDisplayId());
         // Get primary activity
         waitAndAssertResumed(primaryActivityId);
         Activity primaryActivity = getResumedActivityById(primaryActivityId);
@@ -436,7 +438,13 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
 
     @NonNull
     private Rect getTaskBounds() {
-        final Activity activity = startFullScreenActivityNewTask(TestActivity.class);
+        return getTaskBounds(getLaunchingDisplayId());
+    }
+
+    @NonNull
+    protected Rect getTaskBounds(@Nullable Integer displayId) {
+        final Activity activity = startFullScreenActivityNewTask(TestActivity.class,
+                null /* activityId */, displayId);
         final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
         activity.finish();
         new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());

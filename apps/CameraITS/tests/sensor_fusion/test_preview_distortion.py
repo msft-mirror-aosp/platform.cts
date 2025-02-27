@@ -27,6 +27,7 @@ import its_base_test
 import camera_properties_utils
 import image_processing_utils
 import its_session_utils
+import opencv_processing_utils
 import preview_processing_utils
 
 _ACCURACY = 0.001
@@ -311,8 +312,9 @@ def get_aruco_corners(image):
                   None if expected ArUco corners are not found.
   """
   # Detect ArUco markers
-  aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_100)
-  corners, ids, _ = aruco.detectMarkers(image, aruco_dict)
+  corners, ids, _ = opencv_processing_utils.version_agnostic_detect_markers(
+      image
+  )
 
   logging.debug('corners: %s', corners)
   logging.debug('ids: %s', ids)

@@ -22,6 +22,8 @@ import static android.app.admin.DevicePolicyManager.EXTRA_LOST_MODE_LOCATION;
 import static android.content.Context.RECEIVER_EXPORTED;
 import static android.location.LocationManager.FUSED_PROVIDER;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -75,12 +77,12 @@ public final class LostModeLocationTest {
     @Before
     public void setUp() {
         TestApis.location().setLocationEnabled(true);
-        sDeviceState.dpc().registerReceiver(sFilter, RECEIVER_EXPORTED);
+        dpc(sDeviceState).registerReceiver(sFilter, RECEIVER_EXPORTED);
     }
 
     @After
     public void tearDown() throws Exception {
-        sDeviceState.dpc().unregisterReceiver(sFilter);
+        dpc(sDeviceState).unregisterReceiver(sFilter);
     }
 
     @Postsubmit(reason = "new test")
@@ -115,7 +117,7 @@ public final class LostModeLocationTest {
 
             sendLostModeLocationUpdate(/* expected= */ true);
 
-            final Intent receivedIntent = sDeviceState.dpc().events().broadcastReceived()
+            final Intent receivedIntent = dpc(sDeviceState).events().broadcastReceived()
                     .whereIntent().action()
                     .isEqualTo(ACTION_LOST_MODE_LOCATION_UPDATE)
                     .poll().intent();
@@ -140,7 +142,7 @@ public final class LostModeLocationTest {
 
             sendLostModeLocationUpdate(/* expected= */ true);
 
-            final Intent receivedIntent = sDeviceState.dpc().events().broadcastReceived()
+            final Intent receivedIntent = dpc(sDeviceState).events().broadcastReceived()
                     .whereIntent().action()
                     .isEqualTo(ACTION_LOST_MODE_LOCATION_UPDATE)
                     .poll().intent();

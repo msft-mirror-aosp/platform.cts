@@ -61,6 +61,7 @@ android_test {
     ],
     static_libs: [
         "CtsVirtualDeviceCommonLib",
+        "android.hardware.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "com.android.input.flags-aconfig-java",
@@ -76,7 +77,6 @@ android_test {
         "junit-params",
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
-        "android.companion.virtual.flags-aconfig-java",
         "android.media.codec-aconfig-java",
         "ui-trace-collector",
         "collector-device-lib",

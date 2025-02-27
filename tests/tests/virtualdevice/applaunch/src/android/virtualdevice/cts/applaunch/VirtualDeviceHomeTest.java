@@ -44,7 +44,6 @@ import static org.mockito.Mockito.verify;
 import android.app.WallpaperManager;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -57,7 +56,6 @@ import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
 import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.WindowManagerState;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -82,7 +80,6 @@ import java.util.concurrent.TimeUnit;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_HOME)
 public class VirtualDeviceHomeTest {
 
     private static final VirtualDisplayConfig.Builder HOME_DISPLAY_CONFIG =

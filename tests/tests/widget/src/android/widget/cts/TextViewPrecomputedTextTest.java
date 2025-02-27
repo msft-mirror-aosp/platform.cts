@@ -60,12 +60,10 @@ public class TextViewPrecomputedTextTest {
     @Parameterized.Parameter(5)
     public boolean differentTypeface;
     @Parameterized.Parameter(6)
-    public boolean differentElegantTextHeight;
-    @Parameterized.Parameter(7)
     public boolean differentBreakStrategy;
-    @Parameterized.Parameter(8)
+    @Parameterized.Parameter(7)
     public boolean differentHyphenationFrequency;
-    @Parameterized.Parameter(9)
+    @Parameterized.Parameter(8)
     public boolean differentFontVariationSettings;
 
     // text size from the default value.
@@ -113,10 +111,6 @@ public class TextViewPrecomputedTextTest {
             }
             differenceList.add("Font variation settings");
         }
-        if (differentElegantTextHeight) {
-            paint.setElegantTextHeight(!paint.isElegantTextHeight());
-            differenceList.add("Elegant Text Height");
-        }
 
         int strategy = params.getBreakStrategy();
         if (differentBreakStrategy) {
@@ -146,7 +140,7 @@ public class TextViewPrecomputedTextTest {
         ArrayList<Object[]> allParams = new ArrayList<>();
 
         // Compute the powerset except for all false case.
-        final int allParameterCount = 10;
+        final int allParameterCount = 9;
         // The 11-th bit is for font variation settings. Don't add test case if the system don't
         // have variable fonts.
         final int fullBits = hasVarFont()

@@ -16,12 +16,10 @@
   ~ limitations under the License
   -->
 <resources>
-    <style name="LightBarThemeBase" parent="@android:style/Theme.Material.Light.NoActionBar">
-    </style>
-    <style name="LightBarTheme" parent="@style/LightBarThemeBase">
+    <style name="LightBarTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
-        <item name="android:navigationBarColor">@color/navigationBarColor</item>
-        <item name="android:navigationBarDividerColor">@color/navigationBarDividerColor</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 </resources>

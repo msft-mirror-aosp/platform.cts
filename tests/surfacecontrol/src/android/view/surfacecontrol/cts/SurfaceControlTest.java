@@ -16,6 +16,7 @@
 
 package android.view.surfacecontrol.cts;
 
+import static android.hardware.flags.Flags.FLAG_LUTS_API;
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
 import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.WAIT_TIMEOUT_S;
 import static android.view.cts.util.ASurfaceControlTestUtils.getBufferId;
@@ -38,7 +39,9 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.Region;
 import android.hardware.DataSpace;
+import android.hardware.DisplayLuts;
 import android.hardware.HardwareBuffer;
+import android.hardware.LutProperties;
 import android.hardware.SyncFence;
 import android.media.Image;
 import android.media.ImageReader;
@@ -2006,6 +2009,175 @@ public class SurfaceControlTest {
             throw new RuntimeException(e);
         }
         return ratio;
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_overrideLuts() throws Throwable {
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    SurfaceControl surfaceControl = createFromWindow(holder);
+                    DisplayLuts displayLuts = new DisplayLuts();
+                    DisplayLuts.Entry entry = new DisplayLuts.Entry(
+                            new float[]{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.ONE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_MAX_RGB);
+                    displayLuts.set(entry);
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                   Color.CYAN, DataSpace.DATASPACE_SRGB);
+                    new SurfaceControl.Transaction()
+                            .setLuts(surfaceControl, displayLuts)
+                            .apply();
+                    new SurfaceControl.Transaction()
+                            .setLuts(surfaceControl, null)
+                            .apply();
+                }
+            },
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                PixelColor mResult = new PixelColor(Color.CYAN);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            }
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_1DLut_withDKGRAY() throws Throwable {
+        mActivity.awaitReadyState();
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    SurfaceControl surfaceControl = createFromWindow(holder);
+                    DisplayLuts displayLuts = new DisplayLuts();
+                    DisplayLuts.Entry entry = new DisplayLuts.Entry(
+                            new float[]{0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.ONE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_MAX_RGB);
+                    displayLuts.set(entry);
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                Color.DKGRAY, DataSpace.DATASPACE_SRGB);
+                    new SurfaceControl.Transaction()
+                            .setLuts(surfaceControl, displayLuts)
+                            .apply();
+                }
+            },
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                PixelColor mResult = new PixelColor(Color.BLACK);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            }
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_1DLut_withCIEy() throws Throwable {
+        mActivity.awaitReadyState();
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    SurfaceControl surfaceControl = createFromWindow(holder);
+                    DisplayLuts displayLuts = new DisplayLuts();
+                    DisplayLuts.Entry entry = new DisplayLuts.Entry(
+                            new float[]{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.ONE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_CIE_Y);
+                    displayLuts.set(entry);
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                   Color.WHITE, DataSpace.DATASPACE_SRGB);
+                    new SurfaceControl.Transaction()
+                            .setLuts(surfaceControl, displayLuts)
+                            .apply();
+                }
+            },
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                PixelColor mResult = new PixelColor(0xFFBCBCBC);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            }
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_1DLut_withCYAN() throws Throwable {
+        mActivity.awaitReadyState();
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    SurfaceControl surfaceControl = createFromWindow(holder);
+                    DisplayLuts displayLuts = new DisplayLuts();
+                    DisplayLuts.Entry entry = new DisplayLuts.Entry(
+                            new float[]{0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.ONE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_RGB);
+                    displayLuts.set(entry);
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                   Color.CYAN, DataSpace.DATASPACE_SRGB);
+                    new SurfaceControl.Transaction()
+                            .setLuts(surfaceControl, displayLuts)
+                            .apply();
+                }
+            },
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                PixelColor mResult = new PixelColor(0xFF00BCBC);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            }
+        );
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LUTS_API)
+    public void testSurfaceTransaction_setLuts_twoLuts() throws Throwable {
+        verifyTest(
+            new BasicSurfaceHolderCallback() {
+                @Override
+                public void surfaceCreated(SurfaceHolder holder) {
+                    SurfaceControl surfaceControl = createFromWindow(holder);
+                    DisplayLuts displayLuts = new DisplayLuts();
+                    DisplayLuts.Entry entry1 = new DisplayLuts.Entry(
+                            new float[]{0f, 0f, 0f, 0f, 0f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.ONE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_RGB);
+                    DisplayLuts.Entry entry2 = new DisplayLuts.Entry(
+                            new float[]{0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+                                        0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f,
+                                        0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 0.5f},
+                            LutProperties.THREE_DIMENSION,
+                            LutProperties.SAMPLING_KEY_RGB);
+                    displayLuts.set(entry1, entry2);
+                    setSolidBuffer(surfaceControl, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT,
+                                   Color.CYAN);
+                    new SurfaceControl.Transaction()
+                            .setDataSpace(surfaceControl, DataSpace.DATASPACE_SRGB)
+                            .setLuts(surfaceControl, displayLuts)
+                            .apply();
+                }
+            },
+
+            new RectChecker(new Rect(0, 0, DEFAULT_LAYOUT_WIDTH, DEFAULT_LAYOUT_HEIGHT)) {
+                PixelColor mResult = new PixelColor(0xFFBCBCBC);
+                @Override
+                public PixelColor getExpectedColor(int x, int y) {
+                    return mResult;
+                }
+            }
+        );
     }
 
     @Test

@@ -22,6 +22,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeNotNull;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -47,6 +48,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
@@ -984,6 +986,9 @@ public class AtomTests {
     public void testGameState() throws Exception {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            assumeNotNull(gameManager);
+        }
         gameManager.setGameState(new GameState(true, GameState.MODE_CONTENT, 1, 2));
     }
 
@@ -991,7 +996,11 @@ public class AtomTests {
     public void testSetGameMode() throws Exception {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
-        assertNotNull(gameManager);
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            assumeNotNull(gameManager);
+        } else {
+            assertNotNull(gameManager);
+        }
         assertNotNull(context.getPackageName());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
                 (gm) -> gm.setGameMode(context.getPackageName(),
@@ -1005,7 +1014,11 @@ public class AtomTests {
     public void testUpdateCustomGameModeConfiguration() throws Exception {
         Context context = InstrumentationRegistry.getContext();
         GameManager gameManager = context.getSystemService(GameManager.class);
-        assertNotNull(gameManager);
+        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+            assumeNotNull(gameManager);
+        } else {
+            assertNotNull(gameManager);
+        }
         assertNotNull(context.getPackageName());
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
                 (gm) -> gm.updateCustomGameModeConfiguration(context.getPackageName(),

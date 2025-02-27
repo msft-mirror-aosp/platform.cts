@@ -43,6 +43,23 @@ cc_library_shared {
     sdk_version: "current",
 }
 
+cc_library_shared {
+    name: "libimagedecoderhelper",
+    srcs: ["jni/image_decoding.cpp"],
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+    shared_libs: [
+        "libandroid",
+        "libjnigraphics",
+        "liblog",
+    ],
+    header_libs: ["jni_headers"],
+    stl: "c++_static",
+    sdk_version: "current",
+}
+
 android_test_helper_app {
     name: "CtsStatsdAtomApp",
     defaults: ["cts_defaults"],
@@ -74,6 +91,7 @@ android_test_helper_app {
     jni_libs: [
         "liblmkhelper_statsdatom",
         "libcrashhelper",
+        "libimagedecoderhelper",
     ],
     compile_multilib: "both",
     v4_signature: true,

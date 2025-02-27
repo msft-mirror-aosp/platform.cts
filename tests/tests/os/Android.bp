@@ -22,8 +22,8 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
-        "android-sdk-flags-java",
         "android.hidl.manager-V1.0-java",
+        "android.sdk.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
@@ -35,8 +35,9 @@ android_test {
         "guava",
         "junit",
         "junit-params",
-        "Harrier",
+        "bedstead-enterprise",
         "CtsMockInputMethodLib",
+        "CtsSurfaceValidatorLib",
         "hamcrest-library",
         "platformprotosnano",
         "device-time-shell-utils",
@@ -46,6 +47,7 @@ android_test {
         "android.crashrecovery.flags-aconfig-java",
         "backstage_power_flags_lib",
         "sdk_sandbox_flags_lib",
+        "cts_backported_fixes",
     ],
     jni_uses_platform_apis: true,
     jni_libs: [
@@ -70,13 +72,13 @@ android_test {
         "cts",
         "general-tests",
         "sts",
-        "mcts-documentsui",
         "mts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
         "android.test.runner.stubs.test",
         "android.test.base.stubs.test",
+        "PlatformProperties",
     ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],
@@ -89,7 +91,7 @@ android_ravenwood_test {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
     static_libs: [
-        "android-sdk-flags-java",
+        "android.sdk.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt-ravenwood",
