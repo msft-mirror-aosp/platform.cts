@@ -16,22 +16,27 @@
 
 package android.app.cts;
 
-import static com.android.compatibility.common.util.PackageUtil.supportsRotation;
+import static com.android.compatibility.common.util.DisplayUtil.supportsAutoRotation;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.app.ActivityOptions;
+import android.app.Instrumentation;
+import android.app.UiAutomation;
 import android.app.stubs.DisplayTestActivity;
 import android.app.stubs.OrientationTestUtils;
 import android.content.Intent;
 import android.graphics.Point;
 import android.server.wm.SetRequestedOrientationRule;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Display;
+import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +48,8 @@ public class DisplayTest {
     @Rule public SetRequestedOrientationRule mSetRequestedOrientationRule =
             new SetRequestedOrientationRule();
 
+    private static final String TAG = "DisplayTest";
+
     /**
      * Tests that the underlying {@link android.view.DisplayAdjustments} in {@link Display} updates.
      * The method {@link DisplayTestActivity#getDisplay()} fetches the Display directly from the
@@ -52,16 +59,18 @@ public class DisplayTest {
     @Test
     @ApiTest(apis = {"android.content.Context#getDisplay"})
     public void testRotation() throws Throwable {
-        if (!supportsRotation()) {
-            // Skip rotation test if device doesn't support it.
+        if (!supportsAutoRotation()) {
+            // Skip test if device doesn't support auto rotation as this is needed for rotation
+            // via UiAutomation.
             return;
         }
 
         final Pair<Intent, ActivityOptions> launchArgs =
                 SetRequestedOrientationRule.buildFullScreenLaunchArgs(DisplayTestActivity.class);
 
-        final DisplayTestActivity activity = (DisplayTestActivity) InstrumentationRegistry
-                .getInstrumentation()
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+
+        final DisplayTestActivity activity = (DisplayTestActivity) instrumentation
                 .startActivitySync(launchArgs.first, launchArgs.second.toBundle());
         try {
             // Get a {@link Display} instance before rotation.
@@ -71,30 +80,38 @@ public class DisplayTest {
             final Point origSize = new Point();
             origDisplay.getRealSize(origSize);
 
-            // Change orientation
-            activity.configurationChangeObserver.startObserving();
-            OrientationTestUtils.switchOrientation(activity);
-
-            final boolean closeToSquareBounds =
-                    OrientationTestUtils.isCloseToSquareBounds(activity);
-
-            // Don't wait for the configuration to change if
-            // the display is square. In many cases it won't.
-            if (!closeToSquareBounds) {
-                activity.configurationChangeObserver.await();
+            // Rotate to the next rotation.
+            int nextRotation;
+            switch (origDisplay.getRotation()) {
+                case Surface.ROTATION_0:
+                case Surface.ROTATION_180:
+                    nextRotation = UiAutomation.ROTATION_FREEZE_90;
+                    break;
+                case Surface.ROTATION_90:
+                case Surface.ROTATION_270:
+                    nextRotation = UiAutomation.ROTATION_FREEZE_0;
+                    break;
+                default:
+                    Log.e(TAG, "Cannot get rotation, test is canceled");
+                    return;
             }
+            instrumentation.getUiAutomation().setRotation(nextRotation);
 
+            PollingCheck.waitFor(() -> activity.getDisplay().getRotation() == nextRotation,
+                    "Failed to rotate to a different rotation");
+
+            // Get the size of the original {@link Display} instance after rotation.
             final Point newOrigSize = new Point();
             origDisplay.getRealSize(newOrigSize);
 
-            // Get a {@link Display} instance after rotation.
+            // Get an updated {@link Display} instance after rotation.
             final Display updatedDisplay = activity.getDisplay();
             final Point updatedSize = new Point();
             updatedDisplay.getRealSize(updatedSize);
 
             // For square screens the following assertions do not make sense and will always
             // fail.
-            if (!closeToSquareBounds) {
+            if (!OrientationTestUtils.isCloseToSquareBounds(activity)) {
                 // Ensure that the width and height of the original instance no longer are the
                 // same.
                 // Note that this will be false if the device width and height are identical.
@@ -112,6 +129,7 @@ public class DisplayTest {
                     "size from original display instance should match current")
                     .that(newOrigSize).isEqualTo(updatedSize);
         } finally {
+            instrumentation.getUiAutomation().setRotation(UiAutomation.ROTATION_UNFREEZE);
             InstrumentationRegistry.getInstrumentation().runOnMainSync(activity::finish);
         }
     }
