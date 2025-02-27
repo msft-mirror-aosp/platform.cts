@@ -23,11 +23,8 @@ import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionI
 import static android.car.cts.utils.VehiclePropertyVerifiers.PORT_LOCATION_TYPES;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getEnvOutsideTemperatureVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortConnectedVerifierBuilder;
-import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
@@ -1630,33 +1627,24 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         }
     }
     private static VerifierInfo[] getAllVerifierInfo() {
-        // TODO(b/395988562): Remove default verifiers from this list.
         List<VehiclePropertyVerifier.Builder<?>> allCustomVerifierBuilders =
                 List.of(
                         getGearSelectionVerifierBuilder(),
                         getNightModeVerifierBuilder(),
                         getPerfVehicleSpeedVerifierBuilder(),
-                        getPerfVehicleSpeedDisplayVerifierBuilder(),
                         getParkingBrakeOnVerifierBuilder(),
-                        getEmergencyLaneKeepAssistEnabledVerifierBuilder(),
                         getEmergencyLaneKeepAssistStateVerifierBuilder(),
-                        getCruiseControlEnabledVerifierBuilder(),
                         getCruiseControlTypeVerifierBuilder(),
                         getCruiseControlStateVerifierBuilder(),
                         getCruiseControlCommandVerifierBuilder_OnAdaptiveCruiseControl(),
                         getCruiseControlTargetSpeedVerifierBuilder(),
                         getAdaptiveCruiseControlTargetTimeGapVerifierBuilder(),
                         getAdaptiveCruiseControlLeadVehicleMeasuredDistanceVerifierBuilder(),
-                        getHandsOnDetectionEnabledVerifierBuilder(),
                         getHandsOnDetectionDriverStateVerifierBuilder(),
                         getHandsOnDetectionWarningVerifierBuilder(),
-                        getDriverDrowsinessAttentionSystemEnabledVerifierBuilder(),
                         getDriverDrowsinessAttentionStateVerifierBuilder(),
-                        getDriverDrowsinessAttentionWarningEnabledVerifierBuilder(),
                         getDriverDrowsinessAttentionWarningVerifierBuilder(),
-                        getDriverDistractionSystemEnabledVerifierBuilder(),
                         getDriverDistractionStateVerifierBuilder(),
-                        getDriverDistractionWarningEnabledVerifierBuilder(),
                         getDriverDistractionWarningVerifierBuilder(),
                         getWheelTickVerifierBuilder(),
                         getInfoVinVerifierBuilder(),
@@ -1672,7 +1660,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getInfoMultiEvPortLocationsVerifierBuilder(),
                         getInfoDriverSeatVerifierBuilder(),
                         getInfoExteriorDimensionsVerifierBuilder(),
-                        getEpochTimeVerifierBuilder(),
                         getLocationCharacterizationVerifierBuilder(),
                         getUltrasonicsSensorPositionVerifierBuilder(),
                         getUltrasonicsSensorOrientationVerifierBuilder(),
@@ -1683,30 +1670,19 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getElectronicTollCollectionCardTypeVerifierBuilder(),
                         getElectronicTollCollectionCardStatusVerifierBuilder(),
                         getGeneralSafetyRegulationComplianceVerifierBuilder(),
-                        getEnvOutsideTemperatureVerifierBuilder(),
                         getCurrentGearVerifierBuilder(),
-                        getParkingBrakeAutoApplyVerifierBuilder(),
                         getIgnitionStateVerifierBuilder(),
                         getEvBrakeRegenerationLevelVerifierBuilder(),
                         getEvStoppingModeVerifierBuilder(),
-                        getAbsActiveVerifierBuilder(),
-                        getTractionControlActiveVerifierBuilder(),
                         getDoorPosVerifierBuilder(),
                         getDoorMoveVerifierBuilder(),
-                        getDoorLockVerifierBuilder(),
-                        getDoorChildLockEnabledVerifierBuilder(),
                         getVehicleDrivingAutomationCurrentLevelVerifierBuilder(),
                         getMirrorZPosVerifierBuilder(),
                         getMirrorZMoveVerifierBuilder(),
                         getMirrorYPosVerifierBuilder(),
                         getMirrorYMoveVerifierBuilder(),
-                        getMirrorLockVerifierBuilder(),
-                        getMirrorFoldVerifierBuilder(),
-                        getMirrorAutoFoldEnabledVerifierBuilder(),
-                        getMirrorAutoTiltEnabledVerifierBuilder(),
                         getWindowPosVerifierBuilder(),
                         getWindowMoveVerifierBuilder(),
-                        getWindowLockVerifierBuilder(),
                         getWindshieldWipersPeriodVerifierBuilder(),
                         getWindshieldWipersStateVerifierBuilder(),
                         getWindshieldWipersSwitchVerifierBuilder(),
@@ -1714,11 +1690,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getSteeringWheelDepthMoveVerifierBuilder(),
                         getSteeringWheelHeightPosVerifierBuilder(),
                         getSteeringWheelHeightMoveVerifierBuilder(),
-                        getSteeringWheelTheftLockEnabledVerifierBuilder(),
-                        getSteeringWheelLockedVerifierBuilder(),
-                        getSteeringWheelEasyAccessEnabledVerifierBuilder(),
                         getGloveBoxDoorPosVerifierBuilder(),
-                        getGloveBoxLockedVerifierBuilder(),
                         getDistanceDisplayUnitsVerifierBuilder(),
                         getFuelVolumeDisplayUnitsVerifierBuilder(),
                         getTirePressureVerifierBuilder(),
@@ -1726,30 +1698,21 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getTirePressureDisplayUnitsVerifierBuilder(),
                         getEvBatteryDisplayUnitsVerifierBuilder(),
                         getVehicleSpeedDisplayUnitsVerifierBuilder(),
-                        getFuelConsumptionUnitsDistanceOverVolumeVerifierBuilder(),
                         getFuelLevelVerifierBuilder(),
                         getEvBatteryLevelVerifierBuilder(),
                         getEvCurrentBatteryCapacityVerifierBuilder(),
                         getEvBatteryInstantaneousChargeRateVerifierBuilder(),
                         getRangeRemainingVerifierBuilder(),
-                        getEvBatteryAverageTemperatureVerifierBuilder(),
                         getFuelLevelLowVerifierBuilder(),
                         getFuelDoorOpenVerifierBuilder(),
-                        getEvChargePortOpenVerifierBuilder(),
-                        getEvChargePortConnectedVerifierBuilder(),
                         getEvChargeCurrentDrawLimitVerifierBuilder(),
                         getEvChargePercentLimitVerifierBuilder(),
                         getEvChargeStateVerifierBuilder(),
-                        getEvChargeSwitchVerifierBuilder(),
                         getEvChargeTimeRemainingVerifierBuilder(),
                         getEvRegenerativeBrakingStateVerifierBuilder(),
                         getPerfSteeringAngleVerifierBuilder(),
-                        getPerfRearSteeringAngleVerifierBuilder(),
-                        getEngineCoolantTempVerifierBuilder(),
                         getEngineOilLevelVerifierBuilder(),
-                        getEngineOilTempVerifierBuilder(),
                         getEngineRpmVerifierBuilder(),
-                        getEngineIdleAutoStopEnabledVerifierBuilder(),
                         getImpactDetectedVerifierBuilder(),
                         getPerfOdometerVerifierBuilder(),
                         getTurnSignalStateVerifierBuilder(),
@@ -1775,7 +1738,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getSteeringWheelLightsSwitchVerifierBuilder(),
                         getSeatMemorySelectVerifierBuilder(),
                         getSeatMemorySetVerifierBuilder(),
-                        getSeatBeltBuckledVerifierBuilder(),
                         getSeatBeltHeightPosVerifierBuilder(),
                         getSeatBeltHeightMoveVerifierBuilder(),
                         getSeatForeAftPosVerifierBuilder(),
@@ -1802,20 +1764,14 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getSeatHeadrestForeAftMoveVerifierBuilder(),
                         getSeatFootwellLightsStateVerifierBuilder(),
                         getSeatFootwellLightsSwitchVerifierBuilder(),
-                        getSeatEasyAccessEnabledVerifierBuilder(),
-                        getSeatAirbagEnabledVerifierBuilder(),
                         getSeatCushionSideSupportPosVerifierBuilder(),
                         getSeatCushionSideSupportMoveVerifierBuilder(),
                         getSeatLumberVerticalPosVerifierBuilder(),
                         getSeatLumberVerticalMoveVerifierBuilder(),
                         getSeatWalkInPosVerifierBuilder(),
                         getSeatAirbagsDeployedVerifierBuilder(),
-                        getSeatBeltPretensionerDeployedVerifierBuilder(),
-                        getValetModeEnabledVerifierBuilder(),
-                        getHeadUpDisplayEnabledVerifierBuilder(),
                         getSeatOccupancyVerifierBuilder(),
                         getHvacDefrosterVerifierBuilder(),
-                        getHvacElectricDefrosterOnVerifierBuilder(),
                         getHvacSideMirrorHeatVerifierBuilder(),
                         getHvacSteeringWheelHeatVerifierBuilder(),
                         getHvacTemperatureDisplayUnitsVerifierBuilder(),
@@ -1836,26 +1792,16 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         getHvacAutoRecircOnVerifierBuilder(),
                         getHvacSeatVentilationVerifierBuilder(),
                         getHvacDualOnVerifierBuilder(),
-                        getAutomaticEmergencyBrakingEnabledVerifierBuilder(),
                         getAutomaticEmergencyBrakingStateVerifierBuilder(),
-                        getForwardCollisionWarningEnabledVerifierBuilder(),
                         getForwardCollisionWarningStateVerifierBuilder(),
-                        getBlindSpotWarningEnabledVerifierBuilder(),
                         getBlindSpotWarningStateVerifierBuilder(),
-                        getLaneDepartureWarningEnabledVerifierBuilder(),
                         getLaneDepartureWarningStateVerifierBuilder(),
-                        getLaneKeepAssistEnabledVerifierBuilder(),
                         getLaneKeepAssistStateVerifierBuilder(),
-                        getLaneCenteringAssistEnabledVerifierBuilder(),
                         getLaneCenteringAssistCommandVerifierBuilder(),
                         getLaneCenteringAssistStateVerifierBuilder(),
-                        getLowSpeedCollisionWarningEnabledVerifierBuilder(),
                         getLowSpeedCollisionWarningStateVerifierBuilder(),
                         getElectronicStabilityControlStateVerifierBuilder(),
-                        getElectronicStabilityControlEnabledVerifierBuilder(),
-                        getCrossTrafficMonitoringEnabledVerifierBuilder(),
                         getCrossTrafficMonitoringWarningStateVerifierBuilder(),
-                        getLowSpeedAutomaticEmergencyBrakingEnabledVerifierBuilder(),
                         getLowSpeedAutomaticEmergencyBrakingStateVerifierBuilder(),
                         VehiclePropertyVerifiers.getInfoModelTrimVerifierBuilder(),
                         VehiclePropertyVerifiers.getInfoVehicleSizeClassVerifierBuilder(),
@@ -1970,22 +1916,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireProperty();
     }
 
-    private static VehiclePropertyVerifier.Builder<Float>
-            getPerfVehicleSpeedDisplayVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
-                VehiclePropertyIds.PERF_VEHICLE_SPEED_DISPLAY);
-    }
-
     private static VehiclePropertyVerifier.Builder<Boolean> getParkingBrakeOnVerifierBuilder() {
         return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
                         VehiclePropertyIds.PARKING_BRAKE_ON)
                 .requireProperty();
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getEmergencyLaneKeepAssistEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.EMERGENCY_LANE_KEEP_ASSIST_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -2010,12 +1944,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testEmergencyLaneKeepAssistStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(EMERGENCY_LANE_KEEP_ASSIST_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getCruiseControlEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.CRUISE_CONTROL_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getCruiseControlTypeVerifierBuilder() {
@@ -2244,12 +2172,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS));
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getHandsOnDetectionEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.HANDS_ON_DETECTION_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getHandsOnDetectionDriverStateVerifierBuilder() {
         ImmutableSet<Integer> possibleEnumValues =
@@ -2298,12 +2220,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyEnumValuesAreDistinct(HANDS_ON_DETECTION_WARNINGS, ERROR_STATES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getDriverDrowsinessAttentionSystemEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_SYSTEM_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getDriverDrowsinessAttentionStateVerifierBuilder() {
         ImmutableSet<Integer> possibleEnumValues =
@@ -2327,12 +2243,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDrowsinessAttentionStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(HANDS_ON_DETECTION_DRIVER_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getDriverDrowsinessAttentionWarningEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.DRIVER_DROWSINESS_ATTENTION_WARNING_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -2360,12 +2270,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyEnumValuesAreDistinct(DRIVER_DROWSINESS_ATTENTION_WARNINGS, ERROR_STATES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getDriverDistractionSystemEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.DRIVER_DISTRACTION_SYSTEM_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getDriverDistractionStateVerifierBuilder() {
         ImmutableSet<Integer> possibleEnumValues =
@@ -2389,12 +2293,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testDriverDistractionStateAndErrorStateDontIntersect() {
         verifyEnumValuesAreDistinct(DRIVER_DISTRACTION_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getDriverDistractionWarningEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.DRIVER_DISTRACTION_WARNING_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -2700,10 +2598,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isGreaterThan(0);
                             }
                         });
-    }
-
-    private static VehiclePropertyVerifier.Builder<Long> getEpochTimeVerifierBuilder() {
-        return VehiclePropertyVerifier.<Long>newDefaultBuilder(VehiclePropertyIds.EPOCH_TIME);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer[]>
@@ -3018,12 +2912,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requirePropertyValueTobeInConfigArray();
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getParkingBrakeAutoApplyVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.PARKING_BRAKE_AUTO_APPLY);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.IGNITION_STATE)
                 .setAllPossibleEnumValues(
@@ -3051,16 +2939,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleUnwritableValues(EV_STOPPING_MODE_UNWRITABLE_STATES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getAbsActiveVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.ABS_ACTIVE);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getTractionControlActiveVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.TRACTION_CONTROL_ACTIVE);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getDoorPosVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.DOOR_POS)
                 .requireMinMaxValues()
@@ -3071,16 +2949,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.DOOR_MOVE)
                 .requireMinMaxValues()
                 .requireZeroToBeContainedInMinMaxRanges();
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getDoorLockVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.DOOR_LOCK);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getDoorChildLockEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.DOOR_CHILD_LOCK_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getMirrorZPosVerifierBuilder() {
@@ -3107,26 +2975,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges();
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getMirrorLockVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.MIRROR_LOCK);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getMirrorFoldVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.MIRROR_FOLD);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getMirrorAutoFoldEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.MIRROR_AUTO_FOLD_ENABLED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getMirrorAutoTiltEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.MIRROR_AUTO_TILT_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getWindowPosVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.WINDOW_POS)
                 .requireMinMaxValues()
@@ -3137,10 +2985,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.WINDOW_MOVE)
                 .requireMinMaxValues()
                 .requireZeroToBeContainedInMinMaxRanges();
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getWindowLockVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(VehiclePropertyIds.WINDOW_LOCK);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -3228,34 +3072,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireZeroToBeContainedInMinMaxRanges();
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getSteeringWheelTheftLockEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.STEERING_WHEEL_THEFT_LOCK_ENABLED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getSteeringWheelLockedVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.STEERING_WHEEL_LOCKED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getSteeringWheelEasyAccessEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.STEERING_WHEEL_EASY_ACCESS_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getGloveBoxDoorPosVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
                         VehiclePropertyIds.GLOVE_BOX_DOOR_POS)
                 .requireMinMaxValues()
                 .requireMinValuesToBeZero();
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getGloveBoxLockedVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.GLOVE_BOX_LOCKED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -3348,12 +3169,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .verifySetterWithConfigArrayValues();
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getFuelConsumptionUnitsDistanceOverVolumeVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.FUEL_CONSUMPTION_UNITS_DISTANCE_OVER_VOLUME);
-    }
-
     private static VehiclePropertyVerifier.Builder<Float>
             getEvCurrentBatteryCapacityVerifierBuilder() {
         return VehiclePropertyVerifier.<Float>newDefaultBuilder(
@@ -3393,12 +3208,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                     .that(evCurrentBatteryCapacity)
                                     .isAtMost((Float) infoEvBatteryCapacityValue.getValue());
                         });
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float>
-            getEvBatteryAverageTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
-                VehiclePropertyIds.EV_BATTERY_AVERAGE_TEMPERATURE);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
@@ -3511,11 +3320,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 EvChargeState.STATE_ERROR));
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getEvChargeSwitchVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.EV_CHARGE_SWITCH);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getEvChargeTimeRemainingVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
@@ -3546,31 +3350,10 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 EvRegenerativeBrakingState.STATE_FULLY_ENABLED));
     }
 
-    private static VehiclePropertyVerifier.Builder<Float>
-            getPerfRearSteeringAngleVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
-                VehiclePropertyIds.PERF_REAR_STEERING_ANGLE);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getEngineCoolantTempVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(
-                VehiclePropertyIds.ENGINE_COOLANT_TEMP);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getEngineOilLevelVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
                         VehiclePropertyIds.ENGINE_OIL_LEVEL)
                 .setAllPossibleEnumValues(VEHICLE_OIL_LEVELS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float> getEngineOilTempVerifierBuilder() {
-        return VehiclePropertyVerifier.<Float>newDefaultBuilder(VehiclePropertyIds.ENGINE_OIL_TEMP);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getEngineIdleAutoStopEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.ENGINE_IDLE_AUTO_STOP_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getImpactDetectedVerifierBuilder() {
@@ -3947,11 +3730,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         });
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getSeatBeltBuckledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.SEAT_BELT_BUCKLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer> getSeatBeltHeightPosVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
                         VehiclePropertyIds.SEAT_BELT_HEIGHT_POS)
@@ -4148,17 +3926,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setAllPossibleEnumValues(VEHICLE_LIGHT_SWITCHES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getSeatEasyAccessEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.SEAT_EASY_ACCESS_ENABLED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getSeatAirbagEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.SEAT_AIRBAG_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getSeatCushionSideSupportPosVerifierBuilder() {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(
@@ -4204,35 +3971,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .setBitMapEnumEnabled(true);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getSeatBeltPretensionerDeployedVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.SEAT_BELT_PRETENSIONER_DEPLOYED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getValetModeEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.VALET_MODE_ENABLED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getHeadUpDisplayEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.HEAD_UP_DISPLAY_ENABLED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getHvacElectricDefrosterOnVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.HVAC_ELECTRIC_DEFROSTER_ON);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getAutomaticEmergencyBrakingEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.AUTOMATIC_EMERGENCY_BRAKING_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getAutomaticEmergencyBrakingStateVerifierBuilder() {
         ImmutableSet<Integer> combinedCarPropertyValues =
@@ -4255,12 +3993,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testAutomaticEmergencyBrakingStateWithErrorState() {
         verifyEnumValuesAreDistinct(AUTOMATIC_EMERGENCY_BRAKING_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getForwardCollisionWarningEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.FORWARD_COLLISION_WARNING_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -4287,12 +4019,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyEnumValuesAreDistinct(FORWARD_COLLISION_WARNING_STATES, ERROR_STATES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getBlindSpotWarningEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.BLIND_SPOT_WARNING_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getBlindSpotWarningStateVerifierBuilder() {
         ImmutableSet<Integer> combinedCarPropertyValues =
@@ -4315,12 +4041,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testBlindSpotWarningStateWithErrorState() {
         verifyEnumValuesAreDistinct(BLIND_SPOT_WARNING_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getLaneDepartureWarningEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.LANE_DEPARTURE_WARNING_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -4347,12 +4067,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyEnumValuesAreDistinct(LANE_DEPARTURE_WARNING_STATES, ERROR_STATES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getLaneKeepAssistEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.LANE_KEEP_ASSIST_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getLaneKeepAssistStateVerifierBuilder() {
         ImmutableSet<Integer> combinedCarPropertyValues =
@@ -4375,12 +4089,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testLaneKeepAssistStateWithErrorState() {
         verifyEnumValuesAreDistinct(LANE_KEEP_ASSIST_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getLaneCenteringAssistEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.LANE_CENTERING_ASSIST_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -4417,12 +4125,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     public void testLaneCenteringAssistStateWithErrorState() {
         verifyEnumValuesAreDistinct(LANE_CENTERING_ASSIST_STATES, ERROR_STATES);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getLowSpeedCollisionWarningEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.LOW_SPEED_COLLISION_WARNING_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
@@ -4480,18 +4182,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         verifyEnumValuesAreDistinct(ELECTRONIC_STABILITY_CONTROL_STATES, ERROR_STATES);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getElectronicStabilityControlEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.ELECTRONIC_STABILITY_CONTROL_ENABLED);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getCrossTrafficMonitoringEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.CROSS_TRAFFIC_MONITORING_ENABLED);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getCrossTrafficMonitoringWarningStateVerifierBuilder() {
         ImmutableSet<Integer> combinedCarPropertyValues =
@@ -4509,12 +4199,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 Car.PERMISSION_READ_ADAS_SETTINGS,
                                 Car.PERMISSION_CONTROL_ADAS_SETTINGS))
                 .verifyErrorStates();
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getLowSpeedAutomaticEmergencyBrakingEnabledVerifierBuilder() {
-        return VehiclePropertyVerifier.<Boolean>newDefaultBuilder(
-                VehiclePropertyIds.LOW_SPEED_AUTOMATIC_EMERGENCY_BRAKING_ENABLED);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer>
