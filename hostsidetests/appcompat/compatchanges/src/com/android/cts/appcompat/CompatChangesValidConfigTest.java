@@ -127,7 +127,8 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "SEND_CHOOSER_RESULT",
             "OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION",
             "RO_DCL_CHANGE_ID",
-            "ENABLE_PREVENT_INTENT_REDIRECT_TAKE_ACTION"
+            "ENABLE_PREVENT_INTENT_REDIRECT_TAKE_ACTION",
+            "MEDIA_FGS_STATE_TRANSITION"
     );
 
     /**

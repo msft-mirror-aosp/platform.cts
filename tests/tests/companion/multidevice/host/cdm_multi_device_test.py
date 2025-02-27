@@ -11,6 +11,7 @@ import cdm_base_test
 from android.platform.test.annotations import ApiTest, CddTest
 from mobly import asserts
 from mobly import test_runner
+from test_utils import wait
 from time import sleep
 
 @CddTest(requirements = ["3.16/C-1-1", "3.16/C-1-2"])
@@ -26,11 +27,9 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # Skip if device is a watch
         asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
 
-        secondary_address = self.secondary.cdm.btGetAddress()
-
         # Create association
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
-        secondary_id = self.primary.cdm.associate(secondary_address)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
 
         # Assert association was created
         associations = self.primary.cdm.getMyAssociations()
@@ -64,23 +63,15 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
             asserts.skip_if(not primary_verified, 'Secondary device failed to verify primary device')
             asserts.skip_if(not secondary_verified, 'Primary device failed to verify secondary device')
 
-        primary_address = self.primary.cdm.btGetAddress()
-        secondary_address = self.secondary.cdm.btGetAddress()
-
         # Create associations
         self.primary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
-        primary_id = self.secondary.cdm.associate(primary_address)
+        primary_id = self.secondary.cdm.associate(self.primary.address)
 
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
-        secondary_id = self.primary.cdm.associate(secondary_address)
-
-        # Create bond
-        self.secondary.cdm.btStartAutoAcceptIncomingPairRequest()
-        self.primary.cdm.btDiscoverAndGetResults()
-        self.primary.cdm.btPairDevice(secondary_address)
-        sleep(cdm_base_test.OPERATION_DELAY_TIME)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
 
         # Start permissions sync and wait for completion
+        self.bt_pair_devices()
         self.secondary.cdm.attachServerSocket(primary_id)
         self.primary.cdm.attachClientSocket(secondary_id)
         self.primary.cdm.requestPermissionTransferUserConsent(secondary_id)
@@ -99,27 +90,17 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # Skip if removeBond API flag is disabled
         api_flags_utils.assume_enabled(self.primary, 'unpair_associated_device')
 
-        secondary_address = self.secondary.cdm.btGetAddress()
-
-        # Associate
+        # Associate and assert successful pairing
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
-        secondary_id = self.primary.cdm.associate(secondary_address)
-
-        # Create classic bluetooth pairing
-        self.secondary.cdm.btStartAutoAcceptIncomingPairRequest()
-        self.primary.cdm.btDiscoverAndGetResults()
-        self.primary.cdm.btPairDevice(secondary_address)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
+        self.bt_pair_devices()
         sleep(cdm_base_test.OPERATION_DELAY_TIME)
-
-        # Assert bluetooth pairing success
-        paired_devices = map(lambda device: device['Address'], self.primary.cdm.btGetPairedDevices())
-        asserts.assert_true(secondary_address in paired_devices, 'Pairing unsuccessful.')
+        asserts.assert_true(self.secondary.address in self.primary.paired_devices(), 'Pairing unsuccessful.')
 
         # Remove BT pairing via CDM and assert success
         asserts.assert_true(self.primary.cdm.removeBond(secondary_id), "Unpairing failed.")
         sleep(cdm_base_test.OPERATION_DELAY_TIME)
-        paired_devices = map(lambda device: device['Address'], self.primary.cdm.btGetPairedDevices())
-        asserts.assert_false(secondary_address in paired_devices, 'Devices should not be paired.')
+        asserts.assert_false(self.secondary.address in self.primary.paired_devices(), 'Devices should not be paired.')
 
 
     @ApiTest(apis=[
@@ -131,11 +112,9 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # Skip if device is a watch
         asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
 
-        secondary_address = self.secondary.cdm.btGetAddress()
-
         # Create association
         self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
-        secondary_id = self.primary.cdm.associate(secondary_address)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
 
         # Reboot the primary device
         with (self.primary.handle_reboot()):
@@ -144,6 +123,42 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         # The association should be remaining.
         associations = self.primary.cdm.getMyAssociations()
         asserts.assert_true(secondary_id in associations, 'Association not found.')
+
+
+    @ApiTest(apis=[
+            'android.companion.CompanionDeviceManager#startObservingDevicePresence(android.companion.ObservingDevicePresenceRequest)',
+            'android.companion.CompanionDeviceManager#stopObservingDevicePresence(android.companion.ObservingDevicePresenceRequest)'
+    ])
+    def test_startObservingDevicePresence_observesEvents_bt_classic(self):
+        """
+        This tests that CDM can listen for BT classic device presence events from
+        associated devices.
+        """
+
+        # Skip if either device is a watch
+        asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
+        asserts.skip_if(self.secondary.cdm.isWatch(), 'Cannot create association as a watch.')
+
+        # Skip if device presence API flag is disabled
+        api_flags_utils.assume_enabled(self.primary, 'device_presence')
+
+        # Associate and start observing
+        self.secondary.cdm.btBecomeDiscoverable(cdm_base_test.BT_DISCOVERABLE_TIME)
+        secondary_id = self.primary.cdm.associate(self.secondary.address)
+        self.primary.cdm.startObservingDevicePresence(secondary_id)
+
+        # Assert classic bluetooth pairing is detected
+        self.bt_pair_devices()
+        connected = wait(lambda: self.primary.cdm.isAssociationBtConnected(secondary_id))
+        asserts.assert_true(connected, 'Device appearance was not observed.')
+
+        # Assert bluetooth unpair is detected
+        self.bt_unpair_devices()
+        gone = wait(lambda: not self.primary.cdm.isAssociationBtConnected(secondary_id))
+        asserts.assert_true(gone, 'Device disappearance was not observed.')
+
+        # Stop observing device presence
+        self.primary.cdm.stopObservingDevicePresence(secondary_id)
 
 
 if __name__ == '__main__':

@@ -556,7 +556,10 @@ public class MmsTest {
                 + "sOriginalDefaultSmsApp=" + sOriginalDefaultSmsApp
                 + " sSetDefaultSmsAppSuccessful=" + sSetDefaultSmsAppSuccessful);
 
-        if (TextUtils.isEmpty(sOriginalDefaultSmsApp)) {
+        if (TextUtils.isEmpty(sOriginalDefaultSmsApp)
+                || sOriginalDefaultSmsApp.equals("android.telephonyprovider.cts")) {
+            Log.d(TAG, "testSubqueryNotAllowed: check if messages app is set as "
+                    + "default sms app successfully");
             assumeTrue(sSetDefaultSmsAppSuccessful);
         }
 
