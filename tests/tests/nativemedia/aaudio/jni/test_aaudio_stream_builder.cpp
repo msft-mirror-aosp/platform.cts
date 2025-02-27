@@ -428,6 +428,7 @@ protected:
                 case AAUDIO_CHANNEL_7POINT1:
                 case AAUDIO_CHANNEL_7POINT1POINT2:
                 case AAUDIO_CHANNEL_7POINT1POINT4:
+                case AAUDIO_CHANNEL_13POINT0:
                 case AAUDIO_CHANNEL_9POINT1POINT4:
                 case AAUDIO_CHANNEL_9POINT1POINT6:
                     return true;
@@ -540,6 +541,7 @@ INSTANTIATE_TEST_CASE_P(
                 AAUDIO_CHANNEL_5POINT1POINT4,
                 AAUDIO_CHANNEL_7POINT1POINT2,
                 AAUDIO_CHANNEL_7POINT1POINT4,
+                AAUDIO_CHANNEL_13POINT0,
                 AAUDIO_CHANNEL_9POINT1POINT4,
                 AAUDIO_CHANNEL_9POINT1POINT6,
                 AAUDIO_CHANNEL_FRONT_BACK,
