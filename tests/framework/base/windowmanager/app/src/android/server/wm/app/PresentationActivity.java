@@ -32,39 +32,63 @@ public class PresentationActivity extends Activity {
 
     private static final String TAG = PresentationActivity.class.getSimpleName();
     private Presentation mPresentation;
+    private Intent mLastIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        createPresentationWindow(getIntent());
+        mLastIntent = getIntent();
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        createPresentationWindow(intent);
+        mLastIntent = intent;
+        if (mPresentation != null) {
+            mPresentation.dismiss();
+            mPresentation = null;
+        }
     }
 
-    private void createPresentationWindow(Intent intent) {
-        int displayId = intent.getExtras().getInt(
-                Components.PresentationActivity.KEY_DISPLAY_ID);
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mPresentation == null) {
+            createPresentationWindow();
+        }
+    }
 
-        Display presentationDisplay =
+    protected void onStop() {
+        super.onStop();
+        if (mPresentation != null) {
+            mPresentation.dismiss();
+            mPresentation = null;
+        }
+    }
+
+    private void createPresentationWindow() {
+        if (mLastIntent == null) return;
+
+        final int displayId =
+                mLastIntent.getExtras().getInt(Components.PresentationActivity.KEY_DISPLAY_ID);
+        final Display presentationDisplay =
                 getSystemService(DisplayManager.class).getDisplay(displayId);
+        if (presentationDisplay == null) {
+            Log.w(TAG, "Presentation display not found");
+            return;
+        }
 
         final TextView view = new TextView(this);
         view.setText("I'm a presentation");
         view.setGravity(Gravity.CENTER);
         view.setBackgroundColor(Color.RED);
-        if (mPresentation != null) {
-            mPresentation.dismiss();
-        }
         mPresentation = new Presentation(this, presentationDisplay);
         mPresentation.setContentView(view);
         mPresentation.setTitle(getPackageName());
         try {
             mPresentation.show();
         } catch (WindowManager.InvalidDisplayException e) {
+            mPresentation = null;
             Log.w(TAG, "Presentation blocked", e);
         }
     }
