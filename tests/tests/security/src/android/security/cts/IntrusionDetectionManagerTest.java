@@ -105,6 +105,7 @@ public class IntrusionDetectionManagerTest {
     }
 
     private void reset() throws InterruptedException {
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.READ_INTRUSION_DETECTION_STATE,
                 Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
@@ -172,6 +173,7 @@ public class IntrusionDetectionManagerTest {
 
     @Test
     public void testRemoveStateCallback_NoPermission() {
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.READ_INTRUSION_DETECTION_STATE);
         var executor = newSingleThreadExecutor();
@@ -182,6 +184,7 @@ public class IntrusionDetectionManagerTest {
         assertThrows(SecurityException.class,
                 () -> mIntrusionDetectionManager.removeStateCallback(scb));
         executor.close();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
@@ -223,9 +226,13 @@ public class IntrusionDetectionManagerTest {
     @Test
     public void testRemoveStateCallback() throws InterruptedException {
         assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_INTRUSION_DETECTION_STATE,
-                Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.BIND_INTRUSION_DETECTION_EVENT_TRANSPORT_SERVICE,
+                        Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                        Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
 
         var executor = newSingleThreadExecutor();
 
@@ -311,10 +318,12 @@ public class IntrusionDetectionManagerTest {
         assertThat(commandLatch1.await(1, SECONDS)).isTrue();
         assertThat(scb0Latch2.await(1, SECONDS)).isTrue();
         executor.close();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
     public void testDisable_FromDisable() throws InterruptedException {
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.READ_INTRUSION_DETECTION_STATE,
                 Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
@@ -353,14 +362,19 @@ public class IntrusionDetectionManagerTest {
         assertThat(commandLatch0.await(1, SECONDS)).isTrue();
 
         executor.close();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
     @Test
     public void testEnable_FromEnable() throws InterruptedException {
         assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
-        mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                Manifest.permission.READ_INTRUSION_DETECTION_STATE,
-                Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.BIND_INTRUSION_DETECTION_EVENT_TRANSPORT_SERVICE,
+                        Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                        Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
 
         var executor = newSingleThreadExecutor();
 
@@ -417,5 +431,6 @@ public class IntrusionDetectionManagerTest {
 
         assertThat(commandLatch1.await(1, SECONDS)).isTrue();
         executor.close();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 }
