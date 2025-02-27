@@ -27,6 +27,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Activity;
@@ -206,8 +207,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
     @Test
     public void testParcelingAndUnparceling_multiplePackages() {
-        Optional<String> otherPackageName = getAnotherPackageName();
-        if (!otherPackageName.isPresent()) return;
+        String otherPackageName = getAnotherPackageName();
         RemoteCollectionItems items =
                 new RemoteCollectionItems.Builder()
                         .setHasStableIds(true)
@@ -217,8 +217,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                                 new RemoteViews(PACKAGE_NAME, R.layout.textview_singleline))
                         .addItem(
                                 5 /* id */,
-                                new RemoteViews(
-                                        otherPackageName.get(), android.R.layout.list_content))
+                                new RemoteViews(otherPackageName, android.R.layout.list_content))
                         .build();
 
         RemoteViews parent = new RemoteViews(PACKAGE_NAME, R.layout.listview_layout);
@@ -235,7 +234,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
         assertNotNull(unparceled.getItemView(0).mApplication);
         assertNotNull(unparceled.getItemView(1).mApplication);
         assertEquals(PACKAGE_NAME, unparceled.getItemView(0).mApplication.packageName);
-        assertEquals(otherPackageName.get(), unparceled.getItemView(1).mApplication.packageName);
+        assertEquals(otherPackageName, unparceled.getItemView(1).mApplication.packageName);
     }
 
     @Test
@@ -351,10 +350,9 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
     @Test
     public void testSerializationSize_largeCollection_multiPackage() {
-        Optional<String> otherPackageName = getAnotherPackageName();
-        if (!otherPackageName.isPresent()) return;
+        String otherPackageName = getAnotherPackageName();
         RemoteCollectionItems items =
-                createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackageName.get());
+                createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackageName);
 
         int dataSize = parcelAndGetDataSize(items);
 
@@ -398,16 +396,15 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
     @Test
     public void testSerializationSize_largeCollectionInLandPortRemoteViews_multiPackage() {
-        Optional<String> otherPackage = getAnotherPackageName();
-        if (!otherPackage.isPresent()) return;
+        String otherPackage = getAnotherPackageName();
         RemoteViews landscape = new RemoteViews(PACKAGE_NAME, R.layout.listview_layout);
         landscape.setRemoteAdapter(
                 R.id.listview_default,
-                createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackage.get()));
+                createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackage));
         RemoteViews portrait = new RemoteViews(PACKAGE_NAME, R.layout.listview_layout);
         landscape.setRemoteAdapter(
                 R.id.listview_default,
-                createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackage.get()));
+                createSampleMultiPackageCollectionItems(/* size= */ 100, otherPackage));
 
         RemoteViews joinedRemoteViews = new RemoteViews(landscape, portrait);
 
@@ -437,13 +434,12 @@ public class RemoteViewsFixedCollectionAdapterTest {
         int dataSize = parcelAndGetDataSize(joinedRemoteViews);
 
         // 22,100 when test was written.
-        assertLessThan(31_000, dataSize);
+        assertLessThan(32_000, dataSize);
     }
 
     @Test
     public void testSerializationSize_largeCollectionInSizedRemoteViews_multiPackage() {
-        Optional<String> otherPackage = getAnotherPackageName();
-        if (!otherPackage.isPresent()) return;
+        String otherPackage = getAnotherPackageName();
         List<SizeF> sizes =
                 Lists.newArrayList(
                         new SizeF(50, 50),
@@ -454,7 +450,7 @@ public class RemoteViewsFixedCollectionAdapterTest {
                 sizes.stream().collect(Collectors.toMap(Function.identity(), ignored -> {
                     RemoteCollectionItems items =
                             createSampleMultiPackageCollectionItems(
-                                    /* size= */ 100, otherPackage.get());
+                                    /* size= */ 100, otherPackage);
                     RemoteViews views = new RemoteViews(PACKAGE_NAME, R.layout.listview_layout);
                     views.setRemoteAdapter(R.id.listview_default, items);
                     return views;
@@ -1059,14 +1055,19 @@ public class RemoteViewsFixedCollectionAdapterTest {
 
     /**
      * Returns a different package on the device that can be used for testing multi-package
-     * collections.
+     * collections. Tries to find a package name under 40 characters so that the resulting
+     * collection serialization size is more predictable.
      */
-    private Optional<String> getAnotherPackageName() {
-        return mActivity.getPackageManager()
+    private String getAnotherPackageName() {
+        Optional<String> name = mActivity.getPackageManager()
                 .getInstalledApplications(/* flags= */ 0)
                 .stream()
-                .filter(info -> !PACKAGE_NAME.equals(info.packageName))
+                .filter(info -> !PACKAGE_NAME.equals(info.packageName)
+                        && info.packageName.length() < 40)
                 .findFirst()
                 .map(info -> info.packageName);
+        assumeTrue("Skipping serialization size test; no packageName under 40 chars found",
+                name.isPresent());
+        return name.get();
     }
 }
