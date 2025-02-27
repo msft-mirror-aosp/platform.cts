@@ -1624,14 +1624,15 @@
     <string name="ci_dismiss_result_dialog">Dismiss</string>
     <string name="ci_instruction_text_app_picture_label">\n
 
-    1. Click Open Settings and deny location permissions to CTS Verifier and return. \n
-    2. Click Start Test. \n
-    3. Go to home screen (HOME key). \n
-    4. Launch Camera application. \n
-    5. Capture photo within 1 minute. \n
-    6. Return to CTS verifier app. \n
-    7. Pass button will light up if intent and URI triggers were fired.\n
-    8. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
+    1. Open the default camera app. If possible, make sure settings within the app are configured to save location data in photos and videos.\n
+    2. Click Open Settings and deny location permissions to CTS Verifier, ensure that device-wide location data is enabled and return. \n
+    3. Click Start Test. \n
+    4. Go to home screen (HOME key). \n
+    5. Launch Camera application. \n
+    6. Capture photo within 1 minute. \n
+    7. Return to CTS verifier app. \n
+    8. Pass button will light up if intent and URI triggers were fired.\n
+    9. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
     </string>
     <string name="ci_instruction_text_app_video_label">\n
     1. Click Start Test. \n
@@ -1686,7 +1687,7 @@
     1. Click Start Test.\n
     2. Settings app will launch. Go to \"Storage &amp; Cache\" and click \"Clear Storage\".\n
     3. Capture/confirm photo using camera app controls within 1 minute.\n
-    4. Navigate back to CtsVerifier.\n
+    4. Navigate back to CtsVerifier using the back buttons (not by switching focus).\n
     5. Pass button will light up if location info was not found.\n
     6. Click "Pass" if possible, otherwise open settings app, allow location again and click "Fail".
     </string>
