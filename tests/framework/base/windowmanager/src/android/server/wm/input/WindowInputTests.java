@@ -71,8 +71,8 @@ import android.window.WindowInfosListenerForTest.WindowInfo;
 
 import androidx.test.rule.ActivityTestRule;
 
-import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.FeatureUtil;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.input.UinputTouchScreen;
@@ -104,7 +104,8 @@ import java.util.function.Predicate;
 public class WindowInputTests {
     private static final String TAG = "WindowInputTests";
 
-    private static final long TOUCH_EVENT_PROPAGATION_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
+    private static final long TOUCH_EVENT_PROPAGATION_TIMEOUT =
+            TimeUnit.SECONDS.toMillis(10) * HW_TIMEOUT_MULTIPLIER;
     private static final long TOUCH_EVENT_PROPAGATION_TIMEOUT_SHORT = 100L;
 
     private final ActivityTestRule<TestActivity> mActivityRule =

@@ -124,9 +124,9 @@ public class VendorVibrationSessionTest {
             new VibrationAttributes.Builder()
                     .setUsage(VibrationAttributes.USAGE_TOUCH)
                     .build();
-    private static final VibrationAttributes RINGTONE_ATTRIBUTES =
+    private static final VibrationAttributes COMMUNICATION_REQUEST_ATTRIBUTES =
             new VibrationAttributes.Builder()
-                    .setUsage(VibrationAttributes.USAGE_RINGTONE)
+                    .setUsage(VibrationAttributes.USAGE_COMMUNICATION_REQUEST)
                     .build();
 
     private final Vibrator mVibrator;
@@ -279,7 +279,7 @@ public class VendorVibrationSessionTest {
         TestCallback firstCallback = startSession(TOUCH_ATTRIBUTES);
         assertSessionRunning(firstCallback);
 
-        TestCallback secondCallback = startSession(RINGTONE_ATTRIBUTES);
+        TestCallback secondCallback = startSession(COMMUNICATION_REQUEST_ATTRIBUTES);
         assertSessionRunning(secondCallback);
 
         // First session started, so expect it to be notified by onFinishing()

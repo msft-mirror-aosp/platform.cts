@@ -1212,6 +1212,15 @@ class PreviewTestCase {
         return ACAMERA_OK;
     }
 
+    void deInitImageReader() {
+        if (mImgReader) {
+            AImageReader_delete(mImgReader);
+            mImgReaderAnw = nullptr;
+            mImgReader = nullptr;
+        }
+        mImgReaderInited = false;
+    }
+
     int getNumCameras() {
         if (!mMgrInited || !mCameraIdList) {
             ALOGE("%s CameraManager not inited yet.", __FUNCTION__);
@@ -1426,7 +1435,11 @@ class PreviewTestCase {
         }
 
         if (mImgReaderInited) {
-            ret = ACaptureSessionOutput_create(mImgReaderAnw, &mImgReaderOutput);
+            if (isPreviewShared) {
+                ret = ACaptureSessionSharedOutput_create(mImgReaderAnw, &mImgReaderOutput);
+            } else {
+                ret = ACaptureSessionOutput_create(mImgReaderAnw, &mImgReaderOutput);
+            }
             if (ret != ACAMERA_OK || mImgReaderOutput == nullptr) {
                 LOG_ERROR(errorString,
                         "Session image reader output create fail! ret %d output %p",
@@ -1475,10 +1488,6 @@ class PreviewTestCase {
             }
         }
         return ret;
-    }
-
-    camera_status_t createCaptureSessionSharedOutput() {
-        return ACaptureSessionSharedOutput_create(mImgReaderAnw, &mImgReaderOutput);
     }
 
     camera_status_t createCaptureSessionWithLog(
@@ -1931,6 +1940,8 @@ class PreviewTestCase {
     ACaptureSessionOutput *getPreviewOutput() {
         return mPreviewOutput;
     }
+
+    ACaptureSessionOutput* getImageReaderOutput() { return mImgReaderOutput; }
 
     ANativeWindow* getImageReaderNativeWindow() { return mImgReaderAnw; }
 
@@ -5381,81 +5392,131 @@ cleanup:
     return pass;
 }
 
-// TODO (b/394083987): Investigate native tests failures. For now they are commented out.
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testPerformUnsupportedOperationsNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
+                                       int width, int height, int format) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    const int NUM_TEST_IMAGES = 10;
+    media_status_t mediaRet = AMEDIA_ERROR_UNKNOWN;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    PreviewTestCase* sharedCtx = nullptr;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    mediaRet = sharedCtx->initImageReaderWithErrorLog(width, height, format, NUM_TEST_IMAGES);
+    if (mediaRet != AMEDIA_OK) {
+        LOG_ERROR(errorString, "initImageReaderWithErrorLog failure: ret %d", mediaRet);
+        goto cleanup;
+    }
+    ret = sharedCtx->createRequestsWithErrorLog();
+    if (ret == ACAMERA_OK) {
+        LOG_ERROR(errorString,
+                  "Expected failure for createRequestsWithErrorLog, but got success: ret %d", ret);
+        goto cleanup;
+    }
+    // Create capture session with shared output enabled.
+    ret = sharedCtx->createCaptureSessionWithLog(true);
+    if (ret == ACAMERA_OK) {
+        LOG_ERROR(errorString,
+                  "Expected failure for createCaptureSession with shared output, but got success:"
+                  " ret %d",
+                  ret);
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    sharedCtx->deInitImageReader();
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}
 
-//extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
-//testPerformUnsupportedOperationsNative(JNIEnv* env, jclass /*clazz*/, jlong sharedTestContext,
-//                                       int width, int height, int format) {
-//    ALOGV("%s", __FUNCTION__);
-//    bool pass = false;
-//    const int NUM_TEST_IMAGES = 10;
-//    media_status_t mediaRet = AMEDIA_ERROR_UNKNOWN;
-//    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
-//    PreviewTestCase* sharedCtx = nullptr;
-//    if (sharedTestContext == 0) {
-//        LOG_ERROR(errorString, "Invalid shared Test Context");
-//        goto cleanup;
-//    }
-//    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
-//    mediaRet = sharedCtx->initImageReaderWithErrorLog(width, height, format, NUM_TEST_IMAGES);
-//    if (mediaRet != AMEDIA_OK) {
-//        LOG_ERROR(errorString, "initImageReaderWithErrorLog failure: ret %d", mediaRet);
-//        goto cleanup;
-//    }
-//    ret = sharedCtx->createRequestsWithErrorLog();
-//    if (ret == ACAMERA_OK) {
-//        LOG_ERROR(errorString,
-//                  "Expected failure for createRequestsWithErrorLog, but got success: ret %d",
-//                  ret);
-//        goto cleanup;
-//    }
-//    ret = sharedCtx->createCaptureSessionSharedOutput();
-//    if (ret == ACAMERA_OK) {
-//        LOG_ERROR(errorString,
-//                  "Expected failure for createCaptureSessionSharedOutput, but got success: ret
-//                  %d", ret);
-//        goto cleanup;
-//    }
-//    pass = true;
-// cleanup:
-//    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
-//    if (!pass) {
-//        throwAssertionError(env, errorString);
-//    }
-//    return pass;
-//}
-
-//extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
-//testUnsupportedCaptureSessionCommandsNative(JNIEnv* env, jclass /*clazz*/,
-//                                            jlong sharedTestContext) {
-//    ALOGV("%s", __FUNCTION__);
-//    bool pass = false;
-//    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
-//    bool frameStarted = false;
-//    const int timeoutSec = 1;
-//    PreviewTestCase* sharedCtx = nullptr;
-//    ANativeWindow* anw = nullptr;
-//    if (sharedTestContext == 0) {
-//        LOG_ERROR(errorString, "Invalid shared Test Context");
-//        goto cleanup;
-//    }
-//    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
-//    ret = sharedCtx->abortCaptures();
-//    if (ret == ACAMERA_OK) {
-//        LOG_ERROR(errorString, "Expected failure for abortCaptures, but got success: ret %d",
-//        ret); goto cleanup;
-//    }
-//    anw = sharedCtx->getImageReaderNativeWindow();
-//        ret = sharedCtx->prepareWindow(anw);
-//        if (ret == ACAMERA_OK) {
-//            LOG_ERROR(errorString, "Expected failure for prepareWindow, but got success: ret %d",
-//            ret); goto cleanup;
-//        }
-//    pass = true;
-// cleanup:
-//    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
-//    if (!pass) {
-//        throwAssertionError(env, errorString);
-//    }
-//    return pass;
-//}
+extern "C" jboolean Java_android_hardware_multiprocess_camera_cts_SharedCameraTest_\
+testUnsupportedCaptureSessionCommandsNative(JNIEnv* env, jclass /*clazz*/,
+                                            jlong sharedTestContext) {
+    ALOGV("%s", __FUNCTION__);
+    bool pass = false;
+    camera_status_t ret = ACAMERA_ERROR_UNKNOWN;
+    bool frameStarted = false;
+    bool frameArrived = false;
+    const int timeoutSec = 1;
+    int64_t lastFrameNumber;
+    PreviewTestCase* sharedCtx = nullptr;
+    ANativeWindow* anw = nullptr;
+    ACaptureSessionOutput* imgReaderOutput = nullptr;
+    int sequenceId;
+    if (sharedTestContext == 0) {
+        LOG_ERROR(errorString, "Invalid shared Test Context");
+        goto cleanup;
+    }
+    sharedCtx = reinterpret_cast<PreviewTestCase*>(sharedTestContext);
+    anw = sharedCtx->getImageReaderNativeWindow();
+    if (anw == nullptr) {
+        LOG_ERROR(errorString, "Image reader is not initialized");
+        goto cleanup;
+    }
+    ret = sharedCtx->prepareWindow(anw);
+    if (ret == ACAMERA_OK) {
+        LOG_ERROR(errorString, "Expected failure for prepareWindow, but got success: ret %d", ret);
+        goto cleanup;
+    }
+    imgReaderOutput = sharedCtx->getImageReaderOutput();
+    ret = sharedCtx->updateOutput(env, imgReaderOutput);
+    if (ret == ACAMERA_OK) {
+        LOG_ERROR(errorString,
+                  "Expected failure for updateOutputConfiguration, but got success:"
+                  " ret %d",
+                  ret);
+        goto cleanup;
+    }
+    ret = sharedCtx->startSharedStreaming();
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "Start Streaming failure: ret %d", ret);
+        goto cleanup;
+    }
+    frameStarted = sharedCtx->waitForCaptureStarted(timeoutSec);
+    if (!frameStarted) {
+        LOG_ERROR(errorString,
+                  "Camera timed out waiting on onCaptureStart for last"
+                  "frame number!");
+        goto cleanup;
+    }
+    ret = sharedCtx->abortCaptures();
+    if (ret == ACAMERA_OK) {
+        LOG_ERROR(errorString, "Expected failure for abortCaptures, but got success: ret %d", ret);
+        goto cleanup;
+    }
+    ret = sharedCtx->stopPreview();
+    if (ret == ACAMERA_OK) {
+        LOG_ERROR(errorString, "Expected failure for stopRepeating, but got success: ret %d", ret);
+        goto cleanup;
+    }
+    sequenceId = sharedCtx->getSharedStreamingSeqId();
+    ret = sharedCtx->stopSharedStreaming();
+    if (ret != ACAMERA_OK) {
+        LOG_ERROR(errorString, "Stop Streaming failure: ret %d", ret);
+        goto cleanup;
+    }
+    lastFrameNumber = sharedCtx->getCaptureSequenceLastFrameNumber(sequenceId, timeoutSec);
+    if (lastFrameNumber < 0) {
+        LOG_ERROR(errorString, "Camera failed to acquire last frame number!");
+        goto cleanup;
+    }
+    frameArrived = sharedCtx->waitForFrameNumber(lastFrameNumber, timeoutSec);
+    if (!frameArrived) {
+        LOG_ERROR(errorString, "Camera timed out waiting on last frame number!");
+        goto cleanup;
+    }
+    pass = true;
+cleanup:
+    ALOGI("%s %s", __FUNCTION__, pass ? "pass" : "failed");
+    if (!pass) {
+        throwAssertionError(env, errorString);
+    }
+    return pass;
+}

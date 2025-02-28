@@ -23,6 +23,7 @@ import static android.app.admin.DevicePolicyIdentifiers.APPLICATION_RESTRICTIONS
 import static android.app.admin.DevicePolicyIdentifiers.AUTO_TIMEZONE_POLICY;
 import static android.app.admin.DevicePolicyIdentifiers.KEYGUARD_DISABLED_FEATURES_POLICY;
 import static android.app.admin.DevicePolicyIdentifiers.LOCK_TASK_POLICY;
+import static android.app.admin.DevicePolicyIdentifiers.MEMORY_TAGGING_POLICY;
 import static android.app.admin.DevicePolicyIdentifiers.PACKAGE_UNINSTALL_BLOCKED_POLICY;
 import static android.app.admin.DevicePolicyIdentifiers.PERMISSION_GRANT_POLICY;
 import static android.app.admin.DevicePolicyIdentifiers.PERMITTED_INPUT_METHODS_POLICY;
@@ -86,14 +87,17 @@ import android.devicepolicy.cts.utils.PolicyEngineUtils;
 import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
-import com.android.bedstead.accounts.annotations.EnsureHasAccountAuthenticator;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.inputmethods.InputMethod;
@@ -124,6 +128,9 @@ public final class DeviceManagementCoexistenceTest {
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String PACKAGE_NAME = "com.android.package.test";
 
@@ -584,6 +591,27 @@ public final class DeviceManagementCoexistenceTest {
                 dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
                         dpc(sDeviceState).componentName(), LOCAL_USER_RESTRICTION);
             }
+        }
+    }
+
+    @Test
+    @EnsureHasDevicePolicyManagerRoleHolder(onUser = UserType.SYSTEM_USER)
+    @EnsureHasDeviceOwner(isPrimary = true)
+    @ApiTest(apis = "android.app.admin.PolicyUpdateReceiver#ACTION_DEVICE_POLICY_SET_RESULT")
+    @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
+    public void policyUpdateReceiver_setMemoryTaggingPolicy_receivedPolicySetBroadcast() {
+        int mtePolicy = dpc(sDeviceState).devicePolicyManager().getMtePolicy();
+        try {
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(DevicePolicyManager.MTE_ENABLED);
+
+            PolicySetResultUtils.assertPolicySetResultReceived(
+                    sDeviceState,
+                    MEMORY_TAGGING_POLICY,
+                    PolicyUpdateResult.RESULT_POLICY_SET,
+                    GLOBAL_USER_ID,
+                    new Bundle());
+        } finally {
+            dpc(sDeviceState).devicePolicyManager().setMtePolicy(mtePolicy);
         }
     }
 

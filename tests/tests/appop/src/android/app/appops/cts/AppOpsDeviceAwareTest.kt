@@ -21,6 +21,7 @@ import android.app.AppOpsManager
 import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceParams
 import android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
+import android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT
 import android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA
 import android.content.AttributionSource
 import android.os.Process
@@ -53,7 +54,8 @@ class AppOpsDeviceAwareTest {
         VirtualDeviceRule.withAdditionalPermissions(
             Manifest.permission.GRANT_RUNTIME_PERMISSIONS,
             Manifest.permission.REVOKE_RUNTIME_PERMISSIONS,
-            Manifest.permission.GET_APP_OPS_STATS
+            Manifest.permission.GET_APP_OPS_STATS,
+            Manifest.permission.MANAGE_APPOPS,
         )
 
     @Before
@@ -67,6 +69,42 @@ class AppOpsDeviceAwareTest {
 
         // Reset app ops state for this test package to the system default.
         reset(context.opPackageName)
+        appOpsManager.resetPackageOpsNoHistory(context.opPackageName)
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+    )
+    @Test
+    fun virtualDeviceDefaultPolicy_opModeShouldBeFromDefaultDevicePermissionState() {
+        virtualDevice =
+            virtualDeviceRule.createManagedVirtualDevice(
+                VirtualDeviceParams.Builder()
+                    .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_DEFAULT)
+                    .build()
+            )
+
+        val attributionSource =
+            AttributionSource.Builder(Process.myUid())
+                .setPackageName(context.opPackageName)
+                .setAttributionTag(context.attributionTag)
+                .setDeviceId(virtualDevice.deviceId)
+                .build()
+
+        // Verify permission is already granted on the default device. App op mode for a virtual
+        // device should fall back to the default device permission state.
+        assertThat(
+            appOpsManager.unsafeCheckOpRawNoThrow(
+                AppOpsManager.OPSTR_CAMERA,
+                context.applicationInfo.uid,
+                context.opPackageName
+            )
+        ).isEqualTo(AppOpsManager.MODE_FOREGROUND)
+
+        assertThat(
+            appOpsManager.unsafeCheckOpRawNoThrow(AppOpsManager.OPSTR_CAMERA, attributionSource)
+        ).isEqualTo(AppOpsManager.MODE_FOREGROUND)
     }
 
     @RequiresFlagsEnabled(
@@ -112,6 +150,66 @@ class AppOpsDeviceAwareTest {
                 appOpsManager.unsafeCheckOpRawNoThrow(AppOpsManager.OPSTR_CAMERA, attributionSource)
             )
             .isEqualTo(AppOpsManager.MODE_FOREGROUND)
+    }
+
+    @RequiresFlagsEnabled(
+        Flags.FLAG_DEVICE_AWARE_PERMISSION_APIS_ENABLED,
+        Flags.FLAG_RUNTIME_PERMISSION_APPOPS_MAPPING_ENABLED
+    )
+    @Test
+    fun virtualDeviceDefaultPolicy_opAccessShouldBeAttributedToDefaultDevice() {
+        virtualDevice =
+            virtualDeviceRule.createManagedVirtualDevice(
+                VirtualDeviceParams.Builder()
+                    .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_DEFAULT)
+                    .build()
+            )
+
+        val attributionSource =
+            AttributionSource.Builder(Process.myUid())
+                .setPackageName(context.opPackageName)
+                .setAttributionTag(context.attributionTag)
+                .setDeviceId(virtualDevice.deviceId)
+                .build()
+
+        val startTimeMillis = System.currentTimeMillis()
+        val mode =
+            appOpsManager.noteOpNoThrow(AppOpsManager.OP_CAMERA, attributionSource, "message")
+        val endTimeMillis = System.currentTimeMillis()
+
+        assertThat(mode).isEqualTo(AppOpsManager.MODE_ALLOWED)
+
+        // Expect noteOp doesn't create attributedOpEntry for virtual device
+        val packagesOpsForExternalDevice =
+            appOpsManager.getPackagesForOps(
+                arrayOf(AppOpsManager.OPSTR_CAMERA),
+                virtualDevice.persistentDeviceId!!
+            )
+        val packageOpsForExternalDevice =
+            packagesOpsForExternalDevice.find { it.packageName == context.opPackageName }
+        val opEntryForExternalDevice = packageOpsForExternalDevice!!.ops[0]
+        assertThat(opEntryForExternalDevice.opStr).isEqualTo(AppOpsManager.OPSTR_CAMERA)
+        assertThat(opEntryForExternalDevice.attributedOpEntries).isEmpty()
+
+        // Expect op is noted for the default device
+        val packagesOpsForDefaultDevice =
+            appOpsManager.getPackagesForOps(arrayOf(AppOpsManager.OPSTR_CAMERA))
+
+        val packageOps =
+            packagesOpsForDefaultDevice.find { it.packageName == context.opPackageName }
+        assertThat(packageOps).isNotNull()
+
+        val opEntries = packageOps!!.ops
+        assertThat(opEntries.size).isEqualTo(1)
+
+        val opEntry = opEntries[0]
+        assertThat(opEntry.opStr).isEqualTo(AppOpsManager.OPSTR_CAMERA)
+        assertThat(opEntry.mode).isEqualTo(AppOpsManager.MODE_ALLOWED)
+
+        val attributedOpEntry = opEntry.attributedOpEntries[null]!!
+        val lastAccessTime = attributedOpEntry.getLastAccessTime(AppOpsManager.OP_FLAG_SELF)
+        assertThat(lastAccessTime).isAtLeast(startTimeMillis)
+        assertThat(lastAccessTime).isAtMost(endTimeMillis)
     }
 
     @RequiresFlagsEnabled(

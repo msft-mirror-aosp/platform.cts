@@ -20,8 +20,11 @@ def paired_devices(self):
 
 def clear_bonds(self):
     for device in self.paired_devices():
-        self.cdm.btUnpairDevice(device)
-        sleep(OPERATION_DELAY_TIME)
+        try:
+            self.cdm.btUnpairDevice(device)
+            wait(lambda: device.address not in self.paired_devices())
+        except Exception as e:
+            pass
 
 class BaseTestClass(base_test.BaseTestClass):
 
@@ -59,11 +62,15 @@ class BaseTestClass(base_test.BaseTestClass):
 
     def teardown_test(self):
         """Clean up tests"""
-        self.primary.cdm.disassociateAll()
-        self.secondary.cdm.disassociateAll()
 
-        self.primary.clear_bonds()
-        self.secondary.clear_bonds()
+        def _teardown_device(device):
+            # Remove all associations
+            device.cdm.disassociateAll()
+
+            # Clear bluetooth bonds
+            device.clear_bonds()
+
+        self._execute_on_devices(_teardown_device)
 
     def bt_pair_devices(self):
         """Pair two devices using BT classic bond"""

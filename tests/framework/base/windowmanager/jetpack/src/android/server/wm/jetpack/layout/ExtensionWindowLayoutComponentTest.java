@@ -497,7 +497,8 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
                 configHandlingActivity, consumer);
 
-        enterPipActivityHandlesConfigChanges(configHandlingActivity);
+        boolean didEnter = enterPipActivityHandlesConfigChanges(configHandlingActivity);
+        assertTrue("Did not finish entering PiP.", didEnter);
 
         List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
 
