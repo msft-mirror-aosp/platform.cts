@@ -219,7 +219,7 @@ int NativeAudioAnalyzer::analyze() {
 }
 
 double NativeAudioAnalyzer::getLatencyMillis() {
-    return mWhiteNoiseLatencyAnalyzer.getMeasuredLatency() * 1000.0 / 48000;
+    return mWhiteNoiseLatencyAnalyzer.getMeasuredLatency() * 1000.0 / mOutputSampleRate;
 }
 
 double NativeAudioAnalyzer::getConfidence() {
