@@ -63,6 +63,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Instrumentation;
+import android.app.WindowConfiguration;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -788,6 +789,10 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
             final TestActivity activity =
                     startActivityInWindowingModeFullScreen(TestActivity.class);
             final View rootView = activity.getWindow().getDecorView();
+            // Activities are forced to a non-fullscreen mode in a few form-factors like Automotive.
+            // And this test is not supported for such cases in android-15.
+            assumeTrue(activity.getResources().getConfiguration().windowConfiguration
+                    .getWindowingMode() == WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
 
             // Storing all new insets that the activity's rootView is receiving
             final ArrayList<WindowInsets> windowInsetsList = new ArrayList<>();
