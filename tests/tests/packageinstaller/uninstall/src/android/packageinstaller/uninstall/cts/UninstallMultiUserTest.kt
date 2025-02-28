@@ -27,6 +27,7 @@ import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.AppOpsUtils
 import com.android.compatibility.common.util.SystemUtil
 import org.junit.Assert
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.ClassRule
 import org.junit.Rule
@@ -55,6 +56,11 @@ class UninstallMultiUserTest : UninstallTestBase() {
     @EnsureHasAdditionalUser
     @Throws(RemoteException::class)
     fun startUninstallAllUsersCrossUser() {
+        // The user running the test must be an admin user, to be able to uninstall packages for
+        // other users
+        val testUser = UserReference.of(context.getUser())
+        assumeTrue("Only admin user can uninstall packages for other users", testUser.isAdmin())
+
         // Uninstall from all users to start with a clean slate
         SystemUtil.runShellCommand("pm uninstall --user -1 $TEST_APK_PACKAGE_NAME")
 
