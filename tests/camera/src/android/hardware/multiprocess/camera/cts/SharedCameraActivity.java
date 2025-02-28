@@ -984,8 +984,8 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                                 Integer.toString(mCaptureSequenceId));
                     } catch (Exception e) {
                         mErrorServiceConnection.logAsync(TestConstants.EVENT_CAMERA_ERROR,
-                                TAG + " exception during creating shared session: " + e);
-                        Log.e(TAG, "exception during creating shared session: " + e);
+                                TAG + " exception during start preview: " + e);
+                        Log.e(TAG, "exception during start preview: " + e);
                     }
                     break;
 
@@ -997,7 +997,11 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                         return;
                     }
                     try {
-                        mSession.stopRepeating();
+                        if (mIsPrimary) {
+                            mSession.stopRepeating();
+                        } else {
+                            mSession.stopStreaming();
+                        }
                         mCaptureListener.getCaptureSequenceLastFrameNumber(
                                 mCaptureSequenceId, CAPTURE_RESULT_TIMEOUT_MS);
                         mCaptureListener.drain();
@@ -1009,8 +1013,8 @@ public class SharedCameraActivity extends Camera2SurfaceViewCtsActivity {
                     } catch (Exception e) {
                         mErrorServiceConnection.logAsync(
                                 TestConstants.EVENT_CAMERA_ERROR,
-                                TAG + " exception during creating shared session: " + e);
-                        Log.e(TAG, "exception during creating shared session: " + e);
+                                TAG + " exception during stop preview: " + e);
+                        Log.e(TAG, "exception during stop preview: " + e);
                     }
                     break;
 
