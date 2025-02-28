@@ -406,6 +406,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Grab the video from the file location on DUT
               self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
+              # Delete the video file from the DUT
+              self.dut.adb.shell('rm %s' % recording_obj['recordedOutputPath'])
 
               # Verify FPS by inspecting the video clip
               preview_file_name = (
