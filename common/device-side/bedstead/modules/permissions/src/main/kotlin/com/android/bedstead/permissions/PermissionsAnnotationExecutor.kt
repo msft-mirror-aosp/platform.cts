@@ -40,6 +40,12 @@ class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent {
 
     private var permissionContext: PermissionContextImpl? = null
 
+    private fun getPermissionContext(): PermissionContextImpl {
+        return permissionContext ?: permissions().createNonBlockingPermissionContext().also {
+            permissionContext = it
+        }
+    }
+
     override fun applyAnnotation(annotation: Annotation) {
         when (annotation) {
             is EnsureHasPermission -> {
@@ -130,24 +136,20 @@ class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent {
     }
 
     private fun withAppOp(vararg appOp: String) {
-        permissionContext = permissionContext?.withAppOp(*appOp)
-            ?: permissions().withAppOp(*appOp)
+        getPermissionContext().withAppOp(*appOp)
     }
 
     private fun withoutAppOp(vararg appOp: String) {
-        permissionContext = permissionContext?.withoutAppOp(*appOp)
-            ?: permissions().withoutAppOp(*appOp)
+        getPermissionContext().withoutAppOp(*appOp)
     }
 
     private fun withPermission(vararg permission: String) {
-        permissionContext = permissionContext?.withPermission(*permission)
-            ?: permissions().withPermission(*permission)
+        getPermissionContext().withPermission(*permission)
     }
 
     private fun withoutPermission(vararg permission: String) {
         requireNotInstantApp("Uses withoutPermission", FailureMode.SKIP)
-        permissionContext = permissionContext?.withoutPermission(*permission)
-            ?: permissions().withoutPermission(*permission)
+        getPermissionContext().withoutPermission(*permission)
     }
 
     private fun ensureCanGetPermission(permission: String) {
@@ -190,6 +192,7 @@ class PermissionsAnnotationExecutor : AnnotationExecutor, DeviceStateComponent {
             it.close()
             permissionContext = null
         }
+        PermissionContextImpl.closeAllContexts()
     }
 
     override fun onTestFailed(exception: Throwable) {

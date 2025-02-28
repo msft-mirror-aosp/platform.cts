@@ -385,6 +385,8 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
+     *
+     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile() {
@@ -397,6 +399,8 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
+     *
+     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile(TestAppQueryBuilder dpcQuery) {
@@ -409,6 +413,8 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
+     *
+     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile(UserReference parent) {
@@ -422,6 +428,8 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
+     *
+     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile(UserReference parent, TestAppQueryBuilder dpcQuery) {
@@ -451,8 +459,7 @@ public class RemoteDpc extends RemotePolicyManager {
             testApp.install(parent);
         }
 
-        try (PermissionContext p =
-                     TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
+        try {
             RemoteDpc dpc = forDevicePolicyController(TestApis.devicePolicy().getProfileOwner(
                     sDevicePolicyManager.createAndProvisionManagedProfile(
                             new ManagedProfileProvisioningParams.Builder(

@@ -16,26 +16,70 @@
 
 package com.android.bedstead.permissions;
 
+import android.util.Log;
+
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.utils.Versions;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Default implementation of {@link PermissionContext}
  */
 public final class PermissionContextImpl implements PermissionContextModifier {
+
     private final Permissions mPermissions;
     private final Set<String> mGrantedPermissions = new HashSet<>();
     private final Set<String> mDeniedPermissions = new HashSet<>();
     private final Set<String> mGrantedAppOps = new HashSet<>();
     private final Set<String> mDeniedAppOps = new HashSet<>();
+    private final boolean mNonBlockingContext;
 
-    PermissionContextImpl(Permissions permissions) {
+    private static final Lock sPermissionsLock = new ReentrantLock();
+    private static final String TAG = "PermissionContextImpl";
+    private static final List<PermissionContextImpl> sNotClosedContexts = new ArrayList<>();
+
+    /**
+     * creates PermissionContextImpl instance
+     * it won't be executed until other threads will stop using permissions contexts
+     */
+    static PermissionContextImpl create(Permissions permissions) {
+        Log.v(TAG, "locking permissionsLock...");
+        sPermissionsLock.lock();
+        Log.v(TAG, "permissionsLock locked");
+        return new PermissionContextImpl(permissions, false);
+    }
+
+    /**
+     * creates a special version of PermissionContextImpl that allows other threads to create new
+     * PermissionContextImpl objects, it's designed to be used only for handling annotations
+     */
+    static PermissionContextImpl createNonBlocking(Permissions permissions) {
+        Log.v(TAG, "creating non blocking context");
+        return new PermissionContextImpl(permissions, true);
+    }
+
+    static void closeAllContexts() {
+        for (int i = 0; i < sNotClosedContexts.size(); i++) {
+            PermissionContextImpl notClosedContext = sNotClosedContexts.get(i);
+            Log.w(TAG, "closing not closed context: "
+                    + (i + 1) + " of " + sNotClosedContexts.size()
+                    + ", it should have been closed by now");
+            notClosedContext.close();
+        }
+    }
+
+    private PermissionContextImpl(Permissions permissions, boolean nonBlockingContext) {
         mPermissions = permissions;
+        mNonBlockingContext = nonBlockingContext;
+        sNotClosedContexts.add(this);
     }
 
     Set<String> grantedPermissions() {
@@ -62,6 +106,7 @@ public final class PermissionContextImpl implements PermissionContextModifier {
         for (String permission : permissions) {
             if (mDeniedPermissions.contains(permission)) {
                 mPermissions.clearPermissions();
+                close();
                 throw new NeneException(
                         permission + " cannot be required to be both granted and denied");
             }
@@ -69,7 +114,7 @@ public final class PermissionContextImpl implements PermissionContextModifier {
 
         mGrantedPermissions.addAll(Arrays.asList(permissions));
 
-        mPermissions.applyPermissions();
+        applyPermissions();
 
         return this;
     }
@@ -121,12 +166,14 @@ public final class PermissionContextImpl implements PermissionContextModifier {
         for (String permission : permissions) {
             if (mGrantedPermissions.contains(permission)) {
                 mPermissions.clearPermissions();
+                close();
                 throw new NeneException(
                         permission + " cannot be required to be both granted and denied");
             }
         }
 
         if (TestApis.packages().instrumented().isInstantApp()) {
+            close();
             throw new NeneException(
                     "Tests which use withoutPermission must not run as instant apps. If you are"
                             + "using DeviceState, use the @RequireNotInstantApp annotation.");
@@ -134,7 +181,7 @@ public final class PermissionContextImpl implements PermissionContextModifier {
 
         mDeniedPermissions.addAll(Arrays.asList(permissions));
 
-        mPermissions.applyPermissions();
+        applyPermissions();
 
         return this;
     }
@@ -147,6 +194,7 @@ public final class PermissionContextImpl implements PermissionContextModifier {
         for (String appOp : appOps) {
             if (mDeniedAppOps.contains(appOp)) {
                 mPermissions.clearPermissions();
+                close();
                 throw new NeneException(
                         appOp + " cannot be required to be both granted and denied");
             }
@@ -154,7 +202,7 @@ public final class PermissionContextImpl implements PermissionContextModifier {
 
         mGrantedAppOps.addAll(Arrays.asList(appOps));
 
-        mPermissions.applyPermissions();
+        applyPermissions();
 
         return this;
     }
@@ -204,6 +252,7 @@ public final class PermissionContextImpl implements PermissionContextModifier {
         for (String appOp : appOps) {
             if (mGrantedAppOps.contains(appOp)) {
                 mPermissions.clearPermissions();
+                close();
                 throw new NeneException(
                         appOp + " cannot be required to be both granted and denied");
             }
@@ -211,13 +260,29 @@ public final class PermissionContextImpl implements PermissionContextModifier {
 
         mDeniedAppOps.addAll(Arrays.asList(appOps));
 
-        mPermissions.applyPermissions();
+        applyPermissions();
 
         return this;
+    }
+
+    private void applyPermissions() {
+        try {
+            mPermissions.applyPermissions();
+        } catch (NeneException e) {
+            Log.d(TAG, "caught NeneException while executing applyPermissions(), "
+                    + "closing the context");
+            close();
+            throw e;
+        }
     }
 
     @Override
     public void close() {
         Permissions.sInstance.undoPermission(this);
+        if (!mNonBlockingContext) {
+            sPermissionsLock.unlock();
+            Log.v(TAG, "permissionsLock unlocked");
+        }
+        sNotClosedContexts.remove(this);
     }
 }

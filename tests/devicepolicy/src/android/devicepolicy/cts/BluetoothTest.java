@@ -27,6 +27,7 @@ import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_BLUETOOTH;
 import static com.android.bedstead.permissions.CommonPermissions.BLUETOOTH_CONNECT;
 import static com.android.bedstead.permissions.CommonPermissions.LOCAL_MAC_ADDRESS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -281,6 +282,7 @@ public final class BluetoothTest {
     @EnsureHasNoDpc
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
+    @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     public void newManagedProfile_disallowBluetoothSharingIsSet() {
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile()) {
             assertThat(TestApis.devicePolicy().userRestrictions(dpc.user())
@@ -292,6 +294,7 @@ public final class BluetoothTest {
     @EnsureHasNoDpc
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
+    @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     public void clearDisallowBluetoothSharing_newManagedProfile_disallowBluetoothSharingIsNotSet() {
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile()) {
             dpc.devicePolicyManager().clearUserRestriction(
