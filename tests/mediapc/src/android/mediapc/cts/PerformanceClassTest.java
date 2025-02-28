@@ -51,7 +51,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -74,10 +73,6 @@ public class PerformanceClassTest {
     @Rule
     public final TestName mTestName = new TestName();
 
-    @Before
-    public void isPerformanceClassCandidate() {
-        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
-    }
 
     static {
         mMediaTypeSecureSupport.add(MediaFormat.MIMETYPE_VIDEO_AVC);
@@ -102,6 +97,7 @@ public class PerformanceClassTest {
     @Test
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-11"})
     public void testSecureHwDecodeSupport() {
+        Utils.assumeDeviceMeetsPerformanceClassPreconditions();
         ArrayList<String> noSecureHwDecoderForMediaTypes = new ArrayList<>();
         for (String mediaType : mMediaTypeSecureSupport) {
             boolean isSecureHwDecoderFoundForMediaType = false;
