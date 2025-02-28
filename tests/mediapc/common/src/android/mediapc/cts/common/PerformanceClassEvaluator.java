@@ -64,6 +64,22 @@ public class PerformanceClassEvaluator {
         return req;
     }
 
+    /**
+     * Returns if the PerformanceClassEvaluator is ready to be submitted.
+     *
+     * <p>The PerformanceClassEvaluator is ready for submission if: all added requirements have all
+     * their required measurements recorded AND there is at least one requirement added.
+     *
+     * <p>Note: this function is ONLY meant to be used by ITS. Other tests should attempt to submit
+     * and make sure an exception is not thrown during submission.
+     */
+    public boolean isReadyToSubmitItsResults() {
+        boolean allMeasuredValuesSet =
+                mRequirements.stream().allMatch(r -> r.allMeasuredValuesSet());
+        boolean hasRequirements = !mRequirements.isEmpty();
+        return allMeasuredValuesSet && hasRequirements;
+    }
+
     private enum SubmitType {
         TRADEFED, VERIFIER
     }
