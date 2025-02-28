@@ -16,6 +16,7 @@
 
 package android.server.wm.window;
 
+import static android.server.wm.ComponentNameUtils.getWindowName;
 import static android.server.wm.app.Components.HIDE_OVERLAY_WINDOWS_ACTIVITY;
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.ACTION;
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.MOTION_EVENT_EXTRA;
@@ -49,6 +50,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
+import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.app.Components;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
@@ -66,6 +68,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
+
 /**
  * Build/Install/Run:
  * atest CtsWindowManagerDeviceWindow:HideOverlayWindowsTest
@@ -76,6 +80,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     private static final String POP_UP_WINDOW = "POP_UP_WINDOW";
     private static final String WINDOW_NAME_EXTRA = "window_name";
     private static final String SYSTEM_APPLICATION_OVERLAY_EXTRA = "system_application_overlay";
+    private static final Duration WINDOW_ORDER_WAIT_TIMEOUT = Duration.ofSeconds(3);
     private PongReceiver mPongReceiver;
     private TouchReceiver mTouchReceiver;
 
@@ -91,6 +96,9 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
         mTouchReceiver = new TouchReceiver();
         mContext.registerReceiver(mTouchReceiver, new IntentFilter(REPORT_TOUCH),
                 Context.RECEIVER_EXPORTED);
+
+        // Wait for any animations to be finished.
+        mInstrumentation.getUiAutomation().syncInputTransactions();
     }
 
     @After
@@ -266,13 +274,29 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
                     CliIntentExtra.extraBool(SYSTEM_APPLICATION_OVERLAY_EXTRA, true));
             mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
         }, Manifest.permission.SYSTEM_ALERT_WINDOW);
-        Rect appOverlayActivityFrame = mWmState.getWindowState(componentName).getFrame();
 
         launchActivityInFullscreen(HIDE_OVERLAY_WINDOWS_ACTIVITY);
         setHideOverlayWindowsAndWaitForPong(false);
         mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
 
-        MotionEvent motionEvent = touchCenterOfBoundsAndWaitForMotionEvent(appOverlayActivityFrame);
+        // Wait for HIDE_OVERLAY_WINDOWS_ACTIVITY to be right behind SYSTEM_APPLICATION_OVERLAY
+        // without anything in between before tapping.
+        // The reason this wait is needed is that there could be a splash screen coming in between
+        // them and fully obscuring HIDE_OVERLAY_WINDOWS_ACTIVITY for a moment. If we don't wait
+        // for the splash screen to go away before tapping, then a full occlusion would be detected
+        // leading to MotionEvent.FLAG_WINDOW_IS_OBSCURED set in the MotionEvent.
+        assertThat(
+                        CtsWindowInfoUtils.waitForNthWindowFromTop(
+                                WINDOW_ORDER_WAIT_TIMEOUT,
+                                windowInfo ->
+                                        windowInfo.name.endsWith(
+                                                getWindowName(HIDE_OVERLAY_WINDOWS_ACTIVITY)),
+                                1))
+                .isTrue();
+
+        // Tap the center of HIDE_OVERLAY_WINDOWS_ACTIVITY.
+        Rect taskBounds = mWmState.getTaskByActivity(HIDE_OVERLAY_WINDOWS_ACTIVITY).getBounds();
+        MotionEvent motionEvent = touchCenterOfBoundsAndWaitForMotionEvent(taskBounds);
         assertThat(
                 motionEvent.getFlags() & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED).isEqualTo(
                 MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
