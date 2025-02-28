@@ -302,15 +302,17 @@ public class BaseAppVerifierImpl {
         return null;
     }
 
-    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name) throws Exception {
+    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name, boolean inCallMmi)
+            throws Exception {
         if (name.equals(ManagedConnectionServiceApp)) {
             // Treat the first element in mManagedAccounts as the "default"
-            return getDefaultMmiAttributesForApp(name, mManagedAccounts.get(0).getAccountHandle());
+            return getDefaultMmiAttributesForApp(
+                    name, mManagedAccounts.get(0).getAccountHandle(), inCallMmi);
         } else if (name.equals(ManagedConnectionServiceAppClone)) {
             return getDefaultMmiAttributesForApp(
-                    name, mManagedCloneAccounts.get(0).getAccountHandle());
+                    name, mManagedCloneAccounts.get(0).getAccountHandle(), inCallMmi);
         }
-        return getDefaultMmiAttributesForApp(name, null /* handle */);
+        return getDefaultMmiAttributesForApp(name, null /* handle */, inCallMmi);
     }
 
     public CallAttributes getRandomAttributes(TelecomTestApp name,

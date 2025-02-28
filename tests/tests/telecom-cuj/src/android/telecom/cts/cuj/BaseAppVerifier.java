@@ -230,8 +230,9 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.getDefaultAttributes(name, pAH, isOutgoing);
     }
 
-    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name) throws Exception {
-        return mBaseAppVerifierImpl.getDefaultMmiAttributes(name);
+    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name, boolean inCallMmi)
+            throws Exception {
+        return mBaseAppVerifierImpl.getDefaultMmiAttributes(name, inCallMmi);
     }
 
     public CallAttributes getRandomAttributes(

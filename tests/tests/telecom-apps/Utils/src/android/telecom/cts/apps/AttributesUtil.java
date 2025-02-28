@@ -33,7 +33,6 @@ public class AttributesUtil {
     private static final String TEST_NAME_OUT = "Mike Tyson";
     private static final Uri TEST_URI_IN = Uri.parse("tel:456-TEST");
     private static final String TEST_NAME_IN = "Alan Turing";
-    private static final Uri TEST_MMI_URI = Uri.parse("tel:0");
     public static final String TEST_EMERGENCY_NUMBER = "5553637";
     private static final Uri TEST_EMERGENCY_URI = Uri.fromParts("tel", TEST_EMERGENCY_NUMBER, null);
     public static final String SYSTEM_DIALER_PKG_NAME = "android.telecom.cts.cuj/.CujInCallService";
@@ -41,6 +40,8 @@ public class AttributesUtil {
             "android.telecom.cts.apps.managedapp";
     public static final String TEST_EMERGENCY_MANAGED_CLONE_PHONE_ACCOUNT_PKG_NAME =
             "android.telecom.cts.apps.managedappclone";
+    private static final Uri TEST_IN_CALL_MMI_URI = Uri.parse("tel:0");
+    private static final Uri TEST_MMI_URI = Uri.parse("tel:*%2306%23");
 
     /**
      * @return true if the call is holdable according to the CallAttributes
@@ -104,12 +105,12 @@ public class AttributesUtil {
      * @return a CallAttributes object for verifying MMI codes.
      */
     public static CallAttributes getDefaultMmiAttributesForApp(
-            TelecomTestApp name, PhoneAccountHandle handle) throws Exception {
+            TelecomTestApp name, PhoneAccountHandle handle, boolean inCallMmi) throws Exception {
         if (handle == null) {
             handle = getPhoneAccountHandleForApp(name);
         }
         return new CallAttributes.Builder(
-                        handle, DIRECTION_OUTGOING, TEST_NAME_OUT, getDefaultMmiAddress())
+                        handle, DIRECTION_OUTGOING, TEST_NAME_OUT, getDefaultMmiAddress(inCallMmi))
                 .setCallType(CallAttributes.AUDIO_CALL)
                 .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
                 .build();
@@ -206,8 +207,8 @@ public class AttributesUtil {
         return TEST_EMERGENCY_URI;
     }
 
-    private static Uri getDefaultMmiAddress() {
-        return TEST_MMI_URI;
+    private static Uri getDefaultMmiAddress(boolean inCallMmi) {
+        return inCallMmi ? TEST_IN_CALL_MMI_URI : TEST_MMI_URI;
     }
 
     private static String getDefaultName(boolean isOutgoing) {
