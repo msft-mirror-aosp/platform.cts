@@ -125,9 +125,16 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 // Show biometric prompt
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-                showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
-                        true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
-                        randomDescription, randomContentView, randomNegativeButtonText);
+                showDefaultBiometricPromptWithContents(
+                        props.getSensorId(),
+                        Utils.getUserId(),
+                        true /* requireConfirmation */,
+                        callback,
+                        randomTitle,
+                        randomSubtitle,
+                        randomDescription,
+                        randomContentView,
+                        randomNegativeButtonText);
 
                 // Check all views except content view.
                 checkTopViews(true /*checkLogo*/, randomTitle, randomSubtitle,
@@ -137,7 +144,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 checkMoreOptionsButton(false /*checkClickEvent*/);
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */, callback);
+                successfullyAuthenticate(session, Utils.getUserId(), callback);
             }
         }
     }
@@ -170,9 +177,16 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 // Show biometric prompt
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-                showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
-                        true /* requireConfirmation */, callback, "title", "subtitle",
-                        "description", contentView, "negative button");
+                showDefaultBiometricPromptWithContents(
+                        props.getSensorId(),
+                        Utils.getUserId(),
+                        true /* requireConfirmation */,
+                        callback,
+                        "title",
+                        "subtitle",
+                        "description",
+                        contentView,
+                        "negative button");
 
                 // Check content view with more options button.
                 checkMoreOptionsButton(true /*checkClickEvent*/);
@@ -211,12 +225,20 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 final PromptContentViewWithMoreOptionsButton contentView =
                         createContentViewWithMoreOptionsButton();
 
-                SecurityException e = assertThrows(SecurityException.class,
-                        () -> showDefaultBiometricPromptWithContents(props.getSensorId(),
-                                0 /* userId */, true /* requireConfirmation */,
-                                mock(BiometricPrompt.AuthenticationCallback.class),
-                                "title", "subtitle", "description", contentView,
-                                "negative button"));
+                SecurityException e =
+                        assertThrows(
+                                SecurityException.class,
+                                () ->
+                                        showDefaultBiometricPromptWithContents(
+                                                props.getSensorId(),
+                                                Utils.getUserId(),
+                                                true /* requireConfirmation */,
+                                                mock(BiometricPrompt.AuthenticationCallback.class),
+                                                "title",
+                                                "subtitle",
+                                                "description",
+                                                contentView,
+                                                "negative button"));
 
                 assertThat(e).hasMessageThat().contains(
                         "android.permission.SET_BIOMETRIC_DIALOG_ADVANCED");
@@ -378,9 +400,16 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 // Show biometric prompt
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-                showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
-                        true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
-                        randomDescription, randomContentView, randomNegativeButtonText);
+                showDefaultBiometricPromptWithContents(
+                        props.getSensorId(),
+                        Utils.getUserId(),
+                        true /* requireConfirmation */,
+                        callback,
+                        randomTitle,
+                        randomSubtitle,
+                        randomDescription,
+                        randomContentView,
+                        randomNegativeButtonText);
 
                 // Check logo, title, subtitle, description, negative button.
                 checkTopViews(true /*checkLogo*/, randomTitle, randomSubtitle,
@@ -390,7 +419,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 checkVerticalListContentViewItems(randomContentItemTexts);
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */, callback);
+                successfullyAuthenticate(session, Utils.getUserId(), callback);
             }
         }
     }
