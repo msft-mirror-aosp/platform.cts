@@ -164,6 +164,46 @@ public class ManagedConnection extends Connection {
     }
 
     @Override
+    public void onReject() {
+        this.setDisconnected(new DisconnectCause(DisconnectCause.REJECTED));
+        this.destroy();
+        super.onReject();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(
+                    new CallStateTransitionOperation(
+                            CallStateTransitionOperation.OPERATION_DISCONNECT,
+                            System.currentTimeMillis()));
+        }
+    }
+
+    @Override
+    public void onReject(int rejectReason) {
+        this.setDisconnected(
+                new DisconnectCause(DisconnectCause.REJECTED, Integer.toString(rejectReason)));
+        this.destroy();
+        super.onReject(rejectReason);
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(
+                    new CallStateTransitionOperation(
+                            CallStateTransitionOperation.OPERATION_DISCONNECT,
+                            System.currentTimeMillis()));
+        }
+    }
+
+    @Override
+    public void onReject(String reason) {
+        this.setDisconnected(new DisconnectCause(DisconnectCause.REJECTED, reason));
+        this.destroy();
+        super.onReject();
+        if (mOperationConsumer != null) {
+            mOperationConsumer.accept(
+                    new CallStateTransitionOperation(
+                            CallStateTransitionOperation.OPERATION_DISCONNECT,
+                            System.currentTimeMillis()));
+        }
+    }
+
+    @Override
     public void onMuteStateChanged(boolean isMuted) {
         super.onMuteStateChanged(isMuted);
         mIsMuted = isMuted;
