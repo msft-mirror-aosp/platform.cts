@@ -59,6 +59,7 @@ interface IAppControl {
     NoDataTransaction addFailedCall(in CallAttributes callAttributes);
     NoDataTransaction addFailedCallWithCreateConnectionVerify(in CallAttributes callAttributes);
     NoDataTransaction addCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
+    NoDataTransaction verifyCallWithConsumer(in CallAttributes callAttributes, in IRemoteOperationConsumer consumer);
     NoDataTransaction setMuteState(String id, boolean isMuted);
     BooleanTransaction isMuted(String id);
     CallExceptionTransaction transitionCallStateTo(String id, int state, boolean expectSuccess, in Bundle extras);
