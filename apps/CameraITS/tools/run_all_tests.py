@@ -113,7 +113,7 @@ _ALL_SCENES = (_TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES +
 # Scenes that are logically grouped and can be called as group
 # scene6_tele is not grouped with scene6 because it requires extension rig
 _GROUPED_SCENES = types.MappingProxyType({
-        'scene1': ('scene1_1', 'scene1_2'),
+        'scene1': ('scene1_1', 'scene1_2', 'scene1_3'),
         'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
                    'scene2_f', 'scene2_g')
 })
@@ -271,6 +271,10 @@ def report_result(device_id, camera_id, tablet_name, results):
       its_device_utils.run(
           f'{adb} push {results[scene][SUMMARY_KEY]} {device_summary_path}')
       results[scene][SUMMARY_KEY] = device_summary_path
+    if FEATURE_QUERY_KEY in results[scene]:
+      for proto_file in results[scene][FEATURE_QUERY_KEY]:
+        its_device_utils.run(
+            f'{adb} push {proto_file} /sdcard/')
 
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
@@ -598,7 +602,7 @@ def main():
   # Override camera, scenes and testbed with cmd line values if available
   for s in list(sys.argv[1:]):
     if 'scenes=' in s:
-      scenes = s.split('=')[1].split(',')
+      scenes = s.split('scenes=')[1].split(',')
     elif 'camera=' in s:
       camera_id_combos = s.split('=')[1].split(',')
     elif 'testbed_index=' in s:
@@ -640,7 +644,8 @@ def main():
       if scenes == ['scene_ip']:
         if TEST_KEY_GEN2 not in name:
           testbed_to_remove.append(i)
-      elif set(scenes).intersection(set(_CHECKERBOARD_SCENES)):
+      elif set(scenes).intersection(
+          set(_CHECKERBOARD_SCENES)) or scenes == ['checkerboard']:
         if TEST_KEY_SENSOR_FUSION not in name:
           testbed_to_remove.append(i)
       else:
@@ -1010,7 +1015,7 @@ def main():
               num_pass += 1
               break
 
-            if test_code == 1 and not test_not_yet_mandated:
+            if test_code != 0 and not test_not_yet_mandated:
               return_string = 'FAIL '
               if 'Problem with socket' in content and num_try != NUM_TRIES-1:
                 logging.info('Retry %s/%s', s, test)

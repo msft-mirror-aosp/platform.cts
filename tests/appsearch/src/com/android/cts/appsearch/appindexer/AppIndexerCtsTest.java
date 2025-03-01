@@ -16,6 +16,8 @@
 package android.app.appsearch.cts.appindexer;
 
 import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION;
+import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA;
+import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionConstants.APP_A_V2_PRINT_APP_FUNCTION;
 import static android.app.appsearch.testutil.AppFunctionConstants.APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION;
@@ -72,6 +74,9 @@ public class AppIndexerCtsTest {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchema.apk";
     private static final String TEST_APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppADynamicSchemaFewerTypes.apk";
+    private static final String TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH =
+            TEST_APP_ROOT_FOLDER
+                    + "CtsAppSearchIndexerTestAppADynamicSchemaMultipleRootSchemas.apk";
     private static final String TEST_APP_B_DYNAMIC_SCHEMA_PATH =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBDynamicSchema.apk";
     private static final String TEST_APP_A_PKG = "com.android.cts.appsearch.indexertestapp.a";
@@ -385,12 +390,11 @@ public class AppIndexerCtsTest {
                     assertThat(mobileApplication).isNotNull();
                 });
         // Its app functions should be indexed.
-        Map<String, GenericDocument> appFnMap =
-                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
         assertThat(appFnMap).hasSize(1);
         assertThat(
                         clearTimestampsAndParentTypesInDocument(
-                                appFnMap.get("com.example.utils#print1")))
+                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
                 .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
     }
 
@@ -408,13 +412,39 @@ public class AppIndexerCtsTest {
                     assertThat(mobileApplication).isNotNull();
                 });
         // Its app functions should be indexed.
-        Map<String, GenericDocument> appFnMap =
-                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
         assertThat(appFnMap).hasSize(1);
         assertThat(
                         clearTimestampsAndParentTypesInDocument(
-                                appFnMap.get("com.example.utils#print1")))
+                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @Test
+    public void indexAppWithDynamicSchema_multipleRootSchemas() throws Throwable {
+        installPackage(TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH);
+
+        // Retry till the indexer has completed a run.
+        retryAssert(
+                () -> {
+                    // A MobileApplication for it should be inserted.
+                    GenericDocument mobileApplication =
+                            searchMobileApplicationWithId(TEST_APP_A_PKG);
+                    assertThat(mobileApplication).isNotNull();
+                });
+        // Its app functions should be indexed.
+        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
+        assertThat(appFnMap).hasSize(2);
+        assertThat(
+                        clearTimestampsAndParentTypesInDocument(
+                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
+                .isEqualTo(APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PRINT_APP_FUNCTION);
+        assertThat(
+                        clearTimestampsAndParentTypesInDocument(
+                                appFnMap.get(
+                                        TEST_APP_A_PKG + "/topLevelSchemaMetadata#commonSchema")))
+                .isEqualTo(APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_COMMON_SCHEMA_METADATA);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
@@ -427,22 +457,24 @@ public class AppIndexerCtsTest {
         retryAssert(
                 () -> {
                     Map<String, GenericDocument> appFnMapAppB =
-                            searchAppFunctionsIntoAFunctionIdMap(TEST_APP_B_PKG);
+                            searchAppFunctionDocumentsIntoMap(TEST_APP_B_PKG);
                     assertThat(appFnMapAppB).hasSize(1);
                     assertThat(
                                     clearTimestampsAndParentTypesInDocument(
-                                            appFnMapAppB.get("com.example.utils#print1")))
+                                            appFnMapAppB.get(
+                                                    TEST_APP_B_PKG + "/com.example.utils#print1")))
                             .isEqualTo(APP_B_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                 });
 
         retryAssert(
                 () -> {
                     Map<String, GenericDocument> appFnMapAppA =
-                            searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                            searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                     assertThat(appFnMapAppA).hasSize(1);
                     assertThat(
                                     clearTimestampsAndParentTypesInDocument(
-                                            appFnMapAppA.get("com.example.utils#print1")))
+                                            appFnMapAppA.get(
+                                                    TEST_APP_A_PKG + "/com.example.utils#print1")))
                             .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                 });
     }
@@ -461,18 +493,17 @@ public class AppIndexerCtsTest {
                     assertThat(searchMobileApplicationWithId(TEST_APP_B_PKG)).isNotNull();
                 });
         // Verify dynamic schema app function.
-        Map<String, GenericDocument> appFnMap =
-                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+        Map<String, GenericDocument> appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
         assertThat(
                         clearTimestampsAndParentTypesInDocument(
-                                appFnMap.get("com.example.utils#print1")))
+                                appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         // Verify app B app function.
-        appFnMap = searchAppFunctionsIntoAFunctionIdMap(TEST_APP_B_PKG);
+        appFnMap = searchAppFunctionDocumentsIntoMap(TEST_APP_B_PKG);
         assertThat(appFnMap).hasSize(1);
         assertThat(
                         clearTimestampsAndParentTypesInDocument(
-                                appFnMap.get("com.example.utils#print5")))
+                                appFnMap.get(TEST_APP_B_PKG + "/com.example.utils#print5")))
                 .isEqualTo(APP_B_PRINT_APP_FUNCTION);
     }
 
@@ -487,11 +518,13 @@ public class AppIndexerCtsTest {
                     () -> {
                         // Its app functions should be indexed.
                         Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                         assertThat(appFnMap).hasSize(1);
                         assertThat(
                                         clearTimestampsAndParentTypesInDocument(
-                                                appFnMap.get("com.example.utils#print1")))
+                                                appFnMap.get(
+                                                        TEST_APP_A_PKG
+                                                                + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
                     });
         }
@@ -504,11 +537,13 @@ public class AppIndexerCtsTest {
                     () -> {
                         // Its app functions should be indexed.
                         Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                         assertThat(appFnMap).hasSize(1);
                         assertThat(
                                         clearTimestampsAndParentTypesInDocument(
-                                                appFnMap.get("com.example.utils#print1")))
+                                                appFnMap.get(
+                                                        TEST_APP_A_PKG
+                                                                + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                     });
         }
@@ -530,11 +565,11 @@ public class AppIndexerCtsTest {
                     });
             // Its app functions should be indexed.
             Map<String, GenericDocument> appFnMap =
-                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                    searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
             assertThat(appFnMap).hasSize(1);
             assertThat(
                             clearTimestampsAndParentTypesInDocument(
-                                    appFnMap.get("com.example.utils#print1")))
+                                    appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
                     .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         }
 
@@ -545,11 +580,13 @@ public class AppIndexerCtsTest {
             retryAssert(
                     () -> {
                         Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                         assertThat(appFnMap).hasSize(1);
                         assertThat(
                                         clearTimestampsAndParentTypesInDocument(
-                                                appFnMap.get("com.example.utils#print1")))
+                                                appFnMap.get(
+                                                        TEST_APP_A_PKG
+                                                                + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_V2_PRINT_APP_FUNCTION);
                     });
         }
@@ -571,11 +608,11 @@ public class AppIndexerCtsTest {
                     });
             // Its app functions should be indexed.
             Map<String, GenericDocument> appFnMap =
-                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                    searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
             assertThat(appFnMap).hasSize(1);
             assertThat(
                             clearTimestampsAndParentTypesInDocument(
-                                    appFnMap.get("com.example.utils#print1")))
+                                    appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
                     .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
         }
 
@@ -586,11 +623,13 @@ public class AppIndexerCtsTest {
             retryAssert(
                     () -> {
                         Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                         assertThat(appFnMap).hasSize(1);
                         assertThat(
                                         clearTimestampsAndParentTypesInDocument(
-                                                appFnMap.get("com.example.utils#print1")))
+                                                appFnMap.get(
+                                                        TEST_APP_A_PKG
+                                                                + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION);
                     });
         }
@@ -612,11 +651,11 @@ public class AppIndexerCtsTest {
                     });
             // Its app functions should be indexed.
             Map<String, GenericDocument> appFnMap =
-                    searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                    searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
             assertThat(appFnMap).hasSize(1);
             assertThat(
                             clearTimestampsAndParentTypesInDocument(
-                                    appFnMap.get("com.example.utils#print1")))
+                                    appFnMap.get(TEST_APP_A_PKG + "/com.example.utils#print1")))
                     .isEqualTo(APP_A_DYNAMIC_SCHEMA_FEWER_TYPES_PRINT_APP_FUNCTION);
         }
 
@@ -627,11 +666,13 @@ public class AppIndexerCtsTest {
             retryAssert(
                     () -> {
                         Map<String, GenericDocument> appFnMap =
-                                searchAppFunctionsIntoAFunctionIdMap(TEST_APP_A_PKG);
+                                searchAppFunctionDocumentsIntoMap(TEST_APP_A_PKG);
                         assertThat(appFnMap).hasSize(1);
                         assertThat(
                                         clearTimestampsAndParentTypesInDocument(
-                                                appFnMap.get("com.example.utils#print1")))
+                                                appFnMap.get(
+                                                        TEST_APP_A_PKG
+                                                                + "/com.example.utils#print1")))
                                 .isEqualTo(APP_A_DYNAMIC_SCHEMA_PRINT_APP_FUNCTION);
                     });
         }
@@ -701,13 +742,11 @@ public class AppIndexerCtsTest {
         return collectAllResults(searchResults);
     }
 
-    private Map<String, GenericDocument> searchAppFunctionsIntoAFunctionIdMap(String packageName)
+    private Map<String, GenericDocument> searchAppFunctionDocumentsIntoMap(String packageName)
             throws ExecutionException, InterruptedException {
         Map<String, GenericDocument> appFns = new ArrayMap<>();
         for (GenericDocument document : searchAppFunctionsWithPackageName(packageName)) {
-            String fnId = document.getPropertyString(PROPERTY_FUNCTION_ID);
-
-            appFns.put(fnId, document);
+            appFns.put(document.getId(), document);
         }
 
         return appFns;

@@ -46,8 +46,6 @@ import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,17 +89,12 @@ public class SignalStrengthTest {
 
     @Test
     public void testSignalStrength() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (!mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
-                Log.d(TAG, "Skipping test that requires"
-                        + "FEATURE_TELEPHONY and FEATURE_TELEPHONY_RADIO_ACCESS");
-                return;
-            }
-        } else {
-            if (!mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-                Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-                return;
-            }
+        if (!mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
+            Log.d(
+                    TAG,
+                    "Skipping test that requires"
+                            + "FEATURE_TELEPHONY and FEATURE_TELEPHONY_RADIO_ACCESS");
+            return;
         }
 
         if (!isCamped()) fail("Device is not camped on cellular");

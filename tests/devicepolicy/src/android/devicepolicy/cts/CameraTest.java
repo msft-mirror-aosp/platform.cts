@@ -365,16 +365,15 @@ public final class CameraTest {
         boolean successfullyOpened;
 
         String[] cameraIdList = sCameraManager.getCameraIdList();
-        if (cameraIdList == null || cameraIdList.length == 0) {
-            successfullyOpened = false;
-        } else {
-            String cameraId = cameraIdList[0];
-            // TODO(b/202012931): Use a BlockingCallback once it is possible to use it in
-            // conjunction with StateCallback
-            CameraTest.CameraCallback callback = new CameraTest.CameraCallback();
-            sCameraManager.openCamera(cameraId, callback, new Handler(Looper.getMainLooper()));
-            successfullyOpened = callback.waitForResult();
-        }
+        Assume.assumeTrue(
+                "CameraManager returns 0 camera despite device has FEATURE_CAMERA",
+                cameraIdList != null && cameraIdList.length > 0);
+        String cameraId = cameraIdList[0];
+        // TODO(b/202012931): Use a BlockingCallback once it is possible to use it in
+        // conjunction with StateCallback
+        CameraTest.CameraCallback callback = new CameraTest.CameraCallback();
+        sCameraManager.openCamera(cameraId, callback, new Handler(Looper.getMainLooper()));
+        successfullyOpened = callback.waitForResult();
 
         assertThat(successfullyOpened).isTrue();
     }
@@ -384,14 +383,13 @@ public final class CameraTest {
 
         try {
             String[] cameraIdList = sCameraManager.getCameraIdList();
-            if (cameraIdList == null || cameraIdList.length == 0) {
-                successfullyOpened = false;
-            } else {
-                String cameraId = cameraIdList[0];
-                CameraTest.CameraCallback callback = new CameraTest.CameraCallback();
-                sCameraManager.openCamera(cameraId, callback, new Handler(Looper.getMainLooper()));
-                successfullyOpened = callback.waitForResult();
-            }
+            Assume.assumeTrue(
+                    "CameraManager returns 0 camera despite device has FEATURE_CAMERA",
+                    cameraIdList != null && cameraIdList.length > 0);
+            String cameraId = cameraIdList[0];
+            CameraTest.CameraCallback callback = new CameraTest.CameraCallback();
+            sCameraManager.openCamera(cameraId, callback, new Handler(Looper.getMainLooper()));
+            successfullyOpened = callback.waitForResult();
         } catch (Exception e) {
             Log.d(TAG,
                     "Exception when opening camera but we expected to not be able to open it",

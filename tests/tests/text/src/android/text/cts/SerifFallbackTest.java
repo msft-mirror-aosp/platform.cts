@@ -26,6 +26,7 @@ import android.graphics.Typeface;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
 import android.icu.util.ULocale;
+import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
@@ -67,6 +68,9 @@ public class SerifFallbackTest {
     }
 
     private boolean isWearDevice() {
+        if (RavenwoodRule.isOnRavenwood()) {
+            return false;
+        }
         Context ctx = InstrumentationRegistry.getInstrumentation().getTargetContext();
         return ctx.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }

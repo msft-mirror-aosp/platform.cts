@@ -102,6 +102,7 @@ public final class CarProjectionManagerTest extends AbstractCarTestCase {
 
         mCarProjectionManager =
                 (CarProjectionManager) getCar().getCarManager(Car.PROJECTION_SERVICE);
+        assertThat(mCarProjectionManager).isNotNull();
 
         assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         assertThat(mBluetoothAdapter.getProfileProxy(mContext, mServiceListener, A2DP_SINK))
@@ -112,6 +113,10 @@ public final class CarProjectionManagerTest extends AbstractCarTestCase {
 
     @After
     public void tearDown() {
+        if (mCarProjectionManager == null) {
+            Log.w(TAG, "mCarProjectionManager is null, skipping tearDown");
+            return;
+        }
         runWithShellPermissionIdentity(
                 () ->
                         mCarProjectionManager.releaseBluetoothProfileInhibit(

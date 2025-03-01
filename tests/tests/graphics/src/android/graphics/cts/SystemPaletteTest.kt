@@ -21,6 +21,7 @@ import android.app.UiModeManager
 import android.content.Context
 import android.graphics.Color
 import android.graphics.cts.R as CtsR
+import android.platform.test.annotations.DisabledOnRavenwood
 import android.provider.Settings
 import android.util.Log
 import android.util.Pair
@@ -50,6 +51,7 @@ import org.xmlpull.v1.XmlPullParser
 
 @RunWith(Parameterized::class)
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@DisabledOnRavenwood(reason = "Cannot instantiate Parameterized runner")
 class SystemPaletteTest(
         private val color: String,
         private val style: String,

@@ -129,7 +129,7 @@ public class BarometerMeasurementTestActivity extends SensorCtsVerifierTestActiv
     @Override
     protected void activitySetUp() throws InterruptedException {
         if (!Boolean.parseBoolean(
-                PropertyUtil.getProperty("hardware.sensor.barometer.high_quality.implemented"))) {
+                PropertyUtil.getProperty("sensor.barometer.high_quality.implemented"))) {
             // Skip the test by throwing an exception
             throw new SensorTestStateNotSupportedException(
                     getString(R.string.snsr_baro_not_implemented));

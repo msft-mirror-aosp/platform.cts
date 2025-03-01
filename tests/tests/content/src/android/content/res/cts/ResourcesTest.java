@@ -1033,7 +1033,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidResourceId() {
         try {
             mResources.getFont(-1);
@@ -1044,7 +1043,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_fontFile() {
         Typeface font = mResources.getFont(R.font.sample_regular_font);
 
@@ -1053,7 +1051,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFile() {
         Typeface font = mResources.getFont(R.font.samplexmlfont);
 
@@ -1080,7 +1077,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileWithTtc() {
         // Here we test that building typefaces by indexing in font collections works correctly.
         // We want to ensure that the built typefaces correspond to the fonts with the right index.
@@ -1098,7 +1094,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileWithVariationSettings() {
         // Here we test that specifying variation settings for fonts in XMLs works.
         // We build typefaces from two families containing one font each, using the same font
@@ -1115,7 +1110,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidXmlFile() {
         try {
             assertNull(mResources.getFont(R.font.invalid_xmlfamily));
@@ -1131,7 +1125,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidFontFiles() {
         try {
             mResources.getFont(R.font.invalid_xmlfont);
@@ -1164,7 +1157,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_brokenFontFiles() {
         try {
             mResources.getFont(R.font.brokenfont);
@@ -1182,7 +1174,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_fontFileIsCached() {
         Typeface font = mResources.getFont(R.font.sample_regular_font);
         Typeface font2 = mResources.getFont(R.font.sample_regular_font);
@@ -1191,7 +1182,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileIsCached() {
         Typeface font = mResources.getFont(R.font.samplexmlfont);
         Typeface font2 = mResources.getFont(R.font.samplexmlfont);
@@ -1200,7 +1190,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_resolveByFontTable() {
         assertEquals(Typeface.NORMAL, mResources.getFont(R.font.sample_regular_font).getStyle());
         assertEquals(Typeface.BOLD, mResources.getFont(R.font.sample_bold_font).getStyle());
@@ -1249,7 +1238,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testSystemFontFamilyReturnsSystemFont() {
         Typeface typeface = mResources.getFont(R.font.sample_downloadable_font);
         assertEquals(typeface, Typeface.create("sans-serif", Typeface.NORMAL));

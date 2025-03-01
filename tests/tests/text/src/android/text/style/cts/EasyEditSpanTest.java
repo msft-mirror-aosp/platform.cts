@@ -19,6 +19,7 @@ package android.text.style.cts;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.style.EasyEditSpan;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -30,6 +31,7 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(blockedBy = EasyEditSpanTest.class)
 public class EasyEditSpanTest {
     @Test
     public void testConstructor() {

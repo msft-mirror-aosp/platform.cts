@@ -19,6 +19,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.platform.test.annotations.DisabledOnRavenwood
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -39,6 +40,7 @@ import org.mockito.MockitoAnnotations
 
 @MediumTest
 @RunWith(AndroidJUnit4::class)
+@DisabledOnRavenwood(bug = 391342883)
 class EllipsisHyphenationTest {
 
     @Mock

@@ -792,7 +792,7 @@ public class SELinuxHostTest extends BaseHostJUnit4Test {
         checkFc.setExecutable(true);
 
         /* retrieve the AOSP file_contexts file from jar */
-        aospFcFile = copyResourceToTempFile("/plat_file_contexts");
+        aospFcFile = copyResourceToTempFile("/plat_file_contexts_cts");
 
         /* run checkfc -c plat_file_contexts plat_file_contexts */
         String result = tryRunCommand(checkFc.getAbsolutePath(),

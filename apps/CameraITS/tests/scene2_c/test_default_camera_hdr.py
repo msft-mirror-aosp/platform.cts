@@ -14,7 +14,6 @@
 """Check if the default camera app capture is Ultra HDR or not.
 """
 import logging
-import os
 
 from mobly import test_runner
 

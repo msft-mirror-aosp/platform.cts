@@ -46,7 +46,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,12 +53,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.ArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 
 /**
  * Ensures that APNs that use carrier ID instead of legacy identifiers such as MCCMNC, MVNO type and
@@ -124,13 +122,9 @@ public class ApnCarrierIdTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_DATA));
-        } else {
-            assumeTrue(mContext.getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY));
-        }
+        assumeTrue(
+                mContext.getPackageManager()
+                        .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA));
         mTelephonyManager = mContext.getSystemService(TelephonyManager.class);
 
         if (mTelephonyManager.getSimState() != TelephonyManager.SIM_STATE_READY
@@ -160,16 +154,8 @@ public class ApnCarrierIdTest {
 
     @After
     public void tearDown() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (!mContext.getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_DATA)) {
-                return;
-            }
-        } else {
-            if (!mContext.getPackageManager().hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY)) {
-                return;
-            }
+        if (!mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
+            return;
         }
 
         if (mInsertedApnSelectionArgs != null) {

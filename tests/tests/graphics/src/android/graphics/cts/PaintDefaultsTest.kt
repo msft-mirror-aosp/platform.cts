@@ -16,22 +16,15 @@
 package android.graphics.cts
 
 import android.graphics.Paint
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.filters.SmallTest
 import androidx.test.runner.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
 class PaintDefaultsTest {
-
-    @Rule
-    @JvmField
-    val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
-
     @Test
     fun testElegantTextDefaultEnabled() {
         assertThat(Paint().isElegantTextHeight).isTrue()

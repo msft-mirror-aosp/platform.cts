@@ -18,24 +18,21 @@ package android.graphics.cts
 import android.graphics.Paint
 import android.graphics.Paint.FontMetrics
 import android.graphics.Paint.FontMetricsInt
+import android.graphics.Typeface
 import android.graphics.text.TextRunShaper
 import android.os.LocaleList
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.annotations.DisabledOnRavenwood
 import androidx.test.filters.SmallTest
 import androidx.test.runner.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import kotlin.math.roundToInt
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @SmallTest
 @RunWith(AndroidJUnit4::class)
+@DisabledOnRavenwood(blockedBy = [Typeface::class])
 class PaintFontMetricsForLocaleTest {
-
-    @Rule
-    @JvmField
-    val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     companion object {
         val PAINT = Paint().apply {

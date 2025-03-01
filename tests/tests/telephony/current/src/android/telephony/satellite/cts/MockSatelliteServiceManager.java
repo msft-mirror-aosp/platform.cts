@@ -101,6 +101,10 @@ class MockSatelliteServiceManager {
             "cmd phone set-is-satellite-communication-allowed-for-current-location-cache ";
     private static final String SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT =
             "cmd phone set-satellite-subscriberid-list-changed-intent-component ";
+    private static final String SET_SATELLITE_ACCESS_ALLOWED_FOR_SUBSCRIPTIONS_CMD =
+            "cmd phone set-satellite-access-allowed-for-subscriptions";
+    private static final String SET_SATELLITE_TN_SCANNING_SUPPORT_CMD =
+            "cmd phone set-satellite-tn-scanning-support ";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -959,6 +963,15 @@ class MockSatelliteServiceManager {
         mSatelliteService.setShouldRespondTelephony(shouldRespondTelephony);
     }
 
+    public void setShouldRespondEnableRequest(boolean shouldRespond) {
+        logd("setShouldRespondEnableRequest: shouldRespond=" + shouldRespond);
+        if (mSatelliteService == null) {
+            loge("setShouldRespondEnableRequest: mSatelliteService is null");
+            return;
+        }
+        mSatelliteService.setShouldRespondEnableRequest(shouldRespond);
+    }
+
     void setNtnSignalStrength(
             android.telephony.satellite.stub.NtnSignalStrength ntnSignalStrength) {
         if (mSatelliteService == null) {
@@ -1514,6 +1527,49 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setIsSatelliteCommunicationAllowedForCurrentLocationCache: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteAccessAllowedForSubscriptions(@Nullable String subIdListStr) {
+        String args = "";
+        if (!TextUtils.isEmpty(subIdListStr)) {
+            args = " -s " + subIdListStr;
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    SET_SATELLITE_ACCESS_ALLOWED_FOR_SUBSCRIPTIONS_CMD + args);
+            logd("setSatelliteAccessAllowedForSubscriptions(" + args
+                    + "): result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("setSatelliteAccessAllowedForSubscriptions: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteTnScanningSupport(boolean reset, boolean concurrentTnScanningSupported,
+        boolean tnScanningDuringSatelliteSessionAllowed) {
+        StringBuilder command = new StringBuilder();
+        command.append(SET_SATELLITE_TN_SCANNING_SUPPORT_CMD);
+        if (reset) {
+            command.append(" -r");
+        } else {
+            command.append(" -s ");
+            command.append(concurrentTnScanningSupported);
+            command.append(" -a ");
+            command.append(tnScanningDuringSatelliteSessionAllowed);
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    command.toString());
+            logd("setSatelliteTnScanningSupport(" + command.toString()
+                    + "): result = " + result);
+            return true;
+        } catch (Exception e) {
+            loge("setSatelliteTnScanningSupport: e=" + e);
             return false;
         }
     }

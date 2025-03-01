@@ -103,6 +103,7 @@ public class MockSatelliteService extends SatelliteImplBase {
     private Object mSendDatagramWithDelayLock = new Object();
     private static final long TIMEOUT = 1000;
     private final AtomicBoolean mShouldRespondTelephony = new AtomicBoolean(true);
+    private final AtomicBoolean mShouldRespondEnableRequest = new AtomicBoolean(true);
     private final AtomicBoolean mShouldNotifyRemoteServiceConnected =
             new AtomicBoolean(false);
     @Nullable private List<String> mCarrierPlmnList;
@@ -210,9 +211,9 @@ public class MockSatelliteService extends SatelliteImplBase {
                 + ", isEmergency= " + enableAttributes.isEmergencyMode
                 + ", iccId=" + enableAttributes.satelliteSubscriptionInfo.iccId
                 + ", niddApn=" + enableAttributes.satelliteSubscriptionInfo.niddApn
-                + ", mShouldRespondTelephony=" + mShouldRespondTelephony.get());
+                + ", mShouldRespondEnableRequest=" + mShouldRespondEnableRequest.get());
         if (mErrorCode != SatelliteResult.SATELLITE_RESULT_SUCCESS) {
-            if (mShouldRespondTelephony.get()) {
+            if (mShouldRespondEnableRequest.get()) {
                 runWithExecutor(() -> errorCallback.accept(mErrorCode));
             }
             return;
@@ -234,7 +235,7 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     private void enableSatellite(@NonNull IIntegerConsumer errorCallback) {
-        if (mShouldRespondTelephony.get()) {
+        if (mShouldRespondEnableRequest.get()) {
             mIsEnabled = true;
             runWithExecutor(() -> errorCallback.accept(SatelliteResult.SATELLITE_RESULT_SUCCESS));
             updateSatelliteModemState(SatelliteModemState.SATELLITE_MODEM_STATE_IDLE);
@@ -246,7 +247,7 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     private void disableSatellite(@NonNull IIntegerConsumer errorCallback) {
-        if (mShouldRespondTelephony.get()) {
+        if (mShouldRespondEnableRequest.get()) {
             mIsEnabled = false;
             runWithExecutor(() -> errorCallback.accept(SatelliteResult.SATELLITE_RESULT_SUCCESS));
             updateSatelliteModemState(SatelliteModemState.SATELLITE_MODEM_STATE_OFF);
@@ -565,7 +566,8 @@ public class MockSatelliteService extends SatelliteImplBase {
     public void updateSystemSelectionChannels(
             @NonNull List<SystemSelectionSpecifier> systemSelectionSpecifiers,
             @NonNull IIntegerConsumer resultCallback) {
-        logd(" updateSystemSelectionChannels: mErrorCode=" + mErrorCode);
+        logd("updateSystemSelectionChannels: mErrorCode=" + mErrorCode
+                 + ", mShouldRespondTelephony=" + mShouldRespondTelephony.get());
 
         if (mErrorCode == SatelliteResult.SATELLITE_RESULT_SUCCESS) {
             mSystemSelectionSpecifierList = new ArrayList<>(systemSelectionSpecifiers);
@@ -638,6 +640,12 @@ public class MockSatelliteService extends SatelliteImplBase {
 
     public void setShouldRespondTelephony(boolean shouldRespondTelephony) {
         mShouldRespondTelephony.set(shouldRespondTelephony);
+        logd("setShouldRespondTelephony: shouldRespondTelephony=" + shouldRespondTelephony);
+    }
+
+    public void setShouldRespondEnableRequest(boolean shouldRespond) {
+        mShouldRespondEnableRequest.set(shouldRespond);
+        logd("setShouldRespondEnableRequest: shouldRespond=" + shouldRespond);
     }
 
     public void sendOnSatelliteDatagramReceived(SatelliteDatagram datagram, int pendingCount) {

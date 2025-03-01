@@ -360,7 +360,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    public void ignoresKeyCodeBackDuringDispatch() {
+    public void ignoresKeyCodeBackDuringDispatch() throws InterruptedException {
         registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
@@ -369,13 +369,13 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
                 DEFAULT_DISPLAY, true, false);
         touchSession.beginSwipe(0, midHeight);
         touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        assertInvoked(mTracker.mStartLatch);
+        assertInvoked(mTracker.mProgressLatch);
         waitForIdle();
         mTracker.reset();
         TouchHelper.injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, true /* sync */);
         waitForIdle();
         // Make sure the KEYCODE_BACKs don't invoke callbacks.
-        assertNotInvoked(mTracker.mStartLatch);
-        assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
         touchSession.finishSwipe();

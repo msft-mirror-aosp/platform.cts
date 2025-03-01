@@ -27,6 +27,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.text.LineBreaker;
 import android.graphics.text.MeasuredText;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
@@ -43,6 +44,7 @@ import java.util.Locale;
  */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(bug = 391342883)
 public class HyphenationTest {
     private static Paint sPaint;
 

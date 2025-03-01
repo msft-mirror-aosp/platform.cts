@@ -22,6 +22,7 @@ import static android.system.OsConstants.S_IRWXU;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.system.ErrnoException;
 import android.system.Os;
 
@@ -35,6 +36,7 @@ import java.io.File;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(reason = "Security check only valid on device")
 public class DataDirPermissionTest {
     private static final String FONT_DATA_DIR = "/data/fonts";
     private static final String FONT_DATA_FILES_DIR = "/data/fonts/files";

@@ -28,6 +28,4 @@ interface ICtsApi29InCallServiceControl {
     void setShouldReturnNullBinding(boolean shouldReturnNullBinding);
 
     boolean waitForBindRequest();
-
-    void kill();
 }

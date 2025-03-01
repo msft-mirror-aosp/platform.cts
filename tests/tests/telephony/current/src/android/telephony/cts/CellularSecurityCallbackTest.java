@@ -145,10 +145,7 @@ public class CellularSecurityCallbackTest {
     @RequiresFlagsEnabled(Flags.FLAG_SECURITY_ALGORITHMS_UPDATE_INDICATIONS)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnSecurityAlgorithmsChangedListener() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Inserting a SIM is necessary otherwise mockmodem will crash
         assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));
         // Timeout required after inserting a SIM to prevent the test from flakiness
@@ -200,10 +197,7 @@ public class CellularSecurityCallbackTest {
     @RequiresFlagsEnabled(Flags.FLAG_CELLULAR_IDENTIFIER_DISCLOSURE_INDICATIONS)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have permissions to register the callback")
     public void testOnCellularIdentifierDisclosedChangedListener() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPackageManager.hasSystemFeature(
-                    PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        }
+        assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         // Inserting a SIM is necessary otherwise mockmodem will crash
         assertTrue(sMockModemManager.insertSimCard(SLOT_ID_0, MOCK_SIM_PROFILE_ID_US_FI));

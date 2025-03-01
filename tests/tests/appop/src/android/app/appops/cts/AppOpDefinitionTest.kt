@@ -232,6 +232,13 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_WRITE_SYSTEM_PREFERENCES] = 153
             APP_OPS[AppOpsManager.OPSTR_CONTROL_AUDIO] = 154
             APP_OPS[AppOpsManager.OPSTR_CONTROL_AUDIO_PARTIAL] = 155
+            APP_OPS[AppOpsManager.OPSTR_EYE_TRACKING_COARSE] = 156
+            APP_OPS[AppOpsManager.OPSTR_EYE_TRACKING_FINE] = 157
+            APP_OPS[AppOpsManager.OPSTR_FACE_TRACKING] = 158
+            APP_OPS[AppOpsManager.OPSTR_HAND_TRACKING] = 159
+            APP_OPS[AppOpsManager.OPSTR_HEAD_TRACKING] = 160
+            APP_OPS[AppOpsManager.OPSTR_SCENE_UNDERSTANDING_COARSE] = 161
+            APP_OPS[AppOpsManager.OPSTR_SCENE_UNDERSTANDING_FINE] = 162
         }
     }
 }

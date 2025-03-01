@@ -30,6 +30,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.MediaRouter2;
 import android.media.RouteDiscoveryPreference;
 import android.media.cts.ResourceReleaser;
@@ -43,6 +44,7 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.UiAutomatorUtils2;
@@ -64,6 +66,9 @@ import java.util.concurrent.TimeUnit;
 @AppModeFull(reason = "The system should be able to bind to StubMediaRoute2ProviderService")
 @LargeTest
 @FrameworkSpecificTest
+@RequireDoesNotHaveFeature(PackageManager.FEATURE_AUTOMOTIVE) // TODO(b/397522231)
+@RequireDoesNotHaveFeature(PackageManager.FEATURE_LEANBACK) // TODO(b/397521067)
+@RequireDoesNotHaveFeature(PackageManager.FEATURE_WATCH) // TODO(b/397520196)
 public class OutputSwitcherTest {
     private static final String TAG = "OutputSwitcherTest";
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";

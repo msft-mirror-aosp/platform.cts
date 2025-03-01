@@ -47,6 +47,19 @@ public class ShellCommandExecutor {
             "cmd telecom wait-for-audio-ops-complete";
     public static final String COMMAND_WAIT_FOR_AUDIO_ACTIVE = "cmd telecom wait-for-audio-active";
 
+    /** Emergency call related setup constants */
+    private static final String COMMAND_SET_SYSTEM_DIALER = "telecom set-system-dialer ";
+
+    private static final String INCALL_COMPONENT =
+            "com.google.android.dialer" + "/com.android.incallui.InCallServiceImpl";
+    private static final String COMMAND_ADD_TEST_EMERGENCY_NUMBER =
+            "cmd phone emergency-number-test-mode -a ";
+    private static final String COMMAND_CLEAR_TEST_EMERGENCY_NUMBERS =
+            "cmd phone emergency-number-test-mode -c";
+    private static final String COMMAND_SET_TEST_EMERGENCY_PHONE_ACCOUNT_PACKAGE_NAME_FILTER =
+            "telecom set-test-emergency-phone-account-package-filter ";
+    private static final String COMMAND_REGISTER_SIM = "telecom register-sim-phone-account ";
+
     /**
      * Executes the given shell command and returns the output in a string. Note that even
      * if we don't care about the output, we have to read the stream completely to make the
@@ -96,6 +109,65 @@ public class ShellCommandExecutor {
 
     public static String getDefaultDialer(Instrumentation instrumentation) throws Exception {
         return executeShellCommand(instrumentation, COMMAND_GET_DEFAULT_DIALER);
+    }
+
+    public static String getSystemDialer(Instrumentation instrumentation) throws Exception {
+        return executeShellCommand(instrumentation, "telecom get-system-dialer");
+    }
+
+    public static String setSystemDialerOverride(
+            Instrumentation instrumentation, String packageName) throws Exception {
+        return executeShellCommand(instrumentation, COMMAND_SET_SYSTEM_DIALER + packageName);
+    }
+
+    public static String clearSystemDialerOverride(Instrumentation instrumentation)
+            throws Exception {
+        return executeShellCommand(instrumentation, COMMAND_SET_SYSTEM_DIALER + "default");
+    }
+
+    public static void addTestEmergencyNumber(Instrumentation instr, String testNumber)
+            throws Exception {
+        executeShellCommand(instr, COMMAND_ADD_TEST_EMERGENCY_NUMBER + testNumber);
+    }
+
+    public static void clearTestEmergencyNumbers(Instrumentation instr) throws Exception {
+        executeShellCommand(instr, COMMAND_CLEAR_TEST_EMERGENCY_NUMBERS);
+    }
+
+    public static void registerEmergencyPhoneAccount(
+            Instrumentation instrumentation,
+            PhoneAccountHandle handle,
+            String label,
+            String address)
+            throws Exception {
+        final ComponentName component = handle.getComponentName();
+        final long currentUserSerial = getUserSerialNumber(instrumentation, handle.getUserHandle());
+        executeShellCommand(
+                instrumentation,
+                COMMAND_REGISTER_SIM
+                        + "-e "
+                        + component.getPackageName()
+                        + "/"
+                        + component.getClassName()
+                        + " "
+                        + handle.getId()
+                        + " "
+                        + currentUserSerial
+                        + " "
+                        + label
+                        + " "
+                        + address);
+    }
+
+    public static void setTestEmergencyPhoneAccountPackageFilter(
+            Instrumentation instr, String packageName) throws Exception {
+        executeShellCommand(
+                instr, COMMAND_SET_TEST_EMERGENCY_PHONE_ACCOUNT_PACKAGE_NAME_FILTER + packageName);
+    }
+
+    public static void clearTestEmergencyPhoneAccountPackageFilter(Instrumentation instr)
+            throws Exception {
+        executeShellCommand(instr, COMMAND_SET_TEST_EMERGENCY_PHONE_ACCOUNT_PACKAGE_NAME_FILTER);
     }
 
     public static void enablePhoneAccount(Instrumentation instrumentation,

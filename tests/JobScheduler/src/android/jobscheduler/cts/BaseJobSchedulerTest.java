@@ -168,7 +168,7 @@ public abstract class BaseJobSchedulerTest extends InstrumentationTestCase {
                 Settings.Global.BATTERY_STATS_CONSTANTS, mInitialBatteryStatsConstants);
         if (mStorageStateChanged) {
             // Put storage service back in to normal operation.
-            SystemUtil.runShellCommand(getInstrumentation(), "cmd devicestoragemonitor reset");
+            SystemUtil.runShellCommand(getInstrumentation(), "cmd devicestoragemonitor reset -f");
             mStorageStateChanged = false;
         }
         SystemUtil.runShellCommand(getInstrumentation(),

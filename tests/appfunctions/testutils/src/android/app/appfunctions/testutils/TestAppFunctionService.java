@@ -137,6 +137,8 @@ public class TestAppFunctionService extends AppFunctionService {
                                     });
                     break;
                 }
+            case "runForever":
+                break;
             default:
                 callback.onError(
                         new AppFunctionException(

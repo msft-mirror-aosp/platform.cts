@@ -171,13 +171,40 @@ public class AppControlWrapper {
             Consumer<CallStateTransitionOperation> consumer) throws Exception {
         Log.i(TAG, "addCall");
         try {
-            NoDataTransaction transactionResult = mBinder.addCallWithConsumer(callAttributes,
-                    new IRemoteOperationConsumer.Stub() {
-                        @Override
-                        public void complete(CallStateTransitionOperation op) {
-                            consumer.accept(op);
-                        }
-                    });
+            NoDataTransaction transactionResult =
+                    mBinder.addCallWithConsumer(
+                            callAttributes,
+                            new IRemoteOperationConsumer.Stub() {
+                                @Override
+                                public void complete(CallStateTransitionOperation op) {
+                                    consumer.accept(op);
+                                }
+                            });
+            maybeFailTest(transactionResult);
+        } catch (RemoteException re) {
+            handleRemoteException(re, "addCall");
+        }
+    }
+
+    /**
+     * This method requests the app that is bound to add a new call with the given callAttributes.
+     * Note: This method does not verify the call is added for ConnectionService implementations and
+     * that job should be left for the InCallService to verify.
+     */
+    public void verifyAddCall(
+            CallAttributes callAttributes, Consumer<CallStateTransitionOperation> consumer)
+            throws Exception {
+        Log.i(TAG, "verifyAddCall");
+        try {
+            NoDataTransaction transactionResult =
+                    mBinder.verifyCallWithConsumer(
+                            callAttributes,
+                            new IRemoteOperationConsumer.Stub() {
+                                @Override
+                                public void complete(CallStateTransitionOperation op) {
+                                    consumer.accept(op);
+                                }
+                            });
             maybeFailTest(transactionResult);
         } catch (RemoteException re) {
             handleRemoteException(re, "addCall");

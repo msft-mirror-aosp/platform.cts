@@ -212,6 +212,14 @@ public class TransactionalVoipAppControlMain extends Service {
                     }
                 }
 
+                @Override
+                public NoDataTransaction verifyCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer consumer)
+                        throws RemoteException {
+                    // Not supported for transactional app for now.
+                    return new NoDataTransaction(TestAppTransaction.Success);
+                }
+
                 private void verifyCallControlIsNonNull(
                         CallControl callControl, List<String> stackTrace) throws TestAppException {
                     if (callControl == null) {

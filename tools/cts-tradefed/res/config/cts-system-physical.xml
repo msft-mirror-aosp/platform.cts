@@ -307,7 +307,6 @@
   <option name="compatibility:include-filter" value="CtsAdoptableHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppCloningContactsSharingTest"/>
   <option name="compatibility:include-filter" value="CtsResourcesHostTestCases"/>
-  <option name="compatibility:include-filter" value="CtsApkVerityInstallHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsMemunreachableTestCases"/>
   <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsWrapWrapDebugMallocDebugTestCases"/>

@@ -613,8 +613,10 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         runTestOnUiThread(new Runnable() {
             @Override
             public void run() {
-                // Open camera
-                mCamera = Camera.open();
+                if (Camera.getNumberOfCameras() > 0) {
+                    // Open camera
+                    mCamera = Camera.open(0);
+                }
                 if (mCamera == null) {
                     skip[0] = true;
                 } else {
@@ -666,7 +668,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             public void run() {
                 // Open camera
                 try {
-                    mCamera = Camera.open();
+                    mCamera = Camera.open(0);
                 } catch (RuntimeException e) {
                     pass[0] = true;
                 }

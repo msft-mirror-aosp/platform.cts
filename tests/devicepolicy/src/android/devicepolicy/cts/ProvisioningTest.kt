@@ -82,12 +82,12 @@ import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.lang.IllegalArgumentException
 import java.util.*
 import java.util.stream.Collectors
 import org.junit.*
 import org.junit.Assert.assertThrows
 import org.junit.runner.RunWith
-import java.lang.IllegalArgumentException
 
 @RunWith(BedsteadJUnit4::class)
 class ProvisioningTest {
@@ -295,7 +295,7 @@ class ProvisioningTest {
                 ).use { profile ->
                     val nonRequiredApps = localDevicePolicyManager.getDisallowedSystemApps(
                         DEVICE_ADMIN_COMPONENT_NAME,
-                        context.userId,
+                        profile.id(),
                         DevicePolicyManager.ACTION_PROVISION_MANAGED_PROFILE
                     )
                     val nonRequiredAppsInProfile = TestApis.packages().installedForUser(profile)
@@ -1296,8 +1296,7 @@ class ProvisioningTest {
                 }
 
         assertThat(dpm!!.removeManagedProfile()).isTrue()
-        assertThat(workProfileUser.exists()).isFalse();
-
+        assertThat(workProfileUser.exists()).isFalse()
     }
 
     @Test

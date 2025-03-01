@@ -23,6 +23,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.net.wifi.WifiManager;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 
 import androidx.test.InstrumentationRegistry;
@@ -41,6 +42,16 @@ public class Checkers {
     public void checkVibratorSupported() {
         Vibrator v = InstrumentationRegistry.getContext().getSystemService(Vibrator.class);
         assertThat(v.hasVibrator()).isTrue();
+    }
+
+    @Test
+    public void checkVibratorPrimitivesTickAndClickAreSupported() {
+        Vibrator v = InstrumentationRegistry.getContext().getSystemService(Vibrator.class);
+        assertThat(
+                        v.areAllPrimitivesSupported(
+                                VibrationEffect.Composition.PRIMITIVE_TICK,
+                                VibrationEffect.Composition.PRIMITIVE_CLICK))
+                .isTrue();
     }
 
     @Test

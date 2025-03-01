@@ -14,7 +14,6 @@
 """CameraITS test to verify metadata entries."""
 
 import logging
-import math
 
 from mobly import test_runner
 
@@ -144,6 +143,9 @@ class MetadataTest(its_base_test.ItsBaseTest):
               f'Pixel pitch error! w: {pixel_pitch_w}, h: {pixel_pitch_h}')
 
         fov = image_fov_utils.calc_camera_fov_from_metadata(md, props)
+        logging.debug('Assert field of view: %.1f degrees', fov)
+        if not 10 <= fov <= 130:
+          raise AssertionError(f'FoV error: {fov:.1f}')
 
         if camera_properties_utils.lens_approx_calibrated(props):
           diopter_hyperfocal = props['android.lens.info.hyperfocalDistance']

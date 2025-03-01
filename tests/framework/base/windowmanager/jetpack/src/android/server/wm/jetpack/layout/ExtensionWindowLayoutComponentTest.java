@@ -468,8 +468,10 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
                 configHandlingActivity, consumer);
 
-        enterPipActivityHandlesConfigChanges(configHandlingActivity);
-        exitPipActivityHandlesConfigChanges(configHandlingActivity);
+        boolean didEnterFinish = enterPipActivityHandlesConfigChanges(configHandlingActivity);
+        assertTrue("Did not properly enter PiP.", didEnterFinish);
+        boolean didExitFinish = exitPipActivityHandlesConfigChanges(configHandlingActivity);
+        assertTrue("Did not properly exit PiP.", didExitFinish);
 
         List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
 
@@ -495,7 +497,8 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
                 configHandlingActivity, consumer);
 
-        enterPipActivityHandlesConfigChanges(configHandlingActivity);
+        boolean didEnter = enterPipActivityHandlesConfigChanges(configHandlingActivity);
+        assertTrue("Did not finish entering PiP.", didEnter);
 
         List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
 

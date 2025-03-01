@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith;
 @AppModeFull
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@DisabledOnRavenwood(reason = "context.createPackageContext() is not supported")
 public class FontResourceTest {
 
     private static final int REMOTE_FONT_TEXT_WIDTH = 900;

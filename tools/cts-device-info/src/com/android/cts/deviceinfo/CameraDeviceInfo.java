@@ -23,12 +23,14 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.BlackLevelPattern;
+import android.hardware.camera2.params.Capability;
 import android.hardware.camera2.params.ColorSpaceProfiles;
 import android.hardware.camera2.params.ColorSpaceTransform;
 import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.hardware.camera2.params.MultiResolutionStreamConfigurationMap;
 import android.hardware.camera2.params.MultiResolutionStreamInfo;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.hardware.usb.UsbManager;
 import android.media.CamcorderProfile;
 import android.util.Log;
 import android.util.Range;
@@ -352,6 +354,24 @@ public final class CameraDeviceInfo extends DeviceInfo {
             mStore.endGroup();
         }
 
+        private void storeExtendedSceneModeCapability(Capability cap, String protoName)
+                throws Exception {
+            if (protoName == null) {
+                mStore.startGroup();
+            } else {
+                mStore.startGroup(protoName);
+            }
+
+            mStore.addResult("mode", cap.getMode());
+            Size maxStreamingSize = cap.getMaxStreamingSize();
+            mStore.addResult("maxStreamingWidth", maxStreamingSize.getWidth());
+            mStore.addResult("maxStreamingHeight", maxStreamingSize.getHeight());
+            Range<Float> zoomRatioRange = cap.getZoomRatioRange();
+            mStore.addResult("minZoomRatio", zoomRatioRange.getLower());
+            mStore.addResult("maxZoomRatio", zoomRatioRange.getUpper());
+            mStore.endGroup();
+        }
+
         private void storeMultiResStreamConfigurationMap(
                 MultiResolutionStreamConfigurationMap map, String protoName) throws Exception {
             if (protoName == null) {
@@ -564,6 +584,13 @@ public final class CameraDeviceInfo extends DeviceInfo {
                 }
                 mStore.endArray();
                 return;
+            } else if (elmtType == Capability.class) {
+                mStore.startArray(protoName);
+                for (int i = 0; i < arrayLen; i++) {
+                    storeExtendedSceneModeCapability((Capability) Array.get(keyValue, i), null);
+                }
+                mStore.endArray();
+                return;
             } else {
                 Log.w(TAG, "Storing unsupported array type: " + elmtType +
                         " for keyName: " + keyName);
@@ -604,18 +631,23 @@ public final class CameraDeviceInfo extends DeviceInfo {
         }
     }
 
-
     @Override
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
         store.addResult("profile_480p", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_480P));
         store.addResult("profile_720p", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_720P));
-        store.addResult("profile_1080p", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_1080P));
+        store.addResult(
+                "profile_1080p", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_1080P));
         store.addResult("profile_cif", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_CIF));
         store.addResult("profile_qcif", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_QCIF));
         store.addResult("profile_qvga", CamcorderProfile.hasProfile(CamcorderProfile.QUALITY_QVGA));
 
         CameraManager cameraManager = (CameraManager)
                 getContext().getSystemService(Context.CAMERA_SERVICE);
+
+        UsbManager usbManager = getContext().getSystemService(UsbManager.class);
+
+        store.addResult("supports_device_webcam", usbManager.isUvcGadgetSupportEnabled());
+
         try {
             String[] cameraIdList = cameraManager.getCameraIdList();
             HashMap<String, ArrayList<String>> physicalLogicalIdMap =

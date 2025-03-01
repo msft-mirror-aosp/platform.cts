@@ -1617,7 +1617,6 @@
     <string name="ci_intents_direction_label">clockwise</string>
     <string name="ci_instruction_heading_label">Instructions:</string>
     <string name="ci_location_permissions_error">Please give CTS Verifier location permissions before clicking on the pass / fail button</string>
-    <string name="ci_location_permissions_fail_error">Please give CTS Verifier location permissions if the fail button needs to be clicked</string>
     <string name="ci_directory_creation_error">CTS Verifier debug directory could not be created, please try again</string>
     <string name="ci_instruction_text_photo_label">READ BEFORE STARTING TEST</string>
     <string name="ci_instruction_text_passfail_label">Choose \"Pass\" if the right intent is fired after taking a photo from the camera app. Otherwise, choose \"Fail\".</string>
@@ -2581,6 +2580,7 @@
          \n\u2022 The arrow on the bar should point away from the S and toward the E.
          \n\u2022 S icon should appear on the right and it is not mirrored.
          \n\u2022 E icon should appear on the left and it is not mirrored.
+         \nImportant: Make sure to disable RTL mode at the end of the test.
     </string>
     <string name="progress_style_many_segments_with_same_color" formatted="false">A progress style notification with 75% progress was posted. Expand it (if it’s not already expanded), and verify that:
          \n\u2022 75% of the bar should look filled and the rest of it should look unfilled.

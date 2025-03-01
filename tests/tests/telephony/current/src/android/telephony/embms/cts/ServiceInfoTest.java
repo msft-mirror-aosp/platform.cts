@@ -24,8 +24,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.mbms.StreamingServiceInfo;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -54,10 +52,7 @@ public class ServiceInfoTest {
 
     @Test
     public void testDataAccess() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(MbmsUtil.hasMbmsFeature());
-        }
-
+        assumeTrue(MbmsUtil.hasMbmsFeature());
         assertEquals(LOCALES.size(), STREAMING_SERVICE_INFO.getLocales().size());
         for (int i = 0; i < LOCALES.size(); i++) {
             assertTrue(STREAMING_SERVICE_INFO.getLocales().contains(LOCALES.get(i)));

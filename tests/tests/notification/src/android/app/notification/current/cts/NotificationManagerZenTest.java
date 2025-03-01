@@ -55,6 +55,7 @@ import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_OF
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_ON;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_STATUS_BAR;
 import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_LEANBACK;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.service.notification.Condition.STATE_FALSE;
@@ -721,7 +722,8 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_MODES_UI)
     public void testAreAutomaticZenRulesUserManaged_flagsOn() {
         if (mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
-                || mPackageManager.hasSystemFeature(FEATURE_WATCH)) {
+                || mPackageManager.hasSystemFeature(FEATURE_WATCH)
+                || mPackageManager.hasSystemFeature(FEATURE_LEANBACK)) {
             assertFalse(mNotificationManager.areAutomaticZenRulesUserManaged());
         } else {
             assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());

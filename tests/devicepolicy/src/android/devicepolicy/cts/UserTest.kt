@@ -309,12 +309,18 @@ class UserTest {
     @EnsureHasAdditionalUser(switchedToUser = FALSE)
     @ApiTest(apis = ["android.app.admin.DeviceAdminReceiver#onUserSwitched"])
     fun switchUser_userSwitchedCallbackIsReceived() {
-        deviceState.additionalUser().switchTo()
+        try {
+            deviceState.additionalUser().switchTo()
 
-        assertThat(
-            deviceState.dpc().events().userSwitched()
-                .whereSwitchedUser().id().isEqualTo(deviceState.additionalUser().id())
-        ).eventOccurred()
+            assertThat(
+                deviceState.dpc().events().userSwitched()
+                    .whereSwitchedUser().id().isEqualTo(deviceState.additionalUser().id())
+            ).eventOccurred()
+        } finally {
+            // Prevent test isolation bugs by switching back to the initial user as this is what the
+            // other tests expect.
+            deviceState.initialUser().switchTo()
+        }
     }
 
     companion object {

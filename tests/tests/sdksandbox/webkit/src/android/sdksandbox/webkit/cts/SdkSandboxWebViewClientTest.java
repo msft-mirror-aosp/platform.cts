@@ -17,10 +17,10 @@
 package android.sdksandbox.webkit.cts;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -121,43 +121,37 @@ public class SdkSandboxWebViewClientTest {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnRenderProcessGone");
     }
 
-    // TODO(crbug/1245351): Remove @FlakyTest once bug fixed
-    @FlakyTest
+    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingHitBackToSafety() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingHitBackToSafety");
     }
 
-    // TODO(crbug/1245351): Remove @FlakyTest once bug fixed
-    @FlakyTest
+    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingHitProceed() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingHitProceed");
     }
 
-    // TODO(crbug/1245351): Remove @FlakyTest once bug fixed
-    @FlakyTest
+    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingMalwareCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingMalwareCode");
     }
 
-    // TODO(crbug/1245351): Remove @FlakyTest once bug fixed
-    @FlakyTest
+    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingPhishingCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingPhishingCode");
     }
 
-    // TODO(crbug/1245351): Remove @FlakyTest once bug fixed
-    @FlakyTest
+    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingUnwantedSoftwareCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingUnwantedSoftwareCode");
     }
 
-    // TODO(crbug/1245351): Remove @FlakyTest once bug fixed
-    @FlakyTest
+    @Ignore("b/40196091")
     @Test
     public void testOnSafeBrowsingBillingCode() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testOnSafeBrowsingBillingCode");

@@ -796,6 +796,14 @@ public final class EventLogHelperTest {
         assertLogMessage("car_pwr_mgr_garage_mode", "101");
     }
 
+    @Test
+    public void testWriteCarWatchdogServiceIoOveruseKill() {
+        EventLogHelper.writeCarWatchdogServiceIoOveruseKill(
+                "string", 101, 10, 20, 30, 40, 50, 60, 5, true);
+
+        assertLogMessage("car_watchdog_svc_io_overuse_kill", "[string,101,10,20,30,40,50,60,5,1]");
+    }
+
     private void assertLogMessage(String event, String values) {
         assertLogcatMessage(EVENTS, INFO, event, values, TIMEOUT_MS);
     }

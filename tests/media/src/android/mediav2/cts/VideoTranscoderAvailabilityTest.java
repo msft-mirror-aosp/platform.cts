@@ -16,14 +16,14 @@
 
 package android.mediav2.cts;
 
+import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 import static android.media.codec.Flags.FLAG_CODEC_AVAILABILITY;
 import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
-import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
-import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202504;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
+import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
+import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
 
 import android.media.MediaCodec;
 import android.media.MediaFormat;
@@ -34,21 +34,20 @@ import android.mediav2.common.cts.OutputManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Pair;
 
+import androidx.test.filters.LargeTest;
+
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.VsrTest;
 
-import androidx.test.filters.LargeTest;
-
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
@@ -174,26 +173,36 @@ public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase
                 List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
                 GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in eos state \n" + mTestEnv + mTestConfig);
+        mDecoder.stop();
+        validateGetCodecResources(
+                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, true)),
+                GLOBAL_AVBL_RESOURCES,
+                "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
         mDecoder.reset();
         validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
+                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, true)),
                 GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in uninitialized state \n" + mTestEnv + mTestConfig);
+        mEncoder.stop();
+        validateGetCodecResources(
+                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
+                GLOBAL_AVBL_RESOURCES,
+                "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
         mEncoder.reset();
         validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
+                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
                 GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in uninitialized state \n" + mTestEnv + mTestConfig);
         mSurface.release();
         mSurface = null;
         mDecoder.release();
         validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
+                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
                 GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in released state \n" + mTestEnv + mTestConfig);
         mEncoder.release();
         validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
+                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
                 GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in released state \n" + mTestEnv + mTestConfig);
     }

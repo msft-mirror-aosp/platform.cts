@@ -17,13 +17,13 @@
 package com.android.cts.verifier.camera.intents
 
 import android.app.Dialog
+import android.app.DialogFragment
 import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
-import androidx.fragment.app.DialogFragment
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.MetadataRetriever
@@ -46,7 +46,7 @@ public class CameraPresentMediaDialog : DialogFragment() {
     dialog.setContentView(R.layout.ci_present_media)
 
     dialog.setTitle(getString(R.string.ci_verify_capture_title))
-    val uri = arguments.getParcelable<Uri>(KEY_URI, Uri::class.java)!!
+    val uri = arguments.getParcelable<Uri>(KEY_URI)!!
 
     playerView = dialog.findViewById<PlayerView>(R.id.player_view)
     exoPlayer = ExoPlayer.Builder(activity).build()

@@ -217,6 +217,70 @@ public class SystemGestureExclusionRectsTest {
         assertTrue("set rects timeout", setter[0].await(3, SECONDS));
     }
 
+    /** The last call to setSystemGestureExclusionRects is received */
+    @Test
+    public void rootExclusionRectsMultipleCalls() throws Throwable {
+        final Activity activity = mActivityRule.getActivity();
+        final GestureExclusionLatcher[] setter = new GestureExclusionLatcher[1];
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final Window w = activity.getWindow();
+
+                    final List<Rect> initialRects = w.getSystemGestureExclusionRects();
+                    assertTrue("initial rects empty", initialRects.isEmpty());
+
+                    setter[0] =
+                            GestureExclusionLatcher.watching(
+                                    w.getDecorView().getViewTreeObserver());
+                    w.setSystemGestureExclusionRects(Lists.newArrayList(new Rect(0, 0, 5, 5)));
+                    w.setSystemGestureExclusionRects(Lists.newArrayList(new Rect(0, 0, 10, 10)));
+                    assertEquals(
+                            "returned rects as expected",
+                            Lists.newArrayList(new Rect(0, 0, 10, 10)),
+                            w.getSystemGestureExclusionRects());
+                });
+        assertTrue("set rects timeout", setter[0].await(3, SECONDS));
+    }
+
+    /**
+     * Verify that systemGestureExclusionChanged is not calling unnecessary
+     * onSystemGestureExclusionRectsChanged when the rects remained the same wrt the previous call
+     */
+    @Test
+    public void rootExclusionRects_doesNotDispatchWhenRectsDidNotChange() throws Throwable {
+        final Activity activity = mActivityRule.getActivity();
+        final GestureExclusionLatcher[] setter = new GestureExclusionLatcher[1];
+        final List<Rect> rects = Lists.newArrayList(new Rect(0, 0, 5, 5));
+
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final Window w = activity.getWindow();
+                    setter[0] =
+                            GestureExclusionLatcher.watching(
+                                    w.getDecorView().getViewTreeObserver());
+                    w.setSystemGestureExclusionRects(rects);
+                });
+        assertTrue("set rects timeout", setter[0].await(3, SECONDS));
+
+        // Send same rects again and expect nothing happening
+        final CountDownLatch nextMessageLatch = new CountDownLatch(1);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    final Window w = activity.getWindow();
+                    setter[0] =
+                            GestureExclusionLatcher.watching(
+                                    w.getDecorView().getViewTreeObserver());
+                    w.setSystemGestureExclusionRects(rects);
+                    w.getDecorView().post(() -> nextMessageLatch.countDown());
+                });
+
+        // If "next message" has been received, then we would also have received the rects message
+        assertTrue("next message timeout", nextMessageLatch.await(3, SECONDS));
+        assertFalse(
+                "set rects has been called: double call on the same rectangles",
+                setter[0].await(0, TimeUnit.MILLISECONDS));
+    }
+
     @Test
     public void ignoreHiddenViewRects() throws Throwable {
         final Activity activity = mActivityRule.getActivity();

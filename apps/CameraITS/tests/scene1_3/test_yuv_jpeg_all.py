@@ -16,7 +16,6 @@
 
 import logging
 import os.path
-import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib.ticker import MaxNLocator

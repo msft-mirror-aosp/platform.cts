@@ -15,6 +15,7 @@
  */
 package android.sdksandbox.webkit.cts;
 
+import android.app.sdksandbox.testutils.SdkSandboxDeviceSupportedRule;
 import android.app.sdksandbox.testutils.testscenario.SdkSandboxScenarioRule;
 import android.os.Bundle;
 import android.webkit.cts.SharedWebViewTest;
@@ -36,6 +37,8 @@ import org.junit.runners.model.Statement;
  * {@link SdkSandboxScenarioRule}.
  */
 public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
+    private final SdkSandboxDeviceSupportedRule mSdkSandboxRule =
+            new SdkSandboxDeviceSupportedRule();
 
     public WebViewSandboxTestRule(String webViewTestClassName) {
         super(
@@ -62,6 +65,11 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
             return base;
         }
 
+        // Skip loading the SDK if the SDK Sandbox is not supported on the device.
+        if (!mSdkSandboxRule.isSdkSandboxSupportedOnDevice()) {
+            return base;
+        }
+
         return super.apply(base, description);
     }
 
@@ -69,6 +77,9 @@ public class WebViewSandboxTestRule extends SdkSandboxScenarioRule {
     public void assertSdkTestRunPasses(String testMethodName, Bundle params) throws Throwable {
         // This will prevent shared webview tests from running if a WebView provider does not exist.
         Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
+        Assume.assumeTrue(
+                "SDK Sandbox is not supported on the device",
+                mSdkSandboxRule.isSdkSandboxSupportedOnDevice());
         super.assertSdkTestRunPasses(testMethodName, params);
     }
 }

@@ -55,7 +55,6 @@ TestBeds:
       lighting_cntl: <controller-type>  # can be arduino or "None"
       lighting_ch: <controller-channel>
       scene: "checkerboard"  # "checkerboard" for both SF and scene_flash
-      log_feature_combo_support: "False" # "True" if logging feature combination support
       parallel_execution: "True"  # "False" for low-performance hosts
 
   - Name: TEST_BED_GEN2

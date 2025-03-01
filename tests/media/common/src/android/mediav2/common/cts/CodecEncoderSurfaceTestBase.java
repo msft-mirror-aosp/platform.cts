@@ -299,9 +299,6 @@ public class CodecEncoderSurfaceTestBase {
         for (Object[] arg : exhaustiveArgsList) {
             ArrayList<String> decoderList =
                     CodecTestBase.selectCodecs((String) arg[1], null, null, false);
-            if (decoderList.size() == 0) {
-                decoderList.add(CodecTestBase.INVALID_CODEC + arg[1]);
-            }
             for (String decoderName : decoderList) {
                 int argLength = exhaustiveArgsList.get(0).length;
                 Object[] testArg = new Object[argLength + 1];

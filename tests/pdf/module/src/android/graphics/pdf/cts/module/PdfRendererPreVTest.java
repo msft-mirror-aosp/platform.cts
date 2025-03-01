@@ -51,6 +51,7 @@ import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.pdf.PdfRendererPreV;
 import android.graphics.pdf.RenderParams;
+import android.graphics.pdf.component.FreeTextAnnotation;
 import android.graphics.pdf.component.HighlightAnnotation;
 import android.graphics.pdf.component.PdfAnnotation;
 import android.graphics.pdf.component.PdfAnnotationType;
@@ -731,6 +732,22 @@ public class PdfRendererPreVTest {
     }
 
     @Test
+    public void getFreeTextAnnotation() throws IOException {
+        try (PdfRendererPreV renderer =
+                        createPreVRenderer(R.raw.free_text_annotation, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            List<Pair<Integer, PdfAnnotation>> pdfAnnotations = firstPage.getPageAnnotations();
+            assertThat(pdfAnnotations).hasSize(1);
+            assertThat(pdfAnnotations.get(0).first).isEqualTo(0);
+            FreeTextAnnotation freeTextAnnotation =
+                    (FreeTextAnnotation) pdfAnnotations.get(0).second;
+            assertThat(freeTextAnnotation.getTextContent()).isEqualTo("Third annotation こんにちは");
+            assertThat(freeTextAnnotation.getTextColor()).isEqualTo(Color.RED);
+            assertThat(freeTextAnnotation.getBackgroundColor()).isEqualTo(Color.GREEN);
+        }
+    }
+
+    @Test
     public void testAddPdfHighlightAnnotation() throws Exception {
         try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
                 PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
@@ -751,6 +768,59 @@ public class PdfRendererPreVTest {
                     (HighlightAnnotation) annotations.get(0).second;
             assertThat(addedHighlightAnnotation.getBounds()).isEqualTo(bounds);
             assertThat(highlightAnnotation.getColor()).isEqualTo(Color.GREEN);
+        }
+    }
+
+    @Test
+    public void testAddFreeTextAnnotation() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            // Create a FreeTextAnnotation Instance and set the properties.
+            RectF bounds = new RectF(10, 20, 30, 40);
+            String textContent = "FreeText Annotation Test こんにちは";
+            FreeTextAnnotation freeTextAnnotation = new FreeTextAnnotation(bounds, textContent);
+            freeTextAnnotation.setTextColor(Color.GRAY);
+            freeTextAnnotation.setBackgroundColor(Color.BLUE);
+            // Add FreeTextAnnotation
+            firstPage.addPageAnnotation(freeTextAnnotation);
+            assertThat(firstPage.getPageAnnotations()).hasSize(1);
+            // Assert properties of added annotation.
+            FreeTextAnnotation addedFreeTextAnnotation =
+                    (FreeTextAnnotation) firstPage.getPageAnnotations().get(0).second;
+            assertThat(addedFreeTextAnnotation.getTextContent()).isEqualTo(textContent);
+            assertThat(addedFreeTextAnnotation.getTextColor()).isEqualTo(Color.GRAY);
+            assertThat(addedFreeTextAnnotation.getBackgroundColor()).isEqualTo(Color.BLUE);
+        }
+    }
+
+    @Test
+    public void testUpdateFreeTextAnnotation() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            RectF bounds = new RectF(10, 20, 30, 40);
+            String textContent = "FreeText Annotation Test こんにちは";
+            FreeTextAnnotation freeTextAnnotation = new FreeTextAnnotation(bounds, textContent);
+            freeTextAnnotation.setTextColor(Color.GRAY);
+            freeTextAnnotation.setBackgroundColor(Color.DKGRAY);
+
+            firstPage.addPageAnnotation(freeTextAnnotation);
+            assertThat(firstPage.getPageAnnotations()).hasSize(1);
+            FreeTextAnnotation addedFreeTextAnnotation =
+                    (FreeTextAnnotation) firstPage.getPageAnnotations().get(0).second;
+
+            int oldId = firstPage.getPageAnnotations().get(0).first;
+            String newTextContent = "Bye World.";
+            addedFreeTextAnnotation.setTextContent(newTextContent);
+            addedFreeTextAnnotation.setTextColor(Color.RED);
+            addedFreeTextAnnotation.setBackgroundColor(Color.BLUE);
+            boolean result = firstPage.updatePageAnnotation(oldId, addedFreeTextAnnotation);
+            assertThat(result).isTrue();
+
+            FreeTextAnnotation updatedFreeTextAnnotation =
+                    (FreeTextAnnotation) firstPage.getPageAnnotations().get(0).second;
+            assertThat(updatedFreeTextAnnotation.getTextContent()).isEqualTo(newTextContent);
+            assertThat(updatedFreeTextAnnotation.getTextColor()).isEqualTo(Color.RED);
+            assertThat(updatedFreeTextAnnotation.getBackgroundColor()).isEqualTo(Color.BLUE);
         }
     }
 
@@ -830,6 +900,46 @@ public class PdfRendererPreVTest {
             int stampAnnotationId = annotations.get(0).first;
             firstPage.removePageAnnotation(stampAnnotationId);
             assertThat(firstPage.getPageAnnotations().size()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    public void testUpdateStampAnnotation() throws IOException {
+        try (PdfRendererPreV renderer = createPreVRenderer(ONE_STAMP_ANNOTATION, mContext, null);
+                PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
+            List<Pair<Integer, PdfAnnotation>> annotations = firstPage.getPageAnnotations();
+            int stampAnnotationId = annotations.get(0).first;
+            StampAnnotation stampAnnotation = (StampAnnotation) annotations.get(0).second;
+            List<PdfPageObject> pageObjects = stampAnnotation.getObjects();
+            assertThat(pageObjects).hasSize(2);
+
+            assertThat(pageObjects.get(0).getPdfObjectType()).isEqualTo(PdfPageObjectType.IMAGE);
+            assertThat(pageObjects.get(1).getPdfObjectType()).isEqualTo(PdfPageObjectType.PATH);
+
+            // Remove 1st object i.e. image object
+            stampAnnotation.removeObject(0);
+
+            // Update the path object
+            PdfPagePathObject pathObject = (PdfPagePathObject) stampAnnotation.getObjects().get(0);
+            pathObject.setStrokeColor(Color.valueOf(Color.RED));
+
+            // Remove the older path object and the updated one
+            stampAnnotation.removeObject(0);
+            stampAnnotation.addObject(pathObject);
+
+            firstPage.updatePageAnnotation(stampAnnotationId, stampAnnotation);
+
+            annotations = firstPage.getPageAnnotations();
+            StampAnnotation updatedStampAnnotation = (StampAnnotation) annotations.get(0).second;
+
+            // check that the updated stamp annotation has one object which is a path object with
+            // stroke color blue
+            assertThat(updatedStampAnnotation.getObjects()).hasSize(1);
+            assertThat(updatedStampAnnotation.getObjects().get(0).getPdfObjectType())
+                    .isEqualTo(PdfPageObjectType.PATH);
+            PdfPagePathObject updatedPathObject =
+                    (PdfPagePathObject) stampAnnotation.getObjects().get(0);
+            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.RED));
         }
     }
 

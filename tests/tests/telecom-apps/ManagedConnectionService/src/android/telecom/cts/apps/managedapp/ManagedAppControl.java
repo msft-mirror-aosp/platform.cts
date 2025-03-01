@@ -214,9 +214,6 @@ public class ManagedAppControl extends Service {
                         CallAttributes callAttributes, IRemoteOperationConsumer c) {
                     Log.i(TAG, "addCallWithConsumer: enter");
                     try {
-                        List<String> stackTrace =
-                                createStackTraceList(
-                                        CLASS_NAME + ".addCall(" + callAttributes + ")");
                         maybeInitTelecomManager();
                         if (isOutgoing(callAttributes)) {
                             mTelecomManager.placeCall(
@@ -227,25 +224,30 @@ public class ManagedAppControl extends Service {
                                     callAttributes.getPhoneAccountHandle(),
                                     getExtrasWithPhoneAccount(callAttributes));
                         }
-                        // TelecomManager#placeCall and TelecomManager#addNewIncomingCall do not
-                        // return the call object directly! Instead, a ConnectionService callback
-                        // will
-                        // populate a new connection.  The app process will wait via a while loop
-                        // until
-                        // a new connection is populated. If a connection is not added in the given
-                        // time
-                        // window, a TestAppException will be thrown!
-                        ManagedConnection connection =
-                                (ManagedConnection)
-                                        waitUntilConnectionIsNonNull(
-                                                PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
-                        // track the connection so it can be manipulated later in the test stage
-                        trackConnection(connection, callAttributes, stackTrace, c);
-                        // signal to the test process the call has been added successfully
-                        return new NoDataTransaction(TestAppTransaction.Success);
+                        return verifyCallWithConsumer(callAttributes, c);
                     } catch (TestAppException e) {
                         return new NoDataTransaction(TestAppTransaction.Failure, e);
                     }
+                }
+
+                @Override
+                public NoDataTransaction verifyCallWithConsumer(
+                        CallAttributes callAttributes, IRemoteOperationConsumer c) {
+                    List<String> stackTrace =
+                            createStackTraceList(CLASS_NAME + ".addCall(" + callAttributes + ")");
+                    // TelecomManager#placeCall and TelecomManager#addNewIncomingCall do not
+                    // return the call object directly! Instead, a ConnectionService callback
+                    // will populate a new connection.  The app process will wait via a while loop
+                    // until a new connection is populated. If a connection is not added in the
+                    // given time window, a TestAppException will be thrown!
+                    ManagedConnection connection =
+                            (ManagedConnection)
+                                    waitUntilConnectionIsNonNull(
+                                            PACKAGE_NAME, stackTrace, mConnectionServiceImpl);
+                    // track the connection so it can be manipulated later in the test stage
+                    trackConnection(connection, callAttributes, stackTrace, c);
+                    // signal to the test process the call has been added successfully
+                    return new NoDataTransaction(TestAppTransaction.Success);
                 }
 
                 private void trackConnection(
@@ -585,6 +587,7 @@ public class ManagedAppControl extends Service {
     }
 
     private void cleanupImplementation() {
+        ManagedConnectionService.sLastFailedRequest = null;
         disconnectAndDestroyAllCalls();
     }
 

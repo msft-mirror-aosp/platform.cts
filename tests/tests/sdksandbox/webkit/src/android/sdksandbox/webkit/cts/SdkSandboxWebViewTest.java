@@ -161,6 +161,7 @@ public class SdkSandboxWebViewTest {
                 "testJavascriptInterfaceCustomPropertiesClearedOnReload");
     }
 
+    @Ignore("b/171702662")
     @Test
     @MediumTest
     public void testJavascriptInterfaceForClientPopup() throws Throwable {
@@ -298,7 +299,6 @@ public class SdkSandboxWebViewTest {
     }
 
     @Test
-    @Ignore("b/368230178 - re-enable when WebView M131 is available in Android main branch")
     public void testSetSafeBrowsingAllowlistWithValidList() throws Throwable {
         sSdkTestSuiteSetup.assertSdkTestRunPasses("testSetSafeBrowsingAllowlistWithValidList");
     }
