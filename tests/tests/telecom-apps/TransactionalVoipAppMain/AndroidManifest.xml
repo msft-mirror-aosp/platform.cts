@@ -24,7 +24,8 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS"/>
 
-    <application android:label="TransactionalVoipAppMain">
+    <application  android:debuggable="true"
+        android:label="TransactionalVoipAppMain">
 
         <service
             android:name=".TransactionalVoipAppControlMain"

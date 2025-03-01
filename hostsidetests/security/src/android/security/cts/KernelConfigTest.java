@@ -404,8 +404,7 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
     @CddTest(requirement="9.10")
     @Test
     public void testConfigFsVerity() throws Exception {
-        if (PropertyUtil.getFirstApiLevel(mDevice) < 30 &&
-                PropertyUtil.getPropertyInt(mDevice, "ro.apk_verity.mode") != 2) {
+        if (PropertyUtil.getFirstApiLevel(mDevice) < 30) {
             return;
         }
         assertTrue("Linux kernel must have fs-verity enabled: CONFIG_FS_VERITY=y",
