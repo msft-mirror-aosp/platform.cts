@@ -309,6 +309,13 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
     public void testSharedSessionTwoJavaClients() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(cameraIdsUnderTest));
+        // initialize client 2 process
+        mResultReceiver2 = new CameraResultReceiver(/* isFirstClient */ false);
+        mProcessPid2 =
+                startRemoteProcess(
+                        SharedCameraActivitySecondaryClient.class,
+                        "SharedCameraActivityProcess2",
+                        mResultReceiver2);
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             mCameraId = cameraIdsUnderTest[i];
             if (!mAllStaticInfo.get(mCameraId).sharedSessionConfigurationPresent()) {
@@ -328,35 +335,28 @@ public final class SharedCameraTest extends Camera2ParameterizedTestCase {
                                 + " session, skipping");
                 continue;
             }
-
-            // initialize client 2 process
-            mResultReceiver2 = new CameraResultReceiver(/* isFirstClient */ false);
-            mProcessPid2 =
-                    startRemoteProcess(
-                            SharedCameraActivitySecondaryClient.class,
-                            "SharedCameraActivityProcess2",
-                            mResultReceiver2);
-
             assertCameraDeviceSharingSupportedJavaClient(mCameraId, /*sharingSupported*/ true);
-            openSharedCameraJavaClient(mCameraId, /* isPrimaryClient */ true);
-            // starting new client with same priority replaces the old client as the primary
-            openSharedCameraJavaClient(
-                    mCameraId, /* isPrimaryClient */
-                    true,
-                    /*expectedFail*/ false,
-                    mRemoteMessenger2);
-            ArrayList<Integer> sharedStreamArray = new ArrayList<>();
-            sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
-            createSharedSessionJavaClient(sharedStreamArray, mRemoteMessenger2);
-            startPreviewJavaClient(sharedStreamArray, mRemoteMessenger2);
-            // TODO (b/394088185): This test is failing, investigate and fix.
-            //            createSharedSessionJavaClient(sharedStreamArray);
-            //            startPreviewJavaClient();
-            SystemClock.sleep(PREVIEW_TIME_MS);
-            //            stopPreviewJavaClient();
-            stopPreviewJavaClient(mRemoteMessenger2);
-            //            closeCameraJavaClient();
-            closeCameraJavaClient(mRemoteMessenger2);
+            try {
+                openSharedCameraJavaClient(mCameraId, /* isPrimaryClient */ true);
+                // starting new client with same priority replaces the old client as the primary
+                openSharedCameraJavaClient(
+                        mCameraId, /* isPrimaryClient */
+                        true,
+                        /*expectedFail*/ false,
+                        mRemoteMessenger2);
+                ArrayList<Integer> sharedStreamArray = new ArrayList<>();
+                sharedStreamArray.add(TestConstants.SURFACE_TYPE_IMAGE_READER);
+                createSharedSessionJavaClient(sharedStreamArray, mRemoteMessenger2);
+                startPreviewJavaClient(sharedStreamArray, mRemoteMessenger2);
+                createSharedSessionJavaClient(sharedStreamArray);
+                startPreviewJavaClient(sharedStreamArray);
+                SystemClock.sleep(PREVIEW_TIME_MS);
+                stopPreviewJavaClient();
+                stopPreviewJavaClient(mRemoteMessenger2);
+            } finally {
+                closeCameraJavaClient();
+                closeCameraJavaClient(mRemoteMessenger2);
+            }
         }
     }
 
