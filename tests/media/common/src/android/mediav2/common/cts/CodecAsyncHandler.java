@@ -16,6 +16,9 @@
 
 package android.mediav2.common.cts;
 
+import static android.mediav2.common.cts.CodecTestBase.getHeight;
+import static android.mediav2.common.cts.CodecTestBase.getWidth;
+
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaCodec;
@@ -50,7 +53,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
     private boolean mSignalledOutFormatChangedSubSession;
     protected volatile boolean mSignalledError;
     private String mErrorMsg;
-    private int mExpectedMetricsFlushCount;
+    private int mMinExpectedMetricsFlushCount;
     private int mActualMetricsFlushCount;
 
     public CodecAsyncHandler() {
@@ -60,7 +63,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mSignalledError = false;
         mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
-        mExpectedMetricsFlushCount = 0;
+        mMinExpectedMetricsFlushCount = 0;
         mActualMetricsFlushCount = 0;
     }
 
@@ -80,7 +83,7 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         mSignalledOutFormatChangedSubSession = false;
         mErrorMsg = "";
         mSignalledError = false;
-        mExpectedMetricsFlushCount = 0;
+        mMinExpectedMetricsFlushCount = 0;
         mActualMetricsFlushCount = 0;
     }
 
@@ -155,11 +158,9 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         try {
             if (mOutFormat != null
                     && mOutFormat.getString(MediaFormat.KEY_MIME).startsWith("video/")) {
-                if (mOutFormat.getInteger(MediaFormat.KEY_WIDTH)
-                                != format.getInteger(MediaFormat.KEY_WIDTH)
-                        || mOutFormat.getInteger(MediaFormat.KEY_HEIGHT)
-                                != format.getInteger(MediaFormat.KEY_HEIGHT)) {
-                    mExpectedMetricsFlushCount++;
+                if (getWidth(mOutFormat) != getWidth(format)
+                        || getHeight(mOutFormat) != getHeight(format)) {
+                    mMinExpectedMetricsFlushCount++;
                 }
             }
             mOutFormat = format;
@@ -280,8 +281,8 @@ public class CodecAsyncHandler extends MediaCodec.Callback {
         return mSignalledOutFormatChangedSubSession;
     }
 
-    public int getExpectedMetricsFlushCount() {
-        return mExpectedMetricsFlushCount;
+    public int getMinExpectedMetricsFlushCount() {
+        return mMinExpectedMetricsFlushCount;
     }
 
     public int getActualMetricsFlushCount() {
