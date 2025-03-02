@@ -74,29 +74,33 @@ public class SensorHeadTrackerTest extends SensorTestCase {
 
         mCallback = new Callback();
         mVirtualHeadTracker = new VirtualHeadTracker();
-
         mSensorManager.registerDynamicSensorCallback(mCallback, mVirtualHeadTracker.handler);
-
         mVirtualHeadTracker.registerDevice(R.raw.head_tracker_main);
 
         try {
+            // Note that we didn't skip the test here completely since
+            // testIsNotDynamicSensorDiscoverySupported need to be ran without
+            // dynamic sensors support
             featureSupportedOrSkip();
         } catch (SensorTestStateNotSupportedException e) {
             return;
         }
+
+        assertTrue(
+                "Cannot detect sensor connection.",
+                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
     }
 
     @Override
     protected void tearDown() {
         Log.d(TAG, "Teardown.");
         mVirtualHeadTracker.closeDevice();
-
+        mCallback.waitForDisconnection();
         configureHtSensorAccess(false);
     }
 
     @CddTest(requirements = {"7.3"})
     public void testIsNotDynamicSensorDiscoverySupported() {
-
         if (!mHasSensorDynamicHeadTracker && mSensorManager.isDynamicSensorDiscoverySupported()) {
             assertFalse(
                     "Discovered head tracker sensor but feature flag is not set.",
@@ -107,10 +111,6 @@ public class SensorHeadTrackerTest extends SensorTestCase {
     @CddTest(requirements = {"7.3"})
     public void testIsDynamicSensorDiscoverySupported() {
         featureSupportedOrSkip();
-
-        assertTrue("Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         assertTrue(
                 "Dynamic sensor discovery is not supported.",
                 mSensorManager.isDynamicSensorDiscoverySupported());
@@ -119,20 +119,6 @@ public class SensorHeadTrackerTest extends SensorTestCase {
     @CddTest(requirements = {"7.3"})
     public void testRegisterDynamicSensorCallback() {
         featureSupportedOrSkip();
-
-        mVirtualHeadTracker.closeDevice();
-
-        Log.d(
-                TAG,
-                String.format(
-                        "Fake head tracker sensor has %d seconds to connect.",
-                        CONNECTION_TIMEOUT_SEC));
-
-        mVirtualHeadTracker.registerDevice(R.raw.head_tracker_main);
-
-        assertTrue("Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         assertTrue(
                 String.format(
                         "Sensor type is %d. Sensor type should be %d",
@@ -167,20 +153,12 @@ public class SensorHeadTrackerTest extends SensorTestCase {
     @CddTest(requirements = {"7.3"})
     public void testArrayOfSixFloats() {
         featureSupportedOrSkip();
-
-        assertTrue("Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         mCallback.headTrackerData();
     }
 
     @CddTest(requirements = {"7.3"})
     public void testDiscontinuity() {
         featureSupportedOrSkip();
-
-        assertTrue("Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         mVirtualHeadTracker.incDiscontinuityCount();
 
         assertTrue(
@@ -190,20 +168,12 @@ public class SensorHeadTrackerTest extends SensorTestCase {
     @CddTest(requirements = {"7.3"})
     public void testSensorManagerFlush() {
         featureSupportedOrSkip();
-
-        assertTrue("Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         assertTrue("Flush was not completed within five seconds.", mCallback.waitForFlush());
     }
 
     @CddTest(requirements = {"7.3"})
     public void testDisconnectionReconnection() {
         featureSupportedOrSkip();
-
-        assertTrue("Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         mSensorId = mCallback.getSensorId();
 
         mVirtualHeadTracker.closeDevice();
@@ -227,14 +197,8 @@ public class SensorHeadTrackerTest extends SensorTestCase {
     @CddTest(requirements = {"7.3"})
     public void testAddSecondSensor() {
         featureSupportedOrSkip();
-
-        assertTrue(
-                "Cannot detect sensor connection.",
-                mCallback.waitForConnection(VIRTUAL_HEAD_TRACKER_PRIMARY));
-
         Callback secondCallback = new Callback();
         VirtualHeadTracker virtualHeadTrackerTwo = new VirtualHeadTracker();
-
         mSensorManager.registerDynamicSensorCallback(secondCallback, virtualHeadTrackerTwo.handler);
         virtualHeadTrackerTwo.registerDevice(R.raw.head_tracker_distinct_id);
         try {

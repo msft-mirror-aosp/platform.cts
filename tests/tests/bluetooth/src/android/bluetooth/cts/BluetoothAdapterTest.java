@@ -88,7 +88,7 @@ import java.util.concurrent.Executor;
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class BluetoothAdapterTest {
-    private static final String TAG = "BluetoothAdapterTest";
+    private static final String TAG = BluetoothAdapterTest.class.getSimpleName();
 
     private static final String ENABLE_DUAL_MODE_AUDIO = "persist.bluetooth.enable_dual_mode_audio";
 

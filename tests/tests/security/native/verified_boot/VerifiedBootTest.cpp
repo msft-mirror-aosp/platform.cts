@@ -128,7 +128,10 @@ TEST(VerifiedBootTest, avbHashtreeNotUsingSha1) {
         std::string hash_alg = android::base::GetProperty(alg_prop_name, "");
 
         if (hash_alg.empty())
-            ADD_FAILURE() << "Could not find hash algorithm for " << partition;
+            ADD_FAILURE()
+                    << "Could not find hash algorithm for " << partition
+                    << ". Most likely an earlier test disabled verity and did not clean up after "
+                       "itself. In that case the root cause is a bug in that test, not this one.";
         if (android::base::StartsWithIgnoreCase(hash_alg, "sha1"))
             ADD_FAILURE() << "SHA1 is insecure, but is being used for " << partition;
     }

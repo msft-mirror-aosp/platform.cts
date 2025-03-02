@@ -53,7 +53,7 @@ import java.util.Map;
  * </api>
  * <total coveragePercentage="100" numCovered="1" numTotal="1"/>
  */
-public final class ApiMapXmlGenerator extends XmlGenerator<ApiCoverage> {
+public final class ApiMapXmlGenerator extends ApiXmlGenerator {
 
     private static final String TOP_ELEMENT_NAME = "api";
     private static final String STATISTICS_ELEMENT_NAME = "total";
@@ -185,8 +185,6 @@ public final class ApiMapXmlGenerator extends XmlGenerator<ApiCoverage> {
                                     "test", test.testName())));
         }
     }
-
-
 
     private String convertCoveredWithsToString(Collection<String> coveredModules) {
         List<String> coveredWiths = new ArrayList<>(coveredModules);

@@ -221,6 +221,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testMaximumObscuringOpacity() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Setting the previous value since we override this on setUp()
         setMaximumObscuringOpacityForTouch(mPreviousTouchOpacity);
 
@@ -230,6 +234,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testAfterSettingThreshold_returnsThresholdSet()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         float threshold = .123f;
         setMaximumObscuringOpacityForTouch(threshold);
 
@@ -238,11 +246,19 @@ public class WindowUntrustedTouchTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testAfterSettingThresholdLessThan0_throws() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         setMaximumObscuringOpacityForTouch(-.5f);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testAfterSettingThresholdGreaterThan1_throws() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         setMaximumObscuringOpacityForTouch(1.5f);
     }
 
@@ -250,6 +266,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneSawWindowAboveThreshold_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -260,6 +280,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneSawWindowBelowThreshold_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .7f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -269,6 +293,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneSawWindowWithZeroOpacity_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -278,6 +306,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneSawWindowAtThreshold_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, MAXIMUM_OBSCURING_OPACITY);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -288,6 +320,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenTwoSawWindowsFromSameAppTogetherBelowThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Resulting opacity = 1 - (1 - 0.5)*(1 - 0.5) = .75
         addSawOverlay(APP_A, WINDOW_1, .5f);
         addSawOverlay(APP_A, WINDOW_2, .5f);
@@ -300,6 +336,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenTwoSawWindowsFromSameAppTogetherAboveThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Resulting opacity = 1 - (1 - 0.7)*(1 - 0.7) = .91
         addSawOverlay(APP_A, WINDOW_1, .7f);
         addSawOverlay(APP_A, WINDOW_2, .7f);
@@ -312,6 +352,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenTwoSawWindowsFromDifferentAppsEachBelowThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .7f);
         addSawOverlay(APP_B, WINDOW_2, .7f);
 
@@ -323,6 +367,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneSawWindowAboveThresholdAndSelfSawWindow_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .9f);
         addSawOverlay(APP_SELF, WINDOW_1, .7f);
 
@@ -335,6 +383,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneSawWindowBelowThresholdAndSelfSawWindow_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .7f);
         addSawOverlay(APP_SELF, WINDOW_1, .7f);
 
@@ -346,6 +398,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenTwoSawWindowsTogetherBelowThresholdAndSelfSawWindow_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Resulting opacity for A = 1 - (1 - 0.5)*(1 - 0.5) = .75
         addSawOverlay(APP_A, WINDOW_1, .5f);
         addSawOverlay(APP_A, WINDOW_1, .5f);
@@ -359,6 +415,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenThresholdIs0AndSawWindowAtThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         setMaximumObscuringOpacityForTouch(0);
         addSawOverlay(APP_A, WINDOW_1, 0);
 
@@ -370,6 +430,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenThresholdIs0AndSawWindowAboveThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         setMaximumObscuringOpacityForTouch(0);
         addSawOverlay(APP_A, WINDOW_1, .1f);
 
@@ -382,6 +446,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenThresholdIs1AndSawWindowAtThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         setMaximumObscuringOpacityForTouch(1);
         addSawOverlay(APP_A, WINDOW_1, 1);
 
@@ -393,6 +461,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenThresholdIs1AndSawWindowBelowThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         setMaximumObscuringOpacityForTouch(1);
         addSawOverlay(APP_A, WINDOW_1, .9f);
 
@@ -406,6 +478,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowBelowThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .5f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -416,6 +492,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowAboveThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -426,6 +506,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowWithZeroOpacity_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ 0f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -436,6 +520,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowWithMinPositiveOpacity_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ MIN_POSITIVE_OPACITY);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -446,6 +534,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowWithSmallOpacity_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .01f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -455,6 +547,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneSelfActivityWindow_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_SELF, /* opacity */ .9f);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -465,6 +561,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenTwoActivityWindowsFromDifferentAppsTogetherBelowThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .7f);
         addActivityOverlay(APP_B, /* opacity */ .7f);
 
@@ -476,6 +576,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowAndOneSawWindowTogetherBelowThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .5f);
         addSawOverlay(APP_A, WINDOW_1, .5f);
 
@@ -487,6 +591,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowAndOneSelfCustomToastWindow_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Toast has to be before otherwise it would be blocked from background
         addToastOverlay(APP_SELF, /* custom */ true);
         addActivityOverlay(APP_A, /* opacity */ .5f);
@@ -499,6 +607,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowAndOneSelfSawWindow_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .5f);
         addSawOverlay(APP_SELF, WINDOW_1, .5f);
 
@@ -510,6 +622,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowAndOneSawWindowBelowThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .5f);
         addSawOverlay(APP_A, WINDOW_1, .5f);
 
@@ -521,6 +637,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneActivityWindowAndOneSawWindowBelowThresholdFromDifferentApp_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_A, /* opacity */ .5f);
         addSawOverlay(APP_B, WINDOW_1, .5f);
 
@@ -534,6 +654,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenActivityChildWindowWithSameTokenFromDifferentApp_allowsTouch()
             throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         IBinder token = mActivity.getWindow().getAttributes().token;
         addActivityChildWindow(APP_A, WINDOW_1, token);
 
@@ -545,6 +669,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenActivityChildWindowWithDifferentTokenFromDifferentApp_blocksTouch()
             throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
         addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
@@ -563,6 +691,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenActivityChildWindowWithDifferentTokenFromSameApp_allowsTouch()
             throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
         addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
@@ -578,7 +710,11 @@ public class WindowUntrustedTouchTest {
     /** Activity transitions */
 
     @Test
-    public void testLongEnterAnimations_areLimited() {
+    public void testLongEnterAnimations_areLimited() throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         long durationSet = mResources.getInteger(R.integer.long_animation_duration);
         assertThat(durationSet).isGreaterThan(
                 MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
@@ -593,7 +729,11 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testLongExitAnimations_areLimited() {
+    public void testLongExitAnimations_areLimited() throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         long durationSet = mResources.getInteger(R.integer.long_animation_duration);
         assertThat(durationSet).isGreaterThan(
                 MAX_ANIMATION_DURATION_MS + ANIMATION_DURATION_TOLERANCE_MS);
@@ -616,7 +756,12 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenEnterAnimationAboveThresholdAndNewActivityNotTouchable_blocksTouch() {
+    public void testWhenEnterAnimationAboveThresholdAndNewActivityNotTouchable_blocksTouch()
+            throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_9, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
@@ -627,7 +772,12 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenEnterAnimationBelowThresholdAndNewActivityNotTouchable_allowsTouch() {
+    public void testWhenEnterAnimationBelowThresholdAndNewActivityNotTouchable_allowsTouch()
+            throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addAnimatedActivityOverlay(APP_A, /* touchable */ false, R.anim.alpha_0_7, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
@@ -638,7 +788,12 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenEnterAnimationBelowThresholdAndNewActivityTouchable_blocksTouch() {
+    public void testWhenEnterAnimationBelowThresholdAndNewActivityTouchable_blocksTouch()
+            throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addAnimatedActivityOverlay(APP_A, /* touchable */ true, R.anim.alpha_0_7, R.anim.alpha_1);
         assertTrue(mWmState.waitForAppTransitionRunningOnDisplay(Display.DEFAULT_DISPLAY));
 
@@ -649,7 +804,12 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenExitAnimationBelowThreshold_allowsTouch() {
+    public void testWhenExitAnimationBelowThreshold_allowsTouch()
+            throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addExitAnimationActivity(APP_A);
 
         // Wait for ExitAnimationActivity open transition to complete to avoid
@@ -668,7 +828,12 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenExitAnimationAboveThreshold_blocksTouch() {
+    public void testWhenExitAnimationAboveThreshold_blocksTouch()
+            throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addExitAnimationActivity(APP_A);
         sendFinishToExitAnimationActivity(APP_A,
                 Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_9);
@@ -681,7 +846,12 @@ public class WindowUntrustedTouchTest {
     }
 
     @Test
-    public void testWhenExitAnimationAboveThresholdFromSameUid_allowsTouch() {
+    public void testWhenExitAnimationAboveThresholdFromSameUid_allowsTouch()
+            throws Exception {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addExitAnimationActivity(APP_SELF);
         sendFinishToExitAnimationActivity(APP_SELF,
                 Components.ExitAnimationActivityReceiver.EXTRA_VALUE_ANIMATION_0_9);
@@ -697,6 +867,10 @@ public class WindowUntrustedTouchTest {
     @FlakyTest(bugId = 293267005)
     @Test
     public void testWhenSelfTextToastWindow_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addToastOverlay(APP_SELF, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
@@ -714,7 +888,11 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenTextToastWindow_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
         assumeFalse("Watch does not support new Toast behavior yet.", FeatureUtil.isWatch());
+
         addToastOverlay(APP_A, /* custom */ false);
         Rect toast = mWmState.waitForResult("toast bounds",
                 state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
@@ -726,6 +904,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneCustomToastWindow_blocksTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addToastOverlay(APP_A, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -735,6 +917,10 @@ public class WindowUntrustedTouchTest {
 
     @Test
     public void testWhenOneSelfCustomToastWindow_allowsTouch() throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addToastOverlay(APP_SELF, /* custom */ true);
 
         mTouchHelper.tapOnViewCenter(mContainer);
@@ -745,6 +931,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneCustomToastWindowAndOneSelfSawWindow_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_SELF, WINDOW_1, .9f);
         addToastOverlay(APP_A, /* custom */ true);
 
@@ -756,6 +946,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneCustomToastWindowAndOneSawWindowBelowThreshold_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .5f);
         addToastOverlay(APP_A, /* custom */ true);
 
@@ -767,6 +961,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneCustomToastWindowAndOneSawWindowBelowThresholdFromDifferentApp_blocksTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addSawOverlay(APP_A, WINDOW_1, .5f);
         addToastOverlay(APP_B, /* custom */ true);
 
@@ -778,6 +976,10 @@ public class WindowUntrustedTouchTest {
     @Test
     public void testWhenOneSelfCustomToastWindowOneSelfActivityWindowAndOneSawBelowThreshold_allowsTouch()
             throws Throwable {
+        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
+        assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
+                FeatureUtil.isXrHeadset());
+
         addActivityOverlay(APP_SELF, /* opacity */ .9f);
         addSawOverlay(APP_A, WINDOW_1, .5f);
         addToastOverlay(APP_SELF, /* custom */ true);
