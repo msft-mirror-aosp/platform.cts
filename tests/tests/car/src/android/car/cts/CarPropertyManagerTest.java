@@ -4270,18 +4270,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     for (int i = 0; i < verifiers.size(); i++) {
                         VehiclePropertyVerifier verifier = verifiers.get(i);
                         CarPropertyConfig cfg = verifier.getCarPropertyConfig();
-                        if (!Flags.areaIdConfigAccess()
-                                && cfg.getAccess() != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                                && cfg.getAccess()
-                                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                            continue;
-                        }
 
                         List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
                         int propId = cfg.getPropertyId();
                         for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                            if (Flags.areaIdConfigAccess()
-                                    && areaIdConfig.getAccess()
+                            if (areaIdConfig.getAccess()
                                             != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
                                     && areaIdConfig.getAccess()
                                             != CarPropertyConfig
@@ -6222,19 +6215,12 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     for (int i = 0; i < verifiers.size(); i++) {
                         var verifier = verifiers.get(i);
                         CarPropertyConfig cfg = verifier.getCarPropertyConfig();
-                        if (!Flags.areaIdConfigAccess()
-                                && cfg.getAccess()
-                                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                            continue;
-                        }
 
                         List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
                         int propId = cfg.getPropertyId();
                         for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                            if (Flags.areaIdConfigAccess()
-                                    && areaIdConfig.getAccess()
-                                            != CarPropertyConfig
-                                                    .VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                            if (areaIdConfig.getAccess()
+                                    != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
                                 continue;
                             }
                             int areaId = areaIdConfig.getAreaId();
