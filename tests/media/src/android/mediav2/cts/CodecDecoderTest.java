@@ -16,11 +16,11 @@
 
 package android.mediav2.cts;
 
-import static android.media.codec.Flags.apvSupport;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420PackedPlanar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
+import static android.media.codec.Flags.apvSupport;
 import static android.media.tv.flags.Flags.FLAG_APPLY_PICTURE_PROFILES;
 import static android.media.tv.flags.Flags.FLAG_MEDIA_QUALITY_FW;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_ALL;
@@ -170,12 +170,6 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
             offset += info.size;
         }
         return list;
-    }
-
-    private Bundle setPictureProfileInstance(PictureProfile instance) {
-        final Bundle bundle = new Bundle();
-        bundle.putObject(MediaFormat.KEY_PICTURE_PROFILE_INSTANCE, instance);
-        return bundle;
     }
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
@@ -817,7 +811,9 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
                         .build();
         configureCodec(format, true, true, false);
         mCodec.start();
-        mCodec.setParameters(setPictureProfileInstance(testPictureProfile));
+        Bundle bundle = new Bundle();
+        bundle.putObject(MediaFormat.KEY_PICTURE_PROFILE_INSTANCE, testPictureProfile);
+        mCodec.setParameters(bundle);
         doWork(Integer.MAX_VALUE);
         queueEOS();
         waitForAllOutputs();

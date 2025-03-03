@@ -26,6 +26,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTa
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.graphics.Rect;
@@ -132,6 +133,8 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
     })
     @Test
     public void testGetEmbeddedActivityWindowInfo_embeddedActivity_secondaryDisplay() {
+        assumeTrue(supportsMultiDisplay());
+
         final WindowManagerState.DisplayContent secondaryDisplay =
                 createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
         final SplitPairRule splitPairRule = createWildcardSplitPairRule();
@@ -249,6 +252,8 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
     })
     @Test
     public void testEmbeddedActivityWindowInfoCallbackOnSecondaryDisplay() {
+        assumeTrue(supportsMultiDisplay());
+
         final WindowManagerState.DisplayContent secondaryDisplay =
                 createLandscapeLargeScreenSimulatedDisplay(createManagedVirtualDisplaySession());
         final TestWindowInfoChangeListener listener = new TestWindowInfoChangeListener();

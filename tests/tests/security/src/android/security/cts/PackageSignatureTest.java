@@ -43,7 +43,8 @@ import java.util.regex.Pattern;
 public class PackageSignatureTest extends AndroidTestCase {
 
     private static final String TAG = PackageSignatureTest.class.getSimpleName();
-    private static final Pattern TEST_PACKAGE_PATTERN = Pattern.compile("android\\.[^\\.]+\\.cts");
+    private static final Pattern TEST_PACKAGE_PATTERN =
+            Pattern.compile("android\\.[^\\.]+\\.cts(\\..*)?");
 
     @RestrictedBuildTest
     public void testPackageSignatures() throws Exception {
@@ -253,7 +254,12 @@ public class PackageSignatureTest extends AndroidTestCase {
             "com.android.cts.oomcatcher",
 
             // Collects device info at the start of the test
-            "com.android.compatibility.common.deviceinfo"
+            "com.android.compatibility.common.deviceinfo",
+
+            // Test package for Intrusion Detection API. Since it is in the same package as this
+            // CTS test, the trade fed uninstallation happens after this test is run,
+            // causing this test to fail. See b/395140628 for more details.
+            "com.android.coretests.apps.testapp"
 
             ));
 

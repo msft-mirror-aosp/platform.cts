@@ -20,7 +20,6 @@ import static android.service.chooser.ChooserResult.CHOOSER_RESULT_COPY;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.service.chooser.ChooserResult;
 
 import com.android.cts.verifier.R;
 
@@ -56,6 +55,6 @@ public final class SharesheetChooserResultCopyActivity extends SharesheetChooser
                 R.string.sharesheet_result_test_copy_pressed,
                 R.string.sharesheet_result_test_copy_not_found);
 
-        setExpectedResult(new ChooserResult(CHOOSER_RESULT_COPY, null, false));
+        setExpectedResult(CHOOSER_RESULT_COPY, null, false);
     }
 }

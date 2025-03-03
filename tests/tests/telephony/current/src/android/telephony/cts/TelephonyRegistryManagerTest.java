@@ -958,7 +958,6 @@ public class TelephonyRegistryManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testCarrierRoamingNtnModeChanged() throws Exception {
         CarrierRoamingNtnListener listener = new CarrierRoamingNtnListener();
 

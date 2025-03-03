@@ -19,7 +19,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.compatibility.common.tradefed.targetprep.ApkInstaller;
 import com.android.tradefed.build.FolderBuildInfo;
 import com.android.tradefed.config.ConfigurationDescriptor;
 import com.android.tradefed.config.ConfigurationException;
@@ -27,10 +26,10 @@ import com.android.tradefed.config.ConfigurationFactory;
 import com.android.tradefed.config.IConfiguration;
 import com.android.tradefed.config.IDeviceConfiguration;
 import com.android.tradefed.invoker.ExecutionFiles.FilesKey;
-import com.android.tradefed.targetprep.ITargetPreparer;
-import com.android.tradefed.targetprep.RootTargetPreparer;
 import com.android.tradefed.invoker.InvocationContext;
 import com.android.tradefed.invoker.TestInformation;
+import com.android.tradefed.targetprep.ITargetPreparer;
+import com.android.tradefed.targetprep.RootTargetPreparer;
 import com.android.tradefed.testtype.suite.ITestSuite;
 import com.android.tradefed.testtype.suite.TestSuiteInfo;
 import com.android.tradefed.testtype.suite.params.ModuleParameters;
@@ -82,7 +81,6 @@ public class CtsConfigLoadingTest {
                             "hdmi",
                             "inputmethod",
                             "libcore",
-                            "libnativehelper",
                             "location",
                             "media",
                             "metrics",

@@ -18,8 +18,8 @@ import logging
 import os.path
 
 import camera_properties_utils
-import capture_request_utils
 import its_base_test
+import its_device_utils
 import its_session_utils
 import opencv_processing_utils
 import ui_interaction_utils
@@ -47,6 +47,9 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
     super().setup_class()
     self.ui_app = ui_interaction_utils.JETPACK_CAMERA_APP_PACKAGE_NAME
     ui_interaction_utils.restart_cts_verifier(self.dut, self.ui_app)
+    # Disable accelerometer rotation to ensure intent result is delivered
+    its_device_utils.run_adb_shell_command(
+        self.dut.serial, 'settings put system accelerometer_rotation 0')
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(self.dut, self.ui_app)

@@ -23,7 +23,6 @@ import image_fov_utils
 import its_session_utils
 import opencv_processing_utils
 
-_ARUCO_MARKERS_COUNT = 4
 _CH_FULL_SCALE = 255
 _CONVERGED_STATE = 2
 
@@ -191,9 +190,6 @@ def find_aruco_markers(img, img_path, suffix):
       f'{img_path.stem}_{suffix}_aruco{img_path.suffix}')
   corners, ids, _ = opencv_processing_utils.find_aruco_markers(
       img, aruco_path)
-  if len(ids) != _ARUCO_MARKERS_COUNT:
-    raise AssertionError(
-        f'{_ARUCO_MARKERS_COUNT} ArUco markers should be detected.')
   return corners, ids
 
 

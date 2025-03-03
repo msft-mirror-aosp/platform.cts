@@ -23,7 +23,6 @@
 #include <dlfcn.h>
 #include <gtest/gtest.h>
 #include <sys/system_properties.h>
-#include <system/audio.h> /* FCC_LIMIT */
 
 #include <atomic>
 #include <map>
@@ -31,7 +30,6 @@
 #include <unordered_set>
 
 #include "test_aaudio.h" // NANOS_PER_MILLISECOND
-
 int64_t getNanoseconds(clockid_t clockId = CLOCK_MONOTONIC);
 const char* performanceModeToString(aaudio_performance_mode_t mode);
 const char* sharingModeToString(aaudio_sharing_mode_t mode);
@@ -40,6 +38,7 @@ static constexpr const char* FEATURE_PLAYBACK = "android.hardware.audio.output";
 static constexpr const char* FEATURE_RECORDING = "android.hardware.microphone";
 static constexpr const char* FEATURE_LOW_LATENCY = "android.hardware.audio.low_latency";
 bool deviceSupportsFeature(const char* feature);
+int getOutChannelCountMax();
 
 const static std::set<aaudio_policy_t> ALL_VALID_POLICIES = {AAUDIO_POLICY_NEVER,
                                                              AAUDIO_POLICY_AUTO,
@@ -154,7 +153,7 @@ class StreamBuilderHelper {
     const int32_t kMinValidSampleRate = 8000; // 8 kHz
     const int32_t kMaxValidSampleRate = 2000000; // 2 MHz
     const int32_t kMinValidChannelCount = 1;
-    const int32_t kMaxValidChannelCount = FCC_LIMIT;
+    const int32_t kMaxValidChannelCount = getOutChannelCountMax();
 };
 
 class InputStreamBuilderHelper : public StreamBuilderHelper {

@@ -811,6 +811,16 @@ public class WindowInsetsTest {
     }
 
     @Test
+    public void testInset_halfAmount() {
+        final int typeMask = WindowInsets.Type.statusBars();
+        final WindowInsets insets =
+                new WindowInsets.Builder().setInsets(typeMask, Insets.of(0, 10, 0, 0)).build();
+        final WindowInsets insetInsets = insets.inset(0, 5, 0, 0);
+
+        assertEquals(Insets.of(0, 5, 0, 0), insetInsets.getInsets(typeMask));
+    }
+
+    @Test
     public void testInset_boundingRects() {
         final WindowInsets insets =
                 new WindowInsets.Builder()

@@ -55,8 +55,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelUuid;
 import android.os.PersistableBundle;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SystemUserOnly;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -563,43 +561,6 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
-    public void testTelephonyApisAreAccessible() {
-        // The following methods may return any value depending on the state of the device. Simply
-        // call them to make sure they do not throw any exceptions. Methods that return a device
-        // identifier will be accessible to apps with carrier privileges in Q, but this may change
-        // in a future release.
-        try {
-            final int subId = mTelephonyManager.getSubscriptionId();
-            mTelephonyManager.getDeviceId();
-            mTelephonyManager.getImei();
-            mTelephonyManager.getMeid();
-            mTelephonyManager.getDeviceSoftwareVersion();
-            mTelephonyManager.getNai();
-            mTelephonyManager.getDataNetworkType();
-            mTelephonyManager.getVoiceNetworkType();
-            mTelephonyManager.getSimSerialNumber();
-            mTelephonyManager.getSubscriberId();
-            mTelephonyManager.getGroupIdLevel1();
-            mTelephonyManager.getLine1Number();
-            mTelephonyManager.getVoiceMailNumber();
-            mTelephonyManager.getVisualVoicemailPackageName();
-            mTelephonyManager.getVoiceMailAlphaTag();
-            mTelephonyManager.getForbiddenPlmns();
-            mTelephonyManager.getServiceState();
-            mTelephonyManager.getManualNetworkSelectionPlmn();
-            mTelephonyManager.setForbiddenPlmns(new ArrayList<String>());
-            // TODO(b/235490259): test all slots once TM#isModemEnabledForSlot allows
-
-            mTelephonyManager.isModemEnabledForSlot(
-                    SubscriptionManager.getSlotIndex(subId));
-        } catch (SecurityException e) {
-            fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
     public void testTelephonyApisAreAccessibleWithFeatureMapping() {
         // The following methods may return any value depending on the state of the device. Simply
         // call them to make sure they do not throw any exceptions. Methods that return a device
@@ -642,7 +603,6 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
     public void testImsApisAreAccessibleWithFeatureMapping() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_IMS));
         final int subId = mTelephonyManager.getSubscriptionId();

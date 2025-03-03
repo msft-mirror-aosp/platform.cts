@@ -222,19 +222,13 @@ public final class CarEvsManagerTest extends AbstractCarTestCase {
             assertThat(mStreamCallback.waitForStreamEvent(stream0,
                     CarEvsManager.STREAM_EVENT_STREAM_STOPPED)).isTrue();
 
-            // Check a current status of two active service types, again.
-            assertThat(verifyServiceStatus(stream0, CarEvsManager.SERVICE_STATE_INACTIVE)).isTrue();
+            // Check the current status of stream1; it must stay in the active state.
             assertThat(verifyServiceStatus(stream1, CarEvsManager.SERVICE_STATE_ACTIVE)).isTrue();
 
             // Stop another video stream and wait for a confirmation.
             mCarEvsManager.stopVideoStream(stream1);
             assertThat(mStreamCallback.waitForStreamEvent(stream1,
                     CarEvsManager.STREAM_EVENT_STREAM_STOPPED)).isTrue();
-
-            // Check a current status of two active service types one last time. Both service types
-            // must be now in the inactive state.
-            assertThat(verifyServiceStatus(stream0, CarEvsManager.SERVICE_STATE_INACTIVE)).isTrue();
-            assertThat(verifyServiceStatus(stream1, CarEvsManager.SERVICE_STATE_INACTIVE)).isTrue();
         }
 
         // Unregister a listener.

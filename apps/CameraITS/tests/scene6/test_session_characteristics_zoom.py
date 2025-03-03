@@ -35,6 +35,7 @@ _MAX_FPS_INDEX = 1
 _MAX_STREAM_COUNT = 3
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _SEC_TO_NSEC = 1_000_000_000
+_SESSION_CHARACTERISTICS_ZOOM_MAX = 4.0
 
 
 class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
@@ -230,7 +231,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               z_min, z_max = float(z_range[0]), float(z_range[1])
               camera_properties_utils.skip_unless(
                   z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
-              z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
+              z_max = min(z_max, _SESSION_CHARACTERISTICS_ZOOM_MAX)
               z_list = [z_min, z_max]
               if z_min != 1:
                 z_list = np.insert(z_list, 0, 1)  # make reference zoom 1x

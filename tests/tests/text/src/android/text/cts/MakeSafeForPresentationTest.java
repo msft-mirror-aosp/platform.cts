@@ -24,6 +24,9 @@ import static android.text.TextUtils.makeSafeForPresentation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import android.graphics.drawable.Drawable;
+import android.platform.test.annotations.DisabledOnRavenwood;
+
 import org.junit.Test;
 
 public class MakeSafeForPresentationTest {
@@ -123,6 +126,7 @@ public class MakeSafeForPresentationTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void replaceImgTags() {
         assertStringEquals("a\ufffcb", makeSafeForPresentation("a<img src=\"myimg.jpg\" />b", 0, 0,
                 0));

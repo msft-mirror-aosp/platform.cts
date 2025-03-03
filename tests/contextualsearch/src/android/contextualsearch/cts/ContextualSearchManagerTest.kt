@@ -26,13 +26,18 @@ import android.contextualsearch.caller.ContextualSearchMessage
 import android.graphics.Bitmap
 import android.os.OutcomeReceiver
 import android.os.SystemClock
+import android.os.UserManager
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.UserTest
 import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.BroadcastMessenger.Receiver
 import com.android.compatibility.common.util.SystemUtil
@@ -49,7 +54,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
+@RunWith(BedsteadJUnit4::class)
 class ContextualSearchManagerTest {
     @get:Rule val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
@@ -105,7 +110,22 @@ class ContextualSearchManagerTest {
     }
 
     @Test
+    @UserTest(
+        UserType.SYSTEM_USER,
+        UserType.INITIAL_USER,
+        UserType.ADDITIONAL_USER,
+        UserType.WORK_PROFILE
+    )
+    @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
+    @EnsureHasDeviceOwner
     fun testContextualSearchExtras() {
+        // Launch an activity for the current user.
+        TestApis.activities().startActivity(
+            Intent(context, OverlayActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        await(OverlayActivity.WATCHER?.resumed, "Waiting for OverlayActivity to be resumed.")
+
         val beforeMs = SystemClock.uptimeMillis()
         mManager.startContextualSearch(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         await(
@@ -115,19 +135,23 @@ class ContextualSearchManagerTest {
         // Now that the activity has launched, we can verify launch extras.
         val extras = mWatcher!!.launchExtras!!
         assertThat(extras.getInt(ContextualSearchManager.EXTRA_ENTRYPOINT))
-                .isEqualTo(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
+            .isEqualTo(ContextualSearchManager.ENTRYPOINT_LONG_PRESS_HOME)
         // Setting the default to true to make sure that default is not being returned
         assertThat(extras.getBoolean(ContextualSearchManager.EXTRA_FLAG_SECURE_FOUND, true))
-                .isFalse()
+            .isFalse()
         assertThat(extras.getParcelable(
             ContextualSearchManager.EXTRA_SCREENSHOT,
             Bitmap::class.java
         )).isNotNull()
-        // Setting the default to true to make sure that default is not being returned
-        assertThat(extras.getBoolean(
-            ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
-            true
-        )).isFalse()
+        // The OverlayActivity should be visible and marked as managed profile or not accordingly.
+        val isManagedProfile =
+            (context.getSystemService(Context.USER_SERVICE) as UserManager).isManagedProfile
+        assertThat(
+            extras.getBoolean(
+                ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
+                !isManagedProfile // ensure the default isn't being used.
+            )
+        ).isEqualTo(isManagedProfile)
         assertThat(extras.getParcelableArrayList(
             ContextualSearchManager.EXTRA_VISIBLE_PACKAGE_NAMES,
             String::class.java
@@ -158,7 +182,7 @@ class ContextualSearchManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CONTEXTUAL_SEARCH_WINDOW_LAYER)
+    @RequiresFlagsEnabled(Flags.FLAG_CONTEXTUAL_SEARCH_PREVENT_SELF_CAPTURE)
     fun testOwnSecureOverlayNotCaptured() {
         context.startActivity(
             Intent(context, OverlayActivity::class.java)
@@ -297,8 +321,16 @@ class ContextualSearchManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
     @Test
+    @UserTest(
+        UserType.SYSTEM_USER,
+        UserType.INITIAL_USER,
+        UserType.ADDITIONAL_USER,
+        UserType.WORK_PROFILE
+    )
+    @EnsureHasProfileOwner(onUser = UserType.INITIAL_USER, isPrimary = true)
+    @EnsureHasDeviceOwner
+    @RequiresFlagsEnabled(Flags.FLAG_SELF_INVOCATION)
     fun testContextualSearchFromOutOfProcessForegroundActivity() {
         // Test startContextualSearch() from an out of process foreground activity.
         TestApis.activities().startActivity(
@@ -320,6 +352,14 @@ class ContextualSearchManagerTest {
         val extras = mWatcher!!.launchExtras!!
         assertThat(extras.getInt(ContextualSearchManager.EXTRA_ENTRYPOINT))
             .isEqualTo(INTERNAL_ENTRYPOINT_APP)
+        val isManagedProfile =
+            (context.getSystemService(Context.USER_SERVICE) as UserManager).isManagedProfile
+        assertThat(
+            extras.getBoolean(
+                ContextualSearchManager.EXTRA_IS_MANAGED_PROFILE_VISIBLE,
+                !isManagedProfile // ensure the default isn't being used.
+            )
+        ).isEqualTo(isManagedProfile)
     }
 
     private class TestOutcomeReceiver(

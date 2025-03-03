@@ -41,6 +41,7 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
 _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
+_WIDE_ONLY_ZOOM_RATIO_THRESHOLD = 4.0
 _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
 _WIDE_ZOOM_RATIO_MAX = 2.5
 
@@ -274,6 +275,11 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
                         z, e)
+          if not tele_camera_found and z > _WIDE_ONLY_ZOOM_RATIO_THRESHOLD:
+            logging.debug('No Tele camera found and zoom ratio %.2f is greater '
+                          'than threshold %.2f, ignoring remaining captures.',
+                          z, _WIDE_ONLY_ZOOM_RATIO_THRESHOLD)
+            z_max = z
           break
 
         all_aruco_corners.append([corner[0] for corner in corners])

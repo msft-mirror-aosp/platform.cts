@@ -32,23 +32,18 @@ import android.graphics.Path.Direction;
 import android.graphics.PathIterator;
 import android.graphics.RectF;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class PathTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
     // Test constants
     private static final float LEFT = 10.0f;
     private static final float RIGHT = 50.0f;

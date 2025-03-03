@@ -19,7 +19,7 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test_helper_app {
+android_test {
     name: "CtsExtendedMockingTestCases",
     defaults: ["cts_defaults"],
     libs: ["android.test.runner.stubs"],

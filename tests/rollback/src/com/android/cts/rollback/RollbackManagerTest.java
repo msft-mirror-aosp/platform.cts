@@ -838,7 +838,6 @@ public class RollbackManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RECOVERABILITY_DETECTION)
     public void testImpactLevelInRollback() throws Exception {
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback().setRollbackImpactLevel(1).commit();
@@ -849,7 +848,6 @@ public class RollbackManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_RECOVERABILITY_DETECTION)
     public void testImpactLevelInRollbackDefault() throws Exception {
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback().commit();
@@ -859,9 +857,8 @@ public class RollbackManagerTest {
         assertThat(rollback).isNotNull();
     }
 
-
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_RECOVERABILITY_DETECTION, FLAG_ENABLE_CRASHRECOVERY})
+    @RequiresFlagsEnabled(FLAG_ENABLE_CRASHRECOVERY)
     public void testImpactLevelInRollback_withGetRollbackImpactAsSystemApi() throws Exception {
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback().setRollbackImpactLevel(1).commit();
@@ -873,8 +870,9 @@ public class RollbackManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_RECOVERABILITY_DETECTION, FLAG_ENABLE_CRASHRECOVERY})
-    public void testImpactLevelInRollbackDefault_withGetRollbackImpactAsSystemApi() throws Exception {
+    @RequiresFlagsEnabled(FLAG_ENABLE_CRASHRECOVERY)
+    public void testImpactLevelInRollbackDefault_withGetRollbackImpactAsSystemApi()
+            throws Exception {
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback().commit();
         RollbackUtils.waitForAvailableRollback(TestApp.A);

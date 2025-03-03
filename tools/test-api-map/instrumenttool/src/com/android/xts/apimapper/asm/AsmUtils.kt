@@ -33,14 +33,10 @@ const val CTOR_DESC = "()V"
 const val CTOR_NAME = "<init>"
 
 /** Convert the class name to jvm format. */
-fun String.toJvmClassName(): String {
-    return this.replace('.', '/')
-}
+fun String.toJvmClassName(): String = replace('.', '/')
 
 /** Convert the class name from jvm format. */
-fun String.toHumanReadableClassName(): String {
-    return this.replace('/', '.')
-}
+fun String.toHumanReadableClassName() = replace(Regex("[/$]"), ".")
 
 /** Convert method params from jvm format. */
 fun String.toHumanReadableDesc(): String {

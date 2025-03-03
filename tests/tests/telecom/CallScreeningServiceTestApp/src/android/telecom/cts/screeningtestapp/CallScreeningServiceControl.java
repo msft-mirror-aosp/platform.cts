@@ -25,6 +25,7 @@ import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class CallScreeningServiceControl extends Service {
     private static final int ASYNC_TIMEOUT = 10000;
@@ -47,13 +48,13 @@ public class CallScreeningServiceControl extends Service {
                 @Override
                 public void reset() {
                     Log.i(TAG, "reset: mCallResponse");
-                    mCallResponse =
+                    mCallResponse.set(
                             new CallScreeningService.CallResponse.Builder()
                                     .setDisallowCall(false)
                                     .setRejectCall(false)
                                     .setSkipCallLog(false)
                                     .setSkipNotification(false)
-                                    .build();
+                                    .build());
                     mBindingLatch = new CountDownLatch(1);
                     CtsPostCallActivity.resetPostCallActivity();
                 }
@@ -66,14 +67,14 @@ public class CallScreeningServiceControl extends Service {
                         boolean shouldSkipCallLog,
                         boolean shouldSkipNotification) {
 
-                    mCallResponse =
+                    mCallResponse.set(
                             new CallScreeningService.CallResponse.Builder()
                                     .setSkipNotification(shouldSkipNotification)
                                     .setSkipCallLog(shouldSkipCallLog)
                                     .setDisallowCall(shouldDisallowCall)
                                     .setRejectCall(shouldRejectCall)
                                     .setSilenceCall(shouldSilenceCall)
-                                    .build();
+                                    .build());
 
                     Log.i(
                             TAG,
@@ -81,7 +82,7 @@ public class CallScreeningServiceControl extends Service {
                                     "setCallResponse: shouldDisallowCall=[%b],"
                                         + " shouldRejectCall=[%b], shouldSilenceCall=[%b],"
                                         + " shouldSkipCallLog=[%b], shouldSkipNotification=[%b] ,"
-                                        + " mCallResponse.hash=[%d]",
+                                        + " mCallResponse.hash=[%d] (AR)",
                                     shouldDisallowCall,
                                     shouldRejectCall,
                                     shouldSilenceCall,
@@ -120,14 +121,15 @@ public class CallScreeningServiceControl extends Service {
                 }
             };
 
-    private CallScreeningService.CallResponse mCallResponse =
-            new CallScreeningService.CallResponse.Builder()
-                    .setDisallowCall(false)
-                    .setRejectCall(false)
-                    .setSilenceCall(false)
-                    .setSkipCallLog(false)
-                    .setSkipNotification(false)
-                    .build();
+    private AtomicReference<CallScreeningService.CallResponse> mCallResponse =
+            new AtomicReference<>(
+                    new CallScreeningService.CallResponse.Builder()
+                            .setDisallowCall(false)
+                            .setRejectCall(false)
+                            .setSilenceCall(false)
+                            .setSkipCallLog(false)
+                            .setSkipNotification(false)
+                            .build());
 
     public static CallScreeningServiceControl getInstance() {
         return sCallScreeningServiceControl;
@@ -159,6 +161,7 @@ public class CallScreeningServiceControl extends Service {
     }
 
     public CallScreeningService.CallResponse getCallResponse() {
+        CallScreeningService.CallResponse currentResponse = mCallResponse.get();
         Log.i(
                 TAG,
                 String.format(
@@ -166,13 +169,13 @@ public class CallScreeningServiceControl extends Service {
                                 + "shouldRejectCall=[%b], "
                                 + "shouldSilenceCall=[%b], "
                                 + "shouldSkipCallLog=[%b], "
-                                + "shouldSkipNotification=[%b] , mCallResponse.hash=[%d]",
-                        mCallResponse.getDisallowCall(),
-                        mCallResponse.getRejectCall(),
-                        mCallResponse.getSilenceCall(),
-                        mCallResponse.getSkipCallLog(),
-                        mCallResponse.getSkipNotification(),
-                        mCallResponse.hashCode()));
-        return mCallResponse;
+                                + "shouldSkipNotification=[%b] , mCallResponse.hash=[%d] (AR)",
+                        currentResponse.getDisallowCall(),
+                        currentResponse.getRejectCall(),
+                        currentResponse.getSilenceCall(),
+                        currentResponse.getSkipCallLog(),
+                        currentResponse.getSkipNotification(),
+                        currentResponse.hashCode()));
+        return currentResponse;
     }
 }

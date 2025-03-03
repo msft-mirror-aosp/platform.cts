@@ -242,6 +242,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     @After
     public void tearDown() throws Exception {
+        sInstrumentation.waitForIdleSync();
         sUiAutomation.dropShellPermissionIdentity();
     }
 
@@ -2180,17 +2181,14 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final String text = "Hello World!";
         sUiAutomation.executeAndWaitForEvent(
                 () ->
-                        sInstrumentation.runOnMainSync(
-                                () -> {
-                                    EditText myView = mActivity.findViewById(R.id.edittext);
-                                    if (myView == null) {
-                                        myView = new EditText(getContext());
-                                        ((LinearLayout) mActivity.findViewById(R.id.containerView))
-                                                .addView(myView);
-                                    }
-                                    myView.setTextIsSelectable(true);
-                                    myView.setText(text);
-                                }),
+                        mActivityRule
+                                .getScenario()
+                                .onActivity(
+                                        activity -> {
+                                            EditText myView = activity.findViewById(R.id.edittext);
+                                            myView.setTextIsSelectable(true);
+                                            myView.setText(text);
+                                        }),
                 filterForEventType(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED),
                 DEFAULT_TIMEOUT_MS);
 
@@ -2218,20 +2216,32 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                                 }),
                 filterForEventType(AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED),
                 DEFAULT_TIMEOUT_MS);
+        try {
+            AccessibilityNodeInfo myViewNode =
+                    sUiAutomation
+                            .getRootInActiveWindow()
+                            .findAccessibilityNodeInfosByText(text)
+                            .getFirst();
 
-        AccessibilityNodeInfo myViewNode =
-                sUiAutomation
-                        .getRootInActiveWindow()
-                        .findAccessibilityNodeInfosByText(text)
-                        .getFirst();
-
-        assertThat(myViewNode.getTextSelectionStart()).isEqualTo(0);
-        assertThat(myViewNode.getTextSelectionEnd()).isEqualTo(4);
-        assertThat(myViewNode.getSelection()).isNotNull();
-        assertThat(myViewNode.getSelection().getStart().getNode()).isEqualTo(myViewNode);
-        assertThat(myViewNode.getSelection().getEnd().getNode()).isEqualTo(myViewNode);
-        assertThat(myViewNode.getSelection().getStart().getOffset()).isEqualTo(0);
-        assertThat(myViewNode.getSelection().getEnd().getOffset()).isEqualTo(4);
+            assertThat(myViewNode.getTextSelectionStart()).isEqualTo(0);
+            assertThat(myViewNode.getTextSelectionEnd()).isEqualTo(4);
+            assertThat(myViewNode.getSelection()).isNotNull();
+            assertThat(myViewNode.getSelection().getStart().getNode()).isEqualTo(myViewNode);
+            assertThat(myViewNode.getSelection().getEnd().getNode()).isEqualTo(myViewNode);
+            assertThat(myViewNode.getSelection().getStart().getOffset()).isEqualTo(0);
+            assertThat(myViewNode.getSelection().getEnd().getOffset()).isEqualTo(4);
+        } finally {
+            // Wait for EditText finish show popup menu async and close then set the view back to
+            // non selectable
+            mActivityRule
+                    .getScenario()
+                    .onActivity(
+                            activity -> {
+                                EditText myView = activity.findViewById(R.id.edittext);
+                                // clear the selection
+                                myView.setTextIsSelectable(false);
+                            });
+        }
     }
 
     @Test

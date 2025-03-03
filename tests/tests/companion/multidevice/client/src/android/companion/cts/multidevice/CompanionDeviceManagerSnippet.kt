@@ -22,7 +22,9 @@ import android.companion.AssociationInfo
 import android.companion.AssociationRequest
 import android.companion.BluetoothDeviceFilter
 import android.companion.CompanionDeviceManager
+import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.CompanionActivity
+import android.companion.cts.common.PrimaryCompanionService
 import android.companion.cts.multidevice.CallbackUtils.SystemDataTransferCallback
 import android.companion.cts.uicommon.CompanionDeviceManagerUi
 import android.content.Context
@@ -162,6 +164,29 @@ class CompanionDeviceManagerSnippet : Snippet {
     @Rpc(description = "Remove bluetooth bond.")
     fun removeBond(associationId: Int): Boolean {
         return companionDeviceManager.removeBond(associationId)
+    }
+
+    @Rpc(description = "Start listening for device presence event.")
+    fun startObservingDevicePresence(associationId: Int) {
+        val request = ObservingDevicePresenceRequest.Builder()
+            .setAssociationId(associationId)
+            .build()
+        companionDeviceManager.startObservingDevicePresence(request)
+    }
+
+    @Rpc(description = "Stop listening for device presence event.")
+    fun stopObservingDevicePresence(associationId: Int) {
+        val request = ObservingDevicePresenceRequest.Builder()
+            .setAssociationId(associationId)
+            .build()
+        companionDeviceManager.stopObservingDevicePresence(request)
+    }
+
+    @Rpc(description = "Wait for a BT classic device to connect to a test service.")
+    fun isAssociationBtConnected(associationId: Int): Boolean {
+        return PrimaryCompanionService.connectedBtBondDevices.stream().anyMatch {
+            it.id == associationId
+        }
     }
 
     @Rpc(description = "Attach client socket.")

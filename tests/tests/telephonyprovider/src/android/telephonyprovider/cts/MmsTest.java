@@ -25,10 +25,13 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.Telephony;
@@ -38,6 +41,7 @@ import android.provider.Telephony.Mms.Outbox;
 import android.provider.Telephony.Mms.Sent;
 import android.provider.Telephony.Sms;
 import android.telephony.cts.util.DefaultSmsAppHelper;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.test.filters.SmallTest;
@@ -60,20 +64,33 @@ public class MmsTest {
     private static final String TEXT_PLAIN = "text/plain";
 
     private ContentResolver mContentResolver;
+    @Nullable private static String sOriginalDefaultSmsApp;
+    private static boolean sSetDefaultSmsAppSuccessful = false;
 
     @BeforeClass
-    public static void ensureDefaultSmsApp() {
+    public static void ensureDefaultSmsApp() throws Exception {
+        Context context = getInstrumentation().getContext();
+        sOriginalDefaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(context);
+        if (TextUtils.isEmpty(sOriginalDefaultSmsApp)
+                || sOriginalDefaultSmsApp.equals("android.telephonyprovider.cts")) {
+            sSetDefaultSmsAppSuccessful = DefaultSmsAppHelper.setDefaultSmsApp(
+                    context, "com.google.android.apps.messaging");
+        }
         DefaultSmsAppHelper.ensureDefaultSmsApp();
     }
 
     @AfterClass
-    public static void cleanup() {
+    public static void cleanup() throws Exception {
+        Context context = getInstrumentation().getContext();
         ContentResolver contentResolver = getInstrumentation().getContext().getContentResolver();
         contentResolver.delete(Telephony.Mms.CONTENT_URI, null, null);
+        if (!TextUtils.isEmpty(sOriginalDefaultSmsApp)) {
+            assertTrue(DefaultSmsAppHelper.setDefaultSmsApp(context, sOriginalDefaultSmsApp));
+        }
     }
 
     @Before
-    public void setupTestEnvironment() {
+    public void setupTestEnvironment() throws Exception {
         assumeTelephony();
         assumeMessaging();
         cleanup();
@@ -535,7 +552,17 @@ public class MmsTest {
      */
     @Test
     public void testSubqueryNotAllowed()  throws Throwable  {
-        Log.d(TAG, "testSubqueryNotAllowed");
+        Log.d(TAG, "testSubqueryNotAllowed: "
+                + "sOriginalDefaultSmsApp=" + sOriginalDefaultSmsApp
+                + " sSetDefaultSmsAppSuccessful=" + sSetDefaultSmsAppSuccessful);
+
+        if (TextUtils.isEmpty(sOriginalDefaultSmsApp)
+                || sOriginalDefaultSmsApp.equals("android.telephonyprovider.cts")) {
+            Log.d(TAG, "testSubqueryNotAllowed: check if messages app is set as "
+                    + "default sms app successfully");
+            assumeTrue(sSetDefaultSmsAppSuccessful);
+        }
+
         int messageType = PduHeaders.MESSAGE_TYPE_NOTIFICATION_IND;
         String expectedSubject = "testMmsQuery_canViewNotificationIndMessages";
         Log.d(TAG, "testSubqueryNotAllowed: insertTestMms");

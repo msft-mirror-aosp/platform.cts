@@ -49,7 +49,7 @@ public class GnssTtffTests extends GnssTestCase {
    * connection should not matter hence one threshold is used.
    * @throws Exception
    */
-  @CddTest(requirement="7.3.3")
+  @CddTest(requirement = "7.3.3")
   @AppModeFull(reason = "permission ACCESS_LOCATION_EXTRA_COMMANDS not available to instant apps")
   public void testTtffWithNetwork() throws Exception {
     if (!TestUtils.deviceHasGpsFeature(getContext())) {
@@ -61,14 +61,21 @@ public class GnssTtffTests extends GnssTestCase {
       return;
     }
 
+    // Turn on assisted_gps_enabled if it's not enabled
+    int oldAssistedGpsEnabled = TestUtils.getAssistedGpsEnabled(getContext());
+    TestUtils.setAssistedGpsEnabled(getContext(), 1);
+
     ensureNetworkStatus();
-    if (hasCellularData()) {
-      checkTtffColdWithWifiOn(TTFF_WITH_WIFI_CELLUAR_COLD_TH_SECS);
+    try {
+      if (hasCellularData()) {
+        checkTtffColdWithWifiOn(TTFF_WITH_WIFI_CELLUAR_COLD_TH_SECS);
+      } else {
+        checkTtffColdWithWifiOn(TTFF_WITH_WIFI_ONLY_COLD_TH_SECS);
+      }
+      checkTtffHotWithWifiOn(TTFF_HOT_TH_SECS);
+    } finally {
+      TestUtils.setAssistedGpsEnabled(getContext(), oldAssistedGpsEnabled);
     }
-    else {
-      checkTtffColdWithWifiOn(TTFF_WITH_WIFI_ONLY_COLD_TH_SECS);
-    }
-    checkTtffHotWithWifiOn(TTFF_HOT_TH_SECS);
   }
 
   /**

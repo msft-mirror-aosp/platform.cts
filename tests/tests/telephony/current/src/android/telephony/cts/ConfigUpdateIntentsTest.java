@@ -23,11 +23,8 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.ConfigUpdate;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.InstrumentationRegistry;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -77,7 +74,6 @@ public class ConfigUpdateIntentsTest {
                 .hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
     @Test
     public void testConfigUpdateReceiversIntent() {
         Intent configUpdateIntent = new Intent();

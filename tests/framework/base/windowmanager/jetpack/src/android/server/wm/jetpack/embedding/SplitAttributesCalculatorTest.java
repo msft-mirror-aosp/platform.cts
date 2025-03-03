@@ -32,9 +32,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.app.PictureInPictureParams;
 import android.content.Intent;
-import android.server.wm.NestedShellPermission;
 import android.server.wm.RotationSession;
-import android.server.wm.TestTaskOrganizer;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivity;
@@ -340,14 +338,12 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
                 + " split pair launch.");
 
         // Make the host task go to split screen.
-        final TestTaskOrganizer[] taskOrganizer = new TestTaskOrganizer[1];
-        NestedShellPermission.run(() -> taskOrganizer[0] = new TestTaskOrganizer());
-        taskOrganizer[0].putTaskInSplitPrimary(activityA.getTaskId());
+        mTaskOrganizer.putTaskInSplitPrimary(activityA.getTaskId());
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called because"
                 + " the host task enters to split screen");
 
-        taskOrganizer[0].dismissSplitScreen(true /* primaryOnTop */);
+        mTaskOrganizer.dismissSplitScreen(true /* primaryOnTop */);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called because"
                 + " the host task leaves to split screen");
@@ -360,6 +356,8 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
     @Test
     public void testSplitAttributesCalculatorInvocation_acrossDisplays()
             throws InterruptedException {
+        assumeTrue(supportsMultiDisplay());
+
         final String tag = "testSplitAttributesCalculatorInvocation_acrossDisplays";
         final InvocationVerifier verifier = new InvocationVerifier(tag);
 

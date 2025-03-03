@@ -16,7 +16,10 @@
 
 package android.media.audio.cts;
 
+import static android.Manifest.permission.MODIFY_DEFAULT_AUDIO_EFFECTS;
 import static android.media.audio.Flags.FLAG_FEATURE_SPATIAL_AUDIO_HEADTRACKING_LOW_LATENCY;
+
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static org.junit.Assert.assertThrows;
 
@@ -29,6 +32,7 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.Spatializer;
 import android.media.audiofx.AudioEffect;
+import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
@@ -77,12 +81,20 @@ public class SpatializerTest extends CtsAndroidTestCase {
     }
 
     /**
-     * Test that if the device reports audio effects of type EFFECT_TYPE_SPATIALIZER,
+     * Test that if the device reports the property ro.audio.spatializer_enabled as true
+     * and has an audio effect of type EFFECT_TYPE_SPATIALIZER,
      * then the Spatializer's immersive audio level has some spatialization capability
      * @throws Exception when SPATIALIZER_IMMERSIVE_LEVEL_NONE is the reported immersive level
      *                   by the Spatializer instance
      */
     public void testEffectSpatializer() throws Exception {
+        final boolean spatEnabled = SystemProperties.getBoolean("ro.audio.spatializer_enabled",
+                false);
+        if (!spatEnabled) {
+            Log.i(TAG, "testEffectSpatializer: spatializer_enabled false, skipping");
+            return;
+        }
+
         AudioEffect.Descriptor[] descriptors = AudioEffect.queryEffects();
         boolean hasSpatializer = false;
         for (AudioEffect.Descriptor desc : descriptors) {
@@ -497,19 +509,21 @@ public class SpatializerTest extends CtsAndroidTestCase {
             spat.addOnSpatializerStateChangedListener(Executors.newSingleThreadExecutor(),
                     stateListener);
             // now disable the effect and check head tracker availability
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                    "android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-            spat.setEnabled(false);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            // now disable the effect and check head tracker availability
+            runWithShellPermissionIdentity(
+                    () -> {
+                        spat.setEnabled(false);
+                    },
+                    MODIFY_DEFAULT_AUDIO_EFFECTS);
             assertFalse("spatializer state listener not notified after disabling",
                     stateListener.getEnabled());
             assertFalse("head tracker available despite spatializer disabled",
                     spat.isHeadTrackerAvailable());
-            // reset state and wait until done
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
-                    "android.permission.MODIFY_DEFAULT_AUDIO_EFFECTS");
-            spat.setEnabled(true);
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            runWithShellPermissionIdentity(
+                    () -> {
+                        spat.setEnabled(true);
+                    },
+                    MODIFY_DEFAULT_AUDIO_EFFECTS);
             assertTrue("spatializer state listener not notified after enabling",
                     stateListener.getEnabled());
         }

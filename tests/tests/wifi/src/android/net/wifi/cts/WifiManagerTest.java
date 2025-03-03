@@ -759,6 +759,24 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 return mWifiStateChangedCount;
             }
         }
+
+        /**
+         * Verifies that onWifiStateChanged is called a given number of times.
+         *
+         * @throws InterruptedException
+         */
+        public void verifyWifiStateChangeCount(int times) throws InterruptedException {
+            long now = System.currentTimeMillis();
+            long deadline = now + TEST_WAIT_DURATION_MS;
+            while (now < deadline) {
+                mWifiStateLock.wait(deadline - now);
+                if (getWifiStateChangedCount() >= times) {
+                    return;
+                }
+                now = System.currentTimeMillis();
+            }
+            assertEquals(times, getWifiStateChangedCount());
+        }
     }
 
     /**
@@ -774,20 +792,12 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             final TestWifiStateChangedListener listener = new TestWifiStateChangedListener(mLock);
             try {
                 sWifiManager.addWifiStateChangedListener(mExecutor, listener);
+                listener.verifyWifiStateChangeCount(1);
 
                 // Wi-Fi is already enabled in #setUp, so set Wi-Fi to disabled and verify
                 // WifiStateChangedListener was called twice (ENABLED -> DISABLING -> DISABLED).
                 setWifiEnabled(false);
-                long now = System.currentTimeMillis();
-                long deadline = now + TEST_WAIT_DURATION_MS;
-                while (now < deadline) {
-                    mLock.wait(deadline - now);
-                    if (listener.getWifiStateChangedCount() > 1) {
-                        break;
-                    }
-                    now = System.currentTimeMillis();
-                }
-                assertEquals(2, listener.getWifiStateChangedCount());
+                listener.verifyWifiStateChangeCount(3);
             } catch (InterruptedException e) {
                 throw new AssertionError(
                         "Thread interrupted unexpectedly while waiting on mLock", e);

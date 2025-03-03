@@ -28,15 +28,13 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
 
 import androidx.test.filters.SmallTest;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -55,10 +53,6 @@ import java.util.Set;
 @RunWith(Parameterized.class)
 public class SystemFontsTest {
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Parameterized.Parameter(0)
     public Set<Font> availableFonts;
 
@@ -75,6 +69,7 @@ public class SystemFontsTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Security check only valid on device")
     public void testAvailableFonts_ReadOnlyFile() throws ErrnoException {
         for (Font font : availableFonts) {
             assertNotNull("System font must provide file path to the font file.", font.getFile());
@@ -99,6 +94,7 @@ public class SystemFontsTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Security check only valid on device")
     public void testAvailableFonts_ReadOnlyBuffer() {
         for (Font font : availableFonts) {
             try {
@@ -128,6 +124,7 @@ public class SystemFontsTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "Security check only valid on device")
     public void testFontsFallbackUnreadable() {
         File file = new File("/system/etc/font_fallback.xml");
         assertFalse(file.canRead());

@@ -421,7 +421,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         + " codec\n" + mTestEnv + mTestConfig,
                 asyncHandleResource.hasRequiredResourceChangeCbReceived());
         mCodec.stop();
-        validateGetCodecResources(List.of(Pair.create(mCodec, false)), GLOBAL_AVBL_RESOURCES,
+        validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
                 "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
         mCodec.reset();
         validateGetCodecResources(List.of(Pair.create(mCodec, true)), GLOBAL_AVBL_RESOURCES,
@@ -540,7 +540,7 @@ public class VideoEncoderAvailabilityTest extends CodecEncoderGLSurface {
                         currentGlobalResourcesForFormat, testLogs);
                 Assert.assertEquals("format : " + (lastFormat == null ? "empty" : lastFormat)
                         + " is expected to consume more resources than format : " + currentFormat
-                        + testLogs + mTestEnv + mTestConfig, LHS_RESOURCE_GE, result);
+                        + testLogs + mTestEnv + mTestConfig, RHS_RESOURCE_GE, result);
                 lastGlobalResourcesForFormat = currentGlobalResourcesForFormat;
                 lastFormat = currentFormat;
             }

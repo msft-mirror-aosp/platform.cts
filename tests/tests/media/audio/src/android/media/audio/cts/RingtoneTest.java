@@ -16,6 +16,7 @@
 
 package android.media.audio.cts;
 
+import static android.media.Utils.SYNCHRONIZED_VIBRATION;
 import static android.media.Utils.VIBRATION_URI_PARAM;
 import static android.media.cts.Utils.getTestVibrationFile;
 import static android.media.cts.Utils.RINGTONE_TEST_URI;
@@ -264,12 +265,20 @@ public class RingtoneTest extends InstrumentationTestCase {
 
         assertThat(mRingtone.getVibrationEffect()).isNull();
 
+        // Vibration effect was parsed for vibration file
         String vibrationUriString = getTestVibrationFile().toURI().toString();
         final Uri ringtoneUri = RINGTONE_TEST_URI.buildUpon().appendQueryParameter(
                 VIBRATION_URI_PARAM, vibrationUriString).build();
         mRingtone = RingtoneManager.getRingtone(mContext, ringtoneUri);
 
         assertThat(mRingtone.getVibrationEffect()).isInstanceOf(VibrationEffect.class);
+
+        // Do not parse vibration effect for synchronized vibration
+        final Uri ringtoneUriWithSynchronized = RINGTONE_TEST_URI.buildUpon().appendQueryParameter(
+                VIBRATION_URI_PARAM, SYNCHRONIZED_VIBRATION).build();
+        mRingtone = RingtoneManager.getRingtone(mContext, ringtoneUriWithSynchronized);
+
+        assertThat(mRingtone.getVibrationEffect()).isNull();
     }
 
     public void testRingtoneVibrationPlayback() throws IOException {

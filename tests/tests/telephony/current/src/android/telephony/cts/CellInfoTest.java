@@ -64,8 +64,6 @@ import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -268,11 +266,7 @@ public class CellInfoTest {
     @Before
     public void setUp() throws Exception {
         mPm = getContext().getPackageManager();
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
-        } else {
-            assumeTrue(mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
-        }
+        assumeTrue(mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
 
         mTm = (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         Pair<Integer, Integer> verPair =

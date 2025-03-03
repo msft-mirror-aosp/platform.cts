@@ -32,8 +32,6 @@ import android.service.euicc.GetEuiccProfileInfoListResult;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.internal.telephony.flags.Flags;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,9 +47,7 @@ public final class GetEuiccProfileInfoListResultTest {
 
     @Before
     public void setUp() {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            assumeTrue(EuiccUtil.hasEuiccFeature());
-        }
+        assumeTrue(EuiccUtil.hasEuiccFeature());
 
         mProfileListResult =
                 new GetEuiccProfileInfoListResult(

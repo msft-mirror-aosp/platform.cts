@@ -79,9 +79,10 @@ public final class ApiMap {
         System.out.println("  -i PATH                  path to the file containing a list of jars: "
                 + "Jars must be split by a whitespace, e.g. {jar1} {jar2}.");
         System.out.println(
-                "  -m [api_map|xts_annotation] the static analysis data to generate:"
-                        + " api_map->api mapping data; xts_annotation->xts annotation mapping data."
-                        + " All data will be generated in one xml if this option is not set.");
+                "  -m [api_map|xts_annotation|xts_api_inherit] static analysis data to generate:"
+                        + " api->api mapping data; xts_annotation->xts annotation mapping data;"
+                        + " xts_api_inherit->xts methods inheriting from APIs. All data will be"
+                        + " generated in one xml if this option is not set.");
         System.out.println("  -j PARALLELISM           number of tasks to run in parallel, defaults"
                 + " to number of cpus");
         System.out.println();
@@ -124,6 +125,7 @@ public final class ApiMap {
                         switch (modeSpec) {
                             case "api_map" -> modeTypes.add(ModeType.API_MAP);
                             case "xts_annotation" -> modeTypes.add(ModeType.XTS_ANNOTATION);
+                            case "xts_api_inherit" -> modeTypes.add(ModeType.XTS_API_INHERIT);
                             default -> printUsage();
                         }
                     }
@@ -156,8 +158,9 @@ public final class ApiMap {
         }
 
         ApiCoverage apiCoverage =
-                modeTypes.contains(ModeType.API_MAP)
-                        ? getApiCoverage(apiXmlPaths) : new ApiCoverage();
+                modeTypes.contains(ModeType.API_MAP) || modeTypes.contains(ModeType.XTS_API_INHERIT)
+                        ? getApiCoverage(apiXmlPaths)
+                        : new ApiCoverage();
         apiCoverage.resolveSuperClasses();
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
@@ -265,7 +268,8 @@ public final class ApiMap {
                         throw new RuntimeException(e);
                     }
                     CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
-                    if (modeTypes.contains(ModeType.API_MAP)) {
+                    if (modeTypes.contains(ModeType.API_MAP)
+                            || modeTypes.contains(ModeType.XTS_API_INHERIT)) {
                         callGraphManager.resolveCoveredApis(apiCoverage);
                     }
                     return callGraphManager;

@@ -23,7 +23,9 @@ public enum ModeType {
     XTS_ANNOTATION(1),
 
     // Represents API map (API coverage) analysis.
-    API_MAP(2);
+    API_MAP(2),
+
+    XTS_API_INHERIT(3);
 
     private final int mValue;
 

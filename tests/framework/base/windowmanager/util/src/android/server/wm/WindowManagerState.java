@@ -1177,23 +1177,23 @@ public class WindowManagerState {
                 .filter(dc -> dc.mProviders != null)
                 .flatMap(dc -> dc.mProviders.stream())
                 .filter(provider -> (provider.mSource.is(WindowInsets.Type.navigationBars())))
-                .map(InsetsSourceProvider::getWindowState)
+                .map(provider -> getWindowStateForAppToken(provider.mIdentifier.mAppToken))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     @NonNull
     List<WindowState> getNavBarWindowsOnDisplay(int displayId) {
-        List<WindowState> navWindows = mDisplays.stream()
+        return mDisplays.stream()
                 .filter(dc -> dc.mId == displayId)
                 .filter(dc -> dc.mProviders != null)
                 .flatMap(dc -> dc.mProviders.stream())
-                .filter(provider -> (provider.mSource.is(WindowInsets.Type.navigationBars())))
-                .map(InsetsSourceProvider::getWindowState)
+                .filter(
+                        provider ->
+                                (provider.mSource.is(WindowInsets.Type.navigationBars())))
+                .map(provider -> getWindowStateForAppToken(provider.mIdentifier.mAppToken))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
-
-        return navWindows;
     }
 
     WindowState getWindowStateForAppToken(String appToken) {
@@ -3038,6 +3038,7 @@ public class WindowManagerState {
     }
 
     public static class InsetsSourceProvider {
+        private Identifier mIdentifier;
         private InsetsSource mSource;
         private WindowState mWindowState;
 
@@ -3048,6 +3049,7 @@ public class WindowManagerState {
             if (proto.hasSourceWindowState()) {
                 mWindowState = new WindowState(proto.getSourceWindowState());
             }
+            mIdentifier = new Identifier(proto.getSourceWindowStateIdentifier());
         }
 
         InsetsSourceProvider(com.android.server.wm.nano.InsetsSourceProviderProto proto) {
@@ -3057,6 +3059,7 @@ public class WindowManagerState {
             if (proto.sourceWindowState != null) {
                 mWindowState = new WindowState(proto.sourceWindowState);
             }
+            mIdentifier = new Identifier(proto.sourceWindowStateIdentifier);
         }
 
         int getType() {
@@ -3072,5 +3075,20 @@ public class WindowManagerState {
             return "InsetsSourceProvider: mSource=" + mSource + " mWindowState=" + mWindowState;
         }
 
+    }
+
+    public static class Identifier {
+        protected final String mName;
+        protected final String mAppToken;
+
+        Identifier(IdentifierProto proto) {
+            mName = proto.getTitle();
+            mAppToken = Integer.toHexString(proto.getHashCode());
+        }
+
+        Identifier(com.android.server.wm.nano.IdentifierProto proto) {
+            mName = proto.title;
+            mAppToken = Integer.toHexString(proto.hashCode);
+        }
     }
 }

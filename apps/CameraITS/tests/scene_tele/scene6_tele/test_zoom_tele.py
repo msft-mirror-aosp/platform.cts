@@ -57,6 +57,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
       physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
       physical_fov = float(cam.calc_camera_fov(physical_props))
       is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props) and
           is_tele)
@@ -212,7 +213,12 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
           test_failed = True
 
     if test_failed:
-      raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
+      failure_message = f'{_NAME} failed! Check test_log.DEBUG for errors'
+      if first_api_level >= its_session_utils.ANDROID16_API_LEVEL:
+        raise AssertionError(failure_message)
+      else:
+        raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
+                               f'\n\n{failure_message}')
 
 if __name__ == '__main__':
   test_runner.main()

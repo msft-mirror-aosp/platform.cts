@@ -80,7 +80,9 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       motor_port.close()
     if self.lighting_cntl == 'gen2_lights':
       # Lights will go back to default state after the test
-      lights_port = gen2_rig_controller_utils.find_serial_port(self.lighting_cntl)
+      lights_port = gen2_rig_controller_utils.find_serial_port(
+          self.lighting_cntl
+      )
       lights_port.close()
 
   def on_fail(self, record):

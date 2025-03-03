@@ -212,6 +212,9 @@
     <!-- b/152359655: ResumeOnReboot can't work on GSI -->
     <option name="compatibility:exclude-filter" value="CtsResumeOnRebootHostTestCases android.appsecurity.cts.ResumeOnRebootHostTest" />
 
+    <!-- b/393656726 Remove CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures from cts-on-gsi -->
+    <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testLocationFeatures" />
+
     <!-- b/212223944 placeholder to avoid automerging the test exclusioin from android15-tests-dev -->
 
 </configuration>

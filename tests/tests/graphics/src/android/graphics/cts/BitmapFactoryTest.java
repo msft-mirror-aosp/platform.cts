@@ -36,11 +36,13 @@ import android.graphics.BitmapFactory.Options;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
 import android.graphics.Rect;
+import android.hardware.HardwareBuffer;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresDevice;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -472,6 +474,7 @@ public class BitmapFactoryTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testDecodeReuseHardware() {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.HARDWARE;
@@ -756,7 +759,8 @@ public class BitmapFactoryTest {
         decodeConfigs(R.drawable.grayscale_png, 128, 128, false, true);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testMutableHardwareInDecodeResource() {
         Options options = new Options();
         options.inMutable = true;
@@ -764,7 +768,8 @@ public class BitmapFactoryTest {
         BitmapFactory.decodeResource(mRes, R.drawable.alpha, options);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testMutableHardwareInDecodeByteArray() {
         Options options = new Options();
         options.inMutable = true;
@@ -772,7 +777,8 @@ public class BitmapFactoryTest {
         BitmapFactory.decodeByteArray(new byte[100], 1, 20, options);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testMutableHardwareInDecodeFile() {
         Options options = new Options();
         options.inMutable = true;
@@ -780,7 +786,8 @@ public class BitmapFactoryTest {
         BitmapFactory.decodeFile("barely/care.jpg", options);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testMutableHardwareInDecodeFileDescriptor() {
         Options options = new Options();
         options.inMutable = true;
@@ -788,7 +795,8 @@ public class BitmapFactoryTest {
         BitmapFactory.decodeFileDescriptor(null, new Rect(), options);
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testMutableHardwareInDecodeResourceStream() {
         Options options = new Options();
         options.inMutable = true;
@@ -799,6 +807,7 @@ public class BitmapFactoryTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = HardwareBuffer.class)
     public void testDecodeHardwareBitmap() {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.HARDWARE;
@@ -857,6 +866,7 @@ public class BitmapFactoryTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 397498134)
     public void testDecodePngFromPipe() {
         // This test verifies that we can send a PNG over a pipe and
         // successfully decode it. This behavior worked in N, so this

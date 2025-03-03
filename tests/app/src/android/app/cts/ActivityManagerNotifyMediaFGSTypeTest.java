@@ -20,6 +20,7 @@ import static android.app.stubs.LocalForegroundServiceMedia.ACTION_START_FGSM_RE
 import static android.os.SystemClock.sleep;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.server.am.ActiveServices.MEDIA_FGS_STATE_TRANSITION;
 
 import static org.junit.Assert.assertTrue;
 
@@ -27,6 +28,8 @@ import android.Manifest;
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
+import android.app.compat.CompatChanges;
+import android.app.compat.PackageOverride;
 import android.app.cts.android.app.cts.tools.WaitForBroadcast;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
 import android.app.stubs.CommandReceiver;
@@ -57,6 +60,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class ActivityManagerNotifyMediaFGSTypeTest {
@@ -85,13 +90,29 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         mContext = mInstrumentation.getContext();
         mTargetContext = mInstrumentation.getTargetContext();
         mActivityManager = mContext.getSystemService(ActivityManager.class);
-        CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
+
         cleanUp();
+        CtsAppTestUtils.turnScreenOn(mInstrumentation, mContext);
+
+        // Configure short timeout for test execution and verify it's set.
+        mMediaDeviceConfig.set(
+                USER_ENGAGED_TIMEOUT_KEY, Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
+        sleep(500); // Let the setting propagate.
+        final String dumpLines = runShellCommand("dumpsys media_session");
+        final String expectedLine =
+                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
+        assertTrue(
+                "Failed to configure temp user engaged timeout", dumpLines.contains(expectedLine));
+
+        // Ensure we can remote control media sessions from the test.
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
                         Manifest.permission.MEDIA_CONTENT_CONTROL,
-                        Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG);
+                        Manifest.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG,
+                        Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD);
+
+        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, true);
     }
 
     @After
@@ -101,9 +122,12 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
     }
 
     private void cleanUp() {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-        });
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                    CompatChanges.removePackageOverrides(
+                            PACKAGE_NAME_APP1, Set.of(MEDIA_FGS_STATE_TRANSITION));
+                });
         // Make sure we are in Home screen.
         mInstrumentation.getUiAutomation().performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_HOME);
@@ -214,6 +238,11 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         return null;
     }
 
+    private static void setCompatOverride(long changeId, boolean enable) {
+        var override = Map.of(changeId, new PackageOverride.Builder().setEnabled(enable).build());
+        CompatChanges.putPackageOverrides(PACKAGE_NAME_APP1, override);
+    }
+
     // This test tests activity manager internal API to set media foreground service inactive.
     @Test
     @RequiresFlagsEnabled(
@@ -257,6 +286,103 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         runShellCommand(mInstrumentation,
                 String.format("am set-media-foreground-service active --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyMediaServiceAfterStopForegroundInternal() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        WaitForBroadcast waiter = new WaitForBroadcast(mTargetContext);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        waiter.prepare(ACTION_START_FGSM_RESULT);
+        Bundle extras =
+                LocalForegroundServiceMedia.newCommand(
+                        LocalForegroundServiceMedia.COMMAND_STOP_FOREGROUND_REMOVE_NOTIFICATION);
+        CommandReceiver.sendCommand(
+                mContext,
+                CommandReceiver.COMMAND_START_SERVICE_MEDIA,
+                PACKAGE_NAME_APP1,
+                PACKAGE_NAME_APP1,
+                0,
+                extras);
+        waiter.doWait(WAITFOR_MSEC);
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service active --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
+    // This test tests activity manager internal API to set media foreground service active
+    // with compat change disabled.
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyInactiveMediaForegroundServiceInternalWithDisableCompatChanges()
+            throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // disable compat change.
+        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, false);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        cleanUpMediaForegroundService();
+        uid1Watcher.finish();
+    }
+
+    // This test tests activity manager internal API to set media foreground service
+    // inactive/active with compat change disabled.
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testNotifyMediaServiceInternalWithDisableCompatChanges() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // start a media fgs
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service inactive --user %d %s %d",
+                        mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
+
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        // disable compat change.
+        setCompatOverride(MEDIA_FGS_STATE_TRANSITION, false);
+        runShellCommand(
+                mInstrumentation,
+                String.format(
+                        "am set-media-foreground-service active --user %d %s %d",
                         mContext.getUserId(), PACKAGE_NAME_APP1, notificationId));
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
         cleanUpMediaForegroundService();
@@ -564,16 +690,6 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
-        // Configure temp user engaged timeout.
-        mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
-                Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
-        // Verify if timeout is set.
-        final String dumpLines = runShellCommand("dumpsys media_session");
-        final String expectedLine =
-                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
-        assertTrue(
-                "Failed to configure temp user engaged timeout",
-                dumpLines.contains(expectedLine));
         // Transition session to user disengaged.
         controller.getTransportControls().pause();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
@@ -596,16 +712,6 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         MediaController controller = getMediaControllerForActiveSession();
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
-        // Configure temp user engaged timeout.
-        mMediaDeviceConfig.set(USER_ENGAGED_TIMEOUT_KEY,
-                Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
-        // Verify if timeout is set.
-        final String dumpLines = runShellCommand("dumpsys media_session");
-        final String expectedLine =
-                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
-        assertTrue(
-                "Failed to configure temp user engaged timeout",
-                dumpLines.contains(expectedLine));
         // Transition session to user disengaged.
         controller.getTransportControls().stop();
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
@@ -713,5 +819,52 @@ public class ActivityManagerNotifyMediaFGSTypeTest {
         controller.getTransportControls().play();
         sleep(PLAY_TIMEOUT_MS);
         uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActiveMediaSessionMultiplePlayPauseStopCycle() throws Exception {
+        ApplicationInfo app1Info =
+                mContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        WatchUidRunner uid1Watcher =
+                new WatchUidRunner(mInstrumentation, app1Info.uid, WAITFOR_MSEC);
+        // Start the media service in foreground state.
+        final int notificationId = setupMediaForegroundService();
+        assertTrue(
+                "Failed to start media foreground service with notification", notificationId > 0);
+        // Get the controller for active session before deactivating.
+        MediaController controller = getMediaControllerForActiveSession();
+        controller.getTransportControls().play();
+        sleep(PLAY_TIMEOUT_MS);
+        // Configure temp user engaged timeout.
+        mMediaDeviceConfig.set(
+                USER_ENGAGED_TIMEOUT_KEY, Integer.toString(USER_ENGAGED_TIMEOUT_MSEC));
+        // Verify if timeout is set.
+        final String dumpLines = runShellCommand("dumpsys media_session");
+        final String expectedLine =
+                String.format("%s: [cur: %d", USER_ENGAGED_TIMEOUT_KEY, USER_ENGAGED_TIMEOUT_MSEC);
+        assertTrue(
+                "Failed to configure temp user engaged timeout", dumpLines.contains(expectedLine));
+
+        controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+        controller.getTransportControls().pause();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+        controller.getTransportControls().stop();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
+        controller.getTransportControls().pause();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+        controller.getTransportControls().play();
+        uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
     }
 }

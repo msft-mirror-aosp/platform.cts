@@ -19,9 +19,15 @@ import static android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BA
 import static android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.view.WindowManager;
+import android.view.WindowMetrics;
 
 /**
  * An activity that exercises SYSTEM_UI_FLAG_LIGHT_STATUS_BAR and
@@ -74,5 +80,31 @@ public class LightBarActivity extends LightBarBaseActivity {
             appearance &= ~appearanceFlag;
         }
         controller.setSystemBarsAppearance(appearance, appearanceFlag);
+    }
+
+    /** Sets this Activity to bottom half layout. */
+    public void setBottomHalfLayout() {
+        final WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
+        final WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        final Rect bounds = metrics.getBounds();
+        attrs.gravity = Gravity.BOTTOM;
+        attrs.height = bounds.height() / 2;
+        getWindow().setAttributes(attrs);
+    }
+
+    /**
+     * Sets this Activity to fill the parent container, but no cover the navigation bar insets area.
+     */
+    public void setToEscapeNavBarInsets() {
+        final WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
+        final Insets insets =
+                metrics.getWindowInsets().getInsets(WindowInsets.Type.navigationBars());
+        final WindowManager.LayoutParams attrs = getWindow().getAttributes();
+        attrs.gravity = Gravity.LEFT | Gravity.TOP;
+        attrs.x = insets.left;
+        attrs.y = insets.top;
+        attrs.width = metrics.getBounds().width() - insets.left - insets.right;
+        attrs.height = metrics.getBounds().height() - insets.top - insets.bottom;
+        getWindow().setAttributes(attrs);
     }
 }

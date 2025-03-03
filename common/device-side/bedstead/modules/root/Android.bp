@@ -22,6 +22,16 @@ java_library {
     plugins: ["auto_annotation_plugin"],
 }
 
+java_library_host {
+    name: "bedstead-root-annotations-host",
+    srcs: [":bedstead-root-annotations-srcs"],
+    static_libs: [
+        "bedstead-core-annotations",
+        "auto_value_annotations",
+    ],
+    plugins: ["auto_annotation_plugin"],
+}
+
 android_library {
     name: "bedstead-root",
     srcs: [

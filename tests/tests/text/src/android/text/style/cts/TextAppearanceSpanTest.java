@@ -32,6 +32,7 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.LocaleList;
 import android.os.Parcel;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.text.TextPaint;
 import android.text.style.TextAppearanceSpan;
 import android.widget.TextView;
@@ -440,6 +441,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(reason = "context.createPackageContext not supported")
     public void testRestrictContext() throws PackageManager.NameNotFoundException {
         final Context ctx = mContext.createPackageContext(mContext.getPackageName(),
                 Context.CONTEXT_RESTRICTED);
@@ -454,6 +456,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_TextColor() {
         final TextAppearanceSpan span = new TextAppearanceSpan(mContext,
                 android.text.cts.R.style.TextAppearanceWithTextColor);
@@ -465,6 +468,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_TextColorLink() {
         final TextAppearanceSpan span = new TextAppearanceSpan(mContext,
                 android.text.cts.R.style.TextAppearanceWithTextColorLink);
@@ -476,6 +480,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_TextSize() {
         final TextAppearanceSpan span = new TextAppearanceSpan(mContext,
                 android.text.cts.R.style.TextAppearanceWithTextSize);
@@ -526,6 +531,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_Typeface() {
         // Here we need textView0 to get a default typeface, which will be updated by
         // TextAppearanceSpan, and the result of update should be the same as that of
@@ -545,6 +551,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_TypefaceWithStyle() {
         final TextView textView0 = new TextView(mContext);
         final TextView textView1 = new TextView(mContext);
@@ -561,6 +568,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_TypefaceWithWeight() {
         final TextView textView0 = new TextView(mContext);
         final TextView textView1 = new TextView(mContext);
@@ -579,6 +587,7 @@ public class TextAppearanceSpanTest {
 
     // The priority of fontWeight and bold should be identical in both classes.
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_WeightAndBold() {
         final TextView textView0 = new TextView(mContext);
         final TextView textView1 = new TextView(mContext);
@@ -595,6 +604,7 @@ public class TextAppearanceSpanTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_FontFamily() {
         final TextView textView0 = new TextView(mContext);
         final TextView textView1 = new TextView(mContext);
@@ -612,6 +622,7 @@ public class TextAppearanceSpanTest {
 
     // The priority of fontFamily and typeface should be identical in both classes.
     @Test
+    @DisabledOnRavenwood(blockedBy = TextView.class)
     public void testSameAsTextView_FontFamilyAndTypeface() {
         final TextView textView0 = new TextView(mContext);
         final TextView textView1 = new TextView(mContext);

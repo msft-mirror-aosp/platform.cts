@@ -40,6 +40,8 @@ public class ManagedConnectionService extends ConnectionService {
         Log.i(LOG_TAG, String.format("onBindClient: intent=[%s]", intent));
         sConnectionService = this;
         sLastConnection = null;
+        // sLastFailedRequest needs to be cleaned up by the control interface for verification after
+        // unbind in some cases.
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
         sCreateIncomingConnectionLatch = new CountDownLatch(1);
     }
@@ -49,6 +51,8 @@ public class ManagedConnectionService extends ConnectionService {
         Log.i(LOG_TAG, String.format("onUnbind: intent=[%s]", intent));
         sConnectionService = null;
         sLastConnection = null;
+        // sLastFailedRequest needs to be cleaned up by the control interface for verification after
+        // unbind in some cases.
         sCreateOutgoingConnectionLatch = new CountDownLatch(1);
         sCreateIncomingConnectionLatch = new CountDownLatch(1);
         return super.onUnbind(intent);

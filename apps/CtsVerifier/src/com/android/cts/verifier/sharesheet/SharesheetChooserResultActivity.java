@@ -23,12 +23,14 @@ import static android.service.chooser.ChooserResult.CHOOSER_RESULT_UNKNOWN;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Parcel;
 import android.service.chooser.ChooserResult;
 import android.util.Log;
 import android.view.View;
@@ -89,8 +91,13 @@ abstract class SharesheetChooserResultActivity extends PassFailButtons.Activity 
         mCouldNotLocate.setText(notFoundLabel);
     }
 
-    protected final void setExpectedResult(ChooserResult result) {
-        mResultExpected = result;
+    protected final void setExpectedResult(
+            int type, ComponentName selectedComponent, boolean isShortcut) {
+        Parcel values = Parcel.obtain();
+        values.writeInt(type);
+        ComponentName.writeToParcel(selectedComponent, values);
+        values.writeBoolean(isShortcut);
+        mResultExpected = ChooserResult.CREATOR.createFromParcel(values);
     }
 
     protected abstract Intent createChooserIntent();

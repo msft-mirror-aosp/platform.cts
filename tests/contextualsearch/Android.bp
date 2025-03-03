@@ -24,6 +24,7 @@ android_test {
         "android.app.contextualsearch.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
+        "bedstead-enterprise",
         "bedstead-root",
         "compatibility-device-util-axt",
         "com.android.window.flags.window-aconfig-java",

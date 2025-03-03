@@ -44,6 +44,7 @@ import android.graphics.Typeface;
 import android.graphics.text.LineBreakConfig;
 import android.graphics.text.LineBreaker;
 import android.graphics.text.MeasuredText;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -63,8 +64,7 @@ public class LineBreakerTest {
     private static final String TAG = "LineBreakerTest";
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static Paint sPaint;
     @BeforeClass
@@ -679,6 +679,7 @@ public class LineBreakerTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391342883)
     public void testLineBreak_Balanced_Hyphenation() {
         // The visual BALANCED line break output is like
         // |hyphenation hy-   |
@@ -715,6 +716,7 @@ public class LineBreakerTest {
     }
 
     @Test
+    @DisabledOnRavenwood(bug = 391342883)
     public void testLineBreak_Balanced_Hyphenation_IgnoreKerning() {
         // The visual BALANCED line break output is like
         // |hyphenation hy-   |
@@ -756,6 +758,7 @@ public class LineBreakerTest {
      * Test for no hyphenation span
      */
     @Test
+    @DisabledOnRavenwood(bug = 391342883)
     public void testLineBreak_HighQuality_Hyphenation_NoHyphenation() {
         // The visual High Quality line break output is like
         // |This is Android.|

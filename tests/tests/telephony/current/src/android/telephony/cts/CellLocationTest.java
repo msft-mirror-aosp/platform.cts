@@ -35,7 +35,6 @@ import android.telephony.gsm.GsmCellLocation;
 import android.util.Log;
 
 import com.android.compatibility.common.util.TestThread;
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -79,16 +78,9 @@ public class CellLocationTest {
 
     @Test
     public void testCellLocation() throws Throwable {
-        if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
-            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
-                Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY_RADIO_ACCESS");
-                return;
-            }
-        } else {
-            if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-                Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-                return;
-            }
+        if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS)) {
+            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY_RADIO_ACCESS");
+            return;
         }
 
         TelephonyManagerTest.grantLocationPermissions();

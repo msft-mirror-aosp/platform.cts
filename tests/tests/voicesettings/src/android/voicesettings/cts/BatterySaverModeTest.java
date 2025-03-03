@@ -22,6 +22,7 @@ import android.content.Context;
 import android.os.PowerManager;
 import android.util.Log;
 
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.BroadcastUtils;
 
 import org.junit.Test;
@@ -39,6 +40,7 @@ public class BatterySaverModeTest extends BroadcastTestBase {
     }
 
     @Test
+    @RequireNotAutomotive(reason = "Auto only shows a toast for this intent.")
     public void testAll() throws Exception {
         if (!mHasFeature) {
             Log.i(TAG, "The device doesn't support feature: " + FEATURE_VOICE_RECOGNIZERS);

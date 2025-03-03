@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_CREATE;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_PAUSE;
 import static android.server.wm.activity.lifecycle.LifecycleConstants.ON_RESUME;
@@ -36,6 +37,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
 import android.util.Pair;
@@ -81,6 +83,7 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
+
         mPrimaryActivity = startFullScreenActivityNewTask(TestConfigChangeHandlingActivity.class);
         mTaskId = mPrimaryActivity.getTaskId();
         mWildcardSplitPairRule = createWildcardSplitPairRuleBuilderWithPrimaryActivityClass(
@@ -262,7 +265,7 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
                 TestActivityWithId.class, mWildcardSplitPairRule,
                 mPinnedActivityId, mSplitInfoConsumer);
 
-        pinExpandActivityAndResizeDisplay(secondaryActivity, true /* stickyPin */);
+        pinExpandActivityAndResizeDisplayOrTask(secondaryActivity, true /* stickyPin */);
 
         // Verify the activities are still split
         waitAndAssertResumed(secondaryActivity);
@@ -280,7 +283,7 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
                 TestActivityWithId.class, mWildcardSplitPairRule,
                 mPinnedActivityId, mSplitInfoConsumer);
 
-        pinExpandActivityAndResizeDisplay(secondaryActivity, false /* stickyPin */);
+        pinExpandActivityAndResizeDisplayOrTask(secondaryActivity, false /* stickyPin */);
 
         // Verify the unpinned activity is expanded.
         waitAndAssertResumed(mPinnedActivity);
@@ -288,7 +291,7 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
         waitAndAssertNotVisible(mPrimaryActivity);
     }
 
-    private void pinExpandActivityAndResizeDisplay(@NonNull Activity secondaryActivity,
+    private void pinExpandActivityAndResizeDisplayOrTask(@NonNull Activity secondaryActivity,
             boolean stickyPin) {
         // Starts an Activity to always-expand
         final SplitPairRule expandRule = createSplitPairRuleBuilder(activityActivityPair -> true,
@@ -316,18 +319,43 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
         waitAndAssertResumed(mPinnedActivity);
         waitAndAssertNotVisible(mPrimaryActivity);
 
-        // Shrink the display by 10% to make the activities stacked
+        mWmState.computeState();
         final Size originalDisplaySize = mReportedDisplayMetrics.getSize();
-        mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
-                (int) (originalDisplaySize.getHeight() * 0.9)));
-
+        final Task topTask =
+                mWmState.getTaskByActivity(mPrimaryActivity.getComponentName());
+        final Rect origTaskBounds = topTask.getBounds();
+        if (topTask.getWindowingMode() == WINDOWING_MODE_MULTI_WINDOW) {
+            // Shrink the task by 10% to make the activities stacked
+            // Note: Shrinking the task might have an effect on the task behind this task
+            // in the containing root task on automotive. The task behind will become visible
+            // as the task above is not filling the parent anymore.
+            // This behavior is okay in the specific tests that involve shrinking tasks as the
+            // assertions are unaffected by this behavior.
+            resizeActivityTask(mPrimaryActivity.getComponentName(),
+                    origTaskBounds.left, origTaskBounds.top,
+                    origTaskBounds.left + (int) (origTaskBounds.width() * 0.9),
+                    origTaskBounds.top + (int) (origTaskBounds.height() * 0.9));
+        } else {
+            // Shrink the display by 10% to make the activities stacked
+            mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
+                    (int) (originalDisplaySize.getHeight() * 0.9)));
+        }
         // Verify only the pinned activity is visible
         waitAndAssertResumed(mPinnedActivity);
         waitAndAssertNotVisible(secondaryActivity);
         waitAndAssertNotVisible(mPrimaryActivity);
 
-        // Restore to the original display size
-        mReportedDisplayMetrics.setSize(originalDisplaySize);
+
+        if (topTask.getWindowingMode() == WINDOWING_MODE_MULTI_WINDOW) {
+            // Restore to the original task size
+            resizeActivityTask(mPrimaryActivity.getComponentName(),
+                    origTaskBounds.left, origTaskBounds.top,
+                    origTaskBounds.left + (int) (origTaskBounds.width()),
+                    origTaskBounds.top + (int) (origTaskBounds.height()));
+        } else {
+            // Restore to the original display size
+            mReportedDisplayMetrics.setSize(originalDisplaySize);
+        }
     }
 
     private boolean pinTopActivityStack() {

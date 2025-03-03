@@ -31,7 +31,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
@@ -44,8 +43,6 @@ import android.telephony.cts.util.TelephonyUtils;
 import android.util.Base64;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -121,7 +118,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testSendMessage() throws Exception {
         logd(TAG, "testSendMessage");
 
@@ -135,7 +131,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testReceiveMessage() throws Exception {
         logd(TAG, "testReceiveMessage");
 
@@ -149,7 +144,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testSendEmergencySms() throws Exception {
         logd(TAG, "testSendEmergencySms");
 
@@ -169,7 +163,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testSendSmsAutomaticallyOnSatelliteConnected() throws Exception {
         logd(TAG, "testSendSmsAutomaticallyOnSatelliteConnected");
 
@@ -177,7 +170,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testSendEmergencySmsAutomaticallyOnSatelliteConnected() throws Exception {
         logd(TAG, "testSendEmergencySmsAutomaticallyOnSatelliteConnected");
 
@@ -192,7 +184,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testSendSmsImsEnabled() throws Exception {
         logd(TAG, "testSendSmsImsEnabled");
 
@@ -206,7 +197,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testReceiveSmsImsEnabled() throws Exception {
         logd(TAG, "testReceiveSmsImsEnabled");
 
@@ -220,7 +210,6 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testSendEmergencySmsImsEnabled() throws Exception {
         logd(TAG, "testSendEmergencySmsImsEnabled");
 

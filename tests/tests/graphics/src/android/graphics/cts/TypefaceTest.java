@@ -40,6 +40,7 @@ import android.graphics.fonts.FontVariationAxis;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
 import android.os.SharedMemory;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -867,6 +868,7 @@ public class TypefaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = SharedMemory.class)
     public void testSharedMemoryReadonly() {
         SharedMemory shm = Typeface.getSystemFontMapSharedMemory();
         if (shm == null) {
@@ -881,6 +883,7 @@ public class TypefaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = SharedMemory.class)
     public void testSharedMemoryReadonly_fromMap() {
         HashMap<String, Typeface> map = new HashMap<>();
 
@@ -903,6 +906,7 @@ public class TypefaceTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = SharedMemory.class)
     public void testSharedMemoryReadonly_serializeDeserialize() throws Exception {
         HashMap<String, Typeface> map = new HashMap<>();
 

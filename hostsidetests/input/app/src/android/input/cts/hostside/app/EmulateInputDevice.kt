@@ -196,6 +196,7 @@ class EmulateInputDevice {
         multiFingerSwipe(2)
     }
 
+    @DebugInputRule.DebugInput(bug = 397288324)
     @Test
     fun threeFingerSwipeOnTouchpad() {
         multiFingerSwipe(3)
