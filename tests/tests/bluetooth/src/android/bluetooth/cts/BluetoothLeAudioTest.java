@@ -170,7 +170,7 @@ public class BluetoothLeAudioTest {
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
-    public void setgetConnectionPolicy() {
+    public void setGetConnectionPolicy() {
         assertThat(mService.setConnectionPolicy(null, 0)).isFalse();
         assertThat(mService.getConnectionPolicy(null)).isEqualTo(CONNECTION_POLICY_FORBIDDEN);
     }

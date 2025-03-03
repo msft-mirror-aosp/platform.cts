@@ -136,7 +136,7 @@ public class BluetoothSapTest {
 
     @Test
     @MediumTest
-    public void setgetConnectionPolicy() {
+    public void setGetConnectionPolicy() {
         assertThrows(NullPointerException.class, () -> mService.setConnectionPolicy(null, 0));
         assertThrows(NullPointerException.class, () -> mService.getConnectionPolicy(null));
 
