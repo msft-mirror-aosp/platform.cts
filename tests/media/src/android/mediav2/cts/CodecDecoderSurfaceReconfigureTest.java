@@ -125,6 +125,8 @@ public class CodecDecoderSurfaceReconfigureTest extends CodecDecoderTestBase {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
+        setUpSurface(mActivity);
         mFormat = setUpSource(mTestFile);
         mExtractor.release();
         mReconfigFormat = setUpSource(mReconfigFile);
@@ -138,8 +140,6 @@ public class CodecDecoderSurfaceReconfigureTest extends CodecDecoderTestBase {
             checkFormatSupport(mCodecName, mMediaType, false, formatList, null,
                     mSupportRequirements);
         }
-        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        setUpSurface(mActivity);
     }
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
