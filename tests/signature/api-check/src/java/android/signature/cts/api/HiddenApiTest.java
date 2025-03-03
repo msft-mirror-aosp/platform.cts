@@ -42,6 +42,7 @@ public class HiddenApiTest extends AbstractApiTest {
 
     private String[] hiddenapiFiles;
     private String[] hiddenapiTestFlags;
+    private String[] hiddenapiRestrictToNamespaces;
     private String hiddenapiFilterFile;
     private Set<String> hiddenapiFilterSet;
 
@@ -49,6 +50,8 @@ public class HiddenApiTest extends AbstractApiTest {
     protected void initializeFromArgs(Bundle instrumentationArgs) throws Exception {
         hiddenapiFiles = getCommaSeparatedListRequired(instrumentationArgs, "hiddenapi-files");
         hiddenapiTestFlags = getCommaSeparatedListOptional(instrumentationArgs, "hiddenapi-test-flags");
+        hiddenapiRestrictToNamespaces =
+            getCommaSeparatedListOptional(instrumentationArgs, "hiddenapi-namespaces");
         hiddenapiFilterFile = instrumentationArgs.getString("hiddenapi-filter-file");
         hiddenapiFilterSet = new HashSet<>();
     }
@@ -72,25 +75,21 @@ public class HiddenApiTest extends AbstractApiTest {
     // for the first test to run needs to be sufficiently large on it to allow
     // for loadFilters() to complete.
     @Test(timeout = 900000)
-    @Ignore // b/367930072
     public void testSignatureMethodsThroughReflection() {
         doTestSignature(METHOD_FILTER,/* reflection= */ true, /* jni= */ false);
     }
 
     @Test
-    @Ignore // b/367930072
     public void testSignatureMethodsThroughJni() {
         doTestSignature(METHOD_FILTER, /* reflection= */ false, /* jni= */ true);
     }
 
     @Test
-    @Ignore // b/367930072
     public void testSignatureFieldsThroughReflection() {
         doTestSignature(FIELD_FILTER, /* reflection= */ true, /* jni= */ false);
     }
 
     @Test
-    @Ignore // b/367930072
     public void testSignatureFieldsThroughJni() {
         doTestSignature(FIELD_FILTER, /* reflection= */ false, /* jni= */ true);
     }
@@ -186,6 +185,19 @@ public class HiddenApiTest extends AbstractApiTest {
      * @return true if the member should be tested, false otherwise.
      */
     protected boolean shouldTestMember(DexMember member) {
+        if (hiddenapiRestrictToNamespaces != null) {
+            boolean found = false;
+            for (String namespace : hiddenapiRestrictToNamespaces) {
+                if (member.getJavaClassName().startsWith(namespace)) {
+                    found = true;
+                  break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+
         // Test the member if it supports ANY of the flags specified in the hiddenapi-test-flags
         // argument.
         Set<String> flags = member.getHiddenapiFlags();
