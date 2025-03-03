@@ -67,6 +67,8 @@
         </activity>
         <activity android:name="android.car.cluster.cts.ClusterHomeManagerTest$TestActivity"/>
         <activity android:name="android.car.server.wm.cts.MultiUserMultiDisplayPolicyTest$TestActivity" />
+        <activity android:name="android.car.view.cts.MirroredSurfaceViewTest$SourceActivity" />
+        <activity android:name="android.car.view.cts.MirroredSurfaceViewTest$MirroringActivity" />
 
         <service android:name=".CarOccupantConnectionManagerTest$TestReceiverService"
                  android:permission="android.car.permission.BIND_RECEIVER_SERVICE"
