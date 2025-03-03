@@ -24,6 +24,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EMBEDDED_ACT
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilder;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifyNoCallback;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.verifyStandaloneActivityStackIfNeeded;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertColdLaunch;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 
@@ -117,6 +118,7 @@ public class ActivityEmbeddingIntegrationTests extends ActivityEmbeddingTestBase
         // display features
         secondaryActivity.finish();
         waitAndAssertResumedAndFillsTask(primaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, primaryActivity);
 
         newWindowLayoutInfo = getExtensionWindowLayoutInfo(primaryActivity);
         assertEquals(windowLayoutInfo.getDisplayFeatures().size(),

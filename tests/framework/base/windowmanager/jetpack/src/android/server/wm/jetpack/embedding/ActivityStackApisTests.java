@@ -21,6 +21,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitPairRuleBuilder;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.verifyStandaloneActivityStackIfNeeded;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertFinishing;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
@@ -64,8 +65,8 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
-        final Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity =
+                startFullScreenActivityNewTask(TestConfigChangeHandlingActivity.class);
         final Activity secondaryActivity =
                 startActivityAndVerifySplitAttributes(
                         primaryActivity,
@@ -94,8 +95,8 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
-        final Activity primaryActivity = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity primaryActivity =
+                startFullScreenActivityNewTask(TestConfigChangeHandlingActivity.class);
         final Activity secondaryActivity =
                 startActivityAndVerifySplitAttributes(
                         primaryActivity,
@@ -112,6 +113,7 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
 
         waitAndAssertFinishing(secondaryActivity);
         waitAndAssertResumedAndFillsTask(primaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, primaryActivity);
 
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
         assertTrue(splitInfoList.isEmpty());
@@ -161,8 +163,8 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
         rules.add(splitPairRuleAC);
         mActivityEmbeddingComponent.setEmbeddingRules(rules);
 
-        final Activity activityA = startFullScreenActivityNewTask(
-                TestConfigChangeHandlingActivity.class);
+        final Activity activityA =
+                startFullScreenActivityNewTask(TestConfigChangeHandlingActivity.class);
         final Activity activityB =
                 startActivityAndVerifySplitAttributes(
                         activityA,
@@ -194,6 +196,7 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
         waitAndAssertFinishing(activityB);
         waitAndAssertFinishing(activityC);
         waitAndAssertResumedAndFillsTask(activityA);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, activityA);
 
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
         assertTrue(splitInfoList.isEmpty());
