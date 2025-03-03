@@ -37,6 +37,7 @@
         <option name="instrumentation-arg" key="dynamic-config-name" value="CtsHiddenApiBlocklistApiDynamicConfig" />
         <option name="instrumentation-arg" key="hiddenapi-files" value="hiddenapi-flags.csv" />
         <option name="instrumentation-arg" key="hiddenapi-test-flags" value="blocked,max-target-o" />
+        <option name="instrumentation-arg" key="hiddenapi-namespaces" value="android.view,android.scheduling" />
         <option name="instrumentation-arg" key="hiddenapi-filter-file" value="hiddenapi-filter.csv" />
         <option name="test-api-access" value="false" />
         <option name="runtime-hint" value="30s" />
