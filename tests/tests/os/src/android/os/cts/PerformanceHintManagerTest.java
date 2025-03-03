@@ -23,8 +23,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNotNull;
 
+import android.content.pm.PackageManager;
 import android.os.Flags;
 import android.os.HandlerThread;
 import android.os.PerformanceHintManager;
@@ -65,6 +67,15 @@ public class PerformanceHintManagerTest {
     private ASurfaceControlTestActivity mActivity;
     private ActivityScenario<ASurfaceControlTestActivity> mScenario;
     private SurfaceControl mSurfaceControl;
+
+    private void assumeMobileDeviceFormFactor() {
+        final PackageManager pm =
+                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED));
+    }
 
     private void makeSurfaceControl() {
         mScenario = ActivityScenario.launch(ASurfaceControlTestActivity.class);
@@ -403,6 +414,7 @@ public class PerformanceHintManagerTest {
 
     @Test
     public void testNativeCreateGraphicsPipelineSession() {
+        assumeMobileDeviceFormFactor();
         final String resultMessage = nativeTestCreateGraphicsPipelineSession();
         if (!Strings.isNullOrEmpty(resultMessage)) {
             fail(resultMessage);
