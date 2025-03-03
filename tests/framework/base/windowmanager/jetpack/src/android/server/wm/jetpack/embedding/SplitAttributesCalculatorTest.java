@@ -107,9 +107,13 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
-
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         // Choose a split attributes that different from the default one.
         final SplitAttributes customizedSplitAttributes = new SplitAttributes.Builder()
@@ -131,19 +135,30 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
 
         // Start another Activity to trigger the calculator function, and verify if the split pair
         // matches the customized split attributes.
-        startActivityAndVerifySplitAttributes(activityA, activityA, /* expectedPrimaryActivity */
-                TestActivityWithId.class, customizedSplitAttributes, activityCId,
-                1 /* expectedCallbackCount */, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                activityA, /* expectedPrimaryActivity */
+                TestActivityWithId.class,
+                customizedSplitAttributes,
+                activityCId,
+                1 /* expectedCallbackCount */,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         // Clear the calculator function, then the split pair should align the default split pair
         // rule behavior.
         mActivityEmbeddingComponent.clearSplitAttributesCalculator();
 
         // Launch Activity D to apply the change.
-        startActivityAndVerifySplitAttributes(activityA,
-                activityA, /* expectedPrimaryActivity */ TestActivityWithId.class,
-                splitPairRule, activityDId, 1, /* expectedCallbackCount */
-                mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                activityA, /* expectedPrimaryActivity */
+                TestActivityWithId.class,
+                splitPairRule,
+                activityDId,
+                1 /* expectedCallbackCount */,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /**
@@ -203,9 +218,15 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
 
-        startActivityAndVerifySplitAttributes(activityA, activityA, /* expectedPrimaryActivity */
-                TestActivityWithId.class, customizedSplitAttributes, ACTIVITY_B_ID,
-                1 /* expectedCallbackCount */, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                activityA, /* expectedPrimaryActivity */
+                TestActivityWithId.class,
+                customizedSplitAttributes,
+                ACTIVITY_B_ID,
+                1 /* expectedCallbackCount */,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /** Verify the calculator function is called when the device is rotated.  */
@@ -234,8 +255,13 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
                 + " split pair launch");
@@ -297,8 +323,13 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         final Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
                 + " split pair launch.");
@@ -343,8 +374,13 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         final Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
                 + " split pair launch.");
@@ -391,8 +427,13 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        Activity activityB = startActivityAndVerifySplitAttributes(activityA,
-                TestActivityWithId.class, splitPairRule, ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
                 + " split pair launch.");
@@ -405,8 +446,13 @@ public class SplitAttributesCalculatorTest extends ActivityEmbeddingTestBase {
                 getResumedActivityById(ACTIVITY_A_ID) != null);
         activityA = getResumedActivityById(ACTIVITY_A_ID);
 
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                "activityC", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                "activityC",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         verifier.waitAndAssertFunctionApplied("The calculator function must be called due to"
                 + " split pair launch on secondary display.");

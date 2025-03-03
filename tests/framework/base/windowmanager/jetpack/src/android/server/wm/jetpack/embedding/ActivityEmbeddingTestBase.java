@@ -24,7 +24,9 @@ import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
 
 import androidx.annotation.Nullable;
+import androidx.window.extensions.WindowExtensions;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
+import androidx.window.extensions.embedding.ActivityStack;
 import androidx.window.extensions.embedding.SplitInfo;
 
 import org.junit.After;
@@ -41,6 +43,7 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
 
     protected ActivityEmbeddingComponent mActivityEmbeddingComponent;
     protected TestValueCountConsumer<List<SplitInfo>> mSplitInfoConsumer;
+    protected TestValueCountConsumer<List<ActivityStack>> mActivityStackCallback;
     protected ReportedDisplayMetrics mReportedDisplayMetrics;
 
     @Override
@@ -52,13 +55,21 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
                 ? getLaunchingDisplayId() : getMainDisplayId();
         mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(displayId);
 
-        mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
+        final WindowExtensions windowExtensions = getWindowExtensions();
+        mActivityEmbeddingComponent = windowExtensions.getActivityEmbeddingComponent();
 
         mSplitInfoConsumer = new TestValueCountConsumer<>();
         mActivityEmbeddingComponent.setSplitInfoCallback(mSplitInfoConsumer);
         // The splitInfoCallback will be triggered once upon register, so clear the queue before
         // test starts.
         mSplitInfoConsumer.clearQueue();
+
+        mActivityStackCallback = new TestValueCountConsumer<>();
+        mActivityEmbeddingComponent.registerActivityStackCallback(
+                Runnable::run, mActivityStackCallback);
+        // The ActivityStackCallback will be triggered once upon register, so clear the queue before
+        // test starts.
+        mActivityStackCallback.clearQueue();
 
         UiDeviceUtils.pressWakeupButton();
         UiDeviceUtils.pressUnlockButton();

@@ -52,6 +52,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.window.extensions.core.util.function.Predicate;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
+import androidx.window.extensions.embedding.ActivityStack;
 import androidx.window.extensions.embedding.DividerAttributes;
 import androidx.window.extensions.embedding.SplitAttributes;
 import androidx.window.extensions.embedding.SplitAttributes.LayoutDirection;
@@ -159,12 +160,30 @@ public class ActivityEmbeddingUtil {
         return secondActivity;
     }
 
+    /**
+     * Starts an {@link Activity} and verifies the split states.
+     *
+     * @param activityLaunchingFrom the primary {@link Activity} to launch the secondary
+     * @param secondActivityClass the class of the secondary {@link Activity}
+     * @param secondaryActivityId the {@code String} ID of the secondary {@link Activity}
+     * @param expectedCallbackCount the expected count from {@code splitInfoConsumer}
+     * @param splitInfoConsumer the {@link SplitInfo} callback
+     * @param activityStackCallback the {@link ActivityStack} callback. It could be {@code null}
+     * if {@link ActivityEmbeddingComponent#registerActivityStackCallback} is not supported or
+     * we don't want to verify {@link ActivityStack}.
+     *
+     * @return the launched secondary {@link Activity}
+     */
+    @NonNull
     public static Activity startActivityAndVerifySplitAttributes(
-            @NonNull Activity activityLaunchingFrom, @NonNull Activity expectedPrimaryActivity,
+            @NonNull Activity activityLaunchingFrom,
+            @NonNull Activity expectedPrimaryActivity,
             @NonNull Class<? extends Activity> secondActivityClass,
-            @NonNull SplitAttributes splitAttributes, @NonNull String secondaryActivityId,
+            @NonNull SplitAttributes splitAttributes,
+            @NonNull String secondaryActivityId,
             int expectedCallbackCount,
-            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
+            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer,
+            @Nullable TestValueCountConsumer<List<ActivityStack>> activityStackCallback) {
         // Set the expected callback count
         splitInfoConsumer.setCount(expectedCallbackCount);
 
@@ -176,16 +195,29 @@ public class ActivityEmbeddingUtil {
         waitAndAssertResumed(secondaryActivityId);
         final Activity secondaryActivity = getResumedActivityById(secondaryActivityId);
 
-        assertSplitPairIsCorrect(expectedPrimaryActivity, secondaryActivity, splitAttributes,
-                splitInfoConsumer);
+        assertSplitPairIsCorrect(
+                expectedPrimaryActivity,
+                secondaryActivity,
+                splitAttributes,
+                splitInfoConsumer,
+                activityStackCallback);
 
         // Return second activity for easy access in calling method
         return secondaryActivity;
     }
 
-    public static void assertSplitPairIsCorrect(@NonNull Activity expectedPrimaryActivity,
-            @NonNull Activity secondaryActivity, @NonNull SplitAttributes splitAttributes,
-            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
+    /**
+     * Assert the split pair is correct.
+     *
+     * @param activityStackCallback if not {@code null}, check {@link ActivityStack activityStacks}
+     *     is expected. Otherwise, don't verify {@code activityStacks}.
+     */
+    public static void assertSplitPairIsCorrect(
+            @NonNull Activity expectedPrimaryActivity,
+            @NonNull Activity secondaryActivity,
+            @NonNull SplitAttributes splitAttributes,
+            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer,
+            @Nullable TestValueCountConsumer<List<ActivityStack>> activityStackCallback) {
         // A split info callback should occur after the new activity is launched because the split
         // states have changed.
         List<SplitInfo> activeSplitStates;
@@ -199,6 +231,18 @@ public class ActivityEmbeddingUtil {
         assertSplitInfoTopSplitIsCorrect(activeSplitStates, expectedPrimaryActivity,
                 secondaryActivity, splitAttributes);
         assertValidSplit(expectedPrimaryActivity, secondaryActivity, splitAttributes);
+
+        if (activityStackCallback == null) {
+            return;
+        }
+
+        List<ActivityStack> activityStacks;
+        try {
+            activityStacks = activityStackCallback.waitAndGet();
+        } catch (InterruptedException e) {
+            throw new AssertionError("startActivityAndVerifySplitAttributes()", e);
+        }
+        assertActivityStacksIsCorrect(activityStacks, expectedPrimaryActivity, secondaryActivity);
     }
 
     public static void startActivityAndVerifyNoCallback(@NonNull Activity activityLaunchingFrom,
@@ -216,24 +260,68 @@ public class ActivityEmbeddingUtil {
         assertNull("Received SplitInfo value but did not expect none.", activeSplitStates);
     }
 
+    /**
+     * Starts an {@link Activity} and verifies the split states.
+     *
+     * @param activityLaunchingFrom the primary {@link Activity} to launch the secondary
+     * @param secondActivityClass the class of the secondary {@link Activity}
+     * @param secondaryActivityId the {@code String} ID of the secondary {@link Activity}
+     * @param expectedCallbackCount the expected count from {@code splitInfoConsumer}
+     * @param splitInfoConsumer the {@link SplitInfo} callback
+     * @param activityStackCallback the {@link ActivityStack} callback. It could be {@code null} if
+     *     we don't want to verify {@link ActivityStack}.
+     * @return the launched secondary {@link Activity}
+     */
+    @NonNull
     public static Activity startActivityAndVerifySplitAttributes(
-            @NonNull Activity activityLaunchingFrom, @NonNull Activity expectedPrimaryActivity,
+            @NonNull Activity activityLaunchingFrom,
+            @NonNull Activity expectedPrimaryActivity,
             @NonNull Class<? extends Activity> secondActivityClass,
-            @NonNull SplitRule splitRule, @NonNull String secondaryActivityId,
+            @NonNull SplitRule splitRule,
+            @NonNull String secondaryActivityId,
             int expectedCallbackCount,
-            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
-        return startActivityAndVerifySplitAttributes(activityLaunchingFrom, expectedPrimaryActivity,
-                secondActivityClass, splitRule.getDefaultSplitAttributes(), secondaryActivityId,
-                expectedCallbackCount, splitInfoConsumer);
+            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer,
+            @Nullable TestValueCountConsumer<List<ActivityStack>> activityStackCallback) {
+        return startActivityAndVerifySplitAttributes(
+                activityLaunchingFrom,
+                expectedPrimaryActivity,
+                secondActivityClass,
+                splitRule.getDefaultSplitAttributes(),
+                secondaryActivityId,
+                expectedCallbackCount,
+                splitInfoConsumer,
+                activityStackCallback);
     }
 
-    public static Activity startActivityAndVerifySplitAttributes(@NonNull Activity primaryActivity,
+    /**
+     * Starts an {@link Activity} and verifies the split states.
+     *
+     * @param primaryActivity the primary {@link Activity} to launch the secondary
+     * @param secondActivityClass the class of the secondary {@link Activity}
+     * @param splitPairRule the rule that matches the split pair
+     * @param secondActivityId the {@code String} ID of the secondary {@link Activity}
+     * @param splitInfoConsumer the {@link SplitInfo} callback
+     * @param activityStackCallback the {@link ActivityStack} callback. It could be {@code null} if
+     *     we don't want to verify {@link ActivityStack}.
+     * @return the launched secondary {@link Activity}
+     */
+    @NonNull
+    public static Activity startActivityAndVerifySplitAttributes(
+            @NonNull Activity primaryActivity,
             @NonNull Class<? extends Activity> secondActivityClass,
-            @NonNull SplitPairRule splitPairRule, @NonNull String secondActivityId,
-            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer) {
-        return startActivityAndVerifySplitAttributes(primaryActivity, primaryActivity,
-                secondActivityClass, splitPairRule, secondActivityId, 1 /* expectedCallbackCount */,
-                splitInfoConsumer);
+            @NonNull SplitPairRule splitPairRule,
+            @NonNull String secondActivityId,
+            @NonNull TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer,
+            @Nullable TestValueCountConsumer<List<ActivityStack>> activityStackCallback) {
+        return startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                primaryActivity,
+                secondActivityClass,
+                splitPairRule,
+                secondActivityId,
+                1 /* expectedCallbackCount */,
+                splitInfoConsumer,
+                activityStackCallback);
     }
 
     /**
@@ -759,5 +847,31 @@ public class ActivityEmbeddingUtil {
         assertEquals("Expect secondary activity to match the top of the secondary stack",
                 secondaryActivity, getSecondaryStackTopActivity(topSplit));
         assertEquals(splitAttributes, topSplit.getSplitAttributes());
+    }
+
+    private static void assertActivityStacksIsCorrect(
+            @NonNull List<ActivityStack> activityStacks,
+            @NonNull Activity primaryActivity,
+            @NonNull Activity secondaryActivity) {
+        final List<ActivityStack> primaryActivityStacks =
+                activityStacks.stream()
+                        .filter(
+                                activityStack ->
+                                        activityStack.getActivities().contains(primaryActivity))
+                        .toList();
+        assertEquals(
+                "There must exactly one ActivityStack containing primary Activity "
+                        + primaryActivity
+                        + ", but was "
+                        + primaryActivityStacks,
+                1,
+                primaryActivityStacks.size());
+        final ActivityStack secondaryActivityStack = activityStacks.getLast();
+        assertTrue(
+                "Secondary ActivityStack should contain "
+                        + secondaryActivity
+                        + ", but was "
+                        + activityStacks,
+                secondaryActivityStack.getActivities().contains(secondaryActivity));
     }
 }

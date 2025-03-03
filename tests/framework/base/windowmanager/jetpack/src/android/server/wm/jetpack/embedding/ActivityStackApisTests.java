@@ -66,8 +66,14 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
 
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
-        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId.class, splitPairRule, "secondaryActivity", mSplitInfoConsumer);
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "secondaryActivity",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         final SplitInfo splitInfo = getSplitInfo(primaryActivity, secondaryActivity);
 
@@ -90,8 +96,14 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
 
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
-        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId.class, splitPairRule, "secondaryActivity", mSplitInfoConsumer);
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "secondaryActivity",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         final SplitInfo splitInfo = getSplitInfo(primaryActivity, secondaryActivity);
 
@@ -151,12 +163,22 @@ public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
 
         final Activity activityA = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
-        final Activity activityB = startActivityAndVerifySplitAttributes(activityA,
-                TestActivityWithId.class, splitPairRuleAB, "activityB",
-                mSplitInfoConsumer);
-        final Activity activityC = startActivityAndVerifySplitAttributes(activityA,
-                TestActivityWithId.class, splitPairRuleAC, "activityC",
-                mSplitInfoConsumer);
+        final Activity activityB =
+                startActivityAndVerifySplitAttributes(
+                        activityA,
+                        TestActivityWithId.class,
+                        splitPairRuleAB,
+                        "activityB",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
+        final Activity activityC =
+                startActivityAndVerifySplitAttributes(
+                        activityA,
+                        TestActivityWithId.class,
+                        splitPairRuleAC,
+                        "activityC",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         final Set<ActivityStack.Token> secondaryActivityStacks = mSplitInfoConsumer
                 .getLastReportedValue()

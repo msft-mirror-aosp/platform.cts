@@ -36,7 +36,6 @@ import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.window.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -135,19 +134,30 @@ public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
         // customizedSplitAttributes.
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        Activity activityB = startActivityAndVerifySplitAttributes(activityA,
-                activityA /* expectedPrimaryActivity */, TestActivityWithId.class,
-                mCustomizedSplitAttributes, ACTIVITY_B_ID, 1 /* expectedCallbackCount */,
-                mSplitInfoConsumer);
+        Activity activityB =
+                startActivityAndVerifySplitAttributes(
+                        activityA,
+                        activityA /* expectedPrimaryActivity */,
+                        TestActivityWithId.class,
+                        mCustomizedSplitAttributes,
+                        ACTIVITY_B_ID,
+                        1 /* expectedCallbackCount */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         mActivityEmbeddingComponent.clearSplitAttributesCalculator();
 
         // Invalidate the current splitAttributes Apply the splitAttributes calculator change.
         mActivityEmbeddingComponent.invalidateTopVisibleSplitAttributes();
 
-        // Checks the split pair
-        assertSplitPairIsCorrect(activityA, activityB, TOP_TO_BOTTOM_SPLIT_ATTRS,
-                mSplitInfoConsumer);
+        // Checks the split pair.
+        // Pass null activityStackCallback since there's no update on ActivityStacks.
+        assertSplitPairIsCorrect(
+                activityA,
+                activityB,
+                TOP_TO_BOTTOM_SPLIT_ATTRS,
+                mSplitInfoConsumer,
+                null /* activityStackCallback */);
     }
 
     @ApiTest(apis = {"androidx.window.extensions.embedding.ActivityEmbeddingComponent"
@@ -171,8 +181,14 @@ public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
         // customizedSplitAttributes.
         Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        Activity activityB = startActivityAndVerifySplitAttributes(activityA,
-                TestActivityWithId.class, splitPairRule, ACTIVITY_B_ID, mSplitInfoConsumer);
+        Activity activityB =
+                startActivityAndVerifySplitAttributes(
+                        activityA,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        ACTIVITY_B_ID,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.getLastReportedValue();
         SplitInfo splitInfo = null;
@@ -189,7 +205,12 @@ public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
                 mCustomizedSplitAttributes);
 
         // Checks the split pair
-        assertSplitPairIsCorrect(activityA, activityB, mCustomizedSplitAttributes,
-                mSplitInfoConsumer);
+        // Pass null activityStackCallback since there's no update on ActivityStacks.
+        assertSplitPairIsCorrect(
+                activityA,
+                activityB,
+                mCustomizedSplitAttributes,
+                mSplitInfoConsumer,
+                null /* activityStackCallback */);
     }
 }

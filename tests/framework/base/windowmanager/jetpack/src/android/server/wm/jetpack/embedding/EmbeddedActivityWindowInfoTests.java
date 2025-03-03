@@ -106,9 +106,14 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         // Launch two activities into a split
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
-        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         mInstrumentation.runOnMainSync(() -> {
             final EmbeddedActivityWindowInfo primaryInfo = mActivityEmbeddingComponent
@@ -141,9 +146,14 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 secondaryDisplay.mId);
-        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         mInstrumentation.runOnMainSync(() -> {
             final EmbeddedActivityWindowInfo primaryInfo = mActivityEmbeddingComponent
@@ -188,9 +198,14 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         });
 
         // Report info when activity enters split.
-        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         mInstrumentation.runOnMainSync(() -> {
             final EmbeddedActivityWindowInfo primaryInfo = listener
@@ -226,9 +241,15 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         mActivityEmbeddingComponent.clearEmbeddedActivityWindowInfoCallback();
         // The last split state is back to fullscreen. Clear queue to wait for the new split update.
         mSplitInfoConsumer.clearQueue();
-        final Activity secondaryActivity2 = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        mActivityStackCallback.clearQueue();
+        final Activity secondaryActivity2 =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         mInstrumentation.runOnMainSync(() -> {
             assertEquals(lastPrimaryInfo, listener.getLastReportedInfo(primaryActivity));
@@ -270,9 +291,14 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
         });
 
         // Report info when activity enters split.
-        final Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         mInstrumentation.runOnMainSync(() -> {
             final EmbeddedActivityWindowInfo primaryInfo = listener
