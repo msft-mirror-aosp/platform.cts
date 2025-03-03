@@ -186,7 +186,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                         new CancellationSignal());
 
                 assertTrue(prompt.isConfirmationRequired());
-                successfullyAuthenticate(session, 0 /* userId */, callback);
+                successfullyAuthenticate(session, Utils.getUserId(), callback);
             }
         }
     }
@@ -519,9 +519,16 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-                showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
-                        true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
-                        randomDescription, null /* contentView */, randomNegativeButtonText);
+                showDefaultBiometricPromptWithContents(
+                        props.getSensorId(),
+                        Utils.getUserId(),
+                        true /* requireConfirmation */,
+                        callback,
+                        randomTitle,
+                        randomSubtitle,
+                        randomDescription,
+                        null /* contentView */,
+                        randomNegativeButtonText);
 
                 final UiObject2 actualTitle = findView(TITLE_VIEW);
                 final UiObject2 actualSubtitle = findView(SUBTITLE_VIEW);
@@ -533,7 +540,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 assertEquals(randomNegativeButtonText, actualNegativeButton.getText());
 
                 // Finish auth
-                successfullyAuthenticate(session, 0 /* userId */, callback);
+                successfullyAuthenticate(session, Utils.getUserId(), callback);
             }
         }
     }
