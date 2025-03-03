@@ -1040,6 +1040,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @LockSettingsTest
     @Test
+    @Ignore("Deprecated and no longer maintained")
     public void testSecondaryLockscreen() throws Exception {
         executeDeviceTestClass(".SecondaryLockscreenTest");
     }
