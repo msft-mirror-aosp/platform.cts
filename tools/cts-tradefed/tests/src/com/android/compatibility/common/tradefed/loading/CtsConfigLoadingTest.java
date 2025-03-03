@@ -62,7 +62,6 @@ public class CtsConfigLoadingTest {
             new HashSet<>(
                     Arrays.asList(
                             // modifications to the list below must be reviewed
-                            "abuse",
                             "adservices",
                             "art",
                             "auth",
