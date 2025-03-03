@@ -189,6 +189,7 @@ public class TelephonyLocationTests {
 
     @Test
     public void testSdk28ServiceStateListeningWithoutPermissions() {
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         withRevokedPermission(LOCATION_ACCESS_APP_SDK28_PACKAGE, () -> {
                     ServiceState ss = (ServiceState) performLocationAccessCommand(
                             CtsLocationAccessService.COMMAND_GET_SERVICE_STATE_FROM_LISTENER);
