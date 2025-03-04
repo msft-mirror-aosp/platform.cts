@@ -27,7 +27,6 @@
 #include <android/binder_ibinder.h>
 
 #include <aaudio/AAudio.h>
-#include <system/audio.h> /* FCC_LIMIT */
 
 #include "test_aaudio.h"    // NANOS_PER_MILLISECOND
 
@@ -39,6 +38,7 @@ static constexpr const char* FEATURE_PLAYBACK = "android.hardware.audio.output";
 static constexpr const char* FEATURE_RECORDING = "android.hardware.microphone";
 static constexpr const char* FEATURE_LOW_LATENCY = "android.hardware.audio.low_latency";
 bool deviceSupportsFeature(const char* feature);
+int getOutChannelCountMax();
 
 class StreamBuilderHelper {
   public:
@@ -111,7 +111,7 @@ class StreamBuilderHelper {
     const int32_t kMinValidSampleRate = 8000; // 8 kHz
     const int32_t kMaxValidSampleRate = 2000000; // 2 MHz
     const int32_t kMinValidChannelCount = 1;
-    const int32_t kMaxValidChannelCount = FCC_LIMIT;
+    const int32_t kMaxValidChannelCount = getOutChannelCountMax();
 };
 
 class InputStreamBuilderHelper : public StreamBuilderHelper {
