@@ -6,7 +6,7 @@ import android.companion.AssociationRequest.DEVICE_PROFILE_AUTOMOTIVE_PROJECTION
 import android.companion.AssociationRequest.DEVICE_PROFILE_COMPUTER
 import android.companion.AssociationRequest.DEVICE_PROFILE_GLASSES
 import android.companion.AssociationRequest.DEVICE_PROFILE_NEARBY_DEVICE_STREAMING
-import android.companion.AssociationRequest.DEVICE_PROFILE_SENSOR_DEVICE_STREAMING
+import android.companion.AssociationRequest.DEVICE_PROFILE_VIRTUAL_DEVICE
 import android.companion.AssociationRequest.DEVICE_PROFILE_WATCH
 import android.net.MacAddress
 import android.os.Handler
@@ -23,7 +23,7 @@ val DEVICE_PROFILES = buildSet {
     add(DEVICE_PROFILE_APP_STREAMING)
     add(DEVICE_PROFILE_AUTOMOTIVE_PROJECTION)
     if (android.companion.virtualdevice.flags.Flags.enableLimitedVdmRole()) {
-        add(DEVICE_PROFILE_SENSOR_DEVICE_STREAMING)
+        add(DEVICE_PROFILE_VIRTUAL_DEVICE)
     }
 }
 
@@ -35,7 +35,7 @@ val DEVICE_PROFILE_TO_NAME = buildMap {
     put(DEVICE_PROFILE_APP_STREAMING, "APP_STREAMING")
     put(DEVICE_PROFILE_AUTOMOTIVE_PROJECTION, "AUTOMOTIVE_PROJECTION")
     if (android.companion.virtualdevice.flags.Flags.enableLimitedVdmRole()) {
-        put(DEVICE_PROFILE_SENSOR_DEVICE_STREAMING, "SENSOR_DEVICE_STREAMING")
+        put(DEVICE_PROFILE_VIRTUAL_DEVICE, "VIRTUAL_DEVICE")
     }
 }
 
@@ -54,8 +54,8 @@ val DEVICE_PROFILE_TO_PERMISSION = buildMap {
     put(DEVICE_PROFILE_COMPUTER, Manifest.permission.REQUEST_COMPANION_PROFILE_COMPUTER)
     if (android.companion.virtualdevice.flags.Flags.enableLimitedVdmRole()) {
         put(
-            DEVICE_PROFILE_SENSOR_DEVICE_STREAMING,
-            Manifest.permission.REQUEST_COMPANION_PROFILE_SENSOR_DEVICE_STREAMING
+            DEVICE_PROFILE_VIRTUAL_DEVICE,
+            Manifest.permission.REQUEST_COMPANION_PROFILE_VIRTUAL_DEVICE
         )
     }
 }
