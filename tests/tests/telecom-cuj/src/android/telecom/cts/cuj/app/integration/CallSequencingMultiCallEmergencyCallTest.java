@@ -42,6 +42,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -250,6 +252,9 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
 
     @Override
     public void setUp() throws Exception {
+        // Emergency calling is not supported on devices without FEATURE_TELEPHONY
+        //or FEATURE_TELECOM (i.e. Tangor).
+        assumeTrue(mShouldTestTelecom && mSupportsManagedCalls);
         super.setUp();
         setupForEmergencyCalling();
     }
@@ -282,9 +287,6 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
 
     @Test
     public void testMultiCallEcc() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
         TelecomTestApp[] testApps = mParams.getTestApps();
         int[] expectedCallStatesAndNumCallsDisconnected =
                 mParams.getExpectedCallStatesAndNumsCallsDisconnected();
