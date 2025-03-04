@@ -356,6 +356,7 @@ JNIEnv* getJNIEnv() {
 
 CALL_JAVA_STATIC_METHOD(jobject, Object)
 CALL_JAVA_STATIC_METHOD(jboolean, Boolean)
+CALL_JAVA_STATIC_METHOD(jint, Int)
 
 } // namespace
 
@@ -396,3 +397,9 @@ bool isIEC61937Supported() {
             nullptr, "android/nativemedia/aaudio/AAudioTests", "isIEC61937Supported", "()Z");
 }
 
+int getOutChannelCountMax() {
+    static int outChannelCountMax =
+            (int)callJavaStaticIntFunction(nullptr, "android/nativemedia/aaudio/AAudioTests",
+                                           "getOutChannelCountMax", "()I");
+    return outChannelCountMax;
+}
