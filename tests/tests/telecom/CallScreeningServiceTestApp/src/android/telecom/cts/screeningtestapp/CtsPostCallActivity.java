@@ -49,7 +49,47 @@ public class CtsPostCallActivity extends Activity {
             cachedDisconnectCause = intent
                     .getIntExtra(EXTRA_DISCONNECT_CAUSE, DEFAULT_DISCONNECT_CAUSE);
             sLatch.countDown();
+            //  The activity should be immediately destroyed after the latch is decremented.
+            //  Otherwise, the activity will fail to be created again when another test is
+            //  executed leading to flake.
+            finish();
         }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.i(TAG, "onStart: Activity becoming visible");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "onResume: Activity in foreground and interactive");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.i(TAG, "onPause: Activity losing focus");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.i(TAG, "onStop: Activity no longer visible");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG, "onDestroy: Activity is being destroyed");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.i(TAG, "onRestart: Activity restarting after being stopped");
     }
 
     public static Uri getCachedHandle() {
