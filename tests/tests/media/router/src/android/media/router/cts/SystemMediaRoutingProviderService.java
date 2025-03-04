@@ -365,6 +365,7 @@ public class SystemMediaRoutingProviderService extends MediaRoute2ProviderServic
                         .setVolumeMax(VOLUME_MAX)
                         .setVolume(INITIAL_VOLUME)
                         .setSupportedRoutingTypes(supportedRoutingTypes)
+                        .setDeduplicationIds(Set.of(idAndName))
                         .build();
         // We only put it if not already there, to avoid overriding a "mutable" property, such as
         // volume.

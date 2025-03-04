@@ -56,6 +56,7 @@ import java.util.List;
 
 // TODO(b/184280023): remove @RequiresDevice and @Ignores.
 @RunWith(AndroidJUnit4.class)
+@Ignore("Deprecated and no longer maintained")
 public class SecondaryLockscreenTest {
 
     @Rule

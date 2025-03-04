@@ -33,7 +33,6 @@ import static android.server.wm.app.Components.LAUNCH_TEST_ON_DESTROY_ACTIVITY;
 import static android.server.wm.app.Components.RESIZEABLE_ACTIVITY;
 import static android.server.wm.app.Components.SHOW_WHEN_LOCKED_ATTR_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
-import static android.server.wm.app.Components.TOAST_ACTIVITY;
 import static android.server.wm.app.Components.VIRTUAL_DISPLAY_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.app27.Components.SDK_27_SEPARATE_PROCESS_ACTIVITY;
@@ -48,6 +47,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.Context;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.CommandSession.ActivitySession;
@@ -61,6 +61,8 @@ import android.server.wm.RotationSession;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState.DisplayContent;
 import android.server.wm.WindowManagerState.Task;
+import android.view.Display;
+import android.widget.Toast;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -730,14 +732,19 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
         final DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setPublicDisplay(true)
                 .createDisplay();
-        final String TOAST_NAME = "Toast";
-        launchActivityOnDisplay(TOAST_ACTIVITY, newDisplay.mId);
-        waitAndAssertActivityStateOnDisplay(TOAST_ACTIVITY, STATE_RESUMED, newDisplay.mId,
-                "Activity launched on external display must be resumed");
+        final int displayId = newDisplay.mId;
+        final Display display = mDm.getDisplay(displayId);
+        assertNotNull(display);
+        final Context displayContext = mContext.createDisplayContext(display);
 
-        assertTrue("Toast window must be shown", mWmState.waitForWithAmState(
-                state -> state.containsWindow(TOAST_NAME), "toast window to show"));
-        mWmState.waitAndAssertWindowSurfaceShown(TOAST_NAME, true /* shown */);
+        mInstrumentation.runOnMainSync(
+                () -> Toast.makeText(displayContext, "test toast", Toast.LENGTH_LONG).show());
+
+        assertTrue(
+                "Toast window must be shown",
+                mWmState.waitForWithAmState(
+                        state -> state.isWindowSurfaceShownOnDisplay("Toast", displayId),
+                        "toast window to show"));
     }
 
     /**

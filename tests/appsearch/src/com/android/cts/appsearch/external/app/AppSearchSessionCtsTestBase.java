@@ -11738,8 +11738,10 @@ public abstract class AppSearchSessionCtsTestBase {
                         UnsupportedOperationException.class,
                         () ->
                                 mDb1.search(
-                                        "semanticSearch(getEmbeddingParameter(0), -1, 1)",
-                                        searchSpec));
+                                                "semanticSearch(getEmbeddingParameter(0), -1, 1)",
+                                                searchSpec)
+                                        .getNextPageAsync()
+                                        .get());
         assertThat(exception)
                 .hasMessageThat()
                 .contains(

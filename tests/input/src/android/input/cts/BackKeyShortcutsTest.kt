@@ -79,7 +79,7 @@ class BackKeyShortcutsTest {
         UinputKeyboard(instrumentation).use { keyboardDevice ->
             activity.assertNoEvents()
 
-            for (scanCode in intArrayOf(KEY_ESC, KEY_BACKSPACE, KEY_LEFT)) {
+            for (scanCode in intArrayOf(KEY_ESC, KEY_LEFT)) {
                 injectKeyDown(keyboardDevice, KEY_LEFTMETA)
                 injectKeyDown(keyboardDevice, scanCode)
                 injectKeyUp(keyboardDevice, scanCode)

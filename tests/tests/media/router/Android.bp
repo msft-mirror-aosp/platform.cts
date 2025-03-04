@@ -53,16 +53,3 @@ android_test {
         "general-tests",
     ],
 }
-
-android_test {
-    name: "MctsMediaRouterTestCases",
-    defaults: ["MediaRouterTestCases_defaults"],
-    test_config: "AndroidTest-mcts.xml",
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-        "mcts-media",
-        "mts-media",
-    ],
-}
