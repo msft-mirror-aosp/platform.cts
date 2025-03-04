@@ -33,12 +33,14 @@ import android.app.appsearch.SearchSpec;
 import android.app.appsearch.testutil.AppSearchTestUtils;
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl;
 import android.content.Context;
+import android.os.Build;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArrayMap;
 
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.appsearch.flags.Flags;
 import com.android.compatibility.common.util.SystemUtil;
@@ -399,6 +401,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexAppWithDynamicSchema() throws Throwable {
         installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
@@ -421,6 +424,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexAppWithDynamicSchema_multipleRootSchemas() throws Throwable {
         installPackage(TEST_APP_A_DYNAMIC_SCHEMA_MULTIPLE_ROOT_SCHEMAS_PATH);
@@ -448,6 +452,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexMultipleAppsWithDynamicSchema() throws Throwable {
 
@@ -480,6 +485,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexAppsWithAndWithoutDynamicSchema() throws Throwable {
         installPackage(TEST_APP_A_DYNAMIC_SCHEMA_PATH);
@@ -508,6 +514,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_updateToDynamicSchema() throws Throwable {
         {
@@ -550,6 +557,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_updateToWithoutDynamicSchema() throws Throwable {
         {
@@ -593,6 +601,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_updateToDynamicSchemaWithFewerTypes() throws Throwable {
         {
@@ -636,6 +645,7 @@ public class AppIndexerCtsTest {
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS_SCHEMA_PARSER)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void indexApp_updateToDynamicSchemaWithMoreTypesThanBefore() throws Throwable {
         {
