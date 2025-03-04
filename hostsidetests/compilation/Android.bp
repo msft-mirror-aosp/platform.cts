@@ -24,9 +24,6 @@ java_defaults {
         ":apksigner",
         ":cts-compilation-testkey-files",
     ],
-    device_common_data: [
-        ":StatusCheckerApp",
-    ],
     java_resource_dirs: ["assets/"],
     device_common_java_resources: [
         ":AppUsedByOtherApp",
@@ -41,6 +38,8 @@ java_defaults {
         ":CtsCompilationApp_with_bad_profile",
         ":CtsCompilationApp_with_good_profile",
         ":CtsCompilationApp_debuggable",
+        ":StatusCheckerApp",
+        ":StatusCheckerApp_profile",
         ":disable_embedded_profile_dm",
         ":empty_config_dm",
     ],
@@ -156,6 +155,16 @@ java_genrule {
         ":AppUsedByOtherApp",
     ],
     out: ["AppUsedByOtherApp_2.prof"],
+}
+
+java_genrule {
+    name: "StatusCheckerApp_profile",
+    defaults: ["profile_defaults"],
+    srcs: [
+        "assets/status_checker_app.prof.txt",
+        ":StatusCheckerApp",
+    ],
+    out: ["StatusCheckerApp.prof"],
 }
 
 genrule {
