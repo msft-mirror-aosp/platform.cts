@@ -42,9 +42,9 @@ public class MeanVerification extends AbstractMeanVerification {
         setDefaults();
     }
 
-    private final float[] mExpected;
-    private final float[] mUpperThresholds;
-    private final float[] mLowerThresholds;
+    private float[] mExpected;
+    private float[] mUpperThresholds;
+    private float[] mLowerThresholds;
 
     /**
      * Construct a {@link MeanVerification}
@@ -100,6 +100,61 @@ public class MeanVerification extends AbstractMeanVerification {
      */
     @Override
     public void verify(TestSensorEnvironment environment, SensorStats stats) {
+        if (getCount() > 0) {
+            float[] means = getMeans();
+            int sensorType = environment.getSensor().getType();
+            // If the limited sensor acceleration data for axis are not supported
+            // then we clear the check for the equivalent axis data in limited acclerometer.
+            if (sensorType == Sensor.TYPE_ACCELEROMETER_LIMITED_AXES) {
+                    // X axis
+                    if (means[3] == 0.0f) {
+                        mExpected[0] = 0.0f;
+                        mUpperThresholds[0] = 0.0f;
+                        mLowerThresholds[0] = 0.0f;
+                    }
+                    // Y axis
+                    if (means[4] == 0.0f) {
+                        mExpected[1] = 0.0f;
+                        mUpperThresholds[1] = 0.0f;
+                        mLowerThresholds[1] = 0.0f;
+                    }
+                    // Z axis
+                    if (means[5] == 0.0f) {
+                        mExpected[2] = 0.0f;
+                        mUpperThresholds[2] = 0.0f;
+                        mLowerThresholds[2] = 0.0f;
+                    }
+            }
+            if (sensorType == Sensor.TYPE_ACCELEROMETER_LIMITED_AXES_UNCALIBRATED) {
+                    // X axis
+                    if (means[6] == 0.0f) {
+                        mExpected[0] = 0.0f;
+                        mUpperThresholds[0] = 0.0f;
+                        mLowerThresholds[0] = 0.0f;
+                        // clear bias threshold
+                        mUpperThresholds[3] = 0.0f;
+                        mLowerThresholds[3] = 0.0f;
+                    }
+                    // Y axis
+                    if (means[7] == 0.0f) {
+                        mExpected[1] = 0.0f;
+                        mUpperThresholds[1] = 0.0f;
+                        mLowerThresholds[1] = 0.0f;
+                        // clear bias threshold
+                        mUpperThresholds[4] = 0.0f;
+                        mLowerThresholds[4] = 0.0f;
+                    }
+                    // Z axis
+                    if (means[8] == 0.0f) {
+                        mExpected[2] = 0.0f;
+                        mUpperThresholds[2] = 0.0f;
+                        mLowerThresholds[2] = 0.0f;
+                        // clear bias threshold
+                        mUpperThresholds[5] = 0.0f;
+                        mLowerThresholds[5] = 0.0f;
+                    }
+            }
+        }
         verify(stats);
     }
 
