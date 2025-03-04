@@ -20,10 +20,15 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+import static android.car.cts.utils.VehiclePropertyVerifiers.PORT_LOCATION_TYPES;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEnvOutsideTemperatureVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortConnectedVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortOpenVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
@@ -47,7 +52,12 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureC
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureDisplayUnitsVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCapacityVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
@@ -69,8 +79,6 @@ import static org.junit.Assume.assumeTrue;
 import android.car.Car;
 import android.car.FuelType;
 import android.car.GsrComplianceType;
-import android.car.PortLocationType;
-import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
 import android.car.VehicleAreaWheel;
 import android.car.VehicleGear;
@@ -101,7 +109,6 @@ import android.car.hardware.property.ElectronicStabilityControlState;
 import android.car.hardware.property.EmergencyLaneKeepAssistState;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.EvChargeState;
-import android.car.hardware.property.EvChargingConnectorType;
 import android.car.hardware.property.EvRegenerativeBrakingState;
 import android.car.hardware.property.EvStoppingMode;
 import android.car.hardware.property.ForwardCollisionWarningState;
@@ -201,17 +208,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             ImmutableSet.of(
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE);
-    private static final ImmutableSet<Integer> PORT_LOCATION_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add(
-                            PortLocationType.UNKNOWN,
-                            PortLocationType.FRONT_LEFT,
-                            PortLocationType.FRONT_RIGHT,
-                            PortLocationType.REAR_RIGHT,
-                            PortLocationType.REAR_LEFT,
-                            PortLocationType.FRONT,
-                            PortLocationType.REAR)
-                    .build();
     private static final ImmutableSet<Integer> VEHICLE_GEARS =
             ImmutableSet.<Integer>builder()
                     .add(
@@ -1967,17 +1963,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_POWERTRAIN);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getNightModeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.NIGHT_MODE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .requireProperty()
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
-    }
-
     private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.PERF_VEHICLE_SPEED,
@@ -2742,77 +2727,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
-    private static VehiclePropertyVerifier.Builder<Float>
-            getInfoEvBatteryCapacityVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                evBatteryCapacity) ->
-                                assertWithMessage(
-                                                "INFO_EV_BATTERY_CAPACITY Float value must"
-                                                        + " be greater than or equal to 0")
-                                        .that(evBatteryCapacity)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer[]>
-            getInfoEvConnectorTypeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                evConnectorTypes) -> {
-                            assertWithMessage(
-                                            "INFO_EV_CONNECTOR_TYPE must specify at least 1"
-                                                    + " connection type")
-                                    .that(evConnectorTypes.length)
-                                    .isGreaterThan(0);
-                            for (Integer evConnectorType : evConnectorTypes) {
-                                assertWithMessage(
-                                                "INFO_EV_CONNECTOR_TYPE must be a defined"
-                                                        + " connection type: "
-                                                        + evConnectorType)
-                                        .that(evConnectorType)
-                                        .isIn(
-                                                ImmutableSet.builder()
-                                                        .add(
-                                                                EvChargingConnectorType.UNKNOWN,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_1_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_2_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_3_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_4_DC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_1_CCS_DC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_2_CCS_DC,
-                                                                EvChargingConnectorType
-                                                                        .TESLA_ROADSTER,
-                                                                EvChargingConnectorType.TESLA_HPWC,
-                                                                EvChargingConnectorType
-                                                                        .TESLA_SUPERCHARGER,
-                                                                EvChargingConnectorType.GBT_AC,
-                                                                EvChargingConnectorType.GBT_DC,
-                                                                EvChargingConnectorType.OTHER)
-                                                        .build());
-                            }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getInfoFuelDoorLocationVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -2831,17 +2745,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_PORT_LOCATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoMultiEvPortLocationsVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -2851,7 +2754,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         Integer[].class)
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 evPortLocations) -> {
                             assertWithMessage(
                                             "INFO_MULTI_EV_PORT_LOCATIONS must specify at least 1"
@@ -2867,33 +2774,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isIn(PORT_LOCATION_TYPES);
                             }
                         })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoDriverSeatVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_DRIVER_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(
-                        ImmutableSet.of(
-                                VehicleAreaSeat.SEAT_UNKNOWN,
-                                SEAT_ROW_1_LEFT,
-                                VehicleAreaSeat.SEAT_ROW_1_CENTER,
-                                VehicleAreaSeat.SEAT_ROW_1_RIGHT))
-                .setAreaIdsVerifier(
-                        (verifierContext, areaIds) ->
-                                assertWithMessage("Even though INFO_DRIVER_SEAT is"
-                                        + " VEHICLE_AREA_TYPE_SEAT, it is meant to be"
-                                        + " VEHICLE_AREA_TYPE_GLOBAL, so its AreaIds"
-                                        + " must contain a single 0")
-                                        .that(areaIds)
-                                        .isEqualTo(
-                                                new int[] {
-                                                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL
-                                                }))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
@@ -3210,17 +3090,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_NOT_REQUIRED,
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_REQUIRED_V1))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float>
-            getEnvOutsideTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getCurrentGearVerifierBuilder() {
@@ -3865,47 +3734,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getFuelDoorOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_DOOR_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setCarPropertyConfigVerifier(
-                        (verifierContext, config) -> {
-                            assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.getCarPropertyManager(),
-                                    VehiclePropertyIds.FUEL_DOOR_OPEN);
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getEvChargePortOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getEvChargePortConnectedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_CONNECTED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
