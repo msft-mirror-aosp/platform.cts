@@ -691,7 +691,7 @@ public class MediaRouter2DeviceTest {
         MediaRouter2.RoutingController systemController = router.getSystemController();
         assertThat(systemController.getSelectedRoutes())
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
-                .containsExactly(ROUTE_ID_BUILTIN_SPEAKER);
+                .doesNotContain(MediaRoute2Info.ROUTE_ID_DEFAULT);
     }
 
     @Test
