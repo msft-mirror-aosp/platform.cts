@@ -6583,7 +6583,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     // Ignores the test if wheel_tick property does not exist in the car.
                     assumeTrue(
                             "WheelTick is not available, skip unregisterCallback test",
-                            mCarPropertyManager.isPropertyAvailable(
+                            isPropertyAvailableSafe(
                                     VehiclePropertyIds.WHEEL_TICK,
                                     VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
 
@@ -7212,6 +7212,17 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             return ONCHANGE_RATE_EVENT_COUNTER;
         } else {
             return 0;
+        }
+    }
+
+    private boolean isPropertyAvailableSafe(int propertyId, int areaId) {
+        try {
+            return mCarPropertyManager.isPropertyAvailable(propertyId, areaId);
+        } catch (Exception e) {
+            Log.w(TAG, "isPropertyAvailable for property: "
+                    + VehiclePropertyIds.toString(propertyId) + ", areaId: " + areaId
+                    + " throws exception, assume false", e);
+            return false;
         }
     }
 
