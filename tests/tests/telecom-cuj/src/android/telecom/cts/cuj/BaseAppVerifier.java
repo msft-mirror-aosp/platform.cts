@@ -182,7 +182,7 @@ public class BaseAppVerifier {
 
     @After
     public void tearDown() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || mBaseAppVerifierImpl == null) {
             return;
         }
         mBaseAppVerifierImpl.tearDown();
@@ -552,11 +552,17 @@ public class BaseAppVerifier {
 
     /** Setup required to test emergency calling in CUJ. */
     public void setupForEmergencyCalling() throws Exception {
+        if (mBaseAppVerifierImpl == null) {
+            return;
+        }
         mBaseAppVerifierImpl.setupForEmergencyCalling();
     }
 
     /** Cleanup setup procedure done to test emergency calling. d */
     public void tearDownEmergencyCalling() throws Exception {
+        if (mBaseAppVerifierImpl == null) {
+            return;
+        }
         mBaseAppVerifierImpl.tearDownEmergencyCalling();
     }
 }
