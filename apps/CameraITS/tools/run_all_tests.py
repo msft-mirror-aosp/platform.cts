@@ -634,6 +634,9 @@ def main():
     if (any(s.startswith('scene_' + extension)
             for extension in _EXTENSION_NAMES)):
       scenes[i] = f'scene_extensions/{s}'
+    # Handle scene_tele
+    if s == 'scene6_tele' or s == 'scene7_tele':
+      scenes[i] = f'scene_tele/{s}'
 
   # Read config file and extract relevant TestBed
   config_file_contents = get_config_file_contents()
@@ -788,6 +791,8 @@ def main():
       possible_scenes = list(SUB_CAMERA_TESTS.keys())
       if auto_scene_switch:
         possible_scenes.remove('sensor_fusion')
+      if 'scene_tele' in scenes:
+        possible_scenes = _TELE_SCENES
     else:
       if 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
