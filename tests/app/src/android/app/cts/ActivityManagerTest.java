@@ -908,7 +908,7 @@ public final class ActivityManagerTest {
         assertEquals(RESULT_PASS, appEndReceiver.waitForActivity());
         appEndReceiver.close();
 
-        if (!noHomeScreen()) {
+        if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -917,9 +917,9 @@ public final class ActivityManagerTest {
             assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
             assertTrue(timeReceiver.mTimeUsed == 0);
         } else {
-            // With platforms that have no home screen, focus is returned to something else that is
-            // considered a completion of the tracked activity flow, and hence time tracking is
-            // triggered.
+            // If the system has not returned to the home screen, focus is returned to something
+            // else that is considered a completion of the tracked activity flow, and hence time
+            // tracking is triggered.
             assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         }
 
@@ -1072,7 +1072,7 @@ public final class ActivityManagerTest {
         assertEquals(RESULT_PASS, appEndReceiver.waitForActivity());
         appEndReceiver.close();
 
-        if (!noHomeScreen()) {
+        if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -1081,9 +1081,9 @@ public final class ActivityManagerTest {
             assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
             assertTrue(timeReceiver.mTimeUsed == 0);
         } else {
-            // With platforms that have no home screen, focus is returned to something else that is
-            // considered a completion of the tracked activity flow, and hence time tracking is
-            // triggered.
+            // If the system has not returned to the home screen, focus is returned to something
+            // else that is considered a completion of the tracked activity flow, and hence time
+            // tracking is triggered.
             assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         }
 
@@ -2709,4 +2709,15 @@ public final class ActivityManagerTest {
         assumeFalse("System user is not a FULL user in headless system user mode.",
                 UserManager.isHeadlessSystemUserMode());
     }
+
+    private boolean isTestHomeActivityFocused() {
+        if (noHomeScreen()) {
+            return false;
+        }
+        ComponentName homeActivity =
+                new ComponentName(STUB_PACKAGE_NAME, TestHomeActivity.class.getName());
+        mWmState.waitForValidState(homeActivity);
+        return mWmState.waitForFocusedActivity(homeActivity);
+    }
+
 }
