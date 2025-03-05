@@ -127,12 +127,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
     )
     logging.debug('proto_file_name %s', proto_file_name)
+    logging.debug('root_output_path %s', self.root_output_path)
 
-    with open(proto_file_name, 'wb') as f:
+    proto_file_path = os.path.join(self.root_output_path, proto_file_name)
+    with open(proto_file_path, 'wb') as f:
       f.write(database.SerializeToString())
 
     txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
-    with open(txtpb_file_name, 'w') as tf:
+    txtpb_file_path = os.path.join(self.root_output_path, txtpb_file_name)
+    with open(txtpb_file_path, 'w') as tf:
       database_str = text_format.MessageToString(database)
       tf.write(database_str)
 
