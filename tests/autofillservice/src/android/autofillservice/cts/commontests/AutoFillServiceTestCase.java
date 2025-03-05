@@ -19,6 +19,7 @@ package android.autofillservice.cts.commontests;
 import static android.autofillservice.cts.testcore.Helper.DEVICE_CONFIG_AUTOFILL_DIALOG_HINTS;
 import static android.autofillservice.cts.testcore.Helper.getContext;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_NAME;
+import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.SERVICE_CLASS;
 import static android.content.Context.CLIPBOARD_SERVICE;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -598,6 +599,7 @@ public final class AutoFillServiceTestCase {
          */
         protected void enableService() {
             Helper.enableAutofillService(SERVICE_NAME);
+            InstrumentedAutoFillService.setAutofillServiceClass(SERVICE_CLASS);
         }
 
         /**
