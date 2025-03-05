@@ -482,7 +482,8 @@ def switch_default_camera(dut, facing, log_path):
       camera has been switched.
   """
   flip_camera_pattern = (
-      r'(switch to|flip camera|switch camera|camera switch|switch)'
+      r'(switch to|flip camera|switch camera|camera switch|'
+      'switch|toggle_button|front_back_switcher)'
     )
   default_ui_dump = dut.ui.dump()
   logging.debug('Default camera UI dump: %s', default_ui_dump)
@@ -490,19 +491,31 @@ def switch_default_camera(dut, facing, log_path):
   for node in root.iter('node'):
     resource_id = node.get('resource-id')
     content_desc = node.get('content-desc')
-    if re.search(
-        flip_camera_pattern, content_desc, re.IGNORECASE
-    ):
-      logging.debug('Pattern matches')
-      logging.debug('Resource id: %s', resource_id)
-      logging.debug('Flip camera content-desc: %s', content_desc)
-      break
+    if content_desc:
+      if re.search(
+          flip_camera_pattern, content_desc, re.IGNORECASE
+      ):
+        logging.debug('Pattern matches')
+        logging.debug('Resource id: %s', resource_id)
+        logging.debug('Flip camera content-desc: %s', content_desc)
+        break
+    else:
+      if re.search(
+          flip_camera_pattern, resource_id, re.IGNORECASE
+      ):
+        logging.debug('Pattern matches')
+        logging.debug('Resource id: %s', resource_id)
+        logging.debug('Flip camera content-desc: %s', content_desc)
+        break
   else:
     raise AssertionError('Flip camera resource not found.')
   if facing == _get_current_camera_facing(content_desc, resource_id):
     logging.debug('Pattern found but camera is already switched.')
   else:
-    dut.ui(desc=content_desc).click.wait()
+    if content_desc:
+      dut.ui(desc=content_desc).click.wait()
+    else:
+      dut.ui(res=resource_id).click.wait()
 
   dut.take_screenshot(
       log_path, prefix=f'switched_to_{facing}_default_camera'
