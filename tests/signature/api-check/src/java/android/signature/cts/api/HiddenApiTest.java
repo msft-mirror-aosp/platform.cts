@@ -190,7 +190,7 @@ public class HiddenApiTest extends AbstractApiTest {
             for (String namespace : hiddenapiRestrictToNamespaces) {
                 if (member.getJavaClassName().startsWith(namespace)) {
                     found = true;
-                  break;
+                    break;
                 }
             }
             if (!found) {

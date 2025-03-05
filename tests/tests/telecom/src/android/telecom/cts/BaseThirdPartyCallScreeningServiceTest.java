@@ -157,6 +157,7 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
         }
         boolean completedBeforeTimeout = bindLatch.await(ASYNC_TIMEOUT, TimeUnit.MILLISECONDS);
         assertTrue(completedBeforeTimeout);
+        waitForScreeningControl();
         return serviceConnection;
     }
 
@@ -487,5 +488,28 @@ public abstract class BaseThirdPartyCallScreeningServiceTest
             mInCallCallbacks.getService().disconnectAllCalls();
             assertNumCalls(mInCallCallbacks.getService(), 0);
         }
+    }
+
+    /**
+     * This helper waits for the call screening process to bind and call onServiceConnected. If the
+     * onServiceConnected is never called or called too early, an NPE can be hit while running the
+     * test.
+     */
+    protected void waitForScreeningControl() {
+        waitUntilConditionIsTrueOrTimeout(
+                new Condition() {
+                    @Override
+                    public Object expected() {
+                        return true;
+                    }
+
+                    @Override
+                    public Object actual() {
+                        return mCallScreeningControl != null;
+                    }
+                },
+                5000,
+                "mCallScreeningControl is null which means onServiceConnected was never" +
+                 "called");
     }
 }

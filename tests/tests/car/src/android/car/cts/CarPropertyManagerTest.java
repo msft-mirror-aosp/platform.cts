@@ -20,10 +20,15 @@ import static android.Manifest.permission.ACCESS_FINE_LOCATION;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_LEFT;
 import static android.car.VehicleAreaSeat.SEAT_ROW_1_RIGHT;
 import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
+import static android.car.cts.utils.VehiclePropertyVerifiers.PORT_LOCATION_TYPES;
 import static android.car.cts.utils.VehiclePropertyVerifiers.assertFuelPropertyNotImplementedOnEv;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEngineRpmVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEnvOutsideTemperatureVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryInstantaneousChargeRateVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getEvBatteryLevelVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortConnectedVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getEvChargePortOpenVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelDoorOpenVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelLowVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getFuelLevelVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacAcOnVerifierBuilder;
@@ -47,7 +52,12 @@ import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureC
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureDisplayUnitsVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureSetVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getHvacTemperatureValueSuggestionVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoDriverSeatVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvBatteryCapacityVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvConnectorTypeVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getInfoEvPortLocationVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getLocationCharacterizationVerifierBuilder;
+import static android.car.cts.utils.VehiclePropertyVerifiers.getNightModeVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfOdometerVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getPerfSteeringAngleVerifierBuilder;
 import static android.car.cts.utils.VehiclePropertyVerifiers.getRangeRemainingVerifierBuilder;
@@ -69,8 +79,6 @@ import static org.junit.Assume.assumeTrue;
 import android.car.Car;
 import android.car.FuelType;
 import android.car.GsrComplianceType;
-import android.car.PortLocationType;
-import android.car.VehicleAreaSeat;
 import android.car.VehicleAreaType;
 import android.car.VehicleAreaWheel;
 import android.car.VehicleGear;
@@ -101,7 +109,6 @@ import android.car.hardware.property.ElectronicStabilityControlState;
 import android.car.hardware.property.EmergencyLaneKeepAssistState;
 import android.car.hardware.property.ErrorState;
 import android.car.hardware.property.EvChargeState;
-import android.car.hardware.property.EvChargingConnectorType;
 import android.car.hardware.property.EvRegenerativeBrakingState;
 import android.car.hardware.property.EvStoppingMode;
 import android.car.hardware.property.ForwardCollisionWarningState;
@@ -169,9 +176,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -201,17 +210,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             ImmutableSet.of(
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_NONE,
                     CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE);
-    private static final ImmutableSet<Integer> PORT_LOCATION_TYPES =
-            ImmutableSet.<Integer>builder()
-                    .add(
-                            PortLocationType.UNKNOWN,
-                            PortLocationType.FRONT_LEFT,
-                            PortLocationType.FRONT_RIGHT,
-                            PortLocationType.REAR_RIGHT,
-                            PortLocationType.REAR_LEFT,
-                            PortLocationType.FRONT,
-                            PortLocationType.REAR)
-                    .build();
     private static final ImmutableSet<Integer> VEHICLE_GEARS =
             ImmutableSet.<Integer>builder()
                     .add(
@@ -1967,17 +1965,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_POWERTRAIN);
     }
 
-    private static VehiclePropertyVerifier.Builder<Boolean> getNightModeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.NIGHT_MODE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .requireProperty()
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
-    }
-
     private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
                         VehiclePropertyIds.PERF_VEHICLE_SPEED,
@@ -2742,77 +2729,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
-    private static VehiclePropertyVerifier.Builder<Float>
-            getInfoEvBatteryCapacityVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_BATTERY_CAPACITY,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Float.class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                evBatteryCapacity) ->
-                                assertWithMessage(
-                                                "INFO_EV_BATTERY_CAPACITY Float value must"
-                                                        + " be greater than or equal to 0")
-                                        .that(evBatteryCapacity)
-                                        .isAtLeast(0))
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer[]>
-            getInfoEvConnectorTypeVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_CONNECTOR_TYPE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer[].class)
-                .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
-                                evConnectorTypes) -> {
-                            assertWithMessage(
-                                            "INFO_EV_CONNECTOR_TYPE must specify at least 1"
-                                                    + " connection type")
-                                    .that(evConnectorTypes.length)
-                                    .isGreaterThan(0);
-                            for (Integer evConnectorType : evConnectorTypes) {
-                                assertWithMessage(
-                                                "INFO_EV_CONNECTOR_TYPE must be a defined"
-                                                        + " connection type: "
-                                                        + evConnectorType)
-                                        .that(evConnectorType)
-                                        .isIn(
-                                                ImmutableSet.builder()
-                                                        .add(
-                                                                EvChargingConnectorType.UNKNOWN,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_1_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_2_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_3_AC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_4_DC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_1_CCS_DC,
-                                                                EvChargingConnectorType
-                                                                        .IEC_TYPE_2_CCS_DC,
-                                                                EvChargingConnectorType
-                                                                        .TESLA_ROADSTER,
-                                                                EvChargingConnectorType.TESLA_HPWC,
-                                                                EvChargingConnectorType
-                                                                        .TESLA_SUPERCHARGER,
-                                                                EvChargingConnectorType.GBT_AC,
-                                                                EvChargingConnectorType.GBT_DC,
-                                                                EvChargingConnectorType.OTHER)
-                                                        .build());
-                            }
-                        })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer>
             getInfoFuelDoorLocationVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -2831,17 +2747,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoEvPortLocationVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_EV_PORT_LOCATION,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(PORT_LOCATION_TYPES)
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
     private static VehiclePropertyVerifier.Builder<Integer[]>
             getInfoMultiEvPortLocationsVerifierBuilder() {
         return VehiclePropertyVerifier.newBuilder(
@@ -2851,7 +2756,11 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
                         Integer[].class)
                 .setCarPropertyValueVerifier(
-                        (verifierContext, carPropertyConfig, propertyId, areaId, timestampNanos,
+                        (verifierContext,
+                                carPropertyConfig,
+                                propertyId,
+                                areaId,
+                                timestampNanos,
                                 evPortLocations) -> {
                             assertWithMessage(
                                             "INFO_MULTI_EV_PORT_LOCATIONS must specify at least 1"
@@ -2867,33 +2776,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                         .isIn(PORT_LOCATION_TYPES);
                             }
                         })
-                .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Integer> getInfoDriverSeatVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.INFO_DRIVER_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_SEAT,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_STATIC,
-                        Integer.class)
-                .setAllPossibleEnumValues(
-                        ImmutableSet.of(
-                                VehicleAreaSeat.SEAT_UNKNOWN,
-                                SEAT_ROW_1_LEFT,
-                                VehicleAreaSeat.SEAT_ROW_1_CENTER,
-                                VehicleAreaSeat.SEAT_ROW_1_RIGHT))
-                .setAreaIdsVerifier(
-                        (verifierContext, areaIds) ->
-                                assertWithMessage("Even though INFO_DRIVER_SEAT is"
-                                        + " VEHICLE_AREA_TYPE_SEAT, it is meant to be"
-                                        + " VEHICLE_AREA_TYPE_GLOBAL, so its AreaIds"
-                                        + " must contain a single 0")
-                                        .that(areaIds)
-                                        .isEqualTo(
-                                                new int[] {
-                                                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL
-                                                }))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
     }
 
@@ -3210,17 +3092,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_NOT_REQUIRED,
                                 GsrComplianceType.GSR_COMPLIANCE_TYPE_REQUIRED_V1))
                 .addReadPermission(Car.PERMISSION_CAR_INFO);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Float>
-            getEnvOutsideTemperatureVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
-                        Float.class)
-                .addReadPermission(Car.PERMISSION_EXTERIOR_ENVIRONMENT);
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getCurrentGearVerifierBuilder() {
@@ -3865,47 +3736,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                         CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_CONTINUOUS,
                         Float.class)
                 .addReadPermission(Car.PERMISSION_ENERGY);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getFuelDoorOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.FUEL_DOOR_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .setCarPropertyConfigVerifier(
-                        (verifierContext, config) -> {
-                            assertFuelPropertyNotImplementedOnEv(
-                                    verifierContext.getCarPropertyManager(),
-                                    VehiclePropertyIds.FUEL_DOOR_OPEN);
-                        })
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean> getEvChargePortOpenVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_OPEN,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS)
-                .addReadPermission(Car.PERMISSION_CONTROL_ENERGY_PORTS)
-                .addWritePermission(Car.PERMISSION_CONTROL_ENERGY_PORTS);
-    }
-
-    private static VehiclePropertyVerifier.Builder<Boolean>
-            getEvChargePortConnectedVerifierBuilder() {
-        return VehiclePropertyVerifier.newBuilder(
-                        VehiclePropertyIds.EV_CHARGE_PORT_CONNECTED,
-                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ,
-                        VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL,
-                        CarPropertyConfig.VEHICLE_PROPERTY_CHANGE_MODE_ONCHANGE,
-                        Boolean.class)
-                .addReadPermission(Car.PERMISSION_ENERGY_PORTS);
     }
 
     private static VehiclePropertyVerifier.Builder<Float>
@@ -5581,64 +5411,75 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     @Test
     @ApiTest(apis = {"android.car.hardware.property.CarPropertyManager#getPropertiesAsync"})
     public void testGetAllSupportedReadablePropertiesAsync() throws Exception {
-        runWithShellPermissionIdentity(() -> {
-            Executor executor = Executors.newFixedThreadPool(1);
-            Set<Integer> pendingRequests = new ArraySet<>();
-            List<CarPropertyManager.GetPropertyRequest> getPropertyRequests =
-                    new ArrayList<>();
-            Set<PropIdAreaId> requestPropIdAreaIds = new ArraySet<>();
+        runWithShellPermissionIdentity(
+                () -> {
+                    Set<Integer> pendingRequests = new ArraySet<>();
+                    List<CarPropertyManager.GetPropertyRequest> getPropertyRequests =
+                            new ArrayList<>();
+                    Set<PropIdAreaId> requestPropIdAreaIds = new ArraySet<>();
 
-            var verifiers = getAllSupportedVerifiers();
-            for (int i = 0; i < verifiers.size(); i++) {
-                VehiclePropertyVerifier verifier = verifiers.get(i);
-                CarPropertyConfig cfg = verifier.getCarPropertyConfig();
-                if (!Flags.areaIdConfigAccess() && cfg.getAccess()
-                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ && cfg.getAccess()
-                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                    continue;
-                }
+                    var verifiers = getAllSupportedVerifiers();
+                    for (int i = 0; i < verifiers.size(); i++) {
+                        VehiclePropertyVerifier verifier = verifiers.get(i);
+                        CarPropertyConfig cfg = verifier.getCarPropertyConfig();
+                        if (!Flags.areaIdConfigAccess()
+                                && cfg.getAccess() != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                                && cfg.getAccess()
+                                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                            continue;
+                        }
 
-                List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
-                int propId = cfg.getPropertyId();
-                for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                    if (Flags.areaIdConfigAccess() && areaIdConfig.getAccess()
-                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
-                            && areaIdConfig.getAccess()
-                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                        continue;
+                        List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        int propId = cfg.getPropertyId();
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            if (Flags.areaIdConfigAccess()
+                                    && areaIdConfig.getAccess()
+                                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
+                                    && areaIdConfig.getAccess()
+                                            != CarPropertyConfig
+                                                    .VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                                continue;
+                            }
+
+                            int areaId = areaIdConfig.getAreaId();
+                            CarPropertyManager.GetPropertyRequest gpr =
+                                    mCarPropertyManager.generateGetPropertyRequest(propId, areaId);
+                            getPropertyRequests.add(gpr);
+                            pendingRequests.add(gpr.getRequestId());
+                            requestPropIdAreaIds.add(new PropIdAreaId(propId, areaId));
+                        }
                     }
 
-                    int areaId = areaIdConfig.getAreaId();
-                    CarPropertyManager.GetPropertyRequest gpr =
-                            mCarPropertyManager.generateGetPropertyRequest(propId, areaId);
-                    getPropertyRequests.add(gpr);
-                    pendingRequests.add(gpr.getRequestId());
-                    requestPropIdAreaIds.add(new PropIdAreaId(propId, areaId));
-                }
-            }
+                    int expectedResultCount = pendingRequests.size();
 
-            int expectedResultCount = pendingRequests.size();
+                    TestPropertyAsyncCallback testGetPropertyAsyncCallback =
+                            new TestPropertyAsyncCallback(pendingRequests);
+                    try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+                        mCarPropertyManager.getPropertiesAsync(
+                                getPropertyRequests,
+                                /* cancellationSignal= */ null,
+                                executor,
+                                testGetPropertyAsyncCallback);
+                        testGetPropertyAsyncCallback.waitAndFinish();
+                    }
 
-            TestPropertyAsyncCallback testGetPropertyAsyncCallback =
-                    new TestPropertyAsyncCallback(pendingRequests);
-            mCarPropertyManager.getPropertiesAsync(
-                    getPropertyRequests,
-                    /* cancellationSignal= */ null,
-                    executor,
-                    testGetPropertyAsyncCallback);
-            testGetPropertyAsyncCallback.waitAndFinish();
+                    assertThat(testGetPropertyAsyncCallback.getErrorList()).isEmpty();
+                    int resultCount = testGetPropertyAsyncCallback.getResultList().size();
+                    assertWithMessage(
+                                    "must receive at least "
+                                            + expectedResultCount
+                                            + " results, got "
+                                            + resultCount)
+                            .that(resultCount)
+                            .isEqualTo(expectedResultCount);
 
-            assertThat(testGetPropertyAsyncCallback.getErrorList()).isEmpty();
-            int resultCount = testGetPropertyAsyncCallback.getResultList().size();
-            assertWithMessage("must receive at least " + expectedResultCount + " results, got "
-                    + resultCount).that(resultCount).isEqualTo(expectedResultCount);
-
-            for (PropIdAreaId receivedPropIdAreaId :
-                    testGetPropertyAsyncCallback.getReceivedPropIdAreaIds()) {
-                assertWithMessage("received unexpected result for " + receivedPropIdAreaId)
-                        .that(requestPropIdAreaIds).contains(receivedPropIdAreaId);
-            }
-        });
+                    for (PropIdAreaId receivedPropIdAreaId :
+                            testGetPropertyAsyncCallback.getReceivedPropIdAreaIds()) {
+                        assertWithMessage("received unexpected result for " + receivedPropIdAreaId)
+                                .that(requestPropIdAreaIds)
+                                .contains(receivedPropIdAreaId);
+                    }
+                });
     }
 
     private static final class PropIdAreaId {
@@ -5901,38 +5742,59 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         });
     }
 
+    private boolean subscribeOnePropertyIdAreaId(
+            int propertyId,
+            int areaId,
+            ExecutorService executor,
+            CarPropertyEventCallback callback) {
+        return mCarPropertyManager.subscribePropertyEvents(
+                List.of(new Subscription.Builder(propertyId).addAreaId(areaId).build()),
+                executor,
+                callback);
+    }
+
     @Test
     @ApiTest(
             apis = {
-                    "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
-                    "android.car.hardware.property.CarPropertyManager#unsubscribePropertyEvents"
+                "android.car.hardware.property.CarPropertyManager#subscribePropertyEvents",
+                "android.car.hardware.property.CarPropertyManager#unsubscribePropertyEvents"
             })
     @RequiresFlagsEnabled(Flags.FLAG_BATCHED_SUBSCRIPTIONS)
     public void testSubscribePropertyEventsWithDifferentExecutorForSamePropIdAreaId_notAllowed()
             throws Exception {
-        runWithShellPermissionIdentity(() -> {
-            // Ignores the test if wheel_tick property does not exist in the car.
-            assumeTrue(
-                    "WheelTick is not available, skip subscribePropertyEvent test",
-                    isPropertyAvailableSafe(
-                            VehiclePropertyIds.WHEEL_TICK,
-                            VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
+        runWithShellPermissionIdentity(
+                () -> {
+                    // Ignores the test if wheel_tick property does not exist in the car.
+                    assumeTrue(
+                            "WheelTick is not available, skip subscribePropertyEvent test",
+                            isPropertyAvailableSafe(
+                                    VehiclePropertyIds.WHEEL_TICK,
+                                    VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
 
-            CarPropertyEventCallback callback = new CarPropertyEventCounter();
-            assertThat(mCarPropertyManager.subscribePropertyEvents(List.of(new Subscription
-                            .Builder(VehiclePropertyIds.PERF_VEHICLE_SPEED)
-                            .addAreaId(VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL).build()),
-                    Executors.newSingleThreadExecutor(), callback))
-                    .isTrue();
+                    CarPropertyEventCallback callback = new CarPropertyEventCounter();
 
-            assertThrows(IllegalArgumentException.class, () ->
-                    mCarPropertyManager.subscribePropertyEvents(List.of(new Subscription
-                                    .Builder(VehiclePropertyIds.WHEEL_TICK)
-                                    .addAreaId(VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL).build()),
-                            Executors.newSingleThreadExecutor(), callback));
+                    try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+                        assertThat(
+                                        subscribeOnePropertyIdAreaId(
+                                                VehiclePropertyIds.PERF_VEHICLE_SPEED,
+                                                /* areaId= */ 0,
+                                                executor,
+                                                callback))
+                                .isTrue();
+                    }
+                    try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+                        assertThrows(
+                                IllegalArgumentException.class,
+                                () ->
+                                        subscribeOnePropertyIdAreaId(
+                                                VehiclePropertyIds.WHEEL_TICK,
+                                                /* areaId= */ 0,
+                                                executor,
+                                                callback));
 
-            mCarPropertyManager.unsubscribePropertyEvents(callback);
-        });
+                        mCarPropertyManager.unsubscribePropertyEvents(callback);
+                    }
+                });
     }
 
     @Test
@@ -7418,69 +7280,90 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
     }
 
     private void setAllSupportedReadWritePropertiesAsync(boolean waitForPropertyUpdate) {
-        runWithShellPermissionIdentity(() -> {
-            Executor executor = Executors.newFixedThreadPool(1);
-            Set<Integer> pendingRequests = new ArraySet<>();
-            List<CarPropertyManager.SetPropertyRequest<?>> setPropertyRequests =
-                    new ArrayList<>();
-            Set<PropIdAreaId> requestPropIdAreaIds = new ArraySet<>();
+        runWithShellPermissionIdentity(
+                () -> {
+                    Set<Integer> pendingRequests = new ArraySet<>();
+                    List<CarPropertyManager.SetPropertyRequest<?>> setPropertyRequests =
+                            new ArrayList<>();
+                    Set<PropIdAreaId> requestPropIdAreaIds = new ArraySet<>();
 
-            var verifiers = getAllSupportedVerifiers();
-            for (int i = 0; i < verifiers.size(); i++) {
-                var verifier = verifiers.get(i);
-                CarPropertyConfig cfg = verifier.getCarPropertyConfig();
-                if (!Flags.areaIdConfigAccess() && cfg.getAccess()
-                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                    continue;
-                }
+                    var verifiers = getAllSupportedVerifiers();
+                    for (int i = 0; i < verifiers.size(); i++) {
+                        var verifier = verifiers.get(i);
+                        CarPropertyConfig cfg = verifier.getCarPropertyConfig();
+                        if (!Flags.areaIdConfigAccess()
+                                && cfg.getAccess()
+                                        != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                            continue;
+                        }
 
-                List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
-                int propId = cfg.getPropertyId();
-                for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
-                    if (Flags.areaIdConfigAccess() && areaIdConfig.getAccess()
-                            != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                        continue;
+                        List<? extends AreaIdConfig<?>> areaIdConfigs = cfg.getAreaIdConfigs();
+                        int propId = cfg.getPropertyId();
+                        for (AreaIdConfig<?> areaIdConfig : areaIdConfigs) {
+                            if (Flags.areaIdConfigAccess()
+                                    && areaIdConfig.getAccess()
+                                            != CarPropertyConfig
+                                                    .VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+                                continue;
+                            }
+                            int areaId = areaIdConfig.getAreaId();
+                            CarPropertyManager.SetPropertyRequest<?> spr;
+                            spr =
+                                    this.addSetPropertyRequest(
+                                            setPropertyRequests,
+                                            propId,
+                                            areaId,
+                                            verifier,
+                                            cfg.getPropertyType());
+                            if (spr == null) {
+                                continue;
+                            }
+                            spr.setWaitForPropertyUpdate(waitForPropertyUpdate);
+                            pendingRequests.add(spr.getRequestId());
+                            requestPropIdAreaIds.add(new PropIdAreaId(propId, areaId));
+                        }
+                        verifier.storeCurrentValues();
                     }
-                    int areaId = areaIdConfig.getAreaId();
-                    CarPropertyManager.SetPropertyRequest<?> spr;
-                    spr = this.addSetPropertyRequest(setPropertyRequests, propId, areaId, verifier,
-                            cfg.getPropertyType());
-                    if (spr == null) {
-                        continue;
+
+                    int expectedResultCount = pendingRequests.size();
+
+                    try {
+                        TestPropertyAsyncCallback callback =
+                                new TestPropertyAsyncCallback(pendingRequests);
+                        try (ExecutorService executor = Executors.newSingleThreadExecutor()) {
+                            mCarPropertyManager.setPropertiesAsync(
+                                    setPropertyRequests,
+                                    ASYNC_WAIT_TIMEOUT_IN_SEC * 1000,
+                                    /* cancellationSignal= */ null,
+                                    executor,
+                                    callback);
+                            callback.waitAndFinish();
+                        }
+
+                        assertThat(callback.getErrorList()).isEmpty();
+                        int resultCount = callback.getResultList().size();
+                        assertWithMessage(
+                                        "must receive at least "
+                                                + expectedResultCount
+                                                + " results, got "
+                                                + resultCount)
+                                .that(resultCount)
+                                .isEqualTo(expectedResultCount);
+
+                        for (PropIdAreaId receivedPropIdAreaId :
+                                callback.getReceivedPropIdAreaIds()) {
+                            assertWithMessage(
+                                            "received unexpected result for "
+                                                    + receivedPropIdAreaId)
+                                    .that(requestPropIdAreaIds)
+                                    .contains(receivedPropIdAreaId);
+                        }
+                    } finally {
+                        for (int i = 0; i < verifiers.size(); i++) {
+                            verifiers.get(i).restoreInitialValues();
+                        }
                     }
-                    spr.setWaitForPropertyUpdate(waitForPropertyUpdate);
-                    pendingRequests.add(spr.getRequestId());
-                    requestPropIdAreaIds.add(new PropIdAreaId(propId, areaId));
-                }
-                verifier.storeCurrentValues();
-            }
-
-            int expectedResultCount = pendingRequests.size();
-
-            try {
-                TestPropertyAsyncCallback callback = new TestPropertyAsyncCallback(
-                        pendingRequests);
-                mCarPropertyManager.setPropertiesAsync(setPropertyRequests,
-                        ASYNC_WAIT_TIMEOUT_IN_SEC * 1000,
-                        /* cancellationSignal= */ null, executor, callback);
-
-                callback.waitAndFinish();
-
-                assertThat(callback.getErrorList()).isEmpty();
-                int resultCount = callback.getResultList().size();
-                assertWithMessage("must receive at least " + expectedResultCount + " results, got "
-                        + resultCount).that(resultCount).isEqualTo(expectedResultCount);
-
-                for (PropIdAreaId receivedPropIdAreaId : callback.getReceivedPropIdAreaIds()) {
-                    assertWithMessage("received unexpected result for " + receivedPropIdAreaId)
-                            .that(requestPropIdAreaIds).contains(receivedPropIdAreaId);
-                }
-            } finally {
-                for (int i = 0; i < verifiers.size(); i++) {
-                    verifiers.get(i).restoreInitialValues();
-                }
-            }
-        });
+                });
     }
 
     /**
@@ -7559,17 +7442,27 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                     // We only allow 16 sync operations at once at car service. The client will
                     // try to issue 32 requests at the same time, but 16 of them will be bounced
                     // back and will be retried later.
-                    Executor executor = Executors.newFixedThreadPool(32);
-                    CountDownLatch cd = new CountDownLatch(32);
-                    for (int i = 0; i < 32; i++) {
-                        executor.execute(() -> {
-                            mCarPropertyManager.getProperty(
+                    try (ExecutorService executor = Executors.newFixedThreadPool(32)) {
+                        List<Callable<Object>> tasks = new ArrayList<>();
+                        for (int i = 0; i < 32; i++) {
+                            tasks.add(
+                                    () -> {
+                                        mCarPropertyManager.getProperty(
                                                 VehiclePropertyIds.PERF_VEHICLE_SPEED,
                                                 VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL);
-                            cd.countDown();
-                        });
+                                        return (Object) null;
+                                    });
+                        }
+                        List<Future<Object>> futures =
+                                executor.invokeAll(
+                                        tasks, ASYNC_WAIT_TIMEOUT_IN_SEC, TimeUnit.SECONDS);
+
+                        // Check if each future finishes normally. We do not care about actual
+                        // result.
+                        for (Future<Object> future : futures) {
+                            future.get();
+                        }
                     }
-                    cd.await(ASYNC_WAIT_TIMEOUT_IN_SEC, TimeUnit.SECONDS);
                 },
                 Car.PERMISSION_SPEED);
     }
