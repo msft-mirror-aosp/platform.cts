@@ -100,11 +100,6 @@ android_test {
 
 python_binary_host {
     name: "index_testapps",
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
     main: "tools/index/index_testapps.py",
     srcs: [
         "tools/index/index_testapps.py",

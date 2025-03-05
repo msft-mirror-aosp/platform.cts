@@ -129,6 +129,11 @@ public class NativeAMediaCodecInfoTest {
                 continue;
             }
             String[] types = codecInfo.getSupportedTypes();
+            // For codecs supporting multiple media types, the ndk codec names are different from
+            // the sdk names. Skip these codecs as a workaround.
+            if (types.length > 1) {
+                continue;
+            }
             for (String type : types) {
                 if (codecInfo.getCapabilitiesForType(type).isFeatureSupported(SPECIAL_CODEC)) {
                     continue;

@@ -34,9 +34,4 @@ python_test_host {
         // Package the snippet with the mobly test
         ":bluetooth_multi_devices_snippet",
     ],
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
 }
