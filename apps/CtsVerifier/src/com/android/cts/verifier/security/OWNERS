@@ -6,5 +6,5 @@
 per-file CA*.java, Ca*.java, KeyChainTest.java = file:platform/frameworks/base:/core/java/android/app/admin/EnterprisePlatformSecurity_OWNERS
 per-file LockConfirmBypassTest.java, SetNewPasswordComplexityTest.java, CredentialManagementAppActivity.java = file:platform/frameworks/base:/core/java/android/app/admin/EnterprisePlatformSecurity_OWNERS
 per-file FingerprintBoundKeysTest.java, ProtectedConfirmationTest.java, LskfBoundKeysTest.java, UnlockedDeviceRequiredKeysTest.java = file:platform/frameworks/base:/keystore/OWNERS
-per-file SecurityModeFeatureVerifierActivity.java = jjoslin@google.com, tomcherry@google.com
+per-file SecurityModeFeatureVerifierActivity.java =tomcherry@google.com
 per-file IdentityCredential*.java = zeuthen@google.com

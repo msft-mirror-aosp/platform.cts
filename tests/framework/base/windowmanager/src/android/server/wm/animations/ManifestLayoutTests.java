@@ -43,7 +43,6 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.WindowState;
 import android.util.DisplayMetrics;
 import android.util.Size;
-import android.view.DisplayCutout;
 import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
@@ -160,8 +159,7 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
         final int alternativeMinHeight = dpToPx(MIN_HEIGHT_DP, mDisplay.getDpi());
 
         final Rect parentFrame = mWindowState.getParentFrame();
-        final int cutoutSize = getCutoutSizeByHorGravity(GRAVITY_HOR_LEFT);
-        final int actualWidth = parentFrame.width() + cutoutSize;
+        final int actualWidth = parentFrame.width();
         final int actualHeight = parentFrame.height();
 
         if (freeform) {
@@ -255,16 +253,13 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
     /** Verify that the frame is the expected size. */
     private void verifyFrameSize(int hGravity, @NonNull Size expectedSizePx,
             @NonNull Rect parentFrame) {
-        final int cutoutSize = getCutoutSizeByHorGravity(hGravity);
-        assertEquals("Width is incorrect", expectedSizePx.getWidth(),
-                parentFrame.width() + cutoutSize);
+        assertEquals("Width is incorrect", expectedSizePx.getWidth(),parentFrame.width());
         assertEquals("Height is incorrect", expectedSizePx.getHeight(), parentFrame.height());
     }
 
     /** Verify that the frame is positioned according to the given gravity values. */
     private void verifyFramePosition(int vGravity, int hGravity, @NonNull Rect parentFrame,
-            @NonNull Rect stableBounds) {
-        final int cutoutSize = getCutoutSizeByHorGravity(hGravity);
+            @NonNull Rect stableBounds) {;
         if (vGravity == GRAVITY_VER_TOP) {
             assertEquals("Should be on the top", stableBounds.top, parentFrame.top);
         } else if (vGravity == GRAVITY_VER_BOTTOM) {
@@ -272,10 +267,9 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
         }
 
         if (hGravity == GRAVITY_HOR_LEFT) {
-            assertEquals("Should be on the left", stableBounds.left, parentFrame.left - cutoutSize);
+            assertEquals("Should be on the left", stableBounds.left, parentFrame.left);
         } else if (hGravity == GRAVITY_HOR_RIGHT) {
-            assertEquals("Should be on the right", stableBounds.right,
-                    parentFrame.right + cutoutSize);
+            assertEquals("Should be on the right", stableBounds.right,parentFrame.right);
         }
     }
 
@@ -303,23 +297,5 @@ public class ManifestLayoutTests extends ActivityManagerTestBase {
 
         mDisplay = mWmState.getDisplay(mWindowState.getDisplayId());
         assertNotNull("Should be on a display", mDisplay);
-    }
-
-    private int getCutoutSizeByHorGravity(int hGravity) {
-        DisplayCutout cutout = mDm.getDisplay(DEFAULT_DISPLAY).getCutout();
-        if (cutout == null) {
-            return 0;
-        }
-
-        // When the layoutInDisplayCutoutMode is default, the status bar & navigation bar already
-        // take top and bottom cutout into account.
-        // Here we only need to account for left & right cutout areas.
-        if (hGravity == GRAVITY_HOR_LEFT) {
-            return cutout.getSafeInsetLeft();
-        } else if (hGravity == GRAVITY_HOR_RIGHT) {
-            return cutout.getSafeInsetRight();
-        } else {
-            return 0;
-        }
     }
 }
