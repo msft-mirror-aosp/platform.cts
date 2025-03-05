@@ -24,6 +24,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeNotNull;
 
 import android.content.pm.PackageManager;
@@ -109,6 +110,7 @@ public class PerformanceHintManagerTest {
 
     @Before
     public void setUp() {
+        assumeTrue(nativeGetSessionsAreSupported());
         mPerformanceHintManager =
                 InstrumentationRegistry.getInstrumentation().getContext().getSystemService(
                         PerformanceHintManager.class);
@@ -448,9 +450,9 @@ public class PerformanceHintManagerTest {
         final String resultMessage = nativeTestReportActualWorkDuration2();
     }
 
-    private native String nativeTestCreateGraphicsPipelineSession();
-
+    private native boolean nativeGetSessionsAreSupported();
     private native String nativeTestCreateHintSession();
+    private native String nativeTestCreateGraphicsPipelineSession();
     private native String nativeTestCreateHintSessionUsingConfig();
     private native String nativeTestGetMaxGraphicsPipelineThreadsCount();
     private native String nativeTestGetPreferredUpdateRateNanos();
