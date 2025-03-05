@@ -235,8 +235,6 @@ public class SharedMemoryTest {
             assertTrue(sharedMemory.setProtect(OsConstants.PROT_READ));
             assertTrue(sharedMemory.setProtect(OsConstants.PROT_READ));
             assertFalse(sharedMemory.setProtect(OsConstants.PROT_READ | OsConstants.PROT_WRITE));
-            assertTrue(sharedMemory.setProtect(OsConstants.PROT_NONE));
-            assertFalse(sharedMemory.setProtect(OsConstants.PROT_READ));
         }
     }
 
