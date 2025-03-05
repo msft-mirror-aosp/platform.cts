@@ -55,7 +55,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.MockitoRule;
 
 import java.time.Duration;
@@ -68,7 +67,6 @@ import java.time.Duration;
             + " secondary_user_on_secondary_display.")
 @SmallTest
 @RequiresDevice
-@RunWith(MockitoJUnitRunner.class)
 @AppModeFull(reason = "Instant Apps cannot get Bluetooth related permissions")
 public final class CarProjectionManagerTest extends AbstractCarTestCase {
     @ClassRule
