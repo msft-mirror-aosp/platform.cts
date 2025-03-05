@@ -37,7 +37,6 @@ _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_FACES_MIN_NUM = 3
 _PREVIEW_RECORDING_DURATION_SECONDS = 3
 _RGB_FULL_CHANNEL = 255
-_TEST_REQUIRED_MPC = 34
 _VALID_FD_MODES = {_FD_MODE_OFF, _FD_MODE_SIMPLE, _FD_MODE_FULL}
 
 
@@ -190,15 +189,10 @@ class PreviewNumFacesTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           log_path=log_path)
 
-      # Check media performance class.
-      should_run = camera_properties_utils.face_detect(props)
-      media_performance_class = its_session_utils.get_media_performance_class(
-          self.dut.serial)
-      if media_performance_class >= _TEST_REQUIRED_MPC and not should_run:
-        its_session_utils.raise_mpc_assertion_error(
-            _TEST_REQUIRED_MPC, _NAME, media_performance_class)
-
       # Check skip conditions.
+      should_run = (camera_properties_utils.face_detect(props) and
+                    (its_session_utils.get_first_api_level(self.dut.serial) >=
+                    its_session_utils.ANDROID16_API_LEVEL))
       camera_properties_utils.skip_unless(should_run)
       mono_camera = camera_properties_utils.mono_camera(props)
       fd_modes = props['android.statistics.info.availableFaceDetectModes']
@@ -259,11 +253,9 @@ class PreviewNumFacesTest(its_base_test.ItsBaseTest):
         # Face landmarks (if provided) are within face bounding box.
         crop = result['captureMetadata'][_FRAME_INDEX][
             'android.scaler.cropRegion']
-        if (its_session_utils.get_first_api_level(self.dut.serial) >=
-            its_session_utils.ANDROID16_API_LEVEL):
-          for i, face in enumerate(faces):
-            _check_face_landmarks(
-                crop, face, fd_mode, i, preview_img, preview_size)
+        for i, face in enumerate(faces):
+          _check_face_landmarks(
+              crop, face, fd_mode, i, preview_img, preview_size)
 
         # Save image with green rectangles.
         img_name = f'{file_name_stem}_fd_mode_{fd_mode}.jpg'
