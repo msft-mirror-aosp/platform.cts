@@ -244,6 +244,18 @@ public final class AppFunctionConstants {
                         .setCreationTimestampMillis(0)
                         .setPropertyLong("dataType", 8)
                         .setPropertyString("documentSchemaType", "string")
+                        .setPropertyDocument(
+                                "selfReference",
+                                new GenericDocument.Builder<>(
+                                                NAMESPACE_APP_FUNCTIONS,
+                                                packageName
+                                                        + "/com.example.utils#print/parameter0/"
+                                                        + "message/schema/selfReference",
+                                                "AppFunctionSchema-" + packageName)
+                                        .setCreationTimestampMillis(0)
+                                        .setPropertyLong("dataType", 8)
+                                        .setPropertyString("documentSchemaType", "string")
+                                        .build())
                         .build();
         GenericDocument parameter =
                 new GenericDocument.Builder<>(
