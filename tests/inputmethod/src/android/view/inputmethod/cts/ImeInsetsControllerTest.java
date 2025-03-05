@@ -25,6 +25,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.WindowConfiguration;
 import android.os.Process;
@@ -109,6 +110,16 @@ public class ImeInsetsControllerTest extends EndToEndImeTestBase {
 
             Pair<EditText, Window> launchResult = launchTestActivity();
             final EditText editText = launchResult.first;
+            // Activities are forced to a non-fullscreen mode in a few form-factors like Automotive.
+            // And this test is not supported for such cases.
+            assumeTrue(
+                    editText.getContext()
+                                    .getResources()
+                                    .getConfiguration()
+                                    .windowConfiguration
+                                    .getWindowingMode()
+                            == WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+
             final View decorView = launchResult.second.getDecorView();
 
             WindowInsets[] lastInsets = new WindowInsets[1];
