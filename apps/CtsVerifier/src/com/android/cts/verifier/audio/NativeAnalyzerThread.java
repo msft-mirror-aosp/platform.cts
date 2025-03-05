@@ -30,6 +30,12 @@ public class NativeAnalyzerThread {
 
     private Context mContext;
 
+    // Stream IDs
+    // These are the same os the constants in NativeAnalyzer.h and need to be kept in sync.
+    public static final int NUM_STREAM_TYPES = 2;
+    public static final int STREAM_INPUT = 0;
+    public static final int STREAM_OUTPUT = 1;
+
     private final int mSecondsToRun = 5;
     private Handler mMessageHandler;
     private Thread mThread;
@@ -38,9 +44,13 @@ public class NativeAnalyzerThread {
     private volatile double mConfidence = 0.0;
     private volatile int mSampleRate = 0;
     private volatile double mTimestampLatencyMillis = 0.0;
-    private volatile boolean mIsLowLatencyStream = false;
     private volatile boolean mHas24BitHardwareSupport = false;
     private volatile int mHardwareFormat = 0; // AAUDIO_FORMAT_UNSPECIFIED
+
+    private volatile boolean[] mIsLowLatencyStream = new boolean[NUM_STREAM_TYPES];
+    private volatile int[] mBurstFrames = new int[NUM_STREAM_TYPES];
+    private volatile int[] mCapacityFrames = new int[NUM_STREAM_TYPES];
+    private volatile boolean[] mIsMMapStream = new boolean[NUM_STREAM_TYPES];
 
     private int mInputPreset = 0;
 
@@ -87,9 +97,14 @@ public class NativeAnalyzerThread {
     private native int analyze(long audioContext);
     private native double getLatencyMillis(long audioContext);
     private native double getConfidence(long audioContext);
-    private native boolean isLowlatency(long audioContext);
     private native boolean has24BitHardwareSupport(long audioContext);
     private native int getHardwareFormat(long audioContext);
+
+    // Stream Attributes
+    private native boolean isLowlatency(long audioContext, int streamId);
+    private native int getBurstFrames(long audioContext, int streamId);
+    private native int getCapacityFrames(long audioContext, int streamId);
+    private native boolean isMMapStream(long audioContext, int streamId);
 
     private native int getSampleRate(long audio_context);
 
@@ -105,8 +120,6 @@ public class NativeAnalyzerThread {
 
     public int getSampleRate() { return mSampleRate; }
 
-    public boolean isLowLatencyStream() { return mIsLowLatencyStream; }
-
     /**
      * @return whether 24 bit data formats are supported for the hardware
      */
@@ -116,6 +129,50 @@ public class NativeAnalyzerThread {
 
     public int getHardwareFormat() {
         return mHardwareFormat;
+    }
+
+    /**
+     * @param streamId one of STREAM_INPUT or STREAM_OUTPUT
+     * @return true if the specified stream is a low-latency stream.
+     */
+    public boolean isLowLatencyStream(int streamId) {
+        if (streamId != STREAM_INPUT && streamId != STREAM_OUTPUT) {
+            return false;
+        }
+        return mIsLowLatencyStream[streamId];
+    }
+
+    /**
+     * @param streamId one of STREAM_INPUT or STREAM_OUTPUT
+     * @return the number of burst frames for the specified stream
+     */
+    public int getBurstFrames(int streamId) {
+        if (streamId != STREAM_INPUT && streamId != STREAM_OUTPUT) {
+            return -1;
+        }
+        return mBurstFrames[streamId];
+    }
+
+    /**
+     * @param streamId one of STREAM_INPUT or STREAM_OUTPUT
+     * @return the capacity in frames for the specified stream
+     */
+    public int getCapacityFrames(int streamId) {
+        if (streamId != STREAM_INPUT && streamId != STREAM_OUTPUT) {
+            return -1;
+        }
+        return mCapacityFrames[streamId];
+    }
+
+    /**
+     * @param streamId one of STREAM_INPUT or STREAM_OUTPUT
+     * @return true if the specified stream is a MMAP stream.
+     */
+    public boolean isMMapStream(int streamId) {
+        if (streamId != STREAM_INPUT && streamId != STREAM_OUTPUT) {
+            return false;
+        }
+        return mIsMMapStream[streamId];
     }
 
     public double getTimestampLatencyMillis() {
@@ -174,9 +231,20 @@ public class NativeAnalyzerThread {
                 sendMessage(NATIVE_AUDIO_THREAD_MESSAGE_REC_ERROR);
                 mEnabled = false;
             }
-            mIsLowLatencyStream = isLowlatency(audioContext);
             mHas24BitHardwareSupport = has24BitHardwareSupport(audioContext);
             mHardwareFormat = getHardwareFormat(audioContext);
+
+            mIsLowLatencyStream[STREAM_OUTPUT] = isLowlatency(audioContext, STREAM_OUTPUT);
+            mIsLowLatencyStream[STREAM_INPUT] = isLowlatency(audioContext, STREAM_INPUT);
+
+            mBurstFrames[STREAM_OUTPUT] = getBurstFrames(audioContext, STREAM_OUTPUT);
+            mBurstFrames[STREAM_INPUT] = getBurstFrames(audioContext, STREAM_INPUT);
+
+            mCapacityFrames[STREAM_OUTPUT] = getCapacityFrames(audioContext, STREAM_OUTPUT);
+            mCapacityFrames[STREAM_INPUT] = getCapacityFrames(audioContext, STREAM_INPUT);
+
+            mIsMMapStream[STREAM_OUTPUT] = isMMapStream(audioContext, STREAM_OUTPUT);
+            mIsMMapStream[STREAM_INPUT] = isMMapStream(audioContext, STREAM_INPUT);
 
             final long timeoutMillis = mSecondsToRun * 1000;
             final long startedAtMillis = System.currentTimeMillis();

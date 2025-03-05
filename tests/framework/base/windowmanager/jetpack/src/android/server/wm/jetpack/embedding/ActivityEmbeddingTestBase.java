@@ -65,7 +65,9 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
     @After
     public void tearDown() throws Throwable {
         super.tearDown();
-        mReportedDisplayMetrics.restoreDisplayMetrics();
+        if (mReportedDisplayMetrics != null) {
+            mReportedDisplayMetrics.restoreDisplayMetrics();
+        }
         if (mActivityEmbeddingComponent != null) {
             mActivityEmbeddingComponent.setEmbeddingRules(Collections.emptySet());
             mActivityEmbeddingComponent.clearActivityStackAttributesCalculator();
