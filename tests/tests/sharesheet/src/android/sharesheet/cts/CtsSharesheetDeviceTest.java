@@ -518,12 +518,16 @@ public class CtsSharesheetDeviceTest {
         runAndExecuteCleanupBeforeAnyThrow(() -> {
             Intent shareIntent = createShareIntent(false, 0, 0);
             launchSharesheet(shareIntent);
+            isSharingShortcutDirectShareEnabled();
             findTextContains(mSharingShortcutLabel).click();
             assertWithMessage("Shortcut app didn't start").that(
                     appStarted.await(1000, TimeUnit.MILLISECONDS)).isTrue();
             // The intent carries the shortcut ID that was registered with ShortcutManager.
             assertThat(shortcutIdTargetLaunchedWith.get()).isEqualTo(testShortcutId);
-        }, () -> closeSharesheet());
+        }, () -> {
+            closeSharesheet();
+            clearShortcuts();
+        });
     }
 
     @Test
@@ -601,6 +605,7 @@ public class CtsSharesheetDeviceTest {
             alternateIntent.setType(CTS_ALTERNATE_DATA_TYPE);
             shareIntent.putExtra(Intent.EXTRA_ALTERNATE_INTENTS, new Intent[]{alternateIntent});
             launchSharesheet(shareIntent);
+            isSharingShortcutDirectShareEnabled();
             findTextContains(mSharingShortcutLabel).click();
             assertThat(broadcastInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
             assertThat(chooserCallbackInvoked.await(1000, TimeUnit.MILLISECONDS)).isTrue();
@@ -622,6 +627,7 @@ public class CtsSharesheetDeviceTest {
             mContext.unregisterReceiver(refinementReceiver);
             mContext.unregisterReceiver(chooserCallbackReceiver);
             closeSharesheet();
+            clearShortcuts();
         });
     }
 
@@ -1089,7 +1095,11 @@ public class CtsSharesheetDeviceTest {
             waitAndAssertNoTextContains(mSharingShortcutLabel);
         } else {
             // Ensure direct share is enabled
-            waitAndAssertTextContains(mSharingShortcutLabel);
+            waitAndAssertTextContains(
+                    mSharingShortcutLabel,
+                    String.format(
+                            "Failed to find '%s' target for test-created Shortcut",
+                            mSharingShortcutLabel));
         }
     }
 
@@ -1282,9 +1292,13 @@ public class CtsSharesheetDeviceTest {
     }
 
     private void waitAndAssertTextContains(String containsText) {
+        String failureMessage = "Failed to find " + containsText + " on screen";
+        waitAndAssertTextContains(containsText, failureMessage);
+    }
+
+    private void waitAndAssertTextContains(String containsText, String failureMessage) {
         BySelector selector =
                 By.text(textContainsPattern(containsText, false)).displayId(mMyDisplayId);
-        String failureMessage = "Failed to find " + containsText + " on screen";
         assertWithMessage(failureMessage).that(
                         mSharesheet.wait(Until.findObject(selector),
                                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS))
