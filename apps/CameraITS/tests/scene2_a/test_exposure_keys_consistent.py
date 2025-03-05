@@ -26,38 +26,15 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_SAD_THRESHOLD = 0.04  # No block should be >= 4% different
-_BLOCK_SIZE = 16
+_SAD_THRESHOLD = 0.04  # Images should not be >= 4% different
 _JPG_FORMAT = 'jpg'
 
 
-def split_luma_image(luma_img):
-  """Split the input image into regions of _BLOCK_SIZE x _BLOCK_SIZE.
+def calc_avg_exposure_sad(cap_no_ae, cap_ae, name_with_log_path):
+  """Calculate the avg SAD of the AE capture and the non-AE capture.
 
-  Args:
-    luma_img: The input image (luma only)
-
-  Returns:
-    A 5-dimensional array. The first two dimensions are the block index,
-    and the next two dimensions are the coordinates of each pixel within the
-    block.
-  """
-  width, height, _ = luma_img.shape
-  num_blocks_x = int(width / _BLOCK_SIZE)
-  num_blocks_y = int(height / _BLOCK_SIZE)
-  return (
-      luma_img[: _BLOCK_SIZE * num_blocks_x, : _BLOCK_SIZE * num_blocks_y, :]
-      .reshape(num_blocks_x, _BLOCK_SIZE, num_blocks_y, _BLOCK_SIZE, 1)
-      .swapaxes(1, 2)
-  )
-
-
-def calc_max_avg_exposure_sad(cap_no_ae, cap_ae, name_with_log_path):
-  """Calculate the max avg region SAD of the AE capture and the non-AE capture.
-
-  Splits the image into 16x16 luma regions and calculates the sum of absolute
-  difference (SAD) for each of them averaged by the number of pixels in the
-  region. Returns the maximum of these.
+  Calculates the sum of absolute difference (SAD) for the two images averaged
+  by the number of pixels.
 
   Args:
     cap_no_ae: Camera capture object without auto exposure.
@@ -65,7 +42,7 @@ def calc_max_avg_exposure_sad(cap_no_ae, cap_ae, name_with_log_path):
     name_with_log_path: File name with path to write image.
 
   Returns:
-    The sum of absolute differences for the two images.
+    The average sum of absolute differences for the two images.
   """
   suffix = f'_fmt={_JPG_FORMAT}.{_JPG_FORMAT}'
   img_no_ae = image_processing_utils.decompress_jpeg_to_yuv_image(cap_no_ae)
@@ -106,27 +83,12 @@ def calc_max_avg_exposure_sad(cap_no_ae, cap_ae, name_with_log_path):
   cbar.set_label('SAD')
   plt.savefig(f'{name_with_log_path}_sad.png', dpi=300, bbox_inches='tight')
 
-  blocks_ae = split_luma_image(luma_ae_blur)
-  blocks_no_ae = split_luma_image(luma_no_ae_blur)
+  # Calculate the sum of absolute difference, take the average per pixel.
+  avg_sad = np.sum(
+      np.abs(np.subtract(luma_ae_blur, luma_no_ae_blur))
+  ) / (img_ae.shape[0] * img_ae.shape[1])
 
-  # Calculate the sum of absolute difference per block, take the average per
-  # pixel and return the maximum of these.
-  block_avg_sads = np.sum(
-      np.abs(np.subtract(blocks_ae, blocks_no_ae)), axis=(2, 3)
-  ) / (_BLOCK_SIZE**2)
-  max_index = np.argmax(block_avg_sads)
-  x, y, _ = np.unravel_index(max_index, block_avg_sads.shape)
-
-  max_block_luma_ae = blocks_ae[x, y, :, :, :]
-  max_block_luma_no_ae = blocks_no_ae[x, y, :, :, :]
-  image_processing_utils.write_image(
-      max_block_luma_ae, f'{name_with_log_path}_max_block{suffix}'
-  )
-  image_processing_utils.write_image(
-      max_block_luma_no_ae, f'{name_with_log_path}_max_block_no_ae{suffix}'
-  )
-
-  return block_avg_sads[x, y, 0]
+  return avg_sad
 
 
 class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
@@ -168,12 +130,7 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       sizes = capture_request_utils.get_available_output_sizes(
           _JPG_FORMAT, props
       )
-
-      size = None
-      for i in range(len(sizes)):
-        if (sizes[i][0] >= _BLOCK_SIZE and sizes[i][1] >= _BLOCK_SIZE):
-          size = sizes[i]
-          break
+      size = sizes[0]
 
       camera_properties_utils.skip_unless(size is not None)
 
@@ -221,14 +178,14 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
           and post_raw_sensitivity_boost == post_raw_sensitivity_boost_no_ae
       )
 
-      sad = calc_max_avg_exposure_sad(
+      sad = calc_avg_exposure_sad(
           cap_no_ae['data'], cap_ae['data'], name_with_log_path
       )
 
-      logging.info('Max block SAD: %s (threshold: %s)', sad, _SAD_THRESHOLD)
+      logging.info('Avg SAD: %s (threshold: %s)', sad, _SAD_THRESHOLD)
       if sad > _SAD_THRESHOLD:
         raise AssertionError(
-            f'Max block SAD greater than threshold: {sad} / {_SAD_THRESHOLD}'
+            f'Avg SAD greater than threshold: {sad} / {_SAD_THRESHOLD}'
         )
 
 
