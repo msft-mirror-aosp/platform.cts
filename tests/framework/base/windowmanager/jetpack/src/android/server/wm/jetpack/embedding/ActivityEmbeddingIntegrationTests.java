@@ -99,9 +99,14 @@ public class ActivityEmbeddingIntegrationTests extends ActivityEmbeddingTestBase
                 .build();
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Verify that an embedded activity still observes the same number of features
         WindowLayoutInfo newWindowLayoutInfo = getExtensionWindowLayoutInfo(secondaryActivity);

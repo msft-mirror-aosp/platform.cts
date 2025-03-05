@@ -40,7 +40,6 @@ import android.util.Pair;
 import android.view.WindowMetrics;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
 
@@ -74,9 +73,15 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
-        TestActivity secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                primaryActivity, TestActivityWithId.class, splitPairRule, "secondaryActivity",
-                mSplitInfoConsumer);
+        TestActivity secondaryActivity =
+                (TestActivity)
+                        startActivityAndVerifySplitAttributes(
+                                primaryActivity,
+                                TestActivityWithId.class,
+                                splitPairRule,
+                                "secondaryActivity",
+                                mSplitInfoConsumer,
+                                mActivityStackCallback);
 
         // Finishing the primary activity should cause the secondary activity to resize to fill the
         // task.
@@ -99,9 +104,15 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         TestActivity primaryActivity = startFullScreenActivityNewTask(
                 TestActivityWithId.class);
-        TestActivity secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                primaryActivity, TestActivityWithId.class, splitPairRule, "secondaryActivity",
-                mSplitInfoConsumer);
+        TestActivity secondaryActivity =
+                (TestActivity)
+                        startActivityAndVerifySplitAttributes(
+                                primaryActivity,
+                                TestActivityWithId.class,
+                                splitPairRule,
+                                "secondaryActivity",
+                                mSplitInfoConsumer,
+                                mActivityStackCallback);
 
         // Finishing the secondary activity should cause the primary activity to resize to fill the
         // task.
@@ -356,9 +367,15 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
             if (mShouldPreventSideBySideActivities) {
                 secondaryActivity = startActivityAndVerifyNotSplit(primaryActivity);
             } else {
-                secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                        primaryActivity, TestActivityWithId.class, splitPairRule,
-                        "secondaryActivity", mSplitInfoConsumer);
+                secondaryActivity =
+                        (TestActivity)
+                                startActivityAndVerifySplitAttributes(
+                                        primaryActivity,
+                                        TestActivityWithId.class,
+                                        splitPairRule,
+                                        "secondaryActivity",
+                                        mSplitInfoConsumer,
+                                        mActivityStackCallback);
             }
             return new Pair<>(primaryActivity, secondaryActivity);
         }
