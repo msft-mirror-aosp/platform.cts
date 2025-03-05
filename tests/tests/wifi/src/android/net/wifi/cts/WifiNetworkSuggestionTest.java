@@ -33,6 +33,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -1172,6 +1173,13 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
     public void testConnectToSuggestionThenRemoveWithLingering() throws Exception {
+        PackageManager packageManager = sContext.getPackageManager();
+        boolean notPhoneDevice =
+                packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
+                        || packageManager.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
+                        || packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+                        || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        assumeFalse(notPhoneDevice);
         assertNotNull(sTestNetwork);
         boolean hasActiveNetwork = sConnectivityManager.getActiveNetwork() != null;
         WifiNetworkSuggestion suggestion =
