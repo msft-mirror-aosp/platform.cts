@@ -54,4 +54,7 @@ public class StreamedAppConstants {
 
     // A boolean representing the result of creating and using an AudioRecord to record audio
     public static final String EXTRA_RECORD_AUDIO_SUCCESS = "recordAudioSuccess";
+
+    // A boolean requesting for the operation to be done in a foreground service
+    public static final String EXTRA_USE_SERVICE = "useService";
 }
