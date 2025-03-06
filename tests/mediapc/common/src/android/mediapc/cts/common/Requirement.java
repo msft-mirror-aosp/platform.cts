@@ -52,6 +52,10 @@ public abstract class Requirement {
         return this.id;
     }
 
+    boolean allMeasuredValuesSet() {
+        return mRequiredMeasurements.values().stream().allMatch(rm -> rm.isMeasuredValueSet());
+    }
+
     /**
      * Finds the highest performance class where at least one RequiremdMeasurement has result
      * RequirementConstants.Result.MET and none have RequirementConstants.Result.UNMET
