@@ -702,5 +702,9 @@
         <activity android:name=".WallpaperTargetActivity"
                   android:configChanges="@integer/config_changes_assets_paths"
                   android:exported="true"/>
+
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 </manifest>
