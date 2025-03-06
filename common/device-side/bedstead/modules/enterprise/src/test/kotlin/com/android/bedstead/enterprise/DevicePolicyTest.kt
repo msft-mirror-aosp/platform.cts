@@ -40,6 +40,7 @@ import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
+import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.bedstead.remotedpc.RemoteDeviceAdmin
 import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapps.testApps
@@ -49,7 +50,6 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert
 
 @RunWith(BedsteadJUnit4::class)
 class DevicePolicyTest {
@@ -89,11 +89,8 @@ class DevicePolicyTest {
 
             devicePolicy().setProfileOwner(profile, DPC_COMPONENT_NAME)
 
-            Assert.assertThrows(
-                NeneException::class.java
-            ) {
-                devicePolicy()
-                    .setProfileOwner(profile, DPC_COMPONENT_NAME)
+            assertThrows(NeneException::class.java) {
+                devicePolicy().setProfileOwner(profile, DPC_COMPONENT_NAME)
             }
         } finally {
             profile.remove()
@@ -109,12 +106,8 @@ class DevicePolicyTest {
             .type(users().supportedType(UserType.MANAGED_PROFILE_TYPE_NAME))
             .createAndStart()
         try {
-            Assert.assertThrows(
-                NeneException::class.java
-            ) {
-                devicePolicy().setProfileOwner(
-                    profile, NON_EXISTING_DPC_COMPONENT_NAME
-                )
+            assertThrows(NeneException::class.java) {
+                devicePolicy().setProfileOwner(profile, NON_EXISTING_DPC_COMPONENT_NAME)
             }
         } finally {
             profile.remove()
@@ -125,14 +118,11 @@ class DevicePolicyTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     fun setProfileOwner_componentNameIsNotDPC_throwsException() {
-        Assert.assertThrows(
-            NeneException::class.java
-        ) {
-            devicePolicy()
-                .setProfileOwner(
-                    sUser,
-                    NOT_DPC_COMPONENT_NAME
-                )
+        assertThrows(NeneException::class.java) {
+            devicePolicy().setProfileOwner(
+                sUser,
+                NOT_DPC_COMPONENT_NAME
+            )
         }
     }
 
@@ -140,9 +130,7 @@ class DevicePolicyTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     fun setProfileOwner_userDoesNotExist_throwsException() {
-        Assert.assertThrows(
-            NeneException::class.java
-        ) {
+        assertThrows(NeneException::class.java) {
             devicePolicy().setProfileOwner(
                 NON_EXISTENT_USER,
                 DPC_COMPONENT_NAME
@@ -212,11 +200,8 @@ class DevicePolicyTest {
     @RequireRunOnSystemUser
     @EnsureHasDeviceOwner
     fun setDeviceOwner_deviceOwnerIsAlreadySet_throwsException() {
-        Assert.assertThrows(
-            NeneException::class.java
-        ) {
-            devicePolicy()
-                .setDeviceOwner(DPC_COMPONENT_NAME)
+        assertThrows(NeneException::class.java) {
+            devicePolicy().setDeviceOwner(DPC_COMPONENT_NAME)
         }
     }
 
@@ -225,12 +210,8 @@ class DevicePolicyTest {
     @EnsureHasNoProfileOwner
     fun setDeviceOwner_componentNameNotInstalled_throwsException() {
         try {
-            Assert.assertThrows(
-                NeneException::class.java
-            ) {
-                devicePolicy().setDeviceOwner(
-                    NON_EXISTING_DPC_COMPONENT_NAME
-                )
+            assertThrows(NeneException::class.java) {
+                devicePolicy().setDeviceOwner(NON_EXISTING_DPC_COMPONENT_NAME)
             }
         } finally {
             sTestApp.install(sUser)
@@ -241,11 +222,8 @@ class DevicePolicyTest {
     @EnsureHasNoDeviceOwner
     @EnsureHasNoProfileOwner
     fun setDeviceOwner_componentNameIsNotDPC_throwsException() {
-        Assert.assertThrows(
-            NeneException::class.java
-        ) {
-            devicePolicy()
-                .setDeviceOwner(NOT_DPC_COMPONENT_NAME)
+        assertThrows(NeneException::class.java) {
+            devicePolicy().setDeviceOwner(NOT_DPC_COMPONENT_NAME)
         }
     }
 
@@ -255,11 +233,8 @@ class DevicePolicyTest {
     @EnsureHasSecondaryUser
     @RequireSdkVersion(max = Build.VERSION_CODES.R)
     fun setDeviceOwner_preS_userAlreadyOnDevice_throwsException() {
-        Assert.assertThrows(
-            NeneException::class.java
-        ) {
-            devicePolicy()
-                .setDeviceOwner(DPC_COMPONENT_NAME)
+        assertThrows(NeneException::class.java) {
+            devicePolicy().setDeviceOwner(DPC_COMPONENT_NAME)
         }
     }
 

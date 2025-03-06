@@ -74,6 +74,7 @@ import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME
+import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDpc
@@ -91,7 +92,6 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 class EnterpriseAnnotationExecutorTest {
@@ -543,7 +543,9 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     @EnsureHasNoWorkProfile
     fun workProfile_noWorkProfile_throwsException() {
-        assertThrows(IllegalStateException::class.java) { sDeviceState.workProfile() }
+        assertThrows(IllegalStateException::class.java) {
+            sDeviceState.workProfile()
+        }
     }
 
     @Test
@@ -551,13 +553,13 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasNoDeviceOwner
     fun workProfile_createdWorkProfile_throwsException() {
         users().createUser()
-                .parent(users().instrumented())
-                .type(users().supportedType(MANAGED_PROFILE_TYPE_NAME))
-                .create().use {
-                    assertThrows(IllegalStateException::class.java) {
-                        sDeviceState.workProfile()
-                    }
+            .parent(users().instrumented())
+            .type(users().supportedType(MANAGED_PROFILE_TYPE_NAME))
+            .create().use {
+                assertThrows(IllegalStateException::class.java) {
+                    sDeviceState.workProfile()
                 }
+            }
     }
 
     @Test
@@ -741,7 +743,7 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     @EnsureHasNoTestDeviceAdmin
     fun deviceAdmin_noTestDeviceAdmin_throws() {
-        Assert.assertThrows(IllegalStateException::class.java) {
+        assertThrows(IllegalStateException::class.java) {
             sDeviceState.deviceAdmin()
         }
     }

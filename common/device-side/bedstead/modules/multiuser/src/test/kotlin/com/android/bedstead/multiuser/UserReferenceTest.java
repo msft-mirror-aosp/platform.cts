@@ -29,7 +29,7 @@ import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.testng.Assert.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 import android.app.ActivityManager;
 import android.content.Context;
@@ -57,6 +57,7 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import android.cts.testapisreflection.TestApisReflectionKt;
 
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -68,7 +69,7 @@ import org.junit.runner.RunWith;
 public class UserReferenceTest {
     private static final int NON_EXISTING_USER_ID = 10000;
     private static final int USER_ID = NON_EXISTING_USER_ID;
-    public static final UserHandle USER_HANDLE = new UserHandle(USER_ID);
+    public static final UserHandle USER_HANDLE = UserHandle.of(USER_ID);
     private static final Context sContext = TestApis.context().instrumentedContext();
     private static final UserManager sUserManager = sContext.getSystemService(UserManager.class);
     private static final String PASSWORD = "1234";
@@ -291,7 +292,7 @@ public class UserReferenceTest {
     public void type_returnsType() {
         UserReference user = TestApis.users().instrumented();
 
-        assertThat(user.type().name()).isEqualTo(sUserManager.getUserType());
+        assertThat(user.type().name()).isEqualTo(TestApisReflectionKt.getUserType(sUserManager));
     }
 
     @Test
@@ -862,9 +863,9 @@ public class UserReferenceTest {
     private int getDisplayIdForStartingVisibleBackgroundUser() {
         int[] displayIds;
         try (PermissionContext p =
-                TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
-            displayIds = sContext.getSystemService(ActivityManager.class)
-                .getDisplayIdsForStartingVisibleBackgroundUsers();
+                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS)) {
+            displayIds = TestApisReflectionKt.getDisplayIdsForStartingVisibleBackgroundUsers(
+                    sContext.getSystemService(ActivityManager.class));
         }
         assertWithMessage("available displays").that(displayIds).isNotNull();
         assertWithMessage("# of available displays").that(displayIds.length).isAtLeast(1);

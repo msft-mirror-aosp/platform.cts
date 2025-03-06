@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.nene.utils
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 import org.junit.AssumptionViolatedException
 
 /**
@@ -25,6 +26,7 @@ object Assert {
      * Assert that a particular exception type is thrown.
      */
     @JvmStatic
+    @CanIgnoreReturnValue
     fun <E : Throwable?> assertThrows(message: String? = null,
         exception: Class<E>? = null,
         executable: () -> Unit): E {
@@ -41,12 +43,14 @@ object Assert {
     }
 
     @JvmStatic
+    @CanIgnoreReturnValue
     fun assertThrows(message: String? = null, executable: () -> Unit): Exception =
         assertThrows(message, Exception::class.java, executable)
 
     // This method is just needed to maintain compatibility with existing Java callers - it should
     // be removed once possible
     @JvmStatic
+    @CanIgnoreReturnValue
     fun <E : Throwable?> assertThrows(exception: Class<E>? = null, executable: Runnable): E =
         assertThrows(null, exception) { executable.run() }
 

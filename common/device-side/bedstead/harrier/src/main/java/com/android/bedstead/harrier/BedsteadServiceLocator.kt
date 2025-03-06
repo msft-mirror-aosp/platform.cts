@@ -16,6 +16,7 @@
 package com.android.bedstead.harrier
 
 import android.util.Log
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 import com.android.bedstead.nene.utils.FailureDumper
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
@@ -73,6 +74,7 @@ class BedsteadServiceLocator : DeviceStateComponent {
      * @param className – the fully qualified name of the desired class.
      */
     @Suppress("UNCHECKED_CAST")
+    @CanIgnoreReturnValue
     fun <T : Any> get(className: String): T {
         try {
             return (get(Class.forName(className))) as T

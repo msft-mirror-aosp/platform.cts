@@ -16,6 +16,8 @@
 
 package com.android.bedstead.onboarding.annotations
 
+import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor
+
 /**
  * Marks that this is an onboarding test.
  *
