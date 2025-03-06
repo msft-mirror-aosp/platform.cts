@@ -282,7 +282,9 @@ public class NativeAMediaCodecInfoTest {
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetVideoCapabilitiesNative() {
-        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeTrue("Test is applicable for video codecs",
+                mMediaType.startsWith("video/") || mMediaType.equalsIgnoreCase(
+                        MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
         MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(mMediaType);
@@ -337,7 +339,9 @@ public class NativeAMediaCodecInfoTest {
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetVideoCapsGetSupportForNative() {
-        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeTrue("Test is applicable for video codecs",
+                mMediaType.startsWith("video/") || mMediaType.equalsIgnoreCase(
+                        MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
         MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(mMediaType);
@@ -384,7 +388,9 @@ public class NativeAMediaCodecInfoTest {
     @SmallTest
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     public void testAMediaCodecInfoGetPerformancePointNative() {
-        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        Assume.assumeTrue("Test is applicable for video codecs",
+                mMediaType.startsWith("video/") || mMediaType.equalsIgnoreCase(
+                        MediaFormat.MIMETYPE_IMAGE_ANDROID_HEIC));
         MediaCodecInfo codecInfo = getCodecInfo(mCodecName);
         Assert.assertNotNull("received null codecInfo for component: " + mCodecName, codecInfo);
         MediaCodecInfo.CodecCapabilities caps = codecInfo.getCapabilitiesForType(mMediaType);
