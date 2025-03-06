@@ -29,7 +29,7 @@ java_defaults {
     static_libs: [
         "com.android.media.flags.projection-aconfig-java",
         "ctstestrunner-axt",
-        "cts-media-common",
+        "cts-mediaprojection-common",
         "cts-wm-util",
         "flag-junit",
         "junit",

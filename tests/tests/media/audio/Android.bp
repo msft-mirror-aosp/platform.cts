@@ -82,6 +82,7 @@ android_test {
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "cts-media-common",
+        "cts-mediaprojection-common",
         "cts-wm-util",
         "ctstestrunner-axt",
         "flag-junit",
