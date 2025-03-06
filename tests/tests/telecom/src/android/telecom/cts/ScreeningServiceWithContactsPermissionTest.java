@@ -26,6 +26,8 @@ import android.telecom.Call;
 import android.telecom.TelecomManager;
 import android.telecom.cts.screeningtestapp.CtsCallScreeningService;
 
+import androidx.test.filters.FlakyTest;
+
 /**
  * Tests for third-party {@link android.telecom.CallScreeningService} implementations, focusing on
  * scenarios where the application has the {@link android.Manifest.permission#READ_CONTACTS}
@@ -61,6 +63,7 @@ public class ScreeningServiceWithContactsPermissionTest
      * Verifies that a {@link android.telecom.CallScreeningService} can reject an incoming call.
      * Ensures that the system logs the blocked call to the call log.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testRejectCall() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -88,6 +91,7 @@ public class ScreeningServiceWithContactsPermissionTest
      * android.telecom.CallScreeningService#respondToCall(Call.Details,
      * CallScreeningService.CallResponse)}
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testRejectCallAndTryToSkipCallLog() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -111,6 +115,7 @@ public class ScreeningServiceWithContactsPermissionTest
     /**
      * Verifies that a {@link android.telecom.CallScreeningService} set the extra to silence a call.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testIncomingCallHasSilenceExtra() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -135,6 +140,7 @@ public class ScreeningServiceWithContactsPermissionTest
      * Verifies that a {@link android.telecom.CallScreeningService} did not set the extra to silence
      * an incoming call.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testIncomingCallDoesNotHaveHaveSilenceExtra() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -155,6 +161,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testHasPermissionAndNoContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -175,6 +182,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testHasPermissionAndHasContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -194,6 +202,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testHasPermissionAndNoContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -208,6 +217,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testHasPermissionAndHasContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -222,6 +232,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPostCallActivityWithoutRole() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -237,6 +248,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testAllowCall() throws Exception {
         if (!mShouldTestTelecom || !hasTelephonyFeature(mContext)) {
             return;
@@ -256,6 +268,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPostCallActivityWhenBlocked() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -275,6 +288,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPostCallActivityWhenAudioProcessing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -307,6 +321,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPostCallActivityForOutgoingEmergencyCall() throws Exception {
         if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
@@ -327,6 +342,7 @@ public class ScreeningServiceWithContactsPermissionTest
         }
     }
 
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPostCallActivityForIncomingEmergencyCall() throws Exception {
         if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
