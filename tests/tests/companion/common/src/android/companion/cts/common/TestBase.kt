@@ -24,6 +24,7 @@ import android.app.UiAutomation
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest
 import android.companion.CompanionDeviceManager
+import android.companion.DeviceId
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.LocationManager
@@ -213,6 +214,20 @@ abstract class TestBase {
         runShellCommand(
             "cmd companiondevice stop-observing-device-presence-uuid " +
                     "$userId $packageName $uuid"
+        )
+    }
+
+    fun startObservingDevicePresenceById(userId: Int, packageName: String, id: Int) {
+        runShellCommand(
+            "cmd companiondevice start-observing-device-presence-association-id " +
+                    "$userId $packageName $id"
+        )
+    }
+
+    fun stopObservingDevicePresenceById(userId: Int, packageName: String, id: Int) {
+        runShellCommand(
+            "cmd companiondevice stop-observing-device-presence-association-id " +
+                    "$userId $packageName $id"
         )
     }
 }
@@ -425,3 +440,7 @@ fun getAssociationForPackage(
 ): AssociationInfo = cdm.allAssociations.find {
     it.belongsToPackage(userId, packageName) && it.deviceMacAddress == macAddress
 } ?: fail("Association for u$userId/$packageName linked to address $macAddress does not exist")
+
+fun createDeviceId(id: String?, macAddress: MacAddress?): DeviceId {
+    return DeviceId.Builder().setCustomId(id).setMacAddress(macAddress).build()
+}
