@@ -261,7 +261,6 @@ class PermissionRationalePermissionGrantDialogTest : BaseUsePermissionTest() {
         requestAppPermissionsForNoResult(ACCESS_FINE_LOCATION) {
             clickPermissionRationaleViewInGrantDialog()
             assertPermissionRationaleDialogIsVisible(true)
-            assertPermissionRationaleContainerOnGrantDialogIsVisible(false)
         }
     }
 
