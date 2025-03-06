@@ -538,13 +538,19 @@ public class ByodFlowTestActivity extends DialogTestListActivity {
         adapter.add(mAppLinkingTest);
         */
         adapter.add(mIntentFiltersTest);
+        /* Disabled due to b/398738929
         adapter.add(mCrossProfilePermissionControl);
+        */
         adapter.add(mNonMarketAppsTest);
+        /* Disabled due to b/398738929
         adapter.add(mPermissionLockdownTest);
+        */
         adapter.add(mKeyguardDisabledFeaturesTest);
         adapter.add(mAuthenticationBoundKeyTest);
         adapter.add(mVpnTest);
+        /* Disabled due to b/398738929
         adapter.add(mAlwaysOnVpnSettingsTest);
+        */
         adapter.add(mTurnOffWorkFeaturesTest);
         adapter.add(mSelectWorkChallenge);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
