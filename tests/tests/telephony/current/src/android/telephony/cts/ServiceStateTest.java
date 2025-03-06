@@ -119,13 +119,6 @@ public class ServiceStateTest {
     }
 
     @Test
-    public void testGetCdma() {
-        serviceState.setCdmaSystemAndNetworkId(SYSTEM_ID, NETWORK_ID);
-        assertEquals(SYSTEM_ID, serviceState.getCdmaSystemId());
-        assertEquals(NETWORK_ID, serviceState.getCdmaNetworkId());
-    }
-
-    @Test
     public void testGetChannelNumber() {
         serviceState.setChannelNumber(CHANNEL_NUMBER_BAND_66);
         assertEquals(CHANNEL_NUMBER_BAND_66, serviceState.getChannelNumber());
@@ -261,25 +254,28 @@ public class ServiceStateTest {
                 .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
                 .build();
 
-        NetworkRegistrationInfo wwanReg = new NetworkRegistrationInfo.Builder()
-                .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_1xRTT)
-                .setRegistrationState(NetworkRegistrationInfo.REGISTRATION_STATE_HOME)
-                .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
-                .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
-                .build();
+        NetworkRegistrationInfo wwanReg =
+                new NetworkRegistrationInfo.Builder()
+                        .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_LTE)
+                        .setRegistrationState(NetworkRegistrationInfo.REGISTRATION_STATE_HOME)
+                        .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
+                        .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
+                        .build();
 
-        NetworkRegistrationInfo outOfServiceWwanReg = new NetworkRegistrationInfo.Builder()
-                .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_1xRTT)
-                .setRegistrationState(
-                        NetworkRegistrationInfo.REGISTRATION_STATE_NOT_REGISTERED_OR_SEARCHING)
-                .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
-                .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
-                .build();
+        NetworkRegistrationInfo outOfServiceWwanReg =
+                new NetworkRegistrationInfo.Builder()
+                        .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_LTE)
+                        .setRegistrationState(
+                                NetworkRegistrationInfo
+                                        .REGISTRATION_STATE_NOT_REGISTERED_OR_SEARCHING)
+                        .setTransportType(AccessNetworkConstants.TRANSPORT_TYPE_WWAN)
+                        .setDomain(NetworkRegistrationInfo.DOMAIN_PS)
+                        .build();
 
         serviceState = new ServiceState();
         serviceState.addNetworkRegistrationInfo(iwlanReg);
         serviceState.addNetworkRegistrationInfo(wwanReg);
-        assertEquals(TelephonyManager.NETWORK_TYPE_1xRTT, serviceState.getDataNetworkType());
+        assertEquals(TelephonyManager.NETWORK_TYPE_LTE, serviceState.getDataNetworkType());
 
         serviceState = new ServiceState();
         serviceState.addNetworkRegistrationInfo(iwlanReg);

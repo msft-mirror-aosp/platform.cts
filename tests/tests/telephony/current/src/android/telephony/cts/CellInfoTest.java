@@ -35,20 +35,17 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CellIdentity;
-import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellIdentityNr;
 import android.telephony.CellIdentityTdscdma;
 import android.telephony.CellIdentityWcdma;
 import android.telephony.CellInfo;
-import android.telephony.CellInfoCdma;
 import android.telephony.CellInfoGsm;
 import android.telephony.CellInfoLte;
 import android.telephony.CellInfoNr;
 import android.telephony.CellInfoTdscdma;
 import android.telephony.CellInfoWcdma;
-import android.telephony.CellSignalStrengthCdma;
 import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthNr;
@@ -124,19 +121,6 @@ public class CellInfoTest {
      */
     private static final int MAX_LTE_RSSI = -51;
     private static final int MIN_LTE_RSSI = -113;
-
-    // The followings are parameters for testing CellIdentityCdma
-    // Network Id ranges from 0 to 65535.
-    private static final int NETWORK_ID  = 65535;
-    // CDMA System Id ranges from 0 to 32767
-    private static final int SYSTEM_ID = 32767;
-    // Base Station Id ranges from 0 to 65535
-    private static final int BASESTATION_ID = 65535;
-    // Longitude ranges from -2592000 to 2592000.
-    private static final int LONGITUDE = 2592000;
-    // Latitude ranges from -1296000 to 1296000.
-    private static final int LATITUDE = 1296000;
-    // Cell identity ranges from 0 to 268435456.
 
     // The followings are parameters for testing CellIdentityLte
     private static final int CI = 268435456;
@@ -362,8 +346,6 @@ public class CellInfoTest {
                 verifyWcdmaInfo((CellInfoWcdma) cellInfo);
             } else if (cellInfo instanceof CellInfoGsm) {
                 verifyGsmInfo((CellInfoGsm) cellInfo);
-            } else if (cellInfo instanceof CellInfoCdma) {
-                verifyCdmaInfo((CellInfoCdma) cellInfo);
             } else if (cellInfo instanceof CellInfoTdscdma) {
                 verifyTdscdmaInfo((CellInfoTdscdma) cellInfo);
             } else if (cellInfo instanceof CellInfoNr) {
@@ -404,118 +386,6 @@ public class CellInfoTest {
                 assertNotNull("getOperatorAlphaShort() returns NULL!", alphaShort);
             }
         }
-    }
-
-    private void verifyCdmaInfo(CellInfoCdma cdma) {
-        verifyCellConnectionStatus(cdma.getCellConnectionStatus());
-        verifyCellInfoCdmaParcelandHashcode(cdma);
-        verifyCellIdentityCdma(cdma.getCellIdentity(), cdma.isRegistered());
-        verifyCellIdentityCdmaParcel(cdma.getCellIdentity());
-        verifyCellSignalStrengthCdma(cdma.getCellSignalStrength());
-        verifyCellSignalStrengthCdmaParcel(cdma.getCellSignalStrength());
-    }
-
-    private void verifyCellInfoCdmaParcelandHashcode(CellInfoCdma cdma) {
-        Parcel p = Parcel.obtain();
-        cdma.writeToParcel(p, 0);
-        p.setDataPosition(0);
-
-        CellInfoCdma newCi = CellInfoCdma.CREATOR.createFromParcel(p);
-        assertTrue(cdma.equals(newCi));
-        assertEquals("hashCode() did not get right hashCode", cdma.hashCode(), newCi.hashCode());
-    }
-
-    private void verifyCellIdentityCdma(CellIdentityCdma cdma, boolean isRegistered) {
-        int networkId = cdma.getNetworkId();
-        assertTrue("getNetworkId() out of range [0,65535], networkId=" + networkId,
-                networkId == CellInfo.UNAVAILABLE || (networkId >= 0 && networkId <= NETWORK_ID));
-
-        int systemId = cdma.getSystemId();
-        assertTrue("getSystemId() out of range [0,32767], systemId=" + systemId,
-                systemId == CellInfo.UNAVAILABLE || (systemId >= 0 && systemId <= SYSTEM_ID));
-
-        int basestationId = cdma.getBasestationId();
-        assertTrue("getBasestationId() out of range [0,65535], basestationId=" + basestationId,
-                basestationId == CellInfo.UNAVAILABLE
-                        || (basestationId >= 0 && basestationId <= BASESTATION_ID));
-
-        int longitude = cdma.getLongitude();
-        assertTrue("getLongitude() out of range [-2592000,2592000], longitude=" + longitude,
-                longitude == CellInfo.UNAVAILABLE
-                        || (longitude >= -LONGITUDE && longitude <= LONGITUDE));
-
-        int latitude = cdma.getLatitude();
-        assertTrue("getLatitude() out of range [-1296000,1296000], latitude=" + latitude,
-                latitude == CellInfo.UNAVAILABLE
-                        || (latitude >= -LATITUDE && latitude <= LATITUDE));
-
-        if (isRegistered) {
-            assertTrue("SID is required for registered cells", systemId != CellInfo.UNAVAILABLE);
-            assertTrue("NID is required for registered cells", networkId != CellInfo.UNAVAILABLE);
-            assertTrue("BSID is required for registered cells",
-                    basestationId != CellInfo.UNAVAILABLE);
-        }
-
-        verifyCellIdentityCdmaLocationSanitation(cdma);
-    }
-
-    private void verifyCellIdentityCdmaLocationSanitation(CellIdentityCdma cdma) {
-        CellIdentityCdma sanitized = cdma.sanitizeLocationInfo();
-        assertEquals(CellInfo.UNAVAILABLE, sanitized.getNetworkId());
-        assertEquals(CellInfo.UNAVAILABLE, sanitized.getSystemId());
-        assertEquals(CellInfo.UNAVAILABLE, sanitized.getBasestationId());
-        assertEquals(CellInfo.UNAVAILABLE, sanitized.getLongitude());
-        assertEquals(CellInfo.UNAVAILABLE, sanitized.getLatitude());
-    }
-
-    private void verifyCellIdentityCdmaParcel(CellIdentityCdma cdma) {
-        Parcel p = Parcel.obtain();
-        cdma.writeToParcel(p, 0);
-        p.setDataPosition(0);
-
-        CellIdentityCdma newCi = CellIdentityCdma.CREATOR.createFromParcel(p);
-        assertTrue(cdma.equals(newCi));
-    }
-
-    private void verifyCellSignalStrengthCdma(CellSignalStrengthCdma cdma) {
-        int level = cdma.getLevel();
-        assertTrue("getLevel() out of range [0,4], level=" + level,
-                level >= 0 && level <= 4);
-
-        int asuLevel = cdma.getAsuLevel();
-        assertTrue("getAsuLevel() out of range [0,97] (or 99 is unknown), asuLevel=" + asuLevel,
-                asuLevel == 99 || (asuLevel >= 0 && asuLevel <= 97));
-
-        int cdmaLevel = cdma.getCdmaLevel();
-        assertTrue("getCdmaLevel() out of range [0,4], cdmaLevel=" + cdmaLevel,
-                cdmaLevel >= 0 && cdmaLevel <= 4);
-
-        int evdoLevel = cdma.getEvdoLevel();
-        assertTrue("getEvdoLevel() out of range [0,4], evdoLevel=" + evdoLevel,
-                evdoLevel >= 0 && evdoLevel <= 4);
-
-        // The following four fields do not have specific limits. So just calling to verify that
-        // they don't crash the phone.
-        int cdmaDbm = cdma.getCdmaDbm();
-        int evdoDbm = cdma.getEvdoDbm();
-        cdma.getCdmaEcio();
-        cdma.getEvdoEcio();
-
-        int dbm = (cdmaDbm < evdoDbm) ? cdmaDbm : evdoDbm;
-        assertEquals("getDbm() did not get correct value", dbm, cdma.getDbm());
-
-        int evdoSnr = cdma.getEvdoSnr();
-        assertTrue("getEvdoSnr() out of range [0,8], evdoSnr=" + evdoSnr,
-                (evdoSnr == CellInfo.UNAVAILABLE) || (evdoSnr >= 0 && evdoSnr <= 8));
-    }
-
-    private void verifyCellSignalStrengthCdmaParcel(CellSignalStrengthCdma cdma) {
-        Parcel p = Parcel.obtain();
-        cdma.writeToParcel(p, 0);
-        p.setDataPosition(0);
-
-        CellSignalStrengthCdma newCss = CellSignalStrengthCdma.CREATOR.createFromParcel(p);
-        assertEquals(cdma, newCss);
     }
 
     private static void verifyPlmnInfo(String mccStr, String mncStr, int mcc, int mnc) {
