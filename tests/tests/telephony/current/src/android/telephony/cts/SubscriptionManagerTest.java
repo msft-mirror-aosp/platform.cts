@@ -399,6 +399,9 @@ public class SubscriptionManagerTest {
         assertEquals(plan, returnedPlan);
         if (Flags.subscriptionPlanAllowStatusAndEndDate()) {
             assertNull(returnedPlan.getPlanEndDate());
+            assertEquals(
+                    SubscriptionPlan.SUBSCRIPTION_STATUS_ACTIVE,
+                    returnedPlan.getSubscriptionStatus());
         }
 
         // Push plan with expiration time and verify that it expired
