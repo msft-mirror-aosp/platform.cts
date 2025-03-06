@@ -166,6 +166,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         its_session_utils.mark_features_passed(
             features_passed, streams_name, fps_range_tuple,
             hlg10, is_stabilized)
+      # Remove video clip if test passes to save space
+      try:
+        file_name = recording_obj['recordedOutputPath'].split('/')[-1]
+        os.remove(os.path.join(log_path, file_name))
+      except FileNotFoundError:
+        logging.debug('File Not Found: %s', str(file_name))
 
     return result
 
@@ -303,7 +309,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Check if stabilization is supported: Use video stabilization
               # if there is a dedicated video stream
-              if video_stream_index == 0:
+              if not is_stabilized:
+                stabilize_mode = camera_properties_utils.STABILIZATION_MODE_OFF
+              elif video_stream_index == 0:
                 stabilize_mode = (
                     camera_properties_utils.STABILIZATION_MODE_PREVIEW
                 )
@@ -474,16 +482,18 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Schedule finishing up of verification to run asynchronously
               if not self.parallel_execution:
-                self._finish_combination(combination_name, is_stabilized,
+                self._finish_combination(
+                    combination_name, is_stabilized,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
-                    features_passed, streams_name, fps_range_tuple)
+                    features_passed, streams_name, fps_range_tuple
+                )
               else:
                 future = executor.submit(
-                  self._finish_combination, combination_name, is_stabilized,
-                  support_claimed, passed, recording_obj, gyro_events, _NAME,
-                  log_path, facing, output_surfaces, fps_range, hlg10,
-                  features_passed, streams_name, fps_range_tuple
+                    self._finish_combination, combination_name, is_stabilized,
+                    support_claimed, passed, recording_obj, gyro_events, _NAME,
+                    log_path, facing, output_surfaces, fps_range, hlg10,
+                    features_passed, streams_name, fps_range_tuple
                 )
                 feature_verification_futures.append(future)
 

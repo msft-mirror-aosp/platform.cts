@@ -102,11 +102,10 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
 
       props = cam.get_camera_properties()
       physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
-      physical_fov = float(cam.calc_camera_fov(physical_props))
-      is_tele = physical_fov < opencv_processing_utils.FOV_THRESH_TELE
+      is_tele = cam.get_camera_type(physical_props) == (
+          its_session_utils._CAMERA_TYPE_TELE)
       camera_properties_utils.skip_unless(
-          camera_properties_utils.zoom_ratio_range(props) and
-          is_tele)
+          camera_properties_utils.zoom_ratio_range(props) and is_tele)
 
       # Load chart for scene
       its_session_utils.load_scene(

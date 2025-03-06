@@ -98,9 +98,15 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
 
         // Launch the secondary activity
         final String secondaryActivityId = "secondaryActivityId";
-        final TestActivity secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                primaryActivity, TestActivityWithId.class, splitPairRule, secondaryActivityId,
-                mSplitInfoConsumer);
+        final TestActivity secondaryActivity =
+                (TestActivity)
+                        startActivityAndVerifySplitAttributes(
+                                primaryActivity,
+                                TestActivityWithId.class,
+                                splitPairRule,
+                                secondaryActivityId,
+                                mSplitInfoConsumer,
+                                mActivityStackCallback);
 
         // Resize multiple times to verify that the activities are correctly split or
         // stacked depending on the parent bounds. Resizing multiple times simulates a foldable
@@ -165,8 +171,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /**
@@ -188,8 +199,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /**
@@ -210,8 +226,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     @ApiTest(apis = {"androidx.window.extensions.embedding.SplitAttributes"
@@ -229,8 +250,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     @ApiTest(apis = {"androidx.window.extensions.embedding.SplitAttributes"
@@ -248,8 +274,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /**
@@ -294,13 +325,25 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         // {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
         final Activity activityA = startFullScreenActivityNewTask(
                 TestActivityWithId.class, activityAId, getLaunchingDisplayId());
-        Activity activityB = startActivityAndVerifySplitAttributes(activityA,
-                TestActivityWithId.class, splitPairRuleAB, activityBId, mSplitInfoConsumer);
+        Activity activityB =
+                startActivityAndVerifySplitAttributes(
+                        activityA,
+                        TestActivityWithId.class,
+                        splitPairRuleAB,
+                        activityBId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Launch the activity B and C split and verify that the split ratio is 0.65 in
         // {@link ActivityEmbeddingUtil#startActivityAndVerifySplit}.
-        Activity activityC = startActivityAndVerifySplitAttributes(activityB,
-                TestActivityWithId.class, splitPairRuleBC, activityCId, mSplitInfoConsumer);
+        Activity activityC =
+                startActivityAndVerifySplitAttributes(
+                        activityB,
+                        TestActivityWithId.class,
+                        splitPairRuleBC,
+                        activityCId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Finish activity C so that activity A and B are in a split again. Verify that the split
         // ratio returns to 0.37 in {@link ActivityEmbeddingUtil#assertValidSplit}.
@@ -325,8 +368,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /** Verifies {@link SplitAttributes.SplitType.ExpandContainersSplitType} behavior. */
@@ -348,8 +396,13 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
         final Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        startActivityAndVerifySplitAttributes(primaryActivity, TestActivityWithId.class,
-                splitPairRule, "secondaryActivityId", mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                primaryActivity,
+                TestActivityWithId.class,
+                splitPairRule,
+                "secondaryActivityId",
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     private SplitPairRule createUnevenWidthSplitPairRule(int layoutDir) {

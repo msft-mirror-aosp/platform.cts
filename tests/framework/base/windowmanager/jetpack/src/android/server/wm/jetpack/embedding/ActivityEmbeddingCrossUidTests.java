@@ -189,8 +189,14 @@ public class ActivityEmbeddingCrossUidTests extends ActivityEmbeddingTestBase {
 
         // Launch an embeddable activity from a different UID and verify that it is split with the
         // primary activity.
-        startActivityCrossUidInSplit(primaryActivity, SECOND_UNTRUSTED_EMBEDDING_ACTIVITY,
-                splitPairRule, mSplitInfoConsumer, "id", true /* verify */);
+        startActivityCrossUidInSplit(
+                primaryActivity,
+                SECOND_UNTRUSTED_EMBEDDING_ACTIVITY,
+                splitPairRule,
+                mSplitInfoConsumer,
+                mActivityStackCallback,
+                "id",
+                true /* verify */);
     }
 
     /**
@@ -215,8 +221,14 @@ public class ActivityEmbeddingCrossUidTests extends ActivityEmbeddingTestBase {
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
         // First launch an embeddable activity to setup a split
-        startActivityCrossUidInSplit(primaryActivity, SECOND_UNTRUSTED_EMBEDDING_ACTIVITY,
-                splitPairRule, mSplitInfoConsumer, "id", true /* verify */);
+        startActivityCrossUidInSplit(
+                primaryActivity,
+                SECOND_UNTRUSTED_EMBEDDING_ACTIVITY,
+                splitPairRule,
+                mSplitInfoConsumer,
+                mActivityStackCallback,
+                "id",
+                true /* verify */);
 
         // Launch an embeddable activity from a different UID and request to launch another one that
         // is not embeddable.
@@ -257,8 +269,14 @@ public class ActivityEmbeddingCrossUidTests extends ActivityEmbeddingTestBase {
                     .adoptShellPermissionIdentity(EMBED_ANY_APP_IN_UNTRUSTED_MODE);
             // With the EMBED_ANY_APP_IN_UNTRUSTED_MODE permission, cross UID embedding is allowed
             // even without the second app opt-in.
-            startActivityCrossUidInSplit(primaryActivity, SECOND_ACTIVITY_UNKNOWN_EMBEDDING_CERTS,
-                    splitPairRule, mSplitInfoConsumer, "id", true /* verify */);
+            startActivityCrossUidInSplit(
+                    primaryActivity,
+                    SECOND_ACTIVITY_UNKNOWN_EMBEDDING_CERTS,
+                    splitPairRule,
+                    mSplitInfoConsumer,
+                    mActivityStackCallback,
+                    "id",
+                    true /* verify */);
         } finally {
             InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().dropShellPermissionIdentity();
@@ -367,8 +385,13 @@ public class ActivityEmbeddingCrossUidTests extends ActivityEmbeddingTestBase {
 
         // Launch a cross-app embeddable activity to set up a split
         startActivityCrossUidInSplit(
-                primaryActivity, embeddedComponentName,
-                splitPairRule, mSplitInfoConsumer, "secondActivityId", true /* verify */);
+                primaryActivity,
+                embeddedComponentName,
+                splitPairRule,
+                mSplitInfoConsumer,
+                mActivityStackCallback,
+                "secondActivityId",
+                true /* verify */);
 
         mWmState.waitForActivityState(embeddedComponentName, STATE_RESUMED);
 

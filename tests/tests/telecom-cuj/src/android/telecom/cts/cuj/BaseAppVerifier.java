@@ -182,7 +182,7 @@ public class BaseAppVerifier {
 
     @After
     public void tearDown() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || mBaseAppVerifierImpl == null) {
             return;
         }
         mBaseAppVerifierImpl.tearDown();
@@ -230,8 +230,9 @@ public class BaseAppVerifier {
         return mBaseAppVerifierImpl.getDefaultAttributes(name, pAH, isOutgoing);
     }
 
-    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name) throws Exception {
-        return mBaseAppVerifierImpl.getDefaultMmiAttributes(name);
+    public CallAttributes getDefaultMmiAttributes(TelecomTestApp name, boolean inCallMmi)
+            throws Exception {
+        return mBaseAppVerifierImpl.getDefaultMmiAttributes(name, inCallMmi);
     }
 
     public CallAttributes getRandomAttributes(
@@ -552,11 +553,17 @@ public class BaseAppVerifier {
 
     /** Setup required to test emergency calling in CUJ. */
     public void setupForEmergencyCalling() throws Exception {
+        if (mBaseAppVerifierImpl == null) {
+            return;
+        }
         mBaseAppVerifierImpl.setupForEmergencyCalling();
     }
 
     /** Cleanup setup procedure done to test emergency calling. d */
     public void tearDownEmergencyCalling() throws Exception {
+        if (mBaseAppVerifierImpl == null) {
+            return;
+        }
         mBaseAppVerifierImpl.tearDownEmergencyCalling();
     }
 }

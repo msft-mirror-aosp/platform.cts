@@ -32,6 +32,7 @@ import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.TestActivityKnownEmbeddingCerts;
 
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
+import androidx.window.extensions.embedding.ActivityStack;
 import androidx.window.extensions.embedding.SplitAttributes;
 import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
@@ -47,6 +48,12 @@ import java.util.List;
  * trusted embedding host.
  */
 public class SignedEmbeddingActivity extends Activity {
+
+    private TestValueCountConsumer<List<SplitInfo>> mSplitInfoConsumer;
+
+    private TestValueCountConsumer<List<ActivityStack>> mActivityStackCallback;
+
+    private ActivityEmbeddingComponent mActivityEmbeddingComponent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,19 +73,35 @@ public class SignedEmbeddingActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (mActivityEmbeddingComponent == null) {
+            return;
+        }
+
+        if (mSplitInfoConsumer != null) {
+            mActivityEmbeddingComponent.clearSplitInfoCallback();
+        }
+
+        if (mActivityStackCallback != null) {
+            mActivityEmbeddingComponent.unregisterActivityStackCallback(mActivityStackCallback);
+        }
+    }
+
     void startActivityInSplit() {
-        ActivityEmbeddingComponent embeddingComponent;
         try {
             assumeActivityEmbeddingSupportedDevice();
-            embeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
+            mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
         } catch (AssumptionViolatedException e) {
             // Embedding not supported
             finish();
             return;
         }
 
-        TestValueCountConsumer<List<SplitInfo>> splitInfoConsumer = new TestValueCountConsumer<>();
-        embeddingComponent.setSplitInfoCallback(splitInfoConsumer);
+        mSplitInfoConsumer = new TestValueCountConsumer<>();
+        mActivityEmbeddingComponent.setSplitInfoCallback(mSplitInfoConsumer);
         SplitAttributes.SplitType splitType = new SplitAttributes.SplitType.RatioSplitType(
                 getIntent().getFloatExtra(EXTRA_SPLIT_RATIO, 0.5f));
 
@@ -89,13 +112,23 @@ public class SignedEmbeddingActivity extends Activity {
                 .setDefaultSplitAttributes(new SplitAttributes.Builder()
                         .setSplitType(splitType).build())
                 .build();
-        embeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
+        mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
+
+        mActivityStackCallback = new TestValueCountConsumer<>();
+        mActivityEmbeddingComponent.registerActivityStackCallback(
+                Runnable::run, mActivityStackCallback);
 
         // Launch an activity from a different UID that recognizes this package's signature and
         // verify that it is split with this activity.
-        startActivityCrossUidInSplit(this,
-                new ComponentName("android.server.wm.jetpack",
+        startActivityCrossUidInSplit(
+                this,
+                new ComponentName(
+                        "android.server.wm.jetpack",
                         "android.server.wm.jetpack.utils.TestActivityKnownEmbeddingCerts"),
-                splitPairRule, splitInfoConsumer, EMBEDDED_ACTIVITY_ID, false /* verify */);
+                splitPairRule,
+                mSplitInfoConsumer,
+                mActivityStackCallback,
+                EMBEDDED_ACTIVITY_ID,
+                false /* verify */);
     }
 }

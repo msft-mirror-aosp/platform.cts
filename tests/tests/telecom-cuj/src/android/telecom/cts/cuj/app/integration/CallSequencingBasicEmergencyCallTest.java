@@ -38,6 +38,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +50,9 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
 
     @Override
     public void setUp() throws Exception {
+        // Emergency calling is not supported on devices without FEATURE_TELEPHONY
+        //or FEATURE_TELECOM (i.e. Tangor).
+        assumeTrue(mShouldTestTelecom && mSupportsManagedCalls);
         super.setUp();
         setupForEmergencyCalling();
     }
@@ -64,9 +69,6 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
      */
     @Test
     public void testAddEmergencyCallWithManagedCall() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
         verifyAddEccWithSingleCall(
                 ManagedConnectionServiceApp, STATE_HOLDING, true /* isNormalCallHoldable */);
     }
@@ -77,9 +79,6 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
      */
     @Test
     public void testAddEmergencyCallWithManagedNonHoldableCall() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
         verifyAddEccWithSingleCall(
                 ManagedConnectionServiceApp, STATE_DISCONNECTED, false /* isNormalCallHoldable */);
     }
@@ -90,9 +89,6 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
      */
     @Test
     public void testAddEmergencyCallWithTransactionalCall() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
         verifyAddEccWithSingleCall(
                 TransactionalVoipAppMain, STATE_DISCONNECTED, true /* isNormalCallHoldable */);
     }
@@ -103,9 +99,6 @@ public class CallSequencingBasicEmergencyCallTest extends BaseAppVerifier {
      */
     @Test
     public void testAddEmergencyCallWithSelfManagedCall() throws Exception {
-        if (!mShouldTestTelecom) {
-            return;
-        }
         verifyAddEccWithSingleCall(
                 ConnectionServiceVoipAppMain, STATE_DISCONNECTED, true /* isNormalCallHoldable */);
     }

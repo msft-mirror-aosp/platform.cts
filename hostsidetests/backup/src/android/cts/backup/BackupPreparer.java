@@ -27,8 +27,8 @@ import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.targetprep.BaseTargetPreparer;
 import com.android.tradefed.targetprep.BuildError;
-import com.android.tradefed.targetprep.ITargetCleaner;
 import com.android.tradefed.targetprep.TargetSetupError;
 import com.android.tradefed.util.RunUtil;
 
@@ -41,12 +41,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Tradedfed target preparer for the backup tests.
- * Enables backup before all the tests and selects local transport.
- * Reverts to the original state after all the tests are executed.
+ * Tradedfed target preparer for the backup tests. Enables backup before all the tests and selects
+ * local transport. Reverts to the original state after all the tests are executed.
  */
 @OptionClass(alias = "backup-preparer")
-public class BackupPreparer implements ITargetCleaner {
+public class BackupPreparer extends BaseTargetPreparer {
     private static final long TRANSPORT_AVAILABLE_TIMEOUT_SECONDS = TimeUnit.MINUTES.toSeconds(5);
     @Option(name="enable-backup-if-needed", description=
             "Enable backup before all the tests and return to the original state after.")
