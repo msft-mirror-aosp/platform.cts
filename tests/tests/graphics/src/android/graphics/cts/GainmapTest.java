@@ -649,6 +649,35 @@ public class GainmapTest {
         p.recycle();
     }
 
+    @Test
+    public void testWriteToParcelInSharedBitmap() throws Exception {
+        Bitmap bitmap = ImageDecoder.decodeBitmap(
+                ImageDecoder.createSource(sContext.getResources(), R.raw.gainmap),
+                (decoder, info, source) -> decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE));
+        assertNotNull(bitmap);
+
+        Parcel p = Parcel.obtain();
+        bitmap.asShared().writeToParcel(p, 0);
+        p.setDataPosition(0);
+
+        Bitmap unparceledBitmap = Bitmap.CREATOR.createFromParcel(p);
+        assertTrue(unparceledBitmap.hasGainmap());
+
+        final Bitmap expectedContents = bitmap.getGainmap().getGainmapContents();
+        final Bitmap gotContents = unparceledBitmap.getGainmap().getGainmapContents();
+
+        assertEquals(expectedContents.getWidth(), gotContents.getWidth());
+        assertEquals(expectedContents.getHeight(), gotContents.getHeight());
+        for (int x = 0; x < 4; x++) {
+            for (int y = 0; y < 4; y++) {
+                Color expected = expectedContents.getColor(x, y);
+                Color got = gotContents.getColor(x, y);
+                assertArrayEquals("Differed at x=" + x + ", y=" + y,
+                        expected.getComponents(), got.getComponents(), 0.05f);
+            }
+        }
+    }
+
     @Parameters(method = "getCompressFormats")
     @Test
     public void testCompress8888(CompressFormat format) throws Exception {
