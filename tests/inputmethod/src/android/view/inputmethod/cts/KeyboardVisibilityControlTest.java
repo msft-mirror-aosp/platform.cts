@@ -35,7 +35,6 @@ import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.ex
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
 import static android.view.inputmethod.cts.util.TestUtils.runOnMainSyncWithRethrowing;
-import static android.widget.PopupWindow.INPUT_METHOD_NOT_NEEDED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
@@ -60,6 +59,7 @@ import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.Instrumentation;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -433,15 +433,16 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         verifyHideImeBackPressed(true /* appRequestsBackCallback */,
                 true /* imeRequestsBackCallback */,
                 (instrumentation, editorRef) -> {
-                    AutoCloseableWrapper<PopupWindow> popupWindowWrapper =
-                            createPopupWindowWrapper(editorRef.get());
+                    AutoCloseableWrapper<Dialog> dialogWrapper =
+                            createDialogWrapper(editorRef.get());
                     instrumentation.waitForIdleSync();
-                    // Verify IME became invisible when the non-ime-focusable PopupWindow is shown.
+                    // Verify IME became invisible when the Dialog is shown.
+                    // Note: the IME is partially visible behind dimmed layer and it won't match
+                    // the screenshot.
                     expectImeInvisible(NOT_EXPECT_TIMEOUT);
 
-                    runOnMainSync(() -> popupWindowWrapper.get().dismiss());
-                    // Verify IME became visible when the non-ime-focusable PopupWindow has
-                    // dismissed.
+                    runOnMainSync(() -> dialogWrapper.get().dismiss());
+                    // Verify IME became visible when the Dialog has dismissed.
                     expectImeVisible(TIMEOUT);
                 } /* pre back press procedure */);
     }
@@ -1057,16 +1058,17 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeVisible(TIMEOUT);
 
-            // Create then show a non-ime-focusable PopupWindow with INPUT_METHOD_NOT_NEEDED.
-            try (AutoCloseableWrapper<PopupWindow> popupWindowWrapper =
-                    createPopupWindowWrapper(editorRef.get())
-            ) {
+            // Create then show a Dialog.
+            try (AutoCloseableWrapper<Dialog> dialogWrapper =
+                         createDialogWrapper(editorRef.get())) {
                 instrumentation.waitForIdleSync();
-                // Verify IME became invisible when the non-ime-focusable PopupWindow is shown.
+                // Verify IME became invisible when the Dialog is shown.
+                // Note: the IME is partially visible behind dimmed layer and it won't match
+                // the screenshot.
                 expectImeInvisible(NOT_EXPECT_TIMEOUT);
 
-                runOnMainSync(() -> popupWindowWrapper.get().dismiss());
-                // Verify IME became visible when the non-ime-focusable PopupWindow has dismissed.
+                runOnMainSync(() -> dialogWrapper.get().dismiss());
+                // Verify IME became visible when the Dialog has dismissed.
                 expectImeVisible(TIMEOUT);
             }
         }
@@ -1899,21 +1901,25 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         return imeContainer.isOrganized();
     }
 
-    private static AutoCloseableWrapper<PopupWindow> createPopupWindowWrapper(
-            @NonNull EditText editor) {
+    private static AutoCloseableWrapper<Dialog> createDialogWrapper(@NonNull EditText editor) {
         return AutoCloseableWrapper.create(
                 TestUtils.getOnMainSync(() -> {
-                    final PopupWindow popup = new PopupWindow(editor.getContext());
-                    popup.setInputMethodMode(INPUT_METHOD_NOT_NEEDED);
+                    final Dialog dialog = new Dialog(editor.getContext());
                     final TextView textView = new TextView(editor.getContext());
-                    textView.setText("Popup");
-                    popup.setContentView(textView);
-                    popup.setWidth(MATCH_PARENT);
-                    popup.setHeight(MATCH_PARENT);
-                    // Show the popup window.
-                    popup.showAsDropDown(textView);
-                    return popup;
-                }), popup -> TestUtils.runOnMainSync(popup::dismiss));
+                    textView.setText("Dialog");
+                    dialog.setContentView(textView);
+
+                    // Dim the background.
+                    WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+                    lp.copyFrom(dialog.getWindow().getAttributes());
+                    lp.width = MATCH_PARENT;
+                    lp.height = MATCH_PARENT;
+                    lp.flags = WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+                    lp.dimAmount = 0.3f;
+                    dialog.getWindow().setAttributes(lp);
+                    dialog.show();
+                    return dialog;
+                }), dialog -> TestUtils.runOnMainSync(dialog::dismiss));
     }
 
     /**
