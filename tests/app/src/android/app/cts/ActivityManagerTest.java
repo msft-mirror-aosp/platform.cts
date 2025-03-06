@@ -2172,27 +2172,23 @@ public final class ActivityManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_UID_IMPORTANCE_LISTENER_FOR_UIDS)
     @Test
-    public void testAddOnUidImportanceListener() throws Exception {
+    public void testAddOnUidImportanceListener_legacy() throws Exception {
         final ApplicationInfo ai1 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP1, 0);
         final ApplicationInfo ai2 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP2, 0);
         final CountDownLatch[] latchHolder = new CountDownLatch[1];
         final int[] expectedUidHolder = new int[1];
-        final OnUidImportanceListener listener = new OnUidImportanceListener() {
-            @Override
-            public void onUidImportance(int uid, int importance) {
-                if (uid == expectedUidHolder[0]) {
-                    latchHolder[0].countDown();
-                }
-            }
-        };
+        final OnUidImportanceListener listener =
+                (uid, importance) -> {
+                    if (uid == expectedUidHolder[0]) {
+                        latchHolder[0].countDown();
+                    }
+                };
         try {
             // Make sure we could start activity from background
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
 
             // If we didn't specify the target UID, we should be able to listen on all UID events.
             mActivityManager.addOnUidImportanceListener(listener,
@@ -2213,9 +2209,38 @@ public final class ActivityManagerTest {
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
             assertTrue("Failed to receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+        } finally {
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
-            launchHome();
             mActivityManager.removeOnUidImportanceListener(listener);
+
+            runWithShellPermissionIdentity(
+                    () -> {
+                        // force stop test package; the whole test process group will be killed.
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_UID_IMPORTANCE_LISTENER_FOR_UIDS)
+    @Test
+    public void testAddOnUidImportanceListener() throws Exception {
+        final ApplicationInfo ai1 =
+                mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        final ApplicationInfo ai2 =
+                mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP2, 0);
+        final CountDownLatch[] latchHolder = new CountDownLatch[1];
+        final int[] expectedUidHolder = new int[1];
+        final OnUidImportanceListener listener =
+                (uid, importance) -> {
+                    if (uid == expectedUidHolder[0]) {
+                        latchHolder[0].countDown();
+                    }
+                };
+        try {
+            // Make sure we could start activity from background
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
 
             // Listen on the APP1's UID importance changes only.
             mActivityManager.addOnUidImportanceListener(listener,
@@ -2237,16 +2262,16 @@ public final class ActivityManagerTest {
             assertFalse("It should not receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
         } finally {
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             mActivityManager.removeOnUidImportanceListener(listener);
 
-            runWithShellPermissionIdentity(() -> {
-                // force stop test package, where the whole test process group will be killed.
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
-            });
+            runWithShellPermissionIdentity(
+                    () -> {
+                        // force stop test package; the whole test process group will be killed.
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
+                    });
         }
     }
 
