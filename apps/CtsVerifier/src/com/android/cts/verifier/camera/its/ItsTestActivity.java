@@ -279,8 +279,6 @@ public class ItsTestActivity extends DialogTestListActivity {
     private final HashMap<ResultKey, Boolean> mExecutedScenes = new HashMap<>();
     // map camera id to ITS summary report path
     private final HashMap<ResultKey, String> mSummaryMap = new HashMap<>();
-    // All primary cameras for which MPC level test has run
-    private Set<ResultKey> mExecutedMpcTests = null;
     private static final String MPC_LAUNCH_REQ_NUM = "2.2.7.2/7.5/H-1-6";
     private static final String MPC_JPEG_CAPTURE_REQ_NUM = "2.2.7.2/7.5/H-1-5";
     private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
@@ -446,7 +444,9 @@ public class ItsTestActivity extends DialogTestListActivity {
                             mEndTime = sceneResult.getLong("end");
                             setTestResult(testId(cameraId, scene), pass ?
                                     TestResult.TEST_RESULT_PASSED : TestResult.TEST_RESULT_FAILED);
-                            Log.e(TAG, "setTestResult for " + testId(cameraId, scene) + ": " + result);
+                            Log.e(
+                                    TAG,
+                                    "setTestResult for " + testId(cameraId, scene) + ": " + result);
                             String summary = sceneResult.optString("summary");
                             if (!summary.equals("")) {
                                 mSummaryMap.put(key, summary);
@@ -613,7 +613,6 @@ public class ItsTestActivity extends DialogTestListActivity {
                 } else {
                     mLaunchLatencyReq.setFrontCameraLatency(latency);
                 }
-                mExecutedMpcTests.add(new ResultKey(cameraId, MPC_LAUNCH_REQ_NUM));
             } else if (jpegMatches) {
                 float latency = Float.parseFloat(jpegMatcher.group(1));
                 if (cameraId.equals(mPrimaryRearCameraId)) {
@@ -621,7 +620,6 @@ public class ItsTestActivity extends DialogTestListActivity {
                 } else {
                     mJpegLatencyReq.setFrontCameraLatency(latency);
                 }
-                mExecutedMpcTests.add(new ResultKey(cameraId, MPC_JPEG_CAPTURE_REQ_NUM));
             } else {
                 Log.i(TAG, "Gainmap pattern matches");
                 String result = mpcResult.split(":")[1];
@@ -634,11 +632,10 @@ public class ItsTestActivity extends DialogTestListActivity {
                 } else {
                     mUltraHdrReq.setFrontCameraUltraHdrSupported(hasGainMap);
                 }
-                mExecutedMpcTests.add(new ResultKey(cameraId, MPC_ULTRA_HDR_REQ_NUM));
             }
 
             // Save MPC info once both front primary and rear primary data are collected.
-            if (mExecutedMpcTests.size() == 4) {
+            if (mPce.isReadyToSubmitItsResults()) {
                 mPce.submitAndVerify();
             }
             return true;
@@ -945,9 +942,6 @@ public class ItsTestActivity extends DialogTestListActivity {
         if (mAllScenes == null) {
             mAllScenes = new TreeSet<>(mComparator);
         }
-        if (mExecutedMpcTests == null) {
-            mExecutedMpcTests = new TreeSet<>(mComparator);
-        }
         mCameraThread = new HandlerThread("ItsTestActivityThread");
         mCameraThread.start();
         mCameraHandler = new Handler(mCameraThread.getLooper());
@@ -1124,9 +1118,6 @@ public class ItsTestActivity extends DialogTestListActivity {
                 adapter.add(new DialogTestListItem(this,
                         testTitle(cam, scene),
                         testId(cam, scene)));
-            }
-            if (mExecutedMpcTests == null) {
-                mExecutedMpcTests = new TreeSet<>(mComparator);
             }
             Log.d(TAG, "Total combinations to test on this device:" + mAllScenes.size());
         }
