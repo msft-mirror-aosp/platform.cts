@@ -162,7 +162,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(EVENT_NOTIFIER_EXTRA, receiver.getNotifier());
         mContext.startActivity(intent);
-        receiver.waitForEventOrThrow(ACTIVITY_START_TIMEOUT_MS);
+        receiver.waitForEventOrThrow(ACTIVITY_START_TIMEOUT_MS); // activity started
+        pressHomeAndWaitHomeResumed(); // cancel grace period
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
     }
 
