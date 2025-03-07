@@ -22,6 +22,7 @@ import static android.media.codec.Flags.codecAvailability;
 import static android.media.codec.Flags.codecAvailabilitySupport;
 import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202504;
 import static android.mediav2.common.cts.CodecTestBase.isHardwareAcceleratedCodec;
+import static android.mediav2.cts.CodecResourceUtils.CodecState;
 import static android.mediav2.cts.CodecResourceUtils.getCurrentGlobalCodecResources;
 import static android.mediav2.cts.CodecResourceUtils.validateGetCodecResources;
 
@@ -50,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * This class comprises of tests that validate codec resource availability apis for video
@@ -142,68 +144,85 @@ public class VideoTranscoderAvailabilityTest extends CodecEncoderSurfaceTestBase
         mOutputBuff.reset();
         setUpSource(mTestFile);
         mDecoder = MediaCodec.createByCodecName(mDecoderName);
-        validateGetCodecResources(List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() succeeded in uninitialized state \n" + mTestEnv
-                        + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mDecoder, CodecState.UNINITIALIZED)),
+                GLOBAL_AVBL_RESOURCES, String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded in %s state \n", CodecState.UNINITIALIZED)
+                        + mTestEnv + mTestConfig);
         mEncoder = MediaCodec.createByCodecName(mEncoderName);
-        validateGetCodecResources(List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() succeeded in uninitialized state \n" + mTestEnv
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.UNINITIALIZED),
+                        Pair.create(mDecoder, CodecState.UNINITIALIZED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded, encoder in %s state, decoder in %s "
+                                + "state\n",
+                        CodecState.UNINITIALIZED, CodecState.UNINITIALIZED) + mTestEnv
                         + mTestConfig);
         configureCodec(mDecoderFormat, mEncoderFormat, true, true);
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in configured state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.CONFIGURED),
+                        Pair.create(mDecoder, CodecState.CONFIGURED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.CONFIGURED, CodecState.CONFIGURED) + mTestEnv + mTestConfig);
         mEncoder.start();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in running state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.RUNNING),
+                        Pair.create(mDecoder, CodecState.CONFIGURED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.RUNNING, CodecState.CONFIGURED) + mTestEnv + mTestConfig);
         mDecoder.start();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in running state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.RUNNING),
+                        Pair.create(mDecoder, CodecState.RUNNING)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.RUNNING, CodecState.RUNNING) + mTestEnv + mTestConfig);
         doWork(Integer.MAX_VALUE);
         queueEOS();
         waitForAllEncoderOutputs();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, false)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in eos state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.EOS),
+                        Pair.create(mDecoder, CodecState.EOS)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.EOS, CodecState.EOS) + mTestEnv + mTestConfig);
         mDecoder.stop();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.EOS),
+                        Pair.create(mDecoder, CodecState.STOPPED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.EOS, CodecState.STOPPED) + mTestEnv + mTestConfig);
         mDecoder.reset();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, false), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in uninitialized state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.EOS),
+                        Pair.create(mDecoder, CodecState.UNINITIALIZED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.EOS, CodecState.UNINITIALIZED) + mTestEnv + mTestConfig);
         mEncoder.stop();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in stopped state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.STOPPED),
+                        Pair.create(mDecoder, CodecState.UNINITIALIZED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() failed, encoder in %s state, decoder in %s state\n",
+                        CodecState.STOPPED, CodecState.UNINITIALIZED) + mTestEnv + mTestConfig);
         mEncoder.reset();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in uninitialized state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.UNINITIALIZED),
+                        Pair.create(mDecoder, CodecState.UNINITIALIZED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded, encoder in %s state, decoder in %s "
+                                + "state\n",
+                        CodecState.UNINITIALIZED, CodecState.UNINITIALIZED) + mTestEnv
+                        + mTestConfig);
         mSurface.release();
         mSurface = null;
         mDecoder.release();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in released state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.UNINITIALIZED),
+                        Pair.create(mDecoder, CodecState.RELEASED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded, encoder in %s state, decoder in %s "
+                                + "state\n",
+                        CodecState.UNINITIALIZED, CodecState.RELEASED) + mTestEnv + mTestConfig);
         mEncoder.release();
-        validateGetCodecResources(
-                List.of(Pair.create(mEncoder, true), Pair.create(mDecoder, true)),
-                GLOBAL_AVBL_RESOURCES,
-                "getRequiredResources() failed in released state \n" + mTestEnv + mTestConfig);
+        validateGetCodecResources(List.of(Pair.create(mEncoder, CodecState.RELEASED),
+                        Pair.create(mDecoder, CodecState.RELEASED)), GLOBAL_AVBL_RESOURCES,
+                String.format(Locale.getDefault(),
+                        "getRequiredResources() succeeded, encoder in %s state, decoder in %s "
+                                + "state\n",
+                        CodecState.RELEASED, CodecState.RELEASED) + mTestEnv + mTestConfig);
     }
 }
