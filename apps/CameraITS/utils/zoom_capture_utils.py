@@ -560,6 +560,7 @@ def verify_zoom_data(
     offset_x_values.append(offset_x)
     offset_y_values.append(offset_y)
     z_ratio = data.result_zoom / z_0
+    logged_data = False
 
     # check relative size against zoom[0]
     current_side = opencv_processing_utils.get_aruco_marker_side_length(
@@ -630,6 +631,7 @@ def verify_zoom_data(
                  f'Zoom: {z_ratio:.1f}, '
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.warning(w_msg)
+        logged_data = True
         used_smooth_offset = True
         if data.physical_id not in id_to_next_offset:
           offset_success = False
@@ -651,7 +653,7 @@ def verify_zoom_data(
           else:
             logging.debug('Successfully matched current offset with upcoming '
                           'physical camera offset')
-      if offset_success:
+      if not logged_data:
         d_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {initial_offset:.1f}, '
                  f'offset rel: {offset_hypot_rel:.1f}, '
