@@ -114,10 +114,12 @@ _REQ_STR_PATTERN = 'REQ'
 JCA_VIDEO_STABILIZATION_MODE_OFF = 0
 JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY = 1
 JCA_VIDEO_STABILIZATION_MODE_ON = 2
+JCA_VIDEO_STABILIZATION_MODE_OPTICAL = 3
 JCA_STABILIZATION_MODES = {
     0: 'Off',
     1: 'High Quality',
     2: 'On',
+    3: 'Optical'
 }
 
 
@@ -372,6 +374,7 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
       Acceptable values: JCA_VIDEO_STABILIZATION_MODE_OFF,
                          JCA_VIDEO_STABILIZATION_MODE_HIGH_QUALITY,
                          JCA_VIDEO_STABILIZATION_MODE_ON
+                         JCA_VIDEO_STABILIZATION_MODE_OPTICAL
   Mapping of JCA modes:
   ON: corresponds to setting android.control.videoStabilizationMode
     to PREVIEW_STABILIZATION.
@@ -380,6 +383,8 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
   AUTO: will set the stabilization mode to PREVIEW_STABILIZATION,
     if the lens supports it, and if not, it will set it to OIS.
     If neither preview stabilization or OIS are supported it will be OFF.
+  OPTICAL: optical stabilization is turned on in the default camera app
+    when the video stabilization mode is OFF
   """
   dut.ui(res=SETTINGS_BUTTON_RESOURCE_ID).click()
   if not dut.ui(text=SETTINGS_VIDEO_STABILIZATION_MODE_TEXT).wait.exists(
@@ -425,6 +430,11 @@ def _set_jca_video_stabilization(dut, log_path, stabilization_mode):
         UI_OBJECT_WAIT_TIME_SECONDS):
       raise AssertionError(
           'JCA video stabilization_mode not set to HIGH_QUALITY.')
+  elif stabilization_mode == JCA_VIDEO_STABILIZATION_MODE_OPTICAL:
+    if not dut.ui(desc='Optical stabilization is Enabled').wait.exists(
+        UI_OBJECT_WAIT_TIME_SECONDS):
+      raise AssertionError(
+          'JCA video stabilization_mode not set to OPTICAL.')
   else:
     if 'stabilize' in dut.ui.dump().lower():
       raise AssertionError('JCA video stabilization_mode not set to OFF.')
@@ -898,3 +908,41 @@ def get_default_camera_video_stabilization(file_name):
                   video_stabilization_modes[-1])
     return video_stabilization_modes[-1].strip()
   return None
+
+
+def get_default_camera_ois_mode(file_name):
+  """Returns the optical stabilization mode used by default camera capture.
+
+  Args:
+    file_name: str; file name storing default camera pkg watch
+    cameraservice dump output.
+  Returns:
+    optical_stabilization_mode: str; optical stabilization mode used by
+    default camera app during the capture
+  Raises:
+    FileNotFoundError: If file_name does not exist
+  """
+  optical_stabilization_modes = []
+  if not os.path.exists(file_name):
+    raise FileNotFoundError(f'File not found: {file_name}')
+  with open(file_name, 'r') as file:
+    for line in file:
+      if 'opticalStabilizationMode' in line:
+        if _REQ_STR_PATTERN not in line:
+          continue
+        logging.debug('opticalStabilizationMode line: %s', line)
+        values = line.split(':')
+        value_str = values[-1]
+        match = re.search(r'[a-zA-Z]+', value_str)
+        if match:
+          value = str(match.group())
+          logging.debug('opticalStabilizationMode found: %s', value)
+          optical_stabilization_modes.append(value)
+  if optical_stabilization_modes:
+    logging.debug('optical_stabilization_modes: %s',
+                  optical_stabilization_modes)
+    logging.debug('opticalStabilizationMode used for default captures: %s',
+                  optical_stabilization_modes[-1])
+    return optical_stabilization_modes[-1].strip()
+  return None
+
