@@ -22,6 +22,7 @@ import android.os.Parcelable;
 import com.android.queryable.Queryable;
 import com.android.queryable.QueryableBaseWithMatch;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,6 +94,7 @@ public final class ListQueryHelper<E extends Queryable, F>
     }
 
     @Override
+    @CanIgnoreReturnValue
     public E contains(F... objects) {
         mContainsByType.addAll(Arrays.asList(objects));
         return mQuery;
@@ -105,6 +107,7 @@ public final class ListQueryHelper<E extends Queryable, F>
     }
 
     @Override
+    @CanIgnoreReturnValue
     public E doesNotContain(F... objects) {
         mDoesNotContainByType.addAll(Arrays.asList(objects));
         return mQuery;

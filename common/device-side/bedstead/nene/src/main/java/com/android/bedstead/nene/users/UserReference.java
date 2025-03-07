@@ -279,6 +279,7 @@ public final class UserReference implements AutoCloseable {
      *
      * @throws NeneException if the user does not exist or the start fails for any other reason
      */
+    @CanIgnoreReturnValue
     public UserReference startVisibleOnDisplay(int displayId) {
         if (!TestApis.users().isVisibleBackgroundUsersSupported()) {
             throw new UnsupportedOperationException("Cannot start user " + mId + " on display "
@@ -337,6 +338,7 @@ public final class UserReference implements AutoCloseable {
      *
      * <p>After calling this command, the user will be not running.
      */
+    @CanIgnoreReturnValue
     public UserReference stop() {
         try {
             // Expects no output on success or failure - stderr output on failure

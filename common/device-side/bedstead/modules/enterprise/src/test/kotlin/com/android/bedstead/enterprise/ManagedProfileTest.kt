@@ -23,11 +23,11 @@ import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserType
+import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assume
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
 class ManagedProfileTest {
@@ -105,7 +105,9 @@ class ManagedProfileTest {
                 .type(mManagedProfileType)
                 .parent(nonSystemUser)
 
-            assertThrows(NeneException::class.java) { userBuilder.create() }
+            assertThrows(NeneException::class.java) {
+                userBuilder.create()
+            }
         } finally {
             nonSystemUser.remove()
         }

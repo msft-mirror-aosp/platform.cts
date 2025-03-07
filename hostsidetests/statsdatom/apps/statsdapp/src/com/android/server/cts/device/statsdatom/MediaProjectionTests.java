@@ -16,6 +16,7 @@
 
 package com.android.server.cts.device.statsdatom;
 
+
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
@@ -105,10 +106,12 @@ public class MediaProjectionTests {
 
         UiObject2 consentDialog = mDevice.wait(
                 Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
-        consentDialog.scroll(Direction.DOWN, 100);
+        consentDialog.scrollUntil(Direction.DOWN, Until.scrollFinished(Direction.DOWN));
         UiObject2 cancelButton =
                 consentDialog.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), TIMEOUT);
+        mDevice.waitForIdle();
         cancelButton.click();
+        mDevice.wait(Until.gone(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
     }
 
     @Test

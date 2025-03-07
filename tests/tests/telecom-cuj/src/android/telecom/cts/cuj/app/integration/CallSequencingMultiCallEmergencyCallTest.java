@@ -28,6 +28,7 @@ import static android.telecom.cts.apps.TelecomTestApp.TransactionalVoipAppMain;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.telecom.cts.apps.AppControlWrapper;
@@ -35,14 +36,13 @@ import android.telecom.cts.apps.CallSequencingValidator;
 import android.telecom.cts.apps.CallStateTransitionOperation;
 import android.telecom.cts.apps.TelecomTestApp;
 import android.telecom.cts.cuj.BaseAppVerifier;
+import android.telecom.cts.cuj.TestUtils;
 
 import com.android.server.telecom.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.junit.Assume.assumeTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -252,10 +252,10 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
 
     @Override
     public void setUp() throws Exception {
-        // Emergency calling is not supported on devices without FEATURE_TELEPHONY
-        //or FEATURE_TELECOM (i.e. Tangor).
-        assumeTrue(mShouldTestTelecom && mSupportsManagedCalls);
         super.setUp();
+        // Emergency calling is not supported on devices without FEATURE_TELEPHONY
+        // or FEATURE_TELECOM (i.e. Tangor).
+        assumeTrue(mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext));
         setupForEmergencyCalling();
     }
 

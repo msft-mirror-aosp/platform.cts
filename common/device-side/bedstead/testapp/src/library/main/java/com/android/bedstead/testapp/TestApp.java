@@ -70,6 +70,7 @@ public final class TestApp {
      *
      * <p>See {@link Users#instrumented()}
      */
+    @CanIgnoreReturnValue
     public TestAppInstance install() {
         return install(TestApis.users().instrumented());
     }

@@ -78,6 +78,22 @@ public class VMDebugDeviceTest {
         assertTrue(offsets.getContainerOffset() > 0);
     }
 
+    @Test
+    @RequiresFlagsEnabled(com.android.art.flags.Flags.FLAG_EXECUTABLE_METHOD_FILE_OFFSETS_V2)
+    public void testGetExecutableOffsets() throws Exception {
+        java.lang.reflect.Executable executable = this.getClass().getDeclaredConstructor();
+
+        VMDebug.ExecutableMethodFileOffsets offsets =
+                VMDebug.getExecutableMethodFileOffsets(executable);
+
+        assertNotNull(offsets);
+        String containerPath = offsets.getContainerPath();
+        assertNotNull(containerPath);
+        assertNotEquals("", containerPath);
+        assertTrue(offsets.getMethodOffset() > 0);
+        assertTrue(offsets.getContainerOffset() > 0);
+    }
+
     private void testMethod() {
         final long debugTime = 1000;
 

@@ -290,6 +290,7 @@ public class BedsteadJUnit4Test {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
+    @Test
     public void additionalQueryParameters_policyAppliesTest_isRespected() {
         assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
@@ -299,6 +300,7 @@ public class BedsteadJUnit4Test {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
+    @Test
     public void additionalQueryParameters_policyDoesNotApplyTest_isRespected() {
         assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
@@ -308,6 +310,7 @@ public class BedsteadJUnit4Test {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
+    @Test
     public void additionalQueryParameters_canSetPolicyTest_isRespected() {
         assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }
@@ -317,6 +320,7 @@ public class BedsteadJUnit4Test {
             forTestApp = "dpc",
             query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
+    @Test
     public void additionalQueryParameters_cannotSetPolicyTest_isRespected() {
         assertThat(dpc(sDeviceState).testApp().targetSdkVersion()).isEqualTo(30);
     }

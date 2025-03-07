@@ -67,6 +67,10 @@ public abstract class RequiredMeasurement<T> {
         return measuredValue;
     }
 
+    boolean isMeasuredValueSet() {
+        return measuredValueSet;
+    }
+
     @AutoValue.Builder
     public static abstract class Builder<T> {
 

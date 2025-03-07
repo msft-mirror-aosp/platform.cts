@@ -67,6 +67,8 @@ public final class DeviceUtils {
     // feature names
     public static final String FEATURE_WATCH = "android.hardware.type.watch";
 
+    public static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
+
     public static final String DUMP_BATTERY_CMD = "dumpsys battery";
 
     /**

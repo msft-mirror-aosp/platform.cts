@@ -22,6 +22,7 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -93,7 +94,6 @@ public final class RecognitionServiceMicIndicatorTest {
     private UiDevice mUiDevice;
     private SpeechRecognitionActivity mActivity;
     private String mCameraLabel;
-    private String mOriginalIndicatorsState;
     private boolean mSafetyCenterEnabled;
 
     @Rule
@@ -118,11 +118,6 @@ public final class RecognitionServiceMicIndicatorTest {
                     pm).toString();
         } catch (PackageManager.NameNotFoundException e) {
         }
-        runWithShellPermissionIdentity(() -> {
-            mOriginalIndicatorsState =
-                    DeviceConfig.getProperty(DeviceConfig.NAMESPACE_PRIVACY, INDICATORS_FLAG);
-            Log.v(TAG, "setup(): mOriginalIndicatorsState=" + mOriginalIndicatorsState);
-        });
 
         // TODO(http://b/259941077): Remove once privacy indicators are implemented.
         assumeFalse("Privacy indicators not supported", isWatch());
@@ -134,7 +129,13 @@ public final class RecognitionServiceMicIndicatorTest {
             throw new IllegalStateException(e);
         }
 
-        setIndicatorsEnabledState(Boolean.toString(true));
+        runWithShellPermissionIdentity(
+                () -> {
+                    assertTrue(
+                            "The camera / mic privacy indicators must be enabled for this test",
+                            DeviceConfig.getBoolean(
+                                    DeviceConfig.NAMESPACE_PRIVACY, INDICATORS_FLAG, true));
+                });
         // Wait for any privacy indicator to disappear to avoid the test becoming flaky.
         waitForNoIndicator(chipId());
     }
@@ -143,8 +144,7 @@ public final class RecognitionServiceMicIndicatorTest {
     public void teardown() {
         // press back to close the dialog
         mUiDevice.pressHome();
-        // Restore original value.
-        setIndicatorsEnabledState(mOriginalIndicatorsState);
+        mUiDevice.waitForIdle();
         waitForNoIndicator(chipId());
     }
 
@@ -164,13 +164,6 @@ public final class RecognitionServiceMicIndicatorTest {
 
     private String getCurrentRecognizer() {
         return Settings.Secure.getString(mContext.getContentResolver(), VOICE_RECOGNITION_SERVICE);
-    }
-
-    private void setIndicatorsEnabledState(String enabled) {
-        runWithShellPermissionIdentity(
-                () -> DeviceConfig.setProperty(DeviceConfig.NAMESPACE_PRIVACY, INDICATORS_FLAG,
-                        enabled, false));
-        mUiDevice.waitForIdle();
     }
 
     private boolean hasPreInstalledRecognizer(String packageName) {

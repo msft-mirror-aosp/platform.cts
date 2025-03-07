@@ -124,7 +124,7 @@ import com.android.eventlib.events.services.ServiceUnboundEvent.ServiceUnboundEv
  *
  * `#poll` can be used to fetch results, and the result can be asserted on.
  */
-class TestAppEvents internal constructor(private val mTestApp: TestAppInstance) : ActivityEvents,
+class TestAppEvents constructor(private val mTestApp: TestAppInstance) : ActivityEvents,
     BroadcastReceiverEvents, DeviceAdminReceiverEvents, DelegatedAdminReceiverEvents,
     ServiceEvents {
 

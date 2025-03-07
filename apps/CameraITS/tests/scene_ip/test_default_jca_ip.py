@@ -111,12 +111,13 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
       # logging for data collection
       print(f'{_NAME}_camera_hardware_level: {camera_hardware_level}')
       first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-      is_tablet = its_device_utils.is_dut_tablet(self.dut.serial)
+      is_dut_tablet_or_desktop = its_device_utils.is_dut_tablet_or_desktop(
+          self.dut.serial)
 
       # Skip the test if camera is not primary or if it is a tablet
       is_primary_camera = self.hidden_physical_id is None
       camera_properties_utils.skip_unless(
-          not is_tablet and
+          not is_dut_tablet_or_desktop and
           is_primary_camera and
           first_api_level >= its_session_utils.ANDROID16_API_LEVEL
       )

@@ -41,7 +41,6 @@ android_test {
         "bedstead",
         "bedstead-root",
         "truth",
-        "testng", // used for assertThrows
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",

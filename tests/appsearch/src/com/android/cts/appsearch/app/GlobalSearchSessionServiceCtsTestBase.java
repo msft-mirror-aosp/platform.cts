@@ -28,7 +28,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.app.appsearch.AppSearchBatchResult;
@@ -1677,8 +1677,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGlobalOpenBlobRead_visibleToGlobalReader() throws Exception {
-        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
-        assumeFalse(mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
+        if (mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE)) {
+            assumeTrue(Flags.enableAppSearchManageBlobFiles());
+        }
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
@@ -1739,8 +1740,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGlobalOpenBlobRead_notVisibleToGlobalReader() throws Exception {
-        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
-        assumeFalse(mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
+        if (mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE)) {
+            assumeTrue(Flags.enableAppSearchManageBlobFiles());
+        }
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(
@@ -1774,8 +1776,9 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_BLOB_STORE)
     public void testGlobalOpenBlobRead_visibleToConfig() throws Exception {
-        // TODO: b/389105038 - remove this to allow blob APIs tested for isolated storage.
-        assumeFalse(mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE));
+        if (mDb.getFeatures().isFeatureSupported(Features.ISOLATED_STORAGE)) {
+            assumeTrue(Flags.enableAppSearchManageBlobFiles());
+        }
         byte[] data = generateRandomBytes(10); // 10 Bytes
         byte[] digest = calculateDigest(data);
         AppSearchBlobHandle handle = AppSearchBlobHandle.createWithSha256(

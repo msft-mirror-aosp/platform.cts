@@ -18,6 +18,8 @@ package android.mediapc.cts.common;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -51,5 +53,38 @@ public class PerformanceClassEvaluatorTest {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mMockTestName);
         assertThat(pce.getTestName()).isEqualTo("()");
+    }
+
+    @Test
+    public void isReadyToSubmitItsResults_hasNoRequirements_returnsFalse() {
+        Mockito.when(mMockTestName.getMethodName()).thenReturn("");
+        var pce = new PerformanceClassEvaluator(mMockTestName);
+
+        assertThat(pce.isReadyToSubmitItsResults()).isEqualTo(false);
+    }
+
+    @Test
+    public void isReadyToSubmitItsResults_notAllReqMeasurementsSet_returnsFalse() {
+        Mockito.when(mMockTestName.getMethodName()).thenReturn("");
+        var pce = new PerformanceClassEvaluator(mMockTestName);
+
+        // DRDisplayRequirement has two required measurements. Only one is set here.
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
+        req.setIsHdr(false);
+
+        assertThat(pce.isReadyToSubmitItsResults()).isEqualTo(false);
+    }
+
+    @Test
+    public void isReadyToSubmitItsResults_allReqMeasurementsSet_returnsTrue() {
+        Mockito.when(mMockTestName.getMethodName()).thenReturn("");
+        var pce = new PerformanceClassEvaluator(mMockTestName);
+
+        // DRDisplayRequirement has two required measurements. Both are set here.
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
+        req.setIsHdr(false);
+        req.setDisplayLuminanceNits(1000);
+
+        assertThat(pce.isReadyToSubmitItsResults()).isEqualTo(true);
     }
 }
