@@ -755,6 +755,13 @@ ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)
         }
 
         installAndCheckBound(APK_1, PACKAGE_A, SERVICE_1, mCurrentUserId);
-        assertOomAdjustment(PACKAGE_A, PACKAGE_A_PROC, 200);
+
+        final int expectedOomscore;
+        if (android.view.inputmethod.Flags.lowerImeOomImportance()) {
+            expectedOomscore = 201;
+        } else {
+            expectedOomscore = 200;
+        }
+        assertOomAdjustment(PACKAGE_A, PACKAGE_A_PROC, expectedOomscore);
     }
 }
