@@ -6175,7 +6175,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
             // Ignores the test if wheel_tick property does not exist in the car.
             assumeTrue(
                     "WheelTick is not available, skip subscribePropertyEvent test",
-                    mCarPropertyManager.isPropertyAvailable(
+                    isPropertyAvailableSafe(
                             VehiclePropertyIds.WHEEL_TICK,
                             VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
 
@@ -6980,7 +6980,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 () -> {
                     assumeTrue(
                             "WheelTick is not available, skip UnsubscribePropertyEvents test",
-                            mCarPropertyManager.isPropertyAvailable(
+                            isPropertyAvailableSafe(
                                     VehiclePropertyIds.WHEEL_TICK,
                                     VehicleAreaType.VEHICLE_AREA_TYPE_GLOBAL));
                     int vehicleSpeed = VehiclePropertyIds.PERF_VEHICLE_SPEED;
