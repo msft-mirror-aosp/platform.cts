@@ -239,29 +239,19 @@ public final class TestUtils {
     }
 
     /**
-     * Returns given display's rotation.
+     * Simulates a {@link KeyEvent} event to app.
+     * @param keyCode for the {@link KeyEvent} to inject.
+     * @param instrumentation test {@link Instrumentation} used for injection.
      */
-    public static String getRotation(int displayId) {
-        return SystemUtil.runShellCommandOrThrow("wm user-rotation -d " + displayId);
-    }
-
-    /**
-     * Set a locked rotation
-     * @param displayId display to set rotation on.
-     * @param rotation the fixed rotation to apply.
-     */
-    public static void setLockedRotation(int displayId, String rotation) {
-        SystemUtil.runShellCommandOrThrow(
-                "wm user-rotation -d " + displayId + " lock " + rotation);
-    }
-
-    /**
-     * Set display rotation in degrees.
-     * @param displayId display to set rotation on.
-     * @param rotation the fixed rotation to apply.
-     */
-    public static void setRotation(int displayId, String rotation) {
-        SystemUtil.runShellCommandOrThrow("wm user-rotation -d " + displayId + " " + rotation);
+    public static void injectKeyEvent(int keyCode, Instrumentation instrumentation)
+            throws Exception {
+        final long timestamp = SystemClock.uptimeMillis();
+        instrumentation.getUiAutomation().injectInputEvent(
+                new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_DOWN, keyCode, 0),
+                        true /* sync */);
+        instrumentation.getUiAutomation().injectInputEvent(
+                new KeyEvent(timestamp, timestamp, KeyEvent.ACTION_UP, keyCode, 0),
+                        true /* sync */);
     }
 
     /**
@@ -345,6 +335,16 @@ public final class TestUtils {
         device.sendPressure(255);
         device.sendDown(0 /* pointerId */, new Point(x, y), UinputTouchDevice.MT_TOOL_PEN);
         device.sync();
+    }
+
+    /**
+     * Inject a stylus ACTION_UP event in a multi-touch environment to the screen.
+     *
+     * @param pointer {@link #injectStylusDownEvent(UinputTouchDevice, View, int, int)}
+     * returned Pointer.
+     */
+    public static void injectStylusUpEvent(@NonNull UinputTouchDevice.Pointer pointer) {
+        pointer.lift();
     }
 
     /**
@@ -439,6 +439,23 @@ public final class TestUtils {
                 device.sync();
                 break;
         }
+    }
+
+    /**
+     * Inject a finger tap event in a multi-touch environment to the screen using given
+     * view's center coordinates.
+     * @param device {@link UinputTouchDevice} touch device.
+     * @param view  view whose coordinates are used to compute the event location.
+     */
+    public static void injectFingerClickOnViewCenter(UinputTouchDevice device, @NonNull View view) {
+        final int[] xy = new int[2];
+        view.getLocationOnScreen(xy);
+
+        // Inject finger touch event.
+        final int x = xy[0] + view.getWidth() / 2;
+        final int y = xy[1] + view.getHeight() / 2;
+
+        device.touchDown(x, y).lift();
     }
 
     /**
