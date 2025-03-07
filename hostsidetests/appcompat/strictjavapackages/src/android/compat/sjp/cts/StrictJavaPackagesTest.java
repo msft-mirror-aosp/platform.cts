@@ -888,9 +888,18 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                         }
                         final Multimap<String, String> duplicates =
                                 Multimaps.filterValues(sJarsToClasses, apkClasses::contains);
+
+                        // b/392946613
+                        final ImmutableSet<String> mergedBurndownClasses = ImmutableSet.<String>builder()
+                                .addAll(burndownClasses)
+                                .addAll(hasFeature(FEATURE_AUTOMOTIVE)
+                                        ? AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST
+                                        : ImmutableSet.of())
+                                .build();
+
                         final Multimap<String, String> filteredDuplicates =
                                 Multimaps.filterValues(duplicates,
-                                    className -> !burndownClasses.contains(className)
+                                    className -> !mergedBurndownClasses.contains(className)
                                             // TODO: b/225341497
                                             && !className.equals("Landroidx/annotation/Keep;"));
                         final Multimap<String, String> bcpOnlyDuplicates =
