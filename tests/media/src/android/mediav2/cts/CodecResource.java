@@ -16,8 +16,6 @@
 
 package android.mediav2.cts;
 
-import static org.junit.Assert.fail;
-
 import android.media.MediaCodec;
 import android.util.Pair;
 
@@ -92,6 +90,37 @@ class CodecResourceUtils {
     public static final int LHS_RESOURCE_GE = 1;
     public static final int RHS_RESOURCE_GE = 2;
     public static final int RESOURCE_COMPARISON_UNKNOWN = -1;
+
+    public enum CodecState {
+        UNINITIALIZED,
+        CONFIGURED,
+        FLUSHED,
+        RUNNING,
+        EOS,
+        STOPPED,
+        RELEASED;
+
+        public static String toString(CodecState state) {
+            switch (state) {
+                case UNINITIALIZED:
+                    return "un-initialized";
+                case CONFIGURED:
+                    return "configured";
+                case FLUSHED:
+                    return "flushed";
+                case RUNNING:
+                    return "running";
+                case EOS:
+                    return "end of stream";
+                case STOPPED:
+                    return "stopped";
+                case RELEASED:
+                    return "released";
+                default:
+                    return "unknown state";
+            }
+        }
+    }
 
     public static void addResources(List<MediaCodec.InstanceResourceInfo> from,
             List<CodecResource> to, boolean addNewEntry) {
@@ -197,33 +226,35 @@ class CodecResourceUtils {
      * resources. The caller is responsible for passing all active media codec instances and
      * system's global media codec resources.
      *
-     * @param codecsAndStates list of media codec instance and its state. All states other than
-     *                        executing map to true and executing state maps to false
+     * @param codecsAndStates list of media codec instance and its state.
      * @param refResources    expected global resources
      * @param msg             diagnostics to print on failure
      */
-    public static void validateGetCodecResources(List<Pair<MediaCodec, Boolean>> codecsAndStates,
+    public static void validateGetCodecResources(List<Pair<MediaCodec, CodecState>> codecsAndStates,
             List<CodecResource> refResources, String msg) {
-        boolean testForRefResources = false;
-        for (Pair<MediaCodec, Boolean> codecAndState : codecsAndStates) {
+        boolean shouldThrowException = false;
+        for (Pair<MediaCodec, CodecState> codecAndState : codecsAndStates) {
             boolean seenException;
             try {
                 codecAndState.first.getRequiredResources();
                 seenException = false;
-                testForRefResources = true;
             } catch (IllegalStateException ignored) {
                 seenException = true;
             }
-            Assert.assertEquals(msg, codecAndState.second, seenException);
+            shouldThrowException = (codecAndState.second == CodecState.UNINITIALIZED
+                    || codecAndState.second == CodecState.STOPPED
+                    || codecAndState.second == CodecState.RELEASED);
+            Assert.assertEquals(msg, shouldThrowException, seenException);
         }
-        if (testForRefResources) {
+        if (!shouldThrowException) {
             List<CodecResource> currAvblResources = getCurrentGlobalCodecResources();
             StringBuilder logs = new StringBuilder();
-            for (Pair<MediaCodec, Boolean> codecAndState : codecsAndStates) {
-                if (codecAndState.second) continue;
-                List<MediaCodec.InstanceResourceInfo> instanceResources =
-                        codecAndState.first.getRequiredResources();
-                addResources(instanceResources, currAvblResources, false);
+            for (Pair<MediaCodec, CodecState> codecAndState : codecsAndStates) {
+                if (codecAndState.second != CodecState.CONFIGURED) {
+                    List<MediaCodec.InstanceResourceInfo> instanceResources =
+                            codecAndState.first.getRequiredResources();
+                    addResources(instanceResources, currAvblResources, false);
+                }
             }
             int result = compareResources(refResources, currAvblResources, logs);
             Assert.assertEquals(logs.toString(), RESOURCE_EQ, result);
@@ -232,7 +263,7 @@ class CodecResourceUtils {
 
     /**
      * Determines the maximum percentage of resource consumption across all resources.
-     *
+     * <p>
      * This method compares the total available resources before usage to the remaining resources
      * afterward and calculates the percentage of each resource that has been consumed. It then
      * returns the highest observed consumption percentage among all resources.
