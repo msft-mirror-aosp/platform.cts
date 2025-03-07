@@ -265,10 +265,7 @@ public class ImageDecoderTest {
         }
 
         try {
-            ImageDecoder.Source src = ImageDecoder
-                .createSource(getResources(), R.raw.heifimage_10bit);
-            assertNotNull(src);
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.heifimage_10bit, (decoder, info, source) -> {
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
             assertNotNull(bm);
@@ -277,6 +274,23 @@ public class ImageDecoderTest {
             assertEquals(expectedConfig, bm.getConfig());
         } catch (IOException e) {
             fail("Failed with exception " + e);
+        }
+    }
+
+    private Bitmap decodeUnscaledBitmap(
+            int resId, ImageDecoder.OnHeaderDecodedListener listener) throws IOException {
+        // For tests which rely on ImageDecoder *not* scaling to account for density.
+        // Temporarily change the DisplayMetrics to prevent that scaling.
+        Resources res = getResources();
+        final int originalDensity = res.getDisplayMetrics().densityDpi;
+        res.getDisplayMetrics().densityDpi = DisplayMetrics.DENSITY_DEFAULT;
+
+        try {
+            ImageDecoder.Source src = ImageDecoder.createSource(res, resId);
+            assertNotNull(src);
+            return ImageDecoder.decodeBitmap(src, listener);
+        } finally {
+            res.getDisplayMetrics().densityDpi = originalDensity;
         }
     }
 
@@ -291,11 +305,8 @@ public class ImageDecoderTest {
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                 >= Build.VERSION_CODES.TIRAMISU);
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
-
-        ImageDecoder.Source src = ImageDecoder.createSource(getResources(), R.raw.heifimage_10bit);
-        assertNotNull(src);
         try {
-            Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, source) -> {
+            Bitmap bm = decodeUnscaledBitmap(R.raw.heifimage_10bit, (decoder, info, source) -> {
                 decoder.setMemorySizePolicy(ImageDecoder.MEMORY_POLICY_LOW_RAM);
                 decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
             });
