@@ -818,9 +818,10 @@ public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private void initializeAudioTrack() {
         final int bufferSizeInBytes =
                 TEST_AUDIO_TRACK_PLAY_SECONDS * TEST_AUDIO_TRACK_SAMPLERATE
-                        * TEST_AUDIO_TRACK_CHANNELS;
+                        * TEST_AUDIO_TRACK_CHANNELS * Short.BYTES;
 
-        ByteBuffer audioData = createSoundDataInShortByteBuffer(bufferSizeInBytes,
+        ByteBuffer audioData = createSoundDataInShortByteBuffer(
+                bufferSizeInBytes / Short.BYTES,
                 TEST_AUDIO_TRACK_SAMPLERATE, TEST_AUDIO_TRACK_FREQUENCY,
                 TEST_AUDIO_TRACK_SWEEP);
 
