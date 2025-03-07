@@ -15,13 +15,13 @@
  */
 package android.media.cts;
 
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertTrue;
 
 import android.annotation.NonNull;
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -29,6 +29,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -50,7 +51,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-
 // This is a partial copy of android.view.cts.surfacevalidator.CapturedActivity.
 // Common code should be move in a shared library
 
@@ -66,6 +66,11 @@ public class MediaProjectionActivity extends Activity {
     private static final String SCREEN_SHARE_OPTIONS_REGEX =
             SYSTEM_UI_PACKAGE + ":id/screen_share_mode_(options|spinner)";
 
+    // Extra used to specify a foreground service to use for the MediaProjection session.
+    // If unset MediaProjection will default to the LocalMediaProjectionService implementation.
+    public static final String EXTRA_FOREGROUND_SERVICE_CLASS = "extra_foreground_service_class";
+    public static final String EXTRA_MP_CONFIG = "extra_mp_config";
+    public static final String EXTRA_LAUNCH_COOKIE = "extra_launch_cookie";
     public static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     public static final String CANCEL_RESOURCE_ID = "android:id/button2";
     public static final Pattern SCREEN_SHARE_OPTIONS_RES_PATTERN =
@@ -74,6 +79,8 @@ public class MediaProjectionActivity extends Activity {
             "screen_share_permission_dialog_option_entire_screen";
     public static final String SINGLE_APP_STRING_RES_NAME =
             "screen_share_permission_dialog_option_single_app";
+
+    private boolean mHandleActivityResult = false;
 
     private MediaProjectionManager mProjectionManager;
     private MediaProjection mMediaProjection;
@@ -90,7 +97,8 @@ public class MediaProjectionActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mProjectionManager = getSystemService(MediaProjectionManager.class);
         mCountDownLatch = new CountDownLatch(1);
-        startActivityForResult(mProjectionManager.createScreenCaptureIntent(), PERMISSION_CODE);
+
+        startActivityForResult(createRequestIntent(), PERMISSION_CODE);
     }
 
     @Override
@@ -105,15 +113,31 @@ public class MediaProjectionActivity extends Activity {
         return mProjectionManager.createScreenCaptureIntent();
     }
 
+    private Intent createRequestIntent() {
+        if (getIntent().hasExtra(EXTRA_MP_CONFIG)) {
+            MediaProjectionConfig config =
+                    getIntent().getParcelableExtra(EXTRA_MP_CONFIG, MediaProjectionConfig.class);
+            return mProjectionManager.createScreenCaptureIntent(config);
+        }
+        if (getIntent().hasExtra(EXTRA_LAUNCH_COOKIE)) {
+            ActivityOptions.LaunchCookie launchCookie =
+                    getIntent()
+                            .getParcelableExtra(
+                                    EXTRA_LAUNCH_COOKIE, ActivityOptions.LaunchCookie.class);
+            return mProjectionManager.createScreenCaptureIntent(launchCookie);
+        }
+
+        return mProjectionManager.createScreenCaptureIntent();
+    }
+
     /**
-     * Request to start a foreground service with type "mediaProjection",
-     * it's free to run in either the same process or a different process in the package;
-     * passing a messenger object to send signal back when the foreground service is up.
+     * Request to start a foreground service with type "mediaProjection", it's free to run in either
+     * the same process or a different process in the package; passing a messenger object to send
+     * signal back when the foreground service is up.
      */
     private void startMediaProjectionService() {
-        ForegroundServiceUtil.requestStartForegroundService(this,
-                getForegroundServiceComponentName(),
-                this::createMediaProjection, null);
+        ForegroundServiceUtil.requestStartForegroundService(
+                this, getForegroundServiceComponentName(), this::createMediaProjection, null);
     }
 
     /**
@@ -126,12 +150,22 @@ public class MediaProjectionActivity extends Activity {
     /**
      * @return The component name of the foreground service for this test.
      */
-    public ComponentName getForegroundServiceComponentName() {
-        return new ComponentName(this, LocalMediaProjectionService.class);
+    private ComponentName getForegroundServiceComponentName() {
+        if (getIntent().hasExtra(EXTRA_FOREGROUND_SERVICE_CLASS)) {
+            String fgsClass = getIntent().getStringExtra(EXTRA_FOREGROUND_SERVICE_CLASS);
+            return new ComponentName(this, fgsClass);
+        }
+
+        return new ComponentName(this, android.media.cts.LocalMediaProjectionService.class);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Only handle onActivityResult if the caller actually tries to start
+        if (!mHandleActivityResult) {
+            return;
+        }
+
         if (requestCode != PERMISSION_CODE) {
             throw new IllegalStateException("Unknown request code: " + requestCode);
         }
@@ -149,7 +183,9 @@ public class MediaProjectionActivity extends Activity {
         mCountDownLatch.countDown();
     }
 
+    /** Perform the steps required to pass the MediaProjection consent flow */
     public MediaProjection waitForMediaProjection() throws InterruptedException {
+        mHandleActivityResult = true;
         final long timeOutMs = 10000;
         final int retryCount = 5;
         int count = 0;
@@ -160,8 +196,9 @@ public class MediaProjectionActivity extends Activity {
         // Thus, we try to click that button multiple times.
         do {
             assertTrue("Can't get the permission", count <= retryCount);
-            dismissPermissionDialog(/* isWatch= */
-                    getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH),
+            dismissPermissionDialog(
+                    /* isWatch= */ getPackageManager()
+                            .hasSystemFeature(PackageManager.FEATURE_WATCH),
                     getResourceString(this, ENTIRE_SCREEN_STRING_RES_NAME));
             count++;
         } while (!mCountDownLatch.await(timeOutMs, TimeUnit.MILLISECONDS));
@@ -169,8 +206,8 @@ public class MediaProjectionActivity extends Activity {
     }
 
     /** The permission dialog will be auto-opened by the activity - find it and accept */
-    public static void dismissPermissionDialog(boolean isWatch,
-            @Nullable String entireScreenString) {
+    public static void dismissPermissionDialog(
+            boolean isWatch, @Nullable String entireScreenString) {
         // Ensure the device is initialized before interacting with any UI elements.
         UiDevice.getInstance(getInstrumentation());
         if (entireScreenString != null && !isWatch) {
@@ -212,12 +249,15 @@ public class MediaProjectionActivity extends Activity {
     }
 
     private static boolean selectEntireScreenOption(String entireScreenString) {
-        UiObject2 optionSelector = findUiObject(
-                By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN),
-                new UiSelector().resourceIdMatches(SCREEN_SHARE_OPTIONS_REGEX));
+        UiObject2 optionSelector =
+                findUiObject(
+                        By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN),
+                        new UiSelector().resourceIdMatches(SCREEN_SHARE_OPTIONS_REGEX));
         if (optionSelector == null) {
-            Log.e(TAG, "Couldn't find option selector to select projection mode, "
-                    + "even after scrolling");
+            Log.e(
+                    TAG,
+                    "Couldn't find option selector to select projection mode, "
+                            + "even after scrolling");
             return false;
         }
         optionSelector.click();
@@ -231,15 +271,13 @@ public class MediaProjectionActivity extends Activity {
         return true;
     }
 
-    /**
-     * Returns the string for the drop down option to capture the entire screen.
-     */
+    /** Returns the string for the drop down option to capture the entire screen. */
     @Nullable
     public static String getResourceString(@NonNull Context context, String resName) {
         Resources sysUiResources;
         try {
-            sysUiResources = context.getPackageManager()
-                    .getResourcesForApplication(SYSTEM_UI_PACKAGE);
+            sysUiResources =
+                    context.getPackageManager().getResourcesForApplication(SYSTEM_UI_PACKAGE);
         } catch (NameNotFoundException e) {
             return null;
         }
@@ -254,8 +292,10 @@ public class MediaProjectionActivity extends Activity {
 
     private static void pressStartRecording() {
         // May need to scroll down to the start button on small screen devices.
-        UiObject2 startRecordingButton = findUiObject(By.res(ACCEPT_RESOURCE_ID),
-                new UiSelector().resourceId(ACCEPT_RESOURCE_ID));
+        UiObject2 startRecordingButton =
+                findUiObject(
+                        By.res(ACCEPT_RESOURCE_ID),
+                        new UiSelector().resourceId(ACCEPT_RESOURCE_ID));
         if (startRecordingButton != null) {
             startRecordingButton.click();
         }

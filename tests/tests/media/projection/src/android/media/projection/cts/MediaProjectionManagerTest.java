@@ -17,8 +17,6 @@
 package android.media.projection.cts;
 
 
-import static android.media.projection.cts.MediaProjectionCustomIntentActivity.EXTRA_FGS_CLASS;
-import static android.media.projection.cts.MediaProjectionCustomIntentActivity.EXTRA_SCREEN_CAPTURE_INTENT;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
@@ -33,6 +31,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.cts.ForegroundServiceUtil;
 import android.media.cts.LocalMediaProjectionHelperService;
+import android.media.cts.LocalMediaProjectionSecondaryService;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionConfig;
 import android.media.projection.MediaProjectionManager;
@@ -41,12 +41,10 @@ import android.os.Looper;
 import android.os.UserHandle;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,65 +60,57 @@ import java.util.concurrent.TimeUnit;
  */
 @FrameworkSpecificTest
 public class MediaProjectionManagerTest {
-    private Context mContext;
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final ComponentName mSecondaryFgs =
+            new ComponentName(mContext, LocalMediaProjectionSecondaryService.class);
 
-    private MediaProjectionManager mProjectionManager;
-    private MediaProjection mMediaProjection;
-
-    @Rule
-    public ActivityTestRule<MediaProjectionCustomIntentActivity> mActivityRule =
-            new ActivityTestRule<>(MediaProjectionCustomIntentActivity.class, false, false);
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
         runWithShellPermissionIdentity(() -> {
             mContext.getPackageManager().revokeRuntimePermission(
                     mContext.getPackageName(),
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
                     new UserHandle(mContext.getUserId()));
         });
-        mProjectionManager = mContext.getSystemService(MediaProjectionManager.class);
-        mMediaProjection = null;
-    }
-
-    @After
-    public void tearDown() {
-        if (mMediaProjection != null) {
-            mMediaProjection.stop();
-            mMediaProjection = null;
-        }
     }
 
     @ApiTest(apis = "android.media.projection.MediaProjectionManager#createScreenCaptureIntent")
     @Test
     public void testCreateScreenCaptureIntent() {
-        assertThat(mProjectionManager.createScreenCaptureIntent()).isNotNull();
-        assertThat(mProjectionManager.createScreenCaptureIntent(
-                MediaProjectionConfig.createConfigForDefaultDisplay())).isNotNull();
-        assertThat(mProjectionManager.createScreenCaptureIntent(
-                MediaProjectionConfig.createConfigForUserChoice())).isNotNull();
+        assertThat(mMediaProjectionRule.getMediaProjectionManager().createScreenCaptureIntent())
+                .isNotNull();
+        assertThat(
+                        mMediaProjectionRule
+                                .getMediaProjectionManager()
+                                .createScreenCaptureIntent(
+                                        MediaProjectionConfig.createConfigForDefaultDisplay()))
+                .isNotNull();
+        assertThat(
+                        mMediaProjectionRule
+                                .getMediaProjectionManager()
+                                .createScreenCaptureIntent(
+                                        MediaProjectionConfig.createConfigForUserChoice()))
+                .isNotNull();
     }
 
     @ApiTest(apis = "android.media.projection.MediaProjectionManager#getMediaProjection")
     @Test
     public void testGetMediaProjection() throws Exception {
         // Launch the activity.
-        mActivityRule.launchActivity(null);
-        MediaProjectionCustomIntentActivity activity = mActivityRule.getActivity();
-        // Ensure mediaprojection instance is valid.
-        mMediaProjection = activity.waitForMediaProjection();
-        assertThat(mMediaProjection).isNotNull();
+        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
+        // Ensure MediaProjection instance is valid.
+        assertThat(mediaProjection).isNotNull();
     }
 
     @Test
     public void testGetMediaProjectionSecondaryProcessFgs() throws Exception {
-        // Launch the activity, with a media projection FGS running from another process of this app
-        mActivityRule.launchActivity(getActivityIntentWithSecondaryProcessFgs());
-        MediaProjectionCustomIntentActivity activity = mActivityRule.getActivity();
-        // Ensure mediaprojection instance is valid.
-        mMediaProjection = activity.waitForMediaProjection();
-        assertThat(mMediaProjection).isNotNull();
+        // Launch the activity, with a MediaProjection FGS running from another process of this app
+        MediaProjection mediaProjection =
+                mMediaProjectionRule.startMediaProjection(mSecondaryFgs.getClassName());
+        // Ensure MediaProjection instance is valid.
+        assertThat(mediaProjection).isNotNull();
     }
 
     @Test
@@ -143,31 +133,30 @@ public class MediaProjectionManagerTest {
         assertTrue("Can't start FGS", latchHolder[0].await(timeOutMs, TimeUnit.MILLISECONDS));
 
         // Launch the activity, with a media projection FGS running from another process of this app
-        mActivityRule.launchActivity(getActivityIntentWithSecondaryProcessFgs());
-        MediaProjectionCustomIntentActivity activity = mActivityRule.getActivity();
+        MediaProjection mediaProjection =
+                mMediaProjectionRule.startMediaProjection(mSecondaryFgs.getClassName());
 
-        // Ensure mediaprojection instance is valid.
-        mMediaProjection = activity.waitForMediaProjection();
-        assertThat(mMediaProjection).isNotNull();
+        // Ensure MediaProjection instance is valid.
+        assertThat(mediaProjection).isNotNull();
 
-        // Register a callback to the mediaprojection instance.
-        final MediaProjection.Callback callback = new MediaProjection.Callback() {
-            @Override
-            public void onStop() {
-                latchHolder[1].countDown();
-            }
-        };
+        // Register a callback to the MediaProjection instance.
         latchHolder[1] = new CountDownLatch(1);
-        mMediaProjection.registerCallback(callback, new Handler(Looper.getMainLooper()));
+        mMediaProjectionRule.registerCallback(
+                new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        latchHolder[1].countDown();
+                    }
+                });
 
         // Stop the first FGS.
         latchHolder[0] = new CountDownLatch(1);
         mContext.stopService(new Intent().setComponent(name));
         assertTrue("Can't stop FGS", latchHolder[0].await(timeOutMs, TimeUnit.MILLISECONDS));
 
-        // Now the mediaprojection instance should still be valid.
-        assertFalse("MediaProjection stopped",
-                latchHolder[1].await(timeOutMs, TimeUnit.MILLISECONDS));
+        // Now the MediaProjection instance should still be valid.
+        assertFalse(
+                "MediaProjection stopped", latchHolder[1].await(timeOutMs, TimeUnit.MILLISECONDS));
     }
 
     @ApiTest(apis = "android.media.projection.MediaProjectionManager#getMediaProjection")
@@ -185,22 +174,21 @@ public class MediaProjectionManagerTest {
         };
 
         // Launch the activity, with a media projection FGS running from another process of this app
-        mActivityRule.launchActivity(getActivityIntentWithSecondaryProcessFgs());
-        MediaProjectionCustomIntentActivity activity = mActivityRule.getActivity();
+        MediaProjection mediaProjection =
+                mMediaProjectionRule.startMediaProjection(mSecondaryFgs.getClassName());
 
-        // Ensure mediaprojection instance is valid.
-        mMediaProjection = activity.waitForMediaProjection();
-        assertThat(mMediaProjection).isNotNull();
+        // Ensure MediaProjection instance is valid.
+        assertThat(mediaProjection).isNotNull();
 
-        // Register a callback to the mediaprojection instance.
-        final MediaProjection.Callback callback = new MediaProjection.Callback() {
-            @Override
-            public void onStop() {
-                latchHolder[1].countDown();
-            }
-        };
+        // Register a callback to the MediaProjection instance.
         latchHolder[1] = new CountDownLatch(1);
-        mMediaProjection.registerCallback(callback, new Handler(Looper.getMainLooper()));
+        mMediaProjectionRule.registerCallback(
+                new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        latchHolder[1].countDown();
+                    }
+                });
 
         // Start a FGS with a type other than the "mediaProjection"
         latchHolder[0] = new CountDownLatch(1);
@@ -213,9 +201,9 @@ public class MediaProjectionManagerTest {
         mContext.stopService(new Intent().setComponent(name));
         assertTrue("Can't stop FGS", latchHolder[0].await(timeOutMs, TimeUnit.MILLISECONDS));
 
-        // Now the mediaprojection instance should still be valid.
-        assertFalse("MediaProjection stopped",
-                latchHolder[1].await(timeOutMs, TimeUnit.MILLISECONDS));
+        // Now the MediaProjection instance should still be valid.
+        assertFalse(
+                "MediaProjection stopped", latchHolder[1].await(timeOutMs, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -224,79 +212,66 @@ public class MediaProjectionManagerTest {
         final CountDownLatch[] latchHolder = new CountDownLatch[2];
 
         // Launch the first activity with a media projection
-        mActivityRule.launchActivity(null);
-        MediaProjectionCustomIntentActivity activity = mActivityRule.getActivity();
+        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
+        // Ensure MediaProjection instance is valid.
+        assertThat(mediaProjection).isNotNull();
 
-        // Ensure the first mediaprojection instance is valid.
-        mMediaProjection = activity.waitForMediaProjection();
-        assertThat(mMediaProjection).isNotNull();
-
-        // Register a callback to the first mediaprojection instance.
-        final MediaProjection.Callback callback = new MediaProjection.Callback() {
-            @Override
-            public void onStop() {
-                latchHolder[0].countDown();
-            }
-        };
+        // Register a callback to the first MediaProjection instance.
         latchHolder[0] = new CountDownLatch(1);
-        mMediaProjection.registerCallback(callback, new Handler(Looper.getMainLooper()));
+        mMediaProjectionRule.registerCallback(
+                new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        latchHolder[0].countDown();
+                    }
+                });
 
         // Launch the second activity, with a media projection FGS running from another process
-        mActivityRule.launchActivity(getActivityIntentWithSecondaryProcessFgs());
-        MediaProjectionCustomIntentActivity activity2 = mActivityRule.getActivity();
+        MediaProjection mediaProjection2 =
+                mMediaProjectionRule.startMediaProjection(mSecondaryFgs.getClassName());
 
-        // Ensure the second mediaprojection instance is valid.
-        MediaProjection mediaProjection2 = activity2.waitForMediaProjection();
-        assertThat(mediaProjection2).isNotNull();
-
-        // Register a callback to the second mediaprojection instance.
         final MediaProjection.Callback callback2 = new MediaProjection.Callback() {
             @Override
             public void onStop() {
                 latchHolder[1].countDown();
             }
         };
-        latchHolder[1] = new CountDownLatch(1);
-        mediaProjection2.registerCallback(callback2, new Handler(Looper.getMainLooper()));
+        try {
+            // Ensure the second MediaProjection instance is valid.
+            assertThat(mediaProjection2).isNotNull();
 
-        // Check that first projection IS stopped, but second projection IS NOT stopped
-        assertTrue("First MediaProjection was not stopped",
-                latchHolder[0].await(timeOutMs, TimeUnit.MILLISECONDS));
-        assertFalse("Second projection was stopped",
-                latchHolder[1].await(timeOutMs, TimeUnit.MILLISECONDS));
+            latchHolder[1] = new CountDownLatch(1);
+            // Register a callback to the second MediaProjection instance.
+            mediaProjection2.registerCallback(callback2, new Handler(Looper.getMainLooper()));
+
+            // Check that first projection IS stopped, but second projection IS NOT stopped
+            assertTrue(
+                    "First MediaProjection was not stopped",
+                    latchHolder[0].await(timeOutMs, TimeUnit.MILLISECONDS));
+            assertFalse(
+                    "Second projection was stopped",
+                    latchHolder[1].await(timeOutMs, TimeUnit.MILLISECONDS));
+        } finally {
+            mediaProjection2.unregisterCallback(callback2);
+            mediaProjection2.stop();
+        }
     }
 
     @ApiTest(apis = "android.media.projection.MediaProjectionManager#getMediaProjection")
     @Test
     public void testGetMediaProjection_displayConfig() throws Exception {
-        validateValidMediaProjectionFromIntent(
-                MediaProjectionConfig.createConfigForDefaultDisplay());
+        MediaProjection mediaProjection =
+                mMediaProjectionRule.startMediaProjection(
+                        MediaProjectionConfig.createConfigForDefaultDisplay());
+        assertThat(mediaProjection).isNotNull();
     }
 
     @ApiTest(apis = "android.media.projection.MediaProjectionManager#getMediaProjection")
     @Test
     public void testGetMediaProjection_usersChoiceConfig() throws Exception {
-        validateValidMediaProjectionFromIntent(MediaProjectionConfig.createConfigForUserChoice());
-    }
-
-    private void validateValidMediaProjectionFromIntent(MediaProjectionConfig config)
-            throws Exception {
-        // Build intent to launch test activity.
-        Intent testActivityIntent = new Intent();
-        testActivityIntent.setClass(mContext, MediaProjectionCustomIntentActivity.class);
-        // Ensure test activity uses given intent when requesting permission.
-        testActivityIntent.putExtra(EXTRA_SCREEN_CAPTURE_INTENT,
-                mProjectionManager.createScreenCaptureIntent(config));
-        // Launch the activity.
-        mActivityRule.launchActivity(testActivityIntent);
-        MediaProjectionCustomIntentActivity activity = mActivityRule.getActivity();
-        // Ensure mediaprojection instance is valid.
-        mMediaProjection = activity.waitForMediaProjection();
-        assertThat(mMediaProjection).isNotNull();
-    }
-
-    private Intent getActivityIntentWithSecondaryProcessFgs() {
-        return new Intent().putExtra(EXTRA_FGS_CLASS,
-                "android.media.cts.LocalMediaProjectionSecondaryService");
+        MediaProjection mediaProjection =
+                mMediaProjectionRule.startMediaProjection(
+                        MediaProjectionConfig.createConfigForUserChoice());
+        assertThat(mediaProjection).isNotNull();
     }
 }

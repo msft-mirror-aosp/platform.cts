@@ -15,7 +15,6 @@
  */
 package android.media.projection.cts;
 
-import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
 import static com.android.compatibility.common.util.FeatureUtil.isAutomotive;
@@ -35,29 +34,19 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.PixelFormat;
-import android.hardware.display.VirtualDisplay;
-import android.media.ImageReader;
-import android.media.cts.MediaProjectionActivity;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
-import android.server.wm.VirtualDisplayHelper;
 import android.server.wm.WindowManagerStateHelper;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
@@ -70,7 +59,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -86,27 +74,14 @@ import java.util.concurrent.TimeUnit;
 @FrameworkSpecificTest
 public class MediaProjectionStoppingTest {
     private static final String TAG = "MediaProjectionStoppingTest";
-    private static final int RECORDING_WIDTH = 500;
-    private static final int RECORDING_HEIGHT = 700;
     private static final int STOP_DIALOG_WAIT_TIMEOUT_MS = 5000;
-    private static final int RECORDING_DENSITY = 200;
     private static final String CALL_HELPER_START_CALL = "start_call";
     private static final String CALL_HELPER_STOP_CALL = "stop_call";
     private static final String STOP_DIALOG_TITLE_RES_ID = "android:id/alertTitle";
     private static final String STOP_DIALOG_CLOSE_BUTTON_RES_ID = "android:id/button2";
 
-    @Rule
-    public CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
-    @Rule
-    public ActivityTestRule<MediaProjectionActivity> mActivityRule =
-            new ActivityTestRule<>(MediaProjectionActivity.class, false, false);
-
-    private MediaProjectionActivity mActivity;
-    private MediaProjection mMediaProjection;
-    private MediaProjection.Callback mCallback = null;
-    private ImageReader mImageReader;
-    private VirtualDisplay mVirtualDisplay;
     private Context mContext;
     private int mTimeoutMs;
     private LockScreenSession mLockScreenSession;
@@ -116,8 +91,6 @@ public class MediaProjectionStoppingTest {
 
     @Before
     public void setUp() throws InterruptedException {
-        MockitoAnnotations.initMocks(this);
-
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         runWithShellPermissionIdentity(
                 () -> {
@@ -139,33 +112,23 @@ public class MediaProjectionStoppingTest {
     @After
     public void cleanup() {
         mTestCallStateListener.release();
-        if (mMediaProjection != null) {
-            if (mCallback != null) {
-                mMediaProjection.unregisterCallback(mCallback);
-                mCallback = null;
-            }
-            cleanupVirtualDisplay();
-            mMediaProjection.stop();
-            mMediaProjection = null;
-        }
         mLockScreenSession.close();
-        mActivityRule.finishActivity();
     }
 
     @Test
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionStopsOnKeyguard() throws Exception {
-        startMediaProjection();
+        mMediaProjectionRule.startMediaProjection();
 
         CountDownLatch latch = new CountDownLatch(1);
-        mCallback = new MediaProjection.Callback() {
-            @Override
-            public void onStop() {
-                latch.countDown();
-            }
-        };
-        mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
-        createVirtualDisplay();
+        mMediaProjectionRule.registerCallback(
+                new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        latch.countDown();
+                    }
+                });
+        mMediaProjectionRule.createVirtualDisplay();
 
         try {
             mLockScreenSession.sleepDevice();
@@ -181,16 +144,16 @@ public class MediaProjectionStoppingTest {
     @Test
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionWithoutDisplayDoesNotStopOnKeyguard() throws Exception {
-        startMediaProjection();
+        mMediaProjectionRule.startMediaProjection();
 
         CountDownLatch latch = new CountDownLatch(1);
-        mCallback = new MediaProjection.Callback() {
-            @Override
-            public void onStop() {
-                latch.countDown();
-            }
-        };
-        mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
+        mMediaProjectionRule.registerCallback(
+                new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        latch.countDown();
+                    }
+                });
 
         try {
             mLockScreenSession.sleepDevice();
@@ -210,17 +173,17 @@ public class MediaProjectionStoppingTest {
             throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELECOM));
 
-        startMediaProjection();
+        mMediaProjectionRule.startMediaProjection();
 
         CountDownLatch latch = new CountDownLatch(1);
-        mCallback = new MediaProjection.Callback() {
-            @Override
-            public void onStop() {
-                latch.countDown();
-            }
-        };
-        mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
-        createVirtualDisplay();
+        mMediaProjectionRule.registerCallback(
+                new MediaProjection.Callback() {
+                    @Override
+                    public void onStop() {
+                        latch.countDown();
+                    }
+                });
+        mMediaProjectionRule.createVirtualDisplay();
 
         try {
             startPhoneCall();
@@ -244,16 +207,16 @@ public class MediaProjectionStoppingTest {
         try {
             startPhoneCall();
 
-            startMediaProjection();
+            mMediaProjectionRule.startMediaProjection();
 
-            mCallback = new MediaProjection.Callback() {
-                @Override
-                public void onStop() {
-                    latch.countDown();
-                }
-            };
-            mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
-            createVirtualDisplay();
+            mMediaProjectionRule.registerCallback(
+                    new MediaProjection.Callback() {
+                        @Override
+                        public void onStop() {
+                            latch.countDown();
+                        }
+                    });
+            mMediaProjectionRule.createVirtualDisplay();
 
         } finally {
             endPhoneCall();
@@ -280,9 +243,9 @@ public class MediaProjectionStoppingTest {
 
         try {
             startPhoneCall();
-            startMediaProjection();
+            mMediaProjectionRule.startMediaProjection();
 
-            mCallback =
+            mMediaProjectionRule.registerCallback(
                     new MediaProjection.Callback() {
                         @Override
                         public void onStop() {
@@ -290,9 +253,8 @@ public class MediaProjectionStoppingTest {
                                     "MediaProjection should not be stopped when"
                                             + " FLAG_SHOW_STOP_DIALOG_POST_CALL_END is enabled");
                         }
-                    };
-            mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
-            createVirtualDisplay();
+                    });
+            mMediaProjectionRule.createVirtualDisplay();
 
         } finally {
             endPhoneCall();
@@ -337,49 +299,6 @@ public class MediaProjectionStoppingTest {
                         new ComponentName(
                                 "android.media.projection.cts.helper",
                                 "android.media.projection.cts.helper.CallHelperActivity"));
-    }
-
-    private void startMediaProjection() throws Exception {
-        mActivityRule.launchActivity(null);
-        mActivity = mActivityRule.getActivity();
-        mMediaProjection = mActivity.waitForMediaProjection();
-    }
-
-    private void createVirtualDisplay() throws InterruptedException {
-        mImageReader = ImageReader.newInstance(RECORDING_WIDTH, RECORDING_HEIGHT,
-                PixelFormat.RGBA_8888, /* maxImages= */ 1);
-        mVirtualDisplay = mMediaProjection.createVirtualDisplay(TAG + "VirtualDisplay",
-                RECORDING_WIDTH, RECORDING_HEIGHT, RECORDING_DENSITY,
-                VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                mImageReader.getSurface(),
-                new VirtualDisplay.Callback() {
-                    @Override
-                    public void onStopped() {
-                        super.onStopped();
-                        // VirtualDisplay stopped by the system; no more frames incoming. Must
-                        // release VirtualDisplay
-                        Log.v(TAG, "handleVirtualDisplayStopped");
-                        cleanupVirtualDisplay();
-                    }
-                }, new Handler(Looper.getMainLooper()));
-
-        VirtualDisplayHelper.waitForDisplayState(mVirtualDisplay.getDisplay().getDisplayId(), true);
-    }
-
-    private void cleanupVirtualDisplay() {
-        if (mImageReader != null) {
-            mImageReader.close();
-            mImageReader = null;
-        }
-
-        if (mVirtualDisplay != null) {
-            final Surface surface = mVirtualDisplay.getSurface();
-            if (surface != null) {
-                surface.release();
-            }
-            mVirtualDisplay.release();
-            mVirtualDisplay = null;
-        }
     }
 
     private static final class TestCallStateListener extends TelephonyCallback

@@ -16,8 +16,8 @@
 package android.media.cts;
 
 /**
- * Helper foreground service for the media projection test, its foreground service type
- * is not `mediaProjection`, but `specialUse`.
+ * Helper foreground service for the media projection test, its foreground service type is not
+ * `mediaProjection`, but `specialUse`.
  */
 public class LocalMediaProjectionHelperService extends LocalMediaProjectionService {
     private static final String NOTIFICATION_CHANNEL_ID = "MediaProjectionTest";

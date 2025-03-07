@@ -74,23 +74,27 @@ public class LocalMediaProjectionService extends Service {
     }
 
     private void startForeground() {
-        final NotificationChannel channel = new NotificationChannel(getNotificationChannelId(),
-                getNotificationChannelName(), NotificationManager.IMPORTANCE_NONE);
+        final NotificationChannel channel =
+                new NotificationChannel(
+                        getNotificationChannelId(),
+                        getNotificationChannelName(),
+                        NotificationManager.IMPORTANCE_NONE);
         channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
 
-        final NotificationManager notificationManager =
-                getSystemService(NotificationManager.class);
+        final NotificationManager notificationManager = getSystemService(NotificationManager.class);
         notificationManager.createNotificationChannel(channel);
 
         final Notification.Builder notificationBuilder =
                 new Notification.Builder(this, getNotificationChannelId());
 
-        final Notification notification = notificationBuilder.setOngoing(true)
-                .setContentTitle("App is running")
-                .setSmallIcon(createNotificationIcon())
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .setContentText("Context")
-                .build();
+        final Notification notification =
+                notificationBuilder
+                        .setOngoing(true)
+                        .setContentTitle("App is running")
+                        .setSmallIcon(createNotificationIcon())
+                        .setCategory(Notification.CATEGORY_SERVICE)
+                        .setContentText("Context")
+                        .build();
 
         startForeground(getNotificationId(), notification);
 
