@@ -35,9 +35,9 @@ class NotificationListenerQuerySubject private constructor(
         if (mActual.poll() == null) {
             failWithoutActual(
                 Fact.simpleFact(
-                    "Expected notification to have been posted matching: "
-                            + mActual + " but it was not posted. Did see: "
-                            + mActual.nonMatchingNotifications()
+                    "Expected notification to have been posted matching: " +
+                            mActual + " but it was not posted. Did see: " +
+                            mActual.nonMatchingNotifications()
                 )
             )
         }
@@ -51,9 +51,9 @@ class NotificationListenerQuerySubject private constructor(
         if (mActual.poll(timeout!!) == null) {
             failWithoutActual(
                 Fact.simpleFact(
-                    "Expected notification to have been posted matching: "
-                            + mActual + " but it was not posted. Did see: "
-                            + mActual.nonMatchingNotifications()
+                    "Expected notification to have been posted matching: " +
+                            mActual + " but it was not posted. Did see: " +
+                            mActual.nonMatchingNotifications()
                 )
             )
         }
@@ -63,11 +63,12 @@ class NotificationListenerQuerySubject private constructor(
         /**
          * Assertions about [NotificationListenerQuery].
          */
-        fun notificationListenerQuery(): Factory<NotificationListenerQuerySubject, NotificationListenerQuery> {
-            return Factory { metadata: FailureMetadata, actual: NotificationListenerQuery ->
+        fun notificationListenerQuery():
+	  Factory<NotificationListenerQuerySubject, NotificationListenerQuery> {
+            return Factory { metadata: FailureMetadata, actual: NotificationListenerQuery? ->
                 NotificationListenerQuerySubject(
                     metadata,
-                    actual
+                    actual!!
                 )
             }
         }
