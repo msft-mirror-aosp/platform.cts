@@ -33,6 +33,7 @@ import android.content.om.OverlayManagerTransaction;
 import android.content.om.cts.FabricatedOverlayFacilitator;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.content.res.Flags;
 import android.content.res.Resources;
 import android.content.res.loader.ResourcesLoader;
 import android.content.res.loader.ResourcesProvider;
@@ -40,6 +41,9 @@ import android.graphics.Color;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TypedValue;
 
@@ -59,6 +63,9 @@ import java.io.IOException;
 public class ResourcesProviderTest {
     @Rule
     public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private OverlayManager mOverlayManager;
@@ -128,6 +135,34 @@ public class ResourcesProviderTest {
                         "targetOverlayableName",
                         "baseCodePath",
                         false /* isFabricated */);
+
+        assertThrows(
+                IllegalArgumentException.class, () -> ResourcesProvider.loadOverlay(overlayInfo));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_SELF_TARGETING_ANDROID_RESOURCE_FRRO)
+    public void loaderOverlay_withNullOverlayableName_shouldFail() {
+        final OverlayInfo overlayInfo =
+                mockOverlayInfo(
+                        "overlayName",
+                        null /* targetOverlayableName */,
+                        "baseCodePath",
+                        true /* isFabricated */);
+
+        assertThrows(
+                IllegalArgumentException.class, () -> ResourcesProvider.loadOverlay(overlayInfo));
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_SELF_TARGETING_ANDROID_RESOURCE_FRRO)
+    public void loaderOverlay_withEmptyOverlayableName_shouldFail() {
+        final OverlayInfo overlayInfo =
+                mockOverlayInfo(
+                        "overlayName",
+                        "" /* targetOverlayableName */,
+                        "baseCodePath",
+                        true /* isFabricated */);
 
         assertThrows(
                 IllegalArgumentException.class, () -> ResourcesProvider.loadOverlay(overlayInfo));
