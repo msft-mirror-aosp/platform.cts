@@ -15,9 +15,7 @@
  */
 package android.media.cts;
 
-/**
- * Helper foreground service for the media projection test, it runs on a 2nd process.
- */
+/** Helper foreground service for the media projection test, it runs on a 2nd process. */
 public class LocalMediaProjectionSecondaryService extends LocalMediaProjectionService {
 
     private static final String NOTIFICATION_CHANNEL_ID = "AudioPlaybackCaptureTest2";

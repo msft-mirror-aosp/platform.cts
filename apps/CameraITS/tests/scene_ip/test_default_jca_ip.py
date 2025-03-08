@@ -175,9 +175,19 @@ class DefaultJcaImageParityClassTest(its_base_test.ItsBaseTest):
               default_watch_dump_file)
       )
       if video_stabilization_mode == 'OFF':
-        video_stabilization = (
-            ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OFF
+        # Check if device has OIS enabled
+        ois_enabled = (
+            ui_interaction_utils.get_default_camera_ois_mode(
+                default_watch_dump_file)
         )
+        if ois_enabled == 'ON':
+          video_stabilization = (
+              ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OPTICAL
+          )
+        else:
+          video_stabilization = (
+              ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_OFF
+          )
       else:
         video_stabilization = (
             ui_interaction_utils.JCA_VIDEO_STABILIZATION_MODE_ON

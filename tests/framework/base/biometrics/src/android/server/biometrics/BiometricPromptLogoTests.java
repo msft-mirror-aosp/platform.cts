@@ -202,7 +202,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     assertThat(actualLogoDescription.getText()).isEqualTo(mLogoDescription);
 
                     // Finish auth
-                    successfullyAuthenticate(session, 0 /* userId */, callback);
+                    successfullyAuthenticate(session, Utils.getUserId(), callback);
                 } else {
                     SecurityException e = assertThrows(SecurityException.class,
                             () -> showBiometricPromptWithLogo(testLogoRes, props.getSensorId(),

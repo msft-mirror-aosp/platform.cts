@@ -759,18 +759,18 @@ class AppOpsLoggingTest {
 
         assumeTrue(cameraManager.cameraIdList.isNotEmpty())
 
-        val cameraId = cameraManager!!.cameraIdList[0]
-        val config = cameraManager!!.getCameraCharacteristics(cameraId)
+        val cameraId = cameraManager.cameraIdList[0]
+        val config = cameraManager.getCameraCharacteristics(cameraId)
                 .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
         val outputFormat = config!!.outputFormats[0]
-        val outputSize: Size = config!!.getOutputSizes(outputFormat)[0]
+        val outputSize: Size = config.getOutputSizes(outputFormat)[0]
         val handler = Handler(context.mainLooper)
+        val imageReader = ImageReader.newInstance(
+            outputSize.width, outputSize.height, outputFormat, 2)
 
         val cameraDeviceCallback = object : CameraDevice.StateCallback() {
-            override fun onOpened(cameraDevice: CameraDevice) {
-                val imageReader = ImageReader.newInstance(
-                        outputSize.width, outputSize.height, outputFormat, 2)
 
+            override fun onOpened(cameraDevice: CameraDevice) {
                 val builder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
                 builder.addTarget(imageReader.surface)
                 val captureRequest = builder.build()
@@ -805,7 +805,7 @@ class AppOpsLoggingTest {
             }
         }
 
-        cameraManager!!.openCamera(cameraId, context.mainExecutor, cameraDeviceCallback)
+        cameraManager.openCamera(cameraId, context.mainExecutor, cameraDeviceCallback)
 
         openedCamera.get(TIMEOUT_MILLIS, MILLISECONDS).close()
 

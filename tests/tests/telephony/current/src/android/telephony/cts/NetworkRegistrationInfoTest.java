@@ -15,6 +15,11 @@
  */
 package android.telephony.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+
 import android.os.Parcel;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CellIdentity;
@@ -24,11 +29,6 @@ import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
 
 import androidx.test.InstrumentationRegistry;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -82,10 +82,11 @@ public class NetworkRegistrationInfoTest {
 
     @Test
     public void testGetAccessNetworkTechnology() {
-        NetworkRegistrationInfo nri = new NetworkRegistrationInfo.Builder()
-                .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_EHRPD)
-                .build();
-        assertEquals(TelephonyManager.NETWORK_TYPE_EHRPD, nri.getAccessNetworkTechnology());
+        NetworkRegistrationInfo nri =
+                new NetworkRegistrationInfo.Builder()
+                        .setAccessNetworkTechnology(TelephonyManager.NETWORK_TYPE_NR)
+                        .build();
+        assertEquals(TelephonyManager.NETWORK_TYPE_NR, nri.getAccessNetworkTechnology());
     }
 
     @Test

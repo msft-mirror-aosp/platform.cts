@@ -1,4 +1,4 @@
-// Copyright (C) 2023 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,33 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package {
-    default_applicable_licenses: ["Android-Apache-2.0"],
-}
-
-java_library {
-    name: "car-integration-test-utils-lib",
-    defaults: [
-        "car-framework-aconfig-libraries",
-    ],
+android_library {
+    name: "cts-mediaprojection-common",
     srcs: [
-        "src/android/car/cts/utils/*.java",
+        "**/*.java",
     ],
+    // cts-media-common and other modules have minSdk 29
+    min_sdk_version: "29",
     static_libs: [
         "androidx.test.core",
-        "androidx.test.rules",
-        "android-support-v4",
+        "androidx.test.ext.junit",
         "compatibility-device-util-axt",
-        "flag-junit",
-        "hamcrest-library",
-        "truth",
-        "Nene",
+        "junit",
+        "platform-test-annotations",
     ],
+    platform_apis: true,
     libs: [
-        "android.car",
-        "android.car-test-stubs",
-    ],
-    java_resources: [
-        ":CarSvcProps_JSON",
+        "android.test.runner.stubs.system",
     ],
 }

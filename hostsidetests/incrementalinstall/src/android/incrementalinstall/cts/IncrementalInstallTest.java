@@ -258,7 +258,7 @@ public class IncrementalInstallTest extends BaseHostJUnit4Test {
         // Reboot!
         getDevice().rebootUntilOnline();
         assertTrue("Timed out waiting for device to boot",
-                getDevice().waitForBootComplete(Duration.ofMinutes(2).toMillis()));
+                getDevice().waitForDeviceAvailable());
         // Adb cannot add a split to an existing install, so we'll use pm to install just the
         // dynamic code split.
         String deviceLocalPath = "/data/local/tmp/";

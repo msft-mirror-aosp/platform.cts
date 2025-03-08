@@ -413,6 +413,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         executeDeviceTestMethod(".PermissionsTest", "testCannotRequestPermission");
 
         assertNull(getDevice().uninstallPackage(PERMISSIONS_APP_PKG));
+        RunUtil.getDefault().sleep(500);
         installAppPermissionAppAsUser();
         executeDeviceTestMethod(".PermissionsTest", "testPermissionPolicyAutoGrant");
         installAppPermissionAppAsUser();

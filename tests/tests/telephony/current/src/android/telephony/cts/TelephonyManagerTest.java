@@ -93,7 +93,6 @@ import android.telephony.CallQuality;
 import android.telephony.CarrierConfigManager;
 import android.telephony.CellBroadcastIdRange;
 import android.telephony.CellIdentity;
-import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellIdentityNr;
@@ -163,7 +162,6 @@ import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
@@ -371,13 +369,6 @@ public class TelephonyManagerTest {
                         TelephonyManager.NETWORK_TYPE_HSUPA,
                         TelephonyManager.NETWORK_TYPE_HSPA,
                         TelephonyManager.NETWORK_TYPE_HSPAP));
-        sNetworkTypes.put(CellIdentityCdma.class,
-                Arrays.asList(TelephonyManager.NETWORK_TYPE_CDMA,
-                        TelephonyManager.NETWORK_TYPE_1xRTT,
-                        TelephonyManager.NETWORK_TYPE_EVDO_0,
-                        TelephonyManager.NETWORK_TYPE_EVDO_A,
-                        TelephonyManager.NETWORK_TYPE_EVDO_B,
-                        TelephonyManager.NETWORK_TYPE_EHRPD));
         sNetworkTypes.put(CellIdentityLte.class,
                 Arrays.asList(TelephonyManager.NETWORK_TYPE_LTE));
         sNetworkTypes.put(CellIdentityNr.class,
@@ -903,82 +894,6 @@ public class TelephonyManagerTest {
         }
     }
 
-    @Test
-    public void testListen() throws Throwable {
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            // TODO: temp workaround, need to adjust test to for CDMA
-            return;
-        }
-
-        grantLocationPermissions();
-        mWasLocationEnabled = setLocationEnabled(true);
-
-        TestThread t = new TestThread(() -> {
-            Looper.prepare();
-            mListener = new PhoneStateListener() {
-                @Override
-                public void onCellLocationChanged(CellLocation location) {
-                    Log.i(TAG, "onCellLocationChanged: " + location);
-                    if (!mOnCellLocationChangedCalled) {
-                        synchronized (mLock) {
-                            mOnCellLocationChangedCalled = true;
-                            mLock.notify();
-                        }
-                    }
-                }
-            };
-
-            synchronized (mLock) {
-                mLock.notify(); // mListener is ready
-            }
-
-            Looper.loop();
-        });
-
-        synchronized (mLock) {
-            t.start();
-            mLock.wait(TOLERANCE); // wait for mListener
-        }
-
-        // Test register
-        synchronized (mLock) {
-            // .listen generates an onCellLocationChanged event
-            Log.d(TAG, "testListen: requesting LISTEN_CELL_LOCATION");
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_CELL_LOCATION);
-            mLock.wait(TOLERANCE);
-
-            assertTrue("Test register, mOnCellLocationChangedCalled should be true.",
-                    mOnCellLocationChangedCalled);
-        }
-
-        synchronized (mLock) {
-            mOnCellLocationChangedCalled = false;
-            CellLocation.requestLocationUpdate();
-            mLock.wait(TOLERANCE);
-
-            // Starting with Android S, this API will silently drop all requests from apps
-            // targeting Android S due to unfixable limitations with the API.
-            assertFalse("Test register, mOnCellLocationChangedCalled should be false.",
-                    mOnCellLocationChangedCalled);
-        }
-
-        // unregister the listener
-        mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-        Thread.sleep(TOLERANCE);
-
-        // Test unregister
-        synchronized (mLock) {
-            mOnCellLocationChangedCalled = false;
-            // unregister again, to make sure doing so does not call the listener
-            mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
-            CellLocation.requestLocationUpdate();
-            mLock.wait(TOLERANCE);
-
-            assertFalse("Test unregister, mOnCellLocationChangedCalled should be false.",
-                    mOnCellLocationChangedCalled);
-        }
-    }
-
     /**
      * The getter methods here are all related to the information about the telephony.
      * These getters are related to concrete location, phone, service provider company, so
@@ -1028,7 +943,6 @@ public class TelephonyManagerTest {
             mTelephonyManager.getNetworkOperatorName();
             mTelephonyManager.getNetworkOperator();
             mTelephonyManager.isNetworkRoaming();
-            mTelephonyManager.isLteCdmaEvdoGsmWcdmaEnabled();
             ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                     (tm) -> tm.isManualNetworkSelectionAllowed());
             ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
@@ -1438,7 +1352,6 @@ public class TelephonyManagerTest {
         int phoneType = mTelephonyManager.getPhoneType();
         switch (phoneType) {
             case TelephonyManager.PHONE_TYPE_GSM:
-            case TelephonyManager.PHONE_TYPE_CDMA:
                 assertTrue("Phone count should be > 0", phoneCount > 0);
                 break;
             case TelephonyManager.PHONE_TYPE_NONE:
@@ -1450,8 +1363,8 @@ public class TelephonyManagerTest {
     }
 
     /**
-     * Tests that the device properly reports either a valid IMEI, MEID/ESN, or a valid MAC address
-     * if only a WiFi device. At least one of them must be valid.
+     * Tests that the device properly reports either a valid IMEI, or a valid MAC address if only a
+     * WiFi device. At least one of them must be valid.
      */
     @Test
     public void testGetDeviceId() {
@@ -1470,8 +1383,8 @@ public class TelephonyManagerTest {
     }
 
     /**
-     * Tests that the device properly reports either a valid IMEI, MEID/ESN, or a valid MAC address
-     * if only a WiFi device. At least one of them must be valid.
+     * Tests that the device properly reports either a valid IMEI or a valid MAC address if only a
+     * WiFi device. At least one of them must be valid.
      */
     @Test
     public void testGetDeviceIdForSlot() {
@@ -1490,16 +1403,7 @@ public class TelephonyManagerTest {
 
     private void verifyDeviceId(String deviceId) {
         if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            if (Flags.cleanupCdma()) {
-                assertImei(deviceId);
-            } else {
-                // Either IMEI or MEID need to be valid.
-                try {
-                    assertImei(deviceId);
-                } catch (AssertionError e) {
-                    assertMeidEsn(deviceId);
-                }
-            }
+            assertImei(deviceId);
         } else if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_WIFI)) {
             assertSerialNumber();
             assertMacAddress(getWifiMacAddress());
@@ -1561,20 +1465,6 @@ public class TelephonyManagerTest {
         return sum == 0 ? 0 : 10 - sum;
     }
 
-    private static void assertMeidEsn(String id) {
-        // CDMA device IDs may either be a 14-hex-digit MEID or an
-        // 8-hex-digit ESN.  If it's an ESN, it may not be a
-        // pseudo-ESN.
-        assertFalse("Meid ESN should not be empty or null", TextUtils.isEmpty(id));
-        if (id.length() == 14) {
-            assertMeidFormat(id);
-        } else if (id.length() == 8) {
-            assertHexadecimalEsnFormat(id);
-        } else {
-            fail("device id on CDMA must be 14-digit hex MEID or 8-digit hex ESN.");
-        }
-    }
-
     private static void assertHexadecimalEsnFormat(String deviceId) {
         String esnPattern = "[0-9a-fA-F]{8}";
         String invalidPattern = "[0]{8}";
@@ -1583,16 +1473,6 @@ public class TelephonyManagerTest {
         assertFalse("ESN hex device id " + deviceId + " must not be a pseudo-ESN",
                 "80".equals(deviceId.substring(0, 2)));
         assertFalse("ESN hex device id " + deviceId + "must not be a zero sequence",
-                Pattern.matches(invalidPattern, deviceId));
-    }
-
-    private static void assertMeidFormat(String deviceId) {
-        // MEID must NOT include the check digit.
-        String meidPattern = "[0-9a-fA-F]{14}";
-        String invalidPattern = "[0]{14}";
-        assertTrue("MEID device id " + deviceId + " does not match pattern "
-                + meidPattern, Pattern.matches(meidPattern, deviceId));
-        assertFalse("MEID device id " + deviceId + "must not be a zero sequence",
                 Pattern.matches(invalidPattern, deviceId));
     }
 
@@ -2180,34 +2060,6 @@ public class TelephonyManagerTest {
     }
 
     /**
-     * Tests that a CDMA device properly reports either the correct MC (manufacturer code) or null.
-     * The MC should match the first 8 digits of the MEID.
-     */
-    @Test
-    public void testGetMc() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA));
-
-        String mc = mTelephonyManager.getManufacturerCode();
-        String meid = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getMeid());
-
-        if (mc == null || meid == null) {
-            return;
-        }
-
-        // mc and meid should either be null or supported. empty string is not expected even if
-        // the device does not support mc/meid.
-        assertNotEquals("", mc);
-        assertNotEquals("", meid);
-
-        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-                assertEquals(meid.substring(0, 8), mc);
-            }
-        }
-    }
-
-    /**
      * Tests that the device properly reports either a valid IMEI or null.
      */
     @Test
@@ -2457,16 +2309,10 @@ public class TelephonyManagerTest {
                         && nwReg.getTransportType() == AccessNetworkConstants.TRANSPORT_TYPE_WWAN) {
                 hasRegistered = true;
                 String plmnId = nwReg.getRegisteredPlmn();
-                // CDMA doesn't have PLMN IDs. Rather than put CID|NID here, instead it will be
-                // empty. It's a case that's becoming less important over time, but for now a
-                // device that's only registered on CDMA needs to pass this test.
-                if (nwReg.getCellIdentity() instanceof android.telephony.CellIdentityCdma) {
-                    assertTrue(TextUtils.isEmpty(plmnId));
-                } else {
-                    assertFalse(TextUtils.isEmpty(plmnId));
-                    assertTrue("PlmnId() out of range [00000 - 999999], PLMN ID=" + plmnId,
-                            plmnId.matches("^[0-9]{5,6}$"));
-                }
+                assertFalse(TextUtils.isEmpty(plmnId));
+                assertTrue(
+                        "PlmnId() out of range [00000 - 999999], PLMN ID=" + plmnId,
+                        plmnId.matches("^[0-9]{5,6}$"));
             }
         }
         assertTrue(hasRegistered);
@@ -2539,58 +2385,6 @@ public class TelephonyManagerTest {
         assertThat(nwReg.getAccessNetworkTechnology()).isIn(NETWORK_TYPES);
     }
 
-
-    /**
-     * Tests that the device properly reports either a valid MEID or null.
-     */
-    @Test
-    public void testGetMeid() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA));
-
-        String meid = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getMeid());
-
-        if (mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-                assertMeidEsn(meid);
-            }
-        }
-    }
-
-    /**
-     * Tests that the device properly reports either a valid MEID or null.
-     */
-    @Test
-    public void testGetMeidForSlot() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA));
-
-        SubscriptionManager sm = SubscriptionManager.from(getContext());
-        List<SubscriptionInfo> subInfos = sm.getActiveSubscriptionInfoList();
-
-        if (subInfos != null) {
-            for (SubscriptionInfo subInfo : subInfos) {
-                int slotIndex = subInfo.getSimSlotIndex();
-                int subId = subInfo.getSubscriptionId();
-                TelephonyManager tm = mTelephonyManager.createForSubscriptionId(subId);
-                if (tm.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-                    String meid = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                            mTelephonyManager,
-                            (telephonyManager) -> telephonyManager.getMeid(slotIndex));
-
-                    if (!TextUtils.isEmpty(meid)) {
-                        assertMeidEsn(meid);
-                    }
-                }
-            }
-        }
-
-        // Also verify that no exception is thrown for any slot index (including invalid ones)
-        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getMeid(-1));
-        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getMeid(mTelephonyManager.getPhoneCount()));
-    }
-
     /**
      * Tests sendDialerSpecialCode API.
      * Expects a security exception since the caller does not have carrier privileges or is not the
@@ -2619,7 +2413,6 @@ public class TelephonyManagerTest {
         switch (phoneType) {
             case TelephonyManager.PHONE_TYPE_GSM:
                 assertNotNull("Forbidden PLMNs must be valid or an empty list!", plmns);
-            case TelephonyManager.PHONE_TYPE_CDMA:
             case TelephonyManager.PHONE_TYPE_NONE:
                 if (plmns == null) {
                     return;
@@ -2642,17 +2435,13 @@ public class TelephonyManagerTest {
 
         List<String> plmns = mTelephonyManager.getEquivalentHomePlmns();
 
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            assertEquals(0, plmns.size());
-        } else {
-            for (String plmn : plmns) {
-                assertTrue(
-                        "Invalid Length for PLMN-ID, must be 5 or 6! plmn=" + plmn,
-                        plmn.length() >= 5 && plmn.length() <= 6);
-                assertTrue(
-                        "PLMNs must be strings of digits 0-9! plmn=" + plmn,
-                        android.text.TextUtils.isDigitsOnly(plmn));
-            }
+        for (String plmn : plmns) {
+            assertTrue(
+                    "Invalid Length for PLMN-ID, must be 5 or 6! plmn=" + plmn,
+                    plmn.length() >= 5 && plmn.length() <= 6);
+            assertTrue(
+                    "PLMNs must be strings of digits 0-9! plmn=" + plmn,
+                    android.text.TextUtils.isDigitsOnly(plmn));
         }
     }
 
@@ -4483,19 +4272,6 @@ public class TelephonyManagerTest {
                         mTelephonyManager, getPolicyHelper));
     }
 
-    @Test
-    public void testGetCdmaEnhancedRoamingIndicatorDisplayNumber() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA));
-
-        int index = mTelephonyManager.getCdmaEnhancedRoamingIndicatorDisplayNumber();
-        int phoneType = mTelephonyManager.getPhoneType();
-        if (phoneType == TelephonyManager.PHONE_TYPE_CDMA) {
-            assertTrue(index >= 0 && index <= 255);
-        } else {
-            assertEquals(-1, index);
-        }
-    }
-
     private int disableNrDualConnectivity() {
         if (!ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.isRadioInterfaceCapabilitySupported(
@@ -4563,56 +4339,6 @@ public class TelephonyManagerTest {
         if (!isInitiallyEnabled) {
             disableNrDualConnectivity();
         }
-    }
-
-    @Test
-    public void testCdmaRoamingMode() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA)
-                && mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA);
-
-        // Save state
-        int cdmaRoamingMode = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                TelephonyManager::getCdmaRoamingMode);
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setCdmaRoamingMode(TelephonyManager.CDMA_ROAMING_MODE_HOME));
-        assertEquals(TelephonyManager.CDMA_ROAMING_MODE_HOME,
-                (int) ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                        TelephonyManager::getCdmaRoamingMode));
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setCdmaRoamingMode(TelephonyManager.CDMA_ROAMING_MODE_AFFILIATED));
-        assertEquals(TelephonyManager.CDMA_ROAMING_MODE_AFFILIATED,
-                (int) ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                        TelephonyManager::getCdmaRoamingMode));
-
-        // Reset state
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setCdmaRoamingMode(cdmaRoamingMode));
-    }
-
-    @Test
-    public void testCdmaSubscriptionMode() {
-        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CDMA)
-                && mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA);
-
-        // Save state
-        int cdmaSubscriptionMode = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, TelephonyManager::getCdmaSubscriptionMode);
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setCdmaSubscriptionMode(TelephonyManager.CDMA_SUBSCRIPTION_NV));
-        assertEquals(TelephonyManager.CDMA_SUBSCRIPTION_NV,
-                (int) ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                        TelephonyManager::getCdmaSubscriptionMode));
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setCdmaSubscriptionMode(TelephonyManager.CDMA_SUBSCRIPTION_RUIM_SIM));
-        assertEquals(TelephonyManager.CDMA_SUBSCRIPTION_RUIM_SIM,
-                (int) ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                        TelephonyManager::getCdmaSubscriptionMode));
-
-        // Reset state
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                tm -> tm.setCdmaSubscriptionMode(cdmaSubscriptionMode));
     }
 
     @Test
@@ -7052,7 +6778,7 @@ public class TelephonyManagerTest {
         List<String> emergencyRoleHolders = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 getContext().getSystemService(RoleManager.class),
                 (rm) -> rm.getRoleHolders(RoleManager.ROLE_EMERGENCY));
-        if (mTelephonyManager.isDeviceVoiceCapable()
+        if (mTelephonyManager.isVoiceCapable()
             && ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isEmergencyAssistanceEnabled())) {
             String emergencyAssistancePackageName =

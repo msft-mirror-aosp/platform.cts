@@ -172,7 +172,8 @@ public final class CarrierPrivilegeUtils {
 
         public void waitForCarrierPrivilegeChanged() throws Exception {
             if (!mLatch.await(5, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Failed to update carrier privileges");
+                throw new IllegalStateException(
+                        "Unable to update carrier privileges. Phone process may be dead.");
             }
         }
     }

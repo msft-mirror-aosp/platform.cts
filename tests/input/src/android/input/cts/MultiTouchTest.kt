@@ -126,7 +126,7 @@ class MultiTouchTest {
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{2}")
-        fun parameters() = arrayOf(
+        fun parameters() = arrayOf<Array<Any>>(
             arrayOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, 0, "PORTRAIT"),
             arrayOf(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, FLAG_SPLIT_TOUCH, "PORTRAIT_SPLIT"),
             arrayOf(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE, 0, "LANDSCAPE"),
