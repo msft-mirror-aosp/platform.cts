@@ -23,6 +23,8 @@ import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static junit.framework.Assert.fail;
+
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
@@ -657,15 +659,68 @@ public class VehiclePropertyVerifier<T> {
         }
     }
 
-    private void assertGetPropertyNotSupported(String msg) {
-        if (isAtLeastU()) {
-            assertThrows(
-                    msg,
-                    IllegalArgumentException.class,
-                    () -> mCarPropertyManager.getProperty(mPropertyId, /* areaId= */ 0));
-        } else {
-            assertThat(mCarPropertyManager.getProperty(mPropertyId, /* areaId= */ 0)).isNull();
+    private void verifyGetPropertyWhenConfigIsNull(ImmutableSet<String> allPermissions) {
+        if (!isAtLeastU()) {
+            assertWithMessage(
+                            "CarPropertyManager.getProperty must return null if the property is "
+                                    + "not supported for propertyId: "
+                                    + mPropertyName)
+                    .that(mCarPropertyManager.getProperty(mPropertyId, /* areaId= */ 0))
+                    .isNull();
+            return;
         }
+
+        String errorMsg =
+                "CarPropertyManager.getProperty must throw IllegalArgumentException if "
+                        + "the property is not supported for propertyId: "
+                        + mPropertyName;
+
+        Exception e =
+                assertThrows(
+                        errorMsg,
+                        Exception.class,
+                        () -> mCarPropertyManager.getProperty(mPropertyId, /* areaId= */ 0));
+        if (e.getClass() == SecurityException.class) {
+            fail(
+                    "CarPropertyManager.getProperty must throw IllegalArgumentException if the"
+                        + " property is not supported, actually got SecurityException, test may not"
+                        + " have correct permission granted. PropertyId: "
+                            + mPropertyName
+                            + ". Requested permissions: "
+                            + allPermissions);
+            return;
+        }
+        assertWithMessage(errorMsg).that(e.getClass()).isEqualTo(IllegalArgumentException.class);
+    }
+
+    private void verifySetPropertyWhenConfigIsNull(ImmutableSet<String> allPermissions) {
+        String errorMsg =
+                "CarPropertyManager.setProperty must throw IllegalArgumentException if "
+                        + "the property is not supported for propertyId: "
+                        + mPropertyName;
+
+        Exception e =
+                assertThrows(
+                        errorMsg,
+                        Exception.class,
+                        () ->
+                                mCarPropertyManager.setProperty(
+                                        mPropertyType,
+                                        mPropertyId,
+                                        /* areaId= */ 0,
+                                        getDefaultValue(mPropertyType)));
+
+        if (e.getClass() == SecurityException.class) {
+            fail(
+                    "CarPropertyManager.setProperty must throw IllegalArgumentException if the"
+                        + " property is not supported, actually got SecurityException, test may not"
+                        + " have correct permission granted. PropertyId: "
+                            + mPropertyName
+                            + ". Requested permissions: "
+                            + allPermissions);
+            return;
+        }
+        assertWithMessage(errorMsg).that(e.getClass()).isEqualTo(IllegalArgumentException.class);
     }
 
     /** Verifies the configuration for the property. */
@@ -681,6 +736,7 @@ public class VehiclePropertyVerifier<T> {
                     CarPropertyConfig<T> carPropertyConfig =
                             getCarPropertyConfig(/* useCache= */ false);
                     if (carPropertyConfig == null) {
+                        // The property is not supported.
                         boolean allAllowedAccessCanRead = true;
                         boolean allAllowedAccessCanWrite = true;
                         for (int allowedAccessMode : mAllowedAccessModes) {
@@ -692,25 +748,10 @@ public class VehiclePropertyVerifier<T> {
                             }
                         }
                         if (allAllowedAccessCanRead) {
-                            assertGetPropertyNotSupported(
-                                    "Test does not have correct permissions granted for "
-                                            + mPropertyName
-                                            + ". Requested permissions: "
-                                            + allPermissions);
+                            verifyGetPropertyWhenConfigIsNull(allPermissions);
                         }
                         if (allAllowedAccessCanWrite) {
-                            assertThrows(
-                                    "Test does not have correct permissions granted for "
-                                            + mPropertyName
-                                            + ". Requested permissions: "
-                                            + allPermissions,
-                                    IllegalArgumentException.class,
-                                    () ->
-                                            mCarPropertyManager.setProperty(
-                                                    mPropertyType,
-                                                    mPropertyId,
-                                                    /* areaId= */ 0,
-                                                    getDefaultValue(mPropertyType)));
+                            verifySetPropertyWhenConfigIsNull(allPermissions);
                         }
                     }
 
