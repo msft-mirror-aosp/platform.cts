@@ -22,8 +22,8 @@ import static com.android.compatibility.common.util.CtsMouseUtil.obtainMouseEven
 import static com.android.compatibility.common.util.CtsMouseUtil.verifyEnterMove;
 import static com.android.compatibility.common.util.CtsMouseUtil.verifyEnterMoveExit;
 
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
