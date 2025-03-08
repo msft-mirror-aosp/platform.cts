@@ -77,7 +77,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -93,7 +93,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 
 public class AudioFocusTest {

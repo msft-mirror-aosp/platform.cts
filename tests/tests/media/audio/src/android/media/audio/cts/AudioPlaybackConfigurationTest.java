@@ -65,7 +65,7 @@ import android.util.Log;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CtsAndroidTestCase;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.internal.annotations.GuardedBy;
 
 import java.io.IOException;
@@ -76,7 +76,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 public class AudioPlaybackConfigurationTest extends CtsAndroidTestCase {
     private static final String TAG = "AudioPlaybackConfigurationTest";
 

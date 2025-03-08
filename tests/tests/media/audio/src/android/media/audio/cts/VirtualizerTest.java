@@ -31,14 +31,14 @@ import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class VirtualizerTest extends PostProcTestBase {

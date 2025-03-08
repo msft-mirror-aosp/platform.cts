@@ -35,7 +35,7 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -44,7 +44,7 @@ import org.junit.runner.RunWith;
 /*
  * Tests SystemUsage behavior in non-system app without the MODIFY_AUDIO_ROUTING permission
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class AudioSystemUsageTest {
