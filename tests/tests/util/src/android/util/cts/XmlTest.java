@@ -22,7 +22,7 @@ import static org.junit.Assert.fail;
 
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.Xml;
@@ -411,7 +411,7 @@ public class XmlTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = Resources.class)
+    @DisabledOnRavenwood(blockedBy = Resources.class)
     public void testAsAttributeSet() {
         Resources res = InstrumentationRegistry.getTargetContext().getResources();
         XmlResourceParser xp = res.getLayout(R.layout.xml_test);

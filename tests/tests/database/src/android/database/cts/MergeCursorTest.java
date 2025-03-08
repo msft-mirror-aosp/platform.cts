@@ -31,7 +31,7 @@ import android.database.MatrixCursor;
 import android.database.MergeCursor;
 import android.database.StaleDataException;
 import android.database.sqlite.SQLiteDatabase;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.InstrumentationRegistry;
@@ -39,7 +39,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,8 +47,6 @@ import java.util.Arrays;
 
 @RunWith(AndroidJUnit4.class)
 public class MergeCursorTest {
-    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
     private final int NUMBER_1_COLUMN_INDEX = 1;
     private static final String TABLE1_NAME = "test1";
     private static final String TABLE2_NAME = "test2";
@@ -78,7 +75,7 @@ public class MergeCursorTest {
     public void setUp() throws Exception {
         mCursors = new Cursor[2];
 
-        if (mRavenwood.isUnderRavenwood()) return;
+        if (RavenwoodRule.isOnRavenwood()) return;
         setupDatabase();
     }
 
@@ -90,7 +87,7 @@ public class MergeCursorTest {
             }
         }
 
-        if (mRavenwood.isUnderRavenwood()) return;
+        if (RavenwoodRule.isOnRavenwood()) return;
         mDatabase.close();
         mDatabaseFile.delete();
     }
@@ -125,7 +122,7 @@ public class MergeCursorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SQLiteDatabase.class)
+    @DisabledOnRavenwood(blockedBy = SQLiteDatabase.class)
     public void testCursorSwiching() {
         mDatabase.execSQL("CREATE TABLE " + TABLE5_NAME + " (_id INTEGER PRIMARY KEY,"
                 + TABLE3_COLUMNS + ");");
@@ -154,7 +151,7 @@ public class MergeCursorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SQLiteDatabase.class)
+    @DisabledOnRavenwood(blockedBy = SQLiteDatabase.class)
     public void testGetValues() {
         byte NUMBER_BLOB_UNIT = 99;
         String[] TEST_STRING = new String[] {"Test String1", "Test String2"};
@@ -253,7 +250,7 @@ public class MergeCursorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SQLiteDatabase.class)
+    @DisabledOnRavenwood(blockedBy = SQLiteDatabase.class)
     public void testDeactivate() throws IllegalStateException {
         createCursors();
         MergeCursor mergeCursor = new MergeCursor(mCursors);
@@ -316,7 +313,7 @@ public class MergeCursorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SQLiteDatabase.class)
+    @DisabledOnRavenwood(blockedBy = SQLiteDatabase.class)
     public void testRequery() {
         final String TEST_VALUE1 = Integer.toString(MAX_VALUE + 1);
         final String TEST_VALUE2 = Integer.toString(MAX_VALUE + 2);
@@ -394,7 +391,7 @@ public class MergeCursorTest {
     }
 
     private Cursor getCursor(String tableName, String selection, String[] columnNames) {
-        if (mRavenwood.isUnderRavenwood()) {
+        if (RavenwoodRule.isOnRavenwood()) {
             if (selection != null) {
                 throw new UnsupportedOperationException();
             }

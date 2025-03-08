@@ -27,7 +27,7 @@ import android.content.pm.ProviderInfo;
 import android.content.res.XmlResourceParser;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
@@ -65,7 +65,7 @@ public class ProviderInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testProviderInfo() throws NameNotFoundException {
         PackageManager pm = getContext().getPackageManager();
         Parcel p = Parcel.obtain();
@@ -88,7 +88,7 @@ public class ProviderInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testProviderMetaData() {
         final ProviderInfo info = getContext().getPackageManager()
                 .resolveContentProvider("android.content.cts.fileprovider",

@@ -30,7 +30,6 @@ import android.os.Message;
 import android.os.MessageQueue;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
 
@@ -38,17 +37,12 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.TestThread;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class LooperTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
-            .setProvideMainThread(true).build();
-
     public static final long WAIT_TIME = 1000;
 
     private boolean mHasRun;

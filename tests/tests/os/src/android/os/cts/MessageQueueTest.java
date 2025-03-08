@@ -33,14 +33,12 @@ import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.system.ErrnoException;
 import android.system.Os;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -54,10 +52,6 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class MessageQueueTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
-            .setProvideMainThread(true).build();
-
     private static final long TIMEOUT = 1000;
     private static final long TEST_TIMEOUT = 1000;
     private static final long TEST_INTERVAL = 50;
@@ -298,7 +292,7 @@ public class MessageQueueTest {
 
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testRegisterFileDescriptorCallbackThrowsWhenFdIsNull() {
         MessageQueue queue = Looper.getMainLooper().getQueue();
         try {
@@ -316,7 +310,7 @@ public class MessageQueueTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testRegisterFileDescriptorCallbackThrowsWhenCallbackIsNull() throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
         ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
@@ -332,7 +326,7 @@ public class MessageQueueTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testUnregisterFileDescriptorCallbackThrowsWhenFdIsNull() throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
         try {
@@ -344,7 +338,7 @@ public class MessageQueueTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testUnregisterFileDescriptorCallbackDoesNothingWhenFdNotRegistered()
             throws Exception {
         MessageQueue queue = Looper.getMainLooper().getQueue();
@@ -356,7 +350,7 @@ public class MessageQueueTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testFileDescriptorCallbacks() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -489,7 +483,7 @@ public class MessageQueueTest {
      * This test exercises special logic in Looper.cpp for EPOLL_CTL_DEL handling EBADF.
      */
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks1() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -570,7 +564,7 @@ public class MessageQueueTest {
      * This test exercises special logic in Looper.cpp for EPOLL_CTL_DEL handling ENOENT.
      */
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks2() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -661,7 +655,7 @@ public class MessageQueueTest {
      * the fd after the callback returns.
      */
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks3() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         AssertableHandlerThread thread = new AssertableHandlerThread();
@@ -749,7 +743,7 @@ public class MessageQueueTest {
      * in case it contains a file descriptor which has been closed and cannot be removed.
      */
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = android.os.ParcelFileDescriptor.class)
     public void testPathologicalFileDescriptorReuseCallbacks4() throws Throwable {
         // Prepare a special looper that we can catch exceptions from.
         ParcelFileDescriptor dup = null;

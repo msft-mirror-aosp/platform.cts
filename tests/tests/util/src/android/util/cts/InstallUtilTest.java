@@ -22,7 +22,7 @@ import android.Manifest;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.filters.SmallTest;
@@ -48,7 +48,7 @@ import java.lang.reflect.Field;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
-@IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+@DisabledOnRavenwood(blockedBy = PackageManager.class)
 /**
  * Test for cts.install.lib.
  * <p>This test also tries to showcase how to use the library.
