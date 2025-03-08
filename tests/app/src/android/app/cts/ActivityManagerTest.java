@@ -182,6 +182,14 @@ public final class ActivityManagerTest {
 
     private static final String CANT_SAVE_STATE_1_PACKAGE_NAME = "com.android.test.cantsavestate1";
 
+    private static final String[] HELPER_PACKAGES = {
+            PACKAGE_NAME_APP1,
+            PACKAGE_NAME_APP2,
+            PACKAGE_NAME_APP3,
+            PACKAGE_NAME_WEDGED_STARTUP,
+            CANT_SAVE_STATE_1_PACKAGE_NAME
+    };
+
     private static final String MCC_TO_UPDATE = "987";
     private static final String MNC_TO_UPDATE = "654";
 
@@ -245,6 +253,9 @@ public final class ActivityManagerTest {
         mWatchDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
         mWmState = new WindowManagerStateHelper();
 
+        for (String pkg : HELPER_PACKAGES) {
+            CtsAppTestUtils.clearBadProcess(pkg, mTestRunningUserId);
+        }
         startSubActivity(ScreenOnActivity.class);
         AmUtils.waitForBroadcastBarrier();
     }

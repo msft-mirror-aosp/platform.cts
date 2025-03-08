@@ -24,4 +24,6 @@ public class Constants {
 
     public static final String TEST_BROADCAST_ACTION =
             "com.android.cts.device.broadcasts.RECEIVE";
+
+    public static final int BROADCAST_PROCESSING_TIME_MS = 10;
 }

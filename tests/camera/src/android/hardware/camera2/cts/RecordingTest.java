@@ -21,7 +21,7 @@ import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HD
 
 import static com.android.ex.camera2.blocking.BlockingSessionCallback.*;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
