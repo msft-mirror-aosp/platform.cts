@@ -24,8 +24,6 @@ import static android.view.Surface.ROTATION_270;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
@@ -34,24 +32,16 @@ import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
-import android.media.Image;
-import android.media.ImageReader;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.UserHandle;
-import android.server.wm.MediaProjectionHelper;
 import android.server.wm.RotationSession;
 import android.server.wm.WindowManagerStateHelper;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Surface;
 import android.view.WindowMetrics;
@@ -64,14 +54,10 @@ import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -88,40 +74,14 @@ import java.util.function.Supplier;
  */
 @FrameworkSpecificTest
 public class MediaProjectionMirroringTest {
-    private static final String TAG = "MediaProjectionMirroringTest-FOO";
-    private static final int SCREENSHOT_TIMEOUT_MS = 1000;
+    private static final String TAG = "MediaProjectionMirroringTest";
     private static final int TOLERANCE = 1;
-    // Enable debug mode to save screenshots from MediaProjection session.
-    private static final boolean DEBUG_MODE = false;
-    private static final String VIRTUAL_DISPLAY = "MirroringTestVD";
+    private static final int TIMEOUT_MS = 1000;
     private Context mContext;
-    // Manage a MediaProjection capture session.
-    private final MediaProjectionHelper mMediaProjectionHelper = new MediaProjectionHelper();
 
-    private MediaProjection mMediaProjection;
-    private MediaProjection.Callback mMediaProjectionCallback =
-            new MediaProjection.Callback() {
-                @Override
-                public void onStop() {
-                    super.onStop();
-                }
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
-                @Override
-                public void onCapturedContentResize(int width, int height) {
-                    super.onCapturedContentResize(width, height);
-                }
-
-                @Override
-                public void onCapturedContentVisibilityChanged(boolean isVisible) {
-                    super.onCapturedContentVisibilityChanged(isVisible);
-                }
-            };
-    private ImageReader mImageReader;
-    private CountDownLatch mScreenshotCountDownLatch;
-    private VirtualDisplay mVirtualDisplay;
     private final ActivityOptions.LaunchCookie mLaunchCookie = new ActivityOptions.LaunchCookie();
-    public ActivityScenario<TestRotationActivity> mTestRotationActivityActivityScenario;
-    private Activity mActivity;
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     /**
      * Whether to wait for the rotation to be stable state after testing. It can be set if the
@@ -138,30 +98,10 @@ public class MediaProjectionMirroringTest {
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
                     new UserHandle(mContext.getUserId()));
         });
-        mMediaProjection = null;
-        if (DEBUG_MODE) {
-            mScreenshotCountDownLatch = new CountDownLatch(1);
-        }
     }
 
     @After
     public void tearDown() {
-        if (mMediaProjection != null) {
-            if (mMediaProjectionCallback != null) {
-                mMediaProjection.unregisterCallback(mMediaProjectionCallback);
-                mMediaProjectionCallback = null;
-            }
-            mMediaProjection.stop();
-            mMediaProjection = null;
-        }
-        if (mImageReader != null) {
-            mImageReader = null;
-        }
-        if (mVirtualDisplay != null) {
-            mVirtualDisplay.getSurface().release();
-            mVirtualDisplay.release();
-            mVirtualDisplay = null;
-        }
         if (mWaitForRotationOnTearDown) {
             mWmState.waitForDisplayUnfrozen();
         }
@@ -169,101 +109,112 @@ public class MediaProjectionMirroringTest {
 
     // Validate that the mirrored hierarchy is the expected size.
     @Test
-    public void testDisplayCapture() {
-        ActivityScenario<Activity> activityScenario =
-                ActivityScenario.launch(new Intent(mContext, Activity.class));
-        activityScenario.onActivity(activity -> mActivity = activity);
+    public void testDisplayCapture() throws Exception {
+        Intent testActivityIntent = new Intent(mContext, Activity.class);
+        // Start full screen capture.
+        mMediaProjectionRule.startMediaProjection();
 
         final WindowMetrics maxWindowMetrics =
-                mActivity.getWindowManager().getMaximumWindowMetrics();
-        final Rect activityRect = new Rect();
+                mMediaProjectionRule.getActivity().getWindowManager().getMaximumWindowMetrics();
 
-        // Select full screen capture.
-        mMediaProjectionHelper.authorizeMediaProjection();
+        VirtualDisplay virtualDisplay =
+                mMediaProjectionRule.createVirtualDisplay(
+                        maxWindowMetrics.getBounds().width(),
+                        maxWindowMetrics.getBounds().height());
 
-        // Start capture of the entire display.
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
-        mVirtualDisplay = createVirtualDisplay(maxWindowMetrics.getBounds(), "testDisplayCapture");
-        waitForLatestScreenshot();
-
-        // Get the bounds of the activity on screen - use getGlobalVisibleRect to account for
-        // possible insets caused by DisplayCutout
-        mActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
-
-        validateMirroredHierarchy(mActivity,
-                mVirtualDisplay.getDisplay().getDisplayId(),
-                new Point(activityRect.width(), activityRect.height()));
-        activityScenario.close();
+        try (ActivityScenario<Activity> activityScenario =
+                ActivityScenario.launch(testActivityIntent)) {
+            activityScenario.onActivity(
+                    activity -> {
+                        // Get the bounds of the activity on screen - use getGlobalVisibleRect to
+                        // account for
+                        // possible insets caused by DisplayCutout
+                        final Rect activityRect = new Rect();
+                        activity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
+                        validateMirroredHierarchy(
+                                activity,
+                                virtualDisplay.getDisplay().getDisplayId(),
+                                new Point(activityRect.width(), activityRect.height()));
+                    });
+        }
     }
 
     // Validate that the mirrored hierarchy is the expected size after rotating the default display.
     @Test
-    public void testDisplayCapture_rotation() {
+    public void testDisplayCapture_rotation() throws Exception {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
 
-        mTestRotationActivityActivityScenario =
-                ActivityScenario.launch(new Intent(mContext, TestRotationActivity.class));
-        mTestRotationActivityActivityScenario.onActivity(activity -> mActivity = activity);
+        // Start full screen capture.
+        mMediaProjectionRule.startMediaProjection();
+        Activity activity = mMediaProjectionRule.getActivity();
 
-        final RotationSession rotationSession = createManagedRotationSession();
         final WindowMetrics maxWindowMetrics =
-                mActivity.getWindowManager().getMaximumWindowMetrics();
-        final Rect activityRect = new Rect();
-        final int initialRotation = mActivity.getDisplay().getRotation();
+                activity.getWindowManager().getMaximumWindowMetrics();
+        final int initialRotation = activity.getDisplay().getRotation();
 
-        // Select full screen capture.
-        mMediaProjectionHelper.authorizeMediaProjection();
+        VirtualDisplay virtualDisplay =
+                mMediaProjectionRule.createVirtualDisplay(
+                        maxWindowMetrics.getBounds().width(),
+                        maxWindowMetrics.getBounds().height());
 
-        // Start capture of the entire display.
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
-        mVirtualDisplay = createVirtualDisplay(maxWindowMetrics.getBounds(),
-                "testDisplayCapture_rotation");
+        Intent testActivityIntent = new Intent(mContext, TestRotationActivity.class);
 
-        rotateDeviceAndWaitForActivity(rotationSession, initialRotation);
+        try (ActivityScenario<TestRotationActivity> activityScenario =
+                        ActivityScenario.launch(testActivityIntent);
+                RotationSession rotationSession = createManagedRotationSession(); ) {
+            rotateDeviceAndWaitForActivity(rotationSession, initialRotation);
+            // Re-fetch the activity since reference may have been modified during rotation.
+            activityScenario.onActivity(
+                    testActivity -> {
+                        // Get the bounds of the activity on screen - use getGlobalVisibleRect to
+                        // account for
+                        // possible insets caused by DisplayCutout
+                        final Rect activityRect = new Rect();
+                        testActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
 
-        // Get the bounds of the activity on screen - use getGlobalVisibleRect to account for
-        // possible insets caused by DisplayCutout
-        mActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
-
-        final Point mirroredSize = calculateScaledMirroredActivitySize(
-                mActivity.getWindowManager().getCurrentWindowMetrics(), mVirtualDisplay,
-                new Point(activityRect.width(), activityRect.height()));
-        validateMirroredHierarchy(mActivity, mVirtualDisplay.getDisplay().getDisplayId(),
-                mirroredSize);
-
-        rotationSession.close();
-        mTestRotationActivityActivityScenario.close();
+                        final Point mirroredSize =
+                                calculateScaledMirroredActivitySize(
+                                        testActivity.getWindowManager().getCurrentWindowMetrics(),
+                                        virtualDisplay,
+                                        new Point(activityRect.width(), activityRect.height()));
+                        validateMirroredHierarchy(
+                                testActivity,
+                                virtualDisplay.getDisplay().getDisplayId(),
+                                mirroredSize);
+                    });
+        }
     }
 
     // Validate that the mirrored hierarchy is the expected size.
     @Test
-    public void testSingleAppCapture() {
-        final ActivityScenario<Activity> activityScenario = ActivityScenario.launch(
-                new Intent(mContext, Activity.class),
-                createActivityScenarioWithLaunchCookie(mLaunchCookie)
-        );
-        activityScenario.onActivity(activity -> mActivity = activity);
+    public void testSingleAppCapture() throws Exception {
+        // Start full screen capture.
+        mMediaProjectionRule.startMediaProjection(mLaunchCookie);
         final WindowMetrics maxWindowMetrics =
-                mActivity.getWindowManager().getMaximumWindowMetrics();
-        final Rect activityRect = new Rect();
+                mMediaProjectionRule.getActivity().getWindowManager().getMaximumWindowMetrics();
+        VirtualDisplay virtualDisplay =
+                mMediaProjectionRule.createVirtualDisplay(
+                        maxWindowMetrics.getBounds().width(),
+                        maxWindowMetrics.getBounds().height());
 
-        // Select single app capture if supported.
-        mMediaProjectionHelper.authorizeMediaProjection(mLaunchCookie);
+        try (ActivityScenario<Activity> activityScenario =
+                ActivityScenario.launch(
+                        new Intent(mContext, Activity.class),
+                        createActivityScenarioWithLaunchCookie(mLaunchCookie))) {
+            activityScenario.onActivity(
+                    activity -> {
+                        // Get the bounds of the activity on screen - use getGlobalVisibleRect to
+                        // account for
+                        // possible insets caused by DisplayCutout
+                        final Rect activityRect = new Rect();
+                        activity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
 
-        // Start capture of the single app.
-        mMediaProjection = mMediaProjectionHelper.startMediaProjection();
-        mVirtualDisplay = createVirtualDisplay(maxWindowMetrics.getBounds(),
-                "testSingleAppCapture");
-        waitForLatestScreenshot();
-
-        // Get the bounds of the activity on screen - use getGlobalVisibleRect to account for
-        // possible insets caused by DisplayCutout
-        mActivity.getWindow().getDecorView().getGlobalVisibleRect(activityRect);
-
-        validateMirroredHierarchy(mActivity,
-                mVirtualDisplay.getDisplay().getDisplayId(),
-                new Point(activityRect.width(), activityRect.height()));
-        activityScenario.close();
+                        validateMirroredHierarchy(
+                                activity,
+                                virtualDisplay.getDisplay().getDisplayId(),
+                                new Point(activityRect.width(), activityRect.height()));
+                    });
+        }
     }
 
     // TODO (b/284968776): test single app capture in split screen
@@ -278,24 +229,6 @@ public class MediaProjectionMirroringTest {
         return activityOptions.toBundle();
     }
 
-    private VirtualDisplay createVirtualDisplay(Rect displayBounds, String methodName) {
-        mImageReader = ImageReader.newInstance(displayBounds.width(), displayBounds.height(),
-                PixelFormat.RGBA_8888, /* maxImages= */ 1);
-        if (DEBUG_MODE) {
-            ScreenshotListener screenshotListener = new ScreenshotListener(methodName,
-                    mScreenshotCountDownLatch);
-            mImageReader.setOnImageAvailableListener(screenshotListener,
-                    new Handler(Looper.getMainLooper()));
-        }
-        mMediaProjection.registerCallback(mMediaProjectionCallback,
-                new Handler(Looper.getMainLooper()));
-        return mMediaProjection.createVirtualDisplay(VIRTUAL_DISPLAY + "_" + methodName,
-                displayBounds.width(), displayBounds.height(),
-                DisplayMetrics.DENSITY_HIGH, /* flags= */ 0,
-                mImageReader.getSurface(), /* callback= */
-                null, new Handler(Looper.getMainLooper()));
-    }
-
     /**
      * Rotates the device 90 degrees & waits for the display & activity configuration to stabilize.
      */
@@ -304,14 +237,11 @@ public class MediaProjectionMirroringTest {
         // Rotate the device by 90 degrees
         rotationSession.set((initialRotation + 1) % (ROTATION_270 + 1),
                 /* waitForDeviceRotation=*/ true);
-        waitForLatestScreenshot();
         try {
-            waitForStableWindowGeometry(Duration.ofMillis(SCREENSHOT_TIMEOUT_MS));
+            waitForStableWindowGeometry(Duration.ofMillis(TIMEOUT_MS));
         } catch (InterruptedException e) {
             Log.e(TAG, "Unable to wait for window to stabilize after rotation: " + e.getMessage());
         }
-        // Re-fetch the activity since reference may have been modified during rotation.
-        mTestRotationActivityActivityScenario.onActivity(activity -> mActivity = activity);
     }
 
     /**
@@ -387,6 +317,7 @@ public class MediaProjectionMirroringTest {
         Supplier<IBinder> taskWindowTokenSupplier =
                 activity.getWindow().getDecorView()::getWindowToken;
         try {
+            Log.e(TAG, "WindowToken: " + taskWindowTokenSupplier.get());
             boolean condition = waitForWindowInfo(hasExpectedDimensions, Duration.ofSeconds(5),
                     taskWindowTokenSupplier, virtualDisplayId);
             assertAndDumpWindowState(TAG,
@@ -423,89 +354,5 @@ public class MediaProjectionMirroringTest {
      */
     public static class TestRotationActivity extends Activity {
         // Stub
-    }
-
-    /**
-     * Wait for any screenshot that has been received already. Assumes that the countdown
-     * latch is already set.
-     */
-    private void waitForLatestScreenshot() {
-        if (DEBUG_MODE) {
-            // wait until we've received a screenshot
-            try {
-                assertThat(mScreenshotCountDownLatch.await(SCREENSHOT_TIMEOUT_MS,
-                        TimeUnit.MILLISECONDS)).isTrue();
-            } catch (InterruptedException e) {
-                Log.e(TAG, e.toString());
-            }
-        }
-    }
-
-    /**
-     * Save MediaProjection's screenshots to the device to help debug test failures.
-     */
-    public static class ScreenshotListener implements ImageReader.OnImageAvailableListener {
-        private final CountDownLatch mCountDownLatch;
-        private final String mMethodName;
-        private int mCurrentScreenshot = 0;
-        // How often to save an image
-        private static final int SCREENSHOT_FREQUENCY = 5;
-
-        public ScreenshotListener(@NonNull String methodName,
-                @NonNull CountDownLatch latch) {
-            mMethodName = methodName;
-            mCountDownLatch = latch;
-        }
-
-        @Override
-        public void onImageAvailable(ImageReader reader) {
-            if (mCurrentScreenshot % SCREENSHOT_FREQUENCY != 0) {
-                Log.d(TAG, "onImageAvailable - skip this one");
-                return;
-            }
-            Log.d(TAG, "onImageAvailable - processing");
-            if (mCountDownLatch != null) {
-                mCountDownLatch.countDown();
-            }
-            mCurrentScreenshot++;
-
-            final Image image = reader.acquireLatestImage();
-
-            assertThat(image).isNotNull();
-
-            final Image.Plane plane = image.getPlanes()[0];
-
-            assertThat(plane).isNotNull();
-
-            final int rowPadding =
-                    plane.getRowStride() - plane.getPixelStride() * image.getWidth();
-            final Bitmap bitmap = Bitmap.createBitmap(
-                    /* width= */ image.getWidth() + rowPadding / plane.getPixelStride(),
-                    /* height= */ image.getHeight(), Bitmap.Config.ARGB_8888);
-            final ByteBuffer buffer = plane.getBuffer();
-
-            assertThat(buffer).isNotNull();
-            assertThat(bitmap).isNotNull(); // why null?
-
-            bitmap.copyPixelsFromBuffer(plane.getBuffer());
-            assertThat(bitmap).isNotNull(); // why null?
-
-            try {
-                // save to virtual sdcard
-                final File outputDirectory = new File(Environment.getExternalStorageDirectory(),
-                        "cts." + TAG);
-                Log.d(TAG, "Had to create the directory? " + outputDirectory.mkdir());
-                final File screenshot = new File(outputDirectory,
-                        mMethodName + "_screenshot_" + mCurrentScreenshot + "_"
-                                + System.currentTimeMillis() + ".jpg");
-                final FileOutputStream stream = new FileOutputStream(screenshot);
-                assertThat(stream).isNotNull();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                stream.close();
-                image.close();
-            } catch (Exception e) {
-                Log.e(TAG, "Unable to write out screenshot", e);
-            }
-        }
     }
 }

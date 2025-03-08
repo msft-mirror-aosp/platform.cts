@@ -27,12 +27,13 @@ class NotificationListener internal constructor(private val notifications: Notif
     AutoCloseable {
 
     private val receivedNotifications: Deque<Notification> by lazy {
-        NeneNotificationListenerService.connectedLatch.await(60, TimeUnit.SECONDS)
-
-        ArrayDeque(
-            NeneNotificationListenerService.instance.get()!!
-                .activeNotifications.map { Notification(it) }
-        )
+        NeneNotificationListenerService.run {
+            connectedLatch.await(60, TimeUnit.SECONDS)
+            instance.get()?.let { instance ->
+                ArrayDeque(instance.activeNotifications.map { Notification(it) })
+            } ?: throw IllegalStateException("NeneNotificationListenerService instance not " +
+                    "established due to onListenerConnected callback not invoked")
+        }
     }
 
     private val query by lazy { query() }

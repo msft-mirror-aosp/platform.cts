@@ -103,6 +103,9 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
             f'Found media performance class {media_performance_class} '
             f'and minimum zoom {z_min}.')
 
+      # close camera before captures to ensure that JCA can access it
+      cam.close_camera()
+
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
         test_tols, _ = zoom_capture_utils.get_test_tols_and_cap_size(

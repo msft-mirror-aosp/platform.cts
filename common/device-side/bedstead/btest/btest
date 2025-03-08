@@ -689,9 +689,7 @@ def build_modules(args):
     if must_build:
         debug(args, "[Build] Executing '" + command + "'")
 
-        # TODO: We should also stream the output
-        output, err = execute_shell_command("BUILD", args, [command], shell=True, executable="/bin/bash")
-        print(output)
+        output, err = execute_shell_command("BUILD", args, [command], shell=True, executable="/bin/bash", print_output=True)
         if "failed to build some targets" in output:
             sys.exit(1)
 
@@ -1010,19 +1008,35 @@ class BtestRun:
         self.ignored_tests = []
         self.assumption_failed_tests = []
 
-def execute_shell_command(stage, args, command, **extra_args):
+def execute_shell_command(stage, args, command, print_output=False, **extra_args):
     debug(args, "[" + stage + "] Executing '" + " ".join(command) + "'")
-    r = subprocess.run(command, capture_output=True, text=True, **extra_args)
-    output = r.stdout
-    debug(args, "[" + stage + "] Output: '" + output + "' Err: '" + r.stderr + "'")
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, **extra_args)
 
-    if r.stderr:
-        if "no devices/emulators found" in r.stderr or "device offline" in r.stderr:
+    output = ""
+    stderr = ""
+
+    if print_output:
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
+            print(line.strip())
+            output += line
+        stderr = process.stderr.read()
+    else:
+        r = process.communicate()
+        output = r[0]
+        stderr = r[1]
+
+    debug(args, "[" + stage + "] Output: '" + output + "' Err: '" + stderr + "'")
+
+    if stderr:
+        if "no devices/emulators found" in stderr or "device offline" in stderr:
             print("\nDevice not connected to ADB. Waiting for reconnection...")
             wait_for_adb_reconnection()
-            return execute_shell_command(stage, args, command, **extra_args)
+            return execute_shell_command(stage, args, command, rolling_output, **extra_args)
 
-    return output, r.stderr
+    return output, stderr
 
 def wait_for_adb_reconnection():
     while True:

@@ -104,7 +104,8 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
             }
 
         } else {
-            promptView.setText(getResources().getString(R.string.audio_datapaths_analog_autopass));
+            promptView.setText(getResources()
+                    .getString(R.string.audio_datapaths_nonhandheld_autopass));
         }
 
         enableTestButtons(numValidTestModules != 0);

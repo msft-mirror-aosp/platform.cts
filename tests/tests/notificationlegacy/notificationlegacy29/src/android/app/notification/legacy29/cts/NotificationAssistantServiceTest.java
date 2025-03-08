@@ -1164,7 +1164,7 @@ public class NotificationAssistantServiceTest {
 
         // validate a summary can be sent and received
         Bundle signals = new Bundle();
-        signals.putString(KEY_SUMMARIZATION, SUMMARIZATION);
+        signals.putCharSequence(KEY_SUMMARIZATION, SUMMARIZATION);
         Adjustment adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
                 sbn.getUser());
         CountDownLatch rankingUpdateLatch =
@@ -1176,7 +1176,7 @@ public class NotificationAssistantServiceTest {
         assertEquals(SUMMARIZATION, out.getSummarization());
 
         // validate that a summary can be cleared
-        signals.putString(KEY_SUMMARIZATION, null);
+        signals.putCharSequence(KEY_SUMMARIZATION, null);
         adjustment = new Adjustment(sbn.getPackageName(), sbn.getKey(), signals, "",
                 sbn.getUser());
         rankingUpdateLatch = mNotificationListenerService.setRankingUpdateCountDown(1);

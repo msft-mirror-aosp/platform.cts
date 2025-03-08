@@ -47,8 +47,8 @@ def run_adb_shell_command(device_id, command):
     raise RuntimeError(output)
 
 
-def is_dut_tablet(device_id):
-  """Checks if the dut is tablet or not.
+def is_dut_tablet_or_desktop(device_id):
+  """Checks if the dut is tablet or desktop.
 
   Args:
     device_id: serial id of device under test
@@ -59,8 +59,11 @@ def is_dut_tablet(device_id):
   adb_command = 'getprop ro.build.characteristics'
   output = run_adb_shell_command(device_id, adb_command)
   logging.debug('adb command output: %s', output)
-  if output is not None and 'tablet' in output.lower():
-    logging.debug('Device under test is a tablet.')
+  if output is not None and (
+      ('tablet' in output.lower()) or
+      ('desktop' in output.lower())
+  ):
+    logging.debug('Device under test is a tablet/desktop.')
     return True
   logging.debug('Device under test is a phone')
   return False

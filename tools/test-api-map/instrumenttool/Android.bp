@@ -20,6 +20,7 @@ java_binary_host {
     name: "apimapper",
     main_class: "com.android.xts.apimapper.ApiMapperMain",
     srcs: ["src/**/*.kt"],
+    java_resource_dirs: ["res"],
     static_libs: [
         "junit",
         "ow2-asm",

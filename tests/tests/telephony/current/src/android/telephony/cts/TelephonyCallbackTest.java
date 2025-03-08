@@ -447,11 +447,6 @@ public class TelephonyCallbackTest {
     }
 
     private void getSignalStrength() {
-        mSignalStrength.getCdmaDbm();
-        mSignalStrength.getCdmaEcio();
-        mSignalStrength.getEvdoDbm();
-        mSignalStrength.getEvdoEcio();
-        mSignalStrength.getEvdoSnr();
         mSignalStrength.getGsmBitErrorRate();
         mSignalStrength.getGsmSignalStrength();
         mSignalStrength.isGsm();

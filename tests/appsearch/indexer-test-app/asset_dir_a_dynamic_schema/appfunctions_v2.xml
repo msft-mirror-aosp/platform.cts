@@ -38,6 +38,11 @@
                 <id>com.example.utils#print/parameter0/message/schema</id>
                 <dataType>8</dataType>
                 <documentSchemaType>string</documentSchemaType>
+                <selfReference>
+                    <id>com.example.utils#print/parameter0/message/schema/selfReference</id>
+                    <dataType>8</dataType>
+                    <documentSchemaType>string</documentSchemaType>
+                </selfReference>
             </schema>
         </parameters>
         <parameters>

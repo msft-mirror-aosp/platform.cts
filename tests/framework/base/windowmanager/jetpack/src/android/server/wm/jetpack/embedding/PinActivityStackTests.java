@@ -113,9 +113,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
 
     private void pinTopActivityStackAndVerifyLifecycle(boolean newPrimaryContainer) {
         // Launch a secondary activity to side
-        mPinnedActivity = startActivityAndVerifySplitAttributes(mPrimaryActivity,
-                TestActivityWithId.class, mWildcardSplitPairRule,
-                mPinnedActivityId, mSplitInfoConsumer);
+        mPinnedActivity =
+                startActivityAndVerifySplitAttributes(
+                        mPrimaryActivity,
+                        TestActivityWithId.class,
+                        mWildcardSplitPairRule,
+                        mPinnedActivityId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Pin the top ActivityStack
         assertTrue(pinTopActivityStack());
@@ -172,9 +177,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
     @Test
     public void testUnpinTopActivityStack() {
         // Launch a secondary activity to side
-        mPinnedActivity = startActivityAndVerifySplitAttributes(mPrimaryActivity,
-                TestActivityWithId.class, mWildcardSplitPairRule,
-                mPinnedActivityId, mSplitInfoConsumer);
+        mPinnedActivity =
+                startActivityAndVerifySplitAttributes(
+                        mPrimaryActivity,
+                        TestActivityWithId.class,
+                        mWildcardSplitPairRule,
+                        mPinnedActivityId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Pin and unpin the top ActivityStack
         assertTrue(pinTopActivityStack());
@@ -200,9 +210,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
     @Test
     public void testUnpinTopActivityStack_expands() {
         // Launch a secondary activity to side
-        mPinnedActivity = startActivityAndVerifySplitAttributes(mPrimaryActivity,
-                TestActivityWithId.class, mWildcardSplitPairRule,
-                mPinnedActivityId, mSplitInfoConsumer);
+        mPinnedActivity =
+                startActivityAndVerifySplitAttributes(
+                        mPrimaryActivity,
+                        TestActivityWithId.class,
+                        mWildcardSplitPairRule,
+                        mPinnedActivityId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Pin the top ActivityStack
         assertTrue(pinTopActivityStack());
@@ -235,9 +250,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
         assertFalse(pinTopActivityStack());
 
         // Launch a secondary activity to side
-        mPinnedActivity = startActivityAndVerifySplitAttributes(mPrimaryActivity,
-                TestActivityWithId.class, mWildcardSplitPairRule,
-                mPinnedActivityId, mSplitInfoConsumer);
+        mPinnedActivity =
+                startActivityAndVerifySplitAttributes(
+                        mPrimaryActivity,
+                        TestActivityWithId.class,
+                        mWildcardSplitPairRule,
+                        mPinnedActivityId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Cannot pin if no such task.
         assertFalse(pinTopActivityStack(mTaskId + 1));
@@ -261,9 +281,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
     @Test
     public void testPinTopActivityStack_resizeStickyPin() {
         // Launch a secondary activity to side
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(mPrimaryActivity,
-                TestActivityWithId.class, mWildcardSplitPairRule,
-                mPinnedActivityId, mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        mPrimaryActivity,
+                        TestActivityWithId.class,
+                        mWildcardSplitPairRule,
+                        mPinnedActivityId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         pinExpandActivityAndResizeDisplayOrTask(secondaryActivity, true /* stickyPin */);
 
@@ -279,9 +304,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
     @Test
     public void testPinTopActivityStack_resizeNonStickyPin() {
         // Launch a secondary activity to side
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(mPrimaryActivity,
-                TestActivityWithId.class, mWildcardSplitPairRule,
-                mPinnedActivityId, mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        mPrimaryActivity,
+                        TestActivityWithId.class,
+                        mWildcardSplitPairRule,
+                        mPinnedActivityId,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         pinExpandActivityAndResizeDisplayOrTask(secondaryActivity, false /* stickyPin */);
 
@@ -299,8 +329,14 @@ public class PinActivityStackTests extends ActivityEmbeddingLifecycleTestBase {
                 EXPAND_SPLIT_ATTRS).build();
         mActivityEmbeddingComponent.setEmbeddingRules(
                 Collections.singleton(expandRule));
-        mPinnedActivity = startActivityAndVerifySplitAttributes(secondaryActivity,
-                TestActivityWithId.class, expandRule, "expandActivityId", mSplitInfoConsumer);
+        mPinnedActivity =
+                startActivityAndVerifySplitAttributes(
+                        secondaryActivity,
+                        TestActivityWithId.class,
+                        expandRule,
+                        "expandActivityId",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Pin the top ActivityStack
         final Rect taskBounds = waitAndGetTaskBounds(mPinnedActivity,

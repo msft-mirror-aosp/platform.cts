@@ -17,8 +17,10 @@ package com.android.bedstead.usb
 
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.nene.TestApis
+import com.android.interactive.Step
 import com.android.interactive.annotations.Interactive
 import com.android.interactive.annotations.UntetheredTest
+import com.android.interactive.steps.ConnectViaAdbToHostStep
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,10 +28,10 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 class UsbTest {
 
+    @Interactive
     @Test
-    fun isConnected_isConnected_returnsTrue() {
-        // This is true by default in all scenarios we would be testing
-        assertThat(TestApis.usb().isConnected()).isTrue()
+    fun executeConnectViaAdbToHostStep_checkInteractivelyIfUsbConnected() {
+        Step.execute(ConnectViaAdbToHostStep::class.java)
     }
 
     @Test

@@ -490,6 +490,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final String KEY_VIEWPORT_SUB_PIXEL_BITS = "viewportSubPixelBits";
     private static final String KEY_VK_KHR_DRIVER_PROPERTIES = "VK_KHR_driver_properties";
     private static final String KEY_VK_KHR_VARIABLE_POINTERS = "VK_KHR_variable_pointers";
+    private static final String KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D = "VK_EXT_image_2d_view_of_3d";
+    private static final String KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT = "image2DViewOf3DFeaturesEXT";
+    private static final String KEY_IMAGE_2D_VIEW_OF_3D = "image2DViewOf3D";
+    private static final String KEY_SAMPLER_2D_VIEW_OF_3D = "sampler2DViewOf3D";
     private static final String KEY_VULKAN_12_FEATURES = "vulkan_12_features";
     private static final String KEY_VULKAN_12_PROPERTIES = "vulkan_12_properties";
     private static final String KEY_VULKAN_13_FEATURES = "vulkan_13_features";
@@ -505,6 +509,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final int VK_API_VERSION_1_3 = 4206592;
     private static final int ENUM_VK_KHR_VARIABLE_POINTERS = 0;
     private static final int ENUM_VK_KHR_DRIVER_PROPERTIES = 1;
+    private static final int ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D = 2;
 
     private static HashMap<String, Integer> extensionNameToEnum;
 
@@ -513,6 +518,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         extensionNameToEnum = new HashMap<>();
         extensionNameToEnum.put(KEY_VK_KHR_DRIVER_PROPERTIES, ENUM_VK_KHR_DRIVER_PROPERTIES);
         extensionNameToEnum.put(KEY_VK_KHR_VARIABLE_POINTERS, ENUM_VK_KHR_VARIABLE_POINTERS);
+        extensionNameToEnum.put(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D, ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
     }
 
     @Override
@@ -1238,7 +1244,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
-        } catch (JSONException ignored) {
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
         }
     }
 
@@ -1262,7 +1269,34 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                 e.printStackTrace();
                 throw new RuntimeException(e);
             }
-        } catch (JSONException ignored) {
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+
+        }
+    }
+
+    private static void emitImage2DViewOf3DFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extImage2DViewOf3DFeatures = parent.getJSONObject(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D));
+                {
+                    JSONObject image2DViewOf3DFeaturesEXT = extImage2DViewOf3DFeatures.getJSONObject(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT));
+                    {
+                        emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_IMAGE_2D_VIEW_OF_3D);
+                        emitBoolean(store, image2DViewOf3DFeaturesEXT, KEY_SAMPLER_2D_VIEW_OF_3D);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
         }
     }
 
@@ -1276,6 +1310,9 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             case ENUM_VK_KHR_DRIVER_PROPERTIES:
               emitDriverPropertiesKHR(store, parent);
               break;
+            case ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
+                emitImage2DViewOf3DFeaturesEXT(store, parent);
+                break;
         }
     }
 
@@ -1753,12 +1790,16 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             case KEY_VARIABLE_POINTERS_STORAGE_BUFFER: return "variable_pointers_storage_buffer";
             case KEY_VARIABLE_POINTER_FEATURES: return "variable_pointer_features";
             case KEY_VARIABLE_POINTER_FEATURES_KHR: return "variable_pointer_features_khr";
+            case KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT: return "image_2d_view_of_3d_features_ext";
+            case KEY_IMAGE_2D_VIEW_OF_3D: return "image_2d_view_of_3d";
+            case KEY_SAMPLER_2D_VIEW_OF_3D: return "sampler_2d_view_of_3d";
             case KEY_VENDOR_ID: return "vendor_id";
             case KEY_VERTEX_PIPELINE_STORES_AND_ATOMICS: return "vertex_pipeline_stores_and_atomics";
             case KEY_VIEWPORT_BOUNDS_RANGE: return "viewport_bounds_range";
             case KEY_VIEWPORT_SUB_PIXEL_BITS: return "viewport_sub_pixel_bits";
             case KEY_VK_KHR_DRIVER_PROPERTIES: return "vk_khr_driver_properties";
             case KEY_VK_KHR_VARIABLE_POINTERS: return "vk_khr_variable_pointers";
+            case KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D: return "vk_ext_image_2d_view_of_3d";
             case KEY_VULKAN_12_FEATURES: return "vulkan_12_features";
             case KEY_VULKAN_12_PROPERTIES: return "vulkan_12_properties";
             case KEY_VULKAN_13_FEATURES: return "vulkan_13_features";

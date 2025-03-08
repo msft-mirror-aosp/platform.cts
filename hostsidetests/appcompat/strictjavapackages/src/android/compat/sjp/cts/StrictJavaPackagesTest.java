@@ -46,15 +46,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import java.io.FileInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
@@ -891,32 +892,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 .isEmpty();
     }
 
-    private String bytesToString(long bytes) {
-        if (bytes < 1024) {
-            return bytes + " bytes";
-        }
-        if (bytes < 1024 * 1024) {
-            return bytes / 1024 + " KB";
-        }
-        if (bytes < 1024 * 1024 * 1024) {
-            return bytes / (1024 * 1024) + " MB";
-        }
-        return bytes / (1024 * 1024 * 1024) + " GB";
-    }
-
-    private void logFileDetails(File file) {
-        if (file == null) {
-            CLog.d(LOG_TAG + ": File is null");
-            return;
-        }
-        CLog.d(LOG_TAG + ": File absolute path: " + file.getAbsolutePath());
-        CLog.d(LOG_TAG + ": File exists: " + file.exists());
-        CLog.d(LOG_TAG + ": File size: " + bytesToString(file.length()));
-        CLog.d(LOG_TAG + ": File size: " + file.length() + " bytes");
-        CLog.d(LOG_TAG + ": File can read: " + file.canRead());
-        CLog.d(LOG_TAG + ": File free space: " + bytesToString(file.getFreeSpace()));
-    }
-
     /**
      * Ensure that no apk-in-apex bundles classes that could be eclipsed by jars in
      * BOOTCLASSPATH.
@@ -932,7 +907,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     File apkFile = null;
                     try {
                         apkFile = pullJarFromDevice(getDevice(), apk);
-                        logFileDetails(apkFile);
                         final ImmutableSet<String> apkClasses;
                         try {
                             apkClasses = Classpaths.getClassDefsFromJar(apkFile).stream()
@@ -967,9 +941,18 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                         }
                         final Multimap<String, String> duplicates =
                                 Multimaps.filterValues(sJarsToClasses, apkClasses::contains);
+
+                        // b/392946613
+                        final ImmutableSet<String> mergedBurndownClasses = ImmutableSet.<String>builder()
+                                .addAll(burndownClasses)
+                                .addAll(hasFeature(FEATURE_AUTOMOTIVE)
+                                        ? AUTOMOTIVE_HIDL_OVERLAP_BURNDOWN_LIST
+                                        : ImmutableSet.of())
+                                .build();
+
                         final Multimap<String, String> filteredDuplicates =
                                 Multimaps.filterValues(duplicates,
-                                    className -> !burndownClasses.contains(className)
+                                    className -> !mergedBurndownClasses.contains(className)
                                             // TODO: b/225341497
                                             && !className.equals("Landroidx/annotation/Keep;"));
                         final Multimap<String, String> bcpOnlyDuplicates =
@@ -1084,15 +1067,85 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
     private static File pullJarFromDevice(INativeDevice device,
             String remoteJarPath) throws DeviceNotAvailableException {
         String sha1OnDevice = device.executeShellCommand("sha1sum " + remoteJarPath);
-        CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
+        // sha1sum returns a string of the form "<sha1> <path>"
+        sha1OnDevice = sha1OnDevice.split(" ")[0];
+
         File jar = device.pullFile(remoteJarPath);
         if (jar == null) {
             CLog.d(LOG_TAG + ": could not pull remote file " + remoteJarPath);
             throw new IllegalStateException("could not pull remote file " + remoteJarPath);
         }
         String sha1OnHost = calculateSHA1(jar);
-        CLog.d(LOG_TAG + ": [on host] sha1sum of " + jar.getPath() + ": " + sha1OnHost);
+        if (!sha1OnDevice.equals(sha1OnHost)) {
+            CLog.d(LOG_TAG + ": [on host] sha1sum of " + jar.getPath() + ": " + sha1OnHost);
+            CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
+            CLog.d(LOG_TAG + ": sha1 mismatch between " + remoteJarPath + " on device and on host");
+            compareBinary(jar.getPath(), remoteJarPath);
+            // attempt to pull the file again to see if the sha1 mismatch is transient.
+            jar = device.pullFile(remoteJarPath);
+            if (jar == null) {
+                CLog.d(LOG_TAG + ": could not pull remote file a second time " + remoteJarPath);
+                throw new IllegalStateException("could not pull remote file a second time " + remoteJarPath);
+            }
+            sha1OnHost = calculateSHA1(jar);
+            CLog.d(LOG_TAG + ": [on host] sha1sum of second attempt " + jar.getPath() + ": " + sha1OnHost);
+            if (!sha1OnDevice.equals(sha1OnHost)) {
+                CLog.d(LOG_TAG + ": sha1 second mismatch between on device and on host");
+                compareBinary(jar.getPath(), remoteJarPath);
+                throw new IllegalStateException(
+                        "sha1 mismatch between on device and on host after second attempt");
+            }
+            CLog.d(
+                    LOG_TAG
+                            + ": sha1 mismatch between on device and on host, but resolved after"
+                            + " second attempt");
+            // to help debug this, still throw an exception. In the future, we can consider
+            // returning the jar from the second attempt.
+            throw new IllegalStateException("sha1 mismatch between on device and on host");
+        }
         return jar;
+    }
+
+    private static void compareBinary(String localPath, String remotePath) {
+        try {
+            byte[] localBytes = Files.readAllBytes(Path.of(localPath));
+            byte[] remoteBytes = Files.readAllBytes(Path.of(remotePath));
+            if (localBytes.length != remoteBytes.length) {
+                CLog.d(LOG_TAG + ": length mismatch between local and remote " + remotePath);
+                return;
+            }
+
+            CLog.d(LOG_TAG + ": comparing " + localBytes.length + " bytes from " + remotePath);
+            boolean isMismatching = false;
+            for (int i = 0; i < localBytes.length; i++) {
+                if (localBytes[i] != remoteBytes[i]) {
+                    if(!isMismatching) {
+                        isMismatching = true;
+                        CLog.d(LOG_TAG + ": byte mismatch at index " + i);
+                        CLog.d(LOG_TAG + ": local bytes:  " + readBytes(localBytes, i-4));
+                        CLog.d(LOG_TAG + ": remote bytes: " + readBytes(remoteBytes, i-4));
+                    }
+                } else {
+                    if(isMismatching) {
+                        CLog.d(LOG_TAG + ": byte match at index " + i);
+                    }
+                    isMismatching = false;
+                }
+            }
+        } catch (IOException e) {
+            CLog.d(LOG_TAG + ": failed to read files");
+        }
+    }
+
+    private static String readBytes(byte[] localBytes, int startIndex) {
+        StringBuilder sb = new StringBuilder();
+        // the caller passes `i - 4` so that we can see the bytes before and after the mismatch.
+        startIndex = Math.max(0, startIndex);
+        int endIndex = Math.min(localBytes.length, startIndex + 32);
+        for (int i = startIndex; i < endIndex; i++) {
+          sb.append(String.format("%02x", localBytes[i]));
+        }
+        return sb.toString();
     }
 
     private static String calculateSHA1(File file) {

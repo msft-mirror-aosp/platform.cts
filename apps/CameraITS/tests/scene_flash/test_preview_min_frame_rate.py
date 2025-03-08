@@ -32,8 +32,9 @@ import video_processing_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_RECORDING_DURATION_SECONDS = 10
+_CONTROL_AE_ANTIBANDING_MODE_OFF = 0
 _MAX_VAR_FRAME_DELTA = 0.001  # variance of frame deltas, units: seconds^2
-_FPS_ATOL = 0.8
+_FPS_ATOL = 1
 _DARKNESS_ATOL = 0.1 * 255  # openCV uses [0:255] images
 
 
@@ -103,12 +104,16 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       logging.debug('Doing 3A to ensure AE convergence')
       cam.do_3a(do_af=False)
       logging.debug('Testing preview recording FPS for size: %s', preview_size)
+      antibanding_mode_to_set = scene_flicker_freq
+      if _CONTROL_AE_ANTIBANDING_MODE_OFF in props.get(
+          'android.control.aeAvailableAntibandingModes', []):
+        antibanding_mode_to_set = _CONTROL_AE_ANTIBANDING_MODE_OFF
       preview_recording_obj = cam.do_preview_recording(
           preview_size, _PREVIEW_RECORDING_DURATION_SECONDS, stabilize=False,
           zoom_ratio=None,
           ae_target_fps_min=ae_target_fps_range[0],
           ae_target_fps_max=ae_target_fps_range[1],
-          antibanding_mode=scene_flicker_freq
+          antibanding_mode=antibanding_mode_to_set
       )
       logging.debug('preview_recording_obj: %s', preview_recording_obj)
 

@@ -43,6 +43,7 @@
         <xs:element name="itemSchema" type="appfn:AppFunctionTypeParameterMetadata" />
         <xs:element name="properties" type="appfn:AppFunctionValueParameterMetadata"
             cardinality="2" />
+        <xs:element name="selfReference" type="appfn:AppFunctionSchema" cardinality="2" />
     </xs:documentType>
 
     <!-- Definition for AppFunctionStaticMetadata -->

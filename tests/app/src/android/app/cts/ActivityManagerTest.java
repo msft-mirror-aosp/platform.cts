@@ -110,6 +110,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 
@@ -181,6 +182,14 @@ public final class ActivityManagerTest {
 
     private static final String CANT_SAVE_STATE_1_PACKAGE_NAME = "com.android.test.cantsavestate1";
 
+    private static final String[] HELPER_PACKAGES = {
+            PACKAGE_NAME_APP1,
+            PACKAGE_NAME_APP2,
+            PACKAGE_NAME_APP3,
+            PACKAGE_NAME_WEDGED_STARTUP,
+            CANT_SAVE_STATE_1_PACKAGE_NAME
+    };
+
     private static final String MCC_TO_UPDATE = "987";
     private static final String MNC_TO_UPDATE = "654";
 
@@ -208,6 +217,7 @@ public final class ActivityManagerTest {
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
     private boolean mWatchDevice;
+    private WindowManagerStateHelper mWmState;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -241,7 +251,11 @@ public final class ActivityManagerTest {
         mAutomotiveDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mLeanbackOnly = mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
         mWatchDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
+        mWmState = new WindowManagerStateHelper();
 
+        for (String pkg : HELPER_PACKAGES) {
+            CtsAppTestUtils.clearBadProcess(pkg, mTestRunningUserId);
+        }
         startSubActivity(ScreenOnActivity.class);
         AmUtils.waitForBroadcastBarrier();
     }
@@ -260,6 +274,10 @@ public final class ActivityManagerTest {
         if (mErrorProcessID != -1) {
             android.os.Process.killProcess(mErrorProcessID);
         }
+
+        // Ensure that there are no remaining component records of the test app package.
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME));
     }
 
     @Test
@@ -889,7 +907,7 @@ public final class ActivityManagerTest {
         // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_OK, appEndReceiver.getResult());
 
-        if (!noHomeScreen()) {
+        if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -898,9 +916,9 @@ public final class ActivityManagerTest {
             assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
             assertTrue(timeReceiver.mTimeUsed == 0);
         } else {
-            // With platforms that have no home screen, focus is returned to something else that is
-            // considered a completion of the tracked activity flow, and hence time tracking is
-            // triggered.
+            // If the system has not returned to the home screen, focus is returned to something
+            // else that is considered a completion of the tracked activity flow, and hence time
+            // tracking is triggered.
             assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         }
 
@@ -1034,7 +1052,7 @@ public final class ActivityManagerTest {
         assertEquals(RESULT_OK, appEndReceiver.getResult());
         Log.e("SOSO", "Done waiting for activity exit");
 
-        if (!noHomeScreen()) {
+        if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -1043,9 +1061,9 @@ public final class ActivityManagerTest {
             assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
             assertTrue(timeReceiver.mTimeUsed == 0);
         } else {
-            // With platforms that have no home screen, focus is returned to something else that is
-            // considered a completion of the tracked activity flow, and hence time tracking is
-            // triggered.
+            // If the system has not returned to the home screen, focus is returned to something
+            // else that is considered a completion of the tracked activity flow, and hence time
+            // tracking is triggered.
             assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         }
 
@@ -2165,27 +2183,23 @@ public final class ActivityManagerTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_UID_IMPORTANCE_LISTENER_FOR_UIDS)
     @Test
-    public void testAddOnUidImportanceListener() throws Exception {
+    public void testAddOnUidImportanceListener_legacy() throws Exception {
         final ApplicationInfo ai1 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP1, 0);
         final ApplicationInfo ai2 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP2, 0);
         final CountDownLatch[] latchHolder = new CountDownLatch[1];
         final int[] expectedUidHolder = new int[1];
-        final OnUidImportanceListener listener = new OnUidImportanceListener() {
-            @Override
-            public void onUidImportance(int uid, int importance) {
-                if (uid == expectedUidHolder[0]) {
-                    latchHolder[0].countDown();
-                }
-            }
-        };
+        final OnUidImportanceListener listener =
+                (uid, importance) -> {
+                    if (uid == expectedUidHolder[0]) {
+                        latchHolder[0].countDown();
+                    }
+                };
         try {
             // Make sure we could start activity from background
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
 
             // If we didn't specify the target UID, we should be able to listen on all UID events.
             mActivityManager.addOnUidImportanceListener(listener,
@@ -2206,9 +2220,38 @@ public final class ActivityManagerTest {
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
             assertTrue("Failed to receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+        } finally {
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
-            launchHome();
             mActivityManager.removeOnUidImportanceListener(listener);
+
+            runWithShellPermissionIdentity(
+                    () -> {
+                        // force stop test package; the whole test process group will be killed.
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
+                    });
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_UID_IMPORTANCE_LISTENER_FOR_UIDS)
+    @Test
+    public void testAddOnUidImportanceListener() throws Exception {
+        final ApplicationInfo ai1 =
+                mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        final ApplicationInfo ai2 =
+                mTargetContext.getPackageManager().getApplicationInfo(PACKAGE_NAME_APP2, 0);
+        final CountDownLatch[] latchHolder = new CountDownLatch[1];
+        final int[] expectedUidHolder = new int[1];
+        final OnUidImportanceListener listener =
+                (uid, importance) -> {
+                    if (uid == expectedUidHolder[0]) {
+                        latchHolder[0].countDown();
+                    }
+                };
+        try {
+            // Make sure we could start activity from background
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
 
             // Listen on the APP1's UID importance changes only.
             mActivityManager.addOnUidImportanceListener(listener,
@@ -2230,16 +2273,16 @@ public final class ActivityManagerTest {
             assertFalse("It should not receive the UID importance changes",
                     latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
         } finally {
-            runShellCommand(mInstrumentation,
-                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
+            runShellCommand(mInstrumentation, "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
 
             mActivityManager.removeOnUidImportanceListener(listener);
 
-            runWithShellPermissionIdentity(() -> {
-                // force stop test package, where the whole test process group will be killed.
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
-            });
+            runWithShellPermissionIdentity(
+                    () -> {
+                        // force stop test package; the whole test process group will be killed.
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                        mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
+                    });
         }
     }
 
@@ -2620,6 +2663,16 @@ public final class ActivityManagerTest {
     private void assumeNonHeadlessSystemUserMode() {
         assumeFalse("System user is not a FULL user in headless system user mode.",
                 UserManager.isHeadlessSystemUserMode());
+    }
+
+    private boolean isTestHomeActivityFocused() {
+        if (noHomeScreen()) {
+            return false;
+        }
+        ComponentName homeActivity =
+                new ComponentName(STUB_PACKAGE_NAME, TestHomeActivity.class.getName());
+        mWmState.waitForValidState(homeActivity);
+        return mWmState.waitForFocusedActivity(homeActivity);
     }
 
     private boolean isAutomotive() {

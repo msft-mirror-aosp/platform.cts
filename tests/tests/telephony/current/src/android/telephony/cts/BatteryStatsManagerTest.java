@@ -20,7 +20,7 @@ import static androidx.test.InstrumentationRegistry.getContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyInt;
 
 import android.os.BatteryStatsManager;
 import android.os.connectivity.CellularBatteryStats;

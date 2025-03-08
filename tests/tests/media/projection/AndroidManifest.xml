@@ -39,9 +39,6 @@
         android:debuggable="true"
         android:requestLegacyExternalStorage="true"
         android:largeHeap="true">
-        <activity android:name="android.media.projection.cts.MediaProjectionCustomIntentActivity"
-                  android:label="MediaProjectionCustomIntentActivity"
-                  android:screenOrientation="locked"/>
         <activity android:name="android.app.Activity"
             android:label="Empty MediaProjection Mirroring Activity"
             android:screenOrientation="locked"/>
@@ -49,13 +46,6 @@
             android:label="Rotating MediaProjection Mirroring Activity"
             android:configChanges="orientation" />
         <activity android:name="android.server.wm.MediaProjectionHelper$MediaProjectionActivity" />
-        <activity android:name="android.media.projection.cts.MediaProjectionPermissionDialogTestActivity"
-            android:label="MediaProjectionActivity"
-            android:screenOrientation="locked"/>
-        <service
-            android:name="android.server.wm.MediaProjectionHelper$MediaProjectionService"
-            android:enabled="true"
-            android:foregroundServiceType="mediaProjection" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

@@ -37,7 +37,10 @@ import android.net.MacAddress;
 import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiSsid;
+import android.net.wifi.aware.AttachCallback;
 import android.net.wifi.aware.PeerHandle;
+import android.net.wifi.aware.WifiAwareManager;
+import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.cts.WifiBuildCompat;
 import android.net.wifi.cts.WifiFeature;
 import android.net.wifi.rtt.PasnConfig;
@@ -69,6 +72,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -750,16 +754,32 @@ public class WifiRttTest extends TestBase {
         if (!WifiFeature.isAwareSupported(getContext())) {
             return;
         }
-        RangingRequest request = new RangingRequest.Builder()
-                .addWifiAwarePeer(MAC).build();
-        ResultCallback callback = new ResultCallback();
-        mWifiRttManager.startRanging(request, mExecutor, callback);
-        assertTrue("Wi-Fi RTT results: no callback",
-                callback.waitForCallback());
-        List<RangingResult> rangingResults = callback.getResults();
-        assertNotNull("Wi-Fi RTT results: null results", rangingResults);
-        assertEquals(1, rangingResults.size());
-        assertEquals(RangingResult.STATUS_FAIL, rangingResults.get(0).getStatus());
+        WifiAwareManager awareManager = sContext.getSystemService(WifiAwareManager.class);
+        assertNotNull(awareManager);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        final WifiAwareSession[] awareSession = {null};
+        awareManager.attach(
+                new AttachCallback() {
+                    @Override
+                    public void onAttached(WifiAwareSession session) {
+                        awareSession[0] = session;
+                        countDownLatch.countDown();
+                    }
+                },
+                mHandler);
+        countDownLatch.await();
+        try {
+            RangingRequest request = new RangingRequest.Builder().addWifiAwarePeer(MAC).build();
+            ResultCallback callback = new ResultCallback();
+            mWifiRttManager.startRanging(request, mExecutor, callback);
+            assertTrue("Wi-Fi RTT results: no callback", callback.waitForCallback());
+            List<RangingResult> rangingResults = callback.getResults();
+            assertNotNull("Wi-Fi RTT results: null results", rangingResults);
+            assertEquals(1, rangingResults.size());
+            assertEquals(RangingResult.STATUS_FAIL, rangingResults.get(0).getStatus());
+        } finally {
+            awareSession[0].close();
+        }
     }
 
     /**
@@ -770,16 +790,33 @@ public class WifiRttTest extends TestBase {
         if (!WifiFeature.isAwareSupported(getContext())) {
             return;
         }
-        PeerHandle peerHandle = mock(PeerHandle.class);
-        RangingRequest request = new RangingRequest.Builder()
-                .addWifiAwarePeer(peerHandle).build();
-        ResultCallback callback = new ResultCallback();
-        mWifiRttManager.startRanging(request, mExecutor, callback);
-        assertTrue("Wi-Fi RTT results: no callback",
-                callback.waitForCallback());
-        List<RangingResult> rangingResults = callback.getResults();
-        assertNotNull("Wi-Fi RTT results: null results", rangingResults);
-        assertEquals("Invalid peerHandle should return 0 result", 0, rangingResults.size());
+        WifiAwareManager awareManager = sContext.getSystemService(WifiAwareManager.class);
+        assertNotNull(awareManager);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        final WifiAwareSession[] awareSession = {null};
+        awareManager.attach(
+                new AttachCallback() {
+                    @Override
+                    public void onAttached(WifiAwareSession session) {
+                        awareSession[0] = session;
+                        countDownLatch.countDown();
+                    }
+                },
+                mHandler);
+        countDownLatch.await();
+        try {
+            PeerHandle peerHandle = mock(PeerHandle.class);
+            RangingRequest request =
+                    new RangingRequest.Builder().addWifiAwarePeer(peerHandle).build();
+            ResultCallback callback = new ResultCallback();
+            mWifiRttManager.startRanging(request, mExecutor, callback);
+            assertTrue("Wi-Fi RTT results: no callback", callback.waitForCallback());
+            List<RangingResult> rangingResults = callback.getResults();
+            assertNotNull("Wi-Fi RTT results: null results", rangingResults);
+            assertEquals("Invalid peerHandle should return 0 result", 0, rangingResults.size());
+        } finally {
+            awareSession[0].close();
+        }
     }
 
     /**

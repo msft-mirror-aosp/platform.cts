@@ -87,6 +87,7 @@ public class BitmapWrapper implements Parcelable {
                 dest.writeInt(mReplaceFields.get(Field.RowBytes));
             }
             Assert.assertEquals(mBitmap.getDensity(), dest.readInt());
+            final long bitmapId = dest.readLong();
             int type = dest.readInt();
             if (type == 0) { // in-place
                 if (mReplaceFields.containsKey(Field.DataSize)) {

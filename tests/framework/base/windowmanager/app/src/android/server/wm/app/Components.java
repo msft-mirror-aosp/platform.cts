@@ -27,7 +27,8 @@ public class Components extends ComponentsBase {
     public static final ComponentName ANIMATION_TEST_ACTIVITY = component("AnimationTestActivity");
     public static final ComponentName ASSISTANT_ACTIVITY = component("AssistantActivity");
     public static final ComponentName BOTTOM_ACTIVITY = component("BottomActivity");
-    public static final ComponentName BOTTOM_NON_RESIZABLE_ACTIVITY = component("BottomNonResizableActivity");
+    public static final ComponentName BOTTOM_NON_RESIZABLE_ACTIVITY =
+            component("BottomNonResizableActivity");
     public static final ComponentName BOTTOM_LEFT_LAYOUT_ACTIVITY =
             component("BottomLeftLayoutActivity");
     public static final ComponentName BOTTOM_RIGHT_LAYOUT_ACTIVITY =
@@ -150,10 +151,11 @@ public class Components extends ComponentsBase {
             component("ShowWhenLockedWithDialogNoPreviewActivity");
 
     public static final ComponentName TEST_ACTIVITY = component("TestActivity");
-    public static final ComponentName TOAST_ACTIVITY = component("ToastActivity");
     public static final ComponentName TOP_ACTIVITY = component("TopActivity");
-    public static final ComponentName TOP_NON_RESIZABLE_ACTIVITY = component("TopNonResizableActivity");
-    public static final ComponentName TOP_NON_RESIZABLE_WALLPAPER_ACTIVITY = component("TopNonResizableWallpaperActivity");
+    public static final ComponentName TOP_NON_RESIZABLE_ACTIVITY =
+            component("TopNonResizableActivity");
+    public static final ComponentName TOP_NON_RESIZABLE_WALLPAPER_ACTIVITY =
+            component("TopNonResizableWallpaperActivity");
     public static final ComponentName TOP_WALLPAPER_ACTIVITY = component("TopWallpaperActivity");
     public static final ComponentName TEST_ACTIVITY_WITH_SAME_AFFINITY =
             component("TestActivityWithSameAffinity");
@@ -735,6 +737,7 @@ public class Components extends ComponentsBase {
     public static class WallpaperTargetActivity {
         public static final String EXTRA_ENABLE_WALLPAPER_TOUCH = "enable_wallpaper_touch";
     }
+
     private static ComponentName component(String className) {
         return component(Components.class, className);
     }

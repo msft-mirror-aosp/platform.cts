@@ -24,6 +24,7 @@ import com.android.xts.apimapper.asm.ClassNodes
 import com.android.xts.apimapper.asm.InvalidJarFileException
 import com.android.xts.apimapper.asm.loadClassStructure
 import com.android.xts.apimapper.asm.zipEntryNameToClassName
+import com.android.xts.apimapper.config.Configuration
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -33,16 +34,22 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 
+const val CONFIG_FILE = "config.xml"
+
 /** Inject the code to record API calls. */
 class ApiMapper(val args: Array<String>) {
 
     fun run() {
         val apiMapperOption = ApiMapperOption(args)
         apiMapperOption.validateOptions()
-        process(apiMapperOption.getInJar(), apiMapperOption.getOutJar())
+        process(
+            apiMapperOption.getInJar(),
+            apiMapperOption.getOutJar(),
+            Configuration(CONFIG_FILE)
+        )
     }
 
-    private fun process(inJar: String, outJar: String) {
+    private fun process(inJar: String, outJar: String, configuration: Configuration) {
         val classNodes = loadClassStructure(inJar)
         ZipFile(inJar).use { inZip ->
             val inEntries = inZip.entries()
@@ -53,8 +60,8 @@ class ApiMapper(val args: Array<String>) {
                         throw InvalidJarFileException("$inJar is not a jar file.")
                     }
                     val className = zipEntryNameToClassName(entry.name)
-                    if (className != null && shouldProcessClass(className)) {
-                        processSingleClass(inZip, entry, outZip, classNodes)
+                    if (className != null && shouldProcessClass(className, inJar, configuration)) {
+                        processSingleClass(inZip, entry, outZip, classNodes, configuration)
                     } else {
                         // Simply copy entries not need to be instrumented.
                         copyZipEntry(inZip, entry, outZip)
@@ -85,6 +92,7 @@ class ApiMapper(val args: Array<String>) {
         entry: ZipEntry,
         outZip: ZipOutputStream,
         classNodes: ClassNodes,
+        configuration: Configuration
     ) {
         val newEntry = ZipEntry(entry.name)
         outZip.putNextEntry(newEntry)
@@ -97,7 +105,7 @@ class ApiMapper(val args: Array<String>) {
             outVisitor = RuleInjectingAdapter(outVisitor, classNodes)
             outVisitor = MethodCallHookingAdapter(
                 outVisitor,
-                AndroidApiInjectionSettings(),
+                AndroidApiInjectionSettings(configuration),
                 classNodes
             )
             cr.accept(outVisitor, ClassReader.EXPAND_FRAMES)

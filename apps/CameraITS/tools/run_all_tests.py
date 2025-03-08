@@ -50,6 +50,7 @@ RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
 PERFORMANCE_KEY = 'performance_metrics'
 FEATURE_QUERY_KEY = 'feature_query_proto'
+FEATURE_QUERY_PATH_KEY = 'feature_query_proto_path'
 SUMMARY_KEY = 'summary'
 RESULT_VALUES = (RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED)
 CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
@@ -242,6 +243,7 @@ _EXTENSION_NAMES = (
 )
 
 _DST_SCENE_DIR = '/sdcard/Download/'
+_DST_ROOT_DIR = '/sdcard/'
 _SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
@@ -271,10 +273,14 @@ def report_result(device_id, camera_id, tablet_name, results):
       its_device_utils.run(
           f'{adb} push {results[scene][SUMMARY_KEY]} {device_summary_path}')
       results[scene][SUMMARY_KEY] = device_summary_path
-    if FEATURE_QUERY_KEY in results[scene]:
-      for proto_file in results[scene][FEATURE_QUERY_KEY]:
+    if (FEATURE_QUERY_KEY in results[scene] and
+        FEATURE_QUERY_PATH_KEY in results[scene]):
+      for (proto_path, proto_file) in zip(
+          results[scene][FEATURE_QUERY_PATH_KEY],
+          results[scene][FEATURE_QUERY_KEY]):
+        host_path = os.path.join(proto_path, proto_file)
         its_device_utils.run(
-            f'{adb} push {proto_file} /sdcard/')
+            f'{adb} push {host_path} {_DST_ROOT_DIR}')
 
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
@@ -634,6 +640,9 @@ def main():
     if (any(s.startswith('scene_' + extension)
             for extension in _EXTENSION_NAMES)):
       scenes[i] = f'scene_extensions/{s}'
+    # Handle scene_tele
+    if s == 'scene6_tele' or s == 'scene7_tele':
+      scenes[i] = f'scene_tele/{s}'
 
   # Read config file and extract relevant TestBed
   config_file_contents = get_config_file_contents()
@@ -788,6 +797,8 @@ def main():
       possible_scenes = list(SUB_CAMERA_TESTS.keys())
       if auto_scene_switch:
         possible_scenes.remove('sensor_fusion')
+      if 'scene_tele' in scenes:
+        possible_scenes = _TELE_SCENES
     else:
       if 'scene_extensions' in scenes:
         possible_scenes = _EXTENSIONS_SCENES
@@ -853,6 +864,7 @@ def main():
       results[s][METRICS_KEY] = []
       results[s][PERFORMANCE_KEY] = []
       results[s][FEATURE_QUERY_KEY] = []
+      results[s][FEATURE_QUERY_PATH_KEY] = []
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_start_time = int(round(time.time() * 1000))
@@ -956,6 +968,7 @@ def main():
             hdr_mpc_req = ''
             feature_query_proto = ''
             content = file.read()
+            root_output_path = ''
 
             # Find media performance class logging
             lines = content.splitlines()
@@ -977,6 +990,11 @@ def main():
                 hdr_mpc_req = one_line
                 break
 
+            # Find root output path used to store feature combination query
+            # proto
+            for one_line in lines:
+              if 'root_output_path:' in one_line:
+                root_output_path = one_line.split(':')[1].strip()
             # Find feature combination query proto
             for one_line in lines:
               # regular expression pattern must match in ItsTestActivity.java.
@@ -1035,8 +1053,9 @@ def main():
           results[s][METRICS_KEY].append(test_mpc_req)
         if hdr_mpc_req:
           results[s][METRICS_KEY].append(hdr_mpc_req)
-        if feature_query_proto:
+        if feature_query_proto and root_output_path:
           results[s][FEATURE_QUERY_KEY].append(feature_query_proto)
+          results[s][FEATURE_QUERY_PATH_KEY].append(root_output_path)
 
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'

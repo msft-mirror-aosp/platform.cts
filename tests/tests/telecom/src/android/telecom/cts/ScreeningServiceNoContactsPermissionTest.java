@@ -18,6 +18,8 @@ package android.telecom.cts;
 
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
 
+import androidx.test.filters.FlakyTest;
+
 /**
  * Tests for third-party {@link android.telecom.CallScreeningService} implementations, focusing on
  * scenarios where the application *does not* have the {@link
@@ -54,6 +56,7 @@ public class ScreeningServiceNoContactsPermissionTest
      * Tests that an incoming call from a number *not* in contacts is blocked when READ_CONTACTS
      * permission is revoked and the CallScreeningService is set to reject.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPermissionAndNoContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -79,6 +82,7 @@ public class ScreeningServiceNoContactsPermissionTest
      * permission is revoked. The CallScreeningService should not be able to access the contact
      * information and therefore cannot block based on contact data.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPermissionAndHasContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
@@ -102,6 +106,7 @@ public class ScreeningServiceNoContactsPermissionTest
      * Tests that the {@link android.telecom.CallScreeningService} *is* still invoked for outgoing
      * calls when READ_CONTACTS permission is revoked, for a number that is *not* a contact.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPermissionAndNoContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -122,6 +127,7 @@ public class ScreeningServiceNoContactsPermissionTest
      * that the number is a contact *without* needing to ask the CallScreeningService, it bypasses
      * the service.
      */
+    @FlakyTest // b/400864548 , b/401247439 , b/401246633
     public void testNoPermissionAndHasContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;

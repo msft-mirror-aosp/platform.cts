@@ -15,6 +15,7 @@
  */
 package com.android.cts.host.broadcasts;
 
+import static com.android.cts.host.broadcasts.Constants.BROADCAST_PROCESSING_TIME_MS;
 import static com.android.cts.host.broadcasts.Constants.RECEIVER_PKG;
 import static com.android.cts.host.broadcasts.Constants.TEST_BROADCAST_ACTION;
 import static com.android.cts.host.broadcasts.Constants.TEST_CLASS;
@@ -32,6 +33,7 @@ import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.internal.os.StatsdConfigProto;
 import com.android.os.StatsLog;
+import com.android.os.broadcasts.BroadcastProcessed;
 import com.android.os.broadcasts.BroadcastSent;
 import com.android.os.broadcasts.BroadcastsExtensionAtoms;
 import com.android.server.am.Flags;
@@ -101,12 +103,39 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
         // Hardcoding the intent flags as they cannot be accessed directly on the hostside.
         final int expectedFlags = 0x10000000 /* FLAG_RECEIVER_FOREGROUND */
                 | 0x01000000 /* FLAG_RECEIVER_INCLUDE_BACKGROUND */;
+
         verifyBroadcastSentEvent(broadcastSent, DeviceUtils.getAppUid(getDevice(), TEST_PKG),
                 TEST_BROADCAST_ACTION,
                 expectedFlags, false /* isPackageTargeted */, false /* isComponentTargeted */,
                 2 /* numReceivers */, BroadcastSent.Result.SUCCESS,
                 ProcessStateEnum.PROCESS_STATE_FOREGROUND_SERVICE,
                 ProcessStateEnum.PROCESS_STATE_FOREGROUND_SERVICE);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_LOG_BROADCAST_PROCESSED_EVENT)
+    @Test
+    public void testBroadcastProcessed() throws Exception {
+        uploadConfigForBroadcastProcessedEvent(TEST_PKG, TEST_BROADCAST_ACTION, RECEIVER_PKG);
+        final ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        BroadcastsExtensionAtoms.registerAllExtensions(registry);
+
+        DeviceUtils.runDeviceTests(getDevice(), TEST_PKG, TEST_CLASS, "testBroadcastSent");
+
+        final List<StatsLog.EventMetricData> data =
+                ReportUtils.getEventMetricDataList(getDevice(), registry);
+        assertThat(data).isNotNull();
+        assertThat(data.size()).isEqualTo(1);
+        final BroadcastProcessed broadcastProcessed =
+                data.getFirst().getAtom().getExtension(BroadcastsExtensionAtoms.broadcastProcessed);
+
+        verifyBroadcastProcessedEvent(
+                broadcastProcessed,
+                TEST_BROADCAST_ACTION,
+                DeviceUtils.getAppUid(getDevice(), TEST_PKG) /* senderUid */,
+                1 /* numReceivers */,
+                RECEIVER_PKG,
+                BROADCAST_PROCESSING_TIME_MS /* maxTimeMillis */,
+                BROADCAST_PROCESSING_TIME_MS /* totalTimeMillis */);
     }
 
     private void uploadConfigForBroadcastSentEvent(String senderPkg, String action)
@@ -119,6 +148,26 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
                 BroadcastSent.INTENT_ACTION_FIELD_NUMBER).setEqString(action);
         ConfigUtils.addEventMetric(config, BroadcastsExtensionAtoms.BROADCAST_SENT_FIELD_NUMBER,
                 Arrays.asList(senderMatcher, actionMatcher));
+        ConfigUtils.uploadConfig(getDevice(), config);
+    }
+
+    private void uploadConfigForBroadcastProcessedEvent(
+            String senderPkg, String action, String receiverPkg) throws Exception {
+        final StatsdConfigProto.StatsdConfig.Builder config =
+                ConfigUtils.createConfigBuilder(senderPkg);
+        final StatsdConfigProto.FieldValueMatcher.Builder actionMatcher =
+                ConfigUtils.createFvm(BroadcastProcessed.INTENT_ACTION_FIELD_NUMBER)
+                        .setEqString(action);
+        final StatsdConfigProto.FieldValueMatcher.Builder senderMatcher =
+                ConfigUtils.createFvm(BroadcastProcessed.SENDER_UID_FIELD_NUMBER)
+                        .setEqString(senderPkg);
+        final StatsdConfigProto.FieldValueMatcher.Builder receiverMatcher =
+                ConfigUtils.createFvm(BroadcastProcessed.RECEIVER_UID_FIELD_NUMBER)
+                        .setEqString(receiverPkg);
+        ConfigUtils.addEventMetric(
+                config,
+                BroadcastsExtensionAtoms.BROADCAST_PROCESSED_FIELD_NUMBER,
+                Arrays.asList(senderMatcher, actionMatcher, receiverMatcher));
         ConfigUtils.uploadConfig(getDevice(), config);
     }
 
@@ -135,6 +184,23 @@ public class BroadcastStatsHostTest extends BaseHostJUnit4Test implements IBuild
         assertThat(broadcastSent.getResult()).isEqualTo(result);
         assertThat(broadcastSent.getSenderUidState()).isEqualTo(uidState);
         assertThat(broadcastSent.getSenderProcState()).isEqualTo(procState);
+    }
+
+    private void verifyBroadcastProcessedEvent(
+            BroadcastProcessed broadcastProcessed,
+            String action,
+            int senderUid,
+            int numReceivers,
+            String receiverProcessName,
+            int maxTimeMillis,
+            int totalTimeMillis) {
+        assertThat(broadcastProcessed).isNotNull();
+        assertThat(broadcastProcessed.getIntentAction()).isEqualTo(action);
+        assertThat(broadcastProcessed.getNumReceivers()).isEqualTo(numReceivers);
+        assertThat(broadcastProcessed.getSenderUid()).isEqualTo(senderUid);
+        assertThat(broadcastProcessed.getMaxTimeMillis()).isAtLeast(maxTimeMillis);
+        assertThat(broadcastProcessed.getTotalTimeMillis()).isAtLeast(totalTimeMillis);
+        assertThat(broadcastProcessed.getReceiverProcessName()).contains(receiverProcessName);
     }
 
     protected String runCommand(String command) throws Exception {

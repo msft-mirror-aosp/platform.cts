@@ -46,7 +46,6 @@ import android.cts.statsdatom.lib.ReportUtils;
 import com.android.ddmlib.testrunner.TestResult;
 import com.android.os.StatsLog.EventMetricData;
 import com.android.os.framework.FrameworkExtensionAtoms;
-import com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionStateChanged;
 import com.android.os.framework.FrameworkExtensionAtoms.MediaProjectionTargetChanged;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.result.TestDescription;
@@ -56,6 +55,7 @@ import com.android.tradefed.testtype.IBuildReceiver;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
+import com.google.common.truth.IterableSubject;
 import com.google.protobuf.ExtensionRegistry;
 
 import org.junit.After;
@@ -129,22 +129,13 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
 
         // Check the expected MediaProjectionStateChanged atoms were logged in the expected order
-        assertThat(data.size()).isEqualTo(4);
-        MediaProjectionStateChanged a0 =
-                data.get(0).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a0.getState()).isEqualTo(MEDIA_PROJECTION_STATE_INITIATED);
-
-        MediaProjectionStateChanged a1 =
-                data.get(1).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a1.getState()).isEqualTo(MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED);
-
-        MediaProjectionStateChanged a2 =
-                data.get(2).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a2.getState()).isEqualTo(MEDIA_PROJECTION_STATE_CAPTURING_IN_PROGRESS);
-
-        MediaProjectionStateChanged a3 =
-                data.get(3).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a3.getState()).isEqualTo(MEDIA_PROJECTION_STATE_STOPPED);
+        assertThatMediaProjectionState(data)
+                .containsExactly(
+                        MEDIA_PROJECTION_STATE_INITIATED,
+                        MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED,
+                        MEDIA_PROJECTION_STATE_CAPTURING_IN_PROGRESS,
+                        MEDIA_PROJECTION_STATE_STOPPED)
+                .inOrder();
     }
 
     @Test
@@ -213,18 +204,12 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
 
         // Check the expected MediaProjectionStateChanged atoms were logged in the expected order
-        assertThat(data.size()).isEqualTo(3);
-        MediaProjectionStateChanged a0 =
-                data.get(0).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a0.getState()).isEqualTo(MEDIA_PROJECTION_STATE_INITIATED);
-
-        MediaProjectionStateChanged a1 =
-                data.get(1).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a1.getState()).isEqualTo(MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED);
-
-        MediaProjectionStateChanged a2 =
-                data.get(2).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a2.getState()).isEqualTo(MEDIA_PROJECTION_STATE_CANCELLED);
+        assertThatMediaProjectionState(data)
+                .containsExactly(
+                        MEDIA_PROJECTION_STATE_INITIATED,
+                        MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED,
+                        MEDIA_PROJECTION_STATE_CANCELLED)
+                .inOrder();
     }
 
     @Test
@@ -242,21 +227,32 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         FrameworkExtensionAtoms.registerAllExtensions(registry);
         List<EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice(), registry);
 
-        assertThat(data.size()).isAtLeast(2);
-        MediaProjectionStateChanged a0 =
-                data.get(0).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a0.getState()).isEqualTo(MEDIA_PROJECTION_STATE_INITIATED);
-
-        MediaProjectionStateChanged a1 =
-                data.get(1).getAtom().getExtension(mediaProjectionStateChanged);
-        assertThat(a1.getState()).isEqualTo(MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED);
-
-        // In the case where an OEMs doesn't support partial screnshare, this atom won't be logged,
+        // In the case where an OEMs doesn't support partial screenshare, this atom won't be logged,
         // so we only assert on it being emitted conditionally.
-        if (data.size() > 2) {
-            MediaProjectionStateChanged a2 =
-                    data.get(2).getAtom().getExtension(mediaProjectionStateChanged);
-            assertThat(a2.getState()).isEqualTo(MEDIA_PROJECTION_STATE_APP_SELECTOR_DISPLAYED);
+        if (data.size() <= 2) {
+            assertThatMediaProjectionState(data)
+                    .containsExactly(
+                            MEDIA_PROJECTION_STATE_INITIATED,
+                            MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED)
+                    .inOrder();
+        } else {
+            assertThatMediaProjectionState(data)
+                    .containsExactly(
+                            MEDIA_PROJECTION_STATE_INITIATED,
+                            MEDIA_PROJECTION_STATE_PERMISSION_REQUEST_DISPLAYED,
+                            MEDIA_PROJECTION_STATE_APP_SELECTOR_DISPLAYED)
+                    .inOrder();
         }
+    }
+
+    private static IterableSubject assertThatMediaProjectionState(List<EventMetricData> data) {
+        return assertThat(
+                data.stream()
+                        .map(
+                                (e) ->
+                                        e.getAtom()
+                                                .getExtension(mediaProjectionStateChanged)
+                                                .getState())
+                        .toList());
     }
 }

@@ -60,6 +60,7 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.permissions.Permissions;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -99,6 +100,7 @@ public final class Users {
     }
 
     /** Get all {@link UserReference}s on the device. */
+    @CanIgnoreReturnValue
     public Collection<UserReference> all() {
         if (!Versions.meetsMinimumSdkVersionRequirement(S)) {
             fillCache();

@@ -318,6 +318,10 @@ public class MimeMapTest {
         }
     }
 
+    @Test public void bug179151942_jpeg_xl() {
+        assertBidirectional("image/jxl", "jxl");
+    }
+
     private void checkInvalidExtension(String s) {
         assertFalse(mimeMap.hasExtension(s));
         assertNull(mimeMap.guessMimeTypeFromExtension(s));

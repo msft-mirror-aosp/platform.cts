@@ -29,6 +29,7 @@ import static org.junit.Assert.assertThat;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.drawable.Icon;
 import android.location.Location;
@@ -36,6 +37,7 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ParcelUuid;
+import android.os.UserHandle;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.PhoneLookup;
@@ -738,6 +740,15 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertFalse(callExtras.containsKey("cna"));
         assertFalse(callExtras.containsKey("oir"));
         assertFalse(callExtras.containsKey("cnap"));
+    }
+
+    /**
+     * Test that the associated user of the call is propagated
+     */
+    public void testUserPropagation() {
+        UserHandle testUser = mContext.getUser();
+        assertEquals(testUser, mCall.getDetails().getExtras()
+                .getParcelable(Intent.EXTRA_USER_HANDLE, UserHandle.class));
     }
 
     /**

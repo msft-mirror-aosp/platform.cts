@@ -17,6 +17,7 @@
 package com.android.queryable.queries;
 
 import com.android.queryable.Queryable;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 
 /** Query for a {@link Integer}. */
@@ -29,6 +30,7 @@ public interface IntegerQuery<E extends Queryable> extends Query<Integer> {
     }
 
     /** Require the {@link Integer} is equal to {@code i}. */
+    @CanIgnoreReturnValue
     E isEqualTo(int i);
 
     /** Require the {@link Integer} is greater than {@code i}. */

@@ -226,28 +226,19 @@ public final class Helper {
     }
 
     /**
-     * Checks if the privacy indicators are enabled on this device. Sets the state to the parameter,
-     * And returns the original enable state (to allow this state to be reset after the test)
+     * Returns whether the camera / mic privacy indicators are enabled. This method uses the same
+     * API call as the platform to check if the indicators are available to facilitate checking the
+     * enabled state.
      */
-    public static String getIndicatorEnabledState() {
-        return SystemUtil.runWithShellPermissionIdentity(() -> {
-            String currentlyEnabled = DeviceConfig.getProperty(DeviceConfig.NAMESPACE_PRIVACY,
-                    INDICATORS_FLAG);
-            Log.v(TAG, "getIndicatorEnabledStateIfNeeded()=" + currentlyEnabled);
-            return currentlyEnabled;
-        });
-    }
-
-    /**
-     * Checks if the privacy indicators are enabled on this device. Sets the state to the parameter,
-     * and returns the original enable state (to allow this state to be reset after the test)
-     */
-    public static void setIndicatorEnabledState(String shouldEnable) {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
-            Log.v(TAG, "setIndicatorEnabledState()=" + shouldEnable);
-            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_PRIVACY, INDICATORS_FLAG, shouldEnable,
-                    false);
-        });
+    public static boolean getCameraMicIndicatorsEnabled() {
+        return SystemUtil.runWithShellPermissionIdentity(
+                () -> {
+                    boolean enabled =
+                            DeviceConfig.getBoolean(
+                                    DeviceConfig.NAMESPACE_PRIVACY, INDICATORS_FLAG, true);
+                    Log.v(TAG, "getCameraMicIndicatorsEnabled()=" + enabled);
+                    return enabled;
+                });
     }
 
     /**

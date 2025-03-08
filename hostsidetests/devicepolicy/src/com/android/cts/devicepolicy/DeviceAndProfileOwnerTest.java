@@ -413,6 +413,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
         executeDeviceTestMethod(".PermissionsTest", "testCannotRequestPermission");
 
         assertNull(getDevice().uninstallPackage(PERMISSIONS_APP_PKG));
+        RunUtil.getDefault().sleep(500);
         installAppPermissionAppAsUser();
         executeDeviceTestMethod(".PermissionsTest", "testPermissionPolicyAutoGrant");
         installAppPermissionAppAsUser();
@@ -1040,6 +1041,7 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @LockSettingsTest
     @Test
+    @Ignore("Deprecated and no longer maintained")
     public void testSecondaryLockscreen() throws Exception {
         executeDeviceTestClass(".SecondaryLockscreenTest");
     }
