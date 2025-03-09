@@ -263,8 +263,8 @@ public class BluetoothLeAudioCodecTest {
     @Test
     public void builderWithExistingObject() {
         final int octetsPerFrame = 100;
-        final int minOctectsPerFrame = 50;
-        final int maxOctectsPerFrame = 150;
+        final int minOctetsPerFrame = 50;
+        final int maxOctetsPerFrame = 150;
         BluetoothLeAudioCodecConfig oriLeAudioCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder()
                         .setCodecType(BluetoothLeAudioCodecConfig.SOURCE_CODEC_TYPE_LC3)
@@ -274,8 +274,8 @@ public class BluetoothLeAudioCodecTest {
                         .setChannelCount(BluetoothLeAudioCodecConfig.CHANNEL_COUNT_2)
                         .setFrameDuration(BluetoothLeAudioCodecConfig.FRAME_DURATION_7500)
                         .setOctetsPerFrame(octetsPerFrame)
-                        .setMinOctetsPerFrame(minOctectsPerFrame)
-                        .setMaxOctetsPerFrame(maxOctectsPerFrame)
+                        .setMinOctetsPerFrame(minOctetsPerFrame)
+                        .setMaxOctetsPerFrame(maxOctetsPerFrame)
                         .build();
         BluetoothLeAudioCodecConfig toBuilderCodecConfig =
                 new BluetoothLeAudioCodecConfig.Builder(oriLeAudioCodecConfig).build();
@@ -292,7 +292,7 @@ public class BluetoothLeAudioCodecTest {
         assertThat(toBuilderCodecConfig.getFrameDuration())
                 .isEqualTo(BluetoothLeAudioCodecConfig.FRAME_DURATION_7500);
         assertThat(toBuilderCodecConfig.getOctetsPerFrame()).isEqualTo(octetsPerFrame);
-        assertThat(toBuilderCodecConfig.getMinOctetsPerFrame()).isEqualTo(minOctectsPerFrame);
-        assertThat(toBuilderCodecConfig.getMaxOctetsPerFrame()).isEqualTo(maxOctectsPerFrame);
+        assertThat(toBuilderCodecConfig.getMinOctetsPerFrame()).isEqualTo(minOctetsPerFrame);
+        assertThat(toBuilderCodecConfig.getMaxOctetsPerFrame()).isEqualTo(maxOctetsPerFrame);
     }
 }

@@ -16,7 +16,7 @@
 
 package android.mediapc.cts.common;
 
-import static android.util.DisplayMetrics.DENSITY_400;
+import static android.util.DisplayMetrics.DENSITY_HIGH;
 
 import static org.junit.Assume.assumeTrue;
 
@@ -44,30 +44,19 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * Test utilities.
- */
-public class Utils {
+/** Test utilities. */
+public final class Utils {
+
+    public static final int DISPLAY_DPI;
+    public static final int DISPLAY_LONG_PIXELS;
+    public static final int DISPLAY_SHORT_PIXELS;
+    public static final boolean IS_HDR;
+    public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
+    public static final long TOTAL_MEMORY_MB;
     private static final int sPc;
 
     private static final String TAG = "PerformanceClassTestUtils";
     private static final String MEDIA_PERF_CLASS_KEY = "media-performance-class";
-
-    public static final int DISPLAY_DPI;
-    public static final int MIN_DISPLAY_CANDIDATE_DPI = DENSITY_400;
-    public static final int DISPLAY_LONG_PIXELS;
-    public static final int MIN_DISPLAY_LONG_CANDIDATE_PIXELS = 1920;
-    public static final int DISPLAY_SHORT_PIXELS;
-    public static final int MIN_DISPLAY_SHORT_CANDIDATE_PIXELS = 1080;
-    public static final boolean IS_HDR;
-    public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
-
-    public static final long TOTAL_MEMORY_MB;
-    // Media performance requires 6 GB minimum RAM, but keeping the following to 5 GB
-    // as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB device.
-    public static final long MIN_MEMORY_PERF_CLASS_CANDIDATE_MB = 5 * 1024;
-    // Android T Media performance requires 8 GB min RAM, so setting lower as above
-    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 6800;
 
     private static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
     static {
@@ -250,14 +239,6 @@ public class Utils {
                 && meetsAvcCodecPreconditions(/* isEncoder */ false);
     }
 
-    private static boolean meetsMemoryPrecondition() {
-        if (isBeforeTPerfClass()) {
-            return TOTAL_MEMORY_MB >= MIN_MEMORY_PERF_CLASS_CANDIDATE_MB;
-        } else {
-            return TOTAL_MEMORY_MB >= MIN_MEMORY_PERF_CLASS_T_MB;
-        }
-    }
-
     public static int getPerfClass() {
         return sPc;
     }
@@ -267,6 +248,17 @@ public class Utils {
                sPc <= LAST_PERFORMANCE_CLASS;
     }
 
+    /**
+     * Does the device meet the preconditions for Media Performance Class.
+     *
+     * <p>Failing to meet these thresholds means we know that the device can't meet any performance
+     * class requirement. If the device doesn't meet these, we save time for everyone by skipping
+     * the tests that we know the device will fail.
+     *
+     * <p>The numbers here are slightly reduced from the strict thresholds so that we can gather
+     * some information about "almost performance class" devices. This won't impact CTS results, but
+     * will increase CTS runtime for those devices.
+     */
     public static boolean meetsPerformanceClassPreconditions() {
         if (isPerfClass()) {
             return true;
@@ -274,21 +266,32 @@ public class Utils {
 
         // If device doesn't advertise performance class, check if this can be ruled out as a
         // candidate for performance class tests.
-        if (!isHandheld()
-                || !meetsMemoryPrecondition()
-                || DISPLAY_DPI < MIN_DISPLAY_CANDIDATE_DPI
-                || DISPLAY_LONG_PIXELS < MIN_DISPLAY_LONG_CANDIDATE_PIXELS
-                || DISPLAY_SHORT_PIXELS < MIN_DISPLAY_SHORT_CANDIDATE_PIXELS
-                || !MEETS_AVC_CODEC_PRECONDITIONS) {
-            return false;
-        }
-        return true;
+        return isHandheld()
+                // Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
+                // As of 2025 Q1 this is about 80% of daily active devices.
+                && TOTAL_MEMORY_MB >= (long) 2.5 * 1024
+                // MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
+                // "mid tier" devices
+                // As of 2025 Q1 this is about 85% of daily active devices.
+                && DISPLAY_DPI >= DENSITY_HIGH
+                // MPC requires 1920. lowering to 1280 to report statistics on "mid tier" devices
+                // As of 2025 Q1 this is about 99% of daily active devices.
+                && DISPLAY_LONG_PIXELS >= 1280
+                // MPC requires 1080. lowering to 720 to report statistics on "mid tier" devices
+                // As of 2025 Q1 this is about 99% of daily active devices.
+                && DISPLAY_SHORT_PIXELS >= 720;
     }
 
+    /**
+     * Throws an {@link org.junit.AssumptionViolatedException} if the device does not {@link
+     * #meetsPerformanceClassPreconditions()}
+     */
     public static void assumeDeviceMeetsPerformanceClassPreconditions() {
         assumeTrue(
                 "Test skipped because the device does not meet the hardware requirements for "
                         + "performance class.",
                 meetsPerformanceClassPreconditions());
     }
+
+    private Utils() {}
 }

@@ -478,9 +478,7 @@ public abstract class Step<E> {
         // 1. The argument TAKE_SCREENSHOT should be set as true.
         // 2. The step needs a manual interact.
         // 3. The step hasn't been taken a screenshot before.
-        return mInstructionView != null
-                && getBooleanArg("TAKE_SCREENSHOT", false)
-                && !mHasTakenScreenshot;
+        return getBooleanArg("TAKE_SCREENSHOT", false) && !mHasTakenScreenshot;
     }
 
     /** Removes the instruction view in the main executor if it's still there. */

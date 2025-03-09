@@ -27,6 +27,7 @@ import org.w3c.dom.ProcessingInstruction;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -130,7 +131,10 @@ public class XmlWriter {
      * @throws RuntimeException if the mode is not supported.
      */
     public void registerXmlGenerators(List<ModeType> modes) {
-        modes.forEach(
+        // Sort the modes to ensure a consistent order of generators.
+        List<ModeType> sortedModes = new ArrayList<>(modes);
+        Collections.sort(sortedModes);
+        sortedModes.forEach(
                 modeType -> {
                     XmlGenerator<?> xmlGenerator;
                     try {
