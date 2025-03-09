@@ -912,10 +912,14 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                             apkClasses = Classpaths.getClassDefsFromJar(apkFile).stream()
                                         .map(ClassDef::getType)
                                         .collect(ImmutableSet.toImmutableSet());
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            // Just catch Exception instead of individual exceptions as this is
+                            // a test and we only care about logging the apk info - we have already
+                            // encountered IllegalArgumentException and IndexOutOfBoundsException
+                            // in the past.
                             CLog.e(LOG_TAG + ": Failed to get class defs from APK: "
-                                    + apkFile.getAbsolutePath());
-                            throw new IOException("Failed to get class defs from APK: "
+                                    + apkFile.getAbsolutePath() + " because of exception: " + e);
+                            throw new Exception("Failed to get class defs from APK: "
                                                            + apkFile.getAbsolutePath(), e);
                         }
                         // b/226559955: The directory paths containing APKs contain the build ID,
