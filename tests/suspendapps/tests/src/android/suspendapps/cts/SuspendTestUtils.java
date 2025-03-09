@@ -42,10 +42,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.internal.util.ArrayUtils;
 import com.android.suspendapps.suspendtestapp.SuspendTestActivity;
 import com.android.suspendapps.testdeviceadmin.TestCommsReceiver;
+import com.android.suspendapps.testdeviceadmin.TestDeviceAdmin;
 
 import libcore.util.EmptyArray;
 
@@ -103,8 +106,9 @@ public class SuspendTestUtils {
     }
 
     static void addAndAssertProfileOwner() {
-        SystemUtil.runShellCommand("dpm set-profile-owner --user cur " + DEVICE_ADMIN_COMPONENT,
-                output -> output.startsWith("Success"));
+        UserReference currentUser = TestApis.users().current();
+        TestApis.devicePolicy().setProfileOwner(currentUser,
+                new ComponentName(DEVICE_ADMIN_PACKAGE, TestDeviceAdmin.class.getName()));
     }
 
     static void removeDeviceAdmin() {

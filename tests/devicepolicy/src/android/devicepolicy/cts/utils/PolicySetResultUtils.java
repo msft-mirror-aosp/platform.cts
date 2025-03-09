@@ -22,6 +22,8 @@ import static android.app.admin.PolicyUpdateReceiver.EXTRA_POLICY_KEY;
 import static android.app.admin.PolicyUpdateReceiver.EXTRA_POLICY_TARGET_USER_ID;
 import static android.app.admin.PolicyUpdateReceiver.EXTRA_POLICY_UPDATE_RESULT_KEY;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.content.Intent;
@@ -37,7 +39,7 @@ public class PolicySetResultUtils {
             DeviceState deviceState, String policyIdentifier, int resultKey, int targetUser,
             Bundle policyExtraBundle) {
 
-        final Intent receivedIntent = deviceState.dpc().events().broadcastReceived()
+        final Intent receivedIntent = dpc(deviceState).events().broadcastReceived()
                 .whereIntent().action()
                 .isEqualTo(ACTION_DEVICE_POLICY_SET_RESULT)
                 .whereIntent().extras().key(EXTRA_POLICY_KEY).stringValue()

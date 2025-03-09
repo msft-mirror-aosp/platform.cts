@@ -26,6 +26,7 @@ android_test {
         "compatibility-device-util-axt",
         "tests-tests-networksecurityconfig-lib",
         "android.security.flags-aconfig-java",
+        "conscrypt-aconfig-flags-lib",
     ],
     libs: [
         "org.apache.http.legacy.stubs.test",

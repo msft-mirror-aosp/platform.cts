@@ -18,22 +18,19 @@ import logging
 import math
 import os.path
 
+import its_base_test
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
-import its_base_test
 import its_session_utils
+import opencv_processing_utils
+import zoom_capture_utils
+import cv2
 from mobly import test_runner
 import numpy as np
-import zoom_capture_utils
 
 
-_CIRCLE_COLOR = 0  # [0: black, 255: white]
-_CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
-_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTINUOUS_PICTURE_MODE = 4  # continuous picture AF mode
-_MIN_AREA_RATIO = 0.00015  # based on 2000/(4000x3000) pixels
-_MIN_CIRCLE_PTS = 25
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 10
 _SMOOTH_ZOOM_STEP = 1.1  # [1.0, 1.1] as a reference smooth zoom step
@@ -109,7 +106,7 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
 
-      # do auto captures over zoom range and find circles with cv2
+      # do auto captures over zoom range and find ArUco markers with cv2
       img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
       logging.debug('Using auto capture request')
       fmt = 'yuv'
@@ -124,6 +121,9 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       )
       test_failed = False
       test_data = []
+      all_aruco_ids = []
+      all_aruco_corners = []
+      images = []
       reqs = []
       req = capture_request_utils.auto_capture_request()
       req['android.control.settingsOverride'] = (
@@ -147,32 +147,50 @@ class LowLatencyZoomTest(its_base_test.ItsBaseTest):
       for i, cap in enumerate(caps):
         z_result = cap['metadata']['android.control.zoomRatio']
         af_state = cap['metadata']['android.control.afState']
-        scaled_zoom = min(z_list[i], z_result)
         logging.debug('Result[%d]: zoom ratio %.2f, afState %d',
                       i, z_result, af_state)
         img = image_processing_utils.convert_capture_to_rgb_image(
             cap, props=props)
         img_name = f'{img_name_stem}_{fmt}_{i}_{round(z_result, 2)}.jpg'
         image_processing_utils.write_image(img, img_name)
+        img_bgr = cv2.cvtColor(
+            image_processing_utils.convert_image_to_uint8(img),
+            cv2.COLOR_RGB2BGR)
 
         # determine radius tolerance of capture
         cap_fl = cap['metadata']['android.lens.focalLength']
+        cap_physical_id = (
+            cap['metadata']['android.logicalMultiCamera.activePhysicalId']
+        )
         radius_tol, offset_tol = test_tols[cap_fl]
 
-        # Find the center circle in img and check if it's cropped
-        circle = zoom_capture_utils.find_center_circle(
-            img, img_name, size, scaled_zoom, z_min, debug=debug)
+        # Find the center ArUco marker in img and check if it's cropped
+        corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+            img_bgr,
+            f'{img_name_stem}_{fmt}_{i}_{z_result:.2f}_ArUco.jpg',
+            aruco_marker_count=1,
+            force_greyscale=True,
+        )
 
+        all_aruco_corners.append([corner[0] for corner in corners])
+        all_aruco_ids.append([id[0] for id in ids])
+        images.append(img_bgr)
         test_data.append(
             zoom_capture_utils.ZoomTestData(
                 result_zoom=z_result,
-                circle=circle,
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
-                focal_length=cap_fl
+                focal_length=cap_fl,
+                physical_id=cap_physical_id,
             )
         )
 
+      # Find ArUco markers in all captures and update test data
+      zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
+          test_data, all_aruco_ids, all_aruco_corners, size)
+      # Mark ArUco marker center and image center
+      opencv_processing_utils.mark_zoom_images(
+          images, test_data, f'{img_name_stem}_{fmt}')
       # Since we are zooming in, settings_override may change the minimum zoom
       # value in the result metadata.
       # This is because zoom values like: [1., 2., 3., ..., 10.] may be applied

@@ -18,13 +18,13 @@ package com.android.bedstead.testapisreflection.processor.generators;
 
 import static com.android.bedstead.testapisreflection.processor.Processor.BLOCKLISTED_TEST_CLASSES;
 
-import com.android.bedstead.testapisreflection.processor.generators.common.CodeGenerator;
 import com.android.bedstead.testapis.parser.signatures.ClassSignature;
+import com.android.bedstead.testapisreflection.processor.generators.common.CodeGenerator;
 
 import com.google.common.collect.ImmutableMap;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.processing.ProcessingEnvironment;
 
@@ -48,7 +48,7 @@ public final class ProxyClassesGenerator {
     /**
      * Generate a proxy class per each "TestClass".
      */
-    public void generatedMethods(Set<ClassSignature> testClasses) {
+    public void generatedMethods(List<ClassSignature> testClasses) {
         for (ClassSignature classSignature : testClasses) {
             if (BLOCKLISTED_TEST_CLASSES.contains(classSignature.getName())) {
                 continue;

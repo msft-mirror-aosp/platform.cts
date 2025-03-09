@@ -20,7 +20,6 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet
-import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis.settings
 import com.android.bedstead.nene.users.UserReference
 

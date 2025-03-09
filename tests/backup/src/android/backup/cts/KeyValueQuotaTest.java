@@ -16,7 +16,11 @@
 
 package android.backup.cts;
 
-import android.platform.test.annotations.AppModeFull;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Verifies receiving quotaExceeded() callback on full backup.
@@ -24,7 +28,7 @@ import android.platform.test.annotations.AppModeFull;
  * Uses test app that creates large file and receives the callback.
  * {@link com.android.localtransport.LocalTransport} is used, it has size quota 25MB.
  */
-@AppModeFull
+@RunWith(AndroidJUnit4.class)
 public class KeyValueQuotaTest extends BaseBackupCtsTest {
 
     private static final String BACKUP_APP_NAME = "android.backup.kvapp";
@@ -35,6 +39,12 @@ public class KeyValueQuotaTest extends BaseBackupCtsTest {
 
     private static final int TIMEOUT_SECONDS = 30;
 
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+    }
+
+    @Test
     public void testQuotaExceeded() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -49,6 +59,7 @@ public class KeyValueQuotaTest extends BaseBackupCtsTest {
             "Quota exceeded!");
     }
 
+    @Test
     public void testQuotaReported() throws Exception {
         if (!isBackupSupported()) {
             return;
@@ -61,5 +72,4 @@ public class KeyValueQuotaTest extends BaseBackupCtsTest {
         waitForLogcat(TIMEOUT_SECONDS, separator,
             "quota is " + LOCAL_TRANSPORT_BACKUP_QUOTA);
     }
-
 }

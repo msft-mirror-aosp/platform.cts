@@ -16,6 +16,7 @@
 
 package android.view.inputmethod.cts.installtests;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -42,8 +43,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.compatibility.common.util.PollingCheck;
@@ -112,7 +113,7 @@ public final class AdditionalSubtypeLifecycleTest {
     @EnsureHasAdditionalUser
     public void testPerUserAdditionalInputMethodSubtype() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
         assertThat(currentUserId).isNotEqualTo(additionalUserId);
@@ -146,7 +147,7 @@ public final class AdditionalSubtypeLifecycleTest {
     @EnsureHasAdditionalUser
     public void testClearAdditionalInputMethodSubtypeUponApkUpdateForForegroundUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
         assertThat(currentUserId).isNotEqualTo(additionalUserId);
@@ -186,7 +187,7 @@ public final class AdditionalSubtypeLifecycleTest {
     @EnsureHasAdditionalUser
     public void testClearAdditionalInputMethodSubtypeUponApkUpdateForBackgroundUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
         assertThat(currentUserId).isNotEqualTo(additionalUserId);
@@ -227,7 +228,7 @@ public final class AdditionalSubtypeLifecycleTest {
     public void testClearAdditionalInputMethodSubtypeUponClearDataForForegroundUser()
             throws Exception {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
         assertThat(currentUserId).isNotEqualTo(additionalUserId);
@@ -273,7 +274,7 @@ public final class AdditionalSubtypeLifecycleTest {
     public void testClearAdditionalInputMethodSubtypeUponClearDataForBackgroundUser()
             throws Exception  {
         final UserReference currentUser = sDeviceState.initialUser();
-        final UserReference additionalUser = sDeviceState.additionalUser();
+        final UserReference additionalUser = additionalUser(sDeviceState);
         final int currentUserId = currentUser.id();
         final int additionalUserId = additionalUser.id();
         assertThat(currentUserId).isNotEqualTo(additionalUserId);

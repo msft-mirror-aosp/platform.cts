@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.InstrumentationRegistry;
@@ -108,5 +109,10 @@ public abstract class BaseCarrierApiTest {
                 .that(getContext().getSystemService(TelephonyManager.class).hasCarrierPrivileges())
                 .isTrue();
         mPreconditionsSatisfied = true;
+    }
+
+    protected boolean hasTelephonyCalling() {
+        return getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_TELEPHONY_CALLING);
     }
 }

@@ -20,6 +20,6 @@
         <option name="test-file-name" value="bedstead-root-test.apk" />
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="com.android.bedstead.root.test" />
+        <option name="package" value="com.android.xts.root.test" />
     </test>
 </configuration>

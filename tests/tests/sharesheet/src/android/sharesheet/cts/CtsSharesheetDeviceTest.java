@@ -60,7 +60,6 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
@@ -1045,7 +1044,7 @@ public class CtsSharesheetDeviceTest {
     private void clickText(String label, boolean caseSensitive) {
         UiObject2 customAction = mSharesheet.wait(
                 Until.findObject(
-                    By.text(textContainsPattern(label, caseSensitive)).displayId(mMyDisplayId)),
+                        By.text(textContainsPattern(label, caseSensitive)).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
         assertWithMessage("Couldn't find text '" + label + "'").that(customAction).isNotNull();
         Log.d(TAG, "clicking on the custom action");
@@ -1171,7 +1170,7 @@ public class CtsSharesheetDeviceTest {
         // This method intentionally does not wait, looks to see if visible on method call
         try {
             return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId))
-                != null;
+                    != null;
         } catch (StaleObjectException e) {
             // If we get a StaleObjectException, it means that the underlying View has
             // already been destroyed, meaning the sharesheet is no longer visible.
@@ -1275,8 +1274,7 @@ public class CtsSharesheetDeviceTest {
     }
 
     private void waitAndAssertPkgVisible(String pkg, String failureMessage) {
-        waitAndAssertFoundOnDevice(
-            By.pkg(pkg).depth(0).displayId(mMyDisplayId), failureMessage);
+        waitAndAssertFoundOnDevice(By.pkg(pkg).depth(0).displayId(mMyDisplayId), failureMessage);
     }
 
     private void waitAndAssertPkgNotVisible(String pkg) {
@@ -1285,7 +1283,7 @@ public class CtsSharesheetDeviceTest {
 
     private void waitAndAssertTextContains(String containsText) {
         BySelector selector =
-            By.text(textContainsPattern(containsText, false)).displayId(mMyDisplayId);
+                By.text(textContainsPattern(containsText, false)).displayId(mMyDisplayId);
         String failureMessage = "Failed to find " + containsText + " on screen";
         assertWithMessage(failureMessage).that(
                         mSharesheet.wait(Until.findObject(selector),
@@ -1339,7 +1337,7 @@ public class CtsSharesheetDeviceTest {
      */
     private UiObject2 findTextContains(String containsText) {
         return mSharesheet.wait(
-            Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
+                Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
     }
 

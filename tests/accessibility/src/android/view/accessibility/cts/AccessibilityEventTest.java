@@ -36,6 +36,9 @@ import android.content.Context;
 import android.os.Message;
 import android.os.Parcel;
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannableString;
 import android.text.TextUtils;
 import android.text.style.LocaleSpan;
@@ -44,6 +47,7 @@ import android.view.View;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityRecord;
+import android.view.accessibility.Flags;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -51,6 +55,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -89,11 +95,15 @@ public class AccessibilityEventTest {
                     new InstrumentedAccessibilityServiceTestRule<>(
                             SpeakingAccessibilityService.class, false);
 
+    private final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Rule
     public final RuleChain mRuleChain =
             RuleChain.outerRule(mActivityRule)
                     .around(mInstrumentedAccessibilityServiceRule)
-                    .around(mDumpOnFailureRule);
+                    .around(mDumpOnFailureRule)
+                    .around(mCheckFlagsRule);
 
     @Before
     public void setUp() throws Throwable {
@@ -287,6 +297,47 @@ public class AccessibilityEventTest {
                 DEFAULT_TIMEOUT_MS);
         assertThat(awaitedEvent.getAction()).isEqualTo(ACTION_SCROLL_IN_DIRECTION.getId());
         assertThat(awaitedEvent.getSource()).isEqualTo(mChildView.createAccessibilityNodeInfo());
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityEvent#CONTENT_CHANGE_TYPE_CHECKED"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_TRI_STATE_CHECKED)
+    public void testContentChangeTypeCheckedEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent = sUiAutomation.executeAndWaitForEvent(
+                () -> {
+                    AccessibilityEvent event = new AccessibilityEvent(
+                            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+                    event.setContentChangeTypes(AccessibilityEvent.CONTENT_CHANGE_TYPE_CHECKED);
+                    mChildView.sendAccessibilityEventUnchecked(event);
+                },
+                event -> event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
+                DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getContentChangeTypes()).isEqualTo(
+                AccessibilityEvent.CONTENT_CHANGE_TYPE_CHECKED);
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityEvent#CONTENT_CHANGE_TYPE_EXPANDED"})
+    @RequiresFlagsEnabled(Flags.FLAG_A11Y_EXPANSION_STATE_API)
+    public void testContentChangeTypeExpandedEvent() throws Throwable {
+        final AccessibilityEvent awaitedEvent =
+                sUiAutomation.executeAndWaitForEvent(
+                        () -> {
+                            AccessibilityEvent event =
+                                    new AccessibilityEvent(
+                                            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+                            event.setContentChangeTypes(
+                                    AccessibilityEvent.CONTENT_CHANGE_TYPE_EXPANDED);
+                            mChildView.sendAccessibilityEventUnchecked(event);
+                        },
+                        event ->
+                                event.getEventType()
+                                        == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
+                        DEFAULT_TIMEOUT_MS);
+        assertThat(awaitedEvent.getContentChangeTypes())
+                .isEqualTo(AccessibilityEvent.CONTENT_CHANGE_TYPE_EXPANDED);
     }
 
     @Test

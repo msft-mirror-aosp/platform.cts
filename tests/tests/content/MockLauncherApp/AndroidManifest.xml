@@ -36,14 +36,14 @@
         </activity>
 
         <!-- Tests for attribute of resetEnabledSetting -->
-        <activity android:name=".MockActivity" android:exported="false"
+        <activity android:name=".MockActivity" android:exported="true"
                   android:enabled="false" />
-        <receiver android:name=".MockReceiver" android:exported="false"
+        <receiver android:name=".MockReceiver" android:exported="true"
                   android:enabled="false" />
-        <service android:name=".MockService" android:exported="false"
+        <service android:name=".MockService" android:exported="true"
                  android:enabled="false" />
         <provider android:authorities="android.content.cts.mocklauncherapp"
-                  android:name=".MockProvider" android:exported="false"
+                  android:name=".MockProvider" android:exported="true"
                   android:enabled="false" />
     </application>
 </manifest>

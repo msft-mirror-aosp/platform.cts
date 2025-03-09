@@ -30,7 +30,7 @@ android_test {
     static_libs: [
         "RemoteAccountAuthenticator",
         "Nene",
-        "Harrier",
+        "bedstead",
         "TestApp",
         "EventLib",
         "androidx.test.ext.junit",

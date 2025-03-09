@@ -24,7 +24,7 @@ android_test {
         "androidx.test.rules",
         "ctstestrunner-axt",
         "CtsAppTestStubsShared",
-        "Harrier",
+        "bedstead",
         "junit",
         "truth",
     ],

@@ -17,90 +17,109 @@
 package android.uirendering.cts.bitmapverifiers;
 
 import android.graphics.Color;
+import android.graphics.Rect;
+import androidx.annotation.ColorInt;
 
-public class BlurPixelVerifier extends BitmapVerifier {
+public class BlurPixelVerifier extends PerPixelBitmapVerifier {
+    // The background color that the blurred rectangle is blended against.
+    private final Color mDstColor;
+    // The original color of the rectangle before it was blurred.
+    private final Color mSrcColor;
 
-    private final int mDstColor;
-    private final int mSrcColor;
+    // The original geometry of the rectangle before it was blurred.
+    private final Rect mSrcRect;
+    // The blur radius applied to the rectangle.
+    private final int mBlurRadius;
+    private final int mKernelWidth;
+
+    // Pre-computed 2D Gaussian integral based on mBlurRadius. For x,y in [-radius, radius],
+    // mKernelWeights[(y+mBlurRadius)*mKernelWidth + x + mBlurRadius] is integral from of the
+    // Gaussian equation from [-x, +radius]x[-y, +radius].
+    private final float[] mKernelWeights;
 
     /**
-     * Create a BitmapVerifier that compares pixel values relative to the
-     * provided source and destination colors. Pixels closer to the center of
-     * the test bitmap are expected to match closer to the source color, while pixels
-     * on the exterior of the test bitmap are expected to match the destination
-     * color more closely
+     * Create a BitmapVerifier that compares pixel values assuming that a solid color
+     * rectangle of `srcColor` has been blurred with a blur radius of `blurRadius` and blended
+     * against a background of `dstColor`.
      */
-    public BlurPixelVerifier(int srcColor, int dstColor) {
-        mSrcColor = srcColor;
-        mDstColor = dstColor;
-    }
+    public BlurPixelVerifier(@ColorInt int srcColor, @ColorInt int dstColor,
+                             Rect srcRect, int blurRadius) {
+        // Use a 15% spatial tolerance and default color tolerance to account for reasonable
+        // approximations in the blur rendering.
+        super(DEFAULT_THRESHOLD, 0.15f);
 
-    @Override
-    public boolean verify(int[] bitmap, int offset, int stride, int width, int height) {
+        mSrcColor = Color.valueOf(srcColor);
+        mDstColor = Color.valueOf(dstColor);
+        mSrcRect = srcRect;
+        mBlurRadius = blurRadius;
+        mKernelWidth = mBlurRadius * 2 + 1;
 
-        float dstRedChannel = Color.red(mDstColor);
-        float dstGreenChannel = Color.green(mDstColor);
-        float dstBlueChannel = Color.blue(mDstColor);
+        // The sigma equation comes from Blur::convertRadiusToSigma() in native code.
+        float sigma = mBlurRadius > 0 ? 0.57735f * mBlurRadius + 0.5f : 0.f;
+        float sigmaDenom = mBlurRadius > 0 ? 1.0f / (2.0f * sigma * sigma) : 1.f;
 
-        float srcRedChannel = Color.red(mSrcColor);
-        float srcGreenChannel = Color.green(mSrcColor);
-        float srcBlueChannel = Color.blue(mSrcColor);
-
-        // Calculate the largest rgb color difference between the source and destination
-        // colors
-        double maxDifference = Math.pow(srcRedChannel - dstRedChannel, 2.0f)
-                + Math.pow(srcGreenChannel - dstGreenChannel, 2.0f)
-                + Math.pow(srcBlueChannel - dstBlueChannel, 2.0f);
-
-        // Calculate the maximum distance between pixels to the center of the test image
-        double maxPixelDistance =
-                Math.sqrt(Math.pow(width / 2.0, 2.0) + Math.pow(height / 2.0, 2.0));
-
-        // Additional tolerance applied to comparisons
-        float threshold = .05f;
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                double pixelDistance = Math.sqrt(Math.pow(x - width / 2.0, 2.0)
-                        + Math.pow(y - height / 2.0, 2.0));
-                // Calculate the threshold of the destination color expected based on the
-                // pixels position relative to the center
-                double dstPercentage = pixelDistance / maxPixelDistance + threshold;
-
-                int pixelColor = bitmap[indexFromXAndY(x, y, stride, offset)];
-                double pixelRedChannel = Color.red(pixelColor);
-                double pixelGreenChannel = Color.green(pixelColor);
-                double pixelBlueChannel = Color.blue(pixelColor);
-                // Compare the RGB color distance between the current pixel and the destination
-                // color
-                double dstDistance = Math.sqrt(Math.pow(pixelRedChannel - dstRedChannel, 2.0)
-                        + Math.pow(pixelGreenChannel - dstGreenChannel, 2.0)
-                        + Math.pow(pixelBlueChannel - dstBlueChannel, 2.0));
-
-                // Compare the RGB color distance between the current pixel and the source
-                // color
-                double srcDistance = Math.sqrt(Math.pow(pixelRedChannel - srcRedChannel, 2.0)
-                        + Math.pow(pixelGreenChannel - srcGreenChannel, 2.0)
-                        + Math.pow(pixelBlueChannel - srcBlueChannel, 2.0));
-
-                // calculate the ratio between the destination color to the current pixel
-                // color relative to the maximum distance between source and destination colors
-                // If this value exceeds the threshold expected for the pixel distance from
-                // center then we are rendering an unexpected color
-                double dstFraction = dstDistance / maxDifference;
-                if (dstFraction > dstPercentage) {
-                    return false;
-                }
-
-                // similarly compute the ratio between the source color to the current pixel
-                // color relative to the maximum distance between source and destination colors
-                // If this value exceeds the threshold expected for the pixel distance from
-                // center then we are rendering an unexpected source color
-                double srcFraction = srcDistance / maxDifference;
-                if (srcFraction > dstPercentage) {
-                    return false;
-                }
+        // Calculate Gaussian weights for the full 2D kernel.
+        mKernelWeights = new float[mKernelWidth * mKernelWidth];
+        for (int y = -mBlurRadius; y < mBlurRadius; ++y) {
+            for (int x = -mBlurRadius; x < mBlurRadius; ++x) {
+                int i = (y + mBlurRadius) * mKernelWidth + (x + mBlurRadius);
+                mKernelWeights[i] = (float) Math.exp(-(x*x + y*y)*sigmaDenom);
             }
         }
-        return true;
+
+        // Summed area table, do base horizontal and vertical edge first.
+        for (int x = 1; x < mKernelWidth; ++x) {
+            mKernelWeights[x] += mKernelWeights[x - 1];
+        }
+        for (int y = 1; y < mKernelWidth; ++y) {
+            mKernelWeights[y * mKernelWidth] += mKernelWeights[(y - 1) * mKernelWidth];
+        }
+        // Fill in 2D portion based on adjacent cells that are already summed up
+        for (int y = 1; y < mKernelWidth; ++y) {
+            for (int x = 1; x < mKernelWidth; ++x) {
+                int a = (y-1) * mKernelWidth + x - 1;
+                int b = (y-1) * mKernelWidth + x;
+                int c = y * mKernelWidth + x - 1;
+                int d = y * mKernelWidth + x;
+                mKernelWeights[d] += mKernelWeights[b] + mKernelWeights[c] - mKernelWeights[a];
+            }
+        }
+
+        // Normalize
+        float norm = 1.f / mKernelWeights[mKernelWeights.length - 1];
+        for (int i = 0; i < mKernelWidth*mKernelWidth; ++i) {
+            mKernelWeights[i] *= norm;
+        }
+    }
+
+    @Override @ColorInt
+    protected int getExpectedColor(int x, int y) {
+        // Calculate minimum distance between the pixel location and the
+        // boundary of the unblurred rectangle. Negative values indicate the pixel
+        // is outside the unblurred rectangle.
+        int minX = Math.min(x - mSrcRect.left, mSrcRect.right - x - 1);
+        int minY = Math.min(y - mSrcRect.top, mSrcRect.bottom - y - 1);
+
+        // The blur radius is the maximum distance that the srcColor or the dstColor
+        // can influence another pixel. That means if minDistance <= -mBlurRadius,
+        // the pixel color should be mDstColor. If minDistance >= mBlurRadius, the pixel
+        // color should be mSrcColor. Otherwise, the pixel color should be a Gaussian-weighted
+        // interpolation between the two.
+        float weight;
+        if (minX < -mBlurRadius || minY < -mBlurRadius) {
+            weight = 0.f;
+        } else if (minX > mBlurRadius && minY > mBlurRadius) {
+            weight = 1.f;
+        } else {
+            minX = Math.clamp(minX, -mBlurRadius, mBlurRadius);
+            minY = Math.clamp(minY, -mBlurRadius, mBlurRadius);
+            weight = mKernelWeights[(minY + mBlurRadius)*mKernelWidth + minX + mBlurRadius];
+        }
+
+        // Calculate the expected color of the pixel.
+        float expectedRed = weight * mSrcColor.red() + (1.0f - weight) * mDstColor.red();
+        float expectedGreen = weight * mSrcColor.green() + (1.0f - weight) * mDstColor.green();
+        float expectedBlue = weight * mSrcColor.blue() + (1.0f - weight) * mDstColor.blue();
+        return Color.rgb(expectedRed, expectedGreen, expectedBlue);
     }
 }

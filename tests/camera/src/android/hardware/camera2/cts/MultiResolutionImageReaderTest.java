@@ -48,12 +48,16 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 
 import com.android.internal.camera.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -91,6 +95,9 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
     private MultiResolutionImageReader mMultiResolutionImageReader;
     private SimpleMultiResolutionImageReaderListener mListener;
+
+    @Rule
+    public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testMultiResolutionCaptureCharacteristics() throws Exception {
@@ -186,42 +193,64 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
     @Test
     public void testMultiResolutionImageReaderJpeg() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.JPEG, /*repeating*/false);
+        testMultiResolutionImageReaderForFormat(ImageFormat.JPEG, /*repeating*/false,
+                                                /*usage*/0);
     }
 
     @Test
     public void testMultiResolutionImageReaderFlexibleYuv() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.YUV_420_888, /*repeating*/false);
+        testMultiResolutionImageReaderForFormat(ImageFormat.YUV_420_888, /*repeating*/false,
+                                                /*usage*/0);
     }
 
     @Test
     public void testMultiResolutionImageReaderRaw() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.RAW_SENSOR, /*repeating*/false);
+        testMultiResolutionImageReaderForFormat(ImageFormat.RAW_SENSOR, /*repeating*/false,
+                                                /*usage*/0);
     }
 
     @Test
     public void testMultiResolutionImageReaderPrivate() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.PRIVATE, /*repeating*/false);
+        testMultiResolutionImageReaderForFormat(ImageFormat.PRIVATE, /*repeating*/false,
+                                                /*usage*/0);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MULTIRESOLUTION_IMAGEREADER_USAGE_PUBLIC)
+    @Test
+    public void testMultiResolutionImageReaderPrivateUsage() throws Exception {
+        testMultiResolutionImageReaderForFormat(ImageFormat.PRIVATE, /*repeating*/false,
+                                                /*usage*/HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
     }
 
     @Test
     public void testMultiResolutionImageReaderRepeatingJpeg() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.JPEG, /*repeating*/true);
+        testMultiResolutionImageReaderForFormat(ImageFormat.JPEG, /*repeating*/true,
+                                                /*usage*/0);
     }
 
     @Test
     public void testMultiResolutionImageReaderRepeatingFlexibleYuv() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.YUV_420_888, /*repeating*/true);
+        testMultiResolutionImageReaderForFormat(ImageFormat.YUV_420_888, /*repeating*/true,
+                                                /*usage*/0);
     }
 
     @Test
     public void testMultiResolutionImageReaderRepeatingRaw() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.RAW_SENSOR, /*repeating*/true);
+        testMultiResolutionImageReaderForFormat(ImageFormat.RAW_SENSOR, /*repeating*/true,
+                                                /*usage*/0);
     }
 
     @Test
     public void testMultiResolutionImageReaderRepeatingPrivate() throws Exception {
-        testMultiResolutionImageReaderForFormat(ImageFormat.PRIVATE, /*repeating*/true);
+        testMultiResolutionImageReaderForFormat(ImageFormat.PRIVATE, /*repeating*/true,
+                                                /*usage*/0);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_MULTIRESOLUTION_IMAGEREADER_USAGE_PUBLIC)
+    @Test
+    public void testMultiResolutionImageReaderRepeatingPrivateUsage() throws Exception {
+        testMultiResolutionImageReaderForFormat(ImageFormat.PRIVATE, /*repeating*/true,
+                                                /*usage*/HardwareBuffer.USAGE_GPU_SAMPLED_IMAGE);
     }
 
     /**
@@ -352,7 +381,7 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
         targets.close();
     }
 
-    private void testMultiResolutionImageReaderForFormat(int format, boolean repeating)
+    private void testMultiResolutionImageReaderForFormat(int format, boolean repeating, long usage)
             throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             try {
@@ -386,7 +415,7 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
                 openDevice(id);
                 multiResolutionImageReaderFormatTestByCamera(format,
-                        multiResolutionStreams, zoomRatios, repeating);
+                        multiResolutionStreams, zoomRatios, repeating, usage);
             } finally {
                 closeDevice(id);
             }
@@ -395,13 +424,19 @@ public class MultiResolutionImageReaderTest extends Camera2AndroidTestCase {
 
     private void multiResolutionImageReaderFormatTestByCamera(int format,
             Collection<MultiResolutionStreamInfo> multiResolutionStreams, List<Float> zoomRatios,
-            boolean repeating) throws Exception {
+            boolean repeating, long usage) throws Exception {
         try {
             int numFrameVerified = repeating ? NUM_FRAME_VERIFIED : 1;
 
             // Create multi-resolution ImageReader
-            mMultiResolutionImageReader = new MultiResolutionImageReader(
-                    multiResolutionStreams, format, MAX_NUM_IMAGES);
+            if (usage == 0) {
+                mMultiResolutionImageReader = new MultiResolutionImageReader(
+                        multiResolutionStreams, format, MAX_NUM_IMAGES);
+            } else {
+                mMultiResolutionImageReader = new MultiResolutionImageReader(
+                        multiResolutionStreams, format, MAX_NUM_IMAGES, usage);
+            }
+
             mListener = new SimpleMultiResolutionImageReaderListener(
                     mMultiResolutionImageReader, MAX_NUM_IMAGES, repeating);
             mMultiResolutionImageReader.setOnImageAvailableListener(mListener,

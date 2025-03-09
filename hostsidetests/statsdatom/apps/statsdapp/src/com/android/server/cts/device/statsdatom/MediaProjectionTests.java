@@ -29,6 +29,7 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
@@ -47,6 +48,8 @@ public class MediaProjectionTests {
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     private static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     private static final String CANCEL_RESOURCE_ID = "android:id/button2";
+    private static final String MEDIA_PROJECTION_CONSENT_DIALOG =
+            SYSTEM_UI_PACKAGE + ":id/screen_share_permission_dialog";
 
     // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
     // 24Q4 onwards will have screen_share_mode_options, so need to check both options here
@@ -100,8 +103,11 @@ public class MediaProjectionTests {
         mActivityRule.launchActivity(null);
         mDevice.waitForIdle();
 
+        UiObject2 consentDialog = mDevice.wait(
+                Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
+        consentDialog.scroll(Direction.DOWN, 100);
         UiObject2 cancelButton =
-                mDevice.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), TIMEOUT);
+                consentDialog.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), TIMEOUT);
         cancelButton.click();
     }
 
@@ -135,8 +141,11 @@ public class MediaProjectionTests {
         singleAppOption.click();
 
         // Go to app selector page
+        UiObject2 consentDialog = mDevice.wait(
+                Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
+        consentDialog.scroll(Direction.DOWN, 100);
         UiObject2 startRecordingButton =
-                mDevice.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)), TIMEOUT);
+                consentDialog.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)), TIMEOUT);
         startRecordingButton.click();
     }
 }

@@ -34,8 +34,10 @@ import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureTestAppInstalledAsPrimaryDPC
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnBackgroundDeviceOwnerUser
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideManagedProfileUsingParentInstance
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnCloneProfileAlongsideOrganizationOwnedProfileUsingParentInstance
@@ -55,11 +57,12 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUna
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.harrier.policies.DisallowBluetooth
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.profile
+import com.android.bedstead.multiuser.secondaryUser
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -73,10 +76,12 @@ import com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME
 import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDpc
+import com.android.bedstead.testapps.testApp
 import com.android.queryable.annotations.BooleanQuery
 import com.android.queryable.annotations.IntegerQuery
 import com.android.queryable.annotations.IntegerSetQuery
 import com.android.queryable.annotations.Query
+import com.android.queryable.annotations.StringQuery
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert
@@ -328,20 +333,6 @@ class EnterpriseAnnotationExecutorTest {
     fun profileOwner_otherUser_profileOwnerIsNotSet_throwsException() {
         assertThrows(IllegalStateException::class.java) {
             sDeviceState.profileOwner()
-        }
-    }
-
-    @Test
-    fun profileOwner_userType_onUserIsNull_throwsException() {
-        assertThrows(NullPointerException::class.java) {
-            sDeviceState.profileOwner(null as UserType?)
-        }
-    }
-
-    @Test
-    fun profileOwner_userReference_onUserIsNull_throwsException() {
-        assertThrows(NullPointerException::class.java) {
-            sDeviceState.profileOwner(null as UserReference?)
         }
     }
 
@@ -812,11 +803,20 @@ class EnterpriseAnnotationExecutorTest {
         ).isTrue()
     }
 
+    @EnsureTestAppInstalledAsPrimaryDPC(
+        query = Query(packageName = StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)))
+    @Test
+    fun dpc_primaryTestApp_returnsTestApp() {
+        assertThat(sDeviceState.dpc().packageName()).isEqualTo(TEST_APP_PACKAGE_NAME)
+    }
+
     companion object {
         @ClassRule
         @Rule
         @JvmField
         val sDeviceState = DeviceState()
+
+        private const val TEST_APP_PACKAGE_NAME: String = "com.android.bedstead.testapp.LockTaskApp"
 
         private const val CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE"
         private const val PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE"
