@@ -23,8 +23,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeNotNull;
 
+import android.content.pm.PackageManager;
 import android.os.Flags;
 import android.os.HandlerThread;
 import android.os.PerformanceHintManager;
@@ -66,6 +69,15 @@ public class PerformanceHintManagerTest {
     private ActivityScenario<ASurfaceControlTestActivity> mScenario;
     private SurfaceControl mSurfaceControl;
 
+    private void assumeMobileDeviceFormFactor() {
+        final PackageManager pm =
+                InstrumentationRegistry.getInstrumentation().getContext().getPackageManager();
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED));
+    }
+
     private void makeSurfaceControl() {
         mScenario = ActivityScenario.launch(ASurfaceControlTestActivity.class);
         final CountDownLatch activityLatch = new CountDownLatch(1);
@@ -98,6 +110,7 @@ public class PerformanceHintManagerTest {
 
     @Before
     public void setUp() {
+        assumeTrue(nativeGetSessionsAreSupported());
         mPerformanceHintManager =
                 InstrumentationRegistry.getInstrumentation().getContext().getSystemService(
                         PerformanceHintManager.class);
@@ -403,6 +416,7 @@ public class PerformanceHintManagerTest {
 
     @Test
     public void testNativeCreateGraphicsPipelineSession() {
+        assumeMobileDeviceFormFactor();
         final String resultMessage = nativeTestCreateGraphicsPipelineSession();
         if (!Strings.isNullOrEmpty(resultMessage)) {
             fail(resultMessage);
@@ -436,9 +450,9 @@ public class PerformanceHintManagerTest {
         final String resultMessage = nativeTestReportActualWorkDuration2();
     }
 
-    private native String nativeTestCreateGraphicsPipelineSession();
-
+    private native boolean nativeGetSessionsAreSupported();
     private native String nativeTestCreateHintSession();
+    private native String nativeTestCreateGraphicsPipelineSession();
     private native String nativeTestCreateHintSessionUsingConfig();
     private native String nativeTestGetMaxGraphicsPipelineThreadsCount();
     private native String nativeTestGetPreferredUpdateRateNanos();

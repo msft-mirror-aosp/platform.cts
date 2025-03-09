@@ -51,7 +51,6 @@ android_test {
     static_libs: [
         "bedstead-enterprise",
         "truth",
-        "testng", // used for assertThrows
         "bedstead-root",
     ],
     manifest: "src/test/AndroidManifest.xml",

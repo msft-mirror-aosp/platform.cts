@@ -19,11 +19,12 @@ Copyright (C) 2017 The Android Open Source Project
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:background="@drawable/border"
-              android:padding="8dp" >
+              android:background="@drawable/border_lime"
+              android:padding="8dp">
 
     <TextView android:layout_width="wrap_content"
               android:layout_height="wrap_content"
-              android:textColor="@android:color/black"
+              android:padding="8dp"
+              android:textColor="#00FF00"
               android:text="@string/da_tapjacking_overlay_app_description" />
 </LinearLayout>

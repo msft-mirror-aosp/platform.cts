@@ -1477,8 +1477,10 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeVisible(TIMEOUT);
             assertTrue("IME should be in fullscreen mode",
                     getOnMainSync(() -> imm.isFullscreenMode()));
+        } finally {
+            setAutoRotateScreen(true);
+            uiDevice.setOrientationNatural();
         }
-        setAutoRotateScreen(true);
     }
 
     /**

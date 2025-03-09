@@ -16,23 +16,17 @@
 package android.telephony.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeFalse;
 
 import static java.util.Collections.EMPTY_SET;
 
 import android.telephony.CellIdentity;
-import android.telephony.CellIdentityCdma;
 import android.telephony.CellIdentityGsm;
 import android.telephony.CellIdentityLte;
 import android.telephony.CellIdentityNr;
 import android.telephony.CellIdentityTdscdma;
 import android.telephony.CellIdentityWcdma;
-import android.telephony.CellInfo;
 import android.telephony.CellLocation;
-import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Test;
 
@@ -40,41 +34,6 @@ import org.junit.Test;
  * Test {@link android.telephony.CellIdentity} and its subclasses.
  */
 public class CellIdentityTest {
-    @Test
-    public void testCellIdentityCdma_asCellLocation() {
-        assumeFalse(Flags.cleanupCdma());
-        int nid = 12;
-        int sid = 34;
-        int bid = 56;
-        int lon = 78;
-        int lat = 90;
-        CellIdentity cellIdentity = new CellIdentityCdma(nid, sid, bid, lon, lat, null, null);
-
-        CellLocation cellLocation = cellIdentity.asCellLocation();
-
-        CdmaCellLocation cdmaCellLocation = (CdmaCellLocation) cellLocation;
-        assertEquals(nid, cdmaCellLocation.getNetworkId());
-        assertEquals(sid, cdmaCellLocation.getSystemId());
-        assertEquals(bid, cdmaCellLocation.getBaseStationId());
-        assertEquals(lon, cdmaCellLocation.getBaseStationLongitude());
-        assertEquals(lat, cdmaCellLocation.getBaseStationLatitude());
-    }
-
-    @Test
-    public void testCellIdentityCdma_unavailable_asCellLocation() {
-        assumeFalse(Flags.cleanupCdma());
-        CellIdentity cellIdentity = new CellIdentityCdma();
-
-        CellLocation cellLocation = cellIdentity.asCellLocation();
-
-        CdmaCellLocation cdmaCellLocation = (CdmaCellLocation) cellLocation;
-        assertEquals(-1, cdmaCellLocation.getNetworkId());
-        assertEquals(-1, cdmaCellLocation.getSystemId());
-        assertEquals(-1, cdmaCellLocation.getBaseStationId());
-        assertEquals(CellInfo.UNAVAILABLE, cdmaCellLocation.getBaseStationLongitude());
-        assertEquals(CellInfo.UNAVAILABLE, cdmaCellLocation.getBaseStationLatitude());
-    }
-
     @Test
     public void testCellIdentityGsm_asCellLocation() {
         int lac = 123;

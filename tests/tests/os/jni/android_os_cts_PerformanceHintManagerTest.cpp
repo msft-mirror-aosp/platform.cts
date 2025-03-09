@@ -137,6 +137,10 @@ static std::shared_ptr<AWorkDuration> createWorkDuration(WorkDurationCreator cre
     return wrapWorkDuration(out);
 }
 
+static jboolean nativeGetSessionsAreSupported() {
+    return APerformanceHint_isFeatureSupported(APERF_HINT_SESSIONS);
+}
+
 static jstring nativeTestCreateHintSession(JNIEnv *env, jobject) {
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
@@ -420,7 +424,6 @@ static jstring nativeTestReportActualWorkDuration2WithIllegalArgument(JNIEnv* en
 static jstring nativeTestLoadHints(JNIEnv* env, jobject) {
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
-    SupportHelper supportInfo = getSupportHelper();
     auto session = createSession(manager);
     if (session == nullptr) return nullptr;
 
@@ -498,7 +501,13 @@ static jlong nativeBorrowSessionFromJava(JNIEnv* env, jobject, jobject sessionOb
 
     return reinterpret_cast<jlong>(session);
 }
+
 static jstring nativeTestCreateGraphicsPipelineSession(JNIEnv* env, jobject) {
+    auto supportInfo = getSupportHelper();
+    if (!supportInfo.graphicsPipeline) {
+        return nullptr;
+    }
+
     APerformanceHintManager* manager = APerformanceHint_getManager();
     if (!manager) return toJString(env, "null manager");
 
@@ -513,13 +522,13 @@ static jstring nativeTestCreateGraphicsPipelineSession(JNIEnv* env, jobject) {
 
 static jstring nativeTestSetNativeSurfaces(JNIEnv* env, jobject, jobject surfaceControlFromJava,
                                            jobject surfaceFromJava) {
-    APerformanceHintManager* manager = APerformanceHint_getManager();
-    if (!manager) return toJString(env, "null manager");
-
     auto supportInfo = getSupportHelper();
     if (!supportInfo.bindToSurface) {
         return nullptr;
     }
+
+    APerformanceHintManager* manager = APerformanceHint_getManager();
+    if (!manager) return toJString(env, "null manager");
 
     int errCode = 0;
 
@@ -680,7 +689,10 @@ static jstring nativeTestSupportChecking(JNIEnv* env, jobject) {
 }
 
 static JNINativeMethod gMethods[] = {
-        {"nativeTestCreateHintSession", "()Ljava/lang/String;", (void*)nativeTestCreateHintSession},
+        {"nativeGetSessionsAreSupported", "()Z",
+         (void*)nativeGetSessionsAreSupported},
+        {"nativeTestCreateHintSession", "()Ljava/lang/String;",
+         (void*)nativeTestCreateHintSession},
         {"nativeTestCreateGraphicsPipelineSession", "()Ljava/lang/String;",
          (void*)nativeTestCreateGraphicsPipelineSession},
         {"nativeTestCreateHintSessionUsingConfig", "()Ljava/lang/String;",

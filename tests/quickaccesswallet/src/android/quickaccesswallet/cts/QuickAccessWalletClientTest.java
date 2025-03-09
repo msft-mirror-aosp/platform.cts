@@ -155,6 +155,20 @@ public class QuickAccessWalletClientTest {
     }
 
     @Test
+    public void testIsWalletServiceAvailable_returnsFalseIfNoRoleHolder()
+            throws InterruptedException {
+        assumeTrue(setDefaultWalletRoleHolder(mContext, null));
+
+        // setDefaultWalletHolder screws this up from when it gets done in setUp()
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(MANAGE_ROLE_HOLDERS);
+
+        QuickAccessWalletClient client = QuickAccessWalletClient.create(mContext);
+        assertThat(client.isWalletServiceAvailable()).isFalse();
+    }
+
+    @Test
     public void testIsWalletFeatureAvailableWhenDeviceLocked_checksSecureSettings() {
         QuickAccessWalletClient client = QuickAccessWalletClient.create(mContext);
         String showCardsAndPasses =
@@ -707,7 +721,9 @@ public class QuickAccessWalletClientTest {
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
-                        MANAGE_DEFAULT_APPLICATIONS, INTERACT_ACROSS_USERS_FULL);
+                        MANAGE_DEFAULT_APPLICATIONS,
+                        INTERACT_ACROSS_USERS_FULL,
+                        MANAGE_ROLE_HOLDERS);
         try {
             RoleManager roleManager = context.getSystemService(RoleManager.class);
             if (!roleManager.isRoleAvailable(RoleManager.ROLE_WALLET)) {
@@ -715,6 +731,7 @@ public class QuickAccessWalletClientTest {
             }
             CountDownLatch countDownLatch = new CountDownLatch(1);
             AtomicReference<Boolean> result = new AtomicReference<>(false);
+            roleManager.setRoleFallbackEnabled(RoleManager.ROLE_WALLET, false);
             roleManager.setDefaultApplication(RoleManager.ROLE_WALLET,
                     packageName, 0,
                     MoreExecutors.directExecutor(), aBoolean -> {

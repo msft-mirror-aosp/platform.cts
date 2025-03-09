@@ -21,8 +21,8 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.DEFAULT_SPLI
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createWildcardSplitPairRule;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifyNotSplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.verifyStandaloneActivityStackIfNeeded;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertFinishing;
-import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
@@ -40,7 +40,6 @@ import android.util.Pair;
 import android.view.WindowMetrics;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
 
@@ -74,14 +73,21 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class);
-        TestActivity secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                primaryActivity, TestActivityWithId.class, splitPairRule, "secondaryActivity",
-                mSplitInfoConsumer);
+        TestActivity secondaryActivity =
+                (TestActivity)
+                        startActivityAndVerifySplitAttributes(
+                                primaryActivity,
+                                TestActivityWithId.class,
+                                splitPairRule,
+                                "secondaryActivity",
+                                mSplitInfoConsumer,
+                                mActivityStackCallback);
 
         // Finishing the primary activity should cause the secondary activity to resize to fill the
         // task.
         primaryActivity.finish();
         waitAndAssertResumedAndFillsTask(secondaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, secondaryActivity);
 
         // Verify that there are no split states
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
@@ -97,16 +103,22 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
-        TestActivity primaryActivity = startFullScreenActivityNewTask(
-                TestActivityWithId.class);
-        TestActivity secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                primaryActivity, TestActivityWithId.class, splitPairRule, "secondaryActivity",
-                mSplitInfoConsumer);
+        TestActivity primaryActivity = startFullScreenActivityNewTask(TestActivityWithId.class);
+        TestActivity secondaryActivity =
+                (TestActivity)
+                        startActivityAndVerifySplitAttributes(
+                                primaryActivity,
+                                TestActivityWithId.class,
+                                splitPairRule,
+                                "secondaryActivity",
+                                mSplitInfoConsumer,
+                                mActivityStackCallback);
 
         // Finishing the secondary activity should cause the primary activity to resize to fill the
         // task.
         secondaryActivity.finish();
         waitAndAssertResumedAndFillsTask(primaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, primaryActivity);
 
         // Verify that there are no split states
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
@@ -125,7 +137,9 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
                 .preventSplitActivities().setFinishPrimaryWithSecondary(FINISH_NEVER).start();
         // Verify the paired finish behavior
         activityPair.second.finish();
-        waitAndAssertResumed(activityPair.first);
+        final Activity primaryActivity = activityPair.first;
+        waitAndAssertResumedAndFillsTask(primaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, primaryActivity);
     }
 
     /**
@@ -141,7 +155,9 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
                 .preventSplitActivities().setFinishPrimaryWithSecondary(FINISH_ADJACENT).start();
         // Verify the paired finish behavior
         activityPair.second.finish();
-        waitAndAssertResumed(activityPair.first);
+        final Activity primaryActivity = activityPair.first;
+        waitAndAssertResumedAndFillsTask(primaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, primaryActivity);
     }
 
     /**
@@ -172,7 +188,9 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
                 .setFinishPrimaryWithSecondary(FINISH_NEVER).start();
         // Verify the paired finish behavior
         activityPair.second.finish();
-        waitAndAssertResumedAndFillsTask(activityPair.first);
+        final Activity primaryActivity = activityPair.first;
+        waitAndAssertResumedAndFillsTask(primaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, primaryActivity);
     }
 
     /**
@@ -218,7 +236,9 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
                 .preventSplitActivities().setFinishSecondaryWithPrimary(FINISH_NEVER).start();
         // Verify the paired finish behavior
         activityPair.first.finish();
-        waitAndAssertResumed(activityPair.second);
+        final Activity secondaryActivity = activityPair.second;
+        waitAndAssertResumedAndFillsTask(secondaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, secondaryActivity);
     }
 
     /**
@@ -234,7 +254,9 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
                 .preventSplitActivities().setFinishSecondaryWithPrimary(FINISH_ADJACENT).start();
         // Verify the paired finish behavior
         activityPair.first.finish();
-        waitAndAssertResumed(activityPair.second);
+        final Activity secondaryActivity = activityPair.second;
+        waitAndAssertResumedAndFillsTask(secondaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, secondaryActivity);
     }
 
     /**
@@ -265,7 +287,9 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
                 .setFinishSecondaryWithPrimary(FINISH_NEVER).start();
         // Verify the paired finish behavior
         activityPair.first.finish();
-        waitAndAssertResumedAndFillsTask(activityPair.second);
+        final Activity secondaryActivity = activityPair.second;
+        waitAndAssertResumedAndFillsTask(secondaryActivity);
+        verifyStandaloneActivityStackIfNeeded(mActivityStackCallback, secondaryActivity);
     }
 
     /**
@@ -350,15 +374,21 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
             mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
             // Launch the two activities
-            TestActivity primaryActivity = startFullScreenActivityNewTask(
-                    TestConfigChangeHandlingActivity.class);
+            TestActivity primaryActivity =
+                    startFullScreenActivityNewTask(TestConfigChangeHandlingActivity.class);
             TestActivity secondaryActivity;
             if (mShouldPreventSideBySideActivities) {
                 secondaryActivity = startActivityAndVerifyNotSplit(primaryActivity);
             } else {
-                secondaryActivity = (TestActivity) startActivityAndVerifySplitAttributes(
-                        primaryActivity, TestActivityWithId.class, splitPairRule,
-                        "secondaryActivity", mSplitInfoConsumer);
+                secondaryActivity =
+                        (TestActivity)
+                                startActivityAndVerifySplitAttributes(
+                                        primaryActivity,
+                                        TestActivityWithId.class,
+                                        splitPairRule,
+                                        "secondaryActivity",
+                                        mSplitInfoConsumer,
+                                        mActivityStackCallback);
             }
             return new Pair<>(primaryActivity, secondaryActivity);
         }

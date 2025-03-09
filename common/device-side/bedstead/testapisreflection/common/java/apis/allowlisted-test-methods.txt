@@ -72,3 +72,4 @@ android.app.admin.DevicePolicyManager,public void forceSetMaxPolicyStorageLimit(
 android.app.admin.DevicePolicyManager,public int getPolicySizeForAdmin(android.app.admin.EnforcingAdmin)
 android.os.UserManager,public boolean canAddPrivateProfile()
 android.app.UiAutomation,public android.os.ParcelFileDescriptor[] executeShellCommandRwe(java.lang.String)
+android.app.ActivityManager,public int[] getDisplayIdsForStartingVisibleBackgroundUsers()

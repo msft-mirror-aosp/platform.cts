@@ -456,9 +456,6 @@
              android:configChanges="orientation|screenSize|screenLayout"
              android:exported="true"/>
 
-        <activity android:name=".ToastActivity"
-             android:exported="true"/>
-
         <activity android:name=".TurnScreenOnAttrActivity"
              android:turnScreenOn="true"
              android:exported="true"/>
@@ -710,5 +707,9 @@
         <activity android:name=".WallpaperTargetActivity"
                   android:configChanges="@integer/config_changes_assets_paths"
                   android:exported="true"/>
+
+        <meta-data
+            android:name="android.software.car.display_compatibility"
+            android:value="false" />
     </application>
 </manifest>

@@ -32,6 +32,7 @@ import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 import java.util.UUID;
 
@@ -131,6 +132,7 @@ public final class UserBuilder {
     }
 
     /** Create the user. */
+    @CanIgnoreReturnValue
     public UserReference create() {
         if (mName == null) {
             mName = UUID.randomUUID().toString();

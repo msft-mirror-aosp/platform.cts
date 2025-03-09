@@ -16,9 +16,12 @@
 
 package com.android.cts.device.broadcasts;
 
+import static com.android.cts.host.broadcasts.Constants.BROADCAST_PROCESSING_TIME_MS;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.SystemClock;
 import android.util.Log;
 
 public class TestReceiver extends BroadcastReceiver {
@@ -27,5 +30,9 @@ public class TestReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.i(TAG, "onReceive: " + intent);
+
+        // Introduce a delay to ensure broadcast processing takes longer than 10 milliseconds.
+        // This is necessary for testing BroadcastProcessed atom logging.
+        SystemClock.sleep(BROADCAST_PROCESSING_TIME_MS);
     }
 }

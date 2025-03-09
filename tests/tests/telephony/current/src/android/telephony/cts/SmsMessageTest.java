@@ -26,7 +26,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -42,8 +41,6 @@ import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 public class SmsMessageTest {
 
@@ -106,10 +103,6 @@ public class SmsMessageTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_SMS_OVER_IMS_APIS)
     public void testCreateFromPdu() throws Exception {
-        // TODO: temp workaround, need to adjust test to use CDMA pdus
-        assumeFalse(mPackageManager.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_CDMA));
-
         String pdu = "07916164260220F0040B914151245584F600006060605130308A04D4F29C0E";
         SmsMessage sms = SmsMessage.createFromPdu(hexStringToByteArray(pdu),
                 SmsMessage.FORMAT_3GPP);
@@ -206,10 +199,6 @@ public class SmsMessageTest {
 
     @Test
     public void testCPHSVoiceMail() throws Exception {
-        // TODO: temp workaround, need to adjust test to use CDMA pdus
-        assumeFalse(mPackageManager.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_CDMA));
-
         // "set MWI flag"
         String pdu = "07912160130310F20404D0110041006060627171118A0120";
         SmsMessage sms = SmsMessage.createFromPdu(hexStringToByteArray(pdu),
@@ -248,10 +237,6 @@ public class SmsMessageTest {
 
     @Test
     public void testGetUserData() throws Exception {
-        // TODO: temp workaround, need to adjust test to use CDMA pdus
-        assumeFalse(mPackageManager.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_CDMA));
-
         String pdu = "07914140279510F6440A8111110301003BF56080207130138A8C0B05040B8423F"
             + "000032A02010106276170706C69636174696F6E2F766E642E7761702E6D6D732D"
             + "6D65737361676500AF848D0185B4848C8298524E453955304A6D7135514141426"
@@ -282,31 +267,10 @@ public class SmsMessageTest {
         smsPdu = SmsMessage.getSubmitPdu(scAddress, destinationAddress, message,
                 statusReportRequested);
         assertNull(smsPdu);
-
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            // TODO: temp workaround, OCTET encoding for EMS not properly supported
-            return;
-        }
-
-        scAddress = "1650253000";
-        destinationAddress = "18004664411";
-        message = "This is a test message";
-        statusReportRequested = false;
-        smsPdu = SmsMessage.getSubmitPdu(
-                scAddress, destinationAddress, message, statusReportRequested);
-        assertNotNull(smsPdu);
-
-        smsPdu = SmsMessage.getSubmitPdu(scAddress, destinationAddress, (short)80,
-                message.getBytes(), statusReportRequested);
-        assertNotNull(smsPdu);
     }
 
     @Test
     public void testEmailGateway() throws Exception {
-        // TODO: temp workaround, need to adjust test to use CDMA pdus
-        assumeFalse(mPackageManager.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_CDMA));
-
         String pdu = "07914151551512f204038105f300007011103164638a28e6f71b50c687db" +
                          "7076d9357eb7412f7a794e07cdeb6275794c07bde8e5391d247e93f3";
 
@@ -380,19 +344,6 @@ public class SmsMessageTest {
                 SmsManager.STATUS_ON_ICC_READ,
                 scAddress, destinationAddress, message, System.currentTimeMillis());
         assertNull(smsPdu);
-
-        if (mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
-            // TODO: temp workaround, OCTET encoding for EMS not properly supported
-            return;
-        }
-
-        scAddress = "1650253000";
-        destinationAddress = "18004664411";
-        message = "This is a test message";
-        smsPdu = SmsMessage.getSmsPdu(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID,
-                SmsManager.STATUS_ON_ICC_READ,
-                scAddress, destinationAddress, message, System.currentTimeMillis());
-        assertNotNull(smsPdu);
     }
 
     @Test
@@ -414,24 +365,7 @@ public class SmsMessageTest {
                 2, 1, -88, -24, -12, 28, -108, -98, -125, -62, 32, 122, 121, 78, 7, -75, -53, -13,
                 121, -8, 92, 6};
 
-        // See comments for gsmMsg.
-        byte[] cdmaMsg = SmsMessage.getSubmitPduEncodedMessage(false, destinationAddress,
-                message, 1, 0, 0, 1, 1, 2);
-
-        // Encoded cdma message.
-        byte[] expectedCdmaMsg = {0, 0, 16, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 1, 8, 10, 10,
-                4, 6, 6, 4, 4, 1, 1, 0, 0, 0, 35, 0, 3, 32, 0, 24, 1, 28, 72, -24, 40, 0, 24, 8, 16,
-                13, 71, 71, -96, -28, -92, -12, 30, 17, 3, -45, -54, 112, 61, -82, 95, -101, -49,
-                -62, -32, 48};
-
         assertArrayEquals(expectedGsmMsg, gsmMsg);
-        // In CDMA, the message byte array is affected by the messageId generated by
-        // {@link com.android.internal.telephony.cdma.SmsMessage#getNextMessageId()}
-        // which is not consistent. Skip the 2 bytes which are affected by it.
-        assertArrayEquals(Arrays.copyOfRange(expectedCdmaMsg, 0, 35),
-                Arrays.copyOfRange(cdmaMsg, 0, 35));
-        assertArrayEquals(Arrays.copyOfRange(expectedCdmaMsg, 37, expectedCdmaMsg.length),
-                Arrays.copyOfRange(cdmaMsg, 37, expectedCdmaMsg.length));
     }
 
     @Test

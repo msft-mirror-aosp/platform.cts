@@ -29,7 +29,6 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -460,7 +459,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
                 showDefaultBiometricPrompt(props.getSensorId(), callback,
                         new CancellationSignal());
 
-                verify(callback).onAuthenticationError(anyInt(), anyObject());
+                verify(callback).onAuthenticationError(anyInt(), any());
             }
         }
     }

@@ -27,7 +27,6 @@ import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.annotations.Experimental
@@ -70,12 +69,11 @@ object DevicePolicy {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.B)) {
             true
         } else if (Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            val adbCommand = "device_config get enterprise android.app.admin.flags.provisioning_context_parameter"
             try {
-                DeviceFlagsValueProvider().getBoolean(
-                    "android.app.admin.flags.provisioning_context_parameter"
-                )
-            } catch (exception: Exception) {
-                Log.d(LOG_TAG, "unable to access the flag", exception)
+                ShellCommand.builder(adbCommand).execute().trim().toBoolean()
+            } catch (exception: AdbException) {
+                Log.d(LOG_TAG, "Unable to execute adb command: $adbCommand", exception)
                 false
             }
         } else {

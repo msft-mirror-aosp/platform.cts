@@ -34,7 +34,6 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.CellSignalStrength;
-import android.telephony.CellSignalStrengthCdma;
 import android.telephony.CellSignalStrengthGsm;
 import android.telephony.CellSignalStrengthLte;
 import android.telephony.CellSignalStrengthNr;
@@ -137,13 +136,6 @@ public class SignalStrengthTest {
             types.add(voiceType);
         }
 
-        // Check for SRLTE
-        if (dataType != null && voiceType != null
-                && dataType.equals(CellSignalStrengthLte.class)
-                && voiceType.equals(CellSignalStrengthCdma.class)) {
-            types.add(voiceType);
-        }
-
         // Check for NR
         if (isUsingEnDc()) {
             types.add(CellSignalStrengthNr.class);
@@ -190,13 +182,6 @@ public class SignalStrengthTest {
                 return CellSignalStrengthWcdma.class;
             case TelephonyManager.NETWORK_TYPE_TD_SCDMA:
                 return CellSignalStrengthTdscdma.class;
-            case TelephonyManager.NETWORK_TYPE_CDMA: /* fall through */
-            case TelephonyManager.NETWORK_TYPE_1xRTT: /* fall through */
-            case TelephonyManager.NETWORK_TYPE_EVDO_0: /* fall through */
-            case TelephonyManager.NETWORK_TYPE_EVDO_A: /* fall through */
-            case TelephonyManager.NETWORK_TYPE_EVDO_B: /* fall through */
-            case TelephonyManager.NETWORK_TYPE_EHRPD:
-                return CellSignalStrengthCdma.class;
             case TelephonyManager.NETWORK_TYPE_LTE: /* fall through */
             case TelephonyManager.NETWORK_TYPE_LTE_CA:
                 return CellSignalStrengthLte.class;

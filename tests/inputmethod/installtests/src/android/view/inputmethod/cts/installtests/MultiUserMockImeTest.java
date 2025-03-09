@@ -31,6 +31,7 @@ import android.content.Context;
 import android.content.pm.InstantAppInfo;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
+import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerStateHelper;
 import android.text.TextUtils;
 import android.view.inputmethod.cts.installtests.common.ShellCommandUtils;
@@ -189,10 +190,12 @@ public final class MultiUserMockImeTest {
                 MockTestActivityUtil.TEST_ACTIVITY.getPackageName(), profileUserId,
                 false /* instant */));
 
-        try (var session1 = MockImeSession.create(context, uiAutomation,
-                new ImeSettings.Builder());
+        try (var lockScreenSession = new LockScreenSession(instrumentation, mWmState);
+                var session1 = MockImeSession.create(context, uiAutomation,
+                        new ImeSettings.Builder());
                 var session2 = MockImeSession.create(context, uiAutomation,
-                        new ImeSettings.Builder().setTargetUser(profileUser.userHandle())
+                        new ImeSettings.Builder()
+                                .setTargetUser(profileUser.userHandle())
                                 .setSuppressDeleteSettings(true))) {
             var stream1 = session1.openEventStream();
             var stream2 = session2.openEventStream();
@@ -214,7 +217,7 @@ public final class MultiUserMockImeTest {
                     expectEvent(stream1, event -> "onDestroy".equals(event.getEventName()),
                             TIMEOUT);
 
-                    TestApis.device().sleep();
+                    lockScreenSession.sleepDevice();
 
                     // Remove profile with screen off to maintain currentImeUser ID in
                     // InputMethodManagerService.
@@ -225,10 +228,12 @@ public final class MultiUserMockImeTest {
                     assertEquals("Expected MockImeSession to crash due to removed user",
                             ApplicationExitInfo.REASON_USER_STOPPED, exitInfo.getReason());
 
-                    TestApis.device().wakeUp();
+                    lockScreenSession.wakeUpDevice();
                     // Wait for lock screen to be visible and focused before unlocking.
                     mWmState.waitForNonActivityWindowFocused();
-                    TestApis.device().unlock();
+                    lockScreenSession.unlockDevice();
+
+                    mWmState.waitForFocusedActivity(MockTestActivityUtil.TEST_ACTIVITY);
 
                     // Must be able to startInput on the previous user even when the currentImeUser
                     // was removed.

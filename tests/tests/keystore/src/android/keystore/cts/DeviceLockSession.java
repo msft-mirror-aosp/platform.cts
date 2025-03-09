@@ -16,16 +16,12 @@
 
 package android.keystore.cts;
 
-import static android.os.UserHandle.USER_ALL;
-import static android.server.wm.ShellCommandHelper.executeShellCommand;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.os.Process;
 import android.os.SystemClock;
 import android.server.wm.LockScreenSession;
 import android.server.wm.UiDeviceUtils;
@@ -36,12 +32,6 @@ import androidx.annotation.NonNull;
 import com.android.compatibility.common.util.UserHelper;
 
 class DeviceLockSession implements AutoCloseable {
-    protected static final String AM_START_HOME_ACTIVITY_COMMAND =
-            "am start -W -a android.intent.action.MAIN -c android.intent.category.HOME --user "
-                    + Process.myUserHandle().getIdentifier();
-    private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
-            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
-
     @NonNull
     private final LockScreenSession mLockCredential;
 
@@ -50,7 +40,6 @@ class DeviceLockSession implements AutoCloseable {
     DeviceLockSession(Instrumentation instrumentation) throws Exception {
         mContext = instrumentation.getContext();
         UiDeviceUtils.wakeUpAndUnlock(mContext);
-        launchHomeActivity();
         assumeFalseOnVisibleBackgroundUser(mContext,
                 "Keyguard not supported for visible background users");
 
@@ -71,7 +60,6 @@ class DeviceLockSession implements AutoCloseable {
         mLockCredential.gotoKeyguard();
         UiDeviceUtils.pressUnlockButton();
         mLockCredential.enterAndConfirmLockCredential();
-        launchHomeActivity();
         var keyguardManager = mContext.getSystemService(KeyguardManager.class);
         for (int i = 0; i < 25 && keyguardManager.isDeviceLocked(); i++) {
             SystemClock.sleep(200);
@@ -84,17 +72,6 @@ class DeviceLockSession implements AutoCloseable {
     @Override
     public void close() throws Exception {
         mLockCredential.close();
-    }
-
-    /** Launches the home activity directly with waiting for it to be visible. */
-    private void launchHomeActivity() {
-        // dismiss all system dialogs before launch home.
-        closeSystemDialogs();
-        executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
-    }
-
-    private static void closeSystemDialogs() {
-        executeShellCommand(AM_BROADCAST_CLOSE_SYSTEM_DIALOGS);
     }
 
     /** Skips the test on visible background users. */

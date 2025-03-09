@@ -24,7 +24,6 @@ import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
 import static android.media.projection.MediaProjectionConfig.createConfigForUserChoice;
 import static android.media.projection.MediaProjectionManager.OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION;
-import static android.media.projection.cts.MediaProjectionPermissionDialogTestActivity.EXTRA_MEDIA_PROJECTION_CONFIG;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -33,13 +32,12 @@ import static org.junit.Assume.assumeTrue;
 
 import android.compat.testing.PlatformCompatChangeRule;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionConfig;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
@@ -49,10 +47,8 @@ import com.android.compatibility.common.util.FrameworkSpecificTest;
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -80,9 +76,7 @@ public class MediaProjectionCompatChangeTest {
     @Rule
     public TestRule compatChangeRule = new PlatformCompatChangeRule();
 
-    @ClassRule
-    public static ActivityTestRule<MediaProjectionPermissionDialogTestActivity> sActivityRule =
-            new ActivityTestRule<>(MediaProjectionPermissionDialogTestActivity.class, false, false);
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     /** Set up necessary values which only need to be set once */
     @BeforeClass
@@ -98,14 +92,9 @@ public class MediaProjectionCompatChangeTest {
     }
 
     @Before
-    public void setUpTest() {
+    public void setUpTest() throws Exception {
         assumeFalse(sIsWatch);
         initializePartialScreenshareSupport();
-    }
-
-    @After
-    public void tearDown() {
-        sActivityRule.finishActivity();
     }
 
     // MediaProjectionConfig#createConfigForDefaultDisplay should cause the single app option to be
@@ -114,7 +103,8 @@ public class MediaProjectionCompatChangeTest {
     // option is enabled and the default option.
     @Test
     @EnableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
-    public void testMediaProjectionPermissionDialog_overrideDefaultDisplayConfig() {
+    public void testMediaProjectionPermissionDialog_overrideDefaultDisplayConfig()
+            throws Exception {
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForDefaultDisplay(), sSingleAppString);
         assertThat(correctSpinnerString).isTrue();
@@ -125,7 +115,7 @@ public class MediaProjectionCompatChangeTest {
     // enabled, this behaviour is not changed.
     @Test
     @EnableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
-    public void testMediaProjectionPermissionDialog_overrideUserChoiceConfig() {
+    public void testMediaProjectionPermissionDialog_overrideUserChoiceConfig() throws Exception {
         assumeTrue(sSupportsPartialScreenshare.get());
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForUserChoice(), sSingleAppString);
@@ -137,7 +127,7 @@ public class MediaProjectionCompatChangeTest {
     // not changed.
     @Test
     @DisableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
-    public void testMediaProjectionPermissionDialog_defaultDisplayConfig() {
+    public void testMediaProjectionPermissionDialog_defaultDisplayConfig() throws Exception {
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForDefaultDisplay(), sEntireScreenString);
         assertThat(correctSpinnerString).isTrue();
@@ -147,20 +137,16 @@ public class MediaProjectionCompatChangeTest {
     // enabled and be the default option. This test ensures that this behaviour is not changed.
     @Test
     @DisableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
-    public void testMediaProjectionPermissionDialog_userChoiceConfig() {
+    public void testMediaProjectionPermissionDialog_userChoiceConfig() throws Exception {
         assumeTrue(sSupportsPartialScreenshare.get());
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForUserChoice(), sSingleAppString);
         assertThat(correctSpinnerString).isTrue();
     }
 
-    private static boolean testMediaProjectionPermissionDialog(
-            MediaProjectionConfig config, String expectedSpinnerString) {
-        Intent testActivityIntent = null;
-        if (config != null) {
-            testActivityIntent = new Intent().putExtra(EXTRA_MEDIA_PROJECTION_CONFIG, config);
-        }
-        sActivityRule.launchActivity(testActivityIntent);
+    private boolean testMediaProjectionPermissionDialog(
+            MediaProjectionConfig config, String expectedSpinnerString) throws Exception {
+        mMediaProjectionRule.showMediaProjectionConsent(config);
         sDevice.waitForIdle();
 
         // check if we can find a view which has the expected default option
@@ -176,7 +162,7 @@ public class MediaProjectionCompatChangeTest {
         return foundOptionString;
     }
 
-    private static void initializePartialScreenshareSupport() {
+    private void initializePartialScreenshareSupport() throws Exception {
         if (sSupportsPartialScreenshare.isEmpty()) {
             sSupportsPartialScreenshare =
                     Optional.of(testMediaProjectionPermissionDialog(null, sSingleAppString));

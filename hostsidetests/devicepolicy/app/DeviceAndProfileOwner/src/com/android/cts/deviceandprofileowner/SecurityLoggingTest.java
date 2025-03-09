@@ -263,7 +263,6 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
         }
 
         WakeLock mWakeLock = powerManager.newWakeLock(PARTIAL_WAKE_LOCK, TAG);
-        mWakeLock.setReferenceCounted(false);
 
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 .executeShellCommand("dpm force-security-logs");

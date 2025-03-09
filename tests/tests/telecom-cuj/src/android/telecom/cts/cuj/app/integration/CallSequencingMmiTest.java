@@ -41,7 +41,7 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
-    public void testMmiCodeBlocked() throws Exception {
+    public void testInCallMmiCodeBlocked() throws Exception {
         if (!mShouldTestTelecom) {
             return;
         }
@@ -61,7 +61,8 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
             // Verify that dialing an MMI code on a phone account when there are ongoing calls on a
             // different account results in an early failure in Telecom. We should've never
             // attempted to create the connection.
-            CallAttributes mmiAttributes = getDefaultMmiAttributes(ManagedConnectionServiceApp);
+            CallAttributes mmiAttributes =
+                    getDefaultMmiAttributes(ManagedConnectionServiceApp, true /* inCallMmi */);
             addFailedCallWithCreateConnectionVerify(managedApp, mmiAttributes);
 
             // Verify that the states of the ongoing calls are unchanged.
@@ -79,7 +80,7 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
-    public void testMmiCodeAllowed() throws Exception {
+    public void testInCallMmiCodeAllowed() throws Exception {
         if (!mShouldTestTelecom) {
             return;
         }
@@ -92,7 +93,8 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
 
             // Verify that the connection was created successfully when the MMI code is dialed on
             // the same phone account.
-            CallAttributes mmiAttributes = getDefaultMmiAttributes(ManagedConnectionServiceApp);
+            CallAttributes mmiAttributes =
+                    getDefaultMmiAttributes(ManagedConnectionServiceApp, true /* inCallMmi */);
             String mmiDial = addCallAndVerify(managedApp, mmiAttributes);
 
             setCallStateAndVerify(managedApp, mo, STATE_DISCONNECTED);
@@ -100,6 +102,74 @@ public class CallSequencingMmiTest extends BaseAppVerifier {
         } finally {
             List<AppControlWrapper> controls = new ArrayList<>();
             controls.add(managedApp);
+            tearDownApps(controls);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
+    public void testMmiCodeAllowed_SingleSim() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mo = addOutgoingCallAndVerify(managedApp);
+            setCallStateAndVerify(managedApp, mo, STATE_ACTIVE);
+
+            // Verify that the connection was created successfully when the MMI code is dialed on
+            // the same phone account.
+            CallAttributes mmiAttributes =
+                    getDefaultMmiAttributes(ManagedConnectionServiceApp, false /* inCallMmi */);
+            String mmiDial = addCallAndVerify(managedApp, mmiAttributes);
+
+            setCallStateAndVerify(managedApp, mo, STATE_DISCONNECTED);
+            setCallStateAndVerify(managedApp, mmiDial, STATE_DISCONNECTED);
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(managedApp);
+            tearDownApps(controls);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_CALL_SEQUENCING})
+    public void testMmiCodeAllowed_DualSim() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper managedApp = null;
+        AppControlWrapper managedAppClone = null;
+
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mo1 = addOutgoingCallAndVerify(managedApp);
+            setCallStateAndVerify(managedApp, mo1, STATE_ACTIVE);
+
+            managedAppClone = bindToApp(ManagedConnectionServiceAppClone);
+            String mo2 = addOutgoingCallAndVerify(managedAppClone);
+            setCallStateAndVerify(managedAppClone, mo2, STATE_ACTIVE);
+            verifyCallIsInState(mo1, STATE_HOLDING);
+
+            // Verify that dialing an MMI code on a phone account when there are ongoing calls on a
+            // different account results in an early failure in Telecom. We should've never
+            // attempted to create the connection.
+            CallAttributes mmiAttributes =
+                    getDefaultMmiAttributes(ManagedConnectionServiceApp, false /* inCallMmi */);
+            String mmiDial = addCallAndVerify(managedApp, mmiAttributes);
+
+            // Verify that the states of the ongoing calls are unchanged.
+            verifyCallIsInState(mo1, STATE_HOLDING);
+            verifyCallIsInState(mo2, STATE_ACTIVE);
+            setCallStateAndVerify(managedAppClone, mo2, STATE_DISCONNECTED);
+            setCallStateAndVerify(managedApp, mo1, STATE_DISCONNECTED);
+            setCallStateAndVerify(managedApp, mmiDial, STATE_DISCONNECTED);
+        } finally {
+            List<AppControlWrapper> controls = new ArrayList<>();
+            controls.add(managedApp);
+            controls.add(managedAppClone);
             tearDownApps(controls);
         }
     }

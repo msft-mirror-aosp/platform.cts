@@ -28,6 +28,8 @@ import static com.android.media.flags.Flags.FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTE
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertThrows;
+
 import android.Manifest;
 import android.app.UiAutomation;
 import android.content.ComponentName;
@@ -36,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
+import android.media.RouteDiscoveryPreference;
 import android.media.ToneGenerator;
 import android.media.cts.ResourceReleaser;
 import android.platform.test.annotations.AppModeFull;
@@ -142,10 +145,15 @@ public class SystemMediaRoutingTest {
     public void tearDown() {
         transferAndWaitForSessionUpdate(mSelectedRouteBeforeRunningTheTest);
 
-        // We wait for the service provider to be in a clean state before finishing. This ensures
-        // a clean state for following test runs.
-        waitForCondition(() -> mService.getSelectedRouteOriginalId() == null);
-        assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
+        // If the service failed to launch in time during setup, mService will be null, in which
+        // case we don't want to NPE here, otherwise the failure will spuriously point to tearDown.
+        if (mService != null) {
+            // We wait for the service provider to be in a clean state before finishing. This
+            // ensures a clean state for following test runs.
+            waitForCondition(() -> mService.getSelectedRouteOriginalId() == null);
+            assertThat(mService.getNoisyBytesCount()).isEqualTo(0);
+        }
+        mService = null;
         mSelfProxyRoute.cancelScanRequest(mScanToken);
 
         waitForCondition(
@@ -316,6 +324,51 @@ public class SystemMediaRoutingTest {
                 .isEqualTo(ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
     }
 
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void systemMediaAndRemoteRoutes_haveExpectedDeduplicationId() {
+        MediaRouter2 localRouter =
+                MediaRouter2.getInstance(InstrumentationRegistry.getInstrumentation().getContext());
+        var routeCallback = new MediaRouter2.RouteCallback() {};
+        var discoveryPref =
+                new RouteDiscoveryPreference.Builder(
+                                /* preferredFeatures= */ List.of(
+                                        SystemMediaRoutingProviderService.FEATURE_SAMPLE),
+                                /* activeScan= */ false)
+                        .build();
+        localRouter.registerRouteCallback(
+                /* executor= */ Runnable::run, routeCallback, discoveryPref);
+        mResourceReleaser.add(() -> localRouter.unregisterRouteCallback(routeCallback));
+        var systemAndRemoteRoute = waitForRouteWithId(localRouter, ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
+        MediaRoute2Info correspondingSystemRoute =
+                waitForTransferableRouteWithName(ROUTE_ID_BOTH_SYSTEM_AND_REMOTE);
+
+        assertThat(systemAndRemoteRoute.isSystemRoute()).isFalse();
+        assertThat(correspondingSystemRoute.isSystemRoute()).isTrue();
+        assertThat(systemAndRemoteRoute.getDeduplicationIds())
+                .isEqualTo(correspondingSystemRoute.getDeduplicationIds());
+    }
+
+    @RequiresFlagsEnabled({FLAG_ENABLE_MIRRORING_IN_MEDIA_ROUTER_2})
+    @Test
+    public void notifyRoutes_throwsIfMissingDedupId() {
+        var builder =
+                new MediaRoute2Info.Builder("a route id", "a route name")
+                        .addFeature("a feature")
+                        .setSupportedRoutingTypes(
+                                MediaRoute2Info.FLAG_ROUTING_TYPE_REMOTE
+                                        | MediaRoute2Info.FLAG_ROUTING_TYPE_SYSTEM_AUDIO);
+        var routeWithoutDedupId = builder.build();
+        builder.setDeduplicationIds(Set.of("a dedup id"));
+        var routeWithDedupId = builder.build();
+
+        // At least one of the routes supports both system and remote routing, but doesn't hold a
+        // deduplication id.
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> mService.notifyRoutes(List.of(routeWithDedupId, routeWithoutDedupId)));
+    }
+
     /** Retrieves the selected routes, asserts it contains one entry, and returns it. */
     private MediaRoute2Info getSelectedRoute() {
         var selectedRoutes = mSelfProxyRoute.getSystemController().getSelectedRoutes();
@@ -333,6 +386,22 @@ public class SystemMediaRoutingTest {
     }
 
     // Internal methods.
+
+    /**
+     * Returns the route from the given {@link MediaRouter2} with the given {@link
+     * MediaRoute2Info#getOriginalId()}.
+     */
+    private MediaRoute2Info waitForRouteWithId(MediaRouter2 router, String routeId) {
+        var route =
+                PollingCheck.waitFor(
+                        TIMEOUT_MS,
+                        /* supplier= */ () ->
+                                router.getRoutes().stream()
+                                        .filter(it -> it.getOriginalId().equals(routeId))
+                                        .findFirst(),
+                        /* condition= */ Optional::isPresent);
+        return route.get();
+    }
 
     /** Waits for the selected system route to have the given {@code name}. */
     private void waitForSelectedRouteWithName(String name) {

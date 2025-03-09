@@ -45,6 +45,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.FrameLayout;
 
@@ -71,7 +72,9 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(JUnit4.class)
 public class CarTaskViewControllerTest {
-    private static final long QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE = 1000;  // ms
+
+    private static final String TAG = CarTaskViewControllerTest.class.getSimpleName();
+    private static final long QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS = 5000;
     private static final long WAIT_FOR_LAUNCHER_TIME_MS = 2000;
 
     private final Instrumentation mInstrumentation =
@@ -129,17 +132,29 @@ public class CarTaskViewControllerTest {
     public void tearDown() throws Exception {
         if (mHostActivity != null) {
             mHostActivity.finishAndRemoveTask();
-            mHostActivity.waitForDestroyed();
+            if (!mHostActivity.waitForDestroyed()) {
+                throw new RuntimeException(
+                        "Test activity is not destroyed! Please increase the timeout"
+                                + " QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS");
+            }
             mHostActivity = null;
         }
         if (EmbeddedTestActivity1.sInstance != null) {
             EmbeddedTestActivity1.sInstance.finishAndRemoveTask();
-            EmbeddedTestActivity1.sInstance.waitForDestroyed();
+            if (!EmbeddedTestActivity1.sInstance.waitForDestroyed()) {
+                throw new RuntimeException(
+                        "Test activity is not destroyed! Please increase the timeout"
+                                + " QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS");
+            }
             EmbeddedTestActivity1.sInstance = null;
         }
         if (EmbeddedTestActivity2.sInstance != null) {
             EmbeddedTestActivity2.sInstance.finishAndRemoveTask();
-            EmbeddedTestActivity2.sInstance.waitForDestroyed();
+            if (!EmbeddedTestActivity2.sInstance.waitForDestroyed()) {
+                throw new RuntimeException(
+                        "Test activity is not destroyed! Please increase the timeout"
+                                + " QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS");
+            }
             EmbeddedTestActivity2.sInstance = null;
         }
         mUiAutomation.dropShellPermissionIdentity();
@@ -359,7 +374,7 @@ public class CarTaskViewControllerTest {
             mTmpWidth = taskView.getMeasuredWidth();
             latch.countDown();
         });
-        latch.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TimeUnit.MILLISECONDS);
+        latch.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS, TimeUnit.MILLISECONDS);
         return new Point(mTmpLocation[0] + mTmpWidth / 2, mTmpLocation[1] + mTmpHeight / 4);
     }
 
@@ -373,7 +388,7 @@ public class CarTaskViewControllerTest {
         PollingCheck.waitFor(() -> EmbeddedTestActivity1.sInstance != null
                         && EmbeddedTestActivity1.sInstance.mIsResumed,
                 "EmbeddedTestActivity1 is not running.");
-        mUiDevice.waitForIdle(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE);
+        mUiDevice.waitForIdle(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS);
 
         // EmbeddedTestActivity is on the upper part of the screen.
         Point p = getTaskViewCenterOnScreen(carTaskViewHolder.mTaskView);
@@ -455,12 +470,14 @@ public class CarTaskViewControllerTest {
 
         @Override
         protected void onDestroy() {
+            Log.d(TAG, "EmbeddedTestActivity1#onDestroy()");
             super.onDestroy();
             mDestroyed.countDown();
         }
 
         private boolean waitForDestroyed() throws InterruptedException {
-            return mDestroyed.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TimeUnit.MILLISECONDS);
+            return mDestroyed.await(
+                    QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -483,12 +500,14 @@ public class CarTaskViewControllerTest {
 
         @Override
         protected void onDestroy() {
+            Log.d(TAG, "EmbeddedTestActivity2#onDestroy()");
             super.onDestroy();
             mDestroyed.countDown();
         }
 
         private boolean waitForDestroyed() throws InterruptedException {
-            return mDestroyed.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TimeUnit.MILLISECONDS);
+            return mDestroyed.await(
+                    QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -584,12 +603,14 @@ public class CarTaskViewControllerTest {
 
         @Override
         protected void onDestroy() {
+            Log.d(TAG, "TestActivity#onDestroy()");
             super.onDestroy();
             mDestroyed.countDown();
         }
 
         private boolean waitForDestroyed() throws InterruptedException {
-            return mDestroyed.await(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE, TimeUnit.MILLISECONDS);
+            return mDestroyed.await(
+                    QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE_MS, TimeUnit.MILLISECONDS);
         }
     }
 }

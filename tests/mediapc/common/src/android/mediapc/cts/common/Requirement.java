@@ -69,6 +69,10 @@ public abstract class Requirement {
         return this.id;
     }
 
+    boolean allMeasuredValuesSet() {
+        return mRequiredMeasurements.values().stream().allMatch(rm -> rm.isMeasuredValueSet());
+    }
+
     /** Returns id cddId with config and variant if available. */
     public String toString() {
         if (configId == null && variantId == null) {

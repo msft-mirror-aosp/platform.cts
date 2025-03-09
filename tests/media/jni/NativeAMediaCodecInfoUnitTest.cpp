@@ -1194,7 +1194,8 @@ jboolean nativeTestAMediaCodecInfo(JNIEnv* env, jobject, jstring jCodecName, jbo
     CLEANUP_IF_FALSE(
             testUtil->validateGetAudioCaps(strncmp(mediaType, "audio/", strlen("audio/")) == 0))
     CLEANUP_IF_FALSE(
-            testUtil->validateGetVideoCaps(strncmp(mediaType, "video/", strlen("video/")) == 0))
+            testUtil->validateGetVideoCaps(strncmp(mediaType, "video/", strlen("video/")) == 0 ||
+                                           strcasecmp(mediaType, "image/vnd.android.heic") == 0))
     CLEANUP_IF_FALSE(testUtil->validateGetEncoderCaps(isEncoder))
 CleanUp:
     std::string msg = isPass ? std::string{} : testUtil->getErrorMsg();

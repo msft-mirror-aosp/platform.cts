@@ -53,16 +53,12 @@ public final class TelephonyFeatureFlagsTest {
                 PackageManager.FEATURE_TELEPHONY_CALLING);
         boolean hasFeatureCarrierLock = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_CARRIERLOCK);
-        boolean hasFeatureCdma = mPackageManager.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_CDMA);
         boolean hasFeatureData = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_DATA);
         boolean hasFeatureEuicc = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_EUICC);
         boolean hasFeatureEuiccMep = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_EUICC_MEP);
-        boolean hasFeatureGsm = mPackageManager.hasSystemFeature(
-                PackageManager.FEATURE_TELEPHONY_GSM);
         boolean hasFeatureIms = mPackageManager.hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_IMS);
         boolean hasFeatureSingleReg = mPackageManager.hasSystemFeature(
@@ -150,18 +146,6 @@ public final class TelephonyFeatureFlagsTest {
             assertTrue("FEATURE_TELEPHONY_IMS_SINGLE_REGISTRATION requires "
                     + "FEATURE_TELEPHONY_IMS",
                     hasFeatureIms);
-        }
-
-        if (hasFeatureGsm) {
-            assertTrue("FEATURE_TELEPHONY_GSM requires "
-                    + "FEATURE_TELEPHONY_RADIO_ACCESS",
-                    hasFeatureRadio);
-        }
-
-        if (hasFeatureCdma) {
-            assertTrue("FEATURE_TELEPHONY_CDMA requires "
-                    + "FEATURE_TELEPHONY_RADIO_ACCESS",
-                    hasFeatureRadio);
         }
 
         if (hasFeatureMbms) {

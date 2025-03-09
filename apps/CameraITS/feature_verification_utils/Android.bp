@@ -24,11 +24,6 @@ python_binary_host {
     libs: [
         "feature_combination_proto",
     ],
-    version: {
-        py3: {
-            embedded_launcher: true,
-        },
-    },
 }
 
 python_library_host {

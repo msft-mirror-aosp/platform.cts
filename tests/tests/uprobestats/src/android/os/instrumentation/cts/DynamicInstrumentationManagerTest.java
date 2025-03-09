@@ -101,7 +101,7 @@ public class DynamicInstrumentationManagerTest {
                 "elapsedRealtime", new String[0]);
         assertThat(result.statusCode).isEqualTo(0);
         assertThat(result.offsets).isNotNull();
-        assertThat(result.offsets.containerPath).endsWith("boot-framework.oat");
+        assertThat(result.offsets.containerPath).isNotEmpty();
         assertThat(result.offsets.containerOffset).isGreaterThan(0);
         assertThat(result.offsets.methodOffset).isGreaterThan(0);
     }

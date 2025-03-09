@@ -98,8 +98,13 @@ public class ActivityEmbeddingDividerTests extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         final Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /** Verifies setting draggable {@link DividerAttributes}. */
@@ -140,8 +145,13 @@ public class ActivityEmbeddingDividerTests extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         final Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     /** Verifies setting {@link DividerAttributes} with default values. */
@@ -244,8 +254,13 @@ public class ActivityEmbeddingDividerTests extends ActivityEmbeddingTestBase {
         // defaultSplitAttributes.
         final Activity activityA = startFullScreenActivityNewTask(TestActivityWithId.class,
                 ACTIVITY_A_ID);
-        startActivityAndVerifySplitAttributes(activityA, TestActivityWithId.class, splitPairRule,
-                ACTIVITY_B_ID, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_B_ID,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         // Choose a split attributes that different from the default one.
         final DividerAttributes dividerAttributes2 =
@@ -271,19 +286,30 @@ public class ActivityEmbeddingDividerTests extends ActivityEmbeddingTestBase {
 
         // Start another Activity to trigger the calculator function, and verify if the split pair
         // matches the customized split attributes.
-        startActivityAndVerifySplitAttributes(activityA, activityA, /* expectedPrimaryActivity */
-                TestActivityWithId.class, customizedSplitAttributes, ACTIVITY_C_ID,
-                1 /* expectedCallbackCount */, mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                activityA, /* expectedPrimaryActivity */
+                TestActivityWithId.class,
+                customizedSplitAttributes,
+                ACTIVITY_C_ID,
+                1 /* expectedCallbackCount */,
+                mSplitInfoConsumer,
+                mActivityStackCallback);
 
         // Clear the calculator function, then the split pair should align the default split pair
         // rule behavior.
         mActivityEmbeddingComponent.clearSplitAttributesCalculator();
 
         // Launch Activity D to apply the change.
-        startActivityAndVerifySplitAttributes(activityA,
-                activityA, /* expectedPrimaryActivity */ TestActivityWithId.class,
-                splitPairRule, ACTIVITY_D_ID, 1, /* expectedCallbackCount */
-                mSplitInfoConsumer);
+        startActivityAndVerifySplitAttributes(
+                activityA,
+                activityA, /* expectedPrimaryActivity */
+                TestActivityWithId.class,
+                splitPairRule,
+                ACTIVITY_D_ID,
+                1, /* expectedCallbackCount */
+                mSplitInfoConsumer,
+                mActivityStackCallback);
     }
 
     @NonNull

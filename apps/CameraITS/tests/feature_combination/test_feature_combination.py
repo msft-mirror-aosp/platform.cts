@@ -127,12 +127,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
     )
     logging.debug('proto_file_name %s', proto_file_name)
+    logging.debug('root_output_path %s', self.root_output_path)
 
-    with open(proto_file_name, 'wb') as f:
+    proto_file_path = os.path.join(self.root_output_path, proto_file_name)
+    with open(proto_file_path, 'wb') as f:
       f.write(database.SerializeToString())
 
     txtpb_file_name = proto_file_name.replace('.pb', '.txtpb')
-    with open(txtpb_file_name, 'w') as tf:
+    txtpb_file_path = os.path.join(self.root_output_path, txtpb_file_name)
+    with open(txtpb_file_path, 'w') as tf:
       database_str = text_format.MessageToString(database)
       tf.write(database_str)
 
@@ -166,6 +169,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         its_session_utils.mark_features_passed(
             features_passed, streams_name, fps_range_tuple,
             hlg10, is_stabilized)
+      # Remove video clip if test passes to save space
+      try:
+        file_name = recording_obj['recordedOutputPath'].split('/')[-1]
+        os.remove(os.path.join(log_path, file_name))
+      except FileNotFoundError:
+        logging.debug('File Not Found: %s', str(file_name))
 
     return result
 
@@ -303,7 +312,9 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Check if stabilization is supported: Use video stabilization
               # if there is a dedicated video stream
-              if video_stream_index == 0:
+              if not is_stabilized:
+                stabilize_mode = camera_properties_utils.STABILIZATION_MODE_OFF
+              elif video_stream_index == 0:
                 stabilize_mode = (
                     camera_properties_utils.STABILIZATION_MODE_PREVIEW
                 )
@@ -474,16 +485,18 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Schedule finishing up of verification to run asynchronously
               if not self.parallel_execution:
-                self._finish_combination(combination_name, is_stabilized,
+                self._finish_combination(
+                    combination_name, is_stabilized,
                     support_claimed, passed, recording_obj, gyro_events, _NAME,
                     log_path, facing, output_surfaces, fps_range, hlg10,
-                    features_passed, streams_name, fps_range_tuple)
+                    features_passed, streams_name, fps_range_tuple
+                )
               else:
                 future = executor.submit(
-                  self._finish_combination, combination_name, is_stabilized,
-                  support_claimed, passed, recording_obj, gyro_events, _NAME,
-                  log_path, facing, output_surfaces, fps_range, hlg10,
-                  features_passed, streams_name, fps_range_tuple
+                    self._finish_combination, combination_name, is_stabilized,
+                    support_claimed, passed, recording_obj, gyro_events, _NAME,
+                    log_path, facing, output_surfaces, fps_range, hlg10,
+                    features_passed, streams_name, fps_range_tuple
                 )
                 feature_verification_futures.append(future)
 

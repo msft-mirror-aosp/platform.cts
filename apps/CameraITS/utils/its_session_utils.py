@@ -102,6 +102,9 @@ VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 RESULT_OK_STATUS = '-1'
 
+_CAMERA_TYPE_TELE = 'telephoto'
+_CAMERA_TYPE_ULTRAWIDE = 'ultrawide'
+_CAMERA_TYPE_WIDE = 'wide'
 _FLASH_MODE_OFF = 0
 _VALIDATE_LIGHTING_PATCH_H = 0.05
 _VALIDATE_LIGHTING_PATCH_W = 0.05
@@ -2757,7 +2760,7 @@ class ItsSession(object):
     return self._has_physical_camera_with_different_fov(
         facing,
         lambda fov: fov >= opencv_processing_utils.FOV_THRESH_UW,
-        camera_type='ultrawide')
+        camera_type=_CAMERA_TYPE_ULTRAWIDE)
 
   def has_tele_camera(self, facing):
     """Return if device has a telephoto camera facing the same direction.
@@ -2770,7 +2773,25 @@ class ItsSession(object):
     return self._has_physical_camera_with_different_fov(
         facing,
         lambda fov: fov <= opencv_processing_utils.FOV_THRESH_TELE,
-        camera_type='telephoto')
+        camera_type=_CAMERA_TYPE_TELE)
+
+  def get_camera_type(self, props):
+    """Return if a camera is a tele, wide or ultrawide camera.
+
+    Args:
+      props: Camera properties object.
+    Returns:
+      camera_type: str; telephoto, wide or ultrawide.
+    """
+    camera_type = _CAMERA_TYPE_ULTRAWIDE
+    fov = float(self.calc_camera_fov(props))
+    logging.debug('Camera FoV: %s', fov)
+    if fov < opencv_processing_utils.FOV_THRESH_TELE:
+      camera_type = _CAMERA_TYPE_TELE
+    elif fov < opencv_processing_utils.FOV_THRESH_UW:
+      camera_type = _CAMERA_TYPE_WIDE
+    logging.debug('Camera type: %s', camera_type)
+    return camera_type
 
   def get_facing_to_ids(self):
     """Returns mapping from lens facing to list of corresponding camera IDs."""

@@ -26,6 +26,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -34,6 +35,7 @@ import android.net.Uri;
 import android.provider.Telephony;
 import android.telephony.SubscriptionManager;
 import android.telephony.cts.util.DefaultSmsAppHelper;
+import android.util.Log;
 
 import androidx.test.filters.SmallTest;
 
@@ -47,7 +49,7 @@ import org.junit.Test;
 
 @SmallTest
 public class SmsTest {
-
+    private static final String TAG = "SmsTest";
     private static final String TEST_SMS_BODY = "TEST_SMS_BODY";
     private static final String TEST_ADDRESS = "+19998880001";
     private static final int TEST_THREAD_ID_1 = 101;
@@ -301,7 +303,13 @@ public class SmsTest {
         Uri uri = mSmsTestHelper.insertTestSms(TEST_ADDRESS, TEST_SMS_BODY);
         assertThat(uri).isNotNull();
 
+        String currentDefaultSmsApp = getDefaultSmsApp();
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        // In case there is no available default sms app, roleManager returns successful, without
+        // changing default sms app from CTS SMS test app to user-selected default SMS app.
+        String newDefaultSmsApp = getDefaultSmsApp();
+        assumeFalse(newDefaultSmsApp.equals(currentDefaultSmsApp));
+
         {
             // selection
             Cursor cursor1 = mContentResolver.query(Telephony.Sms.CONTENT_URI,
@@ -535,4 +543,23 @@ public class SmsTest {
         assertThat(cursor).isNotNull();
     }
 
+    private String getDefaultSmsApp() {
+        String defaultSmsApp = "";
+        try {
+            defaultSmsApp = DefaultSmsAppHelper.getDefaultSmsApp(
+                    getInstrumentation().getContext());
+            logd("getDefaultSmsApp: defaultSmsApp=" + defaultSmsApp);
+        } catch (Exception ex) {
+            loge("Exception for DefaultSmsAppHelper.getDefaultSmsApp, ex=" + ex);
+        }
+        return defaultSmsApp;
+    }
+
+    private static void logd(String log) {
+        Log.d(TAG, log);
+    }
+
+    private static void loge(String log) {
+        Log.e(TAG, log);
+    }
 }

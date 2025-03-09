@@ -152,7 +152,6 @@ public class HotwordDetectionServiceBasicTest {
 
     private CtsBasicVoiceInteractionService mService;
 
-    private static String sWasIndicatorEnabled;
     private static String sDefaultScreenOffTimeoutValue;
     private static String sDefaultHotwordDetectionServiceRestartPeriodValue;
     private static final Instrumentation sInstrumentation =
@@ -182,17 +181,6 @@ public class HotwordDetectionServiceBasicTest {
     private String mOriginalWearableSensingServiceEnabledConfig;
 
     @BeforeClass
-    public static void enableIndicators() {
-        sWasIndicatorEnabled = Helper.getIndicatorEnabledState();
-        Helper.setIndicatorEnabledState(Boolean.toString(true));
-    }
-
-    @AfterClass
-    public static void resetIndicators() {
-        Helper.setIndicatorEnabledState(sWasIndicatorEnabled);
-    }
-
-    @BeforeClass
     public static void extendScreenOffTimeout() throws Exception {
         // Change screen off timeout to 20 minutes.
         sDefaultScreenOffTimeoutValue = SystemUtil.runShellCommand(
@@ -220,6 +208,8 @@ public class HotwordDetectionServiceBasicTest {
 
     @Before
     public void setup() {
+        assertThat(Helper.getCameraMicIndicatorsEnabled()).isTrue();
+
         // VoiceInteractionServiceConnectedRule handles the service connected,
         // the test should be able to get service
         mService = (CtsBasicVoiceInteractionService) BaseVoiceInteractionService.getService();

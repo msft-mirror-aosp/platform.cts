@@ -25,11 +25,15 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivit
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.jetpack.utils.ActivityEmbeddingUtil;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestActivityWithId2;
@@ -43,6 +47,7 @@ import androidx.window.extensions.embedding.SplitPairRule;
 
 import com.google.common.collect.Sets;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,6 +70,8 @@ import java.util.function.Predicate;
 @Presubmit
 @RunWith(AndroidJUnit4.class)
 public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * Tests splitting activities with the same primary activity.
@@ -92,10 +99,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         final int numActivitiesToLaunch = 4;
         for (int activityLaunchIndex = 0; activityLaunchIndex < numActivitiesToLaunch;
                 activityLaunchIndex++) {
-            Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                    TestActivityWithId.class, splitPairRule,
-                    Integer.toString(activityLaunchIndex) /* secondActivityId */,
-                    mSplitInfoConsumer);
+            Activity secondaryActivity =
+                    startActivityAndVerifySplitAttributes(
+                            primaryActivity,
+                            TestActivityWithId.class,
+                            splitPairRule,
+                            Integer.toString(activityLaunchIndex) /* secondActivityId */,
+                            mSplitInfoConsumer,
+                            mActivityStackCallback);
 
             // Verify that the secondary container has all the secondary activities
             secondaryActivities.add(secondaryActivity);
@@ -136,9 +147,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         SplitPairRule splitPairRule = createWildcardSplitPairRule(true /* shouldClearTop */);
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId.class, splitPairRule,
-                "initialSecondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "initialSecondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Launch multiple activities to the side from the primary activity and verify that they
         // all successfully split with the primary activity and that the previous secondary activity
@@ -147,9 +163,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         Activity prevSecondaryActivity;
         for (int i = 0; i < numActivitiesToLaunch; i++) {
             prevSecondaryActivity = secondaryActivity;
-            secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                    TestActivityWithId.class, splitPairRule,
-                    Integer.toString(i) /* secondActivityId */, mSplitInfoConsumer);
+            secondaryActivity =
+                    startActivityAndVerifySplitAttributes(
+                            primaryActivity,
+                            TestActivityWithId.class,
+                            splitPairRule,
+                            Integer.toString(i) /* secondActivityId */,
+                            mSplitInfoConsumer,
+                            mActivityStackCallback);
             // The previous secondary activity should be finishing because shouldClearTop was set
             // to true, which clears the secondary container before launching the next secondary
             // activity.
@@ -177,9 +198,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        Activity nextPrimaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId.class, splitPairRule,
-                "initialSecondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        Activity nextPrimaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "initialSecondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         Map<Activity, List<SplitInfo>> secondaryActivityToSplitInfoMap = new HashMap<>();
         secondaryActivityToSplitInfoMap.put(nextPrimaryActivity,
@@ -195,10 +221,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         final int numActivitiesToLaunch = 4;
         for (int activityLaunchIndex = 0; activityLaunchIndex < numActivitiesToLaunch;
                 activityLaunchIndex++) {
-            nextPrimaryActivity = startActivityAndVerifySplitAttributes(nextPrimaryActivity,
-                    TestActivityWithId.class, splitPairRule,
-                    Integer.toString(activityLaunchIndex) /* secondActivityId */,
-                    mSplitInfoConsumer);
+            nextPrimaryActivity =
+                    startActivityAndVerifySplitAttributes(
+                            nextPrimaryActivity,
+                            TestActivityWithId.class,
+                            splitPairRule,
+                            Integer.toString(activityLaunchIndex) /* secondActivityId */,
+                            mSplitInfoConsumer,
+                            mActivityStackCallback);
 
             launchedActivitiesInOrder.add(nextPrimaryActivity);
 
@@ -260,9 +290,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Launch always expanded activity from the primary activity
         startActivityFromActivity(primaryActivity, TestActivityWithId.class,
@@ -303,9 +338,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         Activity primaryActivity = startFullScreenActivityNewTask(
                 TestConfigChangeHandlingActivity.class, null /* activityId */,
                 getLaunchingDisplayId());
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId2.class, splitPairRule,
-                "secondaryActivity" /* secondActivityId */, mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId2.class,
+                        splitPairRule,
+                        "secondaryActivity" /* secondActivityId */,
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         // Launch always expanded activity from the secondary activity
         startActivityFromActivity(secondaryActivity, TestActivityWithId.class,
@@ -342,9 +382,14 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
                 .setDefaultSplitAttributes(DEFAULT_SPLIT_ATTRS).build();
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
 
-        Activity secondaryActivity = startActivityAndVerifySplitAttributes(primaryActivity,
-                TestActivityWithId.class, splitPairRule,
-                "initialSecondaryActivity", mSplitInfoConsumer);
+        Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "initialSecondaryActivity",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
 
         List<Activity> secondaryActivities = new ArrayList<>();
         secondaryActivities.add(secondaryActivity);
@@ -356,11 +401,16 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
         // successfully split with the primary activity.
         final int numActivitiesToLaunch = 4;
         for (int i = 0; i < numActivitiesToLaunch; i++) {
-            secondaryActivity = ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes(
-                    secondaryActivity /* activityLaunchingFrom */,
-                    primaryActivity /* expectedPrimaryActivity */, TestActivityWithId.class,
-                    splitPairRule, Integer.toString(i) /* secondActivityId */,
-                    1 /* expectedCallbackCount */, mSplitInfoConsumer);
+            secondaryActivity =
+                    ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes(
+                            secondaryActivity /* activityLaunchingFrom */,
+                            primaryActivity /* expectedPrimaryActivity */,
+                            TestActivityWithId.class,
+                            splitPairRule,
+                            Integer.toString(i) /* secondActivityId */,
+                            1 /* expectedCallbackCount */,
+                            mSplitInfoConsumer,
+                            mActivityStackCallback);
 
             // Verify the split states match with the current and previous launches
             secondaryActivities.add(secondaryActivity);
@@ -385,5 +435,64 @@ public class ActivityEmbeddingLaunchTests extends ActivityEmbeddingTestBase {
             assertValidSplit(primaryActivity, newSecondaryActivity, splitPairRule);
             assertEquals(splitInfosList.get(i - 1), newSplitInfos);
         }
+    }
+
+    /**
+     * Tests that if an activity finishes itself and immediately launches a new activity into the
+     * same container, the new activity should be launched successfully.
+     */
+    @Test
+    @RequiresFlagsEnabled(
+            com.android.window.flags.Flags
+                    .FLAG_ACTIVITY_EMBEDDING_DELAY_TASK_FRAGMENT_FINISH_FOR_ACTIVITY_LAUNCH)
+    public void testActivityFinishAndLaunchNewActivity() {
+        // Set up a split between the primary activity and the secondary activity.
+        final Activity primaryActivity =
+                startFullScreenActivityNewTask(
+                        TestConfigChangeHandlingActivity.class,
+                        null /* activityId */,
+                        getLaunchingDisplayId());
+
+        final Predicate<Pair<Activity, Activity>> activityActivityPredicate =
+                activityActivityPair -> primaryActivity.equals(activityActivityPair.first);
+
+        final SplitPairRule splitPairRule =
+                new SplitPairRule.Builder(
+                                activityActivityPredicate,
+                                activityIntentPair -> true /* activityIntentPredicate */,
+                                parentWindowMetrics -> true /* parentWindowMetricsPredicate */)
+                        .setDefaultSplitAttributes(DEFAULT_SPLIT_ATTRS)
+                        .build();
+        mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPairRule));
+
+        final Activity secondaryActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "secondaryActivity",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
+
+        // Finish the second activity and immediately launch the third activity.
+        secondaryActivity.finish();
+        final Activity thirdActivity =
+                startActivityAndVerifySplitAttributes(
+                        primaryActivity,
+                        TestActivityWithId.class,
+                        splitPairRule,
+                        "thirdActivity",
+                        mSplitInfoConsumer,
+                        mActivityStackCallback);
+
+        // Verify that the third activity is correctly launched into the split
+        final List<SplitInfo> lastReportedSplitInfoList = mSplitInfoConsumer.getLastReportedValue();
+        assertNotNull(lastReportedSplitInfoList);
+        assertEquals(1, lastReportedSplitInfoList.size());
+        final SplitInfo splitInfo = lastReportedSplitInfoList.get(0);
+        assertEquals(1, splitInfo.getPrimaryActivityStack().getActivities().size());
+        assertEquals(1, splitInfo.getSecondaryActivityStack().getActivities().size());
+        assertEquals(primaryActivity, getPrimaryStackTopActivity(splitInfo));
+        assertEquals(thirdActivity, getSecondaryStackTopActivity(splitInfo));
     }
 }

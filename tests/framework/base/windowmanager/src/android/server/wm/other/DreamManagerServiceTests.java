@@ -35,12 +35,14 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.Condition;
 import android.server.wm.DreamCoordinator;
 import android.server.wm.LockScreenSession;
 import android.server.wm.RotationSession;
 import android.server.wm.app.Components;
+import android.server.wm.settings.SettingsSession;
 import android.view.Surface;
 
 import org.junit.After;
@@ -58,10 +60,17 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
 
     private ComponentName mDreamActivityName;
 
+    private SettingsSession<Integer> mCommunalHubSetting;
+
     private DreamCoordinator mDreamCoordinator = new DreamCoordinator(mContext);
 
     @Before
     public void setup() {
+        mCommunalHubSetting = new SettingsSession<>(
+                Settings.Secure.getUriFor(Settings.Secure.GLANCEABLE_HUB_ENABLED),
+                Settings.Secure::getInt, Settings.Secure::putInt);
+        mCommunalHubSetting.set(0);
+
         mDreamCoordinator.setup();
         pressWakeupButton();
         mWmState.waitForDreamGone();
@@ -72,6 +81,7 @@ public class DreamManagerServiceTests extends ActivityManagerTestBase {
         mDreamCoordinator.restoreDefaults();
         mDreamCoordinator.stopDream();
         mWmState.waitForDreamGone();
+        if (mCommunalHubSetting != null) mCommunalHubSetting.close();
     }
 
     private void waitAndAssertDreamActivityGone(int maxTimeOutInSeconds) {

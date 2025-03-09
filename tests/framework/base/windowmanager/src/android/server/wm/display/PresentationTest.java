@@ -63,6 +63,7 @@ public class PresentationTest extends MultiDisplayTestBase {
     @Before
     @Override
     public void setUp() throws Exception {
+        assumeTrue(supportsMultiDisplay());
         super.setUp();
         mVirtualDisplaySession = createManagedVirtualDisplaySession();
     }
@@ -79,7 +80,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_PRESENTATION_FOR_CONNECTED_DISPLAYS)
     @Test
     public void testPresentationFollowsDisplayFlag() {
-        assumeTrue(supportsMultiDisplay());
         for (Display display : mDm.getDisplays()) {
             launchPresentationActivity(getMainDisplayId(), display.getDisplayId());
             if ((display.getFlags() & Display.FLAG_PRESENTATION) != Display.FLAG_PRESENTATION) {
@@ -97,7 +97,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     @ApiTest(apis = {"android.app.Presentation#show"})
     @Test
     public void testPresentationAllowedOnPresentationDisplay() {
-        assumeTrue(supportsMultiDisplay());
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
         final WindowManagerState.DisplayContent presentationDisplay = createPresentationDisplay();
         launchPresentationActivity(displayForActivity.mId, presentationDisplay.mId);
@@ -126,7 +125,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     @Test
     public void
             testPresentationAllowedOnNonPresentationDisplayWithFocusedHostTaskOnAnotherDisplay() {
-        assumeTrue(supportsMultiDisplay());
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
         final WindowManagerState.DisplayContent nonPresentationDisplay =
                 createNonPresentationDisplay();
@@ -138,7 +136,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     @ApiTest(apis = {"android.app.Presentation#show"})
     @Test
     public void testPresentationNotDismissAfterResizeDisplay() {
-        assumeTrue(supportsMultiDisplay());
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
         final WindowManagerState.DisplayContent display =
                 createDisplay(
@@ -182,7 +179,6 @@ public class PresentationTest extends MultiDisplayTestBase {
     @ApiTest(apis = {"android.app.Presentation#show"})
     @Test
     public void testPrivatePresentationCreatedOnPrivatePresentationDisplay() {
-        assumeTrue(supportsMultiDisplay());
         final WindowManagerState.DisplayContent displayForActivity = createDisplayForActivity();
         final WindowManagerState.DisplayContent privatePresentationDisplay =
                 createPrivatePresentationDisplay();

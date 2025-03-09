@@ -30,6 +30,7 @@ import static android.app.settings.Action.ACTION_USER_ASPECT_RATIO_FULL_SCREEN_S
 import static android.app.settings.Action.ACTION_USER_ASPECT_RATIO_FULL_SCREEN_UNSELECTED;
 import static android.app.settings.Action.ACTION_USER_ASPECT_RATIO_HALF_SCREEN_SELECTED;
 import static android.app.settings.Action.ACTION_USER_ASPECT_RATIO_HALF_SCREEN_UNSELECTED;
+import static android.cts.statsdatom.lib.DeviceUtils.FEATURE_AUTOMOTIVE;
 import static android.cts.statsdatom.lib.DeviceUtils.FEATURE_WATCH;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -101,7 +102,9 @@ public class UserAspectRatioStateStatsTests  extends DeviceTestCase implements I
     }
 
     public void testUserAspectRatioOption() throws Exception {
-        if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)) return;
+        // TODO(b/400982232): Add atom statsd logging for automotive
+        if (DeviceUtils.hasFeature(getDevice(), FEATURE_WATCH)
+                || DeviceUtils.hasFeature(getDevice(), FEATURE_AUTOMOTIVE)) return;
         // Cannot enforce existence of user aspect ratio settings.
         if (isUserAspectRatioSettingsDisabled()) return;
         // Run an local test (AppCompatTests#testUserAspectRatioOptions) to

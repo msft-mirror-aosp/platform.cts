@@ -32,6 +32,7 @@ import static android.os.UserManager.USER_OPERATION_SUCCESS;
 import static android.os.UserManager.USER_TYPE_FULL_SECONDARY;
 import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
 import static android.os.UserManager.USER_TYPE_PROFILE_MANAGED;
+import static android.os.UserManager.USER_TYPE_PROFILE_SUPERVISING;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
@@ -459,6 +460,58 @@ public final class UserManagerTest {
         assertThat(communalUsers.get(0).id).isEqualTo(communalUser.getIdentifier());
     }
 
+    @Test
+    @ApiTest(apis = {"android.os.UserManager#USER_TYPE_PROFILE_SUPERVISING"})
+    @RequiresFlagsEnabled(android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE)
+    @RequireMultiUserSupport
+    @EnsureHasPermission({QUERY_USERS, CREATE_USERS, INTERACT_ACROSS_USERS})
+    public void testSupervisingProfile() throws Exception {
+        UserInfo userInfo = null;
+        List<UserHandle> createdUsers = new ArrayList<>();
+
+        List<UserInfo> supervisingUsers =
+                mUserManager.getAliveUsers().stream()
+                        .filter(UserInfo::isSupervisingProfile)
+                        .toList();
+        // There can be a maximum of 1 supervising profile
+        assertThat(supervisingUsers.size()).isLessThan(2);
+        if (!supervisingUsers.isEmpty()) {
+            userInfo = supervisingUsers.getFirst();
+        }
+        try {
+            if (userInfo == null) {
+                userInfo =
+                        mUserManager.createUser(
+                                "Supervising profile", USER_TYPE_PROFILE_SUPERVISING, 0);
+                // Bypass the test if the supervising profile is not supported.
+                assumeNotNull(userInfo);
+                createdUsers.add(userInfo.getUserHandle());
+            }
+            final Context userContext =
+                    sContext.createPackageContextAsUser("system", 0, userInfo.getUserHandle());
+            final UserManager umSupervising = userContext.getSystemService(UserManager.class);
+            assertThat(umSupervising.isProfile()).isTrue();
+            assertThat(umSupervising.isUserOfType(UserManager.USER_TYPE_PROFILE_SUPERVISING))
+                    .isTrue();
+
+            // Ensure that a second supervising profile cannot be created
+            final UserInfo secondUser =
+                    mUserManager.createUser("Second supervising", USER_TYPE_PROFILE_SUPERVISING, 0);
+            if (secondUser != null) {
+                createdUsers.add(secondUser.getUserHandle());
+            }
+            assertThat(secondUser).isNull();
+            supervisingUsers =
+                    mUserManager.getAliveUsers().stream()
+                            .filter(UserInfo::isSupervisingProfile)
+                            .toList();
+            assertThat(supervisingUsers.size()).isEqualTo(1);
+        } finally {
+            for (UserHandle userHandle : createdUsers) {
+                removeUser(userHandle);
+            }
+        }
+    }
 
     @Test
     @EnsureHasNoWorkProfile

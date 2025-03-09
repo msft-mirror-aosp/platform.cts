@@ -1459,6 +1459,17 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
                 .containsExactlyElementsIn(audioZones);
     }
 
+    @Test
+    @EnsureHasPermission(Car.PERMISSION_CAR_CONTROL_AUDIO_SETTINGS)
+    @ApiTest(apis = {"android.car.media.CarAudioManager#getAudioZoneIds"})
+    public void getAudioZoneIds() throws Exception {
+        assumeDynamicRoutingIsEnabled();
+
+        List<Integer> zoneIds = mCarAudioManager.getAudioZoneIds();
+
+        assertWithMessage("Audio Zone Ids").that(zoneIds).contains(PRIMARY_AUDIO_ZONE);
+    }
+
     private TestMediaAudioRequestStatusCallback requestToPlayMediaInPrimaryZone(
             OccupantZoneInfo info) {
         Executor callbackExecutor = Executors.newFixedThreadPool(1);

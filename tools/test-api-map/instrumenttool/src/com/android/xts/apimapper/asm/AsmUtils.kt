@@ -42,7 +42,7 @@ fun String.toHumanReadableClassName() = replace(Regex("[/$]"), ".")
 fun String.toHumanReadableDesc(): String {
     val params = ArrayList<String>()
     Type.getArgumentTypes(this).forEach {
-        params.add(it.className.replace("\\$", "."))
+        params.add(it.className.toHumanReadableClassName())
     }
     return params.joinToString(", ")
 }
