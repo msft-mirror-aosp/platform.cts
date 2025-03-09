@@ -27,7 +27,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -236,7 +235,7 @@ public class SlidingDrawerTest {
                 mock(SlidingDrawer.OnDrawerOpenListener.class);
         mDrawer.setOnDrawerOpenListener(mockOpenListener);
 
-        verifyZeroInteractions(mockOpenListener);
+        verifyNoMoreInteractions(mockOpenListener);
 
         mDrawer.open();
         verify(mockOpenListener, times(1)).onDrawerOpened();
@@ -249,10 +248,10 @@ public class SlidingDrawerTest {
                 mock(SlidingDrawer.OnDrawerCloseListener.class);
         mDrawer.setOnDrawerCloseListener(mockCloseListener);
 
-        verifyZeroInteractions(mockCloseListener);
+        verifyNoMoreInteractions(mockCloseListener);
 
         mDrawer.open();
-        verifyZeroInteractions(mockCloseListener);
+        verifyNoMoreInteractions(mockCloseListener);
 
         mDrawer.close();
         verify(mockCloseListener, times(1)).onDrawerClosed();

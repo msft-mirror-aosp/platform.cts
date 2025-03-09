@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.database.DataSetObserver;
 import android.view.View;
@@ -54,19 +54,19 @@ public class BaseAdapterTest {
         BaseAdapter baseAdapter = new MockBaseAdapter();
         DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
 
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         baseAdapter.notifyDataSetChanged();
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
 
         baseAdapter.registerDataSetObserver(mockDataSetObserver);
         baseAdapter.notifyDataSetChanged();
         verify(mockDataSetObserver, times(1)).onChanged();
 
         reset(mockDataSetObserver);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         baseAdapter.unregisterDataSetObserver(mockDataSetObserver);
         baseAdapter.notifyDataSetChanged();
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
     }
 
     @Test
@@ -74,9 +74,9 @@ public class BaseAdapterTest {
         BaseAdapter baseAdapter = new MockBaseAdapter();
         DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
 
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         baseAdapter.notifyDataSetInvalidated();
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
 
         baseAdapter.registerDataSetObserver(mockDataSetObserver);
         baseAdapter.notifyDataSetInvalidated();

@@ -28,7 +28,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -134,7 +133,7 @@ public class DatePickerTest {
         datePicker.init(2000, 10, 15, mockDateChangeListener);
         assertValues(datePicker, 2000, 10, 15);
 
-        verifyZeroInteractions(mockDateChangeListener);
+        verifyNoMoreInteractions(mockDateChangeListener);
     }
 
     @UiThreadTest
