@@ -48,8 +48,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -486,6 +486,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testEmbeddedViewReceivesRawInputCoordinatesInDisplaySpace() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         final UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
         final int viewX = DEFAULT_SURFACE_VIEW_WIDTH / 2;
         final int viewY = DEFAULT_SURFACE_VIEW_HEIGHT / 2;
@@ -709,6 +713,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testFocusWithTouch() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         mEmbeddedView = new Button(mActivity);
         addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
         mInstrumentation.waitForIdleSync();
@@ -730,6 +738,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testChildWindowFocusable() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         mEmbeddedView = new Button(mActivity);
         mEmbeddedView.setBackgroundColor(Color.BLUE);
         View embeddedViewChild = new Button(mActivity);
@@ -769,6 +781,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testFocusWithTouchCrossProcess() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         mTestService = getService();
         assertNotNull(mTestService);
 
@@ -916,6 +932,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testCanCopySurfacePackage() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         // Create a surface view and wait for its surface to be created.
         CountDownLatch surfaceCreated = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> {
@@ -1047,6 +1067,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testCanReplaceSurfacePackage() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         // Create a surface view and wait for its surface to be created.
         CountDownLatch surfaceCreated = new CountDownLatch(1);
         mActivityRule.runOnUiThread(() -> {
@@ -1281,6 +1305,10 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     @Test
     @DebugInputRule.DebugInput(bug = 329439551)
     public void testEmbeddedViewReceivesInputOnBottom() throws Throwable {
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
+
         mEmbeddedView = new Button(mActivity);
         mEmbeddedView.setOnClickListener((View v) -> {
             mClicked = true;
@@ -1340,9 +1368,11 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     @Test
     public void testHostInputTokenAllowsObscuredTouches() throws Throwable {
-        // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
 
         mTestService = getService();
         assertTrue(mTestService != null);
@@ -1378,6 +1408,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // TODO(b/398861504): Ensure this test case is covered by the CTS Verifier.
         assumeFalse("XR device uses a custom window occlusion check tested via CTS Verifier.",
                 FeatureUtil.isXrHeadset());
+        assumeFalse("Automotive splitscreen uses multi-window root tasks. Because of the "
+                + "lack of a correct display coordinates transform from logical to physical this "
+                + "test fails on android15", hasAutomotiveSplitscreenMultitaskingFeature());
 
         mTestService = getService();
         mRemoteSurfacePackage = mTestService.getSurfacePackage(new Binder());
