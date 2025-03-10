@@ -172,8 +172,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
                 bgr_img,
                 (f'{img_name_stem}_{fmt}_{z:.2f}_'
                  f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-                aruco_marker_count=1,
-                force_greyscale=True  # Maximize number of markers detected
+                aruco_marker_count=1
             )
             found_markers = True
           except AssertionError as e:
