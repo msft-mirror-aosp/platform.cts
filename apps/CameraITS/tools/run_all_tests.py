@@ -887,6 +887,7 @@ def main():
       else:
         # Check manual scenes for correctness
         if ('scene0' not in testing_scene and
+            'scene_ip' not in testing_scene and
             not testing_sensor_fusion_with_controller):
           check_manual_scenes(device_id, camera_id, testing_scene,
                               mobly_output_logs_path)
