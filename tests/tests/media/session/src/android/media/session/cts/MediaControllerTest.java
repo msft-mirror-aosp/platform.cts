@@ -96,14 +96,14 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetPackageName() {
         assertThat(mController.getPackageName())
                 .isEqualTo(getContext().getPackageName());
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetPlaybackState() {
         final int testState = STATE_PLAYING;
         final long testPosition = 100000L;
@@ -145,7 +145,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetRatingType() {
         assertWithMessage("Default rating type of a session must be Rating.RATING_NONE")
                 .that(mController.getRatingType())
@@ -157,13 +157,13 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSessionToken() {
         assertThat(mController.getSessionToken()).isEqualTo(mSession.getSessionToken());
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSessionInfo() {
         Bundle sessionInfo = mController.getSessionInfo();
         assertThat(sessionInfo).isNotNull();
@@ -174,7 +174,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSessionInfoReturnsAnEmptyBundleWhenNotSet() {
         MediaSession session = new MediaSession(getContext(), "test_tag", /*sessionInfo=*/ null);
         try {
@@ -185,13 +185,13 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetTag() {
         assertThat(mController.getTag()).isEqualTo(SESSION_TAG);
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSendCommand() throws Exception {
         synchronized (mWaitLock) {
             mCallback.reset();
@@ -209,7 +209,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSendCommandWithIllegalArgumentsThrowsIAE() {
         Bundle args = new Bundle();
         ResultReceiver resultReceiver = new ResultReceiver(mHandler);
@@ -222,7 +222,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetPlaybackSpeed() throws Exception {
         synchronized (mWaitLock) {
             mCallback.reset();
@@ -238,14 +238,14 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAdjustVolumeWithIllegalDirection() {
         // Call the method with illegal direction. System should not reboot.
         mController.adjustVolume(37, 0);
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testVolumeControl() throws Exception {
         VolumeProvider vp = new VolumeProvider(VolumeProvider.VOLUME_CONTROL_ABSOLUTE, 11, 5) {
             @Override
@@ -291,7 +291,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testTransportControlsAndMediaSessionCallback() throws Exception {
         MediaController.TransportControls controls = mController.getTransportControls();
         final MediaSession.Callback callback = (MediaSession.Callback) mCallback;
@@ -489,7 +489,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testRegisterCallbackWithNullThrowsIAE() {
         assertThrows(IllegalArgumentException.class,
                 () -> mController.registerCallback(/*handler=*/ null));
@@ -499,7 +499,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testRegisteringSameCallbackWithDifferentHandlerHasNoEffect() {
         MediaController.Callback callback = new MediaController.Callback() {};
         mController.registerCallback(callback, mHandler);
@@ -523,14 +523,14 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testUnregisterCallbackWithNull() {
         assertThrows(IllegalArgumentException.class,
                 () -> mController.unregisterCallback(/*handler=*/ null));
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testUnregisterCallbackShouldRemoveCallback() {
         MediaController.Callback callback = new MediaController.Callback() {};
         mController.registerCallback(callback, mHandler);
@@ -542,21 +542,21 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testDispatchMediaButtonEventWithNullKeyEvent() {
         assertThrows(IllegalArgumentException.class,
                 () -> mController.dispatchMediaButtonEvent(/*keyEvent=*/ null));
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testDispatchMediaButtonEventWithNonMediaKeyEventReturnsFalse() {
         KeyEvent keyEvent = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_CAPS_LOCK);
         assertThat(mController.dispatchMediaButtonEvent(keyEvent)).isFalse();
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testPlaybackInfoCreatorNewArray() {
         final int arrayLength = 5;
         MediaController.PlaybackInfo[] playbackInfoArrayInitializedWithNulls =
@@ -569,7 +569,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testTransportControlsPlayAndPrepareFromMediaIdWithIllegalArgumentsThrowsIAE() {
         MediaController.TransportControls transportControls = mController.getTransportControls();
 
@@ -590,7 +590,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testTransportControlsPlayAndPrepareFromUriWithIllegalArgumentsThrowsIAE() {
         MediaController.TransportControls transportControls = mController.getTransportControls();
 
@@ -608,7 +608,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testTransportControlsPlayAndPrepareFromSearchWithNullDoesNotCrash()
             throws Exception {
         MediaController.TransportControls transportControls = mController.getTransportControls();
@@ -626,7 +626,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSendCustomActionWithIllegalArgumentsThrowsIAE() {
         MediaController.TransportControls transportControls = mController.getTransportControls();
 
