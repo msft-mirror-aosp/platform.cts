@@ -74,7 +74,7 @@ class MultiCameraSwitchTeleTest(its_base_test.ItsBaseTest):
       # Check if camera is tele
       physical_props = cam.get_camera_properties_by_id(self.hidden_physical_id)
       is_tele = cam.get_camera_type(physical_props) == (
-          its_session_utils._CAMERA_TYPE_TELE)
+          its_session_utils.CAMERA_TYPE_TELE)
       camera_properties_utils.skip_unless(is_tele)
 
       # Check SKIP conditions
