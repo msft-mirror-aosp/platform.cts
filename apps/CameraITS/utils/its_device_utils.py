@@ -36,7 +36,8 @@ def run_adb_shell_command(device_id, command):
   Args:
     device_id: serial id of device.
     command: adb command to run on device.
-
+  Returns:
+    output: adb command output
   Raises:
     RuntimeError: An error when running adb command.
   """
@@ -45,6 +46,7 @@ def run_adb_shell_command(device_id, command):
                           check=False)
   if 'Exception occurred' in str(output):
     raise RuntimeError(output)
+  return output
 
 
 def is_dut_tablet_or_desktop(device_id):
@@ -60,8 +62,8 @@ def is_dut_tablet_or_desktop(device_id):
   output = run_adb_shell_command(device_id, adb_command)
   logging.debug('adb command output: %s', output)
   if output is not None and (
-      ('tablet' in output.lower()) or
-      ('desktop' in output.lower())
+      ('tablet' in str(output).lower()) or
+      ('desktop' in str(output).lower())
   ):
     logging.debug('Device under test is a tablet/desktop.')
     return True
