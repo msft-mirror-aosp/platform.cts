@@ -21,10 +21,12 @@ android_test {
     team: "trendy_team_machine_learning",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.view.contentcapture.flags-aconfig-java",
         "androidx.annotation_annotation",
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "truth",
         // TODO: remove once Android migrates to JUnit 4.12,
         // which provides assertThrows
