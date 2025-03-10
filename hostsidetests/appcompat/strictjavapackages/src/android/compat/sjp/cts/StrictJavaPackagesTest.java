@@ -1084,7 +1084,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             CLog.d(LOG_TAG + ": [on host] sha1sum of " + jar.getPath() + ": " + sha1OnHost);
             CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
             CLog.d(LOG_TAG + ": sha1 mismatch between " + remoteJarPath + " on device and on host");
-            compareBinary(jar.getPath(), remoteJarPath);
+            File firstAttempt = jar;
             // attempt to pull the file again to see if the sha1 mismatch is transient.
             jar = device.pullFile(remoteJarPath);
             if (jar == null) {
@@ -1095,14 +1095,11 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             CLog.d(LOG_TAG + ": [on host] sha1sum of second attempt " + jar.getPath() + ": " + sha1OnHost);
             if (!sha1OnDevice.equals(sha1OnHost)) {
                 CLog.d(LOG_TAG + ": sha1 second mismatch between on device and on host");
-                compareBinary(jar.getPath(), remoteJarPath);
                 throw new IllegalStateException(
                         "sha1 mismatch between on device and on host after second attempt");
             }
-            CLog.d(
-                    LOG_TAG
-                            + ": sha1 mismatch between on device and on host, but resolved after"
-                            + " second attempt");
+            CLog.d( LOG_TAG + ": sha1 mismatch between on device and on host, but resolved after" + " second attempt");
+            compareBinary(firstAttempt.getPath(), jar.getPath());
             // to help debug this, still throw an exception. In the future, we can consider
             // returning the jar from the second attempt.
             throw new IllegalStateException("sha1 mismatch between on device and on host");
@@ -1137,7 +1134,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 }
             }
         } catch (IOException e) {
-            CLog.d(LOG_TAG + ": failed to read files");
+            CLog.d(LOG_TAG + ": failed to read files", e);
         }
     }
 
@@ -1167,7 +1164,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 }
 
             fis.close();
-            CLog.d(LOG_TAG + ": total bytes read for sha1: " + totalBytes);
 
             byte[] hashBytes = sha1Digest.digest();
 
