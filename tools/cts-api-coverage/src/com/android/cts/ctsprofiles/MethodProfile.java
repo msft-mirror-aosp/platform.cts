@@ -35,14 +35,17 @@ public class MethodProfile {
 
     private int mMethodType = 0;
 
-    // A map of non-api methods called by this method with the method signature as the key.
+    // Non-api methods called by this method.
     private final HashMap<String, MethodProfile> mCommonMethodCalls = new HashMap<>();
 
-    // A map of api methods called by this method with the method signature as the key.
+    // Api methods called by this method.
     private final HashMap<String, MethodProfile> mApiMethodCalls = new HashMap<>();
 
-    // A map of api constructors called by this method with the method signature as the key.
+    // Api constructors called by this method.
     private final HashMap<String, MethodProfile> mApiConstructorCalls = new HashMap<>();
+
+    // Abstract api methods overridden by this method.
+    private final HashMap<String, MethodProfile> mOverriddenApiMethods = new HashMap<>();
 
     private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
             List.of("org.junit.*")
@@ -103,6 +106,10 @@ public class MethodProfile {
         return mApiMethodCalls;
     }
 
+    public Map<String, MethodProfile> getOverriddenApiMethods() {
+        return mOverriddenApiMethods;
+    }
+
     public Map<String, MethodProfile> getApiConstructorCalls() {
         return mApiConstructorCalls;
     }
@@ -123,6 +130,12 @@ public class MethodProfile {
         } else {
             mCommonMethodCalls.putIfAbsent(methodSignature, methodCall);
         }
+    }
+
+    /** Adds an API method overridden by this method. */
+    public void addOverriddenApiMethod(MethodProfile overriddenMethod) {
+        String methodSignature = overriddenMethod.getMethodSignatureWithClass();
+        mOverriddenApiMethods.putIfAbsent(methodSignature, overriddenMethod);
     }
 
     public String getMethodSignatureWithClass() {
