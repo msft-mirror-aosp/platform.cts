@@ -40,6 +40,7 @@ _MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 50
 _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST = 1
+_STANDARD_TEST_MAX_ZOOM_RATIO = 4.0
 _ULTRAWIDE_NUMBER_OF_CAMERAS_TO_TEST = 2  # UW and W
 _WIDE_ONLY_ZOOM_RATIO_THRESHOLD = 4.0
 _WIDE_ZOOM_THIRD_CAMERA_CHECK_ZOOM_RATIO = 2.0
@@ -183,6 +184,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
+      z_range[1] = min(z_range[1], _STANDARD_TEST_MAX_ZOOM_RATIO)
       # Truncate zoom range if test_preview_zoom_tele will be run
       if tele_camera_found:
         logging.debug('Tele camera found, truncating zoom range max to %.2f',
