@@ -1715,13 +1715,23 @@ public class CaptureRequestTest extends Camera2SurfaceViewTestCase {
                 int colorTemperatureResult =
                         result.get(CaptureResult.COLOR_CORRECTION_COLOR_TEMPERATURE);
                 int colorTintResult = result.get(CaptureResult.COLOR_CORRECTION_COLOR_TINT);
-                mCollector.expectEquals("Control mode result/request mismatch",
-                        CaptureResult.CONTROL_MODE_OFF, result.get(CaptureResult.CONTROL_MODE));
                 mCollector.expectEquals("Color temperature result/request mismatch",
                         TEST_COLOR_TEMPERATURE_VALUES[i], colorTemperatureResult);
                 // The actual color tint applied may be clamped so the result
                 // may differ from the request, so we just check if it is null
                 mCollector.expectNotNull("Color tint result null", colorTintResult);
+
+                if (!availableControlModes.contains(CaptureRequest.CONTROL_MODE_OFF)) {
+                    mCollector.expectEquals("Control mode result/request mismatch",
+                            CaptureResult.CONTROL_MODE_AUTO,
+                            result.get(CaptureResult.CONTROL_MODE));
+                    mCollector.expectEquals("AWB mode result/request mismatch",
+                            CaptureResult.CONTROL_AWB_MODE_OFF,
+                            result.get(CaptureResult.CONTROL_AWB_MODE));
+                } else {
+                    mCollector.expectEquals("Control mode result/request mismatch",
+                            CaptureResult.CONTROL_MODE_OFF, result.get(CaptureResult.CONTROL_MODE));
+                }
             }
         }
     }
