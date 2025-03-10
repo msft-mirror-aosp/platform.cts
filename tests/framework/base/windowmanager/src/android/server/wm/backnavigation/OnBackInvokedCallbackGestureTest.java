@@ -49,7 +49,6 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,7 +57,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * Integration test for back navigation
@@ -73,7 +71,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     private UiDevice mUiDevice;
     private BackInvocationTracker mTracker = new BackInvocationTracker();
     private BackNavigationActivity mActivity;
-    private TouchHelper.SwipeSession mTouchSwipeSession;
 
     private final OnBackAnimationCallback mAnimationCallback = new OnBackAnimationCallback() {
         @Override
@@ -115,30 +112,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         mInstrumentation.getUiAutomation().syncInputTransactions();
 
         mActivity = activitySession.getActivity();
-        mTouchSwipeSession = new TouchHelper.SwipeSession(DEFAULT_DISPLAY, true, false);
-    }
-
-    @After
-    public void teardown() {
-        if (mTouchSwipeSession.isSwipe()) {
-            mTouchSwipeSession.finishSwipe();
-        }
-    }
-
-    private Supplier<String> progressFailMessageSupplier() {
-        return () -> {
-            final BackEvent lastEvent = mTracker.mProgressEvents.getLast();
-            final int eventCount = mTracker.mProgressEvents.size();
-            if (lastEvent != null) {
-                return "Did not receive onProgress, event count ="
-                        + eventCount
-                        + ", "
-                        + "last event="
-                        + lastEvent;
-            } else {
-                return "Did not receive onProgress at all!";
-            }
-        };
     }
 
     @Test
@@ -148,14 +121,16 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
-        mTouchSwipeSession.beginSwipe(0, midHeight);
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
         // Back start event shouldn't be sent until the edge swipe threshold is crossed.
         assertNotInvoked(mTracker.mStartLatch);
 
-        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
         assertInvoked(mTracker.mStartLatch);
         assertEquals(BackEvent.EDGE_LEFT, mTracker.mOnBackStartedEvent.getSwipeEdge());
-        assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
+        assertInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
         List<BackEvent> events = mTracker.mProgressEvents;
@@ -170,7 +145,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
             assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
         }
 
-        mTouchSwipeSession.finishSwipe();
+        touchSession.finishSwipe();
         assertInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
     }
@@ -182,13 +157,15 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
-        mTouchSwipeSession.beginSwipe(0, midHeight);
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
         // Back start event shouldn't be sent until the edge swipe threshold is crossed.
         assertNotInvoked(mTracker.mStartLatch);
 
-        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
         assertInvoked(mTracker.mStartLatch);
-        assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
+        assertInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
         List<BackEvent> events = mTracker.mProgressEvents;
@@ -205,7 +182,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
             assertEquals(BackEvent.EDGE_LEFT, event.getSwipeEdge());
         }
 
-        mTouchSwipeSession.finishSwipe();
+        touchSession.finishSwipe();
         assertInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
     }
@@ -216,13 +193,15 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
-        mTouchSwipeSession.beginSwipe(0, midHeight);
-        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
-        assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        long startDownTime = touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        assertInvoked(mTracker.mProgressLatch);
 
         mTracker.reset();
         mTracker.mIsCancelRequested = true;
-        mTouchSwipeSession.cancelSwipe();
+        touchSession.cancelSwipe();
 
         assertInvoked(mTracker.mCancelLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
@@ -306,8 +285,10 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
-        mTouchSwipeSession.beginSwipe(0, midHeight);
-        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
 
         // Assert that observer callback does not receive start and progress events during the
         // gesture
@@ -316,7 +297,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
 
-        mTouchSwipeSession.finishSwipe();
+        touchSession.finishSwipe();
         assertInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
     }
@@ -359,8 +340,10 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
-        mTouchSwipeSession.beginSwipe(0, midHeight);
-        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
 
         // Assert that observer callback does not receive start and progress events during the
         // gesture
@@ -370,7 +353,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertNotInvoked(mTracker.mCancelLatch);
 
         final ComponentName activityName = mActivity.getComponentName();
-        mTouchSwipeSession.finishSwipe();
+        touchSession.finishSwipe();
         assertInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
         mWmState.waitAndAssertActivityState(activityName, STATE_STOPPED);
@@ -382,10 +365,12 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
 
-        mTouchSwipeSession.beginSwipe(0, midHeight);
-        mTouchSwipeSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
+        final TouchHelper.SwipeSession touchSession = new TouchHelper.SwipeSession(
+                DEFAULT_DISPLAY, true, false);
+        touchSession.beginSwipe(0, midHeight);
+        touchSession.continueSwipe(midWidth, midHeight, PROGRESS_SWIPE_STEPS);
         assertInvoked(mTracker.mStartLatch);
-        assertInvoked(mTracker.mProgressLatch, progressFailMessageSupplier());
+        assertInvoked(mTracker.mProgressLatch);
         waitForIdle();
         mTracker.reset();
         TouchHelper.injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, true /* sync */);
@@ -393,6 +378,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         // Make sure the KEYCODE_BACKs don't invoke callbacks.
         assertNotInvoked(mTracker.mInvokeLatch);
         assertNotInvoked(mTracker.mCancelLatch);
+        touchSession.finishSwipe();
     }
 
     @Test
@@ -427,13 +413,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
 
     private void assertInvoked(CountDownLatch latch) throws InterruptedException {
         assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
-    }
-
-    private void assertInvoked(CountDownLatch latch, Supplier<String> failMessage)
-            throws InterruptedException {
-        if (!latch.await(1000, TimeUnit.MILLISECONDS)) {
-            fail(failMessage.get());
-        }
     }
 
     private void assertNotInvoked(CountDownLatch latch) {
