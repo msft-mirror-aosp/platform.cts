@@ -80,8 +80,6 @@ public class CallGraphManager {
      * Maps detected APIs to CTS test methods and marks them as covered by this CTS module.
      */
     public void resolveCoveredApis(ApiCoverage apiCoverage) {
-        resolveExtendedMethods();
-        resolveOverriddenAbstractApiMethods(apiCoverage);
         for (ClassProfile classProfile : mModule.getClasses()) {
             if (!classProfile.isNonAbstractTestClass()) {
                 continue;
@@ -108,10 +106,17 @@ public class CallGraphManager {
         }
     }
 
-    /** Resolves cases that methods are extended from super classes. */
-    private void resolveExtendedMethods() {
+    /** Resolves cases that methods are inherited from super classes. */
+    public void resolveInheritedMethods(ApiCoverage apiCoverage) {
         for (ClassProfile classProfile : mModule.getClasses()) {
-            classProfile.resolveExtendedMethods();
+            classProfile.resolveInheritedMethods(apiCoverage);
+        }
+    }
+
+    /** Resolve cases that methods are inherited from an API method. */
+    public void resolveInheritedApiMethods(ApiCoverage apiCoverage) {
+        for (ClassProfile classProfile : mModule.getClasses()) {
+            classProfile.resolveInheritedApiMethods(apiCoverage);
         }
     }
 
@@ -130,6 +135,7 @@ public class CallGraphManager {
         for (MethodProfile method: methods) {
             coveredApis.addMethods(method.getApiMethodCalls());
             coveredApis.addConstructors(method.getApiConstructorCalls());
+            coveredApis.addMethods(method.getOverriddenApiMethods());
         }
         for (MethodProfile method: methods) {
             for (MethodProfile methodCall : method.getCommonMethodCalls().values()) {
