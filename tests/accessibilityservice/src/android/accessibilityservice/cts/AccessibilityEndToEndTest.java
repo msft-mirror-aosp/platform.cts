@@ -130,7 +130,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -1362,10 +1361,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        // disable scrollView animation to make espresso less flaky
-        scrollView.setSmoothScrollingEnabled(false);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        onView(withId(R.id.buttonTarget)).perform(scrollTo());
         sUiAutomation.waitForIdle(
                 /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
 
@@ -1402,10 +1398,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
         final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
-        final ScrollView scrollView = mActivity.findViewById(R.id.scrollParent);
-        // disable scrollView animation to make espresso less flaky
-        scrollView.setSmoothScrollingEnabled(false);
-        mActivity.runOnUiThread(() -> scrollView.scrollToDescendant(buttonTarget));
+        onView(withId(R.id.buttonTarget)).perform(scrollTo());
         sUiAutomation.waitForIdle(
                 /* idleTimeoutMillis= */ 100, /* globalTimeoutMillis= */ DEFAULT_TIMEOUT_MS);
 
