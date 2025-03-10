@@ -325,6 +325,9 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
           if ultrawide_camera_found
           else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
       )
+      # Make reporting active physical IDs optional
+      if all(d.physical_id is None for d in test_data):
+        number_of_cameras_to_test = 0
       if not zoom_capture_utils.verify_preview_zoom_results(
           test_data, size, z_max, z_min, z_step_size, plot_name_stem,
           number_of_cameras_to_test=number_of_cameras_to_test):
