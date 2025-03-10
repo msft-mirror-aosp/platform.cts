@@ -41,7 +41,6 @@ import android.view.inputmethod.cts.util.TestActivity;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -50,7 +49,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -58,9 +56,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class InProcessImeTest extends EndToEndImeTestBase {
+public final class InProcessImeTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 
     private void enableInProcIme() {

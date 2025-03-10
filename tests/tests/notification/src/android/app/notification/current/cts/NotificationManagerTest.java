@@ -26,6 +26,10 @@ import static android.app.AppOpsManager.MODE_ERRORED;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
+import static android.app.NotificationChannel.NEWS_ID;
+import static android.app.NotificationChannel.PROMOTIONS_ID;
+import static android.app.NotificationChannel.RECS_ID;
+import static android.app.NotificationChannel.SOCIAL_MEDIA_ID;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static android.app.NotificationManager.IMPORTANCE_LOW;
@@ -105,7 +109,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
@@ -132,8 +136,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -871,7 +877,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             }
             compareChannels(channelMap.get(nc.getId()), nc);
         }
-        // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this test
+
+        // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this
+        // test
         assertEquals(4, channels.size());
     }
 
@@ -1782,6 +1790,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
     public void testAutogrouping_groupWithoutSummary() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // Post notifications with a group name BUT without a summary notification
         testAutogrouping_forceGrouping_common(false);
     }
@@ -1789,6 +1799,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING)
     public void testAutogrouping_summaryWithoutChildren() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         // Post group summary notifications BUT no group children
         testAutogrouping_forceGrouping_common(true);
     }
@@ -1797,6 +1809,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
             com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -1856,6 +1870,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled({android.service.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUPING,
             com.android.server.notification.Flags.FLAG_NOTIFICATION_FORCE_GROUP_SINGLETONS})
     public void testAutogrouping_sparseGroups_appCancelsRemovedSummary() throws Exception {
+        assumeFalse("NotificationListeners do not support visible background users",
+                mUserHelper.isVisibleBackgroundUser());
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -3746,6 +3762,34 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 fail("notification callback should fail!");
             }
         } catch (InterruptedException e) {
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
+    public void testCanPostPromotedNotifications() {
+        boolean initialValue = mNotificationManager.canPostPromotedNotifications();
+
+        try {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), true);
+            });
+
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isTrue();
+
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), false);
+            });
+
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
+
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), initialValue);
+            });
         }
     }
 

@@ -16,6 +16,7 @@
 package android.telephony.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeFalse;
 
 import static java.util.Collections.EMPTY_SET;
 
@@ -31,6 +32,8 @@ import android.telephony.CellLocation;
 import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 
+import com.android.internal.telephony.flags.Flags;
+
 import org.junit.Test;
 
 /**
@@ -39,6 +42,7 @@ import org.junit.Test;
 public class CellIdentityTest {
     @Test
     public void testCellIdentityCdma_asCellLocation() {
+        assumeFalse(Flags.cleanupCdma());
         int nid = 12;
         int sid = 34;
         int bid = 56;
@@ -58,6 +62,7 @@ public class CellIdentityTest {
 
     @Test
     public void testCellIdentityCdma_unavailable_asCellLocation() {
+        assumeFalse(Flags.cleanupCdma());
         CellIdentity cellIdentity = new CellIdentityCdma();
 
         CellLocation cellLocation = cellIdentity.asCellLocation();

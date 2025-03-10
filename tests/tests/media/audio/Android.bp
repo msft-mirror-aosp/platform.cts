@@ -76,6 +76,7 @@ android_test {
     compile_multilib: "both",
     static_libs: [
         "android.media.audio-aconfig-java",
+        "com.android.media.audio-aconfig-java",
         "com.android.media.audioserver-aconfig-java",
         "CtsVirtualDeviceCommonLib",
         "androidx.test.ext.junit",
@@ -90,8 +91,7 @@ android_test {
         "mediatestutils",
         "platform-test-annotations",
         "testng",
-        "Nene",
-        "Harrier",
+        "bedstead",
     ],
     jni_libs: [
         "libaudiocts_jni",

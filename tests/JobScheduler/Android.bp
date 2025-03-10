@@ -25,10 +25,9 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.rules",
         "cts-wm-util",
-        "Harrier",
         "net_flags_lib",
         "flag-junit",
-        "Harrier",
+        "bedstead",
     ],
     libs: ["android.test.base.stubs.system"],
     srcs: [

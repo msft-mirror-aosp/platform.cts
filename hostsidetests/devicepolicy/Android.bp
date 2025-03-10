@@ -33,7 +33,6 @@ java_test_host {
         "arcts",
         "cts",
         "general-tests",
-        "mcts-permission",
         "mts-permission",
     ],
     static_libs: [

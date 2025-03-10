@@ -24,7 +24,6 @@ import static org.junit.Assert.assertNull;
 
 import android.app.ActivityManager;
 import android.app.Instrumentation;
-import android.app.UiAutomation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -45,7 +44,6 @@ import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
@@ -85,7 +83,6 @@ public class CtsNfcResolverDeviceTest {
 
     private Context mContext;
     private Instrumentation mInstrumentation;
-    private UiAutomation mAutomation;
     public UiDevice mDevice;
     private UiObject2 mSharesheet;
 
@@ -98,6 +95,7 @@ public class CtsNfcResolverDeviceTest {
             mIntentFilterTesterAppLabel, mIntentFilterTesterIntentFilterLabel;
 
     private int mMyDisplayId;
+
 
     private static Intent createNfcResolverIntent(
             Intent target,
@@ -203,7 +201,7 @@ public class CtsNfcResolverDeviceTest {
 
             waitAndAssertPkgVisible(mSharesheetPkg);
             mSharesheet =
-                mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
+                    mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
             waitForIdle();
 
             waitAndAssertTextContains(title);
@@ -263,7 +261,7 @@ public class CtsNfcResolverDeviceTest {
 
             waitAndAssertPkgVisible(mSharesheetPkg);
             mSharesheet =
-                mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
+                    mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId));
             waitForIdle();
 
             waitAndAssertTextContains(title);
@@ -333,7 +331,7 @@ public class CtsNfcResolverDeviceTest {
         // This method intentionally does not wait, looks to see if visible on method call
         try {
             return mDevice.findObject(By.pkg(mSharesheetPkg).depth(0).displayId(mMyDisplayId))
-                != null;
+                    != null;
         } catch (StaleObjectException e) {
             // If we get a StaleObjectException, it means that the underlying View has
             // already been destroyed, meaning the sharesheet is no longer visible.
@@ -369,7 +367,7 @@ public class CtsNfcResolverDeviceTest {
 
     private void waitAndAssertTextContains(String text, boolean caseSensitive) {
         waitAndAssertFound(
-            By.text(textContainsPattern(text, caseSensitive)).displayId(mMyDisplayId));
+                By.text(textContainsPattern(text, caseSensitive)).displayId(mMyDisplayId));
     }
 
     private static Pattern textContainsPattern(String text, boolean caseSensitive) {
@@ -424,7 +422,7 @@ public class CtsNfcResolverDeviceTest {
      */
     private UiObject2 findTextContains(String containsText) {
         return mSharesheet.wait(
-            Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
+                Until.findObject(By.textContains(containsText).displayId(mMyDisplayId)),
                 WAIT_AND_ASSERT_FOUND_TIMEOUT_MS);
     }
 

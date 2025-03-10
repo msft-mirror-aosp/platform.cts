@@ -124,8 +124,6 @@ public class TestThemeHelper {
         assertLayoutBGColor(activity, mCustomColor);
 
         final Window window = activity.getWindow();
-        assertThat(window.getStatusBarColor()).isEqualTo(mStatusBarColor);
-        assertThat(window.getNavigationBarColor()).isEqualTo(mNavigationBarColor);
         assertDrawableColor(window.getDecorView().getBackground(), mWindowBackground);
 
         assertTextViewBGColor(activity);

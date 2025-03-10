@@ -18,6 +18,10 @@ package android.content.pm.parsing.cts.host
 
 import android.content.pm.parsing.cts.generator.api.AndroidManifestXml
 import android.content.pm.parsing.cts.generator.api.ApkGenerator
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.host.HostFlagsValueProvider
+import android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test
 import com.google.common.truth.Truth.assertThat
@@ -26,6 +30,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
@@ -45,6 +50,11 @@ class UsesSdkTest : BaseHostJUnit4Test() {
             ApkGenerator.initialize(tempFolder)
         }
     }
+
+    @Rule
+    @JvmField
+    val mCheckFlagsRule: CheckFlagsRule =
+        HostFlagsValueProvider.createCheckFlagsRule { this.device }
 
     @Before
     @After
@@ -238,6 +248,52 @@ class UsesSdkTest : BaseHostJUnit4Test() {
         val result = ApkGenerator.install(device, xml, tempFolder)
         assertThat(result.error).isEmpty()
         assertSdks(result, min = 30, target = 30, extensions = mapOf(31 to 0))
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    fun minSdkVersionMinorVersionImplicitlySetTo0() {
+        // language=XML
+        @AndroidManifestXml
+        val xml = """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                <uses-sdk android:minSdkVersionFull="35"/>
+                <application/>
+            </manifest>
+        """
+        val result = ApkGenerator.install(device, xml, tempFolder)
+        assertThat(result.error).isEmpty()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    fun minSdkVersionMinorVersionSetTo0() {
+        // language=XML
+        @AndroidManifestXml
+        val xml = """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                <uses-sdk android:minSdkVersionFull="35.0"/>
+                <application/>
+            </manifest>
+        """
+        val result = ApkGenerator.install(device, xml, tempFolder)
+        assertThat(result.error).isEmpty()
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
+    fun minSdkVersionMinorVersionSetTo1() {
+        // language=XML
+        @AndroidManifestXml
+        val xml = """
+            <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+                <uses-sdk android:minSdkVersionFull="35.1"/>
+                <application/>
+            </manifest>
+        """
+        val result = ApkGenerator.install(device, xml, tempFolder)
+        assertThat(result.error)
+          .contains("Requires newer sdk version 35.1 (current version is 35.0)")
     }
 
     private fun assertSdks(

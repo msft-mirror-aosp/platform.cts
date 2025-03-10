@@ -16,6 +16,7 @@
 
 package android.net.wifi.aware.cts;
 
+
 import static android.Manifest.permission.OVERRIDE_WIFI_CONFIG;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 import static android.net.wifi.aware.AwarePairingConfig.PAIRING_BOOTSTRAPPING_OPPORTUNISTIC;
@@ -41,6 +42,7 @@ import android.net.MacAddress;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.net.wifi.OuiKeyedData;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.aware.AttachCallback;
@@ -66,6 +68,7 @@ import android.net.wifi.aware.WifiAwareSession;
 import android.net.wifi.cts.WifiBuildCompat;
 import android.net.wifi.cts.WifiJUnit3TestBase;
 import android.net.wifi.cts.WifiManagerTest;
+import android.net.wifi.rtt.RangingResult;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -118,6 +121,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
     private static final int AVAILABLE_DATA_PATH_COUNT = 2;
     private static final int AVAILABLE_PUBLISH_SESSION_COUNT = 8;
     private static final int AVAILABLE_SUBSCRIBE_SESSION_COUNT = 8;
+    private static final int MIN_RTT_BURST_SIZE = 2;
 
     private final Object mLock = new Object();
     private final HandlerThread mHandlerThread = new HandlerThread("SingleDeviceTest");
@@ -354,6 +358,7 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         static final int ON_PAIRING_VERIFICATION_FAILED = 18;
         static final int ON_BOOTSTRAPPING_SUCCEEDED = 19;
         static final int ON_BOOTSTRAPPING_FAILED = 20;
+        static final int ON_RANGING_RESULTS_RECEIVED = 21;
 
         private final Object mLocalLock = new Object();
         private final ArrayDeque<Integer> mCallbackQueue = new ArrayDeque<>();
@@ -513,6 +518,12 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         public void onBootstrappingFailed(@NonNull PeerHandle peerHandle) {
             super.onBootstrappingFailed(peerHandle);
             processCallback(ON_BOOTSTRAPPING_FAILED);
+        }
+
+        @Override
+        public void onRangingResultsReceived(@NonNull List<RangingResult> rangingResults) {
+            super.onRangingResultsReceived(rangingResults);
+            processCallback(ON_RANGING_RESULTS_RECEIVED);
         }
 
         /**
@@ -1239,6 +1250,53 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         });
     }
 
+    /**
+     * Validate Publish config with setRangingResultsEnabled and see if results
+     * are received.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName =
+            "Baklava")
+    @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_RTT_ENABLED)
+    @ApiTest(apis = {"android.net.wifi.aware.PublishConfig"
+            + ".Builder#setPeriodicRangingResultsEnabled"})
+    public void testPublishWithPeriodicRangingEnabled() {
+        if (!TestUtils.shouldTestWifiAware(getContext())) {
+            return;
+        }
+        Characteristics characteristics = mWifiAwareManager.getCharacteristics();
+        if (!characteristics.isPeriodicRangingSupported()) {
+            return;
+        }
+        final String serviceName = "PublishName";
+        WifiAwareSession session = attachAndGetSession();
+
+        PublishConfig publishConfig = new PublishConfig.Builder()
+                .setServiceName(serviceName)
+                .setPeriodicRangingResultsEnabled(true)
+                .build();
+
+        DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
+
+        // 1. publish
+        session.publish(publishConfig, discoveryCb, mHandler);
+        assertTrue("Publish started",
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_PUBLISH_STARTED));
+        PublishDiscoverySession discoverySession = discoveryCb.getPublishDiscoverySession();
+        assertNotNull("Publish session", discoverySession);
+        assertFalse(discoveryCb.waitForCallback(
+                DiscoverySessionCallbackTest.ON_SERVICE_DISCOVERED));
+        assertFalse("Ranging results received", discoveryCb.waitForCallback(
+                DiscoverySessionCallbackTest.ON_RANGING_RESULTS_RECEIVED));
+        assertFalse(discoveryCb.waitForCallback(
+                DiscoverySessionCallbackTest.ON_SESSION_DISCOVERED_LOST));
+
+        // 2. destroy
+        assertFalse("Publish not terminated", discoveryCb.hasCallbackAlreadyHappened(
+                DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        discoverySession.close();
+        session.close();
+    }
+
     private static boolean isVendorDataSupported() {
         return SdkLevel.isAtLeastV() && Flags.androidVWifiApi();
     }
@@ -1501,6 +1559,58 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
             session.close();
         });
+    }
+
+    /**
+     * Validate success subscribe with periodic ranging.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName =
+            "Baklava")
+    @RequiresFlagsEnabled(com.android.ranging.flags.Flags.FLAG_RANGING_RTT_ENABLED)
+    @ApiTest(apis = {"android.net.wifi.aware.DiscoverySessionCallback#onRangingResultsReceived"})
+    public void testSubscribeWithPeriodicRanging() {
+        if (!TestUtils.shouldTestWifiAware(getContext())) {
+            return;
+        }
+        Characteristics characteristics = mWifiAwareManager.getCharacteristics();
+        if (!characteristics.isPeriodicRangingSupported()) {
+            return;
+        }
+        final String serviceName = "SubscribeName";
+        WifiAwareSession session = attachAndGetSession();
+
+        SubscribeConfig subscribeConfig = new SubscribeConfig.Builder()
+                .setServiceName(serviceName)
+                .setPeriodicRangingEnabled(true)
+                .setPeriodicRangingInterval(SubscribeConfig.PERIODIC_RANGING_INTERVAL_128TU)
+                .setRttBurstSize(MIN_RTT_BURST_SIZE)
+                .setFrequencyMhz(2437)
+                .setCenterFreq0Mhz(0)
+                .setCenterFreq1Mhz(0)
+                .setPreamble(ScanResult.PREAMBLE_LEGACY)
+                .setChannelWidth(ScanResult.CHANNEL_WIDTH_20MHZ)
+                .build();
+
+        DiscoverySessionCallbackTest discoveryCb = new DiscoverySessionCallbackTest();
+
+        // 1. subscribe
+        session.subscribe(subscribeConfig, discoveryCb, mHandler);
+        assertTrue("Subscribe started",
+                discoveryCb.waitForCallback(DiscoverySessionCallbackTest.ON_SUBSCRIBE_STARTED));
+        SubscribeDiscoverySession discoverySession = discoveryCb.getSubscribeDiscoverySession();
+        assertNotNull("Subscribe session", discoverySession);
+        assertFalse(discoveryCb.waitForCallback(
+                DiscoverySessionCallbackTest.ON_SERVICE_DISCOVERED));
+        assertFalse(discoveryCb.waitForCallback(
+                DiscoverySessionCallbackTest.ON_RANGING_RESULTS_RECEIVED));
+        assertFalse(discoveryCb.waitForCallback(
+                DiscoverySessionCallbackTest.ON_SESSION_DISCOVERED_LOST));
+
+        // 2. destroy
+        assertFalse("Subscribe not terminated", discoveryCb.hasCallbackAlreadyHappened(
+                DiscoverySessionCallbackTest.ON_SESSION_TERMINATED));
+        discoverySession.close();
+        session.close();
     }
 
     /**

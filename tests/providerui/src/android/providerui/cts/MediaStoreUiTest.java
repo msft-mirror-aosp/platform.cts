@@ -183,6 +183,7 @@ public class MediaStoreUiTest {
 
         prepareFile();
         clearDocumentsUi();
+        mDevice.waitForIdle();
 
         try {
             MediaStore.getDocumentUri(mActivity, mMediaStoreUri);

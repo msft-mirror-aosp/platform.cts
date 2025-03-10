@@ -42,18 +42,25 @@ import android.telephony.cts.externalsatelliteservice.ExternalMockSatelliteServi
 import android.telephony.cts.externalsatelliteservice.IExternalMockSatelliteService;
 import android.telephony.cts.externalsatelliteservice.IExternalSatelliteListener;
 import android.telephony.cts.util.TelephonyUtils;
+import android.telephony.satellite.EarfcnRange;
+import android.telephony.satellite.SatelliteInfo;
+import android.telephony.satellite.SatellitePosition;
+import android.telephony.satellite.SystemSelectionSpecifier;
 import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteDatagram;
 import android.text.TextUtils;
+import android.util.IntArray;
 
 import com.android.internal.R;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This class is responsible for connecting Telephony framework and CTS to the MockSatelliteService.
@@ -73,6 +80,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-gateway-service-package-name -s ";
     private static final String SET_SATELLITE_LISTENING_TIMEOUT_DURATION_CMD =
             "cmd phone set-satellite-listening-timeout-duration -t ";
+    private static final String SET_SATELLITE_IGNORE_CELLULAR_SERVICE_STATE_CMD =
+            "cmd phone set-satellite-ignore-cellular-service-state -d ";
     private static final String SET_SATELLITE_POINTING_UI_CLASS_NAME_CMD =
             "cmd phone set-satellite-pointing-ui-class-name";
     private static final String SET_DATAGRAM_CONTROLLER_TIMEOUT_DURATION_CMD =
@@ -1033,6 +1042,19 @@ class MockSatelliteServiceManager {
         }
     }
 
+    boolean setSatelliteIgnoreCellularServiceState(boolean enabled) {
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(mInstrumentation,
+                            SET_SATELLITE_IGNORE_CELLULAR_SERVICE_STATE_CMD + enabled);
+            logd("setSatelliteIgnoreCellularServiceState: result = " + result);
+            return "true".equals(result);
+        } catch (Exception e) {
+            loge("setSatelliteIgnoreCellularServiceState: e=" + e);
+            return false;
+        }
+    }
+
     boolean setDatagramControllerTimeoutDuration(
             boolean reset, int timeoutType, long timeoutMillis) {
         StringBuilder command = new StringBuilder();
@@ -1232,6 +1254,77 @@ class MockSatelliteServiceManager {
         return mSatelliteService.getIsEmergency();
     }
 
+    @Nullable
+    public List<SystemSelectionSpecifier> getSystemSelectionChannels() {
+        if (mSatelliteService == null) {
+            loge("getSystemSelectionChannels: mSatelliteService is null");
+            return null;
+        }
+        List<SystemSelectionSpecifier> converted = new ArrayList<>();
+        List<android.telephony.satellite.stub.SystemSelectionSpecifier>
+                halSystemSelectionSpecifierList = mSatelliteService.getSystemSelectionChannels();
+
+        if (!halSystemSelectionSpecifierList.isEmpty()) {
+            for (android.telephony.satellite.stub.SystemSelectionSpecifier
+                    systemSelectionSpecifier : halSystemSelectionSpecifierList) {
+                converted.add(
+                        covertSystemSelectionSpecifierFromHALFormat(systemSelectionSpecifier));
+            }
+        }
+
+        return converted;
+    }
+
+    private SystemSelectionSpecifier covertSystemSelectionSpecifierFromHALFormat(
+            android.telephony.satellite.stub.SystemSelectionSpecifier systemSelectionSpecifier) {
+        String mccmnc = systemSelectionSpecifier.mMccMnc;
+
+        IntArray bands = new IntArray(systemSelectionSpecifier.mBands.length);
+        bands.addAll(systemSelectionSpecifier.mBands);
+
+        IntArray earfcns = new IntArray(systemSelectionSpecifier.mEarfcs.length);
+        earfcns.addAll(systemSelectionSpecifier.mEarfcs);
+
+        SatelliteInfo[] satelliteInfoArray =
+                new SatelliteInfo[systemSelectionSpecifier.satelliteInfos.length];
+        android.telephony.satellite.stub.SatelliteInfo[] halSatelliteInfos =
+                systemSelectionSpecifier.satelliteInfos;
+        for (int i = 0; i < halSatelliteInfos.length; i++) {
+            android.telephony.satellite.stub.SatelliteInfo halSatelliteInfo = halSatelliteInfos[i];
+
+            long mostSigBits = halSatelliteInfo.id.mostSigBits;
+            long leastSigBits = halSatelliteInfo.id.leastSigBits;
+            UUID uuid = new UUID(mostSigBits, leastSigBits);
+
+            SatellitePosition satellitePosition;
+            double longitudeDegree = halSatelliteInfo.position.longitudeDegree;
+            double altitudeDegree = halSatelliteInfo.position.altitudeKm;
+            if (longitudeDegree == 0 && altitudeDegree == 0) {
+                satellitePosition = null;
+            } else {
+                satellitePosition = new SatellitePosition(longitudeDegree, altitudeDegree);
+            }
+
+            List<Integer> bandList = Arrays.stream(halSatelliteInfo.bands).boxed().collect(
+                    Collectors.toList());
+
+            List<EarfcnRange> earfcnRangeList = new ArrayList<>();
+            for (int j = 0; j < halSatelliteInfo.earfcnRanges.length; j++) {
+                int startEarfcn = halSatelliteInfo.earfcnRanges[j].startEarfcn;
+                int endEarfcn = halSatelliteInfo.earfcnRanges[j].endEarfcn;
+                earfcnRangeList.add(new EarfcnRange(startEarfcn, endEarfcn));
+            }
+
+            satelliteInfoArray[i] = new SatelliteInfo(uuid, satellitePosition, bandList,
+                    earfcnRangeList);
+        }
+
+        IntArray tagIds = new IntArray(systemSelectionSpecifier.tagIds.length);
+        tagIds.addAll(systemSelectionSpecifier.tagIds);
+
+        return new SystemSelectionSpecifier(mccmnc, bands, earfcns, satelliteInfoArray, tagIds);
+    }
+
     /** Set telephony country codes */
     boolean setCountryCodes(boolean reset, @Nullable String currentNetworkCountryCodes,
             @Nullable String cachedNetworkCountryCodes, @Nullable String locationCountryCode,
@@ -1271,7 +1364,8 @@ class MockSatelliteServiceManager {
     /** Set overlay configs for satellite access controller */
     boolean setSatelliteAccessControlOverlayConfigs(boolean reset, boolean isAllowed,
             @Nullable String s2CellFile, long locationFreshDurationNanos,
-            @Nullable String satelliteCountryCodes) {
+            @Nullable String satelliteCountryCodes,
+            @Nullable String satelliteAccessConfigurationFile) {
         logd("setSatelliteAccessControlOverlayConfigs");
         try {
             StringBuilder command = new StringBuilder();
@@ -1291,6 +1385,10 @@ class MockSatelliteServiceManager {
                 if (!TextUtils.isEmpty(satelliteCountryCodes)) {
                     command.append(" -c ");
                     command.append(satelliteCountryCodes);
+                }
+                if (!TextUtils.isEmpty(satelliteAccessConfigurationFile)) {
+                    command.append(" -g ");
+                    command.append(satelliteAccessConfigurationFile);
                 }
             }
             logd("command=" + command);

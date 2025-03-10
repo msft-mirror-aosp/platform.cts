@@ -7,6 +7,7 @@ import android.content.pm.PackageManager.FEATURE_DEVICE_ADMIN
 import android.content.pm.PackageManager.FEATURE_MANAGED_USERS
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.dpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.RequireFeature

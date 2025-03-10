@@ -16,20 +16,21 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_USB_FILE_TRANSFER;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DisallowUsbFileTransfer;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
@@ -55,8 +56,8 @@ public final class FileTransferTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_USB_FILE_TRANSFER")
     public void setUserRestriction_disallowUsbFileTransfer_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_USB_FILE_TRANSFER));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_USB_FILE_TRANSFER));
     }
 
     @PolicyAppliesTest(policy = DisallowUsbFileTransfer.class)
@@ -64,14 +65,14 @@ public final class FileTransferTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_USB_FILE_TRANSFER")
     public void setUserRestriction_disallowUsbFileTransfer_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_USB_FILE_TRANSFER);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_USB_FILE_TRANSFER);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_USB_FILE_TRANSFER))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_USB_FILE_TRANSFER);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_USB_FILE_TRANSFER);
         }
     }
 
@@ -80,15 +81,15 @@ public final class FileTransferTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_USB_FILE_TRANSFER")
     public void setUserRestriction_disallowUsbFileTransfer_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_USB_FILE_TRANSFER);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_USB_FILE_TRANSFER);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_USB_FILE_TRANSFER))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_USB_FILE_TRANSFER);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_USB_FILE_TRANSFER);
         }
     }
 
