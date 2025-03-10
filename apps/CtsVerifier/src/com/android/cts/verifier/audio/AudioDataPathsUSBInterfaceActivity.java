@@ -24,7 +24,6 @@ import android.widget.TextView;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
-// MegaAudio
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
@@ -141,5 +140,10 @@ public class AudioDataPathsUSBInterfaceActivity extends AudioDataPathsBaseActivi
     @Override
     String getRouteDescription() {
         return "usb_interface";
+    }
+
+    @Override
+    protected boolean grantAutoPass() {
+        return true;
     }
 }
