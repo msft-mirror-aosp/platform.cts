@@ -48,6 +48,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
+import com.android.compatibility.common.util.SettingsStateChangerRule;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
@@ -74,22 +76,44 @@ public class FullScreenMagnificationControllerTest {
     private static final int TIMEOUT_CONFIG_SECONDS = 15;
     private static final int BOUNDS_TOLERANCE = 1;
 
+    private static final String DEVICE_CONFIG_NAMESPACE_WM = "window_manager";
+    private static final String DEVICE_CONFIG_KEY_ALWAYS_ON_MAGNIFIER =
+            "AlwaysOnMagnifier__enable_always_on_magnifier";
+    private static final String SETTING_KEY_MAGNIFICATION_ALWAYS_ON =
+            "accessibility_magnification_always_on_enabled";
+
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
     private StubMagnificationAccessibilityService mService;
 
     private ActivityScenario<AccessibilityWindowQueryActivity> mActivityScenario = null;
 
-    private InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
-            mMagnificationAccessibilityServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
-            StubMagnificationAccessibilityService.class, false);
+    private final InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
+            mMagnificationAccessibilityServiceRule =
+                    new InstrumentedAccessibilityServiceTestRule<>(
+                            StubMagnificationAccessibilityService.class, false);
 
-    private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
-            new AccessibilityDumpOnFailureRule();
+    // StateChangerRules starts UiAutomation without FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES.
+    // They have to be outer rule than other accessibility related rules.
+    private final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
+            new DeviceConfigStateChangerRule(
+                    sInstrumentation.getContext(),
+                    DEVICE_CONFIG_NAMESPACE_WM,
+                    DEVICE_CONFIG_KEY_ALWAYS_ON_MAGNIFIER,
+                    "true");
+
+    private final SettingsStateChangerRule mSettingsStateChangerRule =
+            new SettingsStateChangerRule(
+                    sInstrumentation.getContext(),
+                    SETTING_KEY_MAGNIFICATION_ALWAYS_ON,
+                    "1");
 
     @Rule
     public final RuleChain mRuleChain =
-            RuleChain.outerRule(mMagnificationAccessibilityServiceRule).around(mDumpOnFailureRule);
+            RuleChain.outerRule(mDeviceConfigStateChangerRule)
+                    .around(mSettingsStateChangerRule)
+                    .around(mMagnificationAccessibilityServiceRule)
+                    .around(new AccessibilityDumpOnFailureRule());
 
     @BeforeClass
     public static void oneTimeSetup() {
@@ -110,6 +134,18 @@ public class FullScreenMagnificationControllerTest {
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(sInstrumentation.getTargetContext()));
         mService = mMagnificationAccessibilityServiceRule.enableService();
+
+        // `setServiceInfo` resets magnification unless there's any magnification listener.
+        // In `homeScreenOrBust`, `uiAutomation.setServiceInfo` is done to ensure uiAutomation can
+        // listen the window events.
+        // Although we don't need to listen magnification here, adding an empty listener makes sure
+        // that magnification won't be reset by calling `setServiceInfo`.
+        // See also b/401998908.
+        final MagnificationController controller = mService.getMagnificationController();
+        controller.addListener(
+                (controllerInner, region, scale1, centerX, centerY) -> {
+                    // Do nothing.
+                });
     }
 
     @After
@@ -133,10 +169,8 @@ public class FullScreenMagnificationControllerTest {
         // transition to home screen
         homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
 
-        // we cannot identify if the always on feature flag is enabled here, so we cannot ensure if
-        // the magnifier should deactivate itself when transitions. At least we can still verify
-        // the fullscreen magnifier zooming out here.
         assertThat(currentScale()).isEqualTo(1f);
+        assertThat(isActivated()).isTrue();
     }
 
     @Test
@@ -154,10 +188,8 @@ public class FullScreenMagnificationControllerTest {
         // transition to home screen
         homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
 
-        // we cannot identify if the always on feature flag is enabled here, so we cannot ensure if
-        // the magnifier should deactivate itself when transitions. At least we can still verify
-        // the fullscreen magnifier zooming out here.
         assertThat(currentScale()).isEqualTo(2f);
+        assertThat(isActivated()).isTrue();
     }
 
     private void zoomIn(float scale) throws Exception {
@@ -188,6 +220,15 @@ public class FullScreenMagnificationControllerTest {
         assertThat(config).isNotNull();
 
         return config.getScale();
+    }
+
+    private boolean isActivated() {
+        final MagnificationController controller = mService.getMagnificationController();
+        final MagnificationConfig config = controller.getMagnificationConfig();
+
+        assertThat(config).isNotNull();
+
+        return config.isActivated();
     }
 
     private void waitUntilMagnificationConfigEquals(
