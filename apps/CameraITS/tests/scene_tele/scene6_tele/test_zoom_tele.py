@@ -219,7 +219,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
         raise AssertionError(failure_message)
       else:
         raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                               f'\n\n{failure_message}')
+                             f'\n\n{failure_message}')
 
 if __name__ == '__main__':
   test_runner.main()

@@ -149,7 +149,9 @@ class ExposureKeysConsistentTest(its_base_test.ItsBaseTest):
       post_raw_sensitivity_boost = cr['android.control.postRawSensitivityBoost']
       frame_duration = cr['android.sensor.frameDuration']
 
-      camera_properties_utils.skip_unless(post_raw_sensitivity_boost is not None)
+      camera_properties_utils.skip_unless(
+          post_raw_sensitivity_boost is not None
+      )
 
       logging.info('sensor_sensitivity: %s', sensor_sensitivity)
       logging.info('exposure_time: %s', exposure_time)

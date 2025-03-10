@@ -34,7 +34,11 @@ import java.util.Set;
  * <p>The element structure is:
  * <xts-api-inherit>
  *     <method name="methodA" class="ClassA" package="android.cts.module1" >
- *         <override-api class="ApiClassA", package="android.api1" />
+ *         <override-api class="ApiClassA" package="android.api1" type="override"/>
+ *         <parameter type="int"/>
+ *     </method>
+ *     <method name="methodB" class="ClassA" package="android.cts.module1" >
+ *         <override-api class="ApiClassA" package="android.api1" type="inherit"/>
  *         <parameter type="int"/>
  *     </method>
  * </xts-api-inherit>
@@ -59,15 +63,14 @@ public final class XtsApiInheritGenerator extends XtsXmlGenerator {
 
     private void processClass(ClassProfile classProfile) {
         mClassCache.add(classProfile.getClassSignature());
-        Map<String, Map<String, MethodProfile>> overriddenApiMethods =
-                classProfile.getOverriddenAbstractApiMethods();
         for (MethodProfile methodProfile : classProfile.getMethods().values()) {
-            Map<String, MethodProfile> apis =
-                    overriddenApiMethods.get(methodProfile.getMethodSignatureWithClass());
-            if (apis != null) {
-                getTopElement(TOP_ELEMENT_NAME)
-                        .appendChild(createMethodElement(methodProfile, apis));
+            Element methodElement = createMethodElement(methodProfile);
+            if (methodElement != null) {
+                getTopElement(TOP_ELEMENT_NAME).appendChild(methodElement);
             }
+        }
+        for (MethodProfile api : classProfile.getInheritedApiMethods().values()) {
+            getTopElement(TOP_ELEMENT_NAME).appendChild(createMethodElement(classProfile, api));
         }
     }
 
@@ -75,11 +78,13 @@ public final class XtsApiInheritGenerator extends XtsXmlGenerator {
      * Creates an XML element representing a method and its overridden abstract API methods.
      *
      * @param methodProfile The profile of the method.
-     * @param apis abstract API methods overridden by the method.
-     * @return The created XML element.
+     * @return The created XML element. Null if the method is not overriding any abstract APIs.
      */
-    private Element createMethodElement(
-            MethodProfile methodProfile, Map<String, MethodProfile> apis) {
+    private Element createMethodElement(MethodProfile methodProfile) {
+        Map<String, MethodProfile> apis = methodProfile.getOverriddenApiMethods();
+        if (apis.isEmpty()) {
+            return null;
+        }
         Element methodElement =
                 createElement(
                         "method",
@@ -88,18 +93,32 @@ public final class XtsApiInheritGenerator extends XtsXmlGenerator {
                                 "class", methodProfile.getClassName(),
                                 "package", methodProfile.getPackageName()));
         for (MethodProfile api : apis.values()) {
-            methodElement.appendChild(createApiElement(api));
+            methodElement.appendChild(createApiElement(api, "override"));
         }
         addParameterTypes(methodProfile.getMethodParams(), methodElement);
         return methodElement;
     }
 
-    private Element createApiElement(MethodProfile methodProfile) {
+    private Element createMethodElement(ClassProfile classProfile, MethodProfile api) {
+        Element methodElement =
+                createElement(
+                        "method",
+                        Map.of(
+                                "name", api.getMethodName(),
+                                "class", classProfile.getClassName(),
+                                "package", classProfile.getPackageName()));
+        methodElement.appendChild(createApiElement(api, "inherit"));
+        addParameterTypes(api.getMethodParams(), methodElement);
+        return methodElement;
+    }
+
+    private Element createApiElement(MethodProfile methodProfile, String type) {
         return createElement(
                 "override-api",
                 Map.of(
                         "package", methodProfile.getPackageName(),
-                        "class", methodProfile.getClassName()));
+                        "class", methodProfile.getClassName(),
+                        "type", type));
     }
 
     private void addParameterTypes(List<String> params, Element parent) {

@@ -262,6 +262,8 @@ public class MediaProjectionActivity extends Activity {
         }
         optionSelector.click();
 
+        UiDevice.getInstance(getInstrumentation())
+                .waitForWindowUpdate(null, PERMISSION_DIALOG_WAIT_MS);
         UiObject2 entireScreenOption = waitForObject(By.text(entireScreenString));
         if (entireScreenOption == null) {
             Log.e(TAG, "Couldn't find entire screen option");
