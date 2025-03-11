@@ -29,11 +29,11 @@ import android.platform.test.annotations.Presubmit;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CtsAndroidTestCase;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Assert;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 public class AudioNativeTest extends CtsAndroidTestCase {
     public static final int MAX_CHANNEL_COUNT = 2;
     public static final int MAX_INDEX_MASK = (1 << MAX_CHANNEL_COUNT) - 1;

@@ -29,7 +29,7 @@ import android.os.Looper;
 import android.os.Parcel;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -37,7 +37,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 public class AudioRecordingConfigurationTest extends CtsAndroidTestCase {
     private static final String TAG = "AudioRecordingConfigurationTest";
 
@@ -221,7 +221,7 @@ public class AudioRecordingConfigurationTest extends CtsAndroidTestCase {
         }
     }
 
-    @NonMainlineTest
+    @FrameworkSpecificTest
     public void testParcel() throws Exception {
         if (!hasMicrophone()) {
             return;

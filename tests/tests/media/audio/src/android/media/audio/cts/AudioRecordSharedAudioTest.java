@@ -36,7 +36,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
@@ -51,7 +51,7 @@ import java.io.IOException;
 
 
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = 31, codeName = "S")
 public class AudioRecordSharedAudioTest {

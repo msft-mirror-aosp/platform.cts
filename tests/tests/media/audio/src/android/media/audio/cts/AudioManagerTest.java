@@ -111,7 +111,7 @@ import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
@@ -145,7 +145,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeFull(reason = "Waiting for volume/zen mode changes requires receiving intents. " +
         "Several API calls require MODIFY_AUDIO_SETTINGS.")
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
