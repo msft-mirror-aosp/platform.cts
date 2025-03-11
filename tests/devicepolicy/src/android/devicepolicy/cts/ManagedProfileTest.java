@@ -18,6 +18,7 @@ package android.devicepolicy.cts;
 
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -62,6 +63,7 @@ public final class ManagedProfileTest {
 
     @Test
     @EnsureHasNoDpc
+    @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     public void startActivityInManagedProfile_activityStarts() {
         // We want a fresh - properly created work profile
         try (RemoteDpc dpc = RemoteDpc.createWorkProfile();
