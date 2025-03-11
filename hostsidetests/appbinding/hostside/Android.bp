@@ -26,8 +26,6 @@ java_test_host {
         "tradefed",
         "compatibility-host-util",
         "guava",
-        "android.view.inputmethod.flags-aconfig-java",
-        "flag-junit-host",
     ],
     // tag this module as a cts test artifact
     test_suites: [
