@@ -1560,14 +1560,6 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         var verifierInfo = getAllVerifierInfo();
         var verifiers = new ArrayList<VehiclePropertyVerifier<?>>();
         for (int i = 0; i < verifierInfo.length; i++) {
-            if (verifierInfo[i].mAssumeStandardCC != null && !verifierInfo[i].mAssumeStandardCC) {
-                // For some ACC properties, we may have two properties, one for ACC, one for
-                // standard CC, here we just pick one.
-                // Note that if caller want to actually call the verify function, caller should
-                // check whether ACC is enabled first.
-                //  TODO(b/375505791): Use a generic verifier that works for all cases here.
-                continue;
-            }
             verifiers.add(
                     verifierInfo[i].mBuilder.setCarPropertyManager(mCarPropertyManager).build());
         }
