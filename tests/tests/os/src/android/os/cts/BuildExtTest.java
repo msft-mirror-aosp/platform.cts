@@ -23,7 +23,7 @@ import static android.os.cts.BuildTest.runTestCpuAbiCommon;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import org.junit.Rule;
@@ -45,7 +45,7 @@ public class BuildExtTest {
      */
     @Test
     @AppModeFull(reason = "Instant apps cannot access APIs")
-    @IgnoreUnderRavenwood(reason = "No shell commands")
+    @DisabledOnRavenwood(reason = "No shell commands")
     public void testCpuAbi() throws Exception {
         runTestCpuAbiCommon();
         if (android.os.Process.is64Bit()) {

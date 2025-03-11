@@ -30,13 +30,11 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
+import android.platform.test.annotations.DisabledOnRavenwood;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -47,10 +45,6 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class MessageTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
-            .setProvideMainThread(true).build();
-
     public static final int WHAT = 1;
     public static final int ARG1 = 1;
     public static final int ARG2 = 2;
@@ -224,7 +218,7 @@ public class MessageTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.os.Messenger.class)
+    @DisabledOnRavenwood(blockedBy = android.os.Messenger.class)
     public void testWriteToParcel() {
         Message message = Message.obtain(mHandler, WHAT, ARG1, ARG2);
         Bundle bundle = new Bundle();

@@ -35,7 +35,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -45,13 +44,11 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ComponentNameTest {
-    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
     private Context mContext;
 
     @Before
     public void setUp() {
-        if (mRavenwood.isUnderRavenwood() || Process.isSdkSandbox()) {
+        if (RavenwoodRule.isOnRavenwood() || Process.isSdkSandbox()) {
             // TODO: replace with mockito when better supported
             mContext = new MockContext() {
                 @Override

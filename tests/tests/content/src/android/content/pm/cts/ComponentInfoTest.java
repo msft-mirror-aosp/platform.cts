@@ -33,7 +33,7 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
@@ -71,7 +71,7 @@ public class ComponentInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testConstructor() {
         Parcel p = Parcel.obtain();
         ComponentInfo componentInfo = new ComponentInfo();
@@ -109,7 +109,7 @@ public class ComponentInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testLoadIcon() {
         mComponentInfo = new ComponentInfo();
         mComponentInfo.applicationInfo = new ApplicationInfo();
@@ -169,7 +169,7 @@ public class ComponentInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.content.res.Resources.class)
+    @DisabledOnRavenwood(blockedBy = android.content.res.Resources.class)
     public void testGetIconResource() {
         mComponentInfo = new ComponentInfo();
         mComponentInfo.applicationInfo = new ApplicationInfo();
@@ -230,7 +230,7 @@ public class ComponentInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testLoadLabel() throws NameNotFoundException {
         mComponentInfo = new ComponentInfo();
         mComponentInfo.applicationInfo = new ApplicationInfo();
@@ -266,7 +266,7 @@ public class ComponentInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testWriteToParcel() {
         Parcel p = Parcel.obtain();
         mComponentInfo = new ComponentInfo();

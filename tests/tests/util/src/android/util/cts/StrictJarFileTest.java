@@ -22,7 +22,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.system.ErrnoException;
 import android.system.Os;
@@ -51,7 +51,7 @@ import java.util.zip.ZipEntry;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = StrictJarFile.class)
+@DisabledOnRavenwood(blockedBy = StrictJarFile.class)
 public class StrictJarFileTest {
     // A well formed jar file with 6 entries.
     private static final String JAR_1 = "hyts_patch.jar";
