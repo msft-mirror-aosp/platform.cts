@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -52,7 +53,16 @@ public final class PermissionContextImpl implements PermissionContextModifier {
      */
     static PermissionContextImpl create(Permissions permissions) {
         Log.v(TAG, "locking permissionsLock...");
-        sPermissionsLock.lock();
+        try {
+            boolean success = sPermissionsLock.tryLock(90, TimeUnit.SECONDS);
+            if (!success) {
+                throw new NeneException("unable to obtain the lock in PermissionContextImpl, "
+                        + "make sure to not use permission contexts from more than one thread "
+                        + "at a time");
+            }
+        } catch (InterruptedException e) {
+            Log.w(TAG, "unable to obtain the lock in PermissionContextImpl", e);
+        }
         Log.v(TAG, "permissionsLock locked");
         return new PermissionContextImpl(permissions, false);
     }
