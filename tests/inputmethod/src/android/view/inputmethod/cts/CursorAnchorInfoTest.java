@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.RectF;
@@ -41,14 +40,11 @@ import android.view.inputmethod.CursorAnchorInfo.Builder;
 import android.view.inputmethod.EditorBoundsInfo;
 import android.view.inputmethod.TextAppearanceInfo;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,9 +52,8 @@ import java.util.Collections;
 import java.util.List;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class CursorAnchorInfoTest {
+public final class CursorAnchorInfoTest {
     private static final float EPSILON = 0.0000001f;
 
     private static final RectF[] MANY_BOUNDS = new RectF[] {
@@ -103,8 +98,6 @@ public class CursorAnchorInfoTest {
         FLAG_HAS_INVISIBLE_REGION,
         FLAG_HAS_INVISIBLE_REGION | FLAG_IS_RTL,
     };
-
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     @Test
     @ApiTest(

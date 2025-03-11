@@ -43,7 +43,7 @@ import android.text.TextUtils;
 import com.android.bedstead.deviceadminapp.DeviceAdminApp;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.exceptions.NeneException;

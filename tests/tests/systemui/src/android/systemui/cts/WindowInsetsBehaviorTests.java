@@ -71,6 +71,7 @@ import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
+import com.android.cts.input.DebugInputRule;
 
 import com.google.common.collect.Lists;
 
@@ -122,6 +123,9 @@ public class WindowInsetsBehaviorTests {
     private String mGesturePreferenceTitle;
     private TouchHelper mTouchHelper;
     private boolean mConfiguredInSettings;
+
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     @BeforeClass
     public static void setUpClass() {
@@ -682,6 +686,7 @@ public class WindowInsetsBehaviorTests {
         assertEquals(swipeCount, mActionDownPoints.size());
     }
 
+    @DebugInputRule.DebugInput(bug = 372560097)
     @Test
     public void tappableElements_tapSamplePoints_excludeViewRects_withoutAnyCancel()
             throws InterruptedException {
@@ -703,6 +708,7 @@ public class WindowInsetsBehaviorTests {
                 mActionCancelPoints.size());
     }
 
+    @DebugInputRule.DebugInput(bug = 372560097)
     @Test
     public void tappableElements_tapSamplePoints_notExcludeViewRects_withoutAnyCancel() {
         assumeTrue(hasSystemGestureFeature());

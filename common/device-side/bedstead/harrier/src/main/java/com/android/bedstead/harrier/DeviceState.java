@@ -20,10 +20,6 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
-import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
-import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
-import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
-import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
 
@@ -36,29 +32,15 @@ import android.content.IntentFilter;
 import android.os.Process;
 import android.util.Log;
 
-import com.android.bedstead.enterprise.DeviceAdminComponent;
-import com.android.bedstead.enterprise.DeviceOwnerComponent;
-import com.android.bedstead.enterprise.EnterpriseComponent;
-import com.android.bedstead.enterprise.ProfileOwnersComponent;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
-import com.android.bedstead.harrier.components.AccountsComponent;
-import com.android.bedstead.harrier.components.TestAppsComponent;
-import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.DevicePolicy;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.logcat.SystemServerException;
@@ -69,13 +51,6 @@ import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
-import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
-import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
-import com.android.bedstead.remotedpc.RemoteDpc;
-import com.android.bedstead.remotedpc.RemotePolicyManager;
-import com.android.bedstead.testapp.TestAppInstance;
-import com.android.bedstead.testapp.TestAppProvider;
 import com.android.eventlib.EventLogs;
 
 import junit.framework.AssertionFailedError;
@@ -185,20 +160,9 @@ public final class DeviceState extends HarrierRule {
      * Obtains the instance of the given [clazz] from locator
      * This method shouldn't be used in test directly
      */
+    @Nonnull
     public <T> T getDependency(Class<T> clazz) {
         return mLocator.get(clazz);
-    }
-
-    private UsersComponent usersComponent() {
-        return getDependency(UsersComponent.class);
-    }
-
-    private EnterpriseComponent enterpriseComponent() {
-        return getDependency(EnterpriseComponent.class);
-    }
-
-    private AccountsComponent accountsComponent() {
-        return getDependency(AccountsComponent.class);
     }
 
     @Override
@@ -314,7 +278,6 @@ public final class DeviceState extends HarrierRule {
 
         Log.d(LOG_TAG, "Preparing state for test " + testName);
         mLocator.prepareTestState();
-        testApps().snapshot();
         Tags.clearTags();
         Tags.addTag(Tags.USES_DEVICESTATE);
         assumeFalse(mSkipTestsReason, mSkipTests);
@@ -619,179 +582,6 @@ public final class DeviceState extends HarrierRule {
     private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
 
     /**
-     * Get the {@link UserReference} of the work profile for the initial user.
-     *
-     * <p>If the current user is a work profile, then the current user will be returned.
-     *
-     * <p>This should only be used to get work profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed work profile
-     */
-    public UserReference workProfile() {
-        return enterpriseComponent().workProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the work profile.
-     *
-     * <p>This should only be used to get work profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed work profile for the given user
-     */
-    public UserReference workProfile(UserType forUser) {
-        return enterpriseComponent().workProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the work profile.
-     *
-     * <p>This should only be used to get work profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed work profile for the given user
-     */
-    public UserReference workProfile(UserReference forUser) {
-        return enterpriseComponent().workProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the profile of the given type for the given user.
-     *
-     * <p>This should only be used to get profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed profile for the given user
-     */
-    public UserReference profile(String profileType, UserType forUser) {
-        return usersComponent().profile(profileType, forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the profile for the current user.
-     *
-     * <p>If the current user is a profile of the correct type, then the current user will be
-     * returned.
-     *
-     * <p>This should only be used to get profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed profile
-     */
-    public UserReference profile(String profileType) {
-        return profile(profileType, /* forUser= */ UserType.INSTRUMENTED_USER);
-    }
-
-    /**
-     * Get the {@link UserReference} of the tv profile for the current user
-     *
-     * <p>This should only be used to get tv profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed tv profile
-     */
-    public UserReference tvProfile() {
-        return usersComponent().tvProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the tv profile.
-     *
-     * <p>This should only be used to get tv profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed tv profile
-     */
-    public UserReference tvProfile(UserType forUser) {
-        return usersComponent().tvProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the tv profile.
-     *
-     * <p>This should only be used to get tv profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed tv profile
-     */
-    public UserReference tvProfile(UserReference forUser) {
-        return usersComponent().tvProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the clone profile for the current user
-     *
-     * <p>This should only be used to get clone profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed clone profile
-     */
-    public UserReference cloneProfile() {
-        return usersComponent().cloneProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the clone profile.
-     *
-     * <p>This should only be used to get clone profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed clone profile
-     */
-    public UserReference cloneProfile(UserType forUser) {
-        return usersComponent().cloneProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the clone profile.
-     *
-     * <p>This should only be used to get clone profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed clone profile
-     */
-    public UserReference cloneProfile(UserReference forUser) {
-        return usersComponent().cloneProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the private profile for the current user
-     *
-     * <p>This should only be used to get private profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed private profile
-     */
-    public UserReference privateProfile() {
-        return usersComponent().privateProfile();
-    }
-
-    /**
-     * Get the {@link UserReference} of the private profile.
-     *
-     * <p>This should only be used to get private profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed private profile
-     */
-    public UserReference privateProfile(UserType forUser) {
-        return usersComponent().privateProfile(forUser);
-    }
-
-    /**
-     * Get the {@link UserReference} of the private profile.
-     *
-     * <p>This should only be used to get private profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed private profile
-     */
-    public UserReference privateProfile(UserReference forUser) {
-        return usersComponent().privateProfile(forUser);
-    }
-
-    /**
      * Gets the user ID of the initial user.
      */
     // TODO(b/249047658): cache the initial user at the start of the run.
@@ -809,27 +599,6 @@ public final class DeviceState extends HarrierRule {
     @Deprecated
     public UserReference primaryUser() {
         return TestApis.users().primary();
-    }
-
-    /**
-     * Get a secondary user.
-     *
-     * <p>This should only be used to get secondary users managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed secondary user
-     */
-    public UserReference secondaryUser() {
-        return usersComponent().user(SECONDARY_USER_TYPE_NAME);
-    }
-
-    /**
-     * Gets the user marked as "other" by use of the {@code @OtherUser} annotation.
-     *
-     * @throws IllegalStateException if there is no "other" user
-     */
-    public UserReference otherUser() {
-        return usersComponent().otherUser();
     }
 
     /**
@@ -983,13 +752,6 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    /**
-     * Returns the additional user specified by annotation
-     */
-    public UserReference additionalUser() {
-        return usersComponent().additionalUser();
-    }
-
     void teardownNonShareableState() {
         for (BlockingBroadcastReceiver broadcastReceiver : mRegisteredBroadcastReceivers) {
             broadcastReceiver.unregisterQuietly();
@@ -1008,180 +770,17 @@ public final class DeviceState extends HarrierRule {
         mLocator.teardownShareableState();
     }
 
-    /**
-     * Get the {@link RemoteDpc} for the device owner controlled by Harrier.
-     *
-     * <p>If no Harrier-managed device owner exists, an exception will be thrown.
-     *
-     * <p>If the device owner is not a RemoteDPC then an exception will be thrown
-     */
-    public RemoteDpc deviceOwner() {
-        return getDependency(DeviceOwnerComponent.class).deviceOwner();
-    }
-
-
-    /**
-     * Get the {@link RemoteDpc} for the profile owner on the current user controlled by Harrier.
-     *
-     * <p>If no Harrier-managed profile owner exists, an exception will be thrown.
-     *
-     * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
-     */
-    public RemoteDpc profileOwner() {
-        return profileOwner(UserType.INSTRUMENTED_USER);
-    }
-
-    /**
-     * Get the {@link RemoteDpc} for the profile owner on the given user controlled by Harrier.
-     *
-     * <p>If no Harrier-managed profile owner exists, an exception will be thrown.
-     *
-     * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
-     */
-    public RemoteDpc profileOwner(UserType onUser) {
-        return getDependency(ProfileOwnersComponent.class).profileOwner(onUser);
-    }
-
-    /**
-     * Get the {@link RemoteDpc} for the profile owner on the given user controlled by Harrier.
-     *
-     * <p>If no Harrier-managed profile owner exists, an exception will be thrown.
-     *
-     * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
-     */
-    public RemoteDpc profileOwner(UserReference onUser) {
-        return getDependency(ProfileOwnersComponent.class).profileOwner(onUser);
-    }
-
-    /**
-     * Get the [RemoteDeviceAdmin] for the device admin set using
-     * `EnsureHasDeviceAdmin` without specifying a custom key.
-     *
-     * If no Harrier-managed device admin exists, an exception will be thrown.
-     */
-    public RemoteDeviceAdmin deviceAdmin() {
-        return getDependency(DeviceAdminComponent.class).deviceAdmin();
-    }
-
-    /**
-     * Get the [RemoteDeviceAdmin] for the device admin with the specified key set on the
-     * user and controlled by Harrier.
-     *
-     * If no Harrier-managed device admin exists for the given key, an exception will be thrown.
-     */
-    public RemoteDeviceAdmin deviceAdmin(String key) {
-        return getDependency(DeviceAdminComponent.class).deviceAdmin(key);
-    }
-
-    /**
-     * Behaves like {@link #dpc()} except that when running on a delegate, this will return
-     * the delegating DPC not the delegate.
-     */
-    public RemotePolicyManager dpcOnly() {
-        return enterpriseComponent().dpcOnly();
-    }
-
-    /**
-     * Get the most appropriate {@link RemotePolicyManager} instance for the device state.
-     *
-     * <p>This method should only be used by tests which are annotated with any of:
-     * {@link PolicyAppliesTest}
-     * {@link PolicyDoesNotApplyTest}
-     * {@link CanSetPolicyTest}
-     * {@link CannotSetPolicyTest}
-     *
-     * <p>This may be a DPC, a delegate, a device admin, or a normal app with or without given
-     * permissions.
-     *
-     * <p>If no policy manager is set as "primary" for the device state, then this method will first
-     * check for a profile owner in the current user, or else check for a device owner.
-     *
-     * <p>If no Harrier-managed profile owner or device owner exists, an exception will be thrown.
-     *
-     * <p>If the profile owner or device owner is not a RemoteDPC then an exception will be thrown.
-     */
-    public RemotePolicyManager dpc() {
-        return enterpriseComponent().dpc();
-    }
-
-
-    /**
-     * Get the Device Policy Management Role Holder.
-     */
-    public RemoteDevicePolicyManagerRoleHolder dpmRoleHolder() {
-        return enterpriseComponent().dpmRoleHolder();
-    }
-
-    /**
-     * Get a {@link TestAppProvider} which is cleared between tests.
-     *
-     * <p>Note that you must still manage the test apps manually. To have the infrastructure
-     * automatically remove test apps use the {@link EnsureTestAppInstalled} annotation.
-     */
-    public TestAppProvider testApps() {
-        return getDependency(TestAppsComponent.class).getTestAppProvider();
-    }
-
-    /**
-     * Get a test app installed with @EnsureTestAppInstalled with no key.
-     */
-    public TestAppInstance testApp() {
-        return testApp(DEFAULT_KEY);
-    }
-
-    /**
-     * Get a test app installed with `@EnsureTestAppInstalled` with the given key.
-     */
-    public TestAppInstance testApp(String key) {
-        return getDependency(TestAppsComponent.class).testApp(key);
-    }
-
-    /**
-     * Access harrier-managed accounts on the instrumented user.
-     */
-    public RemoteAccountAuthenticator accounts() {
-        return accountsComponent().accounts();
-    }
-
-    /**
-     * Access harrier-managed accounts on the given user.
-     */
-    public RemoteAccountAuthenticator accounts(UserType user) {
-        return accountsComponent().accounts(user);
-    }
-
-    /**
-     * Access harrier-managed accounts on the given user.
-     */
-    public RemoteAccountAuthenticator accounts(UserReference user) {
-        return accountsComponent().accounts(user);
-    }
-
-    /**
-     * Get the default account defined with {@link EnsureHasAccount}.
-     */
-    public AccountReference account() {
-        return accountsComponent().account();
-    }
-
-    /**
-     * Get the account defined with {@link EnsureHasAccount} with a given key.
-     */
-    public AccountReference account(String key) {
-        return accountsComponent().account(key);
-    }
-
     @Override
     boolean isHeadlessSystemUserMode() {
         return TestApis.users().isHeadlessSystemUserMode();
     }
 
     private AnnotationExecutor usesAnnotationExecutor(UsesAnnotationExecutor executorClassName) {
-        return mLocator.get(getAnnotationExecutorClass(executorClassName));
+        return mLocator.get(executorClassName.value());
     }
 
     private TestRuleExecutor usesTestRuleExecutor(UsesTestRuleExecutor executorClassName) {
-        return mLocator.get(getTestRuleExecutorClass(executorClassName));
+        return mLocator.get(executorClassName.value());
     }
 
     void onTestFailed(Throwable exception) {
@@ -1198,11 +797,7 @@ public final class DeviceState extends HarrierRule {
 
     private void createMissingFailureDumpers() {
         for (String className : FailureDumper.Companion.getFailureDumpers()) {
-            try {
-                var unused = mLocator.get(Class.forName(className));
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
+            mLocator.get(className);
         }
     }
 

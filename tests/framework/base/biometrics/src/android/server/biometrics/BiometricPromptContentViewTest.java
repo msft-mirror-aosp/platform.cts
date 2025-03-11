@@ -30,7 +30,6 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
-import android.hardware.biometrics.Flags;
 import android.hardware.biometrics.PromptContentItemBulletedText;
 import android.hardware.biometrics.PromptContentItemPlainText;
 import android.hardware.biometrics.PromptContentViewWithMoreOptionsButton;
@@ -40,7 +39,6 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.biometrics.util.Utils;
 import android.util.Log;
 
@@ -96,7 +94,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptContentViewWithMoreOptionsButton.Builder#setDescription",
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -159,7 +156,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -205,7 +201,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_withoutPermissionException() throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -261,7 +256,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_withoutSettingListenerException() throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -298,7 +292,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_onlyCredential_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -371,7 +364,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#addListItem",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setDescription"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testVerticalList_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -450,7 +442,6 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setContentView",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testVerticalList_onlyCredential_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());

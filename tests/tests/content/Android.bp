@@ -94,8 +94,7 @@ java_defaults {
         "ShortcutManagerTestUtils",
         "libincfs-prebuilt",
         "HelloWorldResHardeningLib",
-        "Nene",
-        "Harrier",
+        "bedstead-enterprise",
         "platformprotosnano",
         "ravenwood-junit",
         "CtsContentUtils",
@@ -171,6 +170,8 @@ android_test {
     ],
     static_libs: [
         "android.content.res.flags-aconfig-java",
+        "flag-junit",
+        "junit-params",
     ],
     srcs: [
         "src/android/content/om/**/*.java",
@@ -236,6 +237,7 @@ android_test {
         ":CtsApkVerityTestPrebuiltFiles",
         ":CtsTargetSdk23TestApp",
         ":CtsTargetSdk24TestApp",
+        ":CtsQueryPackagesTestApp",
         // v1/v2/v3/v4 signed version of android.appsecurity.cts.tinyapp to keep checksums stable
         "data/CtsPkgInstallTinyAppV1.apk",
         "data/CtsPkgInstallTinyAppV2V3V4.apk",
@@ -311,6 +313,13 @@ android_test {
         ":HelloInstallerAppAbsent",
         ":HelloInstallerAppAbsentUpdated",
         ":CtsDeviceAdminTestApp",
+        ":CtsContentDeclaringLibrary",
+        ":CtsContentDeclaringSdkLibrary",
+        ":CtsContentDeclaringStaticLibrary",
+        ":CtsPackageChangedTestApp",
+        ":CtsPackageChangedSharedUserIdTestApp",
+        ":CtsIntentResolutionApplicationOverrideTestApp",
+        ":CtsIntentResolutionComponentOverrideTestApp",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",

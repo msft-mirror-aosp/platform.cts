@@ -16,6 +16,7 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.ImageReaderTest.validateDynamicDepthNative;
 import static android.hardware.camera2.cts.helpers.AssertHelpers.assertArrayContains;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Matchers.any;
@@ -1018,17 +1019,78 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         }
     }
 
+    // Test case to ensure if night mode indicator is supported then night mode camera extension
+    // is also available.
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NIGHT_MODE_INDICATOR)
+    public void testNightModeIndicatorSupportedWithNightModeCameraExtension() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            if (!staticMeta.isNightModeIndicatorSupported()) {
+                continue;
+            }
+            CameraExtensionCharacteristics extensionChars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+            List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
+            assertTrue("Night Mode Camera Extension must be available if "
+                          + "EXTENSION_NIGHT_MODE_INDICATOR is supported",
+                          supportedExtensions.contains(
+                              CameraExtensionCharacteristics.EXTENSION_NIGHT));
+        }
+    }
+
+    // Test case to ensure night mode indicator is supported for both camera extension and camera
+    // capture sessions.
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NIGHT_MODE_INDICATOR)
+    public void testNightModeIndicatorSupportedOnCameraCaptureAndCameraExtensionSession()
+            throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            StaticMetadata staticMeta =
+                    new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
+            CameraExtensionCharacteristics extensionChars =
+                    mTestRule.getCameraManager().getCameraExtensionCharacteristics(id);
+            if (!extensionChars.getSupportedExtensions().contains(
+                    CameraExtensionCharacteristics.EXTENSION_NIGHT)) {
+                continue;
+            }
+            boolean isNightModeIndicatorSupported = staticMeta.isNightModeIndicatorSupported();
+            boolean isNightModeIndicatorCameraExtensionSupported =
+                    extensionChars.getAvailableCaptureResultKeys(
+                        CameraExtensionCharacteristics.EXTENSION_NIGHT).contains(
+                        CaptureResult.EXTENSION_NIGHT_MODE_INDICATOR);
+            // If it's not supported in Camera2 and Camera Extensions then we can ignore
+            // However, if it's supported in either Camera2 or Camera Extensions, then it must
+            // be supported in both.
+            assertEquals("EXTENSION_NIGHT_MODE_INDICATOR must be supported in both camera"
+                          + "extension and camera capture sessions.", isNightModeIndicatorSupported,
+                          isNightModeIndicatorCameraExtensionSupported);
+        }
+    }
+
+
     // Test case for multi-frame only capture on all supported extensions and expected state
     // callbacks. Verify still frame output, measure the average capture latency and if possible
     // ensure that the value is within the reported range.
     @Test
     public void testMultiFrameCapture() throws Exception {
         final int IMAGE_COUNT = 10;
-        final int SUPPORTED_CAPTURE_OUTPUT_FORMATS[] = {
-                ImageFormat.YUV_420_888,
-                ImageFormat.JPEG,
-                ImageFormat.JPEG_R
-        };
+        int SUPPORTED_CAPTURE_OUTPUT_FORMATS[];
+        if (Flags.depthJpegExtensions()) {
+            SUPPORTED_CAPTURE_OUTPUT_FORMATS = new int[] {
+                    ImageFormat.YUV_420_888,
+                    ImageFormat.JPEG,
+                    ImageFormat.JPEG_R,
+                    ImageFormat.DEPTH_JPEG
+            };
+        } else {
+            SUPPORTED_CAPTURE_OUTPUT_FORMATS = new int[] {
+                    ImageFormat.YUV_420_888,
+                    ImageFormat.JPEG,
+                    ImageFormat.JPEG_R
+            };
+        }
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticMeta =
                     new StaticMetadata(mTestRule.getCameraManager().getCameraCharacteristics(id));
@@ -1098,7 +1160,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         for (int i = 0; i < IMAGE_COUNT; i++) {
                             int jpegOrientation = (i * 90) % 360; // degrees [0..270]
                             if (captureFormat == ImageFormat.JPEG
-                                    || captureFormat == ImageFormat.JPEG_R) {
+                                    || captureFormat == ImageFormat.JPEG_R
+                                    || captureFormat == ImageFormat.DEPTH_JPEG) {
                                 captureBuilder.set(CaptureRequest.JPEG_ORIENTATION,
                                         jpegOrientation);
                             }
@@ -1113,7 +1176,8 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                             captureTimes[i] = SystemClock.elapsedRealtime() - startTimeMs;
 
                             if (captureFormat == ImageFormat.JPEG
-                                    || captureFormat == ImageFormat.JPEG_R) {
+                                    || captureFormat == ImageFormat.JPEG_R
+                                    || captureFormat == ImageFormat.DEPTH_JPEG) {
                                 verifyJpegOrientation(img, maxSize,
                                         jpegOrientation, captureFormat);
                             } else {
@@ -1652,6 +1716,9 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
         assertTrue("Invalid image data", data != null && data.length > 0);
 
         switch (captureFormat) {
+            case ImageFormat.DEPTH_JPEG:
+                assertTrue("Dynamic depth validation failed!",
+                        validateDynamicDepthNative(data));
             case ImageFormat.JPEG:
                 validateJpegData(data, jpegSize.getWidth(), jpegSize.getHeight(),
                         null /*filePath*/);

@@ -19,7 +19,7 @@ package android.packageinstaller.admin.cts;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.Test;

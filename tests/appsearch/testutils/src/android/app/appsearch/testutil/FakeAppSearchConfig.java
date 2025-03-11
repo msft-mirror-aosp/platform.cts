@@ -101,9 +101,15 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     }
 
     @Override
-    public int getMaxDocumentCount() {
+    public int getPerPackageDocumentCountLimit() {
         throwIfClosed();
-        return DEFAULT_LIMIT_CONFIG_MAX_DOCUMENT_COUNT;
+        return DEFAULT_LIMIT_CONFIG_PER_PACKAGE_DOCUMENT_COUNT_LIMIT;
+    }
+
+    @Override
+    public int getDocumentCountLimitStartThreshold() {
+        throwIfClosed();
+        return DEFAULT_LIMIT_CONFIG_DOCUMENT_COUNT_LIMIT_START_THRESHOLD;
     }
 
     @Override
@@ -271,6 +277,18 @@ public final class FakeAppSearchConfig implements ServiceAppSearchConfig {
     public boolean getBuildPropertyExistenceMetadataHits() {
         throwIfClosed();
         return DEFAULT_BUILD_PROPERTY_EXISTENCE_METADATA_HITS;
+    }
+
+    @Override
+    public long getOrphanBlobTimeToLiveMs() {
+        throwIfClosed();
+        return DEFAULT_ORPHAN_BLOB_TIME_TO_LIVE_MS;
+    }
+
+    @Override
+    public int getMaxOpenBlobCount() {
+        throwIfClosed();
+        return DEFAULT_MAX_OPEN_BLOB_COUNT;
     }
 
     private void throwIfClosed() {

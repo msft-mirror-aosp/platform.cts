@@ -62,6 +62,23 @@ open class ResourcesWrapper(private val sResources: Resources) {
     @JvmOverloads
     fun getBoolean(configName: String, defPackage: String? = DEF_PACKAGE) =
         getBoolean(getIdentifier(configName, "bool", defPackage))
+
+    /**
+     * Get integer resource through identifier.
+     *
+     * See [android.content.res.Resources.getInteger].
+     */
+    fun getInteger(id: Int) = sResources.getInteger(id)
+
+    /**
+     * Get integer resource through identifier.
+     *
+     * See [android.content.res.Resources.getIdentifier],
+     * [android.content.res.Resources.getInteger].
+     */
+    @JvmOverloads
+    fun getInteger(configName: String, defPackage: String? = DEF_PACKAGE) =
+        getInteger(getIdentifier(configName, "integer", defPackage))
 }
 
 private const val DEF_PACKAGE = "android"

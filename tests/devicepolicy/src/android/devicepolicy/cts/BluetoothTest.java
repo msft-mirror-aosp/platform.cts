@@ -20,6 +20,7 @@ package android.devicepolicy.cts;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.os.UserManager.DISALLOW_BLUETOOTH_SHARING;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.bluetooth.Bluetooth.OPP_LAUNCHER_CLASS;
 import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_BLUETOOTH;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
@@ -44,22 +45,21 @@ import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothDisabled;
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
 import com.android.bedstead.harrier.policies.Bluetooth;
 import com.android.bedstead.harrier.policies.DisableBluetoothContactSharing;
@@ -73,6 +73,7 @@ import com.android.bedstead.harrier.policies.DisallowConfigBluetooth;
 import com.android.bedstead.harrier.policies.DisallowConfigBluetoothGlobally;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
@@ -147,8 +148,8 @@ public final class BluetoothTest {
 
     private void clearUserRestriction(String restriction) {
         try {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), restriction);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), restriction);
         } catch (SecurityException | IllegalStateException e) {
             // Expected for some states
         }
@@ -163,22 +164,22 @@ public final class BluetoothTest {
                 TestApis.users().current().isForeground());
 
         BlockingBroadcastReceiver r = sDeviceState.registerBroadcastReceiverForUser(
-                sDeviceState.dpc().user(), BluetoothAdapter.ACTION_STATE_CHANGED,
+                dpc(sDeviceState).user(), BluetoothAdapter.ACTION_STATE_CHANGED,
                 this::isStateDisabled);
 
         try (PermissionContext p =
-                     sDeviceState.dpc().permissions().withPermission(BLUETOOTH_CONNECT)) {
+                     dpc(sDeviceState).permissions().withPermission(BLUETOOTH_CONNECT)) {
             // For some reason it doesn't always immediately recognise that the permission has
             // been granted to the DPC
             Poll.forValue("return value for disable from adapter",
-                    () -> sDeviceState.dpc().bluetoothManager().getAdapter().disable())
+                    () -> dpc(sDeviceState).bluetoothManager().getAdapter().disable())
                     .toBeEqualTo(true)
                     .errorOnFail()
                     .await();
             r.awaitForBroadcast();
 
             Poll.forValue("Bluetooth Enabled for DPC",
-                    () -> sDeviceState.dpc().bluetoothManager().getAdapter().isEnabled())
+                    () -> dpc(sDeviceState).bluetoothManager().getAdapter().isEnabled())
                     .toBeEqualTo(false)
                     .errorOnFail()
                     .await();
@@ -195,21 +196,21 @@ public final class BluetoothTest {
                 TestApis.users().current().isForeground());
 
         BlockingBroadcastReceiver r = sDeviceState.registerBroadcastReceiverForUser(
-                sDeviceState.dpc().user(), BluetoothAdapter.ACTION_STATE_CHANGED,
+                dpc(sDeviceState).user(), BluetoothAdapter.ACTION_STATE_CHANGED,
                 this::isStateEnabled);
 
         try (PermissionContext p =
-                     sDeviceState.dpc().permissions().withPermission(BLUETOOTH_CONNECT)) {
+                     dpc(sDeviceState).permissions().withPermission(BLUETOOTH_CONNECT)) {
             // For some reason it doesn't always immediately recognise that the permission has
             // been granted to the DPC
             Poll.forValue("return value for enable from adapter",
-                    () -> sDeviceState.dpc().bluetoothManager().getAdapter().enable())
+                    () -> dpc(sDeviceState).bluetoothManager().getAdapter().enable())
                     .toBeEqualTo(true)
                     .errorOnFail().await();
             r.awaitForBroadcast();
 
             Poll.forValue("Bluetooth Enabled for DPC",
-                    () -> sDeviceState.dpc().bluetoothManager().getAdapter().isEnabled())
+                    () -> dpc(sDeviceState).bluetoothManager().getAdapter().isEnabled())
                     .toBeEqualTo(true)
                     .errorOnFail()
                     .await();
@@ -311,8 +312,8 @@ public final class BluetoothTest {
     )
     public void addUserRestriction_preU_disallowBluetoothSharing_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH_SHARING));
     }
 
     @CannotSetPolicyTest(policy = DisallowBluetoothSharing.class)
@@ -320,8 +321,8 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void addUserRestriction_disallowBluetoothSharing_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH_SHARING));
     }
 
     @CannotSetPolicyTest(policy = DisallowBluetoothSharingGlobally.class)
@@ -330,7 +331,7 @@ public final class BluetoothTest {
     @Ignore("No global setters of this restriction")
     public void addUserRestrictionGlobally_disallowBluetoothSharing_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                         DISALLOW_BLUETOOTH_SHARING));
     }
 
@@ -342,8 +343,8 @@ public final class BluetoothTest {
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = UPSIDE_DOWN_CAKE))
     )
     public void addUserRestriction_preU_disallowBluetoothSharing_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH_SHARING);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING))
                 .isTrue();
@@ -353,8 +354,8 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void addUserRestriction_disallowBluetoothSharing_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH_SHARING);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING))
                 .isTrue();
@@ -365,7 +366,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     @Ignore("No global setters of this restriction")
     public void addUserRestrictionGlobally_disallowBluetoothSharing_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+        dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                 DISALLOW_BLUETOOTH_SHARING);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING))
@@ -385,8 +386,8 @@ public final class BluetoothTest {
         assumeFalse("User has DISALLOW_BLUETOOTH_SHARING set by default",
                 TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING));
 
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH_SHARING);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING))
                 .isFalse();
@@ -401,8 +402,8 @@ public final class BluetoothTest {
         assumeFalse("User has DISALLOW_BLUETOOTH_SHARING set by default",
                 TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING));
 
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH_SHARING);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH_SHARING);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING))
                 .isFalse();
@@ -412,7 +413,7 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH_SHARING")
     public void addUserRestrictionGlobally_disallowBluetoothSharing_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+        dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                 DISALLOW_BLUETOOTH_SHARING);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH_SHARING))
@@ -467,8 +468,8 @@ public final class BluetoothTest {
                     + "- we need to simplify this state")
     public void addUserRestriction_disallowBluetooth_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH));
     }
 
     @CannotSetPolicyTest(policy = DisallowBluetoothGlobally.class)
@@ -476,7 +477,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
     public void addUserRestrictionGlobally_disallowBluetooth_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                         DISALLOW_BLUETOOTH));
     }
 
@@ -493,8 +494,8 @@ public final class BluetoothTest {
                     + "- we need to simplify this state")
     public void addUserRestriction_preU_disallowBluetooth_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH));
     }
 
     @EnsureHasUserRestriction(DISALLOW_BLUETOOTH)
@@ -529,8 +530,8 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_BLUETOOTH")
     public void addUserRestriction_disallowConfigBluetooth_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_BLUETOOTH));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_BLUETOOTH));
     }
 
     @CannotSetPolicyTest(policy = DisallowConfigBluetoothGlobally.class)
@@ -538,7 +539,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_BLUETOOTH")
     public void addUserRestrictionGlobally_disallowConfigBluetooth_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                         DISALLOW_CONFIG_BLUETOOTH));
     }
 
@@ -546,8 +547,8 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_BLUETOOTH")
     public void addUserRestriction_disallowConfigBluetooth_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_CONFIG_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_CONFIG_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_BLUETOOTH))
                 .isTrue();
@@ -558,7 +559,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_BLUETOOTH")
     @Ignore("No global setters of this restriction")
     public void addUserRestrictionGlobally_disallowConfigBluetooth_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+        dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                 DISALLOW_CONFIG_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_BLUETOOTH))
@@ -569,8 +570,8 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_BLUETOOTH")
     public void addUserRestriction_disallowConfigBluetooth_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_CONFIG_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_CONFIG_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_BLUETOOTH))
                 .isFalse();
@@ -580,7 +581,7 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_BLUETOOTH")
     public void addUserRestrictionGlobally_disallowConfigBluetooth_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+        dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                 DISALLOW_CONFIG_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_BLUETOOTH))
@@ -618,8 +619,8 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
     public void addUserRestriction_disallowBluetooth_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH))
                 .isTrue();
@@ -630,7 +631,7 @@ public final class BluetoothTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
     @Ignore("No global setters of this restriction")
     public void addUserRestrictionGlobally_disallowBluetooth_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(
+        dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(
                 DISALLOW_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH))
@@ -645,8 +646,8 @@ public final class BluetoothTest {
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = UPSIDE_DOWN_CAKE))
     )
     public void addUserRestriction_preU_disallowBluetooth_isSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH))
                 .isTrue();
@@ -656,8 +657,8 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
     public void addUserRestriction_disallowBluetooth_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH))
                 .isFalse();
@@ -667,7 +668,7 @@ public final class BluetoothTest {
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.os.UserManager#DISALLOW_BLUETOOTH")
     public void addUserRestrictionGlobally_disallowBluetooth_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestrictionGlobally(DISALLOW_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestrictionGlobally(DISALLOW_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH))
                 .isFalse();
@@ -681,8 +682,8 @@ public final class BluetoothTest {
             query = @Query(targetSdkVersion = @IntegerQuery(isLessThan = UPSIDE_DOWN_CAKE))
     )
     public void addUserRestriction_preU_disallowBluetooth_isNotSet() {
-        sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                sDeviceState.dpc().componentName(), DISALLOW_BLUETOOTH);
+        dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                dpc(sDeviceState).componentName(), DISALLOW_BLUETOOTH);
 
         assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_BLUETOOTH)).isFalse();
     }
@@ -715,14 +716,14 @@ public final class BluetoothTest {
     @PolicyAppliesTest(policy = DisableBluetoothContactSharing.class)
     public void setBluetoothContactSharingDisabled_policyApplies_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ true);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ true);
 
             assertThat(
                     TestApis.devicePolicy().getBluetoothContactSharingDisabled()).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ false);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ false);
         }
     }
 
@@ -731,15 +732,15 @@ public final class BluetoothTest {
     @CanSetPolicyTest(policy = DisableBluetoothContactSharing.class)
     public void setBluetoothContactSharingDisabled_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ true);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ true);
 
             assertThat(
-                    sDeviceState.dpc().devicePolicyManager().getBluetoothContactSharingDisabled(
-                            sDeviceState.dpc().componentName())).isTrue();
+                    dpc(sDeviceState).devicePolicyManager().getBluetoothContactSharingDisabled(
+                            dpc(sDeviceState).componentName())).isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ false);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ false);
         }
     }
 
@@ -748,14 +749,14 @@ public final class BluetoothTest {
     @PolicyDoesNotApplyTest(policy = DisableBluetoothContactSharing.class)
     public void setBluetoothContactSharingDisabled_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ true);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ true);
 
             assertThat(
                     TestApis.devicePolicy().getBluetoothContactSharingDisabled()).isFalse();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ false);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ false);
         }
     }
 
@@ -764,13 +765,13 @@ public final class BluetoothTest {
     @PolicyAppliesTest(policy = DisableBluetoothContactSharing.class)
     public void setBluetoothContactSharingDisabled_isLogged() {
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
-            sDeviceState.dpc().devicePolicyManager().setBluetoothContactSharingDisabled(
-                    sDeviceState.dpc().componentName(), /* disabled= */ true);
+            dpc(sDeviceState).devicePolicyManager().setBluetoothContactSharingDisabled(
+                    dpc(sDeviceState).componentName(), /* disabled= */ true);
 
             MetricQueryBuilderSubject.assertThat(metrics.query()
                     .whereType().isEqualTo(
                             EventId.SET_BLUETOOTH_CONTACT_SHARING_DISABLED_VALUE)
-                    .whereAdminPackageName().isEqualTo(sDeviceState.dpc().packageName())
+                    .whereAdminPackageName().isEqualTo(dpc(sDeviceState).packageName())
                     .whereBoolean().isTrue()).wasLogged();
         }
     }

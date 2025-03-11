@@ -102,7 +102,10 @@ public class TextureViewCtsActivity extends Activity implements SurfaceTextureLi
         content.addView(mPreview,
                 LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
-        setContentView(content);
+        FrameLayout contentView = new FrameLayout(this);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(content);
+        setContentView(contentView);
     }
 
     @Override

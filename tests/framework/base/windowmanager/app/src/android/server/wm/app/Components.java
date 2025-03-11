@@ -174,6 +174,8 @@ public class Components extends ComponentsBase {
         component("TranslucentTopNonResizableActivity");
     public static final ComponentName TRANSLUCENT_TEST_ACTIVITY =
             component("TranslucentTestActivity");
+    public static final ComponentName TRANSLUCENT_LANDSCAPE_ACTIVITY =
+            component("TranslucentLandscapeActivity");
     public static final ComponentName TURN_SCREEN_ON_ACTIVITY = component("TurnScreenOnActivity");
     public static final ComponentName TURN_SCREEN_ON_ATTR_ACTIVITY =
             component("TurnScreenOnAttrActivity");

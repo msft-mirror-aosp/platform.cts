@@ -20,8 +20,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothDisabled;
+import com.android.bedstead.bluetooth.annotations.EnsureBluetoothEnabled;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;

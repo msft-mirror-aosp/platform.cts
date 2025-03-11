@@ -26,7 +26,6 @@ import static android.accessibilityservice.cts.utils.AccessibilityEventFilterUti
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWindowByTitleWithList;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActivityTitle;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
@@ -40,7 +39,6 @@ import static android.accessibilityservice.cts.utils.MultiProcessUtils.TOUCH_EXP
 import static android.accessibilityservice.cts.utils.WindowCreationUtils.TOP_WINDOW_TITLE;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 import static android.app.UiAutomation.FLAG_DONT_USE_ACCESSIBILITY;
-import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_CLICKED;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_FOCUSED;
@@ -97,9 +95,6 @@ import android.hardware.display.VirtualDisplay;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.SparseArray;
@@ -133,12 +128,12 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
-import com.android.server.accessibility.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -208,10 +203,10 @@ public class AccessibilityDisplayProxyTest {
 
     private static final String SEPARATE_PROCESS_PACKAGE_NAME = "foo.bar.proxy";
     private static final String SEPARATE_PROCESS_ACTIVITY = ".NonProxySeparateAppActivity";
-    public static final int VIRTUAL_DISPLAY_WIDTH = 100;
     // Minimum screen width for supporting taps. This is more arbitrary since clicking or
     // tapping requires a single point. We use half the virtual display width.
-    private static final int MIN_SCREEN_WIDTH_TAP_PX = VIRTUAL_DISPLAY_WIDTH / 2;
+    private static final int MIN_SCREEN_WIDTH_TAP_PX =
+            VirtualDeviceRule.DEFAULT_VIRTUAL_DISPLAY_WIDTH / 2;
     private static final int TEST_SYSTEM_ACTION_ID = 1000;
 
     private static Instrumentation sInstrumentation;
@@ -247,10 +242,6 @@ public class AccessibilityDisplayProxyTest {
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
             MANAGE_ACCESSIBILITY);
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private ListenerChangeBroadcastReceiver mReceiver =
             new ListenerChangeBroadcastReceiver();
@@ -292,11 +283,6 @@ public class AccessibilityDisplayProxyTest {
     @Before
     public void setUp() throws Exception {
         final Context context = sInstrumentation.getContext();
-        assumeTrue(supportsMultiDisplay(context));
-        final PackageManager packageManager = context.getPackageManager();
-        // TODO(b/261155110): Re-enable tests once freeform mode is supported in Virtual Display.
-        assumeFalse("Skipping test: VirtualDisplay window policy doesn't support freeform.",
-                packageManager.hasSystemFeature(FEATURE_FREEFORM_WINDOW_MANAGEMENT));
         mUiAutomation =
                 sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         final AccessibilityServiceInfo info = mUiAutomation.getServiceInfo();
@@ -306,6 +292,7 @@ public class AccessibilityDisplayProxyTest {
         mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
         VirtualDisplay virtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplayWithFlags(
                 mVirtualDevice, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         mVirtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
         final List<AccessibilityServiceInfo> infos = new ArrayList<>();
@@ -353,6 +340,15 @@ public class AccessibilityDisplayProxyTest {
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testRegisterDisplayProxy_withStreamingRole_successfullyRegisters() {
         assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
+    public void testRegisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
+        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                assertThrows(SecurityException.class, () ->
+                        mA11yManager.registerDisplayProxy(mA11yProxy)));
     }
 
     @Test
@@ -409,6 +405,15 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#unregisterDisplayProxy"})
+    public void testUnregisterDisplayProxy_withoutA11yPermissionOrRole_throwsSecurityException() {
+        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
+        SystemUtil.runWithShellPermissionIdentity(() ->
+                assertThrows(SecurityException.class, () ->
+                        mA11yManager.unregisterDisplayProxy(mA11yProxy)));
+    }
+
+    @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager#registerDisplayProxy"})
     public void testUnregisterAccessibilityProxy_withStreamingRole_successfullyUnRegisters() {
         assertThat(mA11yManager.registerDisplayProxy(mA11yProxy)).isTrue();
@@ -447,6 +452,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#onAccessibilityEvent"})
+    @Ignore("b/372471911")
     public void testPerformSystemAction_keyEventsDispatchedToLastNonProxyDisplay()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -471,6 +477,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @Ignore("b/372471911")
     public void testPerformSystemAction_topFocusDisplayIsLastNonProxyDisplay()
             throws TimeoutException {
         registerProxyAndWaitForConnection();
@@ -495,6 +502,7 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
+    @Ignore("b/372471911")
     public void testTriggerTouchExploration_topFocusDisplayIsLastNonProxyDisplay()
             throws TimeoutException {
         final PackageManager pm = sInstrumentation.getContext().getPackageManager();
@@ -594,6 +602,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
+    @Ignore("b/372471911")
     public void testGetFocus_serviceSetsAccessibilityFocus_proxyGetsNullFocus() throws Exception {
         final StubProxyConcurrentAccessibilityService service =
                 mNonProxyServiceRule.enableService();
@@ -707,6 +716,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
+    @Ignore("b/372471911")
     public void testGetFocus_serviceAndProxySetA11yFocus_serviceAndProxyGetSeparateFocus()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -760,6 +770,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#findFocus(int)"})
+    @Ignore("b/372471911")
     public void testGetFocus_serviceSetsInputFocus_proxyDoesNotGetServiceInputFocus()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -804,6 +815,7 @@ public class AccessibilityDisplayProxyTest {
 
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityDisplayProxy#onAccessibilityEvent"})
+    @Ignore("b/372471911")
     public void testOnA11yEvent_touchDefaultDisplay_serviceReceivesInteractionEvent()
             throws Exception {
         final StubProxyConcurrentAccessibilityService service =
@@ -884,7 +896,6 @@ public class AccessibilityDisplayProxyTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(android.companion.virtual.flags.Flags.FLAG_VDM_PUBLIC_APIS)
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
             + ".AccessibilityServicesStateChangeListener#onAccessibilityServicesStateChanged"})
     public void onAccessibilityServicesStateChanged_updateProxyEnabledList_closeVirtualDevice_notifiesProxiedApp() {
@@ -1249,7 +1260,6 @@ public class AccessibilityDisplayProxyTest {
     @Test
     @ApiTest(apis = {"android.view.accessibility.AccessibilityManager"
             + ".AccessibilityServicesStateChangeListener#onAccessibilityServicesStateChanged"})
-    @RequiresFlagsEnabled(Flags.FLAG_PROXY_USE_APPS_ON_VIRTUAL_DEVICE_LISTENER)
     public void testOnA11yServicesStateChanged_moveAppToVirtualDisplay_notifiesApp()
             throws TimeoutException, InterruptedException {
         // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.

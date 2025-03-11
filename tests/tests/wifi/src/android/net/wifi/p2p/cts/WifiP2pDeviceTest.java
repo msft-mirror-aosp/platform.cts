@@ -23,6 +23,7 @@ import android.test.AndroidTestCase;
 
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.wifi.flags.Flags;
 
 public class WifiP2pDeviceTest extends AndroidTestCase {
@@ -53,5 +54,22 @@ public class WifiP2pDeviceTest extends AndroidTestCase {
     public void testGetIpAddress() {
         WifiP2pDevice dev = new WifiP2pDevice();
         dev.getIpAddress();
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p"
+            + "android.net.wifi.p2p.WifiP2pDevice#isOpportunisticBootstrappingMethodSupported",
+            "android.net.wifi.p2p.WifiP2pDevice#isPassphraseDisplayBootstrappingMethodSupported",
+            "android.net.wifi.p2p.WifiP2pDevice#isPassphraseKeypadBootstrappingMethodSupported",
+            "android.net.wifi.p2p.WifiP2pDevice#isPinCodeDisplayBootstrappingMethodSupported",
+            "android.net.wifi.p2p.WifiP2pDevice#isPinCodeKeypadBootstrappingMethodSupported"})
+    @RequiresFlagsEnabled(Flags.FLAG_WIFI_DIRECT_R2)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA, codeName = "Baklava")
+    public void testDefaultBootstrappingMethodSupportCheck() {
+        WifiP2pDevice dev = new WifiP2pDevice();
+        dev.isOpportunisticBootstrappingMethodSupported();
+        dev.isPassphraseDisplayBootstrappingMethodSupported();
+        dev.isPassphraseKeypadBootstrappingMethodSupported();
+        dev.isPinCodeDisplayBootstrappingMethodSupported();
+        dev.isPinCodeKeypadBootstrappingMethodSupported();
     }
 }

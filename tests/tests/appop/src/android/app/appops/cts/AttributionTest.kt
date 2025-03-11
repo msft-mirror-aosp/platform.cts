@@ -63,6 +63,9 @@ class AttributionTest {
     fun resetTestApp() {
         runCommand("pm uninstall --user ${context.userId} $APP_PKG")
         installApk("CtsAppToBlame1.apk")
+        // We need to wait for the package installation broadcast to reach AppOpsService to update
+        // uidState. Can remove this once b/376345874 is fixed.
+        sleep(1000)
     }
 
     private fun noteForAttribution(attribution: String) {

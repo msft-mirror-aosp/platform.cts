@@ -331,8 +331,6 @@ public abstract class BaseDefaultPermissionGrantPolicyTest extends BusinessLogic
     public void addException(DefaultPermissionGrantException exception,
             Set<String> runtimePermNames, Map<String, PackageInfo> packageInfos,
             Set<String> platformSignedPackages, SparseArray<UidState> outUidStates) {
-        Log.v(LOG_TAG, "Adding exception for company " + exception.company
-                + ". Metadata: " + exception.metadata);
         String packageName = exception.pkg;
         PackageInfo packageInfo = packageInfos.get(packageName);
         if (packageInfo == null) {

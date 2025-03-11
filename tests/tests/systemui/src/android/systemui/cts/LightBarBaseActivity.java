@@ -22,6 +22,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.WindowInsets;
+import android.widget.FrameLayout;
 
 public class LightBarBaseActivity extends Activity {
 
@@ -33,7 +34,10 @@ public class LightBarBaseActivity extends Activity {
         mContent = new View(this);
         mContent.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.MATCH_PARENT));
-        setContentView(mContent);
+        final FrameLayout contentView = new FrameLayout(this);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(mContent);
+        setContentView(contentView);
     }
 
     @MainThread
