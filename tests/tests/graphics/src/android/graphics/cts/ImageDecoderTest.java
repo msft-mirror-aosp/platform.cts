@@ -2146,9 +2146,8 @@ public class ImageDecoderTest {
                 reference = null;
                 isWebp = true;
             }
-            ImageDecoder.Source src = ImageDecoder.createSource(getResources(), resId);
             try {
-                Bitmap bm = ImageDecoder.decodeBitmap(src, (decoder, info, s) -> {
+                Bitmap bm = decodeUnscaledBitmap(resId, (decoder, info, s) -> {
                     // Use software allocator so we can compare.
                     decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
                 });
