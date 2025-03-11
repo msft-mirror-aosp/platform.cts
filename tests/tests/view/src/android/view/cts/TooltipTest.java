@@ -16,6 +16,7 @@
 
 package android.view.cts;
 
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.view.MotionEvent.ACTION_HOVER_ENTER;
 import static android.view.MotionEvent.ACTION_HOVER_EXIT;
 import static android.view.MotionEvent.ACTION_HOVER_MOVE;
@@ -27,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
+import android.os.IBinder;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
@@ -54,6 +56,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * Test {@link View}.
  */
@@ -78,16 +83,18 @@ public class TooltipTest {
     private View mEmptyGroup;
 
     @Rule(order = 0)
-    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
-            androidx.test.platform.app.InstrumentationRegistry
-                    .getInstrumentation().getUiAutomation(),
-            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                            .getUiAutomation(),
+                    Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX,
+                    Manifest.permission.ACCESS_SURFACE_FLINGER);
 
     @Rule(order = 1)
     public ActivityTestRule<TooltipActivity> mActivityRule =
             new ActivityTestRule<>(TooltipActivity.class);
 
-    @Rule(order = 1)
+    @Rule(order = 2)
     public ActivityTestRule<CtsActivity> mCtsActivityRule =
             new ActivityTestRule<>(CtsActivity.class, false, false);
 
@@ -935,16 +942,22 @@ public class TooltipTest {
     @Test
     public void testTooltipInPopup() throws Throwable {
         TextView popupContent = new TextView(mActivity);
+        final AtomicReference<IBinder> popupWindowToken = new AtomicReference<>(null);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    popupContent.setText("Popup view");
+                    popupContent.setTooltipText("Tooltip");
 
-        mActivityRule.runOnUiThread(() -> {
-            popupContent.setText("Popup view");
-            popupContent.setTooltipText("Tooltip");
-
-            PopupWindow popup = new PopupWindow(popupContent,
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            popup.showAtLocation(mGroupView, Gravity.CENTER, 0, 0);
-        });
+                    PopupWindow popup =
+                            new PopupWindow(
+                                    popupContent,
+                                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                                    ViewGroup.LayoutParams.WRAP_CONTENT);
+                    popup.showAtLocation(mGroupView, Gravity.CENTER, 0, 0);
+                    popupWindowToken.set(popup.getContentView().getWindowToken());
+                });
         mInstrumentation.waitForIdleSync();
+        waitForWindowOnTop(Duration.ofSeconds(5), () -> popupWindowToken.get());
 
         injectLongClick(popupContent);
         assertTrue(hasTooltip(popupContent));
