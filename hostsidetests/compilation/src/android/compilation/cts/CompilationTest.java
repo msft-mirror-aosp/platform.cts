@@ -54,6 +54,8 @@ public class CompilationTest extends BaseHostJUnit4Test {
     private static final String STATUS_CHECKER_PKG = "android.compilation.cts.statuscheckerapp";
     private static final String STATUS_CHECKER_CLASS =
             "android.compilation.cts.statuscheckerapp.StatusCheckerAppTest";
+    private static final String STATUS_CHECKER_APK_RES = "/StatusCheckerApp.apk";
+    private static final String STATUS_CHECKER_PROF_RES = "/StatusCheckerApp.prof";
     private static final String TEST_APP_PKG = "android.compilation.cts";
     private static final String TEST_APP_APK_RES = "/CtsCompilationApp.apk";
     private static final String TEST_APP_PROF_RES = "/CtsCompilationApp.prof";
@@ -86,10 +88,13 @@ public class CompilationTest extends BaseHostJUnit4Test {
     public void tearDown() throws Exception {
         getDevice().uninstallPackage(TEST_APP_PKG);
         getDevice().uninstallPackage(TEST_APP_2_PKG);
+        getDevice().uninstallPackage(STATUS_CHECKER_PKG);
     }
 
     @Test
     public void testCompile() throws Exception {
+        mUtils.installFromResources(getAbi(), STATUS_CHECKER_APK_RES);
+
         var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
                               .setTestClassName(STATUS_CHECKER_CLASS)
                               .setTestMethodName("checkStatus")
@@ -156,6 +161,8 @@ public class CompilationTest extends BaseHostJUnit4Test {
     @Test
     @Parameters({"secondary.jar", "secondary"})
     public void testCompileSecondaryDex(String filename) throws Exception {
+        mUtils.installFromResources(getAbi(), STATUS_CHECKER_APK_RES);
+
         var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
                               .setTestClassName(STATUS_CHECKER_CLASS)
                               .setTestMethodName("createAndLoadSecondaryDex")
@@ -183,6 +190,8 @@ public class CompilationTest extends BaseHostJUnit4Test {
 
     @Test
     public void testCompileSecondaryDexUnsupportedClassLoader() throws Exception {
+        mUtils.installFromResources(getAbi(), STATUS_CHECKER_APK_RES);
+
         String filename = "secondary-unsupported-clc.jar";
         var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
                               .setTestClassName(STATUS_CHECKER_CLASS)
@@ -199,6 +208,8 @@ public class CompilationTest extends BaseHostJUnit4Test {
 
     @Test
     public void testSecondaryDexReporting() throws Exception {
+        mUtils.installFromResources(getAbi(), STATUS_CHECKER_APK_RES);
+
         var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
                               .setTestClassName(STATUS_CHECKER_CLASS)
                               .setTestMethodName("testSecondaryDexReporting")
@@ -224,6 +235,8 @@ public class CompilationTest extends BaseHostJUnit4Test {
 
     @Test
     public void testGetDexFileOutputPaths() throws Exception {
+        mUtils.installFromResources(getAbi(), STATUS_CHECKER_APK_RES);
+
         mUtils.assertCommandSucceeds("pm compile -m verify -f " + STATUS_CHECKER_PKG);
 
         var options = new DeviceTestRunOptions(STATUS_CHECKER_PKG)
@@ -410,12 +423,15 @@ public class CompilationTest extends BaseHostJUnit4Test {
     @RequiresFlagsEnabled({android.content.pm.Flags.FLAG_CLOUD_COMPILATION_PM,
             com.android.art.flags.Flags.FLAG_ART_SERVICE_V3})
     public void testSdmOk() throws Exception {
-        CompilationArtifacts artifacts =
-                mUtils.generateCompilationArtifacts(TEST_APP_APK_RES, TEST_APP_PROF_RES, getAbi());
-        File dmFile = mUtils.createDm(TEST_APP_PROF_RES, artifacts.vdexFile());
+        // Keep the class loader context in sync with `libs` of `StatusCheckerApp` in
+        // `cts/hostsidetests/compilation/status_checker_app/Android.bp`.
+        String classLoaderContext = "PCL[]{PCL[/system/framework/android.test.base.jar]}";
+        CompilationArtifacts artifacts = mUtils.generateCompilationArtifacts(
+                STATUS_CHECKER_APK_RES, STATUS_CHECKER_PROF_RES, getAbi(), classLoaderContext);
+        File dmFile = mUtils.createDm(STATUS_CHECKER_PROF_RES, artifacts.vdexFile());
         File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile());
 
-        mUtils.installFromResourcesWithSdm(getAbi(), TEST_APP_APK_RES, dmFile, sdmFile);
+        mUtils.installFromResourcesWithSdm(getAbi(), STATUS_CHECKER_APK_RES, dmFile, sdmFile);
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
