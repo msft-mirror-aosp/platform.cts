@@ -43,6 +43,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -76,6 +77,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.XrUtil;
 
 import org.hamcrest.Matcher;
 import org.junit.AfterClass;
@@ -368,7 +370,11 @@ public class AccessibilityGestureDispatchTest {
         }
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(sInstrumentation.getTargetContext()));
-
+        assumeTrue(
+                "Magnification and third-party accessibility services (3.10/C-1-1)"
+                        + " are not supported on Android XR by default.",
+                XrUtil.supportsXrThirdPartyMagnificationServices(
+                        sInstrumentation.getTargetContext()));
         int displayId = mActivity.getWindow().getDecorView().getDisplay().getDisplayId();
         if (displayId != Display.DEFAULT_DISPLAY) {
             Log.i(TAG, "Magnification is not supported on virtual displays.");

@@ -79,6 +79,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SettingsStateChangerRule;
+import com.android.compatibility.common.util.XrUtil;
 
 import org.junit.After;
 import org.junit.Before;
@@ -187,7 +188,11 @@ public class FullScreenMagnificationGestureHandlerTest {
         assumeTrue(hasTouchscreen);
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(mInstrumentation.getTargetContext()));
-
+        assumeTrue(
+                "Magnification and third-party accessibility services (3.10/C-1-1)"
+                        + " are not supported on Android XR by default.",
+                XrUtil.supportsXrThirdPartyMagnificationServices(
+                        mInstrumentation.getTargetContext()));
         mService = mServiceRule.enableService();
         mService.getMagnificationController().addListener(
                 new AccessibilityService.MagnificationController.OnMagnificationChangedListener() {
