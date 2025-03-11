@@ -26,12 +26,10 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.UserManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.security.Flags;
-import android.telephony.SubscriptionInfo;
-import android.telephony.SubscriptionManager;
-import android.telephony.TelephonyManager;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -41,13 +39,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_AAPM_FEATURE_DISABLE_CELLULAR_2G)
 public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
     private UserManager mUserManager;
+    private PackageManager mPackageManager;
 
     @Override
     @Before
@@ -55,6 +51,7 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
         super.setup();
 
         mUserManager = mInstrumentation.getContext().getSystemService(UserManager.class);
+        mPackageManager = mInstrumentation.getContext().getPackageManager();
 
         mInstrumentation
                 .getUiAutomation()
@@ -64,49 +61,8 @@ public class DisallowCellular2GTest extends BaseAdvancedProtectionTest {
                         Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
     }
 
-    private static boolean isEmbeddedSubscriptionVisible(SubscriptionInfo subInfo) {
-        if (subInfo.isEmbedded()
-                && (subInfo.getProfileClass() == SubscriptionManager.PROFILE_CLASS_PROVISIONING
-                        || subInfo.isOnlyNonTerrestrialNetwork())) {
-            return false;
-        }
-
-        return true;
-    }
-
-    private List<TelephonyManager> getTelephonyManagers() {
-        SubscriptionManager subscriptionManager =
-                mInstrumentation.getContext().getSystemService(SubscriptionManager.class);
-
-        List<SubscriptionInfo> subscriptions = subscriptionManager.getActiveSubscriptionInfoList();
-
-        List<TelephonyManager> managers = new ArrayList<>();
-        for (SubscriptionInfo info : subscriptions) {
-            if (isEmbeddedSubscriptionVisible(info)) {
-                managers.add(
-                        mInstrumentation
-                                .getContext()
-                                .getSystemService(TelephonyManager.class)
-                                .createForSubscriptionId(info.getSubscriptionId()));
-            }
-        }
-
-        return managers;
-    }
-
     private boolean isAvailable() {
-        for (TelephonyManager telephonyManager : getTelephonyManagers()) {
-            boolean hasCellular =
-                    telephonyManager.isRadioInterfaceCapabilitySupported(
-                                    telephonyManager.CAPABILITY_USES_ALLOWED_NETWORK_TYPES_BITMASK)
-                            && telephonyManager.isDataCapable();
-
-            if (hasCellular) {
-                return true;
-            }
-        }
-
-        return false;
+        return mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY);
     }
 
     private long getNumFeatures() {
