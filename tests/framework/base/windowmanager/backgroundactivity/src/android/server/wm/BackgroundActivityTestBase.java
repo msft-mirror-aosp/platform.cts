@@ -37,6 +37,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.os.SystemClock;
 import android.os.UserManager;
 import android.server.wm.WindowManagerState.Task;
 import android.server.wm.backgroundactivity.appa.Components;
@@ -52,10 +53,13 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -98,6 +102,8 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     public static final int FOCUS_LOSS_TIMEOUT_MS = 10_000;
     final DeviceConfigStateHelper mDeviceConfig =
             new DeviceConfigStateHelper(NAMESPACE_WINDOW_MANAGER);
+    final List<TaskStateDump> mTaskStateDumps = new ArrayList<>();
+    final Instant mTestStartTime = Instant.now();
 
     private final Map<ComponentName, FutureConnection<ITestService>> mServiceConnections =
             new HashMap<>();
@@ -434,22 +440,18 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
 
     /** Asserts the activity is the top focused activity on its own display before timeout. */
     protected void assertActivityFocusedOnMainDisplay(ComponentName componentName) {
-        waitForActivityResumed(ACTIVITY_FOCUS_TIMEOUT, componentName);
-        assertWithMessage("activity should be focused within " + ACTIVITY_FOCUS_TIMEOUT)
+        String activityName = getActivityName(componentName);
+        waitForCondition(ACTIVITY_FOCUS_TIMEOUT,
+                mWmState -> activityName.equals(mWmState.getTopActivityName(getMainDisplayId())));
+        assertWithMessage(
+                "activity " + activityName
+                        + " should be on top of main display within "
+                        + ACTIVITY_FOCUS_TIMEOUT)
                 .that(mWmState.getTopActivityName(getMainDisplayId()))
-                .isEqualTo(getActivityName(componentName));
-    }
+                .isEqualTo(activityName);    }
 
     protected void assertActivityNotFocused(ComponentName componentName) {
         assertActivityNotFocused(ACTIVITY_NOT_FOCUS_TIMEOUT, componentName);
-    }
-
-    protected void assertActivityFocused(ComponentName componentName, String message) {
-        assertActivityFocused(ACTIVITY_FOCUS_TIMEOUT, componentName, message);
-    }
-
-    protected void assertActivityNotFocused(ComponentName componentName, String message) {
-        assertActivityNotFocused(ACTIVITY_NOT_FOCUS_TIMEOUT, componentName, message);
     }
 
     /** Asserts the activity is focused before timeout. */
@@ -471,18 +473,47 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     /** Asserts the activity is focused before timeout. */
     protected void assertActivityFocused(Duration timeout, ComponentName componentName,
             String message) {
-        waitForActivityResumed(timeout, componentName);
-        assertWithMessage(message).that(mWmState.getFocusedActivity()).isEqualTo(
-                getActivityName(componentName));
+        String activityName = getActivityName(componentName);
+        waitForCondition(timeout, wmState -> activityName.equals(mWmState.getFocusedActivity()));
+        assertWithMessage(
+                "activity " + activityName + " should be focused within "
+                        + timeout)
+                .that(mWmState.getFocusedActivity())
+                .isEqualTo(activityName);
     }
 
     /** Asserts the activity is not focused until timeout. */
     protected void assertActivityNotFocused(Duration timeout, ComponentName componentName,
             String message) {
-        waitForActivityResumed(timeout, componentName);
-        assertWithMessage(message).that(mWmState.getFocusedActivity())
-                .isNotEqualTo(getActivityName(componentName));
+        String activityName = getActivityName(componentName);
+        waitForCondition(timeout, mWmState ->
+                // mWmState.hasActivityState(componentName, WindowManagerState.STATE_RESUMED)
+                mWmState.getFocusedActivity().equals(activityName)
+        );
+        recordTaskStateDump("Assertion");
+        assertWithMessage(
+                "activity " + activityName
+                        + " should NOT be focused within " + timeout + " but was after "
+                        + (Duration.between(mTestStartTime, Instant.now()))
+                        + allTaskStateDumps()
+        )
+                .that(mWmState.getFocusedActivity())
+                .isNotEqualTo(activityName);
     }
+
+    protected void assertActivityNotFocused(ComponentName... componentNames) {
+        List<String> activityNames = Stream.of(componentNames)
+                .map(ComponentNameUtils::getActivityName)
+                .toList();
+        waitForCondition(ACTIVITY_FOCUS_TIMEOUT, mWmState ->
+                activityNames.contains(mWmState.getFocusedActivity()));
+        assertWithMessage(
+                "activities " + activityNames + " should NOT be focused within "
+                        + ACTIVITY_FOCUS_TIMEOUT)
+                .that(mWmState.getFocusedActivity())
+                .isNotIn(activityNames);
+    }
+
 
     protected TestServiceClient getTestService(Components c) throws Exception {
         return getTestService(new ComponentName(c.APP_PACKAGE_NAME, TEST_SERVICE));
@@ -501,6 +532,113 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
             assertTrue("Failed to setup " + componentName.toString(), success);
         }
         return new TestServiceClient(futureConnection.get(TEST_SERVICE_SETUP_TIMEOUT_MS));
+    }
+
+    private void waitForCondition(Duration timeout, Predicate<WindowManagerStateHelper> predicate) {
+        long endTime = System.currentTimeMillis() + timeout.toMillis();
+        while (endTime > System.currentTimeMillis()) {
+            recordTaskStateDump("waitForCondition"); // computes mWmState!
+            if (predicate.test(mWmState)) {
+                break;
+            }
+            SystemClock.sleep(200);
+        }
+    }
+
+    void dumpWc(List<String> result, String prefix, WindowManagerState.WindowContainer wc) {
+        StringBuilder title = new StringBuilder();
+        title.append(prefix + "-name: " + wc.mName + " (" + wc.getClass() + ")");
+        if (wc.isVisible()) {
+            title.append(" VISIBLE");
+        }
+        if (wc.isFullscreen()) {
+            title.append(" FULLSCREEN");
+        }
+        if (wc instanceof Task t) {
+            title.append(" taskId: " + t.getTaskId());
+            title.append(" display: " + t.mDisplayId);
+        }
+        if (wc instanceof WindowManagerState.TaskFragment t) {
+            title.append(" display: " + t.mDisplayId);
+        }
+        if (wc instanceof WindowManagerState.Activity a) {
+            title.append(" type: " + a.getActivityType());
+            title.append(" " + a.getState());
+        }
+        if (wc.getBounds() != null) {
+            title.append(" bounds:" + wc.getBounds().toShortString());
+        }
+        result.add(title.toString());
+        dumpWc(result, prefix, "children", wc.getChildren());
+    }
+
+    void dumpWc(List<String> result, String prefix, String name,
+            List<? extends WindowManagerState.WindowContainer> wcList) {
+        if (!wcList.isEmpty()) {
+            result.add(prefix + " -" + name);
+            for (WindowManagerState.WindowContainer w : wcList) {
+                dumpWc(result, prefix + "  ", w);
+            }
+        }
+    }
+
+    String taskToString(Task t) {
+        List<String> result = new ArrayList<>();
+        dumpWc(result, "", t);
+        return String.join("\n", result);
+    }
+
+    record TaskStateDump(String name, Instant t, String meta, List<String> taskStates) {}
+
+    /**
+     * Records the current task state for debugging purposes.
+     *
+     * The progression of state can be retrieved with {@link #allTaskStateDumps()}.
+     *
+     * @param name A name associated with the point in time the state was recorded.
+     */
+    public void recordTaskStateDump(String name) {
+        mWmState.computeState();
+        mTaskStateDumps.add(new TaskStateDump(name, Instant.now(),
+                "focused: " + mWmState.getFocusedActivity()
+                        + " displays: " + mWmState.getDisplays(),
+                mWmState.getRootTasks().stream().map(this::taskToString).toList()));
+    }
+
+    /**
+     * Return a dump of the state progression (as recorded by {@link #recordTaskStateDump(String)}.
+     *
+     * The text representation is intended to be read by humans and the format may change.
+     */
+    public String allTaskStateDumps() {
+        Instant now = Instant.now();
+        StringBuilder sb = new StringBuilder();
+        TaskStateDump lastDump = new TaskStateDump("none", Instant.EPOCH, "none", List.of());
+        for (TaskStateDump dump : mTaskStateDumps) {
+            if ("waitForCondition".equals(dump.name) && "waitForCondition".equals(lastDump.name)
+                    && dump.meta.equals(lastDump.meta)
+                    && dump.taskStates.equals(lastDump.taskStates)) {
+                // this is just waiting for a change that didn't happen yet
+                continue;
+            }
+            sb.append("\n----- " + dump.name + " t=" + Duration.between(mTestStartTime, dump.t)
+                    + " (" + dump.t + ") -----\n");
+            if (!dump.meta.equals(lastDump.meta)) {
+                sb.append(dump.meta + "\n");
+            }
+            if (!dump.taskStates.equals(lastDump.taskStates)) {
+                for (String s : dump.taskStates) {
+                    if (lastDump.taskStates.contains(s)) {
+                        sb.append(s.substring(0, s.indexOf("\n")) + " <unchanged>");
+                    } else {
+                        sb.append(s);
+                    }
+                    sb.append("\n");
+                }
+            }
+            lastDump = dump;
+        }
+        return sb.toString();
     }
 
 }

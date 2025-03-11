@@ -1366,6 +1366,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         pressHomeButton();
         mWmState.waitForHomeActivityVisible();
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        recordTaskStateDump("pressHome - home visible on default display");
     }
 
     private void assumeSetupComplete() {
@@ -1471,6 +1472,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
             intent.putExtra(extraTrueName, true);
         }
         mContext.startActivity(intent);
+        recordTaskStateDump("startActivity " + intent);
     }
 
     private static void grantSystemAlertWindow(Components app) throws Exception {
