@@ -32,6 +32,7 @@ import static org.testng.Assert.assertThrows;
 
 import static java.util.stream.Collectors.toSet;
 
+import android.app.Activity;
 import android.media.AudioAttributes;
 import android.media.AudioAttributes.AttributeUsage;
 import android.media.AudioAttributes.CapturePolicy;
@@ -41,14 +42,12 @@ import android.media.AudioManager;
 import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
 import android.media.MediaPlayer;
-import android.media.cts.MediaProjectionActivity;
+import android.media.cts.MediaProjectionRule;
 import android.media.projection.MediaProjection;
 import android.os.Handler;
 import android.os.Looper;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.Presubmit;
-
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.NonMainlineTest;
 
@@ -87,11 +86,9 @@ public class AudioPlaybackCaptureTest {
     private AudioManager mAudioManager;
     private boolean mPlaybackBeforeCapture;
     private int mUid; //< UID of this test
-    private MediaProjectionActivity mActivity;
+    private Activity mActivity;
     private MediaProjection mMediaProjection;
-    @Rule
-    public ActivityTestRule<MediaProjectionActivity> mActivityRule =
-                new ActivityTestRule<>(MediaProjectionActivity.class);
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     private static class APCTestConfig {
         public @AttributeUsage int[] matchingUsages;
@@ -151,10 +148,10 @@ public class AudioPlaybackCaptureTest {
     public void setup() throws Exception {
         mPlaybackBeforeCapture = false;
         mAPCTestConfig = new APCTestConfig();
-        mActivity = mActivityRule.getActivity();
+        mMediaProjection = mMediaProjectionRule.startMediaProjection();
+        mActivity = mMediaProjectionRule.getActivity();
         mAudioManager = mActivity.getSystemService(AudioManager.class);
         mUid = mActivity.getApplicationInfo().uid;
-        mMediaProjection = mActivity.waitForMediaProjection();
         mSetupRequiresVolumeChange =
                 mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0;
         if (mSetupRequiresVolumeChange) {
