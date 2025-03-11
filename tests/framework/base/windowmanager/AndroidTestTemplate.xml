@@ -107,6 +107,9 @@
         <option name="run-command" value="settings put secure user_setup_complete 1" />
         <!-- disable DeprecatedAbi warning -->
         <option name="run-command" value="setprop debug.wm.disable_deprecated_abi_dialog 1" />
+        <!-- disable lowlight dream -->
+        <option name="run-command" value="cmd statusbar low-light disable" />
+        <option name="teardown-command" value="cmd statusbar low-light clear" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
