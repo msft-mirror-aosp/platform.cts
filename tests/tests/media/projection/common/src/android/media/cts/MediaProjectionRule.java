@@ -214,7 +214,8 @@ public class MediaProjectionRule implements TestRule {
                     }
 
                     private void checkDisplayState(int displayId) {
-                        if (dm.getDisplay(displayId).getState() == Display.STATE_ON) {
+                        Display display = dm.getDisplay(displayId);
+                        if (display != null && display.getState() == Display.STATE_ON) {
                             latch.countDown();
                         }
                     }
