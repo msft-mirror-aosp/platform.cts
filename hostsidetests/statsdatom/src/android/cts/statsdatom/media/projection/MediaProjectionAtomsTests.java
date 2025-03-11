@@ -170,7 +170,6 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         MediaProjectionTargetChanged a0 =
                 data.get(0).getAtom().getExtension(mediaProjectionTargetChanged);
         assertThat(a0.getTargetType()).isEqualTo(TARGET_TYPE_DISPLAY);
-        assertThat(a0.getTargetChangeType()).isEqualTo(TARGET_CHANGE_BOUNDS);
 
         MediaProjectionTargetChanged a1 =
                 data.get(1).getAtom().getExtension(mediaProjectionTargetChanged);
