@@ -16,6 +16,7 @@
 import logging
 import math
 import os
+import time
 
 from matplotlib import pyplot as plt
 from mobly import test_runner
@@ -32,9 +33,10 @@ _RAD_TO_DEG = 180/math.pi
 _GYRO_DRIFT_ATOL = 0.01*_RAD_TO_DEG  # PASS/FAIL for gyro accumulated drift
 _GYRO_MEAN_THRESH = 0.01*_RAD_TO_DEG  # PASS/FAIL for gyro mean drift
 _GYRO_VAR_ATOL = 1E-7  # rad^2/sec^2/Hz from CDD C-1-7
-_IMU_EVENTS_WAIT_TIME = 30  # seconds
+_IMU_EVENTS_WAIT_TIME = 120  # seconds (Increased from 30s in Android 15)
 _NAME = os.path.basename(__file__).split('.')[0]
 _NSEC_TO_SEC = 1E-9
+_PREVIEW_RECORDING_TIME = 60  # seconds (>60 often crashes)
 _REAR_MAIN_CAMERA_ID = '0'
 _RV_DRIFT_THRESH = 0.01*_RAD_TO_DEG  # PASS/FAIL for rotation vector drift
 _SEC_TO_MIN = 1/60
@@ -242,9 +244,12 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
           camera_properties_utils.preview_stabilization_supported(props)
       )
       cam.do_preview_recording(
-          video_size=preview_size, duration=_IMU_EVENTS_WAIT_TIME,
+          video_size=preview_size, duration=_PREVIEW_RECORDING_TIME,
           stabilize=preview_stabilization_supported
       )
+
+      if _IMU_EVENTS_WAIT_TIME > _PREVIEW_RECORDING_TIME:
+        time.sleep(_IMU_EVENTS_WAIT_TIME - _PREVIEW_RECORDING_TIME)
 
       # dump IMU events
       sensor_events = cam.get_sensor_events()

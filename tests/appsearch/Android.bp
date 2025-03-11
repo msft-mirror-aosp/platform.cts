@@ -23,11 +23,11 @@ android_test {
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
-        "appsearch_flags_java_exported_lib",
+        "appsearch_flags_java_lib",
         "compatibility-device-util-axt",
         "CtsAppSearchTestUtils",
         "flag-junit",
-        "Harrier",
+        "bedstead-enterprise",
         "testng",
     ],
     srcs: [

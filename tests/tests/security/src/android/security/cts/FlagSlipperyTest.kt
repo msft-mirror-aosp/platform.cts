@@ -19,56 +19,45 @@ package android.security.cts
 import android.app.Activity
 import android.app.ActivityOptions
 import android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN
+import android.cts.input.EventVerifier
 import android.graphics.Rect
-import android.os.SystemClock
 import android.platform.test.annotations.AsbSecurityTest
 import android.view.Display
 import android.view.Gravity
-import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.SurfaceControlViewHost
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
-import android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 import android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 import android.view.WindowManager.LayoutParams.FLAG_SLIPPERY
+import android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import com.android.compatibility.common.util.PollingCheck
+import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.Queue
-
-private fun getViewCenterOnScreen(v: View): Pair<Float, Float> {
+private fun getViewCenterOnScreen(v: View): Pair<Int, Int> {
     val location = IntArray(2)
     v.getLocationOnScreen(location)
-    val x = location[0] + v.width / 2f
-    val y = location[1] + v.height / 2f
+    val x = location[0] + v.width / 2
+    val y = location[1] + v.height / 2
     return Pair(x, y)
-}
-
-private fun assertAction(action: Int, event: MotionEvent?) {
-    if (event == null) {
-        fail("Expected ${MotionEvent.actionToString(action)}, but got a null event instead")
-        return
-    }
-    assertEquals("Expected ${MotionEvent.actionToString(action)}, but received " +
-            "${MotionEvent.actionToString(event.action)}", action, event.action)
 }
 
 private class SurfaceCreatedCallback(created: CountDownLatch) : SurfaceHolder.Callback {
@@ -90,8 +79,6 @@ private fun <T : Activity> getDisplay(scenario: ActivityScenario<T>): Display {
     return display!!
 }
 
-@MediumTest
-@RunWith(AndroidJUnit4::class)
 /**
  * Non-system windows cannot use FLAG_SLIPPERY. In this test, we test that if a window specifies
  * this flag, then the flag is dropped.
@@ -125,35 +112,47 @@ private fun <T : Activity> getDisplay(scenario: ActivityScenario<T>): Display {
  * test code. The third approach requires adding an embedded window, and the code for that test was
  * forked to avoid excessive branching.
  */
-class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
+@MediumTest
+@RunWith(AndroidJUnit4::class)
+class FlagSlipperyTest : StsExtraBusinessLogicTestCase() {
     private lateinit var scenario: ActivityScenario<SlipperyEnterBottomActivity>
     private lateinit var windowManager: WindowManager
+    private lateinit var touchScreen: UinputTouchScreen
 
-    private val nonSlipperyLayoutParams = WindowManager.LayoutParams(TYPE_APPLICATION_OVERLAY,
-            FLAG_NOT_TOUCH_MODAL)
-    private val slipperyLayoutParams = WindowManager.LayoutParams(TYPE_APPLICATION_OVERLAY,
-            FLAG_NOT_TOUCH_MODAL or FLAG_SLIPPERY)
+    private val nonSlipperyLayoutParams = WindowManager.LayoutParams(
+        TYPE_APPLICATION_OVERLAY,
+        FLAG_NOT_TOUCH_MODAL
+    )
+    private val slipperyLayoutParams = WindowManager.LayoutParams(
+        TYPE_APPLICATION_OVERLAY,
+        FLAG_NOT_TOUCH_MODAL or FLAG_SLIPPERY
+    )
     private val layoutCompleted = AtomicBoolean(false)
-    private val eventsForTopWindow: Queue<MotionEvent> = LinkedBlockingQueue()
+    private val eventsForTopWindow = LinkedBlockingQueue<MotionEvent>()
     private var viewToRemove: View? = null
 
+    private val topWindowEventVerifier =
+        EventVerifier { eventsForTopWindow.poll(5, TimeUnit.SECONDS) }
+
     @get:Rule
-    val rule = ActivityScenarioRule<SlipperyEnterBottomActivity>(
+    val rule = ActivityScenarioRule(
             SlipperyEnterBottomActivity::class.java,
             ActivityOptions.makeBasic().apply {
                 setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN)
-            }.toBundle())
-
-    constructor() : super()
+            }.toBundle()
+    )
 
     @Before
     fun setup() {
-        scenario = rule.getScenario()
+        scenario = rule.scenario
         val display = getDisplay(scenario)
         val displayContext = getInstrumentation().getTargetContext().createDisplayContext(display)
+        windowManager = displayContext.getSystemService(WindowManager::class.java)!!
         setDimensionsToQuarterScreen()
 
         waitForWindowFocusOnBottomActivity()
+
+        touchScreen = UinputTouchScreen(getInstrumentation(), display)
     }
 
     @After
@@ -218,7 +217,7 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
     @Test
     @AsbSecurityTest(cveBugId = [157929241])
     fun testWindowIsNotSlipperyWhenAdded() {
-        testWindowIsNotSlippery(true /* slipperyWhenAdded */)
+        testWindowIsNotSlippery(slipperyWhenAdded = true)
     }
 
     /**
@@ -227,7 +226,7 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
     @Test
     @AsbSecurityTest(cveBugId = [157929241])
     fun testWindowIsNotSlipperyAfterRelayout() {
-        testWindowIsNotSlippery(false /* slipperyWhenAdded */)
+        testWindowIsNotSlippery(slipperyWhenAdded = false)
     }
 
     // ========================== Embedded window tests ============================================
@@ -298,8 +297,7 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
 
     // ========================== Shared utility functions =========================================
 
-    private inner class OnTouchListener(relayoutView: View) : View.OnTouchListener {
-        val relayoutView = relayoutView
+    private inner class OnTouchListener(val relayoutView: View) : View.OnTouchListener {
         override fun onTouch(v: View, e: MotionEvent): Boolean {
             if (e.action == MotionEvent.ACTION_DOWN) {
                 // Move the window out of the way by changing the gravity to bottom right
@@ -311,7 +309,6 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
                 // embedded case, the provided embedded view is not attached to the window manager
                 // (and will therefore crash). Just use the view provided in the constructor.
                 windowManager.updateViewLayout(relayoutView, wmlp)
-                return true
             }
             eventsForTopWindow.add(MotionEvent.obtain(e))
             return true
@@ -323,16 +320,17 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
         // bottom right, which will make the next touch slip into the current window if the top
         // window is actually slippery
         val (x, y) = getViewCenterOnScreen(topView)
-        val downTime = SystemClock.uptimeMillis()
-        sendEvent(downTime, MotionEvent.ACTION_DOWN, x, y)
+        val pointer = touchScreen.touchDown(x, y)
+        topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
         waitForLayoutToComplete()
-        sendEvent(downTime, MotionEvent.ACTION_MOVE, x + 1, y + 1)
+        pointer.moveTo(x + 1, y + 1)
+        pointer.lift()
+
+        topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
+        topWindowEventVerifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
         scenario.onActivity {
             // Bottom activity should not get any events
             assertNull(it.getEvent())
-            // Top window should continue getting events.
-            assertAction(MotionEvent.ACTION_MOVE, eventsForTopWindow.poll())
-            assertNull(eventsForTopWindow.poll())
         }
     }
 
@@ -341,7 +339,7 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
      */
     private fun waitForWindowFocusOnBottomActivity() {
         PollingCheck.waitFor {
-            var activityHasWindowFocus = AtomicBoolean(false)
+            val activityHasWindowFocus = AtomicBoolean(false)
             scenario.onActivity { activity -> run {
                     activityHasWindowFocus.set(activity.hasWindowFocus())
                 }
@@ -354,7 +352,10 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
         PollingCheck.waitFor {
             layoutCompleted.get()
         }
-        getInstrumentation().uiAutomation.syncInputTransactions(true /*waitAnimations*/)
+        getInstrumentation().uiAutomation.syncInputTransactions(
+            /* waitForAnimations = */
+            true
+        )
     }
 
     private fun setDimensionsToQuarterScreen() {
@@ -365,16 +366,6 @@ class FlagSlipperyTest : StsExtraBusinessLogicTestCase {
         slipperyLayoutParams.height = height
         nonSlipperyLayoutParams.width = width
         nonSlipperyLayoutParams.height = height
-    }
-
-    private fun sendEvent(downTime: Long, action: Int, x: Float, y: Float) {
-        val eventTime = when (action) {
-            MotionEvent.ACTION_DOWN -> downTime
-            else -> SystemClock.uptimeMillis()
-        }
-        val event = MotionEvent.obtain(downTime, eventTime, action, x, y, 0 /*metaState*/)
-        event.source = InputDevice.SOURCE_TOUCHSCREEN
-        getInstrumentation().uiAutomation.injectInputEvent(event, true /*sync*/)
     }
 
     companion object {

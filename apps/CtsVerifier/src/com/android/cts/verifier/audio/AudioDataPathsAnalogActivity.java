@@ -113,4 +113,9 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
     protected boolean hasPeripheralSupport() {
         return mHeadsetSupport;
     }
+
+    @Override
+    String getRouteDescription() {
+        return "analog";
+    }
 }

@@ -28,7 +28,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
+import android.companion.virtualdevice.flags.Flags;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
@@ -63,12 +63,10 @@ public class RecentTasksTest {
         final int taskId = activity.getTaskId();
         assertThat(isTaskIncludedInRecents(taskId)).isTrue();
 
-        if (Flags.dynamicPolicy()) {
-            virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM);
-            assertThat(isTaskIncludedInRecents(taskId)).isFalse();
-            virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT);
-            assertThat(isTaskIncludedInRecents(taskId)).isTrue();
-        }
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM);
+        assertThat(isTaskIncludedInRecents(taskId)).isFalse();
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT);
+        assertThat(isTaskIncludedInRecents(taskId)).isTrue();
 
         // Make sure the policy is respected even after the device / display are gone.
         virtualDevice.close();
@@ -85,12 +83,10 @@ public class RecentTasksTest {
         final int taskId = activity.getTaskId();
         assertThat(isTaskIncludedInRecents(taskId)).isFalse();
 
-        if (Flags.dynamicPolicy()) {
-            virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT);
-            assertThat(isTaskIncludedInRecents(taskId)).isTrue();
-            virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM);
-            assertThat(isTaskIncludedInRecents(taskId)).isFalse();
-        }
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT);
+        assertThat(isTaskIncludedInRecents(taskId)).isTrue();
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM);
+        assertThat(isTaskIncludedInRecents(taskId)).isFalse();
 
         // Make sure the policy is respected even after the device / display are gone.
         virtualDevice.close();
@@ -98,7 +94,29 @@ public class RecentTasksTest {
         assertThat(isTaskIncludedInRecents(taskId)).isFalse();
     }
 
-    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void activityLaunchedOnUntrustedDisplayWithCustomRecentPolicy_includedInRecents() {
+        VirtualDevice virtualDevice = createVirtualDeviceWithRecentsPolicy(DEVICE_POLICY_CUSTOM);
+        VirtualDisplay virtualDisplay = createUntrustedVirtualDisplay(virtualDevice);
+
+        Activity activity = mRule.runWithTemporaryPermission(() ->
+                    mRule.startActivityOnDisplaySync(virtualDisplay, EmptyActivity.class),
+                android.Manifest.permission.ACTIVITY_EMBEDDING);
+        final int taskId = activity.getTaskId();
+        assertThat(isTaskIncludedInRecents(taskId)).isTrue();
+
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT);
+        assertThat(isTaskIncludedInRecents(taskId)).isTrue();
+        virtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM);
+        assertThat(isTaskIncludedInRecents(taskId)).isTrue();
+
+        // Make sure the policy is respected even after the device / display are gone.
+        virtualDevice.close();
+        mRule.assertDisplayDoesNotExist(virtualDisplay.getDisplay().getDisplayId());
+        assertThat(isTaskIncludedInRecents(taskId)).isTrue();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ACTIVITY_CONTROL_API)
     @Test
     public void testOverrideRecentsPolicyPerDisplay() {
         VirtualDevice virtualDevice = createVirtualDeviceWithRecentsPolicy(DEVICE_POLICY_DEFAULT);
@@ -136,6 +154,12 @@ public class RecentTasksTest {
         return mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+    }
+
+    private VirtualDisplay createUntrustedVirtualDisplay(VirtualDevice virtualDevice) {
+        return mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                         | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
     }
 

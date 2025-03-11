@@ -16,7 +16,6 @@
 
 package android.input.cts
 
-import android.Manifest.permission.CREATE_VIRTUAL_DEVICE
 import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -29,6 +28,7 @@ import android.view.PointerIcon
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.CaptureEventActivity
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.TestPointerDevice
 import com.android.cts.input.VirtualDisplayActivityScenario
@@ -99,7 +99,6 @@ class PointerIconTest {
 
     @Before
     fun setUp() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
         activity = virtualDisplayRule.activity
         activity.runOnUiThread {
             activity.actionBar?.hide()
@@ -107,9 +106,8 @@ class PointerIconTest {
         }
 
         device.setUp(
-            context,
+            virtualDeviceRule.defaultVirtualDevice,
             virtualDisplayRule.virtualDisplay.display,
-            virtualDeviceRule.createManagedAssociation()!!
         )
 
         verifier = EventVerifier(activity::getInputEvent)
@@ -123,12 +121,6 @@ class PointerIconTest {
     @After
     fun tearDown() {
         device.tearDown()
-
-        // Ensure VirtualDeviceRule has the required permissions to close the device, since
-        // the adopted permission may be have been changed or reset by the test.
-        InstrumentationRegistry.getInstrumentation().uiAutomation.adoptShellPermissionIdentity(
-            CREATE_VIRTUAL_DEVICE
-        )
     }
 
     @Test

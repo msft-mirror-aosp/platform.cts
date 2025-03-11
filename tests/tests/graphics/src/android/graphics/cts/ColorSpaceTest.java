@@ -47,7 +47,6 @@ import java.util.function.DoubleUnaryOperator;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
-@android.platform.test.annotations.DisabledOnRavenwood(reason = "Test doesn't pass on AOSP yet")
 public class ColorSpaceTest {
 
     @Rule
@@ -109,6 +108,10 @@ public class ColorSpaceTest {
     static {
         if (Flags.okLabColorspace()) {
             ALLOWED_NAMED_COLORSPACES.add(ColorSpace.Named.OK_LAB);
+        }
+
+        if (Flags.displayBt2020Colorspace()) {
+            ALLOWED_NAMED_COLORSPACES.add(ColorSpace.Named.DISPLAY_BT2020);
         }
     }
 
@@ -383,7 +386,7 @@ public class ColorSpaceTest {
         for (ColorSpace.Named e : ColorSpace.Named.values()) {
             ColorSpace colorSpace = ColorSpace.get(e);
             // ColorSpace.get is guaranteed to return non-null. So if this is queried with
-            // a ColorSpace that is flagged, this falls back ot return SRGB as a default.
+            // a ColorSpace that is flagged, this falls back to return SRGB as a default.
             // The values method of an enum will always return the full set of enum values
             // regardless if they are flagged out or not
             boolean isSrgbFallback = !ALLOWED_NAMED_COLORSPACES.contains(e);

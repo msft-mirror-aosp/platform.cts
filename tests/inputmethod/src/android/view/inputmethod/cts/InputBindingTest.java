@@ -29,16 +29,13 @@ import android.platform.test.ravenwood.RavenwoodRule;
 import android.view.inputmethod.InputBinding;
 import android.view.inputmethod.InputConnection;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 // This is a bivalent test, it is expected to run on both device and host (Ravenwood) sides.
 @SmallTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class InputBindingTest {
 

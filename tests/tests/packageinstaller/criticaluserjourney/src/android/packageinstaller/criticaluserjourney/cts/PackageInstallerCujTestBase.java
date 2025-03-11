@@ -318,15 +318,15 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Get the new BySelector with the package name is {@link #sPackageInstallerPackageName}.
+     * Get the new BySelector with the package name is {@link #getPackageInstallerPackageName()}.
      */
     public static BySelector getPackageInstallerBySelector(BySelector bySelector) {
-        return bySelector.pkg(sPackageInstallerPackageName);
+        return bySelector.pkg(getPackageInstallerPackageName());
     }
 
     /**
      * Find the UiObject2 with the {@code name} and the object's package name is
-     * {@link #sPackageInstallerPackageName}.
+     * {@link #getPackageInstallerPackageName()}.
      */
     public static UiObject2 findPackageInstallerObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
@@ -335,8 +335,8 @@ public class PackageInstallerCujTestBase {
 
     /**
      * Find the UiObject2 with the {@code name} and the object's package name is
-     * {@link #sPackageInstallerPackageName}. If {@code checkNull} is true, also check the object
-     * is not null.
+     * {@link #getPackageInstallerPackageName()}. If {@code checkNull} is true, also check the
+     * object is not null.
      */
     public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull)
             throws Exception {

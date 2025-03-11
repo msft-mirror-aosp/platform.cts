@@ -30,6 +30,8 @@ import android.os.Looper;
 import android.os.SystemProperties;
 import android.telephony.Annotation;
 import android.telephony.BarringInfo;
+import android.telephony.CellularIdentifierDisclosure;
+import android.telephony.SecurityAlgorithmUpdate;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.util.TelephonyUtils;
@@ -734,6 +736,32 @@ public class MockModemManager {
         Log.d(TAG, "unsolEmergencyNetworkScanResult[" + slotId + "]");
         return mMockModemService.getIRadioNetwork((byte) slotId)
                 .unsolEmergencyNetworkScanResult(regResult);
+    }
+
+    /**
+     * Notifies of the SecurityAlgorithmUpdate change.
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param update the security algorithm update information.
+     */
+    public boolean unsolSecurityAlgorithmsUpdated(int slotId,
+            SecurityAlgorithmUpdate update) {
+        Log.d(TAG, "unsolSecurityAlgorithmsUpdated[" + slotId + "]");
+        return mMockModemService.getIRadioNetwork((byte) slotId)
+                .unsolSecurityAlgorithmsUpdated(update);
+    }
+
+    /**
+     * Notifies of the CellularIdentifierDisclosure change.
+     *
+     * @param slotId the Id of logical sim slot.
+     * @param disclosure the cellular identifier disclosure information.
+     */
+    public boolean unsolCellularIdentifierDisclosed(int slotId,
+            CellularIdentifierDisclosure disclosure) {
+        Log.d(TAG, "unsolCellularIdentifierDisclosed[" + slotId + "]");
+        return mMockModemService.getIRadioNetwork((byte) slotId)
+                .unsolCellularIdentifierDisclosed(disclosure);
     }
 
     /**

@@ -113,23 +113,30 @@ public class PropertyTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING)
     public void getRotationOverrideInternal_landscapeToPortraitEnabled_returnsOverrideToPortrait() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
-            // `App1` has the override enabled.
-            Log.i(TAG, "System property enabled, testing getRotationOverride");
-            assertEquals("getRotationOverride should return"
-                            + " ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT",
-                    CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
-                            PROPERTY_APP1_PACKAGE_NAME),
-                    CameraManager.ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT);
+            try {
+                // `App1` has the override enabled.
+                Log.i(TAG, "System property enabled, testing getRotationOverride");
+                assertEquals("getRotationOverride should return"
+                                + " ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT",
+                        CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
+                                PROPERTY_APP1_PACKAGE_NAME),
+                        CameraManager.ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT);
+            } catch (NoSuchMethodError | NoSuchFieldError e) {
+                Log.w(TAG, "API not found, testing shouldOverrideToPortrait. " + e);
+                assertTrue("shouldOverrideToPortrait should return true",
+                        CameraManager.shouldOverrideToPortrait(mPackageManager,
+                                PROPERTY_APP1_PACKAGE_NAME));
+            }
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property disabled.");
         }
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING)
     public void shouldOverrideToPortrait_landscapeToPortraitEnabled_returnsTrue() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             // `App1` has the override enabled.
@@ -143,21 +150,29 @@ public class PropertyTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING)
     public void getRotationOverrideInternal_landscapeToPortraitDisabled_returnsOverrideNone() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
-            // `App2` has the override disabled.
-            Log.i(TAG, "System property enabled, testing getRotationOverride");
-            assertEquals("getRotationOverride should return ROTATION_OVERRIDE_NONE",
-                    CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
-                            PROPERTY_APP2_PACKAGE_NAME), CameraManager.ROTATION_OVERRIDE_NONE);
+            try {
+                // `App2` has the override disabled.
+                Log.i(TAG, "System property enabled, testing getRotationOverride");
+                assertEquals("getRotationOverride should return ROTATION_OVERRIDE_NONE",
+                        CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
+                                PROPERTY_APP2_PACKAGE_NAME), CameraManager.ROTATION_OVERRIDE_NONE);
+            } catch (NoSuchMethodError | NoSuchFieldError e) {
+                // `App2` has the override disabled.
+                Log.w(TAG, "API not found, testing shouldOverrideToPortrait. " + e);
+                assertFalse("shouldOverrideToPortrait should return false",
+                        CameraManager.shouldOverrideToPortrait(mPackageManager,
+                                PROPERTY_APP2_PACKAGE_NAME));
+            }
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property enabled.");
         }
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    @RequiresFlagsDisabled(Flags.FLAG_ENABLE_CAMERA_COMPAT_FOR_DESKTOP_WINDOWING)
     public void shouldOverrideToPortrait_landscapeToPortraitDisabled_returnsFalse() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
             // `App2` has the override disabled.

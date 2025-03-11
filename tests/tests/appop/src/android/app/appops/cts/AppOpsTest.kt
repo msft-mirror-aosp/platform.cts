@@ -39,6 +39,7 @@ import android.os.Process
 import android.os.UserHandle
 import android.permission.flags.Flags
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.util.Log
@@ -213,6 +214,45 @@ class AppOpsTest {
             fail("SecurityException expected")
         } catch (expected: SecurityException) {
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CHECK_OP_OVERLOAD_API_ENABLED)
+    fun testCheckOpWithAttributionTag() {
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ALLOWED)
+        assertEquals(MODE_ALLOWED, mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, null))
+        assertEquals(MODE_ALLOWED, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, null))
+        assertEquals(MODE_ALLOWED, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, null))
+
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_IGNORED)
+        assertEquals(MODE_IGNORED, mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_IGNORED, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_IGNORED, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_ERRORED)
+        try {
+            mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), mOpPackageName, null)
+            fail("SecurityException expected")
+        } catch (expected: SecurityException) {
+        }
+        assertEquals(MODE_ERRORED, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_ERRORED, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+
+        setOpMode(mOpPackageName, OPSTR_RESERVED_FOR_TESTING, MODE_DEFAULT)
+        assertEquals(MODE_DEFAULT, mAppOps.checkOp(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_DEFAULT, mAppOps.checkOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
+        assertEquals(MODE_DEFAULT, mAppOps.checkOpRawNoThrow(OPSTR_RESERVED_FOR_TESTING,
+            Process.myUid(), mOpPackageName, "random_tag"))
     }
 
     @Test
@@ -1013,8 +1053,27 @@ class AppOpsTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_APPOP_MODE_CACHING_ENABLED)
     @Test
-    fun checkOpForBadUid() {
+    fun checkOpForBadUidReturnsIgnored() {
+        val defaultMode = AppOpsManager.opToDefaultMode(OPSTR_RESERVED_FOR_TESTING)
+
+        runWithShellPermissionIdentity {
+            mAppOps.setUidMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), MODE_ERRORED)
+            try {
+                val mode = mAppOps.unsafeCheckOpNoThrow(OPSTR_RESERVED_FOR_TESTING,
+                    Process.myUid() + 1, mOpPackageName)
+                assertEquals(mode, MODE_IGNORED)
+            } finally {
+                // Clear the uid state
+                mAppOps.setUidMode(OPSTR_RESERVED_FOR_TESTING, Process.myUid(), defaultMode)
+            }
+        }
+    }
+
+    @RequiresFlagsDisabled(Flags.FLAG_APPOP_MODE_CACHING_ENABLED)
+    @Test
+    fun checkOpForBadUidReturnsDefaultMode() {
         val defaultMode = AppOpsManager.opToDefaultMode(OPSTR_RESERVED_FOR_TESTING)
 
         runWithShellPermissionIdentity {

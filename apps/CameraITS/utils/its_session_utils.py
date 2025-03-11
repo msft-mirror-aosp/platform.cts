@@ -43,6 +43,7 @@ import ui_interaction_utils
 ANDROID13_API_LEVEL = 33
 ANDROID14_API_LEVEL = 34
 ANDROID15_API_LEVEL = 35
+ANDROID16_API_LEVEL = 36
 CHART_DISTANCE_NO_SCALING = 0
 IMAGE_FORMAT_JPEG = 256
 IMAGE_FORMAT_YUV_420_888 = 35
@@ -146,10 +147,16 @@ def validate_tablet(tablet_name, brightness, device_id):
   """
   tablet_name = tablet_name.lower()
   if tablet_name not in TABLET_ALLOWLIST:
-    raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    raise AssertionError(
+        f'Tablet product name: {tablet_name}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+    )
   if tablet_name in TABLET_OS_VERSION:
-    if get_build_sdk_version(device_id) < TABLET_OS_VERSION[tablet_name]:
-      raise AssertionError(TABLET_NOT_ALLOWED_ERROR_MSG)
+    if (device_sdk := get_build_sdk_version(
+        device_id)) < TABLET_OS_VERSION[tablet_name]:
+      raise AssertionError(
+          f' Tablet product name: {tablet_name}. '
+          f'Android version: {device_sdk}. {TABLET_NOT_ALLOWED_ERROR_MSG}'
+      )
   name_to_brightness = {
       TABLET_LEGACY_NAME: TABLET_LEGACY_BRIGHTNESS,
   }
@@ -183,13 +190,13 @@ def check_apk_installed(device_id, package_name):
 
 
 def get_array_size(buffer):
-  """Get buffer size based on different NumPy versions' functions.
+  """Get array size based on different NumPy versions' functions.
 
   Args:
     buffer: A NumPy array.
 
   Returns:
-    The size of the buffer.
+    buffer_size: The size of the buffer.
   """
   np_version = numpy.__version__
   if np_version.startswith(('1.25', '1.26', '2.')):
@@ -856,7 +863,8 @@ class ItsSession(object):
   def do_basic_recording(self, profile_id, quality, duration,
                          video_stabilization_mode=0, hlg10_enabled=False,
                          zoom_ratio=None, ae_target_fps_min=None,
-                         ae_target_fps_max=None, antibanding_mode=None):
+                         ae_target_fps_max=None, antibanding_mode=None,
+                         face_detect_mode=None):
     """Issue a recording request and read back the video recording object.
 
     The recording will be done with the format specified in quality. These
@@ -877,6 +885,7 @@ class ItsSession(object):
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService which
       contains path at which the recording is saved on the device, quality of
@@ -910,7 +919,12 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     if antibanding_mode:
       cmd['aeAntibandingMode'] = antibanding_mode
-    else: cmd['aeAntibandingMode'] = 0
+    else:
+      cmd['aeAntibandingMode'] = 0
+    if face_detect_mode:
+      cmd['faceDetectMode'] = face_detect_mode
+    else:
+      cmd['faceDetectMode'] = 0
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
@@ -957,7 +971,7 @@ class ItsSession(object):
   def do_preview_recording_multiple_surfaces(
       self, output_surfaces, duration, stabilize, ois=False,
       zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
-      antibanding_mode=None):
+      antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -976,6 +990,7 @@ class ItsSession(object):
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -1000,12 +1015,14 @@ class ItsSession(object):
       cmd['aeTargetFpsMax'] = ae_target_fps_max
     if antibanding_mode is not None:
       cmd['aeAntibandingMode'] = antibanding_mode
+    if face_detect_mode is not None:
+      cmd['faceDetectMode'] = face_detect_mode
     return self._execute_preview_recording(cmd)
 
   def do_preview_recording(
       self, video_size, duration, stabilize, ois=False, zoom_ratio=None,
       ae_target_fps_min=None, ae_target_fps_max=None, hlg10_enabled=False,
-      antibanding_mode=None):
+      antibanding_mode=None, face_detect_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -1024,13 +1041,15 @@ class ItsSession(object):
       hlg10_enabled: boolean; True Eanable 10-bit HLG video recording, False
                               record using the regular SDK profile.
       antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
+      face_detect_mode: int; STATISTICS_FACE_DETECT_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
     return self.do_preview_recording_multiple_surfaces(
         output_surfaces, duration, stabilize, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max, antibanding_mode)
+        ae_target_fps_min, ae_target_fps_max, antibanding_mode,
+        face_detect_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,
@@ -1598,8 +1617,36 @@ class ItsSession(object):
     dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click()
     return self.get_and_pull_jca_capture(dut, log_path)
 
+  def do_jca_video_capture(self, dut, log_path, duration):
+    """Take a capture using JCA using the UI.
+
+    Captures JCA video by holding the capture button with requested duration.
+    Reads response from socket containing the capture path, and
+    pulls the image from the DUT.
+
+    This method is included here because an ITS session is needed to retrieve
+    the capture path from the device.
+
+    Args:
+      dut: An Android controller device object.
+      log_path: str; log path to save screenshots.
+      duration: int; requested video duration, in ms.
+    Returns:
+      The host-side path of the capture.
+    """
+    # Make sure JCA is started
+    jca_capture_button_visible = dut.ui(
+        res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).wait.exists(
+            ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+    if not jca_capture_button_visible:
+      raise AssertionError('JCA was not started! Please use'
+                           'open_jca_viewfinder() or do_jca_video_setup()'
+                           'in ui_interaction_utils.py to start JCA.')
+    dut.ui(res=ui_interaction_utils.CAPTURE_BUTTON_RESOURCE_ID).click(duration)
+    return self.get_and_pull_jca_capture(dut, log_path)
+
   def get_and_pull_jca_capture(self, dut, log_path):
-    """Retrieves a capture path from the socket and pulls capture to host.
+    """Retrieve a capture path from the socket and pulls capture to host.
 
     Args:
       dut: An Android controller device object.
@@ -3015,30 +3062,42 @@ def remove_mp4_file(file_name_with_path):
     logging.debug('File not found: %s', file_name_with_path)
 
 
-def check_and_update_features_tested(
-    features_tested, hlg10, is_stabilized):
-  """Check if the [hlg10, is_stabilized] combination is already tested.
+def check_features_passed(
+    features_passed, hlg10, is_stabilized):
+  """Check if the [hlg10, is_stabilized] combination is already tested
+  to be supported.
 
   Args:
-    features_tested: The list of feature combinations already tested
+    features_passed: The list of feature combinations already supported
     hlg10: boolean; Whether HLG10 is enabled
     is_stabilized: boolean; Whether preview stabilizatoin is enabled
 
   Returns:
-    Whether the [hlg10, is_stabilized] is already tested.
+    Whether the [hlg10, is_stabilized] is already tested to be supported.
   """
   feature_mask = 0
   if hlg10: feature_mask |= _BIT_HLG10
   if is_stabilized: feature_mask |= _BIT_STABILIZATION
   tested = False
-  for tested_feature in features_tested:
+  for tested_feature in features_passed:
     # Only test a combination if they aren't already a subset
     # of another tested combination.
     if (tested_feature | feature_mask) == tested_feature:
       tested = True
       break
-
-  if not tested:
-    features_tested.append(feature_mask)
-
   return tested
+
+
+def mark_features_passed(
+    features_passed, hlg10, is_stabilized):
+  """Mark the [hlg10, is_stabilized] combination as tested to pass.
+
+  Args:
+    features_passed: The list of feature combinations already tested
+    hlg10: boolean; Whether HLG10 is enabled
+    is_stabilized: boolean; Whether preview stabilizatoin is enabled
+  """
+  feature_mask = 0
+  if hlg10: feature_mask |= _BIT_HLG10
+  if is_stabilized: feature_mask |= _BIT_STABILIZATION
+  features_passed.append(feature_mask)

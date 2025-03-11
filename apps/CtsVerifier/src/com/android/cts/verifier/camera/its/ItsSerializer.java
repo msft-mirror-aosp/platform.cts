@@ -416,15 +416,14 @@ public class ItsSerializer {
     }
 
     @SuppressWarnings("unchecked")
-    private static MetadataEntry serializeArrayEntry(Type keyType, Object keyObj, Object keyValue)
-            throws ItsException {
+    private static MetadataEntry serializeArrayEntry(
+            Type elmtType, Object keyObj, Object keyValue) throws ItsException {
         String keyName = getKeyName(keyObj);
         try {
             if (keyValue == null) {
                 return null;
             }
             int arrayLen = Array.getLength(keyValue);
-            Type elmtType = ((GenericArrayType)keyType).getGenericComponentType();
             if (elmtType == int.class  || elmtType == float.class || elmtType == byte.class ||
                 elmtType == long.class || elmtType == double.class || elmtType == boolean.class) {
                 return new MetadataEntry(keyName, new JSONArray(keyValue));
@@ -526,8 +525,10 @@ public class ItsSerializer {
             }
             Type keyType = value.getClass();
             MetadataEntry entry;
-            if (keyType instanceof GenericArrayType) {
-                entry = serializeArrayEntry(keyType, key, value);
+            // getComponentType() to preserve non-generic Types when serializing arrays
+            Class componentType = value.getClass().getComponentType();
+            if (componentType != null) {
+                entry = serializeArrayEntry(componentType, key, value);
             } else {
                 entry = serializeEntry(keyType, key, value);
             }
@@ -604,8 +605,12 @@ public class ItsSerializer {
                         Type keyType = argTypes[0];
                         Object keyObj = field.get(md);
                         MetadataEntry entry;
-                        if (keyType instanceof GenericArrayType) {
-                            entry = serializeArrayEntry(keyType, keyObj, md);
+                        if (keyType instanceof GenericArrayType arrayType) {
+                            entry = serializeArrayEntry(
+                                    arrayType.getGenericComponentType(),
+                                    keyObj,
+                                    md
+                            );
                         } else {
                             entry = serializeEntry(keyType, keyObj, md);
                         }

@@ -54,8 +54,8 @@ import android.os.Looper;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.RequiresDevice;
-import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.UserHelper;
 
@@ -66,7 +66,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 @LargeTest
 @RequiresDevice
 public class DualSuspendTests {

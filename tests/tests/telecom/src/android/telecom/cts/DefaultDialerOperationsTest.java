@@ -84,6 +84,10 @@ public class DefaultDialerOperationsTest extends InstrumentationTestCase {
             // Restore the default dialer to whatever the default dialer was before the tests
             // were started. This may or may not be the system dialer.
             TestUtils.setDefaultDialer(getInstrumentation(), mPreviousDefaultDialer);
+        } else {
+            // Worse case, we didn't know the previous, so use the system dialer.
+            TestUtils.setDefaultDialer(getInstrumentation(),
+                    TestUtils.getSystemDialer(getInstrumentation()));
         }
         super.tearDown();
     }

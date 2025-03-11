@@ -461,9 +461,10 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         extras.putInt(TelecomManager.EXTRA_PRIORITY, TelecomManager.PRIORITY_URGENT);
         extras.putString(TelecomManager.EXTRA_CALL_SUBJECT, "blah blah blah");
 
-        TestUtils.setSystemDialerOverride(getInstrumentation());
-        MockCallScreeningService.enableService(mContext);
         try {
+            TestUtils.setSystemDialerOverride(getInstrumentation());
+            MockCallScreeningService.enableService(mContext);
+
             CallScreeningService.CallResponse response =
                     new CallScreeningService.CallResponse.Builder()
                             .setDisallowCall(false)

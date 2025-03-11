@@ -18,6 +18,11 @@ package android.devicepolicy.cts;
 
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
+
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpmRoleHolder;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.profileOwner;
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.assertThrows;
@@ -39,7 +44,7 @@ import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
@@ -84,8 +89,7 @@ public final class ManagedSubscriptionsPolicyTest {
     @Ignore("TODO(298915118): Enable after work telephony requirements are re-added")
     public void setManagedSubscriptionsPolicy_works() {
         try {
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setManagedSubscriptionsPolicy(
                             new ManagedSubscriptionsPolicy(
@@ -98,8 +102,7 @@ public final class ManagedSubscriptionsPolicyTest {
             assertThat(sLocalDevicePolicyManager.getManagedSubscriptionsPolicy().getPolicyType())
                     .isEqualTo(ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS);
         } finally {
-            sDeviceState
-                    .dpc()
+            dpc(sDeviceState)
                     .devicePolicyManager()
                     .setManagedSubscriptionsPolicy(
                             new ManagedSubscriptionsPolicy(
@@ -116,8 +119,7 @@ public final class ManagedSubscriptionsPolicyTest {
     @Postsubmit(reason = "new test")
     public void getManagedSubscriptionPolicy_policyNotSet_returnsDefaultPolicy() {
         assertThat(
-                sDeviceState
-                        .dpc()
+                dpc(sDeviceState)
                         .devicePolicyManager()
                         .getManagedSubscriptionsPolicy()
                         .getPolicyType())
@@ -133,8 +135,7 @@ public final class ManagedSubscriptionsPolicyTest {
     @Ignore("TODO(298915118): Enable after work telephony requirements are re-added")
     public void setManagedSubscriptionsPolicy_invalidAdmin_fails() {
         assertThrows(
-                SecurityException.class, () -> sDeviceState
-                        .dpc()
+                SecurityException.class, () -> dpc(sDeviceState)
                         .devicePolicyManager()
                         .setManagedSubscriptionsPolicy(
                                 new ManagedSubscriptionsPolicy(
@@ -176,7 +177,7 @@ public final class ManagedSubscriptionsPolicyTest {
     @Ignore("TODO(298915118): Enable after work telephony requirements are re-added")
     public void setManagedSubscriptionsPolicy_callAndSmsIntent_resolvesToWorkProfileApps()
             throws InterruptedException {
-        sDeviceState.dpc().devicePolicyManager().setManagedSubscriptionsPolicy(
+        dpc(sDeviceState).devicePolicyManager().setManagedSubscriptionsPolicy(
                 new ManagedSubscriptionsPolicy(
                         ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
 
@@ -186,12 +187,12 @@ public final class ManagedSubscriptionsPolicyTest {
                     new Intent(Intent.ACTION_DIAL).addCategory(
                             Intent.CATEGORY_DEFAULT).setData(
                             Uri.parse("tel:5555")), PackageManager.ResolveInfoFlags.of(0),
-                    sDeviceState.workProfile().parent().id());
+                    workProfile(sDeviceState).parent().id());
             List<ResolveInfo> smsIntentActivities = sPackageManager.queryIntentActivitiesAsUser(
                     new Intent(Intent.ACTION_SENDTO).addCategory(
                             Intent.CATEGORY_DEFAULT).setData(
                             Uri.parse("smsto:5555")), PackageManager.ResolveInfoFlags.of(0),
-                    sDeviceState.workProfile().parent().id());
+                    workProfile(sDeviceState).parent().id());
 
             assertThat(dialIntentActivities).hasSize(1);
             assertThat(
@@ -212,8 +213,7 @@ public final class ManagedSubscriptionsPolicyTest {
     public void setManagedSubscriptionsPolicy_notEnabledForNonDPMRoleHolders_throwsException()
             throws InterruptedException {
         assertThrows(
-                UnsupportedOperationException.class, () -> sDeviceState
-                        .dpc()
+                UnsupportedOperationException.class, () -> dpc(sDeviceState)
                         .devicePolicyManager()
                         .setManagedSubscriptionsPolicy(
                                 new ManagedSubscriptionsPolicy(
@@ -233,19 +233,19 @@ public final class ManagedSubscriptionsPolicyTest {
     public void setManagedSubscriptionsPolicy_enabledForNonDMPRoleHolders_works()
             throws InterruptedException {
         try {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
 
             assertThat(
-                    sDeviceState.profileOwner(WORK_PROFILE)
+                    profileOwner(sDeviceState, WORK_PROFILE)
                         .devicePolicyManager().getManagedSubscriptionsPolicy()
                         .getPolicyType()).isEqualTo(
                             ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS);
         } finally {
-            sDeviceState.profileOwner(
-                    WORK_PROFILE).devicePolicyManager().setManagedSubscriptionsPolicy(
+            profileOwner(sDeviceState, WORK_PROFILE)
+                    .devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
         }
@@ -263,22 +263,21 @@ public final class ManagedSubscriptionsPolicyTest {
     public void setManagedSubscriptionsPolicy_fromDPMRoleHolder_works()
             throws InterruptedException {
         ProfileOwner profileOwner = TestApis.devicePolicy().setProfileOwner(
-                sDeviceState.workProfile(),
+                workProfile(sDeviceState),
                 new ComponentName(RemoteDevicePolicyManagerRoleHolder.sTestApp.packageName(),
                         "com.android.DevicePolicyManagerRoleHolder.DeviceAdminReceiver"));
         profileOwner.setIsOrganizationOwned(true);
         try {
-
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setManagedSubscriptionsPolicy(
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS));
 
             assertThat(
-                    sDeviceState.dpmRoleHolder().devicePolicyManager()
+                    dpmRoleHolder(sDeviceState).devicePolicyManager()
                             .getManagedSubscriptionsPolicy().getPolicyType()).isEqualTo(
                                  ManagedSubscriptionsPolicy.TYPE_ALL_MANAGED_SUBSCRIPTIONS);
         } finally {
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setManagedSubscriptionsPolicy(
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setManagedSubscriptionsPolicy(
                     new ManagedSubscriptionsPolicy(
                             ManagedSubscriptionsPolicy.TYPE_ALL_PERSONAL_SUBSCRIPTIONS));
             profileOwner.remove();
@@ -291,14 +290,14 @@ public final class ManagedSubscriptionsPolicyTest {
     @Ignore("TODO(298915118): Enable after work telephony requirements are re-added")
     public void setGlobalSetting_allowWorkProfileTelephonyForNonDMPRH_fromDPMRH_works() {
         try {
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setGlobalSetting(null,
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setGlobalSetting(null,
                     Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, "1");
 
             assertThat(TestApis.settings().global().getString(
                     Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS))
                     .isEqualTo("1");
         } finally {
-            sDeviceState.dpmRoleHolder().devicePolicyManager().setGlobalSetting(null,
+            dpmRoleHolder(sDeviceState).devicePolicyManager().setGlobalSetting(null,
                     Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, "0");
         }
     }
@@ -311,7 +310,7 @@ public final class ManagedSubscriptionsPolicyTest {
     @Ignore("TODO(298915118): Enable after work telephony requirements are re-added")
     public void setGlobalSetting_allowWorkProfileTelephonyForNonDMPRH_fromNonDPMRH_fails() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().setGlobalSetting(null,
+                () -> dpc(sDeviceState).devicePolicyManager().setGlobalSetting(null,
                         Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS,
                         "1"));
     }

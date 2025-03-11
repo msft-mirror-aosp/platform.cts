@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -34,7 +35,14 @@ import android.graphics.Typeface;
 import android.graphics.Typeface.Builder;
 import android.graphics.fonts.Font;
 import android.graphics.fonts.FontFamily;
+import android.graphics.fonts.FontFileTestUtil;
+import android.graphics.fonts.FontVariationAxis;
+import android.graphics.text.PositionedGlyphs;
+import android.graphics.text.TextRunShaper;
 import android.os.SharedMemory;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.ErrnoException;
 import android.util.ArrayMap;
 
@@ -42,7 +50,10 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.text.flags.Flags;
+
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,6 +76,9 @@ public class TypefaceTest {
 
     private static final float GLYPH_1EM_WIDTH;
     private static final float GLYPH_3EM_WIDTH;
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static float measureText(String text, Typeface typeface) {
         final Paint paint = new Paint();
@@ -693,9 +707,8 @@ public class TypefaceTest {
         final Paint paint = new Paint();
         paint.setTextSize(100);  // Make 1em = 100px
 
-        // By default, WeightEqualsEmVariableFont has 0 'wght' value.
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
-                .build());
+                .setFontVariationSettings("'wght' 0").build());
         assertEquals(0.0f, paint.measureText("a"), 0.0f);
 
         paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
@@ -743,7 +756,7 @@ public class TypefaceTest {
 
     @Test
     public void testFontVariationSettings_OutOfRangeValue() {
-        // WeightEqualsEmVariableFont is a special font generating the outlines a glyph of 1/1000
+        // WidthEqualsEmVariableFont is a special font generating the outlines a glyph of 1/1000
         // width of the given wght axis. For example, if 300 is given as the wght value to the font,
         // the font will generate 0.3em of the glyph for the 'a'..'z' characters.
         // The minimum, default, maximum value of 'wght' is 0, 0, 1000.
@@ -754,12 +767,12 @@ public class TypefaceTest {
         paint.setTextSize(100);  // Make 1em = 100px
 
         // Out of range value needs to be clipped at the minimum or maximum values.
-        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
-                .setFontVariationSettings("'wght' -100").build());
+        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WidthEqualsEmVariableFont.ttf")
+                .setFontVariationSettings("'wdth' -100").build());
         assertEquals(0.0f, paint.measureText("a"), 0.0f);
 
-        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WeightEqualsEmVariableFont.ttf")
-                .setFontVariationSettings("'wght' 1300").build());
+        paint.setTypeface(new Typeface.Builder(am, "fonts/var_fonts/WidthEqualsEmVariableFont.ttf")
+                .setFontVariationSettings("'wdth' 1300").build());
         assertEquals(100.0f, paint.measureText("a"), 0.0f);
     }
 
@@ -918,5 +931,121 @@ public class TypefaceTest {
                 typeface.releaseNativeObjectForTest();
             }
         }
+    }
+
+    private static final int NO_SETTINGS = -1;
+    private static final int UNSET_VALUE = -2;
+    private static final File ROBOTO = new File("/system/fonts/Roboto-Regular.ttf");
+
+    /**
+     * Return wght variation settings value from the variation settings
+     */
+    public int getWghtFromSettings(Font font) {
+        FontVariationAxis[] axes = font.getAxes();
+        if (axes != null) {
+            for (FontVariationAxis axis : axes) {
+                if (axis.getTag().equals("wght")) {
+                    return (int) axis.getStyleValue();
+                }
+            }
+        }
+
+        Map<String, FontFileTestUtil.FVarEntry> fvarTable;
+        try {
+            fvarTable = FontFileTestUtil.getFVarTable(font.getBuffer());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        FontFileTestUtil.FVarEntry entry = fvarTable.get("wght");
+        if (entry == null) {
+            return NO_SETTINGS;
+        }
+        return (int) (entry.getDefaultValue());
+    }
+
+    /**
+     * Returns effective weight value from the variation settings. Return NO_SETTINGS value is
+     * no weight value is set to variation settings.
+     */
+    public int getEffectiveWeight(Typeface typeface) {
+        String text = "a";
+        Paint paint = new Paint();
+        paint.setTextSize(100);
+        paint.setTypeface(typeface);
+
+        PositionedGlyphs glyphs = TextRunShaper.shapeTextRun(text, 0, text.length(),
+                0, text.length(), 0f, 0f, false, paint);
+
+        int wght = UNSET_VALUE;
+        for (int i = 0; i < glyphs.glyphCount(); ++i) {
+            int wghtForThisGlyph = getWghtFromSettings(glyphs.getFont(i));
+            if (wght == UNSET_VALUE) {
+                wght = wghtForThisGlyph;
+            } else {
+                assertEquals("All glyph must have the same wght settings", wght, wghtForThisGlyph);
+            }
+        }
+        return wght;
+    }
+
+    /**
+     * Asserts that the Typeface has effective weight
+     */
+    public void assertWeight(int weight, Typeface typeface) {
+        assertEquals(weight, getEffectiveWeight(typeface));
+    }
+
+    /**
+     * Build a Typeface from Roboto that has given font variation settings.
+     */
+    public Typeface buildRobotoTypeface(String fontVariationSettings) {
+        try {
+            Font font = new Font.Builder(ROBOTO)
+                    .setFontVariationSettings(fontVariationSettings)
+                    .build();
+            FontFamily family = new FontFamily.Builder(font).build();
+            return new Typeface.CustomFallbackBuilder(family).build();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
+    @Test
+    public void testEffectiveWeight() {
+        assertWeight(400, Typeface.SANS_SERIF);
+        assertWeight(100, Typeface.create("sans-serif-thin", Typeface.NORMAL));
+        assertWeight(500, Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        assertWeight(900, Typeface.create("sans-serif-black", Typeface.NORMAL));
+
+        // Bolding typeface increases the effective weight by 300
+        assertWeight(400, Typeface.create("sans-serif-thin", Typeface.BOLD));
+        assertWeight(800, Typeface.create("sans-serif-medium", Typeface.BOLD));
+        assertWeight(900, Typeface.create("sans-serif-black", Typeface.BOLD));
+
+        // If explicitly specify the weight, override the underlying base weight.
+        assertWeight(400, Typeface.create(
+                Typeface.create("sans-serif-thin", Typeface.NORMAL), 400, false));
+        assertWeight(400, Typeface.create(
+                Typeface.create("sans-serif-medium", Typeface.NORMAL), 400, false));
+        assertWeight(400, Typeface.create(
+                Typeface.create("sans-serif-black", Typeface.NORMAL), 400, false));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_TYPEFACE_REDESIGN_READONLY)
+    @Test
+    public void testEffectiveWeight_customFont() {
+        assumeTrue(ROBOTO.exists() && ROBOTO.canRead());
+
+        // The base weight should be used.
+        assertWeight(100, buildRobotoTypeface("'wght' 100"));
+        assertWeight(500, buildRobotoTypeface("'wght' 500"));
+        assertWeight(700, buildRobotoTypeface("'wght' 700"));
+
+        // This is for making sure the existing behavior.
+        // The base weight must be preserved even if the font weight is provided.
+        assertWeight(100, Typeface.create(buildRobotoTypeface("'wght' 100"), 400, false));
+        assertWeight(500, Typeface.create(buildRobotoTypeface("'wght' 500"), 400, false));
+        assertWeight(700, Typeface.create(buildRobotoTypeface("'wght' 700"), 400, false));
     }
 }

@@ -85,8 +85,11 @@
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_MICROPHONE" />
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_USB_FILE_TRANSFER" />
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_CONTENT_PROTECTION" />
+    <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_APP_FUNCTIONS" />
     <uses-permission android:name="android.permission.MANAGE_DEVICE_POLICY_QUERY_SYSTEM_UPDATES" />
     <uses-permission android:name="android.permission.QUERY_DEVICE_STOLEN_STATE" />
+    <uses-permission android:name="android.permission.COPY_ACCOUNTS" />
+    <uses-permission android:name="android.permission.REMOVE_ACCOUNTS" />
 
     <application
         android:label="DevicePolicyManagerRoleHolder" android:testOnly="true">

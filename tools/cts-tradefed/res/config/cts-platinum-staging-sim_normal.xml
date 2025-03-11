@@ -493,7 +493,6 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.DataProfileTest#testNullApnSetting"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.MmsTest#testSendMmsMessageWithMessageId"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SimultaneousCallingRestrictionsTest#testImsRegisteredWLAN"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testSendAndReceiveMessages"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SmsManagerTest#testSmsRetriever"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testAddSubscriptionIntoNewGroupWithPermission"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.SubscriptionManagerTest#testCountryIso"/>
@@ -624,9 +623,7 @@
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.TelephonyManagerTestOnMockModem#testSimStateChange"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilter"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_InvalidKeyValuePair"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_InvalidMissingKey"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_MessageEndAfterClientPrefix"/>
-    <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_MessageEndAfterPrefix"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_MissingFirstColon"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_MissingSecondColon"/>
     <option name="compatibility:include-filter" value="CtsTelephonyTestCases android.telephony.cts.VisualVoicemailServiceTest#testFilterFail_NotVvm"/>
