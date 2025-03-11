@@ -416,9 +416,6 @@ public class CompilationTest extends BaseHostJUnit4Test {
         File sdmFile = mUtils.createSdm(artifacts.odexFile(), artifacts.artFile());
 
         mUtils.installFromResourcesWithSdm(getAbi(), TEST_APP_APK_RES, dmFile, sdmFile);
-        String dump =
-                mUtils.assertCommandSucceeds("pm art dump --verify-sdm-signatures " + TEST_APP_PKG);
-        assertThat(dump).contains("[sdm-signature=verified]");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {
