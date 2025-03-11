@@ -33,14 +33,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_ANNOTATIONS)
 public class HighlightAnnotationTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private static final RectF BOUNDS = new RectF(1, 2, 3, 4);
-    private static final RectF NEW_BOUNDS = new RectF(10, 20, 30, 40);
+    private static final List<RectF> BOUNDS = List.of(new RectF(1, 2, 3, 4));
+    private static final List<RectF> NEW_BOUNDS = List.of(new RectF(10, 20, 30, 40));
 
     private static final int DEFAULT_TEXT_COLOR = Color.YELLOW;
     private static final int NEW_TEXT_COLOR = Color.RED;

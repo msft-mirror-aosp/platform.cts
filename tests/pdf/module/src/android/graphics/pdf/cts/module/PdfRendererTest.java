@@ -90,6 +90,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -1103,7 +1104,8 @@ public class PdfRendererTest {
         try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
 
-            RectF bounds = new RectF(10, 20, 30, 40);
+            List<RectF> bounds = new ArrayList<>();
+            bounds.add(new RectF(10, 20, 30, 40));
             HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
             highlightAnnotation.setColor(Color.GREEN);
 
@@ -1204,7 +1206,8 @@ public class PdfRendererTest {
         try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
 
-            RectF bounds = new RectF(10, 20, 30, 40);
+            List<RectF> bounds = new ArrayList<>();
+            bounds.add(new RectF(10, 20, 30, 40));
             HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
             highlightAnnotation.setColor(Color.GREEN);
 
