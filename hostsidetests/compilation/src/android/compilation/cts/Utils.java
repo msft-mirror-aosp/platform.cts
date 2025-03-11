@@ -247,8 +247,8 @@ public class Utils {
         return str.split(subStr, -1 /* limit */).length - 1;
     }
 
-    public CompilationArtifacts generateCompilationArtifacts(
-            String apkResource, String profileResource, IAbi abi) throws Exception {
+    public CompilationArtifacts generateCompilationArtifacts(String apkResource,
+            String profileResource, IAbi abi, String classLoaderContext) throws Exception {
         String tempDir = "/data/local/tmp/CtsCompilationTestCases_" + UUID.randomUUID();
         assertCommandSucceeds("mkdir", tempDir);
         String remoteApkFile = tempDir + "/app.apk";
@@ -270,7 +270,8 @@ public class Utils {
                 "--output-vdex=" + remoteVdexFile,
                 "--app-image-file=" + remoteArtFile,
                 "--compiler-filter=speed-profile",
-                "--compilation-reason=cloud");
+                "--compilation-reason=cloud",
+                "--class-loader-context=" + classLoaderContext);
 
         File odexFile = File.createTempFile("temp", ".odex");
         odexFile.deleteOnExit();
