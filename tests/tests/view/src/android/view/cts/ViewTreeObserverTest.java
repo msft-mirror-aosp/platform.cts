@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -157,7 +157,7 @@ public class ViewTreeObserverTest {
             mViewTreeObserver.unregisterFrameCommitCallback(removedListener);
         });
         verify(activeListener, within(TIMEOUT_MS)).run();
-        verifyZeroInteractions(removedListener);
+        verifyNoMoreInteractions(removedListener);
     }
 
     @Test(expected=IllegalStateException.class)
@@ -216,7 +216,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -236,7 +236,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -262,7 +262,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -285,7 +285,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -312,7 +312,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -338,6 +338,6 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 }

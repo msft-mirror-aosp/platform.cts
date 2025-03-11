@@ -26,7 +26,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ServiceInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
@@ -59,7 +59,7 @@ public class ServiceInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testServiceInfo() throws NameNotFoundException {
         PackageManager pm = getContext().getPackageManager();
         ComponentName componentName = new ComponentName(PACKAGE_NAME, SERVICE_NAME);

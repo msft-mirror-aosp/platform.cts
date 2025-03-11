@@ -22,16 +22,11 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAsser
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 
-import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
-
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
 import android.server.wm.jetpack.utils.TestActivityWithId;
@@ -45,7 +40,6 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -60,14 +54,9 @@ import java.util.Collections;
  * Build/Install/Run:
  *     atest CtsWindowManagerJetpackTestCases:MultiDisplayActivityEmbeddingPlaceholderTests
  */
-@RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
-// TODO(b/391965805): Re-enable this test
 @Presubmit
 public class MultiDisplayActivityEmbeddingPlaceholderTests
         extends ActivityEmbeddingPlaceholderTests {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final VirtualDisplaySession mSession =
             new ActivityManagerTestBase.VirtualDisplaySession();

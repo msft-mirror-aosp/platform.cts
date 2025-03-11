@@ -26,7 +26,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TimeUtils;
 
@@ -45,7 +45,7 @@ import java.util.TimeZone;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = TimeUtils.class)
+@DisabledOnRavenwood(blockedBy = TimeUtils.class)
 public class TimeUtilsTest {
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule();

@@ -15,6 +15,8 @@
  */
 package android.media.session.cts;
 
+import static android.media.browse.MediaBrowser.MediaItem.FLAG_PLAYABLE;
+import static android.media.cts.Utils.compareRemoteUserInfo;
 import static android.media.session.cts.MediaBrowserServiceTestService.KEY_PARENT_MEDIA_ID;
 import static android.media.session.cts.MediaBrowserServiceTestService.KEY_SERVICE_COMPONENT_NAME;
 import static android.media.session.cts.MediaBrowserServiceTestService.TEST_SERIES_OF_NOTIFY_CHILDREN_CHANGED;
@@ -22,8 +24,6 @@ import static android.media.session.cts.MediaSessionTestService.KEY_EXPECTED_TOT
 import static android.media.session.cts.MediaSessionTestService.STEP_CHECK;
 import static android.media.session.cts.MediaSessionTestService.STEP_CLEAN_UP;
 import static android.media.session.cts.MediaSessionTestService.STEP_SET_UP;
-import static android.media.browse.MediaBrowser.MediaItem.FLAG_PLAYABLE;
-import static android.media.cts.Utils.compareRemoteUserInfo;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -178,14 +178,14 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSessionToken() {
         assertThat(mMediaBrowserService.getSessionToken())
                 .isEqualTo(StubMediaBrowserService.sSession.getSessionToken());
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testNotifyChildrenChanged() throws Exception {
         getInstrumentation().runOnMainSync(()-> {
             mMediaBrowser.subscribe(StubMediaBrowserService.MEDIA_ID_ROOT, mSubscriptionCallback);
@@ -198,7 +198,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testNotifyChildrenChangedWithNullOptionsThrowsIAE() {
         assertThrows(IllegalArgumentException.class,
                 () -> mMediaBrowserService.notifyChildrenChanged(
@@ -206,7 +206,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testNotifyChildrenChangedWithPagination() {
         final int pageSize = 5;
         final int page = 2;
@@ -246,7 +246,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testDelayedNotifyChildrenChanged() throws Exception {
         getInstrumentation().runOnMainSync(()-> {
             mMediaBrowser.subscribe(StubMediaBrowserService.MEDIA_ID_CHILDREN_DELAYED,
@@ -267,7 +267,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testDelayedItem() throws Exception {
         getInstrumentation().runOnMainSync(()-> {
             mMediaBrowser.getItem(StubMediaBrowserService.MEDIA_ID_CHILDREN_DELAYED,
@@ -280,7 +280,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetBrowserInfo() throws Exception {
         // StubMediaBrowserService stores the browser info in its onGetRoot().
         assertThat(compareRemoteUserInfo(mBrowserInfo, StubMediaBrowserService.sBrowserInfo))
@@ -304,7 +304,7 @@ public class MediaBrowserServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testBrowserRoot() {
         final String id = "test-id";
         final String key = "test-key";
@@ -322,7 +322,7 @@ public class MediaBrowserServiceTest {
      * {@link MediaBrowser} on the remote process due to binder buffer overflow.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSeriesOfNotifyChildrenChanged() throws Exception {
         String parentMediaId = "testSeriesOfNotifyChildrenChanged";
         int numberOfCalls = 100;
@@ -356,7 +356,7 @@ public class MediaBrowserServiceTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_NULL_SESSION_IN_MEDIA_BROWSER_SERVICE)
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetNullSessionToken() {
         MediaBrowserCallbackImpl browserCallback = new MediaBrowserCallbackImpl();
         ComponentName componentName = new ComponentName(mContext, SimpleMediaBrowserService.class);

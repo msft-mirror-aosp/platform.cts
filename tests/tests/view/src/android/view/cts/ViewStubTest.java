@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -105,14 +105,14 @@ public class ViewStubTest {
         final ViewStub viewStub1 = (ViewStub) mActivity.findViewById(R.id.viewstub);
         final ViewStub.OnInflateListener listener = mock(ViewStub.OnInflateListener.class);
         viewStub1.setOnInflateListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         assertNotNull(viewStub1.getParent());
 
         // set GONE
         viewStub1.setVisibility(View.GONE);
         assertEquals(View.GONE, viewStub1.getVisibility());
         // does not call inflate
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         assertNotNull(viewStub1.getParent());
 
         // set VISIBLE
@@ -172,7 +172,7 @@ public class ViewStubTest {
         final ViewStub.OnInflateListener listener = mock(ViewStub.OnInflateListener.class);
 
         viewStub.setOnInflateListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         final View inflated = viewStub.inflate();
         verify(listener, times(1)).onInflate(viewStub, inflated);
     }
@@ -209,7 +209,7 @@ public class ViewStubTest {
         final ViewStub.OnInflateListener listener = mock(ViewStub.OnInflateListener.class);
 
         viewStub.setOnInflateListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         assertNotNull(vsParent);
 
         View view = viewStub.inflate();

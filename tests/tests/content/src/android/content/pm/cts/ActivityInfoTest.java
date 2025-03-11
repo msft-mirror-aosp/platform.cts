@@ -28,7 +28,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
@@ -81,7 +81,7 @@ public class ActivityInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testWriteToParcel() throws NameNotFoundException {
         ComponentName componentName = new ComponentName(TEST_PKG, TEST_ACTIVITY);
 
@@ -110,7 +110,7 @@ public class ActivityInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testGetThemeResource() throws NameNotFoundException {
         ComponentName componentName = new ComponentName(TEST_PKG, TEST_ACTIVITY);
 
@@ -129,7 +129,7 @@ public class ActivityInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testDescribeContents() throws NameNotFoundException {
         mActivityInfo = new ActivityInfo();
         assertEquals(0, mActivityInfo.describeContents());

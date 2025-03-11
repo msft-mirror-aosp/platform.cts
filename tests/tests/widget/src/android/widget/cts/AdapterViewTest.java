@@ -30,7 +30,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.Manifest;
@@ -287,13 +286,13 @@ public class AdapterViewTest {
         mAdapterView.setOnItemLongClickListener(mockLongClickListener);
         assertEquals(mockLongClickListener, mAdapterView.getOnItemLongClickListener());
 
-        verifyZeroInteractions(mockClickListener);
+        verifyNoMoreInteractions(mockClickListener);
         assertTrue(mAdapterView.performItemClick(null, 0, 0));
         verify(mockClickListener, times(1)).onItemClick(eq(mAdapterView), any(),
                 eq(0), eq(0L));
 
         setArrayAdapter(mAdapterView);
-        verifyZeroInteractions(mockLongClickListener);
+        verifyNoMoreInteractions(mockLongClickListener);
         mAdapterView.layout(0, 0, LAYOUT_WIDTH, LAYOUT_HEIGHT);
         assertTrue(mAdapterView.showContextMenuForChild(mAdapterView.getChildAt(0)));
         verify(mockLongClickListener, times(1)).onItemLongClick(eq(mAdapterView), any(View.class),
@@ -316,7 +315,7 @@ public class AdapterViewTest {
                 mAdapterView.setOnItemSelectedListener(mockSelectedListener));
         assertEquals(mockSelectedListener, mAdapterView.getOnItemSelectedListener());
 
-        verifyZeroInteractions(mockSelectedListener);
+        verifyNoMoreInteractions(mockSelectedListener);
 
         // Select item #1 and verify that the listener has been notified
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mAdapterView,

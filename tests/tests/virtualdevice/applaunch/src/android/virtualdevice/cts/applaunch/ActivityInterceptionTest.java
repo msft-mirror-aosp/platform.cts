@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.companion.virtual.VirtualDeviceManager.IntentInterceptorCallback;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
@@ -89,7 +88,7 @@ public class ActivityInterceptionTest {
     public void noInterceptorRegistered_activityShouldLaunch() {
         mRule.sendIntentToDisplay(mInterceptedIntent, mVirtualDisplay);
         mRule.waitAndAssertActivityResumed(new ComponentName(mContext, InterceptedActivity.class));
-        verifyZeroInteractions(mInterceptor);
+        verifyNoMoreInteractions(mInterceptor);
     }
 
     @Test
@@ -117,7 +116,7 @@ public class ActivityInterceptionTest {
 
         mRule.sendIntentToDisplay(mInterceptedIntent, mVirtualDisplay);
         mRule.waitAndAssertActivityResumed(new ComponentName(mContext, InterceptedActivity.class));
-        verifyZeroInteractions(mInterceptor);
+        verifyNoMoreInteractions(mInterceptor);
     }
 
     @Test
@@ -131,7 +130,7 @@ public class ActivityInterceptionTest {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mRule.sendIntentToDisplay(intentWithoutAction, mVirtualDisplay);
         mRule.waitAndAssertActivityResumed(new ComponentName(mContext, InterceptedActivity.class));
-        verifyZeroInteractions(mInterceptor);
+        verifyNoMoreInteractions(mInterceptor);
     }
 
     @Test
@@ -150,7 +149,7 @@ public class ActivityInterceptionTest {
         mRule.sendIntentToDisplay(mInterceptedIntent, mVirtualDisplay);
 
         assertIntentIntercepted();
-        verifyZeroInteractions(interceptorOther);
+        verifyNoMoreInteractions(interceptorOther);
     }
 
     @Test

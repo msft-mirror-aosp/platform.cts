@@ -29,7 +29,6 @@ import android.net.Uri;
 import android.os.PersistableBundle;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 
@@ -99,7 +98,7 @@ public class ClipDataTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = android.util.TimeUtils.class)
+    @DisabledOnRavenwood(blockedBy = android.util.TimeUtils.class)
     public void testToString_metadata() {
         ClipDescription description = new ClipDescription("secret-label",
                 new String[]{"text/plain"});

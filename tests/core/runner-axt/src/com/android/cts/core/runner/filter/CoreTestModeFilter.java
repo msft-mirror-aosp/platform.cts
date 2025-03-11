@@ -53,19 +53,19 @@ public class CoreTestModeFilter implements Predicate<Description> {
      */
     public static Predicate<Description> createInstance(Bundle args) {
         String mode = args.getString(ARGUMENT_MODE);
-        if ("mts".equals(mode)) {
-            // We have to hard-coded the annotation name of NonMts because the annotation definition
-            // isn't built into the same apk file.
-            return new CoreTestModeFilter(NonMts.class);
-        } else if ("presubmit".equals(mode)) {
-            return new CoreTestModeFilter(FlakyTest.class, LargeTest.class);
-        } else {
-            // The default mode is CTS, because most libcore test suites are prefixed with "Cts".
+        if ("cts".equals(mode)) {
             // It's okay that ignoredTestsInCts.txt doesn't exist in the test .apk file, and
             // the created CoreExpectationFilter doesn't skip any test in this case.
             Set<String> expectationFile = Set.of("/skippedCtsTest.txt");
             return new CoreTestModeFilter(NonCts.class)
                     .and(CoreExpectationFilter.createInstance(expectationFile));
+        } else if ("presubmit".equals(mode)) {
+            return new CoreTestModeFilter(FlakyTest.class, LargeTest.class);
+        } else {
+            // Use MTS mode by default because MCTS should dynamically download
+            // the MCTS artifacts in the same version as the ART module installed
+            // on the device.
+            return new CoreTestModeFilter(NonMts.class);
         }
     }
 

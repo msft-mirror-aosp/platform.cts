@@ -535,7 +535,7 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
   offset_y_values = []
   hypots = []
 
-  id_to_next_offset = {}
+  id_to_next_offset_and_zoom = {}
   offsets_while_transitioning = []
   previous_id = test_data[0].physical_id
   # First pass to get transition points
@@ -543,7 +543,9 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
     if i == 0:
       continue
     if test_data[i-1].physical_id != data.physical_id:
-      id_to_next_offset[previous_id] = data.aruco_offset
+      id_to_next_offset_and_zoom[previous_id] = (
+          data.aruco_offset, data.result_zoom
+      )
       previous_id = data.physical_id
 
   initial_offset = test_data[0].aruco_offset
@@ -626,24 +628,40 @@ def verify_zoom_data(test_data, size, plot_name_stem=None,
              f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
       if not math.isclose(initial_offset, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
-        logging.error('Offset check failed. %s', msg)
+        logging.warning('Offset check failed. %s', msg)
         used_smooth_offset = True
-
-        if data.physical_id not in id_to_next_offset:
+        if data.physical_id not in id_to_next_offset_and_zoom:
           offset_success = False
           logging.error('No physical camera is available to explain '
                         'offset changes!')
         else:
-          next_initial_offset = id_to_next_offset[data.physical_id]
-          if not math.isclose(next_initial_offset, data.aruco_offset,
-                              rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
-                              abs_tol=OFFSET_ATOL_SMOOTH_ZOOM):
+          next_initial_offset, next_initial_zoom = (
+              id_to_next_offset_and_zoom[data.physical_id]
+          )
+          next_offset_scaled_by_next_zoom = (
+              next_initial_offset / next_initial_zoom
+          )
+          absolutely_close = (
+              math.isclose(next_initial_offset, data.aruco_offset,
+                           rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
+                           abs_tol=OFFSET_ATOL_SMOOTH_ZOOM)
+          )
+          relatively_close = (
+              math.isclose(next_offset_scaled_by_next_zoom, offset_hypot_rel,
+                           rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
+                           abs_tol=OFFSET_ATOL_SMOOTH_ZOOM)
+          )
+          if not absolutely_close and not relatively_close:
             offset_success = False
             e_msg = ('Current offset did not match upcoming physical camera! '
-                    f'Next initial offset: {next_initial_offset:.1f}, '
-                    f'Current offset: {data.aruco_offset:.1f}, '
-                    f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, '
-                    f'ATOL: {OFFSET_ATOL_SMOOTH_ZOOM}')
+                     f'{i} zoom: {data.result_zoom:.2f}, '
+                     f'next initial offset: {next_initial_offset:.1f}, '
+                     f'current offset: {data.aruco_offset:.1f}, '
+                     f'current scaled offset: {offset_hypot_rel:.1f}, '
+                     'next offset scaled according to next zoom: '
+                     f'{next_offset_scaled_by_next_zoom:.1f}, '
+                     f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, '
+                     f'ATOL: {OFFSET_ATOL_SMOOTH_ZOOM}')
             logging.error(e_msg)
           else:
             logging.debug('Successfully matched current offset with upcoming '

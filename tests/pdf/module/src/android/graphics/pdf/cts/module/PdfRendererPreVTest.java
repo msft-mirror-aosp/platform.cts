@@ -78,6 +78,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -752,7 +753,8 @@ public class PdfRendererPreVTest {
         try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
                 PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
 
-            RectF bounds = new RectF(10, 20, 30, 40);
+            List<RectF> bounds = new ArrayList<>();
+            bounds.add(new RectF(10, 20, 30, 40));
             HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
             highlightAnnotation.setColor(Color.GREEN);
 
@@ -842,7 +844,8 @@ public class PdfRendererPreVTest {
         try (PdfRendererPreV renderer = createPreVRenderer(EMPTY_PDF, mContext, null);
                 PdfRendererPreV.Page firstPage = renderer.openPage(0)) {
 
-            RectF bounds = new RectF(10, 20, 30, 40);
+            List<RectF> bounds = new ArrayList<>();
+            bounds.add(new RectF(10, 20, 30, 40));
             HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
             highlightAnnotation.setColor(Color.GREEN);
 

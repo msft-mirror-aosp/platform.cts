@@ -29,7 +29,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -243,7 +243,7 @@ public class ExpandableListViewTest {
                 mock(ExpandableListView.OnGroupExpandListener.class);
         mExpandableListView.setOnGroupExpandListener(mockOnGroupExpandListener);
 
-        verifyZeroInteractions(mockOnGroupExpandListener);
+        verifyNoMoreInteractions(mockOnGroupExpandListener);
 
         assertTrue(mExpandableListView.expandGroup(0));
         verify(mockOnGroupExpandListener, times(1)).onGroupExpand(0);
@@ -282,7 +282,7 @@ public class ExpandableListViewTest {
                 mock(ExpandableListView.OnGroupExpandListener.class);
         mExpandableListView.setOnGroupExpandListener(mockOnGroupExpandListener);
 
-        verifyZeroInteractions(mockOnGroupExpandListener);
+        verifyNoMoreInteractions(mockOnGroupExpandListener);
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, mExpandableListView,
                 () -> assertTrue(mExpandableListView.expandGroup(0, true)));
         verify(mockOnGroupExpandListener, times(1)).onGroupExpand(0);
@@ -327,7 +327,7 @@ public class ExpandableListViewTest {
                 mock(ExpandableListView.OnGroupCollapseListener.class);
         mExpandableListView.setOnGroupCollapseListener(mockOnGroupCollapseListener);
 
-        verifyZeroInteractions(mockOnGroupCollapseListener);
+        verifyNoMoreInteractions(mockOnGroupCollapseListener);
         assertFalse(mExpandableListView.collapseGroup(0));
         verify(mockOnGroupCollapseListener, times(1)).onGroupCollapse(0);
         assertFalse(mExpandableListView.isGroupExpanded(0));
@@ -361,7 +361,7 @@ public class ExpandableListViewTest {
                 mock(ExpandableListView.OnGroupClickListener.class);
 
         mExpandableListView.setOnGroupClickListener(mockOnGroupClickListener);
-        verifyZeroInteractions(mockOnGroupClickListener);
+        verifyNoMoreInteractions(mockOnGroupClickListener);
 
         mExpandableListView.performItemClick(null, 0, 0);
         verify(mockOnGroupClickListener, times(1)).onGroupClick(eq(mExpandableListView),
@@ -377,7 +377,7 @@ public class ExpandableListViewTest {
                 mock(ExpandableListView.OnChildClickListener.class);
 
         mExpandableListView.setOnChildClickListener(mockOnChildClickListener);
-        verifyZeroInteractions(mockOnChildClickListener);
+        verifyNoMoreInteractions(mockOnChildClickListener);
 
         // first let the list expand
         mExpandableListView.expandGroup(0);

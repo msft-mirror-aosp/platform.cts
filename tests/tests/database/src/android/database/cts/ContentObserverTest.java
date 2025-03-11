@@ -25,7 +25,7 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -44,7 +44,7 @@ public class ContentObserverTest {
     private static final Uri CONTENT_URI = Uri.parse("content://uri");
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = HandlerThread.class)
+    @DisabledOnRavenwood(blockedBy = HandlerThread.class)
     public void testContentObserver() throws InterruptedException {
         // Test constructor with null handler, dispatchChange will directly invoke onChange.
         MyContentObserver contentObserver;
@@ -88,7 +88,7 @@ public class ContentObserverTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = HandlerThread.class)
+    @DisabledOnRavenwood(blockedBy = HandlerThread.class)
     public void testContentObserverWithUri() throws InterruptedException {
         // Test constructor with null handler, dispatchChange will directly invoke onChange.
         MyContentObserverWithUri contentObserver;

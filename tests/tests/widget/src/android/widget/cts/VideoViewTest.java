@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -160,7 +160,7 @@ public class VideoViewTest {
         mActivityRule.runOnUiThread(() -> mVideoView.setVideoPath(mVideoPath));
         verify(mockPreparedListener, within(TIME_OUT)).onPrepared(any(MediaPlayer.class));
         verify(mockPreparedListener, times(1)).onPrepared(any(MediaPlayer.class));
-        verifyZeroInteractions(mockCompletionListener);
+        verifyNoMoreInteractions(mockCompletionListener);
 
         mActivityRule.runOnUiThread(mVideoView::start);
         // wait time is longer than duration in case system is sluggish

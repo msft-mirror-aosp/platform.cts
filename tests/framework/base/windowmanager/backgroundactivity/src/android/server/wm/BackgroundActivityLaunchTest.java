@@ -69,6 +69,7 @@ import android.server.wm.backgroundactivity.appa.Components;
 import android.server.wm.backgroundactivity.common.CommonComponents.Event;
 import android.server.wm.backgroundactivity.common.EventReceiver;
 import android.util.Log;
+import android.view.Surface;
 import android.view.textclassifier.TextClassification;
 
 import androidx.test.filters.FlakyTest;
@@ -162,7 +163,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.putExtra(EVENT_NOTIFIER_EXTRA, receiver.getNotifier());
         mContext.startActivity(intent);
-        receiver.waitForEventOrThrow(ACTIVITY_START_TIMEOUT_MS);
+        receiver.waitForEventOrThrow(ACTIVITY_START_TIMEOUT_MS); // activity started
+        pressHomeAndWaitHomeResumed(); // cancel grace period
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
     }
 
@@ -1300,64 +1302,69 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
     private void clickAllowBindWidget(Components app, ResultReceiver resultReceiver)
             throws Exception {
-        // Create appWidgetId so we can send it to app, to request bind widget and start config
-        // activity.
-        UiDevice device = UiDevice.getInstance(mInstrumentation);
-        AppWidgetHost appWidgetHost = new AppWidgetHost(mContext, 0);
-        final int appWidgetId = appWidgetHost.allocateAppWidgetId();
-        Intent appWidgetIntent = new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);
-        appWidgetIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
-        appWidgetIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER,
-                app.WIDGET_PROVIDER);
+        try (RotationSession rotationSession = new RotationSession(mWmState)) {
+            rotationSession.set(Surface.ROTATION_0);
+            // Create appWidgetId so we can send it to app, to request bind widget and start config
+            // activity.
+            UiDevice device = UiDevice.getInstance(mInstrumentation);
+            AppWidgetHost appWidgetHost = new AppWidgetHost(mContext, 0);
+            final int appWidgetId = appWidgetHost.allocateAppWidgetId();
+            Intent appWidgetIntent = new Intent(AppWidgetManager.ACTION_APPWIDGET_BIND);
+            appWidgetIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+            appWidgetIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_PROVIDER,
+                    app.WIDGET_PROVIDER);
 
-        Intent intent = new Intent();
-        intent.setComponent(app.WIDGET_CONFIG_TEST_ACTIVITY);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.putExtra(Intent.EXTRA_INTENT, appWidgetIntent);
-        intent.putExtra(EVENT_NOTIFIER_EXTRA, resultReceiver);
-        mContext.startActivity(intent);
+            Intent intent = new Intent();
+            intent.setComponent(app.WIDGET_CONFIG_TEST_ACTIVITY);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra(Intent.EXTRA_INTENT, appWidgetIntent);
+            intent.putExtra(EVENT_NOTIFIER_EXTRA, resultReceiver);
+            mContext.startActivity(intent);
 
-        // Find settings package and bind widget activity and click the create button.
-        String settingsPkgName = "";
-        PackageManager pm = mContext.getPackageManager();
-        List<ResolveInfo> ris = pm.queryIntentActivities(appWidgetIntent,
-                PackageManager.MATCH_DEFAULT_ONLY);
-        for (ResolveInfo ri : ris) {
-            if (ri.activityInfo.name.contains("AllowBindAppWidgetActivity")) {
-                settingsPkgName = ri.activityInfo.packageName;
+            // Find settings package and bind widget activity and click the create button.
+            String settingsPkgName = "";
+            PackageManager pm = mContext.getPackageManager();
+            List<ResolveInfo> ris = pm.queryIntentActivities(appWidgetIntent,
+                    PackageManager.MATCH_DEFAULT_ONLY);
+            for (ResolveInfo ri : ris) {
+                if (ri.activityInfo.name.contains("AllowBindAppWidgetActivity")) {
+                    settingsPkgName = ri.activityInfo.packageName;
+                }
             }
+            assertWithMessage("Cannot find settings app").that(settingsPkgName).isNotEmpty();
+            assertWithMessage("Unable to start AllowBindAppWidgetActivity")
+                    .that(device.wait(Until.hasObject(By.pkg(settingsPkgName)),
+                            1000 * 10)).isTrue();
+            boolean buttonClicked = false;
+            BySelector selector = By.clickable(true);
+            List<UiObject2> objects = device.findObjects(selector);
+            assume().withMessage("No clickable UI elements").that(objects).isNotEmpty();
+            List<String> objectTexts = objects.stream()
+                    .map(UiObject2::getText)
+                    .collect(Collectors.toList());
+            for (UiObject2 object : objects) {
+                String objectText = object.getText();
+                if (objectText == null) {
+                    continue;
+                }
+                if (objectText.equalsIgnoreCase("CREATE") || objectText.equalsIgnoreCase("ALLOW")) {
+                    object.click();
+                    buttonClicked = true;
+                    break;
+                }
+            }
+            assertWithMessage("Create' button not found/clicked in %s", objectTexts)
+                    .that(buttonClicked)
+                    .isTrue();
+            assertWithMessage("%s is not gone", settingsPkgName)
+                    .that(device.wait(Until.gone(By.pkg(settingsPkgName)), 1000 * 10)
+                            && buttonClicked)
+                    .isTrue();
+
+            // Wait the bind widget activity goes away.
+            waitUntilForegroundChanged(settingsPkgName, false,
+                    ACTIVITY_NOT_RESUMED_TIMEOUT_MS);
         }
-        assertWithMessage("Cannot find settings app").that(settingsPkgName).isNotEmpty();
-        assertWithMessage("Unable to start AllowBindAppWidgetActivity")
-                .that(device.wait(Until.hasObject(By.pkg(settingsPkgName)), 1000 * 10)).isTrue();
-        boolean buttonClicked = false;
-        BySelector selector = By.clickable(true);
-        List<UiObject2> objects = device.findObjects(selector);
-        assume().withMessage("No clickable UI elements").that(objects).isNotEmpty();
-        List<String> objectTexts = objects.stream()
-                .map(UiObject2::getText)
-                .collect(Collectors.toList());
-        for (UiObject2 object : objects) {
-            String objectText = object.getText();
-            if (objectText == null) {
-                continue;
-            }
-            if (objectText.equalsIgnoreCase("CREATE") || objectText.equalsIgnoreCase("ALLOW")) {
-                object.click();
-                buttonClicked = true;
-                break;
-            }
-        }
-        assertWithMessage("Create' button not found/clicked in %s", objectTexts)
-                .that(buttonClicked)
-                .isTrue();
-        assertWithMessage("%s is not gone", settingsPkgName)
-                .that(device.wait(Until.gone(By.pkg(settingsPkgName)), 1000 * 10) && buttonClicked)
-                .isTrue();
-
-        // Wait the bind widget activity goes away.
-        waitUntilForegroundChanged(settingsPkgName, false,
-                ACTIVITY_NOT_RESUMED_TIMEOUT_MS);
     }
 
     private void pressHomeAndWaitHomeResumed() {
@@ -1365,6 +1372,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         pressHomeButton();
         mWmState.waitForHomeActivityVisible();
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        recordTaskStateDump("pressHome - home visible on default display");
     }
 
     private void assumeSetupComplete() {
@@ -1470,6 +1478,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
             intent.putExtra(extraTrueName, true);
         }
         mContext.startActivity(intent);
+        recordTaskStateDump("startActivity " + intent);
     }
 
     private static void grantSystemAlertWindow(Components app) throws Exception {
