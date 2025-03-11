@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -227,7 +227,7 @@ public class CursorTreeAdapterTest {
         adapter.registerDataSetObserver(mockDataSetObserver);
 
         // mChildrenCursorHelpers is empty
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetChanged(false);
         verify(mockDataSetObserver, times(1)).onChanged();
 
@@ -236,7 +236,7 @@ public class CursorTreeAdapterTest {
         // add group 1 into mChildrenCursorHelpers
         adapter.getChild(1, 0);
         reset(mockDataSetObserver);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
 
         adapter.notifyDataSetChanged(true);
         verify(mockDataSetObserver, times(1)).onChanged();
@@ -248,7 +248,7 @@ public class CursorTreeAdapterTest {
 
         // both group 0 and group 1 are in mChildrenCursorHelpers
         reset(mockDataSetObserver);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         // does not release cursors
         adapter.notifyDataSetChanged(false);
         verify(mockDataSetObserver, times(1)).onChanged();
@@ -267,7 +267,7 @@ public class CursorTreeAdapterTest {
         adapter.registerDataSetObserver(mockDataSetObserver);
 
         // mChildrenCursorHelpers is empty
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetChanged();
         verify(mockDataSetObserver, times(1)).onChanged();
 
@@ -276,7 +276,7 @@ public class CursorTreeAdapterTest {
         // add group 1 into mChildrenCursorHelpers
         adapter.getChild(1, 0);
         reset(mockDataSetObserver);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetChanged();
         verify(mockDataSetObserver, times(1)).onChanged();
         adapter.reset();
@@ -293,7 +293,7 @@ public class CursorTreeAdapterTest {
         DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
         adapter.registerDataSetObserver(mockDataSetObserver);
 
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         // mChildrenCursorHelpers is empty
         adapter.notifyDataSetInvalidated();
         verify(mockDataSetObserver, times(1)).onInvalidated();
@@ -303,7 +303,7 @@ public class CursorTreeAdapterTest {
         // add group 1 into mChildrenCursorHelpers
         adapter.getChild(1, 0);
         reset(mockDataSetObserver);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetInvalidated();
         verify(mockDataSetObserver, times(1)).onInvalidated();
         adapter.reset();

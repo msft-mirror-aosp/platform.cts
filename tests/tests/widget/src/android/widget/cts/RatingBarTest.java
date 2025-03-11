@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -108,7 +107,7 @@ public class RatingBarTest {
                 mock(RatingBar.OnRatingBarChangeListener.class);
         mRatingBar.setOnRatingBarChangeListener(listener);
         assertSame(listener, mRatingBar.getOnRatingBarChangeListener());
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
 
         // normal value
         mRatingBar.setRating(2.2f);

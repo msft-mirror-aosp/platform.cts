@@ -975,7 +975,7 @@ public class UiTranslationManagerTest {
         try {
             // Callback should receive no events.
             SystemClock.sleep(UI_WAIT_TIMEOUT);
-            Mockito.verifyZeroInteractions(mockCallback);
+            Mockito.verifyNoMoreInteractions(mockCallback);
         } finally {
             manager.unregisterUiTranslationStateCallback(mockCallback);
         }
@@ -1157,7 +1157,7 @@ public class UiTranslationManagerTest {
         pauseUiTranslation(contentCaptureContext);
         resumeUiTranslation(contentCaptureContext);
 
-        Mockito.verifyZeroInteractions(mockCallback);
+        Mockito.verifyNoMoreInteractions(mockCallback);
     }
 
     @Test

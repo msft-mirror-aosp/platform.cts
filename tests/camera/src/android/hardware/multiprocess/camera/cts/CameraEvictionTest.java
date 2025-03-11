@@ -632,7 +632,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             return;
         }
 
-        verifyZeroInteractions(mockErrorCb1);
+        verifyNoMoreInteractions(mockErrorCb1);
 
         startRemoteProcess(activityKlass, processName);
 

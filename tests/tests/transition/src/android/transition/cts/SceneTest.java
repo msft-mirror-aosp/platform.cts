@@ -24,7 +24,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.transition.Scene;
 import android.view.View;
@@ -56,7 +56,7 @@ public class SceneTest extends BaseTransitionTest {
         enterScene(scene);
 
         verify(enterCheck, times(1)).run();
-        verifyZeroInteractions(exitCheck);
+        verifyNoMoreInteractions(exitCheck);
 
         View redSquare = mActivity.findViewById(R.id.redSquare);
         assertNotNull(redSquare);
@@ -115,7 +115,7 @@ public class SceneTest extends BaseTransitionTest {
         enterScene(scene);
 
         verify(enterCheck, times(1)).run();
-        verifyZeroInteractions(exitCheck);
+        verifyNoMoreInteractions(exitCheck);
 
         View redSquare = mActivity.findViewById(R.id.redSquare);
         assertNotNull(redSquare);
