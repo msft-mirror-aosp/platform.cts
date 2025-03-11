@@ -280,7 +280,12 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Landroid/app/ondeviceintelligence/IFeatureDetailsCallback;",
                     "Landroid/service/ondeviceintelligence/IOnDeviceSandboxedInferenceService;",
                     "Landroid/app/ondeviceintelligence/FeatureDetails;",
-                    "Landroid/app/ondeviceintelligence/IOnDeviceIntelligenceManager;");
+                    "Landroid/app/ondeviceintelligence/IOnDeviceIntelligenceManager;",
+                    // b/400868534 : Allow duplication for RangingFrameworkInitializer.
+                    // framework-ranging.jar version of this class of this will be used
+                    // for SDK 36 and above.
+                    // framework.jar version of this class will be SDK 35 and below.
+                    "Landroid/ranging/RangingFrameworkInitializer;");
 
     private static final Set<String> SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST =
             ImmutableSet.of(
