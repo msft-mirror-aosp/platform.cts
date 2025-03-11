@@ -141,6 +141,7 @@ java_defaults {
         ":CtsDevicePrereleaseSdkApp",
         ":CtsDeviceProfileableApp",
         ":CtsMockInputMethod",
+        ":CtsMockInputMethod2",
         ":CtsDeviceServicesTestShareUidAppA",
         ":CtsDeviceServicesTestShareUidAppB",
         ":CtsWindowManagerJetpackSecondUidApp",
