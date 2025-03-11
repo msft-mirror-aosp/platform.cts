@@ -1156,12 +1156,12 @@ class ItsSession(object):
 
     Args:
       video_size: str; Preview resolution at which to record. ex. "1920x1080"
-      ae_awb_regions: dictionary of (aeAwbRegionOne/Two/Three/Four).
+      ae_awb_regions: dictionary of (regionBlue/Light/Dark/Yellow).
         Used to control 3A region during recording.
-        aeAwbRegionOne (metering rectangle) first ae/awb region of recording.
-        aeAwbRegionTwo (metering rectangle) second ae/awb region of recording.
-        aeAwbRegionThree (metering rectangle) third ae/awb region of recording.
-        aeAwbRegionFour (metering rectangle) fourth ae/awb region of recording.
+        regionBlue (metering rectangle) first ae/awb region of recording.
+        regionLight (metering rectangle) second ae/awb region of recording.
+        regionDark (metering rectangle) third ae/awb region of recording.
+        regionYellow (metering rectangle) fourth ae/awb region of recording.
       ae_awb_region_duration: float; sleep in ms between 3A regions.
       stabilize: boolean; Whether the preview should be stabilized.
       ae_target_fps_min: int; If not none, set CONTROL_AE_TARGET_FPS_RANGE min.
@@ -1183,10 +1183,10 @@ class ItsSession(object):
         'aeAwbRegionDuration': ae_awb_region_duration
     }
 
-    cmd['aeAwbRegionOne'] = ae_awb_regions['aeAwbRegionOne']
-    cmd['aeAwbRegionTwo'] = ae_awb_regions['aeAwbRegionTwo']
-    cmd['aeAwbRegionThree'] = ae_awb_regions['aeAwbRegionThree']
-    cmd['aeAwbRegionFour'] = ae_awb_regions['aeAwbRegionFour']
+    cmd['regionBlue'] = ae_awb_regions['regionBlue']
+    cmd['regionLight'] = ae_awb_regions['regionLight']
+    cmd['regionDark'] = ae_awb_regions['regionDark']
+    cmd['regionYellow'] = ae_awb_regions['regionYellow']
     cmd['hlg10Enabled'] = False
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
