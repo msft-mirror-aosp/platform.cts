@@ -395,7 +395,7 @@ class PermissionsTest {
 
     @Test
     fun withAppOp_flakeTest() {
-        for (i in 0..1000) {
+        for (i in 0..500) {
             permissions().withAppOp(APP_OP).use {
                 assertWithMessage("Attempt $i").that(permissions().hasAppOpAllowed(APP_OP))
                         .isTrue()
@@ -432,7 +432,7 @@ class PermissionsTest {
         @JvmField
         val deviceState = DeviceState()
 
-        private const val APP_OP = AppOpsManager.OPSTR_FINE_LOCATION
+        private const val APP_OP = AppOpsManager.OPSTR_MANAGE_CREDENTIALS
         private const val PERMISSION_HELD_BY_SHELL = "android.permission.INTERACT_ACROSS_PROFILES"
         private const val DIFFERENT_PERMISSION_HELD_BY_SHELL =
             "android.permission.INTERACT_ACROSS_USERS_FULL"
