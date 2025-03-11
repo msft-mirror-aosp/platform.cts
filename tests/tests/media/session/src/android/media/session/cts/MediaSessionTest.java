@@ -17,6 +17,7 @@ package android.media.session.cts;
 
 import static android.media.AudioAttributes.USAGE_GAME;
 import static android.media.AudioAttributes.USAGE_MEDIA;
+import static android.media.cts.Utils.compareRemoteUserInfo;
 import static android.media.session.cts.MediaSessionTestService.KEY_EXPECTED_QUEUE_SIZE;
 import static android.media.session.cts.MediaSessionTestService.KEY_EXPECTED_TOTAL_NUMBER_OF_ITEMS;
 import static android.media.session.cts.MediaSessionTestService.KEY_SESSION_TOKEN;
@@ -25,7 +26,6 @@ import static android.media.session.cts.MediaSessionTestService.STEP_CLEAN_UP;
 import static android.media.session.cts.MediaSessionTestService.STEP_SET_UP;
 import static android.media.session.cts.MediaSessionTestService.TEST_SERIES_OF_SET_QUEUE;
 import static android.media.session.cts.MediaSessionTestService.TEST_SET_QUEUE;
-import static android.media.cts.Utils.compareRemoteUserInfo;
 import static android.os.UserManager.USER_TYPE_PROFILE_CLONE;
 
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
@@ -169,12 +169,9 @@ public class MediaSessionTest {
         });
     }
 
-    /**
-     * Tests that a session can be created and that all the fields are
-     * initialized correctly.
-     */
+    /** Tests that a session can be created and that all the fields are initialized correctly. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCreateSession() throws Exception {
         assertThat(mSession.getSessionToken()).isNotNull();
         assertWithMessage("New session should not be active").that(mSession.isActive()).isFalse();
@@ -186,7 +183,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     // Needed for assertThat(sessionToken.equals(mSession)).isFalse().
     @SuppressWarnings("EqualsIncompatibleType")
     public void testSessionTokenEquals() {
@@ -208,11 +205,9 @@ public class MediaSessionTest {
         }
     }
 
-    /**
-     * Tests MediaSession.Token created in the constructor of MediaSession.
-     */
+    /** Tests MediaSession.Token created in the constructor of MediaSession. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSessionToken() throws Exception {
         MediaSession.Token sessionToken = mSession.getSessionToken();
 
@@ -236,12 +231,9 @@ public class MediaSessionTest {
         }
     }
 
-    /**
-     * Tests that the various configuration bits on a session get passed to the
-     * controller.
-     */
+    /** Tests that the various configuration bits on a session get passed to the controller. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testConfigureSession() throws Exception {
         MediaController controller = mSession.getController();
         controller.registerCallback(mCallback, mHandler);
@@ -383,7 +375,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void setMediaSession_withInaccessibleUri_uriCleared() throws Exception {
         createCloneProfile();
         Assume.assumeTrue(mCloneProfileId.isPresent());
@@ -417,7 +409,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void setMediaSession_withUri_uriExists() throws Exception {
         String testMediaUri = "content://media/external/images/media/";
         MediaController controller = mSession.getController();
@@ -450,7 +442,7 @@ public class MediaSessionTest {
      */
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetMediaButtonReceiver_broadcastReceiver() throws Exception {
         Intent intent = new Intent(mContext.getApplicationContext(),
                 MediaButtonBroadcastReceiver.class);
@@ -498,11 +490,9 @@ public class MediaSessionTest {
         }
     }
 
-    /**
-     * Test whether media button receiver can be a explicit service.
-     */
+    /** Test whether media button receiver can be a explicit service. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetMediaButtonReceiver_service() throws Exception {
         Intent intent = new Intent(mContext.getApplicationContext(),
                 MediaButtonReceiverService.class);
@@ -551,11 +541,11 @@ public class MediaSessionTest {
     }
 
     /**
-     * Test whether system doesn't crash by
-     * {@link MediaSession#setMediaButtonReceiver(PendingIntent)} with implicit intent.
+     * Test whether system doesn't crash by {@link
+     * MediaSession#setMediaButtonReceiver(PendingIntent)} with implicit intent.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetMediaButtonReceiver_implicitIntent() throws Exception {
         // Note: No such broadcast receiver exists.
         Intent intent = new Intent("android.media.session.cts.ACTION_MEDIA_TEST");
@@ -579,7 +569,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetMediaButtonReceiver_withNull_doesNotThrow() {
         try {
             mSession.setMediaButtonReceiver(null);
@@ -594,7 +584,7 @@ public class MediaSessionTest {
      */
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetMediaButtonBroadcastReceiver_broadcastReceiver() throws Exception {
         // Play a sound so this session can get the priority.
         Utils.assertMediaPlaybackStarted(getContext());
@@ -638,11 +628,9 @@ public class MediaSessionTest {
         }
     }
 
-    /**
-     * Test public APIs of {@link VolumeProvider}.
-     */
+    /** Test public APIs of {@link VolumeProvider}. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testVolumeProvider() {
         VolumeProvider vp = new VolumeProvider(VolumeProvider.VOLUME_CONTROL_RELATIVE,
                 TEST_MAX_VOLUME, TEST_CURRENT_VOLUME, TEST_VOLUME_CONTROL_ID) {};
@@ -656,7 +644,7 @@ public class MediaSessionTest {
      * Test {@link MediaSession#setPlaybackToLocal} and {@link MediaSession#setPlaybackToRemote}.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testPlaybackToLocalAndRemote() throws Exception {
         MediaController controller = mSession.getController();
         controller.registerCallback(mCallback, mHandler);
@@ -720,11 +708,9 @@ public class MediaSessionTest {
         }
     }
 
-    /**
-     * Test {@link MediaSession.Callback#onMediaButtonEvent}.
-     */
+    /** Test {@link MediaSession.Callback#onMediaButtonEvent}. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCallbackOnMediaButtonEvent() throws Exception {
         MediaSessionCallback sessionCallback = new MediaSessionCallback();
         mSession.setCallback(sessionCallback, new Handler(Looper.getMainLooper()));
@@ -835,11 +821,11 @@ public class MediaSessionTest {
     }
 
     /**
-     * Tests {@link MediaSession#setCallback} with {@code null}. No callbacks will be called
-     * once {@code setCallback(null)} is done.
+     * Tests {@link MediaSession#setCallback} with {@code null}. No callbacks will be called once
+     * {@code setCallback(null)} is done.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetCallbackWithNull() throws Exception {
         MediaSessionCallback sessionCallback = new MediaSessionCallback();
         mSession.setCallback(sessionCallback, mHandler);
@@ -872,11 +858,10 @@ public class MediaSessionTest {
 
     /**
      * Test {@link MediaSession#release} doesn't crash when multiple media sessions are in the app
-     * which receives the media key events.
-     * See: b/36669550
+     * which receives the media key events. See: b/36669550
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testReleaseNoCrashWithMultipleSessions() throws Exception {
         // Start a media playback for this app to receive media key events.
         Utils.assertMediaPlaybackStarted(getContext());
@@ -910,11 +895,9 @@ public class MediaSessionTest {
                 new KeyEvent(downTime, System.currentTimeMillis(), KeyEvent.ACTION_UP, keyCode, 0));
     }
 
-    /**
-     * Tests {@link MediaSession.QueueItem}.
-     */
+    /** Tests {@link MediaSession.QueueItem}. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testQueueItem() {
         MediaDescription.Builder descriptionBuilder = new MediaDescription.Builder()
                 .setMediaId("media-id")
@@ -952,7 +935,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testQueueItemEquals() {
         MediaDescription.Builder descriptionBuilder = new MediaDescription.Builder()
                 .setMediaId("media-id")
@@ -980,7 +963,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSessionInfoWithFrameworkParcelable() {
         final String testKey = "test_key";
         final AudioAttributes frameworkParcelable = new AudioAttributes.Builder().build();
@@ -1005,7 +988,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSessionInfoWithCustomParcelable() {
         final String testKey = "test_key";
         final MediaSession2Test.CustomParcelable customParcelable =
@@ -1029,11 +1012,11 @@ public class MediaSessionTest {
     }
 
     /**
-     * An app should not be able to create too many sessions.
-     * See MediaSessionService#SESSION_CREATION_LIMIT_PER_UID
+     * An app should not be able to create too many sessions. See
+     * MediaSessionService#SESSION_CREATION_LIMIT_PER_UID
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSessionCreationLimit() {
         List<MediaSession> sessions = new ArrayList<>();
         try {
@@ -1051,11 +1034,11 @@ public class MediaSessionTest {
     }
 
     /**
-     * Check that calling {@link MediaSession#release()} multiple times for the same session
-     * does not decrement current session count multiple times.
+     * Check that calling {@link MediaSession#release()} multiple times for the same session does
+     * not decrement current session count multiple times.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSessionCreationLimitWithMediaSessionRelease() {
         List<MediaSession> sessions = new ArrayList<>();
         MediaSession sessionToReleaseMultipleTimes = null;
@@ -1085,7 +1068,7 @@ public class MediaSessionTest {
      * Check that calling {@link MediaSession2#close()} does not decrement current session count.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSessionCreationLimitWithMediaSession2Release() {
         List<MediaSession> sessions = new ArrayList<>();
         try {
@@ -1112,7 +1095,7 @@ public class MediaSessionTest {
      * on the remote process due to binder buffer overflow.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSeriesOfSetQueue() throws Exception {
         int numberOfCalls = 100;
         int queueSize = 1_000;
@@ -1138,7 +1121,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetQueueWithLargeNumberOfItems() throws Exception {
         int queueSize = 500_000;
         List<QueueItem> queue = new ArrayList<>();
@@ -1161,7 +1144,7 @@ public class MediaSessionTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSetQueueWithEmptyQueue() throws Exception {
         try (RemoteService.Invoker invoker = new RemoteService.Invoker(mContext,
                 MediaSessionTestService.class, TEST_SET_QUEUE)) {

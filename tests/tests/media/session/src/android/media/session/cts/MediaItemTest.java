@@ -40,6 +40,7 @@ public class MediaItemTest {
     private static final int CONTENT_DESCRIPTION = 0;
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testBrowsableMediaItem() {
         MediaDescription description = new MediaDescription.Builder()
                 .setDescription(DESCRIPTION).setMediaId(MEDIA_ID)
@@ -70,7 +71,7 @@ public class MediaItemTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testPlayableMediaItem() {
         MediaDescription description = new MediaDescription.Builder()
                 .setDescription(DESCRIPTION).setMediaId(MEDIA_ID)
