@@ -341,6 +341,9 @@ abstract class AssistTestBase {
             mDisplaySize = new Point(dMode.getPhysicalWidth(), dMode.getPhysicalHeight());
         }
         Rect bounds = mTestActivity.getWindowManager().getMaximumWindowMetrics().getBounds();
+        if (Utils.isXr(mContext)) {
+            bounds = mTestActivity.getWindowManager().getCurrentWindowMetrics().getBounds();
+        }
         intent.putExtra(Utils.DISPLAY_AREA_BOUNDS_KEY, bounds);
         intent.putExtra(Utils.DISPLAY_WIDTH_KEY, mDisplaySize.x);
         intent.putExtra(Utils.DISPLAY_HEIGHT_KEY, mDisplaySize.y);
