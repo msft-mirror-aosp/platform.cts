@@ -264,6 +264,7 @@ public class Utils {
                 "--instruction-set="
                         + Objects.requireNonNull(ABI_TO_INSTRUCTION_SET_MAP.get(abi.getName())),
                 "--dex-file=" + remoteApkFile,
+                "--dex-location=base.apk",
                 "--profile-file=" + remoteProfileFile,
                 "--oat-file=" + remoteOdexFile,
                 "--output-vdex=" + remoteVdexFile,
