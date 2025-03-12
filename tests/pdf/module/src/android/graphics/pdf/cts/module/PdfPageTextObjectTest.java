@@ -19,8 +19,10 @@ package android.graphics.pdf.cts.module;
 import static com.google.common.truth.Truth.assertThat;
 
 import android.graphics.Color;
-import android.graphics.Typeface;
+import android.graphics.pdf.component.PdfPageObjectRenderMode;
 import android.graphics.pdf.component.PdfPageTextObject;
+import android.graphics.pdf.component.PdfPageTextObjectFont;
+import android.graphics.pdf.component.PdfPageTextObjectFontFamily;
 import android.graphics.pdf.flags.Flags;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -42,35 +44,44 @@ public class PdfPageTextObjectTest {
     private static final String NEW_TEXT = "Bye World";
     private static final float FONT_SIZE = 5.0F;
     private static final float NEW_FONT_SIZE = 10.0F;
-    private static final Color STROKE_COLOR = Color.valueOf(Color.YELLOW);
-    private static final float STROKE_WIDTH = 1.0F;
-    private static final Color FILL_COLOR = Color.valueOf(Color.GREEN);
+    private static final int STROKE_COLOR = Color.YELLOW;
+    private static final float STROKE_WIDTH = 10.0F;
+    private static final int FILL_COLOR = Color.GREEN;
+    private static final int RENDER_MODE = PdfPageObjectRenderMode.FILL_STROKE;
 
-    private static final Typeface TYPE_FACE = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
-    private static final Typeface NEW_TYPE_FACE =
-            Typeface.create(Typeface.SANS_SERIF, Typeface.ITALIC);
+    private static final PdfPageTextObjectFont FONT =
+            new PdfPageTextObjectFont(PdfPageTextObjectFontFamily.COURIER, true, false);
 
     @Test
     public void textPageObject_test() {
-        PdfPageTextObject pageTextObject = new PdfPageTextObject(TEXT, TYPE_FACE, FONT_SIZE);
+        PdfPageTextObject pageTextObject = new PdfPageTextObject(TEXT, FONT, FONT_SIZE);
         assertThat(pageTextObject.getText()).isEqualTo(TEXT);
         assertThat(pageTextObject.getFontSize()).isEqualTo(FONT_SIZE);
-        assertThat(pageTextObject.getTypeface()).isEqualTo(TYPE_FACE);
+        assertThat(pageTextObject.getRenderMode()).isEqualTo(PdfPageObjectRenderMode.FILL);
+
+        PdfPageTextObjectFont font = pageTextObject.getFont();
+        assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFontFamily.COURIER);
+        assertThat(font.isBold()).isTrue();
+        assertThat(font.isItalic()).isFalse();
+
+        font.setFontFamily(PdfPageTextObjectFontFamily.HELVETICA);
+        font.setBold(false);
+        font.setItalic(true);
+        assertThat(font.getFontFamily()).isEqualTo(PdfPageTextObjectFontFamily.HELVETICA);
+        assertThat(font.isBold()).isFalse();
+        assertThat(font.isItalic()).isTrue();
+
+        pageTextObject.setRenderMode(RENDER_MODE);
+        assertThat(pageTextObject.getRenderMode()).isEqualTo(RENDER_MODE);
 
         pageTextObject.setText(NEW_TEXT);
         assertThat(pageTextObject.getText()).isEqualTo(NEW_TEXT);
-
-        pageTextObject.setFontSize(NEW_FONT_SIZE);
-        assertThat(pageTextObject.getFontSize()).isEqualTo(NEW_FONT_SIZE);
 
         pageTextObject.setStrokeColor(STROKE_COLOR);
         assertThat(pageTextObject.getStrokeColor()).isEqualTo(STROKE_COLOR);
 
         pageTextObject.setStrokeWidth(STROKE_WIDTH);
         assertThat(pageTextObject.getStrokeWidth()).isEqualTo(STROKE_WIDTH);
-
-        pageTextObject.setTypeface(NEW_TYPE_FACE);
-        assertThat(pageTextObject.getTypeface()).isEqualTo(NEW_TYPE_FACE);
 
         pageTextObject.setFillColor(FILL_COLOR);
         assertThat(pageTextObject.getFillColor()).isEqualTo(FILL_COLOR);
