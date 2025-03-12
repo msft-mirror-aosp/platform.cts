@@ -75,14 +75,29 @@ class MethodCallHookingAdapter(
     ): MethodVisitor {
         return MethodCallHookingMethodVisitor(
             name,
+            descriptor,
             super.visitMethod(access, name, descriptor, signature, exceptions)
         )
     }
 
     private inner class MethodCallHookingMethodVisitor(
         val methodName: String,
+        val methodDescription: String,
         val nextVisitor: MethodVisitor,
     ) : MethodVisitor(OPCODE_VERSION, nextVisitor) {
+
+        override fun visitCode() {
+            super.visitCode()
+            logCall(
+                nextVisitor,
+                null,
+                null,
+                className,
+                methodName,
+                methodDescription,
+                null
+            )
+        }
 
         override fun visitMethodInsn(
             opcode: Int,
@@ -119,16 +134,22 @@ class MethodCallHookingAdapter(
     /** Log the call. */
     private fun logCall(
         visitor: MethodVisitor,
-        callerMethodName: String,
-        calleeMethodOpcode: Int,
+        callerMethodName: String?,
+        calleeMethodOpcode: Int?,
         calleeMethodOwner: String,
         calleeMethodName: String,
         calleeMethodDesc: String,
         receiverIndex: Int?
     ) {
-        visitor.visitLdcInsn(className.toHumanReadableClassName())
-        visitor.visitLdcInsn(callerMethodName)
-        visitor.visitLdcInsn(calleeMethodOpcode)
+        if (callerMethodName == null) {
+            visitor.visitInsn(ACONST_NULL)
+            visitor.visitInsn(ACONST_NULL)
+            visitor.visitInsn(ACONST_NULL)
+        } else {
+            visitor.visitLdcInsn(className.toHumanReadableClassName())
+            visitor.visitLdcInsn(callerMethodName)
+            visitor.visitLdcInsn(calleeMethodOpcode)
+        }
         visitor.visitLdcInsn(calleeMethodOwner.toHumanReadableClassName())
         visitor.visitLdcInsn(calleeMethodName)
         visitor.visitLdcInsn(calleeMethodDesc.toHumanReadableDesc())
