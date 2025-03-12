@@ -550,8 +550,6 @@ public class VulkanFeaturesTest {
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         final int apiLevel = PropertyUtil.getVsrApiLevel();
-        assumeTrue("Test does not apply for SoCs launched before T", apiLevel > 33);
-
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
         assumeTrue("Skipping because ABP is only required of handheld devices", isHandheld());
 
