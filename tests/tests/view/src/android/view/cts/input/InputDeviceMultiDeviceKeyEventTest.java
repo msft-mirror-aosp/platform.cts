@@ -16,10 +16,6 @@
 
 package android.view.cts.input;
 
-import static com.android.cts.input.EvdevInputEventCodes.EV_KEY;
-import static com.android.cts.input.EvdevInputEventCodes.EV_KEY_PRESS;
-import static com.android.cts.input.EvdevInputEventCodes.EV_KEY_RELEASE;
-import static com.android.cts.input.EvdevInputEventCodes.EV_SYN;
 import static com.android.cts.input.EvdevInputEventCodes.KEY_1;
 import static com.android.cts.input.EvdevInputEventCodes.KEY_2;
 
@@ -43,9 +39,7 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
-import com.android.cts.input.ConfigurationItem;
-import com.android.cts.input.UinputDevice;
-import com.android.cts.input.UinputRegisterCommand;
+import com.android.cts.input.UinputKeyboard;
 
 import org.junit.After;
 import org.junit.Before;
@@ -53,9 +47,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * CTS test cases for multi device key events verification.
@@ -80,7 +72,7 @@ public class InputDeviceMultiDeviceKeyEventTest {
 
     private Instrumentation mInstrumentation;
     private InputManager mInputManager;
-    private UinputDevice[] mUinputDevices = new UinputDevice[NUM_DEVICES];
+    private UinputKeyboard[] mUinputKeyboards = new UinputKeyboard[NUM_DEVICES];
     private int[] mInputManagerDeviceIds = new int[NUM_DEVICES];
 
     @Rule(order = 0)
@@ -99,9 +91,11 @@ public class InputDeviceMultiDeviceKeyEventTest {
         WindowUtil.waitForFocus(mActivityRule.getActivity());
         for (int i = 0; i < NUM_DEVICES; i++) {
             final int jsonDeviceId = i + 1;
-            mUinputDevices[i] = new UinputDevice(mInstrumentation,
-                InputDevice.SOURCE_KEYBOARD, createDeviceRegisterCommand(jsonDeviceId),
-                    null /* display */);
+            mUinputKeyboards[i] =
+                    new UinputKeyboard(
+                            mInstrumentation,
+                            List.of("KEY_1", "KEY_2"),
+                            GOOGLE_VIRTUAL_KEYBOARD_ID + jsonDeviceId);
         }
 
         mInputManager = mInstrumentation.getContext().getSystemService(InputManager.class);
@@ -119,29 +113,10 @@ public class InputDeviceMultiDeviceKeyEventTest {
     @After
     public void tearDown() {
         for (int i = 0; i < NUM_DEVICES; i++) {
-            if (mUinputDevices[i] != null) {
-                mUinputDevices[i].close();
+            if (mUinputKeyboards[i] != null) {
+                mUinputKeyboards[i].close();
             }
         }
-    }
-
-    private UinputRegisterCommand createDeviceRegisterCommand(int deviceId) {
-        List<ConfigurationItem> configurationItems =
-                Arrays.asList(
-                        new ConfigurationItem("UI_SET_EVBIT", List.of("EV_KEY")),
-                        new ConfigurationItem("UI_SET_KEYBIT", List.of(KEY_1, KEY_2)));
-
-        return new UinputRegisterCommand(
-                deviceId,
-                "Virtual All Buttons Device (Test)",
-                GOOGLE_VENDOR_ID,
-                GOOGLE_VIRTUAL_KEYBOARD_ID + deviceId,
-                "bluetooth",
-                "bluetooth:1",
-                configurationItems,
-                Map.of(),
-                /* ffEffectsMax= */ null
-        );
     }
 
     /**
@@ -221,8 +196,7 @@ public class InputDeviceMultiDeviceKeyEventTest {
      * @param evKeyCode The key scan code
      */
     private void pressKeyDown(int deviceId, int evKeyCode) {
-        int[] evCodesDown = new int[] {EV_KEY, evKeyCode, EV_KEY_PRESS, EV_SYN, 0, 0};
-        mUinputDevices[deviceId].injectEvents(Arrays.toString(evCodesDown));
+        mUinputKeyboards[deviceId].injectKeyDown(evKeyCode);
     }
 
     /**
@@ -230,8 +204,7 @@ public class InputDeviceMultiDeviceKeyEventTest {
      * @param evKeyCode The key scan code
      */
     private void pressKeyUp(int deviceId, int evKeyCode) {
-        int[] evCodesUp = new int[] {EV_KEY, evKeyCode, EV_KEY_RELEASE, EV_SYN, 0, 0};
-        mUinputDevices[deviceId].injectEvents(Arrays.toString(evCodesUp));
+        mUinputKeyboards[deviceId].injectKeyUp(evKeyCode);
     }
 
     private void assertKeyRepeat(int deviceId, String label, int repeat, int count) {

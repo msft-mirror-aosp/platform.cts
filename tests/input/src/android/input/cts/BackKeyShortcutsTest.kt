@@ -24,7 +24,6 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.cts.input.CaptureEventActivity
-import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_BACKSPACE
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_ESC
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFT
 import com.android.cts.input.EvdevInputEventCodes.Companion.KEY_LEFTMETA
@@ -80,10 +79,10 @@ class BackKeyShortcutsTest {
             activity.assertNoEvents()
 
             for (scanCode in intArrayOf(KEY_ESC, KEY_LEFT)) {
-                injectKeyDown(keyboardDevice, KEY_LEFTMETA)
-                injectKeyDown(keyboardDevice, scanCode)
-                injectKeyUp(keyboardDevice, scanCode)
-                injectKeyUp(keyboardDevice, KEY_LEFTMETA)
+                keyboardDevice.injectKeyDown(KEY_LEFTMETA)
+                keyboardDevice.injectKeyDown(scanCode)
+                keyboardDevice.injectKeyUp(scanCode)
+                keyboardDevice.injectKeyUp(KEY_LEFTMETA)
 
                 assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_BACK)
             }

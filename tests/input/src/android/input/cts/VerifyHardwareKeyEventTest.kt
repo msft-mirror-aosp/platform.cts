@@ -73,14 +73,13 @@ class VerifyHardwareKeyEventTest {
      */
     @Test
     fun testVerifyHardwareKeyEvent() {
-        val keyboardDevice = UinputKeyboard(instrumentation)
+        UinputKeyboard(instrumentation).use {
+            keyboardDevice ->
+            keyboardDevice.injectKeyDown(KEY_A)
+            // Send the UP event right away to avoid key repeat
+            keyboardDevice.injectKeyUp(KEY_A)
 
-        injectKeyDown(keyboardDevice, KEY_A)
-        // Send the UP event right away to avoid key repeat
-        injectKeyUp(keyboardDevice, KEY_A)
-
-        assertReceivedEventsCanBeVerified(numEvents = 2)
-
-        keyboardDevice.close()
+            assertReceivedEventsCanBeVerified(numEvents = 2)
+         }
     }
 }
