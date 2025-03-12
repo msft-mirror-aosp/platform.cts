@@ -20,23 +20,32 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.credentials.Credential;
 import android.credentials.CredentialOption;
 import android.credentials.GetCredentialException;
 import android.credentials.GetCredentialRequest;
 import android.credentials.GetCredentialResponse;
 import android.credentials.cts.testcore.CtsCredentialManagerUtils;
 import android.credentials.cts.testcore.DeviceConfigStateRequiredRule;
+import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.OutcomeReceiver;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
@@ -56,6 +65,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.List;
+
 @AppModeFull
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
@@ -65,6 +78,51 @@ public class CtsCredentialViewTest {
             "enable_credential_manager";
     private final Context mContext = getInstrumentation().getContext();
     private ViewTestCtsActivity mActivity;
+    private static final Binder CALLBACK =
+            new Binder() {
+                @Override
+                protected boolean onTransact(
+                        final int code,
+                        @NonNull final Parcel data,
+                        final Parcel reply,
+                        final int flags)
+                        throws RemoteException {
+                    if (code != 1 && code != 2) {
+                        return super.onTransact(code, data, reply, flags);
+                    }
+
+                    data.enforceInterface("android.credentials.IGetCandidateCredentialsCallback");
+
+                    if (code == 1) {
+                        final Object response;
+                        try {
+                            @SuppressLint("PrivateApi")
+                            final Class<?> klass =
+                                    Class.forName(
+                                            "android.credentials.GetCandidateCredentialsResponse");
+                            final Parcelable.Creator<?> creator =
+                                    (Parcelable.Creator<?>)
+                                            klass.getDeclaredField("CREATOR").get(null);
+                            assert creator != null;
+                            response = data.readTypedObject(creator);
+                        } catch (final ClassNotFoundException
+                                | IllegalAccessException
+                                | NoSuchFieldException e) {
+                            throw new RuntimeException(e);
+                        }
+                        Log.i(LOG_TAG, response.toString());
+                    } else {
+                        final String errorType = data.readString();
+                        final String message = data.readString();
+
+                        Log.e(LOG_TAG, "Error (" + errorType + "): " + message);
+                    }
+
+                    data.enforceNoDataAvail();
+
+                    return true;
+                }
+            };
 
     @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
@@ -172,5 +230,78 @@ public class CtsCredentialViewTest {
 
         assertEquals(view.getPendingCredentialRequest(), request);
         assertEquals(view.getPendingCredentialCallback(), callback);
+    }
+
+    @Test
+    @AsbSecurityTest(cveBugId = 370477460)
+    public void testGetCandidateCredentials_cannotBeInvokedOutsideCredentialAutofillService() {
+        final IBinder binder;
+        try {
+            @SuppressLint("PrivateApi")
+            final Class<?> serviceManager = Class.forName("android.os.ServiceManager");
+            final Method getService = serviceManager.getMethod("getService", String.class);
+            binder = (IBinder) getService.invoke(null, "credential");
+        } catch (final ClassNotFoundException
+                | IllegalAccessException
+                | InvocationTargetException
+                | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+
+        final Bundle passkeyCandidateQueryData = new Bundle();
+        passkeyCandidateQueryData.putString(
+                "androidx.credentials.BUNDLE_KEY_REQUEST_JSON",
+                "{'challenge': '', 'rpId': 'passkeys-codelab.glitch.me'}");
+
+        final List<CredentialOption> options =
+                List.of(
+                        new CredentialOption.Builder(
+                                        Credential.TYPE_PASSWORD_CREDENTIAL,
+                                        Bundle.EMPTY,
+                                        Bundle.EMPTY)
+                                .build(),
+                        new CredentialOption.Builder(
+                                        "androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL",
+                                        Bundle.EMPTY,
+                                        passkeyCandidateQueryData)
+                                .build());
+        final GetCredentialRequest credentialRequest =
+                new GetCredentialRequest.Builder(Bundle.EMPTY)
+                        .setCredentialOptions(options)
+                        .build();
+
+        try {
+            getCandidateCredentials(
+                    binder, credentialRequest, CALLBACK, null, "com.app.password.provider");
+            fail("A SecurityException should have been thrown.");
+        } catch (SecurityException e) {
+            Log.i(LOG_TAG, "SecurityException is thrown. The feature is secure.");
+        } catch (RemoteException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void getCandidateCredentials(
+            final IBinder /* android.credentials.ICredentialManager */ binder,
+            final GetCredentialRequest request,
+            final IBinder /* android.credentials.IGetCandidateCredentialsCallback */ callback,
+            final IBinder clientCallback,
+            final String callingPackage)
+            throws RemoteException {
+        final Parcel data = Parcel.obtain(binder);
+        final Parcel reply = Parcel.obtain();
+        try {
+            data.writeInterfaceToken("android.credentials.ICredentialManager");
+            data.writeTypedObject(request, 0);
+            data.writeStrongBinder(callback);
+            data.writeStrongBinder(clientCallback);
+            data.writeString(callingPackage);
+            binder.transact(1 + 3, data, reply, 0);
+            reply.readException();
+            reply.readStrongBinder();
+        } finally {
+            reply.recycle();
+            data.recycle();
+        }
     }
 }
