@@ -305,7 +305,10 @@ abstract class AssistTestBase {
     private void waitForTestActivityOnDestroy() throws Exception {
         Log.i(TAG, "waiting for mTestActivity onDestroy() before continuing");
         if (!mHasTestDestroyedLatch.await(Utils.ACTIVITY_ONRESUME_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            fail("mTestActivity failed to destroy in " + Utils.ACTIVITY_ONRESUME_TIMEOUT_MS + "msec");
+            fail(
+                    "mTestActivity failed to destroy in "
+                            + Utils.ACTIVITY_ONRESUME_TIMEOUT_MS
+                            + "msec");
         }
     }
 
@@ -342,6 +345,9 @@ abstract class AssistTestBase {
             mDisplaySize = new Point(dMode.getPhysicalWidth(), dMode.getPhysicalHeight());
         }
         Rect bounds = mTestActivity.getWindowManager().getMaximumWindowMetrics().getBounds();
+        if (Utils.isXr(mContext)) {
+            bounds = mTestActivity.getWindowManager().getCurrentWindowMetrics().getBounds();
+        }
         intent.putExtra(Utils.DISPLAY_AREA_BOUNDS_KEY, bounds);
         intent.putExtra(Utils.DISPLAY_WIDTH_KEY, mDisplaySize.x);
         intent.putExtra(Utils.DISPLAY_HEIGHT_KEY, mDisplaySize.y);
