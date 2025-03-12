@@ -1899,7 +1899,26 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 .requireProperty()
                 .setAllPossibleEnumValues(VEHICLE_GEARS)
                 .setPossibleConfigArrayValues(VEHICLE_GEARS)
-                .requirePropertyValueTobeInConfigArray();
+                .requirePropertyValueTobeInConfigArray()
+                .setConfigArrayVerifier(
+                        (verifierContext, configArray) -> {
+                            assertWithMessage(
+                                            "GEAR_SELECTION must list GEAR_REVERSE and GEAR_NEUTRAL"
+                                                    + " in the config array.")
+                                    .that(configArray)
+                                    .containsAtLeast(
+                                            VehicleGear.GEAR_REVERSE, VehicleGear.GEAR_NEUTRAL);
+                            assertWithMessage(
+                                            "GEAR_SELECTION must list GEAR_FIRST or both GEAR_DRIVE"
+                                                    + " and GEAR_PARK in the config array.")
+                                    .that(
+                                            configArray.containsAll(
+                                                            ImmutableList.of(
+                                                                    VehicleGear.GEAR_DRIVE,
+                                                                    VehicleGear.GEAR_PARK))
+                                                    || configArray.contains(VehicleGear.GEAR_FIRST))
+                                    .isTrue();
+                        });
     }
 
     private static VehiclePropertyVerifier.Builder<Float> getPerfVehicleSpeedVerifierBuilder() {
@@ -2901,7 +2920,26 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
         return VehiclePropertyVerifier.<Integer>newDefaultBuilder(VehiclePropertyIds.CURRENT_GEAR)
                 .setAllPossibleEnumValues(VEHICLE_GEARS)
                 .setPossibleConfigArrayValues(VEHICLE_GEARS)
-                .requirePropertyValueTobeInConfigArray();
+                .requirePropertyValueTobeInConfigArray()
+                .setConfigArrayVerifier(
+                        (verifierContext, configArray) -> {
+                            assertWithMessage(
+                                            "CURRENT_GEAR must list GEAR_REVERSE and GEAR_NEUTRAL"
+                                                    + " in the config array.")
+                                    .that(configArray)
+                                    .containsAtLeast(
+                                            VehicleGear.GEAR_REVERSE, VehicleGear.GEAR_NEUTRAL);
+                            assertWithMessage(
+                                            "CURRENT_GEAR must list GEAR_FIRST or both GEAR_DRIVE"
+                                                    + " and GEAR_PARK in the config array.")
+                                    .that(
+                                            configArray.containsAll(
+                                                            ImmutableList.of(
+                                                                    VehicleGear.GEAR_DRIVE,
+                                                                    VehicleGear.GEAR_PARK))
+                                                    || configArray.contains(VehicleGear.GEAR_FIRST))
+                                    .isTrue();
+                        });
     }
 
     private static VehiclePropertyVerifier.Builder<Integer> getIgnitionStateVerifierBuilder() {
