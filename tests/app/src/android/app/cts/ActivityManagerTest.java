@@ -108,6 +108,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
+import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
 import android.util.Log;
 
@@ -202,6 +203,7 @@ public final class ActivityManagerTest {
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
     private boolean mWatchDevice;
+    private WindowManagerStateHelper mWmState;
 
     private final UserHelper mUserHelper = new UserHelper();
 
@@ -230,6 +232,7 @@ public final class ActivityManagerTest {
         mAutomotiveDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mLeanbackOnly = mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
         mWatchDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
+        mWmState = new WindowManagerStateHelper();
 
         startSubActivity(ScreenOnActivity.class);
         AmUtils.waitForBroadcastBarrier();
@@ -249,6 +252,10 @@ public final class ActivityManagerTest {
         if (mErrorProcessID != -1) {
             android.os.Process.killProcess(mErrorProcessID);
         }
+
+        // Ensure that there are no remaining component records of the test app package.
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(SIMPLE_PACKAGE_NAME));
     }
 
     @Test
@@ -878,7 +885,7 @@ public final class ActivityManagerTest {
         // Wait until it finishes and end the receiver then.
         assertEquals(RESULT_OK, appEndReceiver.getResult());
 
-        if (!noHomeScreen()) {
+        if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -887,9 +894,9 @@ public final class ActivityManagerTest {
             assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
             assertTrue(timeReceiver.mTimeUsed == 0);
         } else {
-            // With platforms that have no home screen, focus is returned to something else that is
-            // considered a completion of the tracked activity flow, and hence time tracking is
-            // triggered.
+            // If the system has not returned to the home screen, focus is returned to something
+            // else that is considered a completion of the tracked activity flow, and hence time
+            // tracking is triggered.
             assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         }
 
@@ -1023,7 +1030,7 @@ public final class ActivityManagerTest {
         assertEquals(RESULT_OK, appEndReceiver.getResult());
         Log.e("SOSO", "Done waiting for activity exit");
 
-        if (!noHomeScreen()) {
+        if (isTestHomeActivityFocused()) {
             // At this time the timerReceiver should not fire, even though the activity has shut
             // down, because we are back to the home screen. Going to the home screen does not
             // qualify as the user leaving the activity's flow. The time tracking is considered
@@ -1032,9 +1039,9 @@ public final class ActivityManagerTest {
             assertEquals(RESULT_TIMEOUT, timeReceiver.waitForActivity());
             assertTrue(timeReceiver.mTimeUsed == 0);
         } else {
-            // With platforms that have no home screen, focus is returned to something else that is
-            // considered a completion of the tracked activity flow, and hence time tracking is
-            // triggered.
+            // If the system has not returned to the home screen, focus is returned to something
+            // else that is considered a completion of the tracked activity flow, and hence time
+            // tracking is triggered.
             assertEquals(RESULT_PASS, timeReceiver.waitForActivity());
         }
 
@@ -2590,6 +2597,16 @@ public final class ActivityManagerTest {
     private void assumeNonHeadlessSystemUserMode() {
         assumeFalse("System user is not a FULL user in headless system user mode.",
                 UserManager.isHeadlessSystemUserMode());
+    }
+
+    private boolean isTestHomeActivityFocused() {
+        if (noHomeScreen()) {
+            return false;
+        }
+        ComponentName homeActivity =
+                new ComponentName(STUB_PACKAGE_NAME, TestHomeActivity.class.getName());
+        mWmState.waitForValidState(homeActivity);
+        return mWmState.waitForFocusedActivity(homeActivity);
     }
 
     private boolean isAutomotive() {
