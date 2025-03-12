@@ -19,6 +19,7 @@ package android.server.wm;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeThat;
 
 import android.app.Activity;
@@ -30,7 +31,10 @@ import android.view.Display;
 
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.FeatureUtil;
+
 import org.hamcrest.Matcher;
+import org.junit.Before;
 
 class AspectRatioTestsBase extends ActivityManagerTestBase {
     // The delta allowed when comparing two floats for equality. We consider them equal if they are
@@ -39,6 +43,12 @@ class AspectRatioTestsBase extends ActivityManagerTestBase {
 
     interface AssertAspectRatioCallback {
         void assertAspectRatio(float actual, int displayId, Point activitySize, Point displaySize);
+    }
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        assumeFalse(FeatureUtil.isXrHeadset());
     }
 
     void runAspectRatioTest(final ComponentName componentName, int windowingMode,
