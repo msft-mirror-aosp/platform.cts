@@ -57,6 +57,7 @@ import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.ActivityManager;
@@ -86,6 +87,7 @@ import android.devicepolicy.cts.utils.BundleUtils;
 import android.devicepolicy.cts.utils.PolicyEngineUtils;
 import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
+import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -600,6 +602,7 @@ public final class DeviceManagementCoexistenceTest {
     @ApiTest(apis = "android.app.admin.PolicyUpdateReceiver#ACTION_DEVICE_POLICY_SET_RESULT")
     @RequiresFlagsEnabled(android.app.admin.flags.Flags.FLAG_SET_MTE_POLICY_COEXISTENCE)
     public void policyUpdateReceiver_setMemoryTaggingPolicy_receivedPolicySetBroadcast() {
+        assumeTrue(isMteAvailable());
         int mtePolicy = dpc(sDeviceState).devicePolicyManager().getMtePolicy();
         try {
             dpc(sDeviceState).devicePolicyManager().setMtePolicy(DevicePolicyManager.MTE_ENABLED);
@@ -1669,5 +1672,14 @@ public final class DeviceManagementCoexistenceTest {
             fail("Returned resolution mechanism is not of type MostRecent<Boolean>: " + e);
             return null;
         }
+    }
+
+    private boolean isMteAvailable() {
+        final String mteDpmSystemProperty = "ro.arm64.memtag.bootctl_device_policy_manager";
+        final String mteSettingsSystemProperty = "ro.arm64.memtag.bootctl_settings_toggle";
+
+        return SystemProperties.getBoolean(
+                mteDpmSystemProperty,
+                SystemProperties.getBoolean(mteSettingsSystemProperty, false));
     }
 }
