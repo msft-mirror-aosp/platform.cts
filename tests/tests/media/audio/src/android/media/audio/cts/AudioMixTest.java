@@ -38,7 +38,7 @@ import android.os.Parcel;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import com.google.common.testing.EqualsTester;
 
@@ -48,7 +48,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class AudioMixTest {
 

@@ -41,6 +41,7 @@ import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.sensor.VirtualSensor;
+import android.companion.virtual.sensor.VirtualSensorAdditionalInfo;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtual.sensor.VirtualSensorDirectChannelCallback;
@@ -50,9 +51,10 @@ import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.hardware.HardwareBuffer;
 import android.hardware.Sensor;
+import android.hardware.SensorAdditionalInfo;
 import android.hardware.SensorDirectChannel;
 import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
+import android.hardware.SensorEventCallback;
 import android.hardware.SensorManager;
 import android.os.MemoryFile;
 import android.os.SharedMemory;
@@ -102,6 +104,9 @@ public class VirtualSensorTest {
     private static final int SENSOR_EVENT_SIZE = 104;
     private static final int SENSOR_EVENT_COUNT = 100;
     private static final int SHARED_MEMORY_SIZE = SENSOR_EVENT_COUNT * SENSOR_EVENT_SIZE;
+
+    private static final float[] ADDITIONAL_INFO_VALUES_1 = new float[] {1.2f, 3.4f};
+    private static final float[] ADDITIONAL_INFO_VALUES_2 = new float[] {5.6f, 7.8f};
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.createDefault();
@@ -444,6 +449,58 @@ public class VirtualSensorTest {
         mVirtualDeviceSensorManager.unregisterListener(mSensorEventListener);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_SENSOR_ADDITIONAL_INFO)
+    @Test
+    public void sendAdditionalInfo_notSupported() {
+        mVirtualSensor = setUpVirtualSensor(
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME).build());
+
+        Sensor sensor = mVirtualDeviceSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
+        assertThat(sensor.isAdditionalInfoSupported()).isFalse();
+
+        final VirtualSensorAdditionalInfo info =
+                new VirtualSensorAdditionalInfo.Builder(SensorAdditionalInfo.TYPE_UNTRACKED_DELAY)
+                        .addValues(ADDITIONAL_INFO_VALUES_1)
+                        .addValues(ADDITIONAL_INFO_VALUES_2)
+                        .build();
+        assertThrows(UnsupportedOperationException.class, () ->
+                mVirtualSensor.sendAdditionalInfo(info));
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_SENSOR_ADDITIONAL_INFO)
+    @Test
+    public void sendAdditionalInfo_reachesRegisteredListeners() {
+        mVirtualSensor = setUpVirtualSensor(
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, VIRTUAL_SENSOR_NAME)
+                        .setAdditionalInfoSupported(true)
+                        .build());
+
+        Sensor sensor = mVirtualDeviceSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
+        assertThat(sensor.isAdditionalInfoSupported()).isTrue();
+
+        mVirtualDeviceSensorManager.registerListener(
+                mSensorEventListener, sensor, SensorManager.SENSOR_DELAY_NORMAL);
+
+        final VirtualSensorAdditionalInfo info =
+                new VirtualSensorAdditionalInfo.Builder(SensorAdditionalInfo.TYPE_UNTRACKED_DELAY)
+                        .addValues(ADDITIONAL_INFO_VALUES_1)
+                        .addValues(ADDITIONAL_INFO_VALUES_2)
+                        .build();
+        mVirtualSensor.sendAdditionalInfo(info);
+
+        mSensorEventListener.assertReceivedSensorAdditionalInfo(
+                sensor, SensorAdditionalInfo.TYPE_FRAME_BEGIN, /* serial= */ 0);
+        mSensorEventListener.assertReceivedSensorAdditionalInfo(
+                sensor, SensorAdditionalInfo.TYPE_UNTRACKED_DELAY, /* serial= */ 0,
+                ADDITIONAL_INFO_VALUES_1);
+        mSensorEventListener.assertReceivedSensorAdditionalInfo(
+                sensor, SensorAdditionalInfo.TYPE_UNTRACKED_DELAY, /* serial= */ 1,
+                ADDITIONAL_INFO_VALUES_2);
+        mSensorEventListener.assertReceivedSensorAdditionalInfo(
+                sensor, SensorAdditionalInfo.TYPE_FRAME_END, /* serial= */ 0);
+        mSensorEventListener.assertNoMoreAdditionalInfos();
+    }
+
     @Test
     public void virtualSensor_arbitrarySensorType() {
         mVirtualSensor = setUpVirtualSensor(
@@ -728,8 +785,17 @@ public class VirtualSensorTest {
         verifyDirectChannelEvents(reportToken);
     }
 
-    private static class VirtualSensorEventListener implements SensorEventListener {
+    private static class VirtualSensorEventListener extends SensorEventCallback {
+
+        // Store a copy of the values because the array object may be reused.
+        private static class TestSensorAdditionalInfo {
+            public SensorAdditionalInfo info;
+            public float[] values;
+        }
+
         private final BlockingQueue<SensorEvent> mEvents = new LinkedBlockingQueue<>();
+        private final BlockingQueue<TestSensorAdditionalInfo> mAdditionalInfos =
+                new LinkedBlockingQueue<>();
 
         @Override
         public void onSensorChanged(SensorEvent event) {
@@ -744,6 +810,18 @@ public class VirtualSensorTest {
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
 
+        @Override
+        public void onSensorAdditionalInfo(SensorAdditionalInfo info) {
+            TestSensorAdditionalInfo testInfo = new TestSensorAdditionalInfo();
+            testInfo.info = info;
+            testInfo.values = Arrays.copyOf(info.floatValues, info.floatValues.length);
+            try {
+                mAdditionalInfos.put(testInfo);
+            } catch (InterruptedException ex) {
+                fail("Interrupted while adding a SensorAdditionalInfo to the queue");
+            }
+        }
+
         public void assertReceivedSensorEvent(Sensor sensor, VirtualSensorEvent expected) {
             SensorEvent event = waitForEvent();
             if (event == null) {
@@ -756,6 +834,26 @@ public class VirtualSensorTest {
             assertThat(event.timestamp).isEqualTo(expected.getTimestampNanos());
         }
 
+        public void assertReceivedSensorAdditionalInfo(
+                Sensor sensor, int type, int serial, float... values) {
+            TestSensorAdditionalInfo testInfo = waitForAdditionalInfo();
+            if (testInfo == null) {
+                fail("Did not receive SensorAdditionalInfo with type " + type);
+            }
+            SensorAdditionalInfo info = testInfo.info;
+            float[] floatValues = testInfo.values;
+
+            assertThat(info.sensor).isEqualTo(sensor);
+            assertThat(info.type).isEqualTo(type);
+            assertThat(info.serial).isEqualTo(serial);
+
+            // Only check that the first elements match the expectation.
+            assertThat(floatValues.length).isAtLeast(values.length);
+            for (int i = 0; i < values.length; ++i) {
+                assertThat(floatValues[i]).isEqualTo(values[i]);
+            }
+        }
+
         public void assertNoMoreEvents() {
             InstrumentationRegistry.getInstrumentation().waitForIdleSync();
             SensorEvent event = waitForEvent();
@@ -764,11 +862,28 @@ public class VirtualSensorTest {
             }
         }
 
+        public void assertNoMoreAdditionalInfos() {
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+            TestSensorAdditionalInfo info = waitForAdditionalInfo();
+            if (info != null) {
+                fail("Received extra SensorAdditionalInfo with type: " + info.info.type);
+            }
+        }
+
         private SensorEvent waitForEvent() {
             try {
                 return mEvents.poll(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 fail("Interrupted while waiting for SensorEvent");
+                return null;
+            }
+        }
+
+        private TestSensorAdditionalInfo waitForAdditionalInfo() {
+            try {
+                return mAdditionalInfos.poll(5, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                fail("Interrupted while waiting for SensorAdditionalInfo");
                 return null;
             }
         }

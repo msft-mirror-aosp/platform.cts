@@ -178,11 +178,11 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
     return result
 
-  def _append_test_failure(self, failures, device_version, combo_version, msg):
-    if (device_version < combo_version):
-      failures['optional'].append(msg)
-    else:
+  def _append_test_failure(self, failures, support_claimed, msg):
+    if (support_claimed == feature_combination_info_pb2.SUPPORT_YES):
       failures['required'].append(msg)
+    else:
+      failures['optional'].append(msg)
 
   def _test_feature_combination(self, executor):
     """Tests features using an injected ThreadPoolExecutor for analysis.
@@ -398,8 +398,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'exception: {e}')
                 logging.debug(failure_msg)
                 self._append_test_failure(
-                    test_failures, feature_combination_query_version,
-                    combo_version, failure_msg
+                    test_failures, support_claimed, failure_msg
                 )
                 passed = False
                 self._add_feature_combo_entry_to_proto(
@@ -438,8 +437,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
                 self._append_test_failure(
-                    test_failures, feature_combination_query_version,
-                    combo_version, failure_msg
+                    test_failures, support_claimed, failure_msg
                 )
                 passed = False
 
@@ -464,8 +462,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
                     f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
                 self._append_test_failure(
-                    test_failures, feature_combination_query_version,
-                    combo_version, failure_msg
+                    test_failures, support_claimed, failure_msg
                 )
                 passed = False
 
@@ -478,8 +475,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: video color space {color_space} '
                     'is missing COLORSPACE_HDR')
                 self._append_test_failure(
-                    test_failures, feature_combination_query_version,
-                    combo_version, failure_msg
+                    test_failures, support_claimed, failure_msg
                 )
                 passed = False
 
@@ -507,8 +503,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         if 'stabilization_failure' in result:
           failure_msg = f"{result['name']}: {result['stabilization_failure']}"
           self._append_test_failure(
-              test_failures, feature_combination_query_version,
-              combo_version, failure_msg
+              test_failures, result['support_claimed'], failure_msg
           )
 
         self._add_feature_combo_entry_to_proto(

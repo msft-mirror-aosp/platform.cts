@@ -37,7 +37,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Assert;
 
@@ -47,7 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 public class SpatializerTest extends CtsAndroidTestCase {
 
     private AudioManager mAudioManager;

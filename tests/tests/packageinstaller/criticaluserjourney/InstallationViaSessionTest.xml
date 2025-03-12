@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2024 The Android Open Source Project
+<!-- Copyright (C) 2025 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<configuration description="Config for CTS Packageinstaller CUJ installation test cases using intents without requesting install result back from package installer">
+<configuration description="Config for CTS Packageinstaller CUJ installation test cases using Session APIs">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="packagemanager" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
@@ -47,7 +47,7 @@
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsPackageInstallerCUJInstallationTestCases.apk" />
+        <option name="test-file-name" value="CtsPackageInstallerCUJInstallationViaSessionTestCases.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.SettingsPreparer">
@@ -70,6 +70,6 @@
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="android.packageinstaller.criticaluserjourney.cts.installation" />
+        <option name="package" value="android.packageinstaller.criticaluserjourney.cts.installation.session" />
     </test>
 </configuration>

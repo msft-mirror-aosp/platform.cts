@@ -166,13 +166,13 @@ public class MainInteractionSession extends VoiceInteractionSession {
         }
 
         if (activity != null
-                && Utils.isAutomotive(mContext)
+                && (Utils.isAutomotive(mContext) || Utils.isXr(mContext))
                 && !activity.getPackageName().startsWith("android.assist")) {
-            // TODO: automotive has multiple activities / displays, so the test might fail if it
+            // TODO: automotive/Xr has multiple activities / displays, so the test might fail if it
             // receives one of them (like the cluster activity) instead of what's expecting. This is
             // a quick fix for the issue; a better solution would be refactoring the infra to
             // either send all events, or let the test specifify which activity it's waiting for
-            Log.i(TAG, "Ignoring " + activity.flattenToShortString() + " on automotive");
+            Log.i(TAG, "Ignoring " + activity.flattenToShortString() + " on automotive/Xr");
             return;
         }
 

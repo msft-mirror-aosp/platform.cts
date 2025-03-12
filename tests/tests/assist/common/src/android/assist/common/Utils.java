@@ -276,4 +276,9 @@ public class Utils {
     public static boolean isAutomotive(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
+
+    /** Returns true if Android XR Device */
+    public static boolean isXr(Context context) {
+        return context.getPackageManager().hasSystemFeature("android.software.xr.immersive");
+    }
 }

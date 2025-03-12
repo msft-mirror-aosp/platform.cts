@@ -26,7 +26,6 @@ import static com.google.common.truth.Truth.assertThat;
 import android.net.InetAddresses;
 import android.net.LinkAddress;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.PreciseDataConnectionState;
@@ -34,8 +33,6 @@ import android.telephony.data.ApnSetting;
 import android.telephony.data.DataCallResponse;
 import android.telephony.data.NetworkSliceInfo;
 import android.telephony.data.TrafficDescriptor;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -248,7 +245,6 @@ public class DataCallResponseTest {
 
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testConstructorAndGettersForNetworkValidation() {
         DataCallResponse response = new DataCallResponse.Builder()
                 .setCause(CAUSE)
@@ -290,7 +286,6 @@ public class DataCallResponseTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testEqualsForNetworkValidation() {
         DataCallResponse response = new DataCallResponse.Builder()
                 .setCause(CAUSE)
@@ -336,7 +331,6 @@ public class DataCallResponseTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testNotEqualsForNetworkValidation() {
         DataCallResponse response = new DataCallResponse.Builder()
                 .setCause(CAUSE)
@@ -384,7 +378,6 @@ public class DataCallResponseTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testParcelForNetworkValidation() {
         DataCallResponse response = new DataCallResponse.Builder()
                 .setCause(CAUSE)
