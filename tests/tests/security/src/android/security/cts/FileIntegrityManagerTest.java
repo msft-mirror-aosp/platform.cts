@@ -27,11 +27,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.FileIntegrityManager;
-import android.security.Flags;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -70,9 +66,6 @@ public class FileIntegrityManagerTest {
 
     private Context mContext;
     private FileIntegrityManager mFileIntegrityManager;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Rule
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
@@ -118,7 +111,6 @@ public class FileIntegrityManagerTest {
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity",
             "android.security.FileIntegrityManager#getFsVerityDigest"})
-    @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
     public void testEnableAndMeasureFsVerityByFile() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
@@ -135,7 +127,6 @@ public class FileIntegrityManagerTest {
 
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity"})
-    @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
     public void testFailToEnableUnsupportedLocation() throws Exception {
         var files = newUnsupportedFiles();
         for (var file : files) {
@@ -148,7 +139,6 @@ public class FileIntegrityManagerTest {
 
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#setupFsVerity"})
-    @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
     public void testFailToEnableWithOpenedWritableFd() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
@@ -165,7 +155,6 @@ public class FileIntegrityManagerTest {
 
     @Test
     @ApiTest(apis = {"android.security.FileIntegrityManager#getFsVerityDigest"})
-    @RequiresFlagsEnabled(Flags.FLAG_FSVERITY_API)
     public void testMeasureWithoutFsVerity() throws Exception {
         var files = newSupportedFiles();
         for (var file : files) {
