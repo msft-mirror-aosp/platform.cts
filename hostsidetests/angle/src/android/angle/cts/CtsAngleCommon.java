@@ -104,11 +104,13 @@ class CtsAngleCommon {
     }
 
     static String getGlobalSetting(ITestDevice device, String globalSetting) throws Exception {
+        device.waitForDeviceAvailable();
         return device.getSetting("global", globalSetting);
     }
 
     static void setGlobalSetting(ITestDevice device, String globalSetting, String value)
             throws Exception {
+        device.waitForDeviceAvailable();
         device.setSetting("global", globalSetting, value);
         device.executeShellCommand("am refresh-settings-cache");
     }
