@@ -20,15 +20,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.runner.AndroidJUnit4;
 
 import dalvik.system.VMDebug;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -38,9 +35,6 @@ import java.io.FileOutputStream;
 /** Tests for VMDebug API */
 @RunWith(AndroidJUnit4.class)
 public class VMDebugDeviceTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     @RequiresFlagsEnabled(com.android.art.flags.Flags.FLAG_ALWAYS_ENABLE_PROFILE_CODE)
