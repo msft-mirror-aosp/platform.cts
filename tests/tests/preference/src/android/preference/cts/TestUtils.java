@@ -39,7 +39,7 @@ import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
-import com.android.compatibility.common.util.UserHelper;
+import java.util.List;
 
 /**
  * Collection of helper utils for testing preferences.
@@ -55,7 +55,6 @@ public class TestUtils {
     private int mStatusBarHeight = -1;
     private int mNavigationBarHeight = -1;
     private ActivityTestRule<?> mRule;
-    private final boolean mIsVisibleBackgroundUser;
 
     TestUtils(ActivityTestRule<?> rule) {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -64,8 +63,6 @@ public class TestUtils {
         mDevice = UiDevice.getInstance(mInstrumentation);
         mAutomation = mInstrumentation.getUiAutomation();
         mRule = rule;
-        UserHelper userHelper = new UserHelper(mContext);
-        mIsVisibleBackgroundUser = userHelper.isVisibleBackgroundUser();
     }
 
     void waitForIdle() {
@@ -184,40 +181,24 @@ public class TestUtils {
     }
 
     private boolean scrollToAndGetTextObject(String text) {
-        // Currently, UiScrollable does not support scroll actions on the secondary display.
-        // To support secondary_user_on_secondary_display, use UiObject2#scroll instead
-        // to perform tests for visible background users.
-        // TODO(b/370532941): Use UiScrollable for secondary_user_on_secondary_display as well
-        // when it supports multi-display.
-        if (mIsVisibleBackgroundUser) {
-            return scrollToTextForSecondaryDisplay(text);
-        }
-        UiScrollable scroller = new UiScrollable(new UiSelector().scrollable(true));
-        try {
-            // Swipe far away from the edges to avoid triggering navigation gestures
-            scroller.setSwipeDeadZonePercentage(0.25);
-            return scroller.scrollTextIntoView(text);
-        } catch (UiObjectNotFoundException e) {
-            throw new AssertionError("View with text '" + text + "' was not found!", e);
-        }
-    }
-
-    private boolean scrollToTextForSecondaryDisplay(String text) {
-        UiObject2 foundObject = null;
         UiObject2 appArea = mDevice.findObject(By.pkg(mPackageName).res("android:id/content"));
-        UiObject2 scrollableView = appArea.findObject(By.scrollable(true));
-        if (scrollableView == null) {
-            throw new AssertionError("No scrollable view found inside app area.");
+        List<UiObject2> scrollableViewList = appArea.findObjects(By.scrollable(true));
+        UiObject2 foundObject = null;
+        for (UiObject2 scrollableView : scrollableViewList) {
+            // Swipe far away from the edges to avoid triggering navigation gestures
+            scrollableView.setGestureMarginPercentage(0.25f);
+            // Scroll from the top to the bottom until the text object is found.
+            scrollableView.scroll(Direction.UP, 1);
+            scrollableView.scrollUntil(Direction.DOWN, Until.findObject(By.textContains(text)));
+            foundObject = mDevice.findObject(By.text(text));
+            if (foundObject != null) {
+                // No need to look at other scrollables.
+                break;
+            }
         }
-        // Swipe far away from the edges to avoid triggering navigation gestures
-        scrollableView.setGestureMarginPercentage(0.25f);
-        // Scroll from the top to the bottom until the text object is found.
-        scrollableView.scroll(Direction.UP, 1.0f);
-        scrollableView.scrollUntil(Direction.DOWN, Until.findObject(By.text(text)));
-        foundObject = mDevice.findObject(By.text(text).pkg(mPackageName));
-        if (foundObject != null) {
-            return true;
+        if (foundObject == null) {
+            throw new AssertionError("View with text '" + text + "' was not found!");
         }
-        throw new AssertionError("View with text '" + text + "' was not found!");
+        return true;
     }
 }
