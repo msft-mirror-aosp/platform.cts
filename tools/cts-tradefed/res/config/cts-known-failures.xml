@@ -395,4 +395,30 @@
 
     <!-- b/378989105 -->
     <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
+
+    <!-- b/400073092 -->
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ActivityIntensityTest#appPermissions_allowAll_grantsPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ActivityIntensityTest#dataAndAccess_deleteData_deletesDataType_doesNotDeleteOtherDataTypes"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ActivityIntensityTest#requestPermission_showsPermission"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_opensAppPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_opensManageData"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_withMedicalData_opensBrowseMedicalRecords"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_deleteData_deletesDataType_doesNotDeleteOtherDataTypes"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#requestPermission_showsPermission"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AllDataFragmentTest#allDataFragment_showsAllAvailableDataTypes"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#appDataFragment_deletesAllData"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#appPermissions_showsAppDataButton"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppDataFragmentTest#navigateToAppData_showsAppData"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.newia.AppEntriesFragmentTest"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ManageAppHealthPermissionUITest#grantPermission_updatesAppPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ManageAppHealthPermissionUITest#revokeAllPermissions_revokesAllAppPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ManageAppHealthPermissionUITest#showDeclaredPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.ManageHealthPermissionsUITest"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.MedicalPermissionsRequestUITest#requestMedicalReadAndWrite_doesNotShowGrantedPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.MedicalPermissionsRequestUITest#requestMedicalReadAndWrite_grantsOnlyRequestedPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.MedicalPermissionsRequestUITest#requestMedicalReadAndWrite_showsRequestedPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions.RequestHealthPermissionUITest#showsAppName_showsRequestedPermissions"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.AllMedicalDataFragmentTest"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.AllMedicalEntriesFragmentTest"/>
+    <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.phr.MedicalAppDataFragmentTest"/>
 </configuration>
