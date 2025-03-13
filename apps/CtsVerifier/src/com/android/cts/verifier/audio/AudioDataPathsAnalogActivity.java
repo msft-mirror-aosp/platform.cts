@@ -24,7 +24,6 @@ import android.widget.TextView;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
-// MegaAudio
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSourceProvider;
 import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
@@ -118,5 +117,10 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
     @Override
     String getRouteDescription() {
         return "analog";
+    }
+
+    @Override
+    protected boolean grantAutoPass() {
+        return false;
     }
 }

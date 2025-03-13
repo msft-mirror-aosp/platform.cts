@@ -5728,7 +5728,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \n • Select the \"Java API\" button.
         \n • Press the \"Start\" button to repeat each data path test for the Java API.
         \n\nTest Completion:
-        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+        \n • Once each of the data paths and APIs have been measured, and a signal detected, the test can be marked successful.
     </string>
     <string name="audio_datapaths_mic">Mic:</string>
     <string name="audio_datapaths_speaker">Speaker:</string>
@@ -5746,7 +5746,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \n • Select the \"Java API\" button.
         \n • Press the \"Start\" button to repeat each data path test for the Java API.
         \n\nTest Completion:
-        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+        \n • Once each of the data paths and APIs have been measured, and a signal detected, the test can be marked successful.
     </string>
     <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test.
         Please insert an Analog Loopback Plug into the Analog Headset Jack and run the test.</string>
