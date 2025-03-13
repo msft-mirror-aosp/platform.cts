@@ -32,12 +32,17 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioDeviceVolumeManager;
 import android.media.AudioManager;
 import android.media.VolumeInfo;
+import android.media.audio.Flags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -51,6 +56,9 @@ import java.util.concurrent.Executors;
  */
 @RunWith(AndroidJUnit4.class)
 public class AudioVolumeBehaviorCompatTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private AudioManager mAudioManager;
     private AudioDeviceVolumeManager mAudioDeviceVolumeManager;
@@ -146,6 +154,42 @@ public class AudioVolumeBehaviorCompatTest {
             assertThat(behavior).isEqualTo(AudioManager.DEVICE_VOLUME_BEHAVIOR_FULL);
         } finally {
             mAudioManager.setDeviceVolumeBehavior(DEVICE_SPEAKER_OUT, originalBehavior);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_UNIFY_ABSOLUTE_VOLUME_MANAGEMENT)
+    public void getDeviceVolumeBehaviorReturnsAbsoluteVolumeAdjustOnlyBehavior_newApi() {
+        VolumeInfo volumeInfo =
+                new VolumeInfo.Builder(AudioManager.STREAM_MUSIC)
+                        .setMinVolumeIndex(0)
+                        .setMaxVolumeIndex(250)
+                        .setVolumeIndex(0)
+                        .build();
+
+        int originalBehavior =
+                mAudioDeviceVolumeManager.getDeviceVolumeBehavior(DEVICE_SPEAKER_OUT);
+        // The original volume behavior must be settable using setDeviceVolumeBehavior.
+        // The builtin speaker should be using such a volume behavior.
+        if (!SETTABLE_VOLUME_BEHAVIORS.contains(originalBehavior)) {
+            return;
+        }
+
+        try {
+            mAudioDeviceVolumeManager.setDeviceAbsoluteVolumeAdjustOnlyBehavior(
+                    DEVICE_SPEAKER_OUT,
+                    volumeInfo,
+                    true,
+                    Executors.newSingleThreadExecutor(),
+                    new AbsoluteVolumeChangedListener());
+
+            int behavior = mAudioDeviceVolumeManager.getDeviceVolumeBehavior(DEVICE_SPEAKER_OUT);
+
+            assertThat(behavior)
+                    .isEqualTo(
+                            AudioDeviceVolumeManager.DEVICE_VOLUME_BEHAVIOR_ABSOLUTE_ADJUST_ONLY);
+        } finally {
+            mAudioDeviceVolumeManager.setDeviceVolumeBehavior(DEVICE_SPEAKER_OUT, originalBehavior);
         }
     }
 

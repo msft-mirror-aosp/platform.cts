@@ -16,7 +16,6 @@
 
 package android.media.router.cts;
 
-import static android.content.Context.AUDIO_SERVICE;
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
@@ -47,6 +46,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.media.AudioDeviceVolumeManager;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
 import android.media.MediaRouter2;
@@ -118,6 +118,7 @@ public class SystemMediaRouter2Test {
 
     private Executor mExecutor;
     private AudioManager mAudioManager;
+    private AudioDeviceVolumeManager mAudioDeviceVolumeManager;
     private StubMediaRoute2ProviderService mService;
 
     private static final int TIMEOUT_MS = 5000;
@@ -168,7 +169,8 @@ public class SystemMediaRouter2Test {
         }
 
         mExecutor = Executors.newSingleThreadExecutor();
-        mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
+        mAudioDeviceVolumeManager = mContext.getSystemService(AudioDeviceVolumeManager.class);
         MediaRouter2TestActivity.startActivity(mContext);
 
         mSystemRouter2ForCts = MediaRouter2.getInstance(mContext, mContext.getPackageName());
@@ -623,7 +625,7 @@ public class SystemMediaRouter2Test {
 
     @Test
     public void testRouteCallbackOnRoutesChanged_whenLocalVolumeChanged() throws Exception {
-        if (mAudioManager.isVolumeFixed() || mAudioManager.isFullVolumeDevice()) {
+        if (mAudioManager.isVolumeFixed() || mAudioDeviceVolumeManager.isFullVolumeDevice()) {
             return;
         }
 
@@ -670,7 +672,7 @@ public class SystemMediaRouter2Test {
 
     @Test
     public void adjustSelectedRouteVolume_invokesOnControllerUpdated() throws Exception {
-        if (mAudioManager.isVolumeFixed() || mAudioManager.isFullVolumeDevice()) {
+        if (mAudioManager.isVolumeFixed() || mAudioDeviceVolumeManager.isFullVolumeDevice()) {
             return;
         }
 
