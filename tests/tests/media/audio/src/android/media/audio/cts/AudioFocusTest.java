@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -298,6 +299,41 @@ public class AudioFocusTest {
             fail("no NPE when setting a non-null listener with null Handler");
         } catch (NullPointerException e) {
         }
+    }
+
+    @Test
+    /**
+     * Test {@link android.media.AudioManager#requestAudioFocus(OnAudioFocusChangeListener, AudioAttributes, int, int)}
+     * @throws Exception on failure
+     */
+    public void testLegacyRequestFocus() throws Exception {
+        final int AUDIOFOCUS_FLAGS_SDK = AudioManager.AUDIOFOCUS_FLAG_DELAY_OK
+                | AudioManager.AUDIOFOCUS_FLAG_PAUSES_ON_DUCKABLE_LOSS;
+        final int AUDIOFOCUS_FLAGS_SYSTEM = AUDIOFOCUS_FLAGS_SDK
+                // LOCK is System, not SDK
+                | AudioManager.AUDIOFOCUS_FLAG_LOCK;
+        final int invalidFocusFlags = AUDIOFOCUS_FLAGS_SYSTEM | (AUDIOFOCUS_FLAGS_SYSTEM << 4);
+        // only SDK flags allowed
+        assertThrows(IllegalArgumentException.class, () ->
+                mAM.requestAudioFocus(
+                        null /*listener*/,
+                        ATTR_MEDIA,
+                        AudioManager.AUDIOFOCUS_GAIN,
+                        AUDIOFOCUS_FLAGS_SYSTEM));
+        // needs non-null AudioAttributes
+        assertThrows(IllegalArgumentException.class, () ->
+                mAM.requestAudioFocus(
+                        null /*listener*/,
+                        null /*AudioAttributes*/,
+                        AudioManager.AUDIOFOCUS_GAIN,
+                        AUDIOFOCUS_FLAGS_SDK));
+        // needs valid request type
+        assertThrows(IllegalArgumentException.class, () ->
+                mAM.requestAudioFocus(
+                        null /*listener*/,
+                        ATTR_MEDIA,
+                        1980 /*invalid request type*/,
+                        AUDIOFOCUS_FLAGS_SDK));
     }
 
     @Test
