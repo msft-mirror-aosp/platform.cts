@@ -29,6 +29,7 @@ import android.content.pm.PackageManager
 import android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
 import android.platform.test.annotations.AppModeFull
 import android.support.test.uiautomator.UiDevice
+import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.AppOpsUtils
@@ -55,6 +56,7 @@ import org.junit.runner.RunWith
 @AppModeFull
 class InstallConstraintsTest {
     companion object {
+        private const val TAG = "InstallConstraintsTest"
         private const val MATCH_STATIC_SHARED_AND_SDK_LIBRARIES = 0x04000000
         private val HelloWorldSdk1 = TestApp(
             "HelloWorldSdk1", "com.test.sdk1_1",
@@ -168,12 +170,14 @@ class InstallConstraintsTest {
         ) { result -> f1.complete(result) }
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
+        var importance = getPackageImportance(TestApp.A)
+        Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer top-visible
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor {
-            val importance = getPackageImportance(TestApp.A)
+        PollingCheck.waitFor ({
+            importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }
+        }, "Importance after pressBack should be greater than foreground, but was $importance")
         val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
         pi.checkInstallConstraints(
             listOf(TestApp.A),
@@ -200,12 +204,14 @@ class InstallConstraintsTest {
         ) { result -> f1.complete(result) }
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
+        var importance = getPackageImportance(TestApp.A)
+        Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer foreground
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor {
-            val importance = getPackageImportance(TestApp.A)
+        PollingCheck.waitFor ({
+            importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }
+        }, "Importance after pressBack should be greater than foreground, but was $importance")
         val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
         pi.checkInstallConstraints(
             listOf(TestApp.A),
@@ -300,12 +306,14 @@ class InstallConstraintsTest {
         ) { result -> f1.complete(result) }
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
+        var importance = getPackageImportance(TestApp.A)
+        Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer foreground. So is test app S.
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor {
-            val importance = getPackageImportance(TestApp.A)
+        PollingCheck.waitFor ({
+            importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }
+        }, "Importance after pressBack should be greater than foreground, but was $importance")
         val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
         pi.checkInstallConstraints(
             listOf(TestApp.S),
@@ -340,12 +348,14 @@ class InstallConstraintsTest {
             ) { result -> f1.complete(result) }
             assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
+            var importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
+            Log.d(TAG, "Importance before pressBack: $importance")
             // HelloWorldUsingSdk1 is no longer foreground. So is HelloWorldSdk1.
             UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-            PollingCheck.waitFor {
-                val importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
+            PollingCheck.waitFor ({
+                importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
                 importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            }
+            }, "Importance after pressBack should be greater than foreground, but was $importance")
 
             val f2 = CompletableFuture<PackageInstaller.InstallConstraintsResult>()
             pi.checkInstallConstraints(
@@ -448,12 +458,14 @@ class InstallConstraintsTest {
         InstallUtils.assertStatusFailure(sender.result)
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(1)
 
+        var importance = getPackageImportance(TestApp.A)
+        Log.d(TAG, "Importance before pressBack: $importance")
         // Test app A is no longer foreground
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
-        PollingCheck.waitFor {
-            val importance = getPackageImportance(TestApp.A)
+        PollingCheck.waitFor ({
+            importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        }
+        }, "Importance after pressBack should be greater than foreground, but was $importance")
         // Commit will succeed for constraints are satisfied
         pi.commitSessionAfterInstallConstraintsAreMet(
             sessionId, sender.intentSender,
