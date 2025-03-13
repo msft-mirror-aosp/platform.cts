@@ -114,7 +114,7 @@ public class MainlineFeaturesImpl implements Features {
             case Features.ISOLATED_STORAGE:
                 return Flags.enableIsolatedStorage()
                         && SystemProperties.getBoolean(
-                                "appsearch.feature.enable_isolated_storage", /* def= */ false)
+                                "ro.appsearch.feature.enable_isolated_storage", /* def= */ false)
                         && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         }
         throw new IllegalArgumentException("Unhandled Features string: " + feature);
