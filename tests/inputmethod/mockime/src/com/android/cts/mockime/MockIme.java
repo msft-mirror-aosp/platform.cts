@@ -1212,7 +1212,7 @@ public final class MockIme extends InputMethodService {
         if (!Looper.getMainLooper().isCurrentThread()) {
             throw new IllegalStateException("onKeyUp must be called on the UI thread");
         }
-        return super.onKeyUp(keyCode, event);
+        return getTracer().onKeyUp(keyCode, event, () -> super.onKeyUp(keyCode, event));
     }
 
     @Override
@@ -1632,6 +1632,13 @@ public final class MockIme extends InputMethodService {
             arguments.putInt("keyCode", keyCode);
             arguments.putParcelable("event", event);
             return recordEventInternal("onKeyDown", supplier::getAsBoolean, arguments);
+        }
+
+        boolean onKeyUp(int keyCode, KeyEvent event, @NonNull BooleanSupplier supplier) {
+            final Bundle arguments = new Bundle();
+            arguments.putInt("keyCode", keyCode);
+            arguments.putParcelable("event", event);
+            return recordEventInternal("onKeyUp", supplier::getAsBoolean, arguments);
         }
 
         void onUpdateCursorAnchorInfo(CursorAnchorInfo cursorAnchorInfo,

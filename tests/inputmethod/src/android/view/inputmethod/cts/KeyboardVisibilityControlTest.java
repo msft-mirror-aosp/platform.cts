@@ -1797,6 +1797,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
                     expectImeInvisible(TIMEOUT);
 
+                    assertTrue("TestActivity2 is still focused after IME is hidden",
+                            testActivity2.hasWindowFocus());
+
                     // Focus the 2nd editor and show the IME with WindowInsets API.
                     testActivity2.runOnUiThread(() -> {
                         editText2Ref.get().requestFocus();
