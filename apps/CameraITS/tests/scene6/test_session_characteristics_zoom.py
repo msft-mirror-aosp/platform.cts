@@ -290,8 +290,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                       bgr_img,
                       (f'{img_name_stem}_{z:.2f}_'
                        f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-                      aruco_marker_count=1,
-                      force_greyscale=True
+                      aruco_marker_count=1
                   )
                 except AssertionError as e:
                   logging.debug(

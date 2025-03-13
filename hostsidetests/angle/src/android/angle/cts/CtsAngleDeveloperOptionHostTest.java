@@ -83,6 +83,11 @@ public class CtsAngleDeveloperOptionHostTest extends BaseHostJUnit4Test {
                 installPackage(appName);
                 return;
             } catch (Exception e) {
+                CLog.logAndDisplay(
+                        LogLevel.ERROR,
+                        "Exception while installing the app: %s, error message: %s",
+                        appName,
+                        e.getMessage());
                 RunUtil.getDefault().sleep(REATTEMPT_SLEEP_MSEC);
             }
         }

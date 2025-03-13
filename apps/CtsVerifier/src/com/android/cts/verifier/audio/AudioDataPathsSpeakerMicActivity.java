@@ -21,7 +21,6 @@ import android.os.Bundle;
 
 import com.android.cts.verifier.R;
 
-// MegaAudio
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SinAudioSourceProvider;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSourceProvider;
@@ -234,5 +233,10 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
     @Override
     String getRouteDescription() {
         return "mic";
+    }
+
+    @Override
+    protected boolean grantAutoPass() {
+        return false;
     }
 }

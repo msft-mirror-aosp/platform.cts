@@ -29,6 +29,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "android-common",
         "android.security.flags-aconfig-java",
+        "wifi_aconfig_flags_lib",
         "ctstestserver",
         "ctstestrunner-axt",
         "cts-input-lib",

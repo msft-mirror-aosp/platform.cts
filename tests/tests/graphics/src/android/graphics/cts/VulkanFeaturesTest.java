@@ -550,8 +550,6 @@ public class VulkanFeaturesTest {
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         final int apiLevel = PropertyUtil.getVsrApiLevel();
-        assumeTrue("Test does not apply for SoCs launched before T", apiLevel > 33);
-
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
         assumeTrue("Skipping because ABP is only required of handheld devices", isHandheld());
 
@@ -636,7 +634,7 @@ public class VulkanFeaturesTest {
     private int determineHardwareCompute(JSONObject device) throws JSONException {
         boolean variablePointers = false;
         try {
-            variablePointers = device.getJSONObject("variablePointerFeatures")
+            variablePointers = device.getJSONObject("variablePointersFeatures")
                                              .getInt("variablePointers") != 0;
         } catch (JSONException exp) {
             try {
@@ -644,7 +642,13 @@ public class VulkanFeaturesTest {
                                                  .getJSONObject("variablePointerFeaturesKHR")
                                                  .getInt("variablePointers") != 0;
             }  catch (JSONException exp2) {
-                variablePointers = false;
+                try {
+                    variablePointers = device.getJSONObject("VK_KHR_variable_pointers")
+                                             .getJSONObject("variablePointersFeaturesKHR")
+                                             .getInt("variablePointers") != 0;
+                } catch (JSONException exp3) {
+                    variablePointers = false;
+                }
             }
         }
         JSONObject limits = device.getJSONObject("properties").getJSONObject("limits");
