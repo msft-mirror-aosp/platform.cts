@@ -1046,7 +1046,8 @@ def find_aruco_markers(
   normalized_input_img = input_img / CH_FULL_SCALE
   # Early return if sufficient markers found and greyscale detection not needed
   if ids is not None and len(ids) >= aruco_marker_count and not force_greyscale:
-    logging.debug('All ArUco markers detected.')
+    logging.debug('At least %d ArUco markers detected.', aruco_marker_count)
+    logging.debug('IDs of the ArUco markers detected: %s', ids)
     cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
     if save_images:
       image_processing_utils.write_image(normalized_input_img, output_img_path)
