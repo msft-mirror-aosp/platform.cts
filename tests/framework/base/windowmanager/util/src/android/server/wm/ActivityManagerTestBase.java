@@ -249,9 +249,6 @@ public abstract class ActivityManagerTestBase {
     protected static final String AM_START_HOME_ACTIVITY_COMMAND =
             "am start -a android.intent.action.MAIN -c android.intent.category.HOME";
 
-    protected static final String AM_START_HOME_ACTIVITY_COMMAND_XR =
-            "am shell input keyevent KEYCODE_ALL_APPS";
-
     protected static final String MSG_NO_MOCK_IME =
             "MockIme cannot be used for devices that do not support installable IMEs";
 
@@ -985,11 +982,6 @@ public abstract class ActivityManagerTestBase {
         // dismiss all system dialogs before launch home.
         closeSystemDialogs();
         executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
-
-        // Show the "home screen" because the home screen isn't showing if we go home on XR.
-        if (FeatureUtil.isXrHeadset()) {
-            executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND_XR);
-        }
     }
 
     protected static void launchHomeActivityNoWaitExpectFailure() {
