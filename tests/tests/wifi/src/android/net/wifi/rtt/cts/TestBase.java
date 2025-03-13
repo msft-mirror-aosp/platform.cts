@@ -90,7 +90,7 @@ public class TestBase extends WifiJUnit4TestBase {
 
     // 5GHz Frequency band
     private static final int FREQUENCY_OF_5GHZ_BAND_IN_MHZ = 5_000;
-    private static Context sContext;
+    protected static Context sContext;
     private static boolean sShouldRunTest;
     private static UiDevice sUiDevice;
     private static TestHelper sTestHelper;
@@ -108,10 +108,12 @@ public class TestBase extends WifiJUnit4TestBase {
 
     private final HandlerThread mHandlerThread = new HandlerThread("SingleDeviceTest");
     protected final Executor mExecutor;
+    protected final Handler mHandler;
 
     {
         mHandlerThread.start();
-        mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
+        mHandler = new Handler(mHandlerThread.getLooper());
+        mExecutor = new HandlerExecutor(mHandler);
     }
 
     @BeforeClass
