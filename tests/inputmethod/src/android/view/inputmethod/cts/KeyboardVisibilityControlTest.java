@@ -1428,8 +1428,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 "enabled".equals(SystemUtil.runShellCommand(FIXED_TO_USER_ROTATION_CMD).trim());
         assumeFalse("Device shouldn't have fixed rotation.", isFixedToUserRotation);
 
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
         // Disable auto-rotate screen and set the screen orientation to portrait mode.
         setAutoRotateScreen(false);
         final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
@@ -1452,6 +1450,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
+            final InputMethodManager imm = editText.getContext().getSystemService(
+                    InputMethodManager.class);
+
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
             assumeFalse("onEvaluateFullscreenMode() should be false for portrait",
