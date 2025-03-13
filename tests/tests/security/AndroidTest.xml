@@ -75,6 +75,7 @@
         <option name="push" value="CtsPermissionBackupAppCert4History124.apk->/data/local/tmp/cts/security/CtsPermissionBackupAppCert4History124.apk" />
         <option name="push" value="DynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/DynamicPermissionTestAttackerApp.apk" />
         <option name="push" value="RolePermissionOverrideTestApp.apk->/data/local/tmp/cts/security/RolePermissionOverrideTestApp.apk" />
+        <option name="push" value="ForceStopAssistantTestApp.apk->/data/local/tmp/cts/security/ForceStopAssistantTestApp.apk" />
         <option name="push" value="SplitBluetoothPermissionTestApp.apk->/data/local/tmp/cts/security/SplitBluetoothPermissionTestApp.apk" />
         <option name="push" value="CertBlocklistTestApp.apk->/data/local/tmp/cts/security/CertBlocklistTestApp.apk" />
         <option name="push" value="UpdatedDynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/UpdatedDynamicPermissionTestAttackerApp.apk" />
