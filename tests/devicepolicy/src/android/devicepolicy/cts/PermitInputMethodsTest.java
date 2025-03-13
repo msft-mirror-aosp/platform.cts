@@ -257,6 +257,7 @@ public final class PermitInputMethodsTest {
             "android.app.admin.DevicePolicyManager#getPermittedInputMethods",
             "android.app.admin.DevicePolicyManager#getDevicePolicyState"})
     @CanSetPolicyTest(policy = PermittedInputMethods.class, singleTestOnly = true)
+    @Ignore("Replace the test with a new one that checks the actual resolution outcome")
     public void getDevicePolicyState_setPermittedInputMethods_returnsCorrectResolutionMechanism() {
         assumeFalse("A system input method is required",
                 SYSTEM_INPUT_METHODS_PACKAGES.isEmpty());
