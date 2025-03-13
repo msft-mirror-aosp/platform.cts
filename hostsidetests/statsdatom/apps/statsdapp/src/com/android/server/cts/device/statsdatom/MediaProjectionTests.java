@@ -106,9 +106,9 @@ public class MediaProjectionTests {
 
         UiObject2 consentDialog = mDevice.wait(
                 Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
-        consentDialog.scrollUntil(Direction.DOWN, Until.scrollFinished(Direction.DOWN));
         UiObject2 cancelButton =
-                consentDialog.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), TIMEOUT);
+                consentDialog.scrollUntil(
+                        Direction.DOWN, Until.findObject(By.res(CANCEL_RESOURCE_ID)));
         mDevice.waitForIdle();
         cancelButton.click();
         mDevice.wait(Until.gone(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
@@ -146,9 +146,10 @@ public class MediaProjectionTests {
         // Go to app selector page
         UiObject2 consentDialog = mDevice.wait(
                 Until.findObject(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
-        consentDialog.scroll(Direction.DOWN, 100);
         UiObject2 startRecordingButton =
-                consentDialog.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)), TIMEOUT);
+                consentDialog.scrollUntil(
+                        Direction.DOWN, Until.findObject(By.res(ACCEPT_RESOURCE_ID)));
         startRecordingButton.click();
+        mDevice.wait(Until.gone(By.res(MEDIA_PROJECTION_CONSENT_DIALOG)), TIMEOUT);
     }
 }
