@@ -40,6 +40,9 @@
          TODO(b/399690519): Drop these modules from CTS package entirely once
          dependencies to them in CI are cleaned up. -->
     <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTests" />
+    <option name="compatibility:exclude-filter" value="CtsMultiDeviceGenericRangingTests" />
+    <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceFiraRangingTests" />
+    <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceUwbManagerTests" />
     <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_FiraRangingTests" />
     <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_UwbManagerTests" />
     <option name="compatibility:exclude-filter" value="MultiDeviceRangingTestCases" />
