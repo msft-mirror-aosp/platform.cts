@@ -55,6 +55,7 @@ android_test {
         "flag-junit",
         "ravenwood-junit",
         "bedstead",
+        "ui-trace-collector",
     ],
     srcs: [
         "src/**/*.java",
