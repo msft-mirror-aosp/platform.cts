@@ -61,7 +61,6 @@ public final class CarRemoteDeviceManagerPermissionTest extends AbstractCarManag
         super.connectCar();
         mCarRemoteDeviceManager = mCar.getCarManager(CarRemoteDeviceManager.class);
         // CarRemoteDeviceManager is available on multi-display builds only.
-        // TODO(b/265091454): annotate the test with @RequireMultipleUsersOnMultipleDisplays.
         assumeNotNull(
                 "Skip the test because CarRemoteDeviceManager is not available on this build",
                 mCarRemoteDeviceManager);
