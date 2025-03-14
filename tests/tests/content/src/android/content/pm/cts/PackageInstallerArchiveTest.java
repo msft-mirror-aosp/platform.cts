@@ -123,7 +123,7 @@ public class PackageInstallerArchiveTest {
 
     private static final String ACTION_UNARCHIVE_ERROR_DIALOG =
             "com.android.intent.action.UNARCHIVE_ERROR_DIALOG";
-
+    private static final int BROADCAST_RECEIVER_TIMEOUT_SECONDS = 10;
 
     private static CompletableFuture<Integer> sUnarchiveId;
     private static CompletableFuture<String> sUnarchiveReceiverPackageName;
@@ -199,10 +199,11 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mPackage.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PACKAGE_NAME);
-                    assertThat(
-                            mArchiveIntentSender.mStatus.get(10, TimeUnit.MILLISECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -227,7 +228,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -248,7 +250,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -278,7 +281,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -304,12 +308,14 @@ public class PackageInstallerArchiveTest {
                     () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mUnarchiveIntentSender)),
                     Manifest.permission.INSTALL_PACKAGES);
-            assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(
-                    PACKAGE_NAME);
-            assertThat(sUnarchiveReceiverAllUsers.get(10, TimeUnit.MILLISECONDS)).isFalse();
-            int unarchiveId = sUnarchiveId.get(10, TimeUnit.MILLISECONDS);
+            assertThat(sUnarchiveReceiverPackageName.get(
+                    BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
+            assertThat(sUnarchiveReceiverAllUsers.get(
+                    BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isFalse();
+            int unarchiveId = sUnarchiveId.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-            int draftSessionId = sessionListener.mSessionIdCreated.get(5, TimeUnit.SECONDS);
+            int draftSessionId = sessionListener.mSessionIdCreated.get(
+                    BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             PackageInstaller.SessionInfo sessionInfo = mPackageInstaller.getSessionInfo(
                     draftSessionId);
             assertThat(unarchiveId).isEqualTo(draftSessionId);
@@ -370,7 +376,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -436,7 +443,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -495,7 +503,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -570,7 +579,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -583,11 +593,14 @@ public class PackageInstallerArchiveTest {
                 () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
                         new IntentSender((IIntentSender) mUnarchiveIntentSender)),
                 Manifest.permission.INSTALL_PACKAGES);
-        assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
-        assertThat(sUnarchiveReceiverAllUsers.get(10, TimeUnit.MILLISECONDS)).isFalse();
-        int unarchiveId = sUnarchiveId.get(10, TimeUnit.MILLISECONDS);
+        assertThat(sUnarchiveReceiverPackageName.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
+        assertThat(sUnarchiveReceiverAllUsers.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isFalse();
+        int unarchiveId = sUnarchiveId.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        int draftSessionId = sessionListener.mSessionIdCreated.get(5, TimeUnit.SECONDS);
+        int draftSessionId = sessionListener.mSessionIdCreated.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         PackageInstaller.SessionInfo sessionInfo = mPackageInstaller.getSessionInfo(
                 draftSessionId);
         assertThat(unarchiveId).isEqualTo(draftSessionId);
@@ -615,7 +628,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -624,7 +638,7 @@ public class PackageInstallerArchiveTest {
                 () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
                         new IntentSender((IIntentSender) mUnarchiveIntentSender)),
                 Manifest.permission.INSTALL_PACKAGES);
-        int unarchiveId1 = sUnarchiveId.get(5, TimeUnit.SECONDS);
+        int unarchiveId1 = sUnarchiveId.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         sUnarchiveId = new CompletableFuture<>();
         sUnarchiveReceiverPackageName = new CompletableFuture<>();
@@ -634,7 +648,7 @@ public class PackageInstallerArchiveTest {
                 () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
                         new IntentSender((IIntentSender) mUnarchiveIntentSender)),
                 Manifest.permission.INSTALL_PACKAGES);
-        int unarchiveId2 = sUnarchiveId.get(5, TimeUnit.SECONDS);
+        int unarchiveId2 = sUnarchiveId.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         assertThat(unarchiveId1).isEqualTo(unarchiveId2);
 
@@ -667,7 +681,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -680,17 +695,20 @@ public class PackageInstallerArchiveTest {
                 () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
                         new IntentSender((IIntentSender) mUnarchiveIntentSender)),
                 Manifest.permission.INSTALL_PACKAGES);
-        int unarchiveId = sUnarchiveId.get(5, TimeUnit.SECONDS);
+        int unarchiveId = sUnarchiveId.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         runWithShellPermissionIdentity(
                 () -> mPackageInstaller.reportUnarchivalState(
                         UnarchivalState.createOkState(unarchiveId)),
                 Manifest.permission.INSTALL_PACKAGES);
-        assertThat(mUnarchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(
+        assertThat(mUnarchiveIntentSender.mPackage.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                 PACKAGE_NAME);
-        assertThat(mUnarchiveIntentSender.mStatus.get(10, TimeUnit.MILLISECONDS)).isEqualTo(
+        assertThat(mUnarchiveIntentSender.mStatus.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                 PackageInstaller.UNARCHIVAL_OK);
-        assertThat(mUnarchiveIntentSender.mIntent.get(10, TimeUnit.MILLISECONDS)).isNull();
+        assertThat(mUnarchiveIntentSender.mIntent.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isNull();
 
         mPackageInstaller.abandonSession(unarchiveId);
     }
@@ -704,7 +722,8 @@ public class PackageInstallerArchiveTest {
                 () -> {
                     mPackageInstaller.requestArchive(PACKAGE_NAME,
                             new IntentSender((IIntentSender) mArchiveIntentSender));
-                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    assertThat(mArchiveIntentSender.mStatus.get(
+                            BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
@@ -717,22 +736,26 @@ public class PackageInstallerArchiveTest {
                 () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
                         new IntentSender((IIntentSender) mUnarchiveIntentSender)),
                 Manifest.permission.INSTALL_PACKAGES);
-        int unarchiveId = sUnarchiveId.get(5, TimeUnit.SECONDS);
+        int unarchiveId = sUnarchiveId.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        int draftSessionId = sessionListener.mSessionIdCreated.get(10, TimeUnit.MILLISECONDS);
+        int draftSessionId = sessionListener.mSessionIdCreated.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
         runWithShellPermissionIdentity(
                 () -> mPackageInstaller.reportUnarchivalState(
                         UnarchivalState.createGenericErrorState(unarchiveId)),
                 Manifest.permission.INSTALL_PACKAGES);
-        assertThat(mUnarchiveIntentSender.mPackage.get(5, TimeUnit.SECONDS)).isEqualTo(
+        assertThat(mUnarchiveIntentSender.mPackage.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                 PACKAGE_NAME);
-        assertThat(mUnarchiveIntentSender.mStatus.get(10, TimeUnit.MILLISECONDS)).isEqualTo(
+        assertThat(mUnarchiveIntentSender.mStatus.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                 PackageInstaller.UNARCHIVAL_GENERIC_ERROR);
-        assertThat(mUnarchiveIntentSender.mIntent.get(10,
-                TimeUnit.MILLISECONDS).getAction()).isEqualTo(ACTION_UNARCHIVE_ERROR_DIALOG);
+        assertThat(mUnarchiveIntentSender.mIntent.get(BROADCAST_RECEIVER_TIMEOUT_SECONDS,
+                TimeUnit.SECONDS).getAction()).isEqualTo(ACTION_UNARCHIVE_ERROR_DIALOG);
 
-        assertThat(sessionListener.mSessionIdFinished.get(5, TimeUnit.SECONDS)).isEqualTo(
+        assertThat(sessionListener.mSessionIdFinished.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                 draftSessionId);
     }
 
@@ -791,8 +814,10 @@ public class PackageInstallerArchiveTest {
         archivePackageWithShellCommand(PACKAGE_NAME);
         unarchivePackageWithShellCommand(PACKAGE_NAME);
 
-        assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
-        assertThat(sUnarchiveReceiverAllUsers.get(1, TimeUnit.MILLISECONDS)).isFalse();
+        assertThat(sUnarchiveReceiverPackageName.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(PACKAGE_NAME);
+        assertThat(sUnarchiveReceiverAllUsers.get(
+                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isFalse();
     }
 
     @Test
@@ -829,7 +854,8 @@ public class PackageInstallerArchiveTest {
                     () -> {
                         mPackageInstaller.requestArchive(PACKAGE_NAME,
                                 new IntentSender((IIntentSender) mArchiveIntentSender));
-                        assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                        assertThat(mArchiveIntentSender.mStatus.get(
+                                BROADCAST_RECEIVER_TIMEOUT_SECONDS, TimeUnit.SECONDS)).isEqualTo(
                                 PackageInstaller.STATUS_SUCCESS);
                     },
                     Manifest.permission.DELETE_PACKAGES);
