@@ -1928,7 +1928,7 @@ public class BitmapTest {
     @RequiresFlagsEnabled(Flags.FLAG_BITMAP_PARCEL_ASHMEM_AS_IMMUTABLE)
     public void testWriteToParcelImplicitAshmemCopyIsImmutable() {
         // A sufficiently large Bitmap so that it's implicitly copied to ashmem.
-        Bitmap chonkySource = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
+        Bitmap chonkySource = Bitmap.createBitmap(1000, 1000, Config.ARGB_8888);
         assertTrue(chonkySource.isMutable());
         Parcel p = Parcel.obtain();
         // This will copy the bitmap to ashmem and write that to the parcel.
