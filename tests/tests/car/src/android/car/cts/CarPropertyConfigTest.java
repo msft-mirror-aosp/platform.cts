@@ -27,7 +27,7 @@ import android.car.Car;
 import android.car.VehicleAreaType;
 import android.car.VehiclePropertyIds;
 import android.car.VehiclePropertyType;
-import android.car.builtin.os.BuildHelper;
+import android.car.cts.utils.BuildUtils;
 import android.car.cts.utils.ShellPermissionUtils;
 import android.car.feature.Flags;
 import android.car.hardware.CarPropertyConfig;
@@ -351,7 +351,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
     public void testIsPropertyIdSimulationPropId() {
-        assumeTrue(BuildHelper.isDebuggableBuild());
+        assumeTrue(BuildUtils.isDebuggableBuild());
         for (CarPropertyConfig<?> cfg : mConfigs) {
             assertThat(cfg.isPropertyIdSimulationPropId()).isFalse();
         }
@@ -360,7 +360,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
     public void testIsPropertyIdSimulationPropId_userBuild() {
-        assumeFalse(BuildHelper.isDebuggableBuild());
+        assumeFalse(BuildUtils.isDebuggableBuild());
         for (CarPropertyConfig<?> cfg : mConfigs) {
             IllegalStateException thrown =
                     assertThrows(
