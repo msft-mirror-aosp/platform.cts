@@ -34,6 +34,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -62,6 +64,15 @@ public class WindowInspectorTest {
     @Rule(order = 1)
     public ActivityScenarioRule<CtsActivity> mActivityScenarioRule =
             new ActivityScenarioRule<>(CtsActivity.class);
+
+    private final List<Consumer<List<View>>> mListeners = new ArrayList<>();
+
+    @After
+    public void tearDown() {
+        for (Consumer<List<View>> listener : mListeners) {
+            WindowInspector.removeGlobalWindowViewsListener(listener);
+        }
+    }
 
     @Test
     public void testGetGlobalWindowViews() {
@@ -91,7 +102,29 @@ public class WindowInspectorTest {
     @RequiresFlagsEnabled(android.view.flags.Flags.FLAG_ROOT_VIEW_CHANGED_LISTENER)
     public void testAddRootViewListener_returnsRootView() throws InterruptedException {
         final RootViewCollector collector = new RootViewCollector(1);
-        WindowInspector.addGlobalWindowViewsListener(Runnable::run, collector);
+        addListenerToWindowInspector(Runnable::run, collector);
+
+        final List<View> expected = WindowInspector.getGlobalWindowViews();
+        collector.waitForElements();
+
+        final List<List<View>> elements = collector.getElements();
+
+        assertEquals(1, elements.size());
+        assertEquals(expected, elements.getFirst());
+    }
+
+    /**
+     * Tests that when a listener is added a second time then the operation is ignored.
+     *
+     * @throws InterruptedException when interrupted.
+     */
+    @Test
+    @RequiresFlagsEnabled(android.view.flags.Flags.FLAG_ROOT_VIEW_CHANGED_LISTENER)
+    public void testAddRootViewListener_doesNotDoubleRegisterListener()
+            throws InterruptedException {
+        final RootViewCollector collector = new RootViewCollector(1);
+        addListenerToWindowInspector(Runnable::run, collector);
+        addListenerToWindowInspector(Runnable::run, collector);
 
         final List<View> expected = WindowInspector.getGlobalWindowViews();
         collector.waitForElements();
@@ -112,7 +145,7 @@ public class WindowInspectorTest {
     @RequiresFlagsEnabled(android.view.flags.Flags.FLAG_ROOT_VIEW_CHANGED_LISTENER)
     public void testAddedViewIsReported() throws InterruptedException {
         final RootViewCollector collector = new RootViewCollector(2);
-        WindowInspector.addGlobalWindowViewsListener(Runnable::run, collector);
+        addListenerToWindowInspector(Runnable::run, collector);
         final List<View> expected = new ArrayList<>();
         final List<View> decorView = new ArrayList<>();
 
@@ -151,7 +184,7 @@ public class WindowInspectorTest {
     @RequiresFlagsEnabled(android.view.flags.Flags.FLAG_ROOT_VIEW_CHANGED_LISTENER)
     public void testRemovedViewIsReported() throws InterruptedException {
         final RootViewCollector collector = new RootViewCollector(3);
-        WindowInspector.addGlobalWindowViewsListener(Runnable::run, collector);
+        addListenerToWindowInspector(Runnable::run, collector);
         final List<View> allViews = new ArrayList<>();
         final List<View> decorViewList = new ArrayList<>();
 
@@ -197,6 +230,12 @@ public class WindowInspectorTest {
         assertEquals(decorViewList, elements.getFirst());
         assertEquals(allViews, elements.get(1));
         assertEquals(decorViewList, elements.getLast());
+    }
+
+    private void addListenerToWindowInspector(
+            @NonNull Executor executor, @NonNull Consumer<List<View>> consumer) {
+        WindowInspector.addGlobalWindowViewsListener(executor, consumer);
+        mListeners.add(consumer);
     }
 
     private static final class RootViewCollector implements Consumer<List<View>> {
