@@ -46,6 +46,7 @@ import android.telecom.VideoProfile;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -239,6 +240,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  </ul>
      *  Assert the current {@link CallEndpoint} is switched successfully
      */
+    @Ignore("Disabling for 25Q1: b/400445099")
     @Test
     public void testBasicAudioSwitchTest_ManagedConnectionServiceApp() throws Exception {
         if (!mShouldTestTelecom) {
@@ -434,6 +436,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  </ul>
      *  Assert the current {@link CallEndpoint} is switched successfully
      */
+    @Ignore("Disabling for 25Q1: b/400445099")
     @Test
     public void testBasicAudioSwitchTest_ConnectionServiceVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
@@ -628,6 +631,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  </ul>
      *  Assert the current {@link CallEndpoint} is switched successfully
      */
+    @Ignore("Disabling for 25Q1: b/400445099")
     @Test
     public void testBasicAudioSwitchTest_ConnectionServiceVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
@@ -850,6 +854,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  </ul>
      *  Assert the current {@link CallEndpoint} is switched successfully
      */
+    @Ignore("Disabling for 25Q1: b/400445099")
     @Test
     public void testBasicAudioSwitchTest_TransactionalVoipAppMain() throws Exception {
         if (!mShouldTestTelecom) {
@@ -1027,6 +1032,7 @@ public class SingleCallingTest extends BaseAppVerifier {
      *  </ul>
      *  Assert the current {@link CallEndpoint} is switched successfully
      */
+    @Ignore("Disabling for 25Q1: b/400445099")
     @Test
     public void testBasicAudioSwitchTest_TransactionalVoipAppClone() throws Exception {
         if (!mShouldTestTelecom) {
