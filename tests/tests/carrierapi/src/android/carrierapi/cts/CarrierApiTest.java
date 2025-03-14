@@ -418,6 +418,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     @Test
     @SystemUserOnly(reason = "b/177921545, broadcast sent only to primary user")
     public void testSendDialerSpecialCode() {
+        assumeTrue("FEATURE_TELEPHONY_CALLING is not supported in device",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         IntentReceiver intentReceiver = new IntentReceiver();
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(Telephony.Sms.Intents.SECRET_CODE_ACTION);
@@ -1107,6 +1109,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testVoiceMailNumber() {
+        assumeTrue("FEATURE_TELEPHONY_CALLING is not supported in device",
+                hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
         // Cache original alpha tag and number values.
         String originalAlphaTag = mTelephonyManager.getVoiceMailAlphaTag();
         String originalNumber = mTelephonyManager.getVoiceMailNumber();
