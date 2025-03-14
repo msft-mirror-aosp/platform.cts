@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2025 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -149,6 +149,48 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     manifest: "appb/AndroidManifest.xml",
     // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppBindingServiceSupervision1",
+    defaults: [
+        "cts_hostside_appbinding_defaults",
+        "cts_defaults",
+    ],
+    srcs: ["src/**/*.java"],
+    manifest: "appsup1/AndroidManifest.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppBindingServiceSupervision2",
+    defaults: [
+        "cts_hostside_appbinding_defaults",
+        "cts_defaults",
+    ],
+    srcs: ["src/**/*.java"],
+    manifest: "appsup2/AndroidManifest.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppBindingServiceSupervision3",
+    defaults: [
+        "cts_hostside_appbinding_defaults",
+        "cts_defaults",
+    ],
+    srcs: ["src/**/*.java"],
+    manifest: "appsup3/AndroidManifest.xml",
     test_suites: [
         "cts",
         "general-tests",
