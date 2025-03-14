@@ -20,6 +20,7 @@ cc_test_library {
         "external/oboe/src/aaudio",
     ],
     header_libs: ["jni_headers"],
+    static_libs: ["oboe"],
     shared_libs: [
         "libaaudio",
         "liblog",
