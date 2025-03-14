@@ -241,6 +241,7 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
         verifyConnectionForOutgoingCall().setActive();
         assertTrue(connectionService.waitForEvent(
                 MockConnectionService.EVENT_CONNECTION_SERVICE_FOCUS_GAINED));
+        assertCallState(mInCallCallbacks.getService().getLastCall(), Call.STATE_ACTIVE);
 
         // WHEN a self-managed call is coming
         SelfManagedConnection selfManagedConnection =
