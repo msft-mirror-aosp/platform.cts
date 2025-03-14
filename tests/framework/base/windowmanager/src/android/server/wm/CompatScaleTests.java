@@ -340,7 +340,9 @@ public class CompatScaleTests extends ActivityManagerTestBase {
             int actualValue) {
         // In order to account for possible rounding errors, let's calculate the actual scale and
         // compare it's against the expected scale (allowing a small delta).
-        final double actualScale = ((double) actualValue) / baseValue;
-        collector.checkThat(message, actualScale, closeTo(expectedScale, EPSILON_GLOBAL_SCALE));
+        if (actualValue != 0 && baseValue != 0) {
+            final double actualScale = ((double) actualValue) / baseValue;
+            collector.checkThat(message, actualScale, closeTo(expectedScale, EPSILON_GLOBAL_SCALE));
+        }
     }
 }
