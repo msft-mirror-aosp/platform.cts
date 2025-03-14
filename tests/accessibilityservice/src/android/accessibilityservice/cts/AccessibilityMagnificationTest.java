@@ -56,6 +56,7 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.MagnificationConfig;
 import android.accessibilityservice.cts.activities.AccessibilityTextTraversalActivity;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
+import android.accessibilityservice.cts.utils.SettingsSession;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
@@ -94,6 +95,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.compatibility.common.util.UserSettings;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -987,23 +989,23 @@ public class AccessibilityMagnificationTest {
     }
 
     @Test
-    public void testGetMagnificationRegion_whenMagnificationGesturesEnabled_shouldNotBeEmpty() {
-        ShellCommandBuilder.create(sUiAutomation)
-                .putSecureSetting(ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED, "1")
-                .run();
-        mService.runOnServiceSync(() -> mService.disableSelf());
-        mService = null;
-        InstrumentedAccessibilityService service =
-                mInstrumentedAccessibilityServiceRule.enableService();
-        try {
+    public void testGetMagnificationRegion_whenMagnificationGesturesEnabled_shouldNotBeEmpty()
+            throws Exception {
+        try (var session =
+                new SettingsSession(
+                        mInstrumentation,
+                        UserSettings.Namespace.SECURE,
+                        ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED,
+                        "1")) {
+            mService.runOnServiceSync(() -> mService.disableSelf());
+            mService = null;
+            InstrumentedAccessibilityService service =
+                    mInstrumentedAccessibilityServiceRule.enableService();
+
             final MagnificationController controller = service.getMagnificationController();
             Region magnificationRegion = controller.getMagnificationRegion();
             assertFalse("Magnification region should not be empty when magnification "
                     + "gestures are active", magnificationRegion.isEmpty());
-        } finally {
-            ShellCommandBuilder.create(sUiAutomation)
-                    .deleteSecureSetting(ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED)
-                    .run();
         }
     }
 

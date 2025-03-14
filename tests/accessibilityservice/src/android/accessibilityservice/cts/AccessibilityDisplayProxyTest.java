@@ -127,12 +127,13 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.SettingsStateChangerRule;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -213,7 +214,14 @@ public class AccessibilityDisplayProxyTest {
     private static Instrumentation sInstrumentation;
     private static UiDevice sUiDevice;
     private static UiAutomation sUiAutomation;
-    private static String sEnabledServices;
+
+    @ClassRule
+    public static final SettingsStateChangerRule sEnabledAccessibilityServicesSettingRule =
+            new SettingsStateChangerRule(
+                    InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                    null);
+
     // The manager representing the app registering/unregistering the proxy.
     private AccessibilityManager mA11yManager;
 
@@ -265,11 +273,6 @@ public class AccessibilityDisplayProxyTest {
     public static void oneTimeSetup() {
         Configurator.getInstance().setUiAutomationFlags(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        // Save enabled accessibility services before disabling them so they can be re-enabled after
-        // the test.
-        sEnabledServices = Settings.Secure.getString(
-                sInstrumentation.getContext().getContentResolver(),
-                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
         // Disable all services before enabling Accessibility service to prevent flakiness
         // that depends on which services are enabled.
         InstrumentedAccessibilityService.disableAllServices();
@@ -279,13 +282,6 @@ public class AccessibilityDisplayProxyTest {
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         sUiAutomation.setServiceInfo(info);
         sUiDevice = UiDevice.getInstance(sInstrumentation);
-    }
-
-    @AfterClass
-    public static void postTestTearDown() {
-        ShellCommandBuilder.create(sInstrumentation)
-                .putSecureSetting(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, sEnabledServices)
-                .run();
     }
 
     @Before
