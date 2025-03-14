@@ -1312,6 +1312,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             try (AutoCloseable closable = MockTestActivityUtil.launchSync(
                     instant, TIMEOUT,
                     Map.of(MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, marker))) {
+                expectEvent(stream, eventMatcher("bindInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInput", marker), START_INPUT_TIMEOUT);
                 expectImeInvisible(TIMEOUT);
 
@@ -1328,6 +1329,7 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // remote process stopped by forceStopPackage.
                 MockTestActivityUtil.forceStopPackage();
                 expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
+                expectEvent(stream, eventMatcher("unbindInput"), TIMEOUT);
                 expectImeInvisible(TIMEOUT);
             }
         }
