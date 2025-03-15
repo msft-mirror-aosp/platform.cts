@@ -104,6 +104,7 @@ public class MediaBrowserTest {
     }
 
     @Test
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testMediaBrowser() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -133,7 +134,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testThrowingISEWhileNotConnected() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -155,7 +156,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testConnectTwice() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -167,7 +168,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testConnectionFailed() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_INVALID_BROWSER_SERVICE);
@@ -185,7 +186,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testReconnection() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
 
@@ -237,7 +238,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testConnectionCallbackNotCalledAfterDisconnect() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         runOnMainThread(() -> {
@@ -260,7 +261,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSubscribe() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -302,7 +303,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSubscribeWithIllegalArguments() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
 
@@ -331,7 +332,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSubscribeWithOptions() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         connectMediaBrowserService();
@@ -391,7 +392,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSubscribeInvalidItem() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -410,7 +411,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSubscribeInvalidItemWithOptions() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -440,7 +441,7 @@ public class MediaBrowserTest {
 
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSubscriptionCallbackNotCalledAfterDisconnect() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         connectMediaBrowserService();
@@ -462,7 +463,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testUnsubscribeWithIllegalArguments() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         runOnMainThread(() -> {
@@ -484,7 +485,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testUnsubscribeForMultipleSubscriptions() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         connectMediaBrowserService();
@@ -533,7 +534,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testUnsubscribeWithSubscriptionCallbackForMultipleSubscriptions() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         connectMediaBrowserService();
@@ -600,7 +601,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetItem() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -620,7 +621,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetItemThrowsIAE() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -644,7 +645,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetItemWhileNotConnected() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -665,7 +666,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetItemFailure() throws Throwable {
         resetCallbacks();
         createMediaBrowser(TEST_BROWSER_SERVICE);
@@ -684,7 +685,7 @@ public class MediaBrowserTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testItemCallbackNotCalledAfterDisconnect() throws Throwable {
         createMediaBrowser(TEST_BROWSER_SERVICE);
         connectMediaBrowserService();

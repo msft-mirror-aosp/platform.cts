@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.content.Context;
@@ -112,7 +112,7 @@ public class ArrayAdapterTest {
 
         // enable automatically notifying.
         mArrayAdapter.setNotifyOnChange(true);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         mArrayAdapter.add(STR1);
         assertEquals(1, mArrayAdapter.getCount());
         verify(mockDataSetObserver, times(1)).onChanged();
@@ -136,7 +136,7 @@ public class ArrayAdapterTest {
 
         mArrayAdapter.add(STR3);
         assertEquals(1, mArrayAdapter.getCount());
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
 
         // manually notify
         mArrayAdapter.notifyDataSetChanged();
@@ -375,7 +375,7 @@ public class ArrayAdapterTest {
 
         // remove the not exist one
         assertEquals(0, mArrayAdapter.getCount());
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         // remove the item not exist also notify change
         mArrayAdapter.remove(STR1);
         verify(mockDataSetObserver, times(1)).onChanged();
@@ -445,7 +445,7 @@ public class ArrayAdapterTest {
         final DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
         mArrayAdapter.registerDataSetObserver(mockDataSetObserver);
         mArrayAdapter.setNotifyOnChange(true);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
 
         mArrayAdapter.sort((String o1, String o2) -> 0);
         verify(mockDataSetObserver, times(1)).onChanged();

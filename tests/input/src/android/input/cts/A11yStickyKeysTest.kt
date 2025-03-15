@@ -119,13 +119,13 @@ class A11yStickyKeysTest {
             activity.assertNoEvents()
 
             // Shift key pressed: Shouldn't be sent to apps
-            injectKeyDown(keyboardDevice, KEY_LEFTSHIFT)
-            injectKeyUp(keyboardDevice, KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyDown(KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyUp(KEY_LEFTSHIFT)
             activity.assertNoEvents()
 
             // Subsequent key press should have sticky modifier state
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
             assertReceivedEventsCorrectlyMapped(
                 2,
                 KeyEvent.KEYCODE_A,
@@ -134,8 +134,8 @@ class A11yStickyKeysTest {
 
             // Any non-modifier key press (the previous press on key A), should have cleared
             // non-locked modifier state
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
             assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_A, 0)
         }
     }
@@ -146,17 +146,17 @@ class A11yStickyKeysTest {
             activity.assertNoEvents()
 
             // Shift key pressed twice: Should lock modifier state
-            injectKeyDown(keyboardDevice, KEY_LEFTSHIFT)
-            injectKeyUp(keyboardDevice, KEY_LEFTSHIFT)
-            injectKeyDown(keyboardDevice, KEY_LEFTSHIFT)
-            injectKeyUp(keyboardDevice, KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyDown(KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyUp(KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyDown(KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyUp(KEY_LEFTSHIFT)
             activity.assertNoEvents()
 
             // Subsequent key press should have locked modifier state
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
             assertReceivedEventsCorrectlyMapped(
                 4,
                 KeyEvent.KEYCODE_A,
@@ -164,10 +164,10 @@ class A11yStickyKeysTest {
             )
 
             // Re-pressing modifier key should clear locked modifier state
-            injectKeyDown(keyboardDevice, KEY_LEFTSHIFT)
-            injectKeyUp(keyboardDevice, KEY_LEFTSHIFT)
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyUp(KEY_LEFTSHIFT)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
             assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_A, 0)
         }
     }

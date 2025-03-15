@@ -44,7 +44,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
@@ -62,7 +62,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test suite derived from GTS DevicesForAttributesTest.java
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 @FlakyTest(bugId = 326206728)

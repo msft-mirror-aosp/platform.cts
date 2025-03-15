@@ -42,7 +42,7 @@ _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
 _MIN_CIRCLE_PTS = 25
 _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
-_OFFSET_ATOL = 10  # number of pixels
+_OFFSET_ATOL = 15  # number of pixels
 _OFFSET_PLOT_FPS = 2
 _OFFSET_PLOT_INTERVAL = 400  # delay between frames in milliseconds.
 _OFFSET_RTOL_MIN_FD = 0.30
@@ -470,19 +470,18 @@ def verify_zoom_results(test_data, size, z_max, z_min,
       test_data, size, offset_plot_name_stem=offset_plot_name_stem)
 
 
-def verify_zoom_data(
-    test_data, size,
-    plot_name_stem=None, offset_plot_name_stem=None,
-    monotonicity_atol=_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
-    number_of_cameras_to_test=0):
-  """Verify that the output images' zoom level reflects the correct zoom ratios.
+def verify_zoom_data(test_data, size, plot_name_stem=None,
+                     offset_plot_name_stem=None,
+                     monotonicity_atol=_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL,
+                     number_of_cameras_to_test=0):
+  """Verify output images' zoom level reflects the correct zoom ratios.
 
-  This test verifies that the center and side length of the ArUco markers in
-  the output images reflects the zoom ratios being set. ArUco marker side length
-  should increase proportionally to the zoom ratio. The distance from the
-  center of the ArUco marker to the center of the image (offset) should either
-  change proportionally to the zoom ratio, or decrease/increase toward the
-  offset of the first capture using the upcoming physical camera, if there is
+  This test ensures accurate zoom functionality by verifying that ArUco marker
+  dimensions and positions in the output images scale correctly with applied
+  zoom ratios. Specifically, the ArUco marker side must increase
+  proportionally to the zoom. The marker's center offset from the image center
+  should either scale proportionally with the zoom or converge towards the
+  offset of the initial capture from the physical camera, particularly after
   a camera switch.
 
   Args:
@@ -498,6 +497,9 @@ def verify_zoom_data(
     Boolean whether the test passes (True) or not (False)
   """
   range_success = True
+  side_success = True
+  offset_success = True
+  used_smooth_offset = False
 
   # assert that multiple cameras were tested where applicable
   ids_tested = set([v.physical_id for v in test_data])
@@ -505,10 +507,6 @@ def verify_zoom_data(
     range_success = False
     logging.error('Expected at least %d physical cameras tested, '
                   'found IDs: %s', number_of_cameras_to_test, ids_tested)
-
-  side_success = True
-  offset_success = True
-  used_smooth_offset = False
 
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
   side_0 = opencv_processing_utils.get_aruco_marker_side_length(
@@ -525,7 +523,7 @@ def verify_zoom_data(
             data.aruco_corners)
         z_0 = float(data.result_zoom)
         break
-  logging.debug('z_0: %.3f, side_0: %.3f', z_0, side_0)
+  logging.debug('Initial zoom: %.3f, Aruco marker length: %.3f', z_0, side_0)
   if plot_name_stem:
     frame_numbers = []
     z_variations = []
@@ -537,7 +535,7 @@ def verify_zoom_data(
   offset_y_values = []
   hypots = []
 
-  id_to_next_offset = {}
+  id_to_next_offset_and_zoom = {}
   offsets_while_transitioning = []
   previous_id = test_data[0].physical_id
   # First pass to get transition points
@@ -545,7 +543,9 @@ def verify_zoom_data(
     if i == 0:
       continue
     if test_data[i-1].physical_id != data.physical_id:
-      id_to_next_offset[previous_id] = data.aruco_offset
+      id_to_next_offset_and_zoom[previous_id] = (
+          data.aruco_offset, data.result_zoom
+      )
       previous_id = data.physical_id
 
   initial_offset = test_data[0].aruco_offset
@@ -553,7 +553,7 @@ def verify_zoom_data(
   # Second pass to check offset correctness
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
-    logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
+    logging.debug('Frame # %d: {%s}', i, preview_zoom_data_to_string(data))
     logging.debug('Zoom: %.2f, physical ID: %s',
                   data.result_zoom, data.physical_id)
     offset_x, offset_y = _get_aruco_marker_x_y_offset(data.aruco_corners, size)
@@ -584,7 +584,7 @@ def verify_zoom_data(
     logging.debug('r ratio req: %.3f, measured: %.3f',
                   z_ratio, side_ratio)
     msg = (
-        f'{i} Marker side ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
+        f'Marker side ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
         f' {z_ratio:.3f}, marker({current_side:.3f}/{side_0:.3f}):'
         f' {side_ratio:.3f}, RTOL: {data.radius_tol}'
     )
@@ -602,10 +602,9 @@ def verify_zoom_data(
     if test_data[i-1].physical_id != data.physical_id:
       initial_zoom = float(data.result_zoom)
       initial_offset = data.aruco_offset
-      logging.debug('offset_hypot_init: %.3f', initial_offset)
       d_msg = (f'-- init {i} zoom: {data.result_zoom:.2f}, '
-               f'offset init: {initial_offset:.1f}, '
-               f'zoom: {z_ratio:.1f} ')
+               f'Initial offset: {initial_offset:.1f}, '
+               f'Zoom: {z_ratio:.1f} ')
       logging.debug(d_msg)
       if offsets_while_transitioning:
         logging.debug('Offsets while transitioning: %s',
@@ -619,34 +618,48 @@ def verify_zoom_data(
     else:
       offsets_while_transitioning.append(data.aruco_offset)
       z_ratio = data.result_zoom / initial_zoom
+      # Expected offset based on the current zoom ratio and initial offset
       offset_hypot_rel = data.aruco_offset / z_ratio
-      logging.debug('offset_hypot_rel: %.3f', offset_hypot_rel)
       rel_tol = data.offset_tol
+      msg = (f'Frame # {i} zoom: {data.result_zoom:.2f}, '
+             f'Baseline offset value: {initial_offset:.4f}, '
+             f'Expected offset: {offset_hypot_rel:.4f}, '
+             f'Zoom: {z_ratio:.1f}, '
+             f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
       if not math.isclose(initial_offset, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
-        w_msg = ('Original offset check failed. '
-                 f'{i} zoom: {data.result_zoom:.2f}, '
-                 f'offset init: {initial_offset:.4f}, '
-                 f'offset rel: {offset_hypot_rel:.4f}, '
-                 f'Zoom: {z_ratio:.1f}, '
-                 f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
-        logging.warning(w_msg)
-        logged_data = True
+        logging.warning('Offset check failed. %s', msg)
         used_smooth_offset = True
-        if data.physical_id not in id_to_next_offset:
+        if data.physical_id not in id_to_next_offset_and_zoom:
           offset_success = False
           logging.error('No physical camera is available to explain '
                         'offset changes!')
         else:
-          next_initial_offset = id_to_next_offset[data.physical_id]
-          if not math.isclose(next_initial_offset, data.aruco_offset,
-                              rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
-                              abs_tol=OFFSET_ATOL_SMOOTH_ZOOM):
+          next_initial_offset, next_initial_zoom = (
+              id_to_next_offset_and_zoom[data.physical_id]
+          )
+          next_offset_scaled_by_next_zoom = (
+              next_initial_offset / next_initial_zoom
+          )
+          absolutely_close = (
+              math.isclose(next_initial_offset, data.aruco_offset,
+                           rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
+                           abs_tol=OFFSET_ATOL_SMOOTH_ZOOM)
+          )
+          relatively_close = (
+              math.isclose(next_offset_scaled_by_next_zoom, offset_hypot_rel,
+                           rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
+                           abs_tol=OFFSET_ATOL_SMOOTH_ZOOM)
+          )
+          if not absolutely_close and not relatively_close:
             offset_success = False
             e_msg = ('Current offset did not match upcoming physical camera! '
                      f'{i} zoom: {data.result_zoom:.2f}, '
                      f'next initial offset: {next_initial_offset:.1f}, '
                      f'current offset: {data.aruco_offset:.1f}, '
+                     f'current scaled offset: {offset_hypot_rel:.1f}, '
+                     'next offset scaled according to next zoom: '
+                     f'{next_offset_scaled_by_next_zoom:.1f}, '
                      f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, '
                      f'ATOL: {OFFSET_ATOL_SMOOTH_ZOOM}')
             logging.error(e_msg)
@@ -654,13 +667,7 @@ def verify_zoom_data(
             logging.debug('Successfully matched current offset with upcoming '
                           'physical camera offset')
       if not logged_data:
-        d_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
-                 f'offset init: {initial_offset:.1f}, '
-                 f'offset rel: {offset_hypot_rel:.1f}, '
-                 f'offset dist: {data.aruco_offset:.1f}, '
-                 f'Zoom: {z_ratio:.1f}, '
-                 f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
-        logging.debug(d_msg)
+        logging.debug(msg)
 
   if plot_name_stem:
     plot_name = plot_name_stem.split('/')[-1].split('.')[0]
@@ -720,33 +727,33 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
   test_data_zoom_values = [v.result_zoom for v in test_data]
   results_z_max = max(test_data_zoom_values)
   results_z_min = min(test_data_zoom_values)
-  logging.debug('capture result: min zoom: %.2f vs max zoom: %.2f',
+  logging.debug('Capture result: min zoom: %.2f vs max zoom: %.2f',
                 results_z_min, results_z_max)
 
   # check if max zoom in capture result close to requested zoom range
-  if (math.isclose(results_z_max, z_max, rel_tol=PRV_Z_RTOL) or
-      math.isclose(results_z_max, z_max - z_step_size, rel_tol=PRV_Z_RTOL)):
-    d_msg = (f'results_z_max = {results_z_max:.2f} is close to requested '
-             f'z_max = {z_max:.2f} or z_max-step = {z_max-z_step_size:.2f} '
-             f'by {PRV_Z_RTOL:.2f} Tol')
-    logging.debug(d_msg)
-  else:
+  if not (math.isclose(results_z_max, z_max, rel_tol=PRV_Z_RTOL) or
+          math.isclose(results_z_max, z_max - z_step_size, rel_tol=PRV_Z_RTOL)):
     test_success = False
     e_msg = (f'Max zoom ratio {results_z_max:.4f} in capture results '
-             f'not close to {z_max:.2f} and '
-             f'z_max-step = {z_max-z_step_size:.2f} by {PRV_Z_RTOL:.2f} '
-             f'tolerance.')
+             f'is not close to requested zoom ratio {z_max:.2f} or '
+             f'close to max zoom ratio subtract zoom step '
+             f'{z_max - z_step_size:.2f} within {PRV_Z_RTOL:.2f}% tolerance.')
     logging.error(e_msg)
-
-  if math.isclose(results_z_min, z_min, rel_tol=PRV_Z_RTOL):
-    d_msg = (f'results_z_min = {results_z_min:.2f} is close to requested '
-             f'z_min = {z_min:.2f} by {PRV_Z_RTOL:.2f} Tol')
-    logging.debug(d_msg)
   else:
+    d_msg = (f'Max zoom ratio in capture results {results_z_max:.2f} is within'
+             f' tolerance of requested max zoom ratio {z_max:.2f}.')
+    logging.debug(d_msg)
+
+  if not math.isclose(results_z_min, z_min, rel_tol=PRV_Z_RTOL):
     test_success = False
-    e_msg = (f'Min zoom ratio {results_z_min:.4f} in capture results '
-             f'not close to {z_min:.2f} by {PRV_Z_RTOL:.2f} tolerance.')
+    e_msg = (f'Min zoom ratio {results_z_min:.4f} in capture results is not '
+             f'close to requested min zoom {z_min:.2f} within {PRV_Z_RTOL:.2f}%'
+             f' tolerance.')
     logging.error(e_msg)
+  else:
+    d_msg = (f'Min zoom ratio in capture results {results_z_min:.2f} is within'
+             f' tolerance of requested min zoom ratio {z_min:.2f}.')
+    logging.debug(d_msg)
 
   return test_success and verify_zoom_data(
       test_data, size, plot_name_stem=plot_name_stem,

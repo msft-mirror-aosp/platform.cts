@@ -70,6 +70,7 @@ import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.provider.DeviceConfig;
+import android.server.wm.BuildUtils;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
@@ -125,7 +126,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class FocusHandlingTest extends EndToEndImeTestBase {
-    static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5) * BuildUtils.HW_TIMEOUT_MULTIPLIER;
     static final long EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(2);
     static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
 
@@ -301,10 +302,9 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
 
             if (testActivity.getApplicationInfo().targetSdkVersion >= Build.VERSION_CODES.P) {
                 // Input shouldn't start
-                notExpectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+                notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
                 // There shouldn't be onStartInput because the focused view is not an editor.
-                notExpectEvent(stream, showSoftInputMatcher(0),
-                        TIMEOUT);
+                notExpectEvent(stream, showSoftInputMatcher(0), NOT_EXPECT_TIMEOUT);
             } else {
                 // Wait until the MockIme gets bound to the TestActivity.
                 expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -339,7 +339,7 @@ public final class FocusHandlingTest extends EndToEndImeTestBase {
             });
 
             // Input shouldn't start
-            notExpectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInput", marker), NOT_EXPECT_TIMEOUT);
         }
     }
 

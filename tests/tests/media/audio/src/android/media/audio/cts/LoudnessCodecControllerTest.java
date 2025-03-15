@@ -50,7 +50,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -63,7 +63,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class LoudnessCodecControllerTest {
     private static final String TAG = "LoudnessCodecControllerTest";

@@ -31,7 +31,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -311,10 +311,10 @@ public class View_UsingViewsTest {
         if (!focusWasOnEditText) {
             verify(editListener, times(1)).onFocusChange(mEditText, true);
         }
-        verifyZeroInteractions(okListener);
-        verifyZeroInteractions(cancelListener);
-        verifyZeroInteractions(symbolListener);
-        verifyZeroInteractions(warningListener);
+        verifyNoMoreInteractions(okListener);
+        verifyNoMoreInteractions(cancelListener);
+        verifyNoMoreInteractions(symbolListener);
+        verifyNoMoreInteractions(warningListener);
 
         // exit touch mode and set ok button to focus
         reset(editListener);
@@ -323,9 +323,9 @@ public class View_UsingViewsTest {
         verify(okListener, times(1)).onFocusChange(mButtonOk, true);
         assertFalse(mEditText.hasFocus());
         verify(editListener, times(1)).onFocusChange(mEditText, false);
-        verifyZeroInteractions(cancelListener);
-        verifyZeroInteractions(symbolListener);
-        verifyZeroInteractions(warningListener);
+        verifyNoMoreInteractions(cancelListener);
+        verifyNoMoreInteractions(symbolListener);
+        verifyNoMoreInteractions(warningListener);
 
         // set cancel button to focus
         reset(okListener);
@@ -335,9 +335,9 @@ public class View_UsingViewsTest {
         verify(cancelListener, times(1)).onFocusChange(mButtonCancel, true);
         assertFalse(mButtonOk.hasFocus());
         verify(okListener, times(1)).onFocusChange(mButtonOk, false);
-        verifyZeroInteractions(editListener);
-        verifyZeroInteractions(symbolListener);
-        verifyZeroInteractions(warningListener);
+        verifyNoMoreInteractions(editListener);
+        verifyNoMoreInteractions(symbolListener);
+        verifyNoMoreInteractions(warningListener);
 
         // set symbol text to focus
         mSymbolTextView.setFocusable(true);
@@ -346,9 +346,9 @@ public class View_UsingViewsTest {
         verify(symbolListener, times(1)).onFocusChange(mSymbolTextView, true);
         assertFalse(mButtonCancel.hasFocus());
         verify(cancelListener, times(1)).onFocusChange(mButtonCancel, false);
-        verifyZeroInteractions(okListener);
-        verifyZeroInteractions(editListener);
-        verifyZeroInteractions(warningListener);
+        verifyNoMoreInteractions(okListener);
+        verifyNoMoreInteractions(editListener);
+        verifyNoMoreInteractions(warningListener);
 
         // set warning text to focus
         mWarningTextView.setFocusable(true);
@@ -357,9 +357,9 @@ public class View_UsingViewsTest {
         verify(warningListener, times(1)).onFocusChange(mWarningTextView, true);
         assertFalse(mSymbolTextView.hasFocus());
         verify(symbolListener, times(1)).onFocusChange(mSymbolTextView, false);
-        verifyZeroInteractions(editListener);
-        verifyZeroInteractions(okListener);
-        verifyZeroInteractions(cancelListener);
+        verifyNoMoreInteractions(editListener);
+        verifyNoMoreInteractions(okListener);
+        verifyNoMoreInteractions(cancelListener);
 
         // set edit text to focus
         assertTrue(mEditText.requestFocus());
@@ -367,9 +367,9 @@ public class View_UsingViewsTest {
         verify(editListener, times(1)).onFocusChange(mEditText, true);
         assertFalse(mWarningTextView.hasFocus());
         verify(warningListener, times(1)).onFocusChange(mWarningTextView, false);
-        verifyZeroInteractions(cancelListener);
-        verifyZeroInteractions(symbolListener);
-        verifyZeroInteractions(okListener);
+        verifyNoMoreInteractions(cancelListener);
+        verifyNoMoreInteractions(symbolListener);
+        verifyNoMoreInteractions(okListener);
     }
 
     @Test

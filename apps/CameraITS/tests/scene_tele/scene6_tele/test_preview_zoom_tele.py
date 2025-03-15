@@ -131,14 +131,12 @@ class PreviewZoomTestTELE(its_base_test.ItsBaseTest):
           [_WIDE_ZOOM_RATIO_MAX, z_range[1]], _NUM_STEPS)
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH and
-          z_min - z_step_size > z_range[0])
+          z_min > z_range[0])
 
-      # Recording preview at z_min - z_step_size to ensure we have a capture
-      # at the min zoom ratio.
-      cam.do_3a(zoom_ratio=z_min - z_step_size)
+      cam.do_3a(zoom_ratio=z_min)
       capture_results, file_list = (
           preview_processing_utils.preview_over_zoom_range(
-              self.dut, cam, preview_size, z_min - z_step_size, z_max,
+              self.dut, cam, preview_size, z_min, z_max,
               z_step_size, log_path)
       )
 

@@ -55,8 +55,6 @@ import static android.server.wm.app.Components.PipActivity.EXTRA_ENTER_PIP;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
-import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
@@ -66,9 +64,6 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.LockScreenSession;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerState.Task;
@@ -77,7 +72,6 @@ import android.util.Pair;
 import androidx.test.filters.MediumTest;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -95,9 +89,6 @@ import java.util.List;
 @Presubmit
 @android.server.wm.annotation.Group3
 public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClientTestBase {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -796,8 +787,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
-    // TODO(b/391965805): Re-enable this test
     public void testTopPositionSwitchAcrossDisplays() throws Exception {
         assumeTrue(supportsMultiDisplay());
 
@@ -1061,8 +1050,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
-    // TODO(b/391965805): Re-enable this test
     public void testFinishOnDifferentDisplay_nonFocused() throws Exception {
         assumeTrue(supportsMultiDisplay());
 
@@ -1112,8 +1099,6 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
     }
 
     @Test
-    @RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
-    // TODO(b/391965805): Re-enable this test
     public void testFinishOnDifferentDisplay_focused() throws Exception {
         assumeTrue(supportsMultiDisplay());
 

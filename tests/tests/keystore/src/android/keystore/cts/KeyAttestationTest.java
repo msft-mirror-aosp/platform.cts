@@ -30,8 +30,8 @@ import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_UNVERIFIED;
 import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
 import static android.keystore.cts.util.TestUtils.assumeLockScreenSupport;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_AGREE_KEY;
-import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_DECRYPT;
+import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_ENCRYPT;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_SIGN;
 import static android.security.keymaster.KeymasterDefs.KM_PURPOSE_VERIFY;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
@@ -1774,14 +1774,14 @@ public class KeyAttestationTest {
         String unexpectedLengthMessagePrefix =
                 "rootOfTrust.verifiedBootKey has an unexpected length: " + verifiedBootKey.length;
 
-        if (TestUtils.getVendorApiLevel() >= 36) {
+        if (TestUtils.getVendorApiLevel() >= 202504) {
             assertEquals(
                     unexpectedLengthMessagePrefix + " (expected 32)", 32, verifiedBootKey.length);
             if (isLocked) {
                 String systemProperty =
                         SystemProperties.get("ro.boot.vbmeta.public_key_digest", "");
                 assertEquals(
-                        "rootOfTrust.verifiedBootKey does not match the"
+                        "rootOfTrust.verifiedBootKey does not match the "
                                 + "ro.boot.vbmeta.public_key_digest system property",
                         systemProperty,
                         HexEncoding.encode(verifiedBootKey));

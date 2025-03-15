@@ -172,8 +172,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
                 bgr_img,
                 (f'{img_name_stem}_{fmt}_{z:.2f}_'
                  f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-                aruco_marker_count=1,
-                force_greyscale=True  # Maximize number of markers detected
+                aruco_marker_count=1
             )
             found_markers = True
           except AssertionError as e:
@@ -219,7 +218,7 @@ class ZoomTestTELE(its_base_test.ItsBaseTest):
         raise AssertionError(failure_message)
       else:
         raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
-                               f'\n\n{failure_message}')
+                             f'\n\n{failure_message}')
 
 if __name__ == '__main__':
   test_runner.main()

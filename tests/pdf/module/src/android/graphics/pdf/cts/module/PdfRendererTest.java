@@ -90,6 +90,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -1103,7 +1104,8 @@ public class PdfRendererTest {
         try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
 
-            RectF bounds = new RectF(10, 20, 30, 40);
+            List<RectF> bounds = new ArrayList<>();
+            bounds.add(new RectF(10, 20, 30, 40));
             HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
             highlightAnnotation.setColor(Color.GREEN);
 
@@ -1204,7 +1206,8 @@ public class PdfRendererTest {
         try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
                 PdfRenderer.Page firstPage = renderer.openPage(0)) {
 
-            RectF bounds = new RectF(10, 20, 30, 40);
+            List<RectF> bounds = new ArrayList<>();
+            bounds.add(new RectF(10, 20, 30, 40));
             HighlightAnnotation highlightAnnotation = new HighlightAnnotation(bounds);
             highlightAnnotation.setColor(Color.GREEN);
 
@@ -1292,7 +1295,7 @@ public class PdfRendererTest {
 
             // Update the path object
             PdfPagePathObject pathObject = (PdfPagePathObject) stampAnnotation.getObjects().get(0);
-            pathObject.setStrokeColor(Color.valueOf(Color.RED));
+            pathObject.setStrokeColor(Color.RED);
 
             // Remove the older path object and the updated one
             stampAnnotation.removeObject(0);
@@ -1310,7 +1313,7 @@ public class PdfRendererTest {
                     .isEqualTo(PdfPageObjectType.PATH);
             PdfPagePathObject updatedPathObject =
                     (PdfPagePathObject) stampAnnotation.getObjects().get(0);
-            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.RED));
+            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.RED);
         }
     }
 
@@ -1371,7 +1374,7 @@ public class PdfRendererTest {
             path.lineTo(0f, 800f);
             PdfPagePathObject pathObject = new PdfPagePathObject(path);
             assertThat(pathObject.getFillColor()).isNotEqualTo(Color.BLUE);
-            pathObject.setFillColor(Color.valueOf(Color.BLUE));
+            pathObject.setFillColor(Color.BLUE);
 
             int id = firstPage.addPageObject(pathObject);
             assertThat(id).isEqualTo(0);
@@ -1380,7 +1383,7 @@ public class PdfRendererTest {
             assertThat(pageObjects.size()).isEqualTo(1);
             PdfPagePathObject addedPathObject =
                     (PdfPagePathObject) firstPage.getPageObjects().get(0).second;
-            assertThat(addedPathObject.getFillColor()).isEqualTo(Color.valueOf(Color.BLUE));
+            assertThat(addedPathObject.getFillColor()).isEqualTo(Color.BLUE);
             Path addedPath = addedPathObject.toPath();
 
             // Path coordinates in the format [x0, y0, x1, y1,...]
@@ -1393,6 +1396,47 @@ public class PdfRendererTest {
                 assertThat(obtainedSegments[3 * i + 1]).isEqualTo(expectedCoordinates[2 * i]);
                 // Compare y-coordinates
                 assertThat(obtainedSegments[3 * i + 2]).isEqualTo(expectedCoordinates[2 * i + 1]);
+            }
+        }
+    }
+
+    @SdkSuppress(
+            minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_PAGE_OBJECTS)
+    public void testUpdatePdfPathPageObject_UpdatePath() throws IOException {
+        try (PdfRenderer renderer = createRenderer(EMPTY_PDF, mContext);
+                PdfRenderer.Page firstPage = renderer.openPage(0)) {
+            PdfPagePathObject pathObjectToAdd = createSamplePdfPagePathObject();
+            firstPage.addPageObject(pathObjectToAdd);
+            assertThat(firstPage.getPageObjects()).hasSize(1);
+
+            Path path = new Path();
+            path.moveTo(10f, 10f);
+            path.lineTo(15f, 18f);
+            path.lineTo(20f, 22f);
+            path.moveTo(10f, 10f);
+
+            PdfPagePathObject pathObjectClone = new PdfPagePathObject(path);
+            pathObjectClone.setFillColor(Color.GRAY);
+            pathObjectClone.setStrokeColor(Color.CYAN);
+
+            firstPage.updatePageObject(firstPage.getPageObjects().get(0).first, pathObjectClone);
+
+            PdfPagePathObject updatedPathObject =
+                    (PdfPagePathObject) firstPage.getPageObjects().get(0).second;
+            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.CYAN);
+            assertThat(updatedPathObject.getFillColor()).isEqualTo(Color.GRAY);
+            // Since path is non-mutable it should not get updated.
+            // The expected co-ordinates should be equal to what was initially added.
+            float[] expectedSegments = {0f, 800f, 100f, 650f, 150f, 650f, 0f, 800f};
+            float[] obtainedSegments = updatedPathObject.toPath().approximate(0.5f);
+            for (int i = 0; i < obtainedSegments.length / 3; i++) {
+                // Compare x-coordinates
+                assertThat(obtainedSegments[3 * i + 1]).isEqualTo(expectedSegments[2 * i]);
+                // Compare y-coordinates
+                assertThat(obtainedSegments[3 * i + 2]).isEqualTo(expectedSegments[2 * i + 1]);
             }
         }
     }
@@ -1441,7 +1485,7 @@ public class PdfRendererTest {
             Path path = new Path();
             path.lineTo(10f, 10f);
             PdfPagePathObject pdfPagePathObject = new PdfPagePathObject(path);
-            pdfPagePathObject.setStrokeColor(Color.valueOf(Color.BLACK));
+            pdfPagePathObject.setStrokeColor(Color.BLACK);
 
             // Add PdfPathPageObject
             int id = firstPage.addPageObject(pdfPagePathObject);
@@ -1454,7 +1498,7 @@ public class PdfRendererTest {
             assertThat(pageObjects.get(0).second.getPdfObjectType())
                     .isEqualTo(PdfPageObjectType.PATH);
             PdfPagePathObject pathObject = (PdfPagePathObject) pageObjects.get(0).second;
-            assertThat(pathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.BLACK));
+            assertThat(pathObject.getStrokeColor()).isEqualTo(Color.BLACK);
         }
     }
 
@@ -1562,13 +1606,13 @@ public class PdfRendererTest {
 
             PdfPagePathObject pathObject =
                     (PdfPagePathObject) firstPage.getPageObjects().get(0).second;
-            pathObject.setStrokeColor(Color.valueOf(Color.BLUE));
+            pathObject.setStrokeColor(Color.BLUE);
 
             firstPage.updatePageObject(firstPage.getPageObjects().get(0).first, pathObject);
 
             PdfPagePathObject updatedPathObject =
                     (PdfPagePathObject) firstPage.getPageObjects().get(0).second;
-            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.valueOf(Color.BLUE));
+            assertThat(updatedPathObject.getStrokeColor()).isEqualTo(Color.BLUE);
         }
     }
 
@@ -1710,8 +1754,8 @@ public class PdfRendererTest {
         path.lineTo(150f, 650f);
         path.lineTo(0f, 800f);
         PdfPagePathObject pathObject = new PdfPagePathObject(path);
-        pathObject.setFillColor(Color.valueOf(Color.RED));
-        pathObject.setStrokeColor(Color.valueOf(Color.BLUE));
+        pathObject.setFillColor(Color.RED);
+        pathObject.setStrokeColor(Color.BLUE);
         return pathObject;
     }
 

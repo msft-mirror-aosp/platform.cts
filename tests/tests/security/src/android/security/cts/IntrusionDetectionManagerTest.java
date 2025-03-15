@@ -16,6 +16,7 @@
 
 package android.security.cts;
 
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
@@ -30,17 +31,23 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.Manifest;
 import android.app.Instrumentation;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.Flags;
 import android.security.intrusiondetection.IntrusionDetectionManager;
+import android.security.keystore.KeyGenParameterSpec;
+import android.security.keystore.KeyProperties;
 import android.util.Slog;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.After;
 import org.junit.Before;
@@ -51,6 +58,10 @@ import org.junit.runner.RunWith;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.GeneralSecurityException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -432,5 +443,126 @@ public class IntrusionDetectionManagerTest {
         assertThat(commandLatch1.await(1, SECONDS)).isTrue();
         executor.close();
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+    }
+
+    @Test
+    public void testEnable_verifyDataSources() throws Exception {
+        assumeTrue(shouldTestIntrusionDetectionEventTransportConfig());
+        // TODO: b/399717716 [AIL] Drop permissions in CTS tests
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        Manifest.permission.BIND_INTRUSION_DETECTION_EVENT_TRANSPORT_SERVICE,
+                        Manifest.permission.READ_INTRUSION_DETECTION_STATE,
+                        Manifest.permission.MANAGE_INTRUSION_DETECTION_STATE);
+
+        var executor = newSingleThreadExecutor();
+        String securityEventTag = "test_security_event_tag";
+
+        // Register receiver to detect when security event was received by the test app.
+        CountDownLatch securityEventLatch = new CountDownLatch(1);
+        IntrusionDetectionBroadcastReceiver securityEventReceiver =
+                new IntrusionDetectionBroadcastReceiver(securityEventLatch);
+        IntentFilter filter =
+                new IntentFilter(
+                        "com.android.coretests.apps.testapp.ACTION_SECURITY_EVENT_RECEIVED");
+        mContext.registerReceiver(securityEventReceiver, filter, Context.RECEIVER_EXPORTED);
+
+        AtomicInteger stateCounter = new AtomicInteger();
+        stateCounter.set(0);
+        mIntrusionDetectionManager.addStateCallback(
+                executor,
+                state -> {
+                    if (stateCounter.get() == 0) {
+                        assertEquals(IntrusionDetectionManager.STATE_DISABLED, state.intValue());
+                        stateCounter.getAndIncrement();
+                    } else if (stateCounter.get() == 1) {
+                        assertEquals(IntrusionDetectionManager.STATE_ENABLED, state.intValue());
+                        stateCounter.getAndIncrement();
+                    } else {
+                        fail("state callback can only be called twice!");
+                    }
+                });
+
+        var commandLatch0 = new CountDownLatch(1);
+        mIntrusionDetectionManager.enable(
+                executor,
+                new IntrusionDetectionManager.CommandCallback() {
+                    @Override
+                    public void onSuccess() {
+                        commandLatch0.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(int error) {
+                        fail("onFailure shall not be called");
+                    }
+                });
+
+        assertThat(commandLatch0.await(1, SECONDS)).isTrue();
+
+        var commandLatch1 = new CountDownLatch(1);
+        mIntrusionDetectionManager.enable(
+                executor,
+                new IntrusionDetectionManager.CommandCallback() {
+                    @Override
+                    public void onSuccess() {
+                        commandLatch1.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(int error) {
+                        fail("onFailure shall not be called");
+                    }
+                });
+
+        assertThat(commandLatch1.await(1, SECONDS)).isTrue();
+
+        generateSecurityEvent(securityEventTag);
+
+        // Security logs are batched by the DevicePolicyManager. Force the
+        // log callback to be sent to SecurityLogSource.
+        UiDevice.getInstance(mInstrumentation).executeShellCommand("dpm force-security-logs");
+
+        assertThat(securityEventLatch.await(1, SECONDS)).isTrue();
+
+        mContext.unregisterReceiver(securityEventReceiver);
+        executor.close();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+    }
+
+    /** Emits a given string into security log (if enabled). */
+    private void generateSecurityEvent(String eventString)
+            throws IllegalArgumentException, GeneralSecurityException, IOException {
+        if (eventString == null || eventString.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Error generating security event: eventString must not be empty");
+        }
+
+        final KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
+        keyGen.initialize(
+                new KeyGenParameterSpec.Builder(eventString, KeyProperties.PURPOSE_SIGN).build());
+        // Emit key generation event.
+        final KeyPair keyPair = keyGen.generateKeyPair();
+        assertNotNull(keyPair);
+
+        final KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+        ks.load(null);
+        // Emit key destruction event.
+        ks.deleteEntry(eventString);
+    }
+
+    public static class IntrusionDetectionBroadcastReceiver extends BroadcastReceiver {
+
+        CountDownLatch mBroadcastLatch;
+
+        public IntrusionDetectionBroadcastReceiver(CountDownLatch broadcastLatch) {
+            mBroadcastLatch = broadcastLatch;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mBroadcastLatch.countDown();
+        }
     }
 }

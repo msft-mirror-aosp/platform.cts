@@ -69,8 +69,17 @@ public class MockCentralizedNetworkAgent {
 
         for (int numSim = 0; numSim < numOfPhone; numSim++) {
             String targetString = "DataNetworkController-" + Integer.toString(numSim);
+            if (!result.contains(targetString)) {
+                Log.e(TAG, "targetString '" + targetString + "' not found in result. Skipping.");
+                continue;
+            }
+            String[] splitResult = result.split(targetString);
+            if (splitResult.length <= 1) {
+                Log.e(TAG, "Split result for '" + targetString + "' has length <= 1. Skipping.");
+                continue;
+            }
             String tmpString = targetString
-                    + result.split(targetString)[1].split("Pending tear down data networks:")[0];
+                    + splitResult[1].split("Pending tear down data networks:")[0];
             sDataCalls.put(numSim, tmpString);
             iRadioDataImpls[numSim]
                 .getMockDataServiceInstance().setBridgeTheDataConnection(tmpString);

@@ -19,14 +19,11 @@ package android.telephony.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.net.NetworkCapabilities;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.data.DataServiceCallback;
 import android.telephony.data.QualifiedNetworksService;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -115,7 +112,6 @@ public class QualifiedNetworksServiceTest {
 
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testRequestNetworkValidation() throws InterruptedException {
         QualifiedNetworksService qns = new TestQns();
         QualifiedNetworksService.NetworkAvailabilityProvider nap =

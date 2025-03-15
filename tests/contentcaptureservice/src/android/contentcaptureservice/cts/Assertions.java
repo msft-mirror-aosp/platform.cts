@@ -294,6 +294,14 @@ final class Assertions {
     }
 
     /**
+     * Asserts the contents of a {@link #TYPE_SESSION_FLUSH} event.
+     */
+    public static void assertSessionFlush(@NonNull List<ContentCaptureEvent> events,
+            int index) {
+        assertSessionLevelEvent(events, index, TYPE_SESSION_FLUSH);
+    }
+
+    /**
      * Asserts that a session for the given activity has no view-level events, just
      * {@link #TYPE_SESSION_RESUMED} and {@link #TYPE_SESSION_PAUSED}.
      */

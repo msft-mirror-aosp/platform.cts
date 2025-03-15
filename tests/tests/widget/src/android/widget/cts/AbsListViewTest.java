@@ -36,7 +36,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -244,7 +243,7 @@ public class AbsListViewTest {
         AbsListView.OnScrollListener mockScrollListener =
                 mock(AbsListView.OnScrollListener.class);
 
-        verifyZeroInteractions(mockScrollListener);
+        verifyNoMoreInteractions(mockScrollListener);
 
         mListView.setOnScrollListener(mockScrollListener);
         verify(mockScrollListener, times(1)).onScroll(mListView, 0, 0, 0);
@@ -590,7 +589,7 @@ public class AbsListViewTest {
 
         AbsListView.RecyclerListener mockRecyclerListener =
                 mock(AbsListView.RecyclerListener.class);
-        verifyZeroInteractions(mockRecyclerListener);
+        verifyNoMoreInteractions(mockRecyclerListener);
 
         mListView.setRecyclerListener(mockRecyclerListener);
         List<View> views = new ArrayList<>();
@@ -755,7 +754,7 @@ public class AbsListViewTest {
                 () -> listView.setOnItemLongClickListener(mockOnItemLongClickListener)
         );
 
-        verifyZeroInteractions(mockOnItemLongClickListener);
+        verifyNoMoreInteractions(mockOnItemLongClickListener);
 
         // Now long click our view
         mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, v, 500);

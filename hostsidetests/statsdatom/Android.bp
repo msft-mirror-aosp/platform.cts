@@ -57,6 +57,7 @@ java_test_host {
         "src/**/settingsstats/*.java",
         "src/**/sizecompatrestartbutton/*.java",
         "src/**/statsd/*.java",
+        "src/**/telecom/*.java",
         "src/**/telephony/*.java",
         "src/**/tls/*.java",
         "src/**/usb/*.java",
@@ -121,6 +122,10 @@ java_test_host {
         ":CtsAppFunctionTestCases",
         ":CtsAppFunctionsTestHelper",
         ":CtsAppFunctionsSidecarTestHelper",
+        ":CtsTelecomTestCases",
+        ":CtsTelecomCujTestCases",
+        ":ManagedConnectionServiceApp",
+        ":TransactionalVoipAppMain",
     ],
     per_testcase_directory: true,
 }

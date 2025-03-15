@@ -164,8 +164,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
               bgr_img,
               (f'{img_name_stem}_{zoom_ratio:.2f}_'
                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-              aruco_marker_count=1,
-              force_greyscale=True  # Maximize number of markers detected
+              aruco_marker_count=1
           )
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',
@@ -196,6 +195,9 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
           if ultrawide_camera_found
           else _SINGLE_CAMERA_NUMBER_OF_CAMERAS_TO_TEST
       )
+      # Make reporting active physical IDs optional
+      if all(d.physical_id is None for d in test_data):
+        number_of_cameras_to_test = 0
       if not zoom_capture_utils.verify_zoom_data(
           test_data, size,
           offset_plot_name_stem=img_name_stem,

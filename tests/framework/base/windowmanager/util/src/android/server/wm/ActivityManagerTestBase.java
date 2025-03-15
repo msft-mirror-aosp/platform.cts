@@ -3205,6 +3205,7 @@ public abstract class ActivityManagerTestBase {
         private boolean mResizeDisplay = true;
         private boolean mShowSystemDecorations = false;
         private boolean mOwnContentOnly = false;
+        private boolean mAllowContentModeSwitch = false;
         private int mDisplayImePolicy = DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
         private boolean mPresentationDisplay = false;
         private boolean mSimulateDisplay = false;
@@ -3280,6 +3281,15 @@ public abstract class ActivityManagerTestBase {
         @NonNull
         public VirtualDisplaySession setOwnContentOnly(boolean ownContentOnly) {
             mOwnContentOnly = ownContentOnly;
+            return this;
+        }
+
+        /**
+         * Sets {@code allowContentModeSwitch} to the virtual display.
+         */
+        @NonNull
+        public VirtualDisplaySession setAllowContentModeSwitch(boolean allowContentModeSwitch) {
+            mAllowContentModeSwitch = allowContentModeSwitch;
             return this;
         }
 
@@ -3413,7 +3423,7 @@ public abstract class ActivityManagerTestBase {
         private List<DisplayContent> simulateDisplays(int count) {
             mOverlayDisplayDeviceSession = new OverlayDisplayDevicesSession();
             mOverlayDisplayDeviceSession.createDisplays(mSimulationDisplaySize, mDensityDpi,
-                    mOwnContentOnly, mShowSystemDecorations, count);
+                    mOwnContentOnly, mShowSystemDecorations, mAllowContentModeSwitch, count);
             mOverlayDisplayDeviceSession.configureDisplays(mDisplayImePolicy /* imePolicy */);
             return mOverlayDisplayDeviceSession.getCreatedDisplays();
         }
@@ -3550,6 +3560,12 @@ public abstract class ActivityManagerTestBase {
                     ",should_show_system_decorations";
 
             /**
+             * See {@code OverlayDisplayAdapter#OVERLAY_DISPLAY_FLAG_FIXED_CONTENT_MODE}.
+             */
+            private static final String OVERLAY_DISPLAY_FLAG_FIXED_CONTENT_MODE =
+                    ",fixed_content_mode";
+
+            /**
              * The displays which are created by this session.
              */
             @NonNull
@@ -3588,7 +3604,8 @@ public abstract class ActivityManagerTestBase {
              * Creates overlay display with custom density dpi, specified size, and test flags.
              */
             void createDisplays(Size displaySize, int densityDpi, boolean ownContentOnly,
-                                boolean shouldShowSystemDecorations, int count) {
+                                boolean shouldShowSystemDecorations, boolean allowContentModeSwitch,
+                                int count) {
                 final StringBuilder builder = new StringBuilder();
                 for (int i = 0; i < count; i++) {
                     String displaySettingsEntry = displaySize + "/" + densityDpi;
@@ -3597,6 +3614,9 @@ public abstract class ActivityManagerTestBase {
                     }
                     if (shouldShowSystemDecorations) {
                         displaySettingsEntry += OVERLAY_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+                    }
+                    if (!allowContentModeSwitch) {
+                        displaySettingsEntry += OVERLAY_DISPLAY_FLAG_FIXED_CONTENT_MODE;
                     }
                     builder.append(displaySettingsEntry);
                     // Creating n displays needs (n - 1) ';'.

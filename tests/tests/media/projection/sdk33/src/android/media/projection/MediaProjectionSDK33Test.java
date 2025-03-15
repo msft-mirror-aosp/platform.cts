@@ -35,14 +35,13 @@ import android.content.pm.PackageManager;
 import android.graphics.PixelFormat;
 import android.hardware.display.VirtualDisplay;
 import android.media.ImageReader;
-import android.media.cts.MediaProjectionActivity;
+import android.media.cts.MediaProjectionRule;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
@@ -80,22 +79,7 @@ public class MediaProjectionSDK33Test {
     private static final int RECORDING_DENSITY = 200;
     private static final int MAX_IMAGES = 20;
 
-    @Rule
-    public ActivityTestRule<MediaProjectionActivity> mActivityRule =
-            new ActivityTestRule<>(MediaProjectionActivity.class, false, false);
-
-    private MediaProjectionActivity mActivity;
-
-    // Define separate objects for each capture.
-    private ImageReader mImageReader;
-    private VirtualDisplay mVirtualDisplay;
-    private final MediaProjection.Callback mCallback = new MediaProjection.Callback() {
-        @Override
-        public void onStop() {
-            cleanupImageReader(mImageReader);
-            cleanupVirtualDisplay(mVirtualDisplay);
-        }
-    };
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     private ImageReader mSecondImageReader;
     private VirtualDisplay mSecondVirtualDisplay;
@@ -107,7 +91,6 @@ public class MediaProjectionSDK33Test {
             cleanupVirtualDisplay(mSecondVirtualDisplay);
         }
     };
-    private MediaProjection mMediaProjection;
     private Context mContext;
     private int mTimeoutMs;
 
@@ -122,12 +105,6 @@ public class MediaProjectionSDK33Test {
     public void cleanup() {
         UiDevice uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         uiDevice.pressHome();
-        if (mMediaProjection != null) {
-            mMediaProjection.stop();
-            mMediaProjection.unregisterCallback(mCallback);
-            mMediaProjection.unregisterCallback(mSecondCallback);
-            mMediaProjection = null;
-        }
     }
 
     /**
@@ -149,14 +126,18 @@ public class MediaProjectionSDK33Test {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
 
         // Navigate the dialog and retrieve the first projection instance.
-        startMediaProjection();
-        assertNotNull("MediaProjection should be a non-null object if projection started "
-                + "successfully", mMediaProjection);
+        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
+        assertNotNull(
+                "MediaProjection should be a non-null object if projection started "
+                        + "successfully",
+                mediaProjection);
 
         // Re-use the result data to retrieve a new media projection instance.
-        Intent resultWithConsent = mActivity.getResultData();
-        final MediaProjection anotherProjection = mContext.getSystemService(
-                MediaProjectionManager.class).getMediaProjection(RESULT_OK, resultWithConsent);
+        Intent resultWithConsent = mMediaProjectionRule.getActivity().getResultData();
+        final MediaProjection anotherProjection =
+                mMediaProjectionRule
+                        .getMediaProjectionManager()
+                        .getMediaProjection(RESULT_OK, resultWithConsent);
         assertNotNull("MediaProjection should be a non-null object if projection started "
                 + "successfully", anotherProjection);
 
@@ -166,20 +147,29 @@ public class MediaProjectionSDK33Test {
         final CountDownLatch dismissPermissionDialogLatch = new CountDownLatch(1);
 
         // Prepare for capturing a single buffer from the entire screen.
-        anotherProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
-        mImageReader = ImageReader.newInstance(RECORDING_WIDTH, RECORDING_HEIGHT,
-                PixelFormat.RGBA_8888, /* maxImages= */ 1);
-        mImageReader.setOnImageAvailableListener((ImageReader imageReader) ->
-                firstBufferLatch.countDown(), new Handler(Looper.getMainLooper()));
+        anotherProjection.registerCallback(mSecondCallback, new Handler(Looper.getMainLooper()));
+        mSecondImageReader =
+                ImageReader.newInstance(
+                        RECORDING_WIDTH,
+                        RECORDING_HEIGHT,
+                        PixelFormat.RGBA_8888,
+                        /* maxImages= */ 1);
+        mSecondImageReader.setOnImageAvailableListener(
+                (ImageReader imageReader) -> firstBufferLatch.countDown(),
+                new Handler(Looper.getMainLooper()));
 
         // The permission dialog should be launched again when trying to start capture on the second
         // projection.
-        mVirtualDisplay = anotherProjection.createVirtualDisplay(TAG + "VirtualDisplay",
-                RECORDING_WIDTH, RECORDING_HEIGHT, RECORDING_DENSITY,
-                VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                mImageReader.getSurface(),
-                /* VirtualDisplay.Callback= */ null,
-                new Handler(Looper.getMainLooper()));
+        mSecondVirtualDisplay =
+                anotherProjection.createVirtualDisplay(
+                        TAG + "VirtualDisplay",
+                        RECORDING_WIDTH,
+                        RECORDING_HEIGHT,
+                        RECORDING_DENSITY,
+                        VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                        mSecondImageReader.getSurface(),
+                        /* VirtualDisplay.Callback= */ null,
+                        new Handler(Looper.getMainLooper()));
 
         // Start recording the entire screen on the re-shown permission dialog.
         // This will wait for the UI elements to appear.
@@ -216,9 +206,8 @@ public class MediaProjectionSDK33Test {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH));
 
         // Start capture once.
-        startMediaProjection();
-        mMediaProjection.registerCallback(mCallback, new Handler(Looper.getMainLooper()));
-        createVirtualDisplay();
+        MediaProjection mediaProjection = mMediaProjectionRule.startMediaProjection();
+        mMediaProjectionRule.createVirtualDisplay();
 
         // Prepare latches to validate that nothing is captured before the user reviews the second
         // permission dialog.
@@ -228,17 +217,21 @@ public class MediaProjectionSDK33Test {
         // Now try to capture again on the same mMediaProjection instance; this should re-show the
         // permission dialog.
         // Prepare for capturing a single buffer from the entire screen.
-        mMediaProjection.registerCallback(mSecondCallback, new Handler(Looper.getMainLooper()));
+        mediaProjection.registerCallback(mSecondCallback, new Handler(Looper.getMainLooper()));
         mSecondImageReader = ImageReader.newInstance(RECORDING_WIDTH, RECORDING_HEIGHT,
                 PixelFormat.RGBA_8888, MAX_IMAGES);
         mSecondImageReader.setOnImageAvailableListener((ImageReader imageReader) ->
                 firstBufferLatch.countDown(), new Handler(Looper.getMainLooper()));
-        mSecondVirtualDisplay = mMediaProjection.createVirtualDisplay(TAG + "VirtualDisplay",
-                RECORDING_WIDTH, RECORDING_HEIGHT, RECORDING_DENSITY,
-                VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                mSecondImageReader.getSurface(),
-                /* VirtualDisplay.Callback= */ null,
-                new Handler(Looper.getMainLooper()));
+        mSecondVirtualDisplay =
+                mediaProjection.createVirtualDisplay(
+                        TAG + "VirtualDisplay",
+                        RECORDING_WIDTH,
+                        RECORDING_HEIGHT,
+                        RECORDING_DENSITY,
+                        VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                        mSecondImageReader.getSurface(),
+                        /* VirtualDisplay.Callback= */ null,
+                        new Handler(Looper.getMainLooper()));
 
         // Start recording the entire screen on the re-shown permission dialog.
         // This will wait for the UI elements to appear.
@@ -261,22 +254,6 @@ public class MediaProjectionSDK33Test {
                 + " ms", firstBufferLatch.await(mTimeoutMs, TimeUnit.MILLISECONDS));
     }
 
-    void startMediaProjection() throws Exception {
-        mActivityRule.launchActivity(null);
-        mActivity = mActivityRule.getActivity();
-        mMediaProjection = mActivity.waitForMediaProjection();
-    }
-
-    void createVirtualDisplay() {
-        mImageReader = ImageReader.newInstance(RECORDING_WIDTH, RECORDING_HEIGHT,
-                PixelFormat.RGBA_8888, /* maxImages= */ 1);
-        mVirtualDisplay = mMediaProjection.createVirtualDisplay(TAG + "VirtualDisplay",
-                RECORDING_WIDTH, RECORDING_HEIGHT, RECORDING_DENSITY,
-                VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                mImageReader.getSurface(), /* callback= */ null,
-                new Handler(Looper.getMainLooper()));
-    }
-
     private static void cleanupImageReader(ImageReader imageReader) {
         if (imageReader != null) {
             imageReader.close();
@@ -291,7 +268,6 @@ public class MediaProjectionSDK33Test {
                 surface.release();
             }
             virtualDisplay.release();
-            virtualDisplay = null;
         }
     }
 

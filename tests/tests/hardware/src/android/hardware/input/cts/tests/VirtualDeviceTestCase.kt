@@ -17,6 +17,7 @@ package android.hardware.input.cts.tests
 
 import android.app.ActivityOptions
 import android.companion.virtual.VirtualDeviceManager
+import android.graphics.Point
 import android.hardware.display.VirtualDisplay
 import android.os.Bundle
 import android.server.wm.WindowManagerStateHelper
@@ -58,5 +59,13 @@ abstract class VirtualDeviceTestCase : InputTestCase() {
         return ActivityOptions.makeBasic()
             .setLaunchDisplayId(mVirtualDisplay.display.displayId)
             .toBundle()
+    }
+
+    fun getActivityCenter(): Point {
+        val view = mTestActivity.window.decorView
+        val xy = IntArray(2)
+        view.getLocationOnScreen(xy)
+
+        return Point(xy[0] + view.width / 2, xy[1] + view.height / 2)
     }
 }

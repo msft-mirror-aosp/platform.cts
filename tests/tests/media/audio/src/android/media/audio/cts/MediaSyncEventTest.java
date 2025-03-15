@@ -35,14 +35,14 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.DeviceReportLog;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class MediaSyncEventTest {
     private final static String TAG = "MediaSyncEventTest";

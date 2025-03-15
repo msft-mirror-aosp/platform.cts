@@ -152,7 +152,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testBuilder_withIllegalArguments() {
         final Session2Token token = new Session2Token(
                 mContext, new ComponentName(mContext, this.getClass()));
@@ -187,7 +187,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testBuilder_setConnectionHints_withFrameworkParcelable() throws Exception {
         final List<MediaSession2.ControllerInfo> controllerInfoList = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -227,7 +227,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testBuilder_setConnectionHints_withCustomParcelable() {
         final Session2Token token = new Session2Token(
                 mContext, new ComponentName(mContext, this.getClass()));
@@ -246,7 +246,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCreatingControllerWithoutCallback() throws Exception {
         try (MediaController2 controller =
                      new MediaController2.Builder(mContext, mSession.getToken()).build()) {
@@ -258,7 +258,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetConnectedToken() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -281,7 +281,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCallback_onConnected_onDisconnected() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -298,7 +298,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCallback_onSessionCommand() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -335,7 +335,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCallback_onCommandResult() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =
@@ -370,7 +370,7 @@ public class MediaController2Test {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCancelSessionCommand() {
         Controller2Callback controllerCallback = new Controller2Callback();
         try (MediaController2 controller =

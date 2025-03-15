@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibilityservice.AccessibilityServiceInfo;
@@ -668,7 +668,7 @@ public class AccessibilityTextActionTest {
         final TextView.OnEditorActionListener mockOnEditorActionListener =
                 mock(TextView.OnEditorActionListener.class);
         textView.setOnEditorActionListener(mockOnEditorActionListener);
-        verifyZeroInteractions(mockOnEditorActionListener);
+        verifyNoMoreInteractions(mockOnEditorActionListener);
 
         final AccessibilityNodeInfo text = sUiAutomation.getRootInActiveWindow()
                 .findAccessibilityNodeInfosByText(mActivity.getString(R.string.a_b)).get(0);

@@ -111,7 +111,7 @@ import com.android.compatibility.common.util.AmUtils;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.UserHelper;
@@ -145,7 +145,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeFull(reason = "Waiting for volume/zen mode changes requires receiving intents. " +
         "Several API calls require MODIFY_AUDIO_SETTINGS.")
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
@@ -272,9 +272,14 @@ public class AudioManagerTest {
             STREAM_ACCESSIBILITY,
         };
         mOriginalRingerMode = mAudioManager.getRingerMode();
-        for (int streamType : streamTypes) {
-            mOriginalStreamVolumes.put(streamType, mAudioManager.getStreamVolume(streamType));
-        }
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            for (int streamType : streamTypes) {
+                if (mAudioManager.getStreamTypeAlias(streamType) == streamType) {
+                    mOriginalStreamVolumes.put(streamType,
+                            mAudioManager.getStreamVolume(streamType));
+                }
+            }
+        });
 
         // Tests require the known state of volumes set to INIT_VOL and zen mode
         // turned off.
@@ -295,9 +300,13 @@ public class AudioManagerTest {
                     mContext.getPackageName(), getInstrumentation(), false);
         }
 
-        for (int streamType : streamTypes) {
-            mAudioManager.setStreamVolume(streamType, INIT_VOL, 0 /* flags */);
-        }
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            for (int streamType : streamTypes) {
+                if (mAudioManager.getStreamTypeAlias(streamType) == streamType) {
+                    mAudioManager.setStreamVolume(streamType, INIT_VOL, 0 /* flags */);
+                }
+            }
+        });
 
         // Check original microphone mute/unmute status
         mDoNotCheckUnmute = false;
@@ -1237,6 +1246,16 @@ public class AudioManagerTest {
         // TODO this does not test the positive case (having permissions)
         assumeFalse("AudioManagerTest testAccessibilityVolume() skipped: fixed volume",
                 mUseFixedVolume);
+
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        int accessibilityAlias = -1;
+        try {
+            accessibilityAlias = mAudioManager.getStreamTypeAlias(STREAM_ACCESSIBILITY);
+        } finally {
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+        assumeTrue(accessibilityAlias == STREAM_ACCESSIBILITY);
 
         final int maxA11yVol = mAudioManager.getStreamMaxVolume(STREAM_ACCESSIBILITY);
         assertWithMessage("Max a11yVol must be strictly positive")

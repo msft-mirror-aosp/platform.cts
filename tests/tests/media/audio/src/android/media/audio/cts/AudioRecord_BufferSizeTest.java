@@ -24,12 +24,12 @@ import android.test.AndroidTestCase;
 import android.util.Log;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 public class AudioRecord_BufferSizeTest extends AndroidTestCase {
 
     private static final String TAG = AudioRecord_BufferSizeTest.class.getSimpleName();

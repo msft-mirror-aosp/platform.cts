@@ -61,7 +61,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
-import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -129,6 +129,7 @@ public final class CrossProfileSharingTest {
     @Test
     @Postsubmit(reason = "new test")
     @RequireRunOnWorkProfile
+    @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     public void openingPersonalFromProfile_disallowShareIntoProfile_restrictionApplied() {
         ResolveInfo toPersonalForwarderInfo = getWorkToPersonalForwarder();
 
@@ -153,6 +154,7 @@ public final class CrossProfileSharingTest {
     @Test
     @Postsubmit(reason = "new test")
     @RequireRunOnWorkProfile
+    @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     public void openingPersonalFromProfile_disallowShareIntoProfile_restrictionRemoved() {
         ResolveInfo workToPersonalForwarder = getWorkToPersonalForwarder();
 
@@ -172,6 +174,7 @@ public final class CrossProfileSharingTest {
     @Test
     @Postsubmit(reason = "new test")
     @EnsureHasWorkProfile
+    @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     public void sharingFromPersonalToWork_disallowShareIntoProfile_restrictionApplied() {
         ResolveInfo personalToWorkForwarder = getPersonalToWorkForwarder();
 
@@ -191,6 +194,7 @@ public final class CrossProfileSharingTest {
     @Test
     @Postsubmit(reason = "new test")
     @EnsureHasWorkProfile
+    @EnsureHasPermission(INTERACT_ACROSS_USERS_FULL)
     public void sharingFromPersonalToWork_disallowShareIntoProfile_restrictionRemoved() {
         try (TestAppInstance testApp = sTestApp.install(workProfile(sDeviceState))) {
             ResolveInfo personalToWorkForwarder = getPersonalToWorkForwarder();
@@ -344,9 +348,7 @@ public final class CrossProfileSharingTest {
         RemoteDpc remoteDpc = profileOwner(sDeviceState, WORK_PROFILE);
         IntentFilter filter = new IntentFilter(ACTION_DATA_SHARING_RESTRICTION_APPLIED);
         Context remoteCtx = TestApis.context().androidContextAsUser(remoteDpc.user());
-        try (PermissionContext permissionContext =
-                     TestApis.permissions().withPermission(INTERACT_ACROSS_USERS_FULL);
-             BlockingBroadcastReceiver receiver =
+        try (BlockingBroadcastReceiver receiver =
                      BlockingBroadcastReceiver.create(remoteCtx, filter).register()) {
             if (enabled) {
                 remoteDpc.devicePolicyManager().clearUserRestriction(

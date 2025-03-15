@@ -236,7 +236,7 @@ class LedSnapshotTest(its_base_test.ItsBaseTest):
                                       f' the limits. Format: {fmt_name},'
                                       f' Size: {width}x{height}')
             if not _WB_MIN <= b_g_ratio <= _WB_MAX:
-              failure_messages.append(f'B/G ratio: {r_g_ratio} not within'
+              failure_messages.append(f'B/G ratio: {b_g_ratio} not within'
                                       f' the limits. Format: {fmt_name},'
                                       f' Size: {width}x{height}')
 

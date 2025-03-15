@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<configuration description="Config for CTS Packageinstaller CUJ installation test cases">
+<configuration description="Config for CTS Packageinstaller CUJ installation test cases using intents without requesting install result back from package installer">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="packagemanager" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />

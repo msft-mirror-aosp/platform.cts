@@ -22,7 +22,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -119,13 +118,13 @@ public class CheckBoxTest {
         final CheckBox.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(CheckBox.OnCheckedChangeListener.class);
         mCheckBox.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mCheckBox.isChecked());
 
         // not checked -> not checked
         mCheckBox.setChecked(false);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
         assertFalse(mCheckBox.isChecked());
 
         // not checked -> checked
@@ -152,7 +151,7 @@ public class CheckBoxTest {
         final CheckBox.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(CheckBox.OnCheckedChangeListener.class);
         mCheckBox.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mCheckBox.isChecked());
 
@@ -174,7 +173,7 @@ public class CheckBoxTest {
         final CheckBox.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(CheckBox.OnCheckedChangeListener.class);
         mCheckBox.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mCheckBox.isChecked());
 
@@ -197,7 +196,7 @@ public class CheckBoxTest {
         final CheckBox.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(CheckBox.OnCheckedChangeListener.class);
         mCheckBox.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mCheckBox.isChecked());
 

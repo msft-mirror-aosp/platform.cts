@@ -29,6 +29,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
+import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.media.AudioAttributes;
@@ -39,7 +40,7 @@ import android.media.AudioManager;
 import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
 import android.media.MediaPlayer;
-import android.media.cts.MediaProjectionActivity;
+import android.media.cts.MediaProjectionRule;
 import android.media.cts.Utils;
 import android.media.projection.MediaProjection;
 import android.platform.test.annotations.AppModeFull;
@@ -48,7 +49,6 @@ import android.util.Log;
 import android.view.KeyEvent;
 
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 import androidx.test.uiautomator.UiDevice;
 
 import org.junit.After;
@@ -90,21 +90,19 @@ public class RemoteSubmixTest {
 
     private Context mContext;
     private AudioManager mAudioManager;
-    private MediaProjectionActivity mActivity;
+    private Activity mActivity;
     private MediaProjection mMediaProjection;
     private Map<Integer, Integer> mStreamVolume = new HashMap<Integer, Integer>();
     private Map<Integer, String> mStreamNames = new HashMap<Integer, String>();
 
-    @Rule
-    public ActivityTestRule<MediaProjectionActivity> mActivityRule =
-            new ActivityTestRule<>(MediaProjectionActivity.class);
+    @Rule public MediaProjectionRule mMediaProjectionRule = new MediaProjectionRule();
 
     @Before
     public void setup() throws Exception {
-        mActivity = mActivityRule.getActivity();
+        mMediaProjection = mMediaProjectionRule.startMediaProjection();
+        mActivity = mMediaProjectionRule.getActivity();
         mContext = getInstrumentation().getContext();
         mAudioManager = mActivity.getSystemService(AudioManager.class);
-        mMediaProjection = mActivity.waitForMediaProjection();
         mStreamNames.put(AudioManager.STREAM_RING, "RING");
         mStreamNames.put(AudioManager.STREAM_NOTIFICATION, "NOTIFICATION");
         mStreamNames.put(AudioManager.STREAM_SYSTEM, "SYSTEM");

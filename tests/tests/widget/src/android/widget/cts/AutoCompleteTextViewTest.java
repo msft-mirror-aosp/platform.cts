@@ -41,7 +41,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -283,13 +282,13 @@ public class AutoCompleteTextViewTest {
         mAutoCompleteTextView.setOnItemClickListener(mockItemClickListener);
         assertSame(mockItemClickListener, mAutoCompleteTextView.getItemClickListener());
         assertSame(mockItemClickListener, mAutoCompleteTextView.getOnItemClickListener());
-        verifyZeroInteractions(mockItemClickListener);
+        verifyNoMoreInteractions(mockItemClickListener);
 
         // re-clear listener by setOnItemClickListener
         mAutoCompleteTextView.setOnItemClickListener(null);
         assertNull(mAutoCompleteTextView.getItemClickListener());
         assertNull(mAutoCompleteTextView.getOnItemClickListener());
-        verifyZeroInteractions(mockItemClickListener);
+        verifyNoMoreInteractions(mockItemClickListener);
     }
 
     @UiThreadTest
@@ -306,13 +305,13 @@ public class AutoCompleteTextViewTest {
         mAutoCompleteTextView.setOnItemSelectedListener(mockItemSelectedListener);
         assertSame(mockItemSelectedListener, mAutoCompleteTextView.getItemSelectedListener());
         assertSame(mockItemSelectedListener, mAutoCompleteTextView.getOnItemSelectedListener());
-        verifyZeroInteractions(mockItemSelectedListener);
+        verifyNoMoreInteractions(mockItemSelectedListener);
 
         //re-clear listener by setOnItemClickListener
         mAutoCompleteTextView.setOnItemSelectedListener(null);
         assertNull(mAutoCompleteTextView.getItemSelectedListener());
         assertNull(mAutoCompleteTextView.getOnItemSelectedListener());
-        verifyZeroInteractions(mockItemSelectedListener);
+        verifyNoMoreInteractions(mockItemSelectedListener);
     }
 
     @UiThreadTest
@@ -357,7 +356,7 @@ public class AutoCompleteTextViewTest {
         assertFalse(mAutoCompleteTextView.isPopupShowing());
         mAutoCompleteTextView.showDropDown();
         assertTrue(mAutoCompleteTextView.isPopupShowing());
-        verifyZeroInteractions(mockDismissListener);
+        verifyNoMoreInteractions(mockDismissListener);
 
         mAutoCompleteTextView.dismissDropDown();
         assertFalse(mAutoCompleteTextView.isPopupShowing());
@@ -988,7 +987,7 @@ public class AutoCompleteTextViewTest {
                 () -> mAutoCompleteTextView.setText("testO", true));
         PollingCheck.waitFor(() -> mAutoCompleteTextView.isPopupShowing());
 
-        verifyZeroInteractions(mockItemClickListener);
+        verifyNoMoreInteractions(mockItemClickListener);
     }
 
     @Test
@@ -1007,7 +1006,7 @@ public class AutoCompleteTextViewTest {
                 () -> mAutoCompleteTextView.setText("testO", false));
 
         assertFalse(mAutoCompleteTextView.isPopupShowing());
-        verifyZeroInteractions(mockItemClickListener);
+        verifyNoMoreInteractions(mockItemClickListener);
     }
 
     @UiThreadTest

@@ -50,6 +50,10 @@ import android.hardware.HardwareBuffer;
 import android.os.Parcel;
 import android.os.StrictMode;
 import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.DisplayMetrics;
 import android.view.Surface;
 
@@ -60,11 +64,13 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.ColorUtils;
 import com.android.compatibility.common.util.WidgetTestUtils;
+import com.android.graphics.hwui.flags.Flags;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -83,6 +89,10 @@ import java.util.List;
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
 public class BitmapTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     // small alpha values cause color values to be pre-multiplied down, losing accuracy
     private static final int PREMUL_COLOR = Color.argb(2, 255, 254, 253);
     private static final int PREMUL_ROUNDED_COLOR = Color.argb(2, 255, 255, 255);
@@ -1898,6 +1908,7 @@ public class BitmapTest {
      * to rely upon when sending bitmaps between themselves
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_BITMAP_PARCEL_ASHMEM_AS_IMMUTABLE)
     public void testWriteToParcelPreserveMutability() {
         Bitmap source = Bitmap.createBitmap(100, 100, Config.ARGB_8888);
         assertTrue(source.isMutable());
@@ -1906,6 +1917,38 @@ public class BitmapTest {
         p.setDataPosition(0);
         Bitmap result = Bitmap.CREATOR.createFromParcel(p);
         p.recycle();
+        assertTrue(result.isMutable());
+    }
+
+    /**
+     * If we copy a bitmap to ashmem and write that to the parcel, then we should parcel as
+     * immutable, since we won't be mutating the bitmap after writing it to the parcel.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_BITMAP_PARCEL_ASHMEM_AS_IMMUTABLE)
+    public void testWriteToParcelImplicitAshmemCopyIsImmutable() {
+        // A sufficiently large Bitmap so that it's implicitly copied to ashmem.
+        Bitmap chonkySource = Bitmap.createBitmap(1000, 1000, Config.ARGB_8888);
+        assertTrue(chonkySource.isMutable());
+        Parcel p = Parcel.obtain();
+        // This will copy the bitmap to ashmem and write that to the parcel.
+        chonkySource.writeToParcel(p, 0);
+        p.setDataPosition(0);
+        Bitmap result = Bitmap.CREATOR.createFromParcel(p);
+        p.recycle();
+        // The parceled Bitmap should be immutable even though the original was mutable.
+        assertFalse(result.isMutable());
+
+        // A Bitmap small enough to not be copied to ashmem for parceling.
+        Bitmap smolSource = Bitmap.createBitmap(10, 10, Config.ARGB_8888);
+        assertTrue(smolSource.isMutable());
+        p = Parcel.obtain();
+        // This will copy the bitmap to ashmem and write that to the parcel.
+        smolSource.writeToParcel(p, 0);
+        p.setDataPosition(0);
+        result = Bitmap.CREATOR.createFromParcel(p);
+        p.recycle();
+        // The parceled Bitmap should be mutable, same as the source.
         assertTrue(result.isMutable());
     }
 

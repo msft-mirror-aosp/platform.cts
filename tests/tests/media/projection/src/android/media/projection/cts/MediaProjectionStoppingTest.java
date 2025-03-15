@@ -118,6 +118,9 @@ public class MediaProjectionStoppingTest {
     @Test
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionStopsOnKeyguard() throws Exception {
+        assumeTrue(mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
+
         mMediaProjectionRule.startMediaProjection();
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -144,6 +147,8 @@ public class MediaProjectionStoppingTest {
     @Test
     @ApiTest(apis = "android.media.projection.MediaProjection.Callback#onStop")
     public void testMediaProjectionWithoutDisplayDoesNotStopOnKeyguard() throws Exception {
+        assumeTrue(mContext.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN));
         mMediaProjectionRule.startMediaProjection();
 
         CountDownLatch latch = new CountDownLatch(1);

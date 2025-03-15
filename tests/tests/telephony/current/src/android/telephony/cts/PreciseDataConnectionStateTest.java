@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 
 import android.net.LinkProperties;
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.AccessNetworkConstants;
@@ -30,8 +29,6 @@ import android.telephony.data.ApnSetting;
 import android.telephony.data.EpsQos;
 import android.telephony.data.NrQos;
 import android.telephony.data.Qos;
-
-import com.android.internal.telephony.flags.Flags;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -134,7 +131,6 @@ public class PreciseDataConnectionStateTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testParcelForNetworkValidation() {
         PreciseDataConnectionState pdcs = makeTestPreciseDataConnectionStateForNetworkValidation();
         Parcel stateParcel = Parcel.obtain();
@@ -147,7 +143,6 @@ public class PreciseDataConnectionStateTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_VALIDATION)
     public void testPreciseDataConnectionStateGettersForNetworkValidation() {
         PreciseDataConnectionState pdcs = makeTestPreciseDataConnectionStateForNetworkValidation();
         assertEquals(TRANSPORT_TYPE, pdcs.getTransportType());

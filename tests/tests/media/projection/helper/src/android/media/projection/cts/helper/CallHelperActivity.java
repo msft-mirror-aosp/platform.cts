@@ -18,13 +18,14 @@ package android.media.projection.cts.helper;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Bundle;
 
 /** Trampoline Activity used for testing (phone) call related features */
 public class CallHelperActivity extends Activity {
 
     @Override
-    protected void onStart() {
-        super.onStart();
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         startService(new Intent(this, CallHelperService.class).setAction(getIntent().getAction()));
         if (CallHelperService.CALL_HELPER_STOP_CALL.equals(getIntent().getAction())) {
             finish();

@@ -105,8 +105,8 @@ class A11ySlowKeysTest {
             activity.assertNoEvents()
 
             // Key not pressed for threshold duration
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
 
             activity.assertNoEvents()
         }
@@ -118,9 +118,9 @@ class A11ySlowKeysTest {
             activity.assertNoEvents()
 
             // Key pressed for threshold duration
-            injectKeyDown(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
             Thread.sleep(2 * THRESHOLD_MILLIS.toLong())
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
 
             assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_A)
         }

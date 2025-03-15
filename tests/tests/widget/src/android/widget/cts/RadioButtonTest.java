@@ -23,7 +23,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -121,13 +120,13 @@ public class RadioButtonTest {
         final RadioButton.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(RadioButton.OnCheckedChangeListener.class);
         mRadioButton.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mRadioButton.isChecked());
 
         // not checked -> not checked
         mRadioButton.setChecked(false);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
         assertFalse(mRadioButton.isChecked());
 
         // not checked -> checked
@@ -154,7 +153,7 @@ public class RadioButtonTest {
         final RadioButton.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(RadioButton.OnCheckedChangeListener.class);
         mRadioButton.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mRadioButton.isChecked());
 
@@ -175,7 +174,7 @@ public class RadioButtonTest {
         final RadioButton.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(RadioButton.OnCheckedChangeListener.class);
         mRadioButton.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mRadioButton.isChecked());
 
@@ -198,7 +197,7 @@ public class RadioButtonTest {
         final RadioButton.OnCheckedChangeListener mockCheckedChangeListener =
                 mock(RadioButton.OnCheckedChangeListener.class);
         mRadioButton.setOnCheckedChangeListener(mockCheckedChangeListener);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         assertFalse(mRadioButton.isChecked());
 

@@ -24,17 +24,12 @@ import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_PHONE;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNoException;
 
 import android.app.Activity;
-import android.app.ActivityOptions;
 import android.app.Instrumentation;
-import android.app.PendingIntent;
 import android.app.Service;
 import android.app.WallpaperManager;
 import android.content.ComponentName;
@@ -73,9 +68,6 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.Os;
 import android.system.OsConstants;
 import android.util.Log;
@@ -86,17 +78,12 @@ import android.view.ViewConfiguration;
 import android.view.WindowManager;
 import android.window.WindowProviderService;
 
-import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.window.flags.Flags;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -127,48 +114,15 @@ import java.util.zip.GZIPOutputStream;
 /** Tests for {@link StrictMode} */
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class StrictModeTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
-
+public class StrictModeTest extends StrictModeTestBase {
     private static final String TAG = "StrictModeTest";
     private static final String REMOTE_SERVICE_ACTION = "android.app.REMOTESERVICE";
     private static final String UNSAFE_INTENT_LAUNCH = "UnsafeIntentLaunch";
-    private static final String BACKGROUND_ACTIVITY_LAUNCH = "BackgroundActivityLaunch";
-    private static final String SIMPLE_ACTIVITY_LAUNCH =
-            "android.os.cts.BROWSABLE_INTENT_LAUNCH";
-
-    private static final int VIOLATION_TIMEOUT_IN_SECOND = 5;
-    private static final int NO_VIOLATION_TIMEOUT_IN_SECOND = 2;
-
-    private StrictMode.ThreadPolicy mThreadPolicy;
-    private StrictMode.VmPolicy mVmPolicy;
 
     private Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private GestureDetector.OnGestureListener mGestureListener =
             new GestureDetector.SimpleOnGestureListener();
     private static final String WM_CLASS_NAME = WindowManager.class.getSimpleName();
-
-    private static Context getContext() {
-        return ApplicationProvider.getApplicationContext();
-    }
-
-    @Before
-    public void setUp() {
-        mThreadPolicy = StrictMode.getThreadPolicy();
-        mVmPolicy = StrictMode.getVmPolicy();
-    }
-
-    @After
-    public void tearDown() {
-        StrictMode.setThreadPolicy(mThreadPolicy);
-        StrictMode.setVmPolicy(mVmPolicy);
-    }
-
-    public interface ThrowingRunnable {
-        void run() throws Exception;
-    }
 
     @Test
     public void testThreadBuilder() throws Exception {
@@ -1464,83 +1418,6 @@ public class StrictModeTest {
         assertNoViolation(() -> context.startActivity(intent));
     }
 
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
-    public void testBackgroundBalAborted_ThrowsViolation() throws Exception {
-        assumeNotHeadlessSystemUserMode();
-        StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                        .detectBlockedBackgroundActivityLaunch()
-                        .penaltyLog()
-                        .build());
-        Context context = getContext();
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentBackgroundActivityStartMode(
-                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
-        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-        PendingIntent pi = PendingIntent.getActivity(
-                context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        assertViolation(
-                BACKGROUND_ACTIVITY_LAUNCH, () -> sendPendingIntentIgnoringErrors(options, pi));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
-    public void testBackgroundBalAborted_IgnoresViolation() throws Exception {
-        assumeNotHeadlessSystemUserMode();
-        StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                        .detectAll()
-                        .ignoreBlockedBackgroundActivityLaunch()
-                        .penaltyLog()
-                        .build());
-        Context context = getContext();
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentBackgroundActivityStartMode(
-                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_DENIED);
-        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-        PendingIntent pi =
-                PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        assertThat(pi).isNotNull();
-        assertNoViolation(() -> sendPendingIntentIgnoringErrors(options, pi));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_BAL_STRICT_MODE_RO)
-    public void testBackgroundBalAborted_NoViolation() throws Exception {
-        assumeNotHeadlessSystemUserMode();
-        StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                        .detectBlockedBackgroundActivityLaunch()
-                        .penaltyLog()
-                        .build());
-        Context context = getContext();
-        ActivityOptions options = ActivityOptions.makeBasic();
-        options.setPendingIntentBackgroundActivityStartMode(
-                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
-        Intent intent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-        PendingIntent pi = PendingIntent.getActivity(
-                context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
-        assertThat(pi).isNotNull();
-        assertNoViolation(() -> sendPendingIntentIgnoringErrors(options, pi));
-    }
-
-    private static void sendPendingIntentIgnoringErrors(ActivityOptions options, PendingIntent pi)
-            throws PendingIntent.CanceledException {
-        try {
-            pi.send(options.toBundle());
-        } catch (PendingIntent.CanceledException e) {
-            // This typically happens when the Activity for the PendingIntent cannot be resolved.
-            assumeNoException("PendingIntent was cancelled", e);
-        }
-    }
-
-    private static void assumeNotHeadlessSystemUserMode() {
-        assumeFalse(
-                "Skipping test not supported on HSUM devices.",
-                UserManager.isHeadlessSystemUserMode());
-    }
-
     private Context createWindowContext() {
         final Display display = getContext().getSystemService(DisplayManager.class)
                 .getDisplay(DEFAULT_DISPLAY);
@@ -1575,34 +1452,6 @@ public class StrictModeTest {
         consumer.accept(ISecondary.Stub.asInterface(binder));
         context.unbindService(secondaryConnection);
         context.stopService(intent);
-    }
-
-    private static void assertViolation(String expected, ThrowingRunnable r) throws Exception {
-        inspectViolation(r, info -> assertThat(info.getStackTrace()).contains(expected),
-                VIOLATION_TIMEOUT_IN_SECOND);
-    }
-
-    private static void assertNoViolation(ThrowingRunnable r) throws Exception {
-        inspectViolation(r, info -> assertWithMessage("Unexpected violation").that(info).isNull(),
-                NO_VIOLATION_TIMEOUT_IN_SECOND);
-    }
-
-    private static void inspectViolation(ThrowingRunnable violating,
-            Consumer<ViolationInfo> consume) throws Exception {
-        inspectViolation(violating, consume, VIOLATION_TIMEOUT_IN_SECOND);
-    }
-
-    private static void inspectViolation(ThrowingRunnable violating,
-            Consumer<ViolationInfo> consume, int timeout) throws Exception {
-        final LinkedBlockingQueue<ViolationInfo> violations = new LinkedBlockingQueue<>();
-        StrictMode.setViolationLogger(violations::add);
-
-        try {
-            violating.run();
-            consume.accept(violations.poll(timeout, TimeUnit.SECONDS));
-        } finally {
-            StrictMode.setViolationLogger(null);
-        }
     }
 
     private boolean hasInternetConnection() {
@@ -1653,4 +1502,5 @@ public class StrictModeTest {
             }
         }
     }
+
 }

@@ -25,7 +25,6 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
-import android.app.Activity;
 import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
@@ -143,36 +142,44 @@ public class MediaProjectionRule implements TestRule {
 
     /** Start a MediaProjection session. */
     public MediaProjection startMediaProjection() throws Exception {
-        return startMediaProjection(null, null, null);
+        return startMediaProjection(null, null, null, false);
     }
 
     /** Start a MediaProjection session (with a custom foregroundService class). */
     public MediaProjection startMediaProjection(String foregroundServiceClass) throws Exception {
-        return startMediaProjection(null, null, foregroundServiceClass);
+        return startMediaProjection(null, null, foregroundServiceClass, false);
     }
 
     /** Start a MediaProjection session (with a custom MediaProjectionConfig). */
     public MediaProjection startMediaProjection(MediaProjectionConfig config) throws Exception {
-        return startMediaProjection(config, null, null);
+        return startMediaProjection(config, null, null, false);
     }
 
     /** Start a MediaProjection session for a specific LaunchCookie. */
     public MediaProjection startMediaProjection(ActivityOptions.LaunchCookie launchCookie)
             throws Exception {
-        return startMediaProjection(null, launchCookie, null);
+        return startMediaProjection(null, launchCookie, null, false);
+    }
+
+    /** Start a MediaProjection session for a specific LaunchCookie. */
+    public MediaProjection startMediaProjection(boolean skipDefaultCallback) throws Exception {
+        return startMediaProjection(null, null, null, skipDefaultCallback);
     }
 
     private MediaProjection startMediaProjection(
             @Nullable MediaProjectionConfig config,
             @Nullable ActivityOptions.LaunchCookie launchCookie,
-            @Nullable String foregroundServiceClass)
+            @Nullable String foregroundServiceClass,
+            boolean skipDefaultCallback)
             throws Exception {
         showMediaProjectionConsent(config, launchCookie, foregroundServiceClass);
         mMediaProjectionTrackerRule.mMediaProjection = mActivity.waitForMediaProjection();
         mMediaProjectionTrackerRule.mActivityScenario.close();
-        // Register an empty callback. Tests that want to validate callback behavior can still
-        // register individual callbacks.
-        registerCallback(mEmptyMediaProjectionCallback);
+        if (!skipDefaultCallback) {
+            // Register an empty callback. Tests that want to validate callback behavior can still
+            // register individual callbacks.
+            registerCallback(mEmptyMediaProjectionCallback);
+        }
         return mMediaProjectionTrackerRule.mMediaProjection;
     }
 
@@ -187,12 +194,25 @@ public class MediaProjectionRule implements TestRule {
 
     /** Create a VirtualDisplay for the MediaProjection. */
     public VirtualDisplay createVirtualDisplay() throws InterruptedException {
-        return createVirtualDisplay(RECORDING_WIDTH, RECORDING_HEIGHT);
+        return createVirtualDisplay(
+                mMediaProjectionTrackerRule.mMediaProjection, RECORDING_WIDTH, RECORDING_HEIGHT);
+    }
+
+    /** Create a VirtualDisplay for a MediaProjection. */
+    public VirtualDisplay createVirtualDisplay(MediaProjection mediaProjection)
+            throws InterruptedException {
+        return createVirtualDisplay(mediaProjection, RECORDING_WIDTH, RECORDING_HEIGHT);
+    }
+
+    /** Create a VirtualDisplay for a MediaProjection. */
+    public VirtualDisplay createVirtualDisplay(int width, int height) throws InterruptedException {
+        return createVirtualDisplay(mMediaProjectionTrackerRule.mMediaProjection, width, height);
     }
 
     /** Create a VirtualDisplay for the MediaProjection with specific dimensions. */
-    public VirtualDisplay createVirtualDisplay(int width, int height) throws InterruptedException {
-        if (mMediaProjectionTrackerRule.mMediaProjection == null) {
+    public VirtualDisplay createVirtualDisplay(
+            MediaProjection mediaProjection, int width, int height) throws InterruptedException {
+        if (mediaProjection == null) {
             throw new IllegalStateException("MediaProjection not yet started.");
         }
 
@@ -214,7 +234,8 @@ public class MediaProjectionRule implements TestRule {
                     }
 
                     private void checkDisplayState(int displayId) {
-                        if (dm.getDisplay(displayId).getState() == Display.STATE_ON) {
+                        Display display = dm.getDisplay(displayId);
+                        if (display != null && display.getState() == Display.STATE_ON) {
                             latch.countDown();
                         }
                     }
@@ -223,7 +244,7 @@ public class MediaProjectionRule implements TestRule {
 
         ImageReader imageReader =
                 ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, /* maxImages= */ 1);
-        mMediaProjectionTrackerRule.mImageReader = imageReader;
+        mMediaProjectionTrackerRule.mImageReaders.add(imageReader);
         CountDownLatch mScreenshotCountDownLatch = new CountDownLatch(1);
         if (DEBUG_MODE) {
             ScreenshotListener screenshotListener =
@@ -231,7 +252,7 @@ public class MediaProjectionRule implements TestRule {
             imageReader.setOnImageAvailableListener(screenshotListener, mCallbackHandler);
         }
         VirtualDisplay virtualDisplay =
-                mMediaProjectionTrackerRule.mMediaProjection.createVirtualDisplay(
+                mediaProjection.createVirtualDisplay(
                         mTestName,
                         width,
                         height,
@@ -243,14 +264,12 @@ public class MediaProjectionRule implements TestRule {
                             public void onStopped() {
                                 super.onStopped();
                                 // VirtualDisplay stopped by the system; no more frames incoming.
-                                // Must
-                                // release VirtualDisplay
-                                Log.v(TAG, "handleVirtualDisplayStopped");
+                                // Must release VirtualDisplay.
                                 mMediaProjectionTrackerRule.cleanupVirtualDisplay();
                             }
                         },
                         mCallbackHandler);
-        mMediaProjectionTrackerRule.mVirtualDisplay = virtualDisplay;
+        mMediaProjectionTrackerRule.mVirtualDisplays.add(virtualDisplay);
 
         if (DEBUG_MODE) {
             // wait until we've received a screenshot
@@ -271,7 +290,7 @@ public class MediaProjectionRule implements TestRule {
     }
 
     /** Get the Activity hosting the MediaProjection consent flow. */
-    public Activity getActivity() {
+    public android.media.cts.MediaProjectionActivity getActivity() {
         return mActivity;
     }
 
@@ -353,10 +372,10 @@ public class MediaProjectionRule implements TestRule {
     private static final class MediaProjectionTrackerRule extends ExternalResource {
 
         final Set<MediaProjection.Callback> mCallbacks = new ArraySet<>();
+        final Set<ImageReader> mImageReaders = new ArraySet<>();
+        final Set<VirtualDisplay> mVirtualDisplays = new ArraySet<>();
         ActivityScenario<android.media.cts.MediaProjectionActivity> mActivityScenario;
         MediaProjection mMediaProjection;
-        ImageReader mImageReader;
-        VirtualDisplay mVirtualDisplay;
 
         @Override
         protected void after() {
@@ -376,18 +395,16 @@ public class MediaProjectionRule implements TestRule {
         }
 
         void cleanupVirtualDisplay() {
-            if (mImageReader != null) {
-                mImageReader.close();
-                mImageReader = null;
+            for (ImageReader imageReader : mImageReaders) {
+                imageReader.close();
             }
 
-            if (mVirtualDisplay != null) {
-                final Surface surface = mVirtualDisplay.getSurface();
+            for (VirtualDisplay virtualDisplay : mVirtualDisplays) {
+                final Surface surface = virtualDisplay.getSurface();
                 if (surface != null) {
                     surface.release();
                 }
-                mVirtualDisplay.release();
-                mVirtualDisplay = null;
+                virtualDisplay.release();
             }
         }
     }

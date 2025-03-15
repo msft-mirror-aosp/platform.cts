@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -77,7 +78,7 @@ import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -93,7 +94,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(BedsteadJUnit4.class)
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 
 public class AudioFocusTest {
@@ -298,6 +299,41 @@ public class AudioFocusTest {
             fail("no NPE when setting a non-null listener with null Handler");
         } catch (NullPointerException e) {
         }
+    }
+
+    @Test
+    /**
+     * Test {@link android.media.AudioManager#requestAudioFocus(OnAudioFocusChangeListener, AudioAttributes, int, int)}
+     * @throws Exception on failure
+     */
+    public void testLegacyRequestFocus() throws Exception {
+        final int AUDIOFOCUS_FLAGS_SDK = AudioManager.AUDIOFOCUS_FLAG_DELAY_OK
+                | AudioManager.AUDIOFOCUS_FLAG_PAUSES_ON_DUCKABLE_LOSS;
+        final int AUDIOFOCUS_FLAGS_SYSTEM = AUDIOFOCUS_FLAGS_SDK
+                // LOCK is System, not SDK
+                | AudioManager.AUDIOFOCUS_FLAG_LOCK;
+        final int invalidFocusFlags = AUDIOFOCUS_FLAGS_SYSTEM | (AUDIOFOCUS_FLAGS_SYSTEM << 4);
+        // only SDK flags allowed
+        assertThrows(IllegalArgumentException.class, () ->
+                mAM.requestAudioFocus(
+                        null /*listener*/,
+                        ATTR_MEDIA,
+                        AudioManager.AUDIOFOCUS_GAIN,
+                        AUDIOFOCUS_FLAGS_SYSTEM));
+        // needs non-null AudioAttributes
+        assertThrows(IllegalArgumentException.class, () ->
+                mAM.requestAudioFocus(
+                        null /*listener*/,
+                        null /*AudioAttributes*/,
+                        AudioManager.AUDIOFOCUS_GAIN,
+                        AUDIOFOCUS_FLAGS_SDK));
+        // needs valid request type
+        assertThrows(IllegalArgumentException.class, () ->
+                mAM.requestAudioFocus(
+                        null /*listener*/,
+                        ATTR_MEDIA,
+                        1980 /*invalid request type*/,
+                        AUDIOFOCUS_FLAGS_SDK));
     }
 
     @Test

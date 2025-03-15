@@ -15,7 +15,7 @@
  */
 package android.util.cts;
 
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TimingLogger;
 
@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = TimingLogger.class)
+@DisabledOnRavenwood(blockedBy = TimingLogger.class)
 public class TimingLoggerTest {
     private static final String LOG_TAG = "TimingLoggerTest";
     private static final int SLEEPING_MSEC = 100;

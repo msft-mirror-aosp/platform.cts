@@ -51,21 +51,21 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testConstructorWithCommandCodeCustom() {
         assertThrows(IllegalArgumentException.class,
                 () -> new Session2Command(Session2Command.COMMAND_CODE_CUSTOM));
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testConstructorWithNullAction() {
         assertThrows(IllegalArgumentException.class,
                 () -> new Session2Command(null, null));
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetCommandCode() {
         Session2Command commandWithCode = new Session2Command(TEST_COMMAND_CODE);
         assertThat(commandWithCode.getCommandCode()).isEqualTo(TEST_COMMAND_CODE);
@@ -77,7 +77,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetCustomAction() {
         Session2Command commandWithCode = new Session2Command(TEST_COMMAND_CODE);
         assertThat(commandWithCode.getCustomAction()).isNull();
@@ -88,7 +88,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetCustomExtras() {
         Session2Command commandWithCode = new Session2Command(TEST_COMMAND_CODE);
         assertThat(commandWithCode.getCustomExtras()).isNull();
@@ -99,7 +99,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testDescribeContents() {
         final int expected = 0;
         Session2Command command = new Session2Command(TEST_COMMAND_CODE);
@@ -107,7 +107,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testWriteToParcel() {
         Session2Command command = new Session2Command(TEST_CUSTOM_ACTION, null);
         Parcel dest = Parcel.obtain();
@@ -119,7 +119,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testEquals() {
         Session2Command commandWithCode1 = new Session2Command(TEST_COMMAND_CODE);
         Session2Command commandWithCode2 = new Session2Command(TEST_COMMAND_CODE);
@@ -133,7 +133,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testHashCode() {
         Session2Command commandWithCode1 = new Session2Command(TEST_COMMAND_CODE);
         Session2Command commandWithCode2 = new Session2Command(TEST_COMMAND_CODE);
@@ -141,7 +141,7 @@ public class Session2CommandTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetResultCodeAndData() {
         Session2Command.Result result = new Session2Command.Result(TEST_RESULT_CODE,
                 mTestResultData);

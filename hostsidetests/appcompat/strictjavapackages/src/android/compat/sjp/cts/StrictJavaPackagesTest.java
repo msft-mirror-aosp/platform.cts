@@ -280,7 +280,12 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                     "Landroid/app/ondeviceintelligence/IFeatureDetailsCallback;",
                     "Landroid/service/ondeviceintelligence/IOnDeviceSandboxedInferenceService;",
                     "Landroid/app/ondeviceintelligence/FeatureDetails;",
-                    "Landroid/app/ondeviceintelligence/IOnDeviceIntelligenceManager;");
+                    "Landroid/app/ondeviceintelligence/IOnDeviceIntelligenceManager;",
+                    // b/400868534 : Allow duplication for RangingFrameworkInitializer.
+                    // framework-ranging.jar version of this class of this will be used
+                    // for SDK 36 and above.
+                    // framework.jar version of this class will be SDK 35 and below.
+                    "Landroid/ranging/RangingFrameworkInitializer;");
 
     private static final Set<String> SYSTEMSERVER_DUPLICATE_BURNDOWN_LIST =
             ImmutableSet.of(
@@ -912,10 +917,14 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                             apkClasses = Classpaths.getClassDefsFromJar(apkFile).stream()
                                         .map(ClassDef::getType)
                                         .collect(ImmutableSet.toImmutableSet());
-                        } catch (IOException e) {
+                        } catch (Exception e) {
+                            // Just catch Exception instead of individual exceptions as this is
+                            // a test and we only care about logging the apk info - we have already
+                            // encountered IllegalArgumentException and IndexOutOfBoundsException
+                            // in the past.
                             CLog.e(LOG_TAG + ": Failed to get class defs from APK: "
-                                    + apkFile.getAbsolutePath());
-                            throw new IOException("Failed to get class defs from APK: "
+                                    + apkFile.getAbsolutePath() + " because of exception: " + e);
+                            throw new Exception("Failed to get class defs from APK: "
                                                            + apkFile.getAbsolutePath(), e);
                         }
                         // b/226559955: The directory paths containing APKs contain the build ID,
@@ -1080,7 +1089,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             CLog.d(LOG_TAG + ": [on host] sha1sum of " + jar.getPath() + ": " + sha1OnHost);
             CLog.d(LOG_TAG + ": [on device] sha1sum of " + remoteJarPath + ": " + sha1OnDevice);
             CLog.d(LOG_TAG + ": sha1 mismatch between " + remoteJarPath + " on device and on host");
-            compareBinary(jar.getPath(), remoteJarPath);
+            File firstAttempt = jar;
             // attempt to pull the file again to see if the sha1 mismatch is transient.
             jar = device.pullFile(remoteJarPath);
             if (jar == null) {
@@ -1091,14 +1100,11 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
             CLog.d(LOG_TAG + ": [on host] sha1sum of second attempt " + jar.getPath() + ": " + sha1OnHost);
             if (!sha1OnDevice.equals(sha1OnHost)) {
                 CLog.d(LOG_TAG + ": sha1 second mismatch between on device and on host");
-                compareBinary(jar.getPath(), remoteJarPath);
                 throw new IllegalStateException(
                         "sha1 mismatch between on device and on host after second attempt");
             }
-            CLog.d(
-                    LOG_TAG
-                            + ": sha1 mismatch between on device and on host, but resolved after"
-                            + " second attempt");
+            CLog.d( LOG_TAG + ": sha1 mismatch between on device and on host, but resolved after" + " second attempt");
+            compareBinary(firstAttempt.getPath(), jar.getPath());
             // to help debug this, still throw an exception. In the future, we can consider
             // returning the jar from the second attempt.
             throw new IllegalStateException("sha1 mismatch between on device and on host");
@@ -1133,7 +1139,7 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 }
             }
         } catch (IOException e) {
-            CLog.d(LOG_TAG + ": failed to read files");
+            CLog.d(LOG_TAG + ": failed to read files", e);
         }
     }
 
@@ -1163,7 +1169,6 @@ public class StrictJavaPackagesTest extends BaseHostJUnit4Test {
                 }
 
             fis.close();
-            CLog.d(LOG_TAG + ": total bytes read for sha1: " + totalBytes);
 
             byte[] hashBytes = sha1Digest.digest();
 

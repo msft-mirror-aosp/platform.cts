@@ -39,7 +39,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.Manifest;
@@ -446,7 +446,7 @@ public class ViewTest {
         CtsMouseUtil.emulateHoverOnView(mInstrumentation, view, view.getWidth() / 2,
                 view.getHeight() / 2);
         assertTrue(view.hasCalledOnHoverEvent());
-        verifyZeroInteractions(delegate);
+        verifyNoMoreInteractions(delegate);
 
         view.setTouchDelegate(null);
         assertNull(view.getTouchDelegate());
@@ -1297,7 +1297,7 @@ public class ViewTest {
             mActivity.registerForContextMenu(view);
             view.setOnCreateContextMenuListener(listener);
             assertFalse(view.hasCalledOnCreateContextMenu());
-            verifyZeroInteractions(listener);
+            verifyNoMoreInteractions(listener);
 
             view.showContextMenu();
             assertTrue(view.hasCalledOnCreateContextMenu());
@@ -1860,7 +1860,7 @@ public class ViewTest {
 
         assertFalse(view.performClick());
 
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         view.setOnClickListener(listener);
 
         assertTrue(view.performClick());
@@ -1932,7 +1932,7 @@ public class ViewTest {
         view.setOnLongClickListener(listener);
         mMockParent.reset();
         assertFalse(mMockParent.hasShowContextMenuForChild());
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         assertTrue(view.performLongClick());
         assertFalse(mMockParent.hasShowContextMenuForChild());
         verify(listener, times(1)).onLongClick(view);
@@ -2063,7 +2063,7 @@ public class ViewTest {
         doReturn(true).when(listener).onContextClick(any());
 
         view.setOnContextClickListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
 
         assertTrue(view.performContextClick());
         verify(listener, times(1)).onContextClick(view);
@@ -2347,7 +2347,7 @@ public class ViewTest {
         assertTrue(view.removeCallbacks(null));
         assertTrue(view.removeCallbacks(mock(Runnable.class)));
         Thread.sleep(delay * 2);
-        verifyZeroInteractions(runner);
+        verifyNoMoreInteractions(runner);
         // check that the runner actually works
         runner = mock(Runnable.class);
         assertTrue(view.postDelayed(runner, delay));
@@ -2509,7 +2509,7 @@ public class ViewTest {
         mInstrumentation.waitForIdleSync();
         assertTrue(mockView.hasCalledOnTouchEvent());
 
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
 
         mActivityRule.runOnUiThread(() -> {
             mockView.setAllowClickWhenDisabled(true);
@@ -3248,7 +3248,7 @@ public class ViewTest {
         View.OnKeyListener listener = mock(View.OnKeyListener.class);
         doReturn(true).when(listener).onKey(any(), anyInt(), any());
         view.setOnKeyListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         assertTrue(view.dispatchKeyEvent(event));
         ArgumentCaptor<KeyEvent> keyEventCaptor = ArgumentCaptor.forClass(KeyEvent.class);
         verify(listener, times(1)).onKey(eq(view), eq(KeyEvent.KEYCODE_0),
@@ -3294,7 +3294,7 @@ public class ViewTest {
         View.OnTouchListener listener = mock(View.OnTouchListener.class);
         doReturn(true).when(listener).onTouch(any(), any());
         mockView1.setOnTouchListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
         assertTrue(mockView1.dispatchTouchEvent(event));
         verify(listener, times(1)).onTouch(mockView1, event);
         assertFalse(mockView1.hasCalledOnTouchEvent());
@@ -3832,7 +3832,7 @@ public class ViewTest {
         event.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(event);
         compareAndRecycleMotionEvents(event, view.pollTouchEvent());
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
 
         view.reset();
         x = xy[0] + viewWidth / 2.0f;
@@ -3852,7 +3852,7 @@ public class ViewTest {
         mInstrumentation.sendPointerSync(event);
         compareAndRecycleMotionEvents(event, view.pollTouchEvent());
         assertFalse(view.isPressed());
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @Test
@@ -4600,7 +4600,7 @@ public class ViewTest {
         verify(touchListener, times(1)).onTouch(view, unobscuredTouch);
         reset(touchListener);
         view.dispatchTouchEvent(obscuredTouch);
-        verifyZeroInteractions(touchListener);
+        verifyNoMoreInteractions(touchListener);
         reset(touchListener);
 
         // Set filter touches to false so all touches are dispatched.

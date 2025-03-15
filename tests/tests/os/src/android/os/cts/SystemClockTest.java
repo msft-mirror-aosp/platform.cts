@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import org.junit.Rule;
@@ -34,7 +34,7 @@ public class SystemClockTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
 
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testCurrentThreadTimeMillis() throws InterruptedException {
 
         long start = SystemClock.currentThreadTimeMillis();
@@ -55,7 +55,7 @@ public class SystemClockTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testSetCurrentTimeMillis() {
 
         long start = SystemClock.currentThreadTimeMillis();
@@ -66,7 +66,7 @@ public class SystemClockTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(reason = "Requires kernel support")
+    @DisabledOnRavenwood(reason = "Requires kernel support")
     public void testSleep_currentThreadTimeMillis() {
         long start = SystemClock.currentThreadTimeMillis();
         SystemClock.sleep(100);

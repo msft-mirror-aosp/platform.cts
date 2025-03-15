@@ -26,8 +26,11 @@ import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.hardware.cts.helpers.TestSensorEnvironment;
+import android.hardware.cts.helpers.SensorTestStateNotSupportedException;
+
 import android.hardware.cts.helpers.sensoroperations.TestSensorOperation;
 import android.hardware.cts.helpers.TestSensorEvent;
+import com.android.compatibility.common.util.PropertyUtil;
 
 import android.view.WindowManager;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +68,16 @@ public class BarometerReferenceDeviceActivity extends SensorCtsVerifierTestActiv
     }
 
     @Override
+    protected void activitySetUp() throws InterruptedException {
+        if (!Boolean.parseBoolean(
+                PropertyUtil.getProperty("sensor.barometer.high_quality.implemented"))) {
+            // Skip the test by throwing an exception
+            throw new SensorTestStateNotSupportedException(
+                    getString(R.string.snsr_baro_not_implemented));
+        }
+    }
+
+    @Override
     protected void activityCleanUp() {
         closeGlSurfaceView();
     }
@@ -73,8 +86,10 @@ public class BarometerReferenceDeviceActivity extends SensorCtsVerifierTestActiv
     public void run() {
         try {
             executeTests();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        } catch (Throwable e) {
+            getTestLogger()
+                    .logTestDetails(
+                            new SensorTestDetails("BarometerReferenceDeviceActivity", "run()", e));
         }
     }
 
@@ -134,6 +149,8 @@ public class BarometerReferenceDeviceActivity extends SensorCtsVerifierTestActiv
                         mBluetoothAdapter.getRemoteDevice(
                                 data.getStringExtra(DevicePickerActivity.EXTRA_DEVICE_ADDRESS));
                 mChatService.connect(device, true);
+            } else {
+                throw new RuntimeException("Failed to pick a device: " + resultCode);
             }
         }
     }

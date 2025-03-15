@@ -237,6 +237,8 @@ public abstract class AudioDataPathsBaseActivity
     //
     protected abstract String getTestCategory();
 
+    protected abstract boolean grantAutoPass();
+
     protected void enableTestButtons(boolean enabled) {
         mStartButton.setEnabled(enabled);
         mClearResultsButton.setEnabled(enabled);
@@ -566,8 +568,9 @@ public abstract class AudioDataPathsBaseActivity
             boolean passed = false;
             if (hasRun(api) && mTestResults[api] != null) {
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
-                    passed = mTestResults[api].mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
-                            && mTestResults[api].mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
+                    passed =
+                            mTestResults[api].mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
+                                    && mTestResults[api].mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
                 } else {
                     passed = mTestResults[api].mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
                 }
@@ -1528,7 +1531,6 @@ public abstract class AudioDataPathsBaseActivity
                         .appendBreak();
             }
 
-            // ALWAYS PASS (for now)
             mTestHasBeenRun = !mTestCanceledByUser;
             boolean passEnabled = passBtnEnabled();
             getPassButton().setEnabled(passEnabled);
@@ -1545,13 +1547,15 @@ public abstract class AudioDataPathsBaseActivity
                         + "ALL test modules will be required to pass.");
                 formatter.appendBreak();
             }
-            formatter.appendText("Press the ");
-            formatter.openBold();
-            formatter.appendText("PASS");
-            formatter.closeBold();
-            formatter.appendText(" button below to complete the test.");
-            formatter.closeParagraph();
 
+            if (passEnabled) {
+                formatter.appendText("Press the ");
+                formatter.openBold();
+                formatter.appendText("PASS");
+                formatter.closeBold();
+                formatter.appendText(" button below to complete the test.");
+                formatter.closeParagraph();
+            }
             formatter.closeDocument();
         }
 
@@ -1754,7 +1758,10 @@ public abstract class AudioDataPathsBaseActivity
     protected abstract boolean hasPeripheralSupport();
 
     boolean passBtnEnabled() {
-        return mTestHasBeenRun || !hasPeripheralSupport();
+        return (mTestHasBeenRun && calculatePass())
+                || (mTestHasBeenRun && grantAutoPass())
+                || !hasPeripheralSupport()
+                || !mIsHandheld;
     }
 
     void displayNonHandheldMessage() {

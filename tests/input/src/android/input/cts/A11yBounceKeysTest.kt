@@ -105,12 +105,12 @@ class A11yBounceKeysTest {
             activity.assertNoEvents()
 
             // First key press
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
 
             // Second key press should be ignored
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
 
             assertReceivedEventsCorrectlyMapped(2, KeyEvent.KEYCODE_A)
         }
@@ -122,14 +122,14 @@ class A11yBounceKeysTest {
             activity.assertNoEvents()
 
             // First key press
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
 
             Thread.sleep(2 * THRESHOLD_MILLIS.toLong())
 
             // Second key press should not be ignored after threshold time
-            injectKeyDown(keyboardDevice, KEY_A)
-            injectKeyUp(keyboardDevice, KEY_A)
+            keyboardDevice.injectKeyDown(KEY_A)
+            keyboardDevice.injectKeyUp(KEY_A)
 
             assertReceivedEventsCorrectlyMapped(4, KeyEvent.KEYCODE_A)
         }

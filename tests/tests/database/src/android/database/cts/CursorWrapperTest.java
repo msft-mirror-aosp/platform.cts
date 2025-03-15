@@ -34,7 +34,7 @@ import android.database.StaleDataException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.InstrumentationRegistry;
@@ -42,7 +42,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -51,8 +50,6 @@ import java.util.Arrays;
 
 @RunWith(AndroidJUnit4.class)
 public class CursorWrapperTest {
-    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
-
     private static final String FIRST_NUMBER = "123";
     private static final String SECOND_NUMBER = "5555";
     private static final int TESTVALUE1 = 199;
@@ -72,14 +69,14 @@ public class CursorWrapperTest {
 
     @Before
     public void setUp() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) return;
+        if (RavenwoodRule.isOnRavenwood()) return;
 
         setupDatabase();
     }
 
     @After
     public void tearDown() throws Exception {
-        if (mRavenwood.isUnderRavenwood()) return;
+        if (RavenwoodRule.isOnRavenwood()) return;
 
         closeDatabase();
     }
@@ -101,13 +98,13 @@ public class CursorWrapperTest {
         assertTrue(cursorWrapper.requery());
         cursorWrapper.close();
         assertTrue(cursorWrapper.isClosed());
-        if (!mRavenwood.isUnderRavenwood()) {
+        if (!RavenwoodRule.isOnRavenwood()) {
             assertFalse(cursorWrapper.requery());
         }
     }
 
     private Cursor getCursor() {
-        if (mRavenwood.isUnderRavenwood()) {
+        if (RavenwoodRule.isOnRavenwood()) {
             final MatrixCursor cursor = new MatrixCursor(NUMBER_PROJECTION, 0);
             cursor.newRow().add("_id", "1").add("number", FIRST_NUMBER);
             cursor.newRow().add("_id", "2").add("number", SECOND_NUMBER);
@@ -126,7 +123,7 @@ public class CursorWrapperTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SQLiteDatabase.class)
+    @DisabledOnRavenwood(blockedBy = SQLiteDatabase.class)
     public void testGetCount() {
         CursorWrapper cursorWrapper = new CursorWrapper(getCursor());
         int defaultCount = cursorWrapper.getCount();
@@ -188,7 +185,7 @@ public class CursorWrapperTest {
         cursorWrapper.deactivate();
         // deactivate method can invoke invalidate() method, can be observed by DataSetObserver.
         assertTrue(observer.hasInvalidated());
-        if (!mRavenwood.isUnderRavenwood()) {
+        if (!RavenwoodRule.isOnRavenwood()) {
             // After deactivating, the cursor can not provide values from database record.
             try {
                 cursorWrapper.getInt(1);
@@ -330,7 +327,7 @@ public class CursorWrapperTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = SQLiteDatabase.class)
+    @DisabledOnRavenwood(blockedBy = SQLiteDatabase.class)
     public void testGettingValues() {
         final byte NUMBER_BLOB_UNIT = 99;
         final String STRING_TEXT = "Test String";

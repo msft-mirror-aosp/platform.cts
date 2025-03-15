@@ -269,7 +269,7 @@ public final class Utils {
         return isHandheld()
                 // Setting the minimum memory to 2.5G so we get statistics on "Mid Tier Devices"
                 // As of 2025 Q1 this is about 80% of daily active devices.
-                && TOTAL_MEMORY_MB >= (long) 2.5 * 1024
+                && TOTAL_MEMORY_MB >= (long)(2.5 * 1024L)
                 // MPC requires 400 DPI. lowering to HIGH (320) to report statistics on
                 // "mid tier" devices
                 // As of 2025 Q1 this is about 85% of daily active devices.

@@ -29,6 +29,12 @@
     -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!--
+    * This permissions are used by the RecordAudioService.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
     <application>
         <activity android:name=".HomeActivity"
             android:launchMode="singleTop"
@@ -54,6 +60,10 @@
 
         <activity android:name=".RecordAudioTestActivity"
             android:exported="true"/>
+
+        <service android:name=".RecordAudioTestActivity$RecordAudioService"
+            android:foregroundServiceType="microphone"
+            android:exported="false"/>
     </application>
 
 </manifest>

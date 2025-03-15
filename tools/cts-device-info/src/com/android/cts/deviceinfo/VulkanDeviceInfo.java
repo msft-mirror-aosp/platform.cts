@@ -74,7 +74,7 @@ import java.util.HashMap;
  */
 public final class VulkanDeviceInfo extends DeviceInfo {
 
-    private static final String KEY_16BIT_STORAGE_FEATURES = "16bitStorageFeatures";
+    private static final String KEY_BIT16_STORAGE_FEATURES = "bit16StorageFeatures";
     private static final String KEY_ALPHA_TO_ONE = "alphaToOne";
     private static final String KEY_API_VERSION = "apiVersion";
     private static final String KEY_BUFFER_DEVICE_ADDRESS = "bufferDeviceAddress";
@@ -482,8 +482,9 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final String KEY_VARIABLE_MULTISAMPLE_RATE = "variableMultisampleRate";
     private static final String KEY_VARIABLE_POINTERS = "variablePointers";
     private static final String KEY_VARIABLE_POINTERS_STORAGE_BUFFER = "variablePointersStorageBuffer";
-    private static final String KEY_VARIABLE_POINTER_FEATURES = "variablePointerFeatures";
+    private static final String KEY_VARIABLE_POINTERS_FEATURES = "variablePointersFeatures";
     private static final String KEY_VARIABLE_POINTER_FEATURES_KHR = "variablePointerFeaturesKHR";
+    private static final String KEY_VARIABLE_POINTERS_FEATURES_KHR = "variablePointersFeaturesKHR";
     private static final String KEY_VENDOR_ID = "vendorID";
     private static final String KEY_VERTEX_PIPELINE_STORES_AND_ATOMICS = "vertexPipelineStoresAndAtomics";
     private static final String KEY_VIEWPORT_BOUNDS_RANGE = "viewportBoundsRange";
@@ -494,6 +495,94 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final String KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT = "image2DViewOf3DFeaturesEXT";
     private static final String KEY_IMAGE_2D_VIEW_OF_3D = "image2DViewOf3D";
     private static final String KEY_SAMPLER_2D_VIEW_OF_3D = "sampler2DViewOf3D";
+    private static final String KEY_VK_EXT_CUSTOM_BORDER_COLOR = "VK_EXT_custom_border_color";
+    private static final String KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT =
+            "customBorderColorFeaturesEXT";
+    private static final String KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT =
+            "customBorderColorWithoutFormat";
+    private static final String KEY_CUSTOM_BORDER_COLORS = "customBorderColors";
+    private static final String KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART =
+            "VK_EXT_primitive_topology_list_restart";
+    private static final String KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT =
+            "primitiveTopologyListRestartFeaturesEXT";
+    private static final String KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART =
+            "primitiveTopologyListRestart";
+    private static final String KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART =
+            "primitiveTopologyPatchListRestart";
+    private static final String KEY_VK_EXT_PROVOKING_VERTEX = "VK_EXT_provoking_vertex";
+    private static final String KEY_PROVOKING_VERTEX_FEATURES_EXT = "provokingVertexFeaturesEXT";
+    private static final String KEY_PROVOKING_VERTEX_LAST = "provokingVertexLast";
+    private static final String KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX =
+            "transformFeedbackPreservesProvokingVertex";
+    private static final String KEY_VK_EXT_TRANSFORM_FEEDBACK = "VK_EXT_transform_feedback";
+    private static final String KEY_TRANSFORM_FEEDBACK_FEATURES_EXT =
+            "transformFeedbackFeaturesEXT";
+    private static final String KEY_GEOMETRY_STREAMS = "geometryStreams";
+    private static final String KEY_TRANSFORM_FEEDBACK = "transformFeedback";
+    private static final String KEY_VK_KHR_SHADER_FLOAT16_INT8 = "VK_KHR_shader_float16_int8";
+    private static final String KEY_SHADER_FLOAT16_INT8_FEATURES_KHR =
+            "shaderFloat16Int8FeaturesKHR";
+  private static final String KEY_FLOAT16_INT8_FEATURES_KHR =
+            "float16Int8FeaturesKHR";
+    private static final String KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES =
+            "VK_KHR_shader_subgroup_extended_types";
+    private static final String KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR =
+            "shaderSubgroupExtendedTypesFeaturesKHR";
+    private static final String KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW =
+            "VK_KHR_shader_subgroup_uniform_control_flow";
+    private static final String KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR =
+            "shaderSubgroupUniformControlFlowFeaturesKHR";
+    private static final String KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW =
+            "shaderSubgroupUniformControlFlow";
+    private static final String KEY_VK_KHR_8BIT_STORAGE = "VK_KHR_8bit_storage";
+    private static final String KEY_BIT8_STORAGE_FEATURES_KHR = "bit8StorageFeaturesKHR";
+    private static final String KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT =
+            "VK_KHR_shader_integer_dot_product";
+    private static final String KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR =
+            "shaderIntegerDotProductFeaturesKHR";
+    private static final String KEY_VK_EXT_INDEX_TYPE_UINT8 = "VK_EXT_index_type_uint8";
+    private static final String KEY_INDEX_TYPE_UINT8_FEATURES_EXT = "indexTypeUint8FeaturesEXT";
+    private static final String KEY_INDEX_TYPE_UINT8 = "indexTypeUint8";
+    private static final String KEY_VK_KHR_INDEX_TYPE_UINT8 = "VK_KHR_index_type_uint8";
+    private static final String KEY_INDEX_TYPE_UINT8_FEATURES_KHR = "indexTypeUint8FeaturesKHR";
+    private static final String KEY_VK_EXT_LINE_RASTERIZATION = "VK_EXT_line_rasterization";
+    private static final String KEY_LINE_RASTERIZATION_FEATURES_EXT =
+            "lineRasterizationFeaturesEXT";
+    private static final String KEY_BRESENHAM_LINES = "bresenhamLines";
+    private static final String KEY_RECTANGULAR_LINES = "rectangularLines";
+    private static final String KEY_SMOOTH_LINES = "smoothLines";
+    private static final String KEY_STIPPLED_BRESENHAM_LINES = "stippledBresenhamLines";
+    private static final String KEY_STIPPLED_RECTANGULAR_LINES = "stippledRectangularLines";
+    private static final String KEY_STIPPLED_SMOOTH_LINES = "stippledSmoothLines";
+    private static final String KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY =
+            "VK_EXT_primitives_generated_query";
+    private static final String KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT =
+            "primitivesGeneratedQueryFeaturesEXT";
+    private static final String KEY_PRIMITIVES_GENERATED_QUERY = "primitivesGeneratedQuery";
+    private static final String KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS =
+            "primitivesGeneratedQueryWithNonZeroStreams";
+    private static final String KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD =
+            "primitivesGeneratedQueryWithRasterizerDiscard";
+    private static final String KEY_VK_KHR_SHADER_FLOAT_CONTROLS = "VK_KHR_shader_float_controls";
+    private static final String KEY_FLOAT_CONTROLS_PROPERTIES_KHR = "floatControlsPropertiesKHR";
+    private static final String KEY_VK_IMG_RELAXED_LINE_RASTERIZATION =
+            "VK_IMG_relaxed_line_rasterization";
+    private static final String KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG =
+            "relaxedLineRasterizationFeaturesIMG";
+    private static final String RELAXED_LINE_RASTERIZATION = "relaxedLineRasterization";
+    private static final String KEY_CORE11 = "core11";
+    private static final String KEY_VULKAN_11_PROPERTIES = "vulkan_11_properties";
+    private static final String KEY_VULKAN_11_FEATURES = "vulkan_11_features";
+    private static final String KEY_PROTECTED_NO_FAULT = "protectedNoFault";
+    private static final String KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES =
+            "subgroupQuadOperationsInAllStages";
+    private static final String KEY_SUBGROUP_SUPPORTED_OPERATIONS = "subgroupSupportedOperations";
+    private static final String KEY_SUBGROUP_SUPPORTED_STAGES = "subgroupSupportedStages";
+    private static final String KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR = "VK_KHR_vertex_attribute_divisor";
+    private static final String KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR =
+            "vertexAttributeDivisorFeaturesKHR";
+    private static final String KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR = "vertexAttributeInstanceRateDivisor";
+    private static final String KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR = "vertexAttributeInstanceRateZeroDivisor";
     private static final String KEY_VULKAN_12_FEATURES = "vulkan_12_features";
     private static final String KEY_VULKAN_12_PROPERTIES = "vulkan_12_properties";
     private static final String KEY_VULKAN_13_FEATURES = "vulkan_13_features";
@@ -510,6 +599,22 @@ public final class VulkanDeviceInfo extends DeviceInfo {
     private static final int ENUM_VK_KHR_VARIABLE_POINTERS = 0;
     private static final int ENUM_VK_KHR_DRIVER_PROPERTIES = 1;
     private static final int ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D = 2;
+    private static final int ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR = 3;
+    private static final int ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART = 4;
+    private static final int ENUM_KEY_VK_EXT_PROVOKING_VERTEX = 5;
+    private static final int ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK = 6;
+    private static final int ENUM_KEY_VK_KHR_8BIT_STORAGE = 7;
+    private static final int ENUM_KEY_VK_KHR_SHADER_FLOAT16_INT8 = 8;
+    private static final int ENUM_KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT = 9;
+    private static final int ENUM_KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES = 10;
+    private static final int ENUM_KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW = 11;
+    private static final int ENUM_KEY_VK_EXT_INDEX_TYPE_UINT8 = 12;
+    private static final int ENUM_KEY_VK_KHR_INDEX_TYPE_UINT8 = 13;
+    private static final int ENUM_KEY_VK_EXT_LINE_RASTERIZATION = 14;
+    private static final int ENUM_KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY = 15;
+    private static final int ENUM_KEY_VK_KHR_SHADER_FLOAT_CONTROLS = 16;
+    private static final int ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION = 17;
+    private static final int ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR = 18;
 
     private static HashMap<String, Integer> extensionNameToEnum;
 
@@ -519,6 +624,33 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         extensionNameToEnum.put(KEY_VK_KHR_DRIVER_PROPERTIES, ENUM_VK_KHR_DRIVER_PROPERTIES);
         extensionNameToEnum.put(KEY_VK_KHR_VARIABLE_POINTERS, ENUM_VK_KHR_VARIABLE_POINTERS);
         extensionNameToEnum.put(KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D, ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D);
+        extensionNameToEnum.put(KEY_VK_EXT_CUSTOM_BORDER_COLOR, ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR);
+        extensionNameToEnum.put(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART,
+ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+        extensionNameToEnum.put(KEY_VK_EXT_PROVOKING_VERTEX, ENUM_KEY_VK_EXT_PROVOKING_VERTEX);
+        extensionNameToEnum.put(KEY_VK_EXT_TRANSFORM_FEEDBACK, ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK);
+        extensionNameToEnum.put(
+                KEY_VK_KHR_SHADER_FLOAT16_INT8, ENUM_KEY_VK_KHR_SHADER_FLOAT16_INT8);
+        extensionNameToEnum.put(
+                KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES,
+                ENUM_KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
+        extensionNameToEnum.put(
+                KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW,
+                ENUM_KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
+        extensionNameToEnum.put(KEY_VK_KHR_8BIT_STORAGE, ENUM_KEY_VK_KHR_8BIT_STORAGE);
+        extensionNameToEnum.put(
+                KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT, ENUM_KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
+        extensionNameToEnum.put(KEY_VK_EXT_INDEX_TYPE_UINT8, ENUM_KEY_VK_EXT_INDEX_TYPE_UINT8);
+        extensionNameToEnum.put(KEY_VK_KHR_INDEX_TYPE_UINT8, ENUM_KEY_VK_KHR_INDEX_TYPE_UINT8);
+        extensionNameToEnum.put(KEY_VK_EXT_LINE_RASTERIZATION, ENUM_KEY_VK_EXT_LINE_RASTERIZATION);
+        extensionNameToEnum.put(
+                KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY, ENUM_KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
+        extensionNameToEnum.put(
+                KEY_VK_KHR_SHADER_FLOAT_CONTROLS, ENUM_KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
+        extensionNameToEnum.put(
+                KEY_VK_IMG_RELAXED_LINE_RASTERIZATION, ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
+        extensionNameToEnum.put(
+                KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR, ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
     }
 
     @Override
@@ -699,6 +831,33 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     store.endGroup();
 
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
+                        JSONObject core11 = device.getJSONObject(KEY_CORE11);
+                        JSONObject vulkan11Properties = core11.getJSONObject(KEY_PROPERTIES);
+                        store.startGroup(convertName(KEY_VULKAN_11_PROPERTIES));
+                        {
+                            emitLong(store, vulkan11Properties, KEY_DEVICE_NODE_MASK);
+                            emitBoolean(store, vulkan11Properties, KEY_DEVICE_LUID_VALID);
+                            emitLong(store, vulkan11Properties, KEY_SUBGROUP_SIZE);
+                            emitBoolean(
+                                    store,
+                                    vulkan11Properties,
+                                    KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES);
+                            emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_INSTANCE_INDEX);
+                            emitLong(store, vulkan11Properties, KEY_MAX_MULTIVIEW_VIEW_COUNT);
+                            emitLong(store, vulkan11Properties, KEY_MAX_PER_SET_DESCRIPTORS);
+                            emitLong(store, vulkan11Properties, KEY_PROTECTED_NO_FAULT);
+
+                            emitLongArray(store, vulkan11Properties, KEY_DEVICE_LUID);
+
+                            emitLongArray(store, vulkan11Properties, KEY_DEVICE_UUID);
+                            emitLongArray(store, vulkan11Properties, KEY_DRIVER_UUID);
+                            emitString(store, vulkan11Properties, KEY_MAX_MEMORY_ALLOCATION_SIZE);
+                            emitLong(store, vulkan11Properties, KEY_POINT_CLIPPING_BEHAVIOR);
+                            emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_OPERATIONS);
+                            emitLong(store, vulkan11Properties, KEY_SUBGROUP_SUPPORTED_STAGES);
+                        }
+                        store.endGroup();
+
                         JSONObject core12 = device.getJSONObject(KEY_CORE12);
                         JSONObject vulkan12Properties = core12.getJSONObject(KEY_PROPERTIES);
                         store.startGroup(convertName(KEY_VULKAN_12_PROPERTIES));
@@ -884,7 +1043,27 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     emitBoolean(store, features, KEY_VARIABLE_MULTISAMPLE_RATE);
                     emitBoolean(store, features, KEY_INHERITED_QUERIES);
 
+
                     if (properties.getLong(KEY_API_VERSION) >= VK_API_VERSION_1_2) {
+                        JSONObject core11 = device.getJSONObject(KEY_CORE11);
+                        JSONObject vulkan11Features = core11.getJSONObject(KEY_FEATURES);
+                        store.startGroup(convertName(KEY_VULKAN_11_FEATURES));
+                        {
+                            emitBoolean(store, vulkan11Features, KEY_MULTIVIEW);
+                            emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_GEOMETRY_SHADER);
+                            emitBoolean(store, vulkan11Features, KEY_MULTIVIEW_TESSELLATION_SHADER);
+                            emitBoolean(store, vulkan11Features, KEY_PROTECTED_MEMORY);
+                            emitBoolean(store, vulkan11Features, KEY_SAMPLER_YCBCR_CONVERSION);
+                            emitBoolean(store, vulkan11Features, KEY_SHADER_DRAW_PARAMETERS);
+                            emitBoolean(store, vulkan11Features, KEY_STORAGE_BUFFER_16BIT_ACCESS);
+                            emitBoolean(store, vulkan11Features, KEY_STORAGE_INPUT_OUTPUT_16);
+                            emitBoolean(store, vulkan11Features, KEY_STORAGE_PUSH_CONSTANT_16);
+                            emitBoolean(store, vulkan11Features, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
+                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS);
+                            emitBoolean(store, vulkan11Features, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                        }
+                        store.endGroup();
+
                         JSONObject core12 = device.getJSONObject(KEY_CORE12);
                         JSONObject vulkan12Features = core12.getJSONObject(KEY_FEATURES);
                         store.startGroup(convertName(KEY_VULKAN_12_FEATURES));
@@ -1098,8 +1277,8 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-                    JSONObject bit16StorageFeatures = device.getJSONObject(KEY_16BIT_STORAGE_FEATURES);
-                    store.startGroup(convertName(KEY_16BIT_STORAGE_FEATURES));
+                    JSONObject bit16StorageFeatures = device.getJSONObject(KEY_BIT16_STORAGE_FEATURES);
+                    store.startGroup(convertName(KEY_BIT16_STORAGE_FEATURES));
                     {
                         emitBoolean(store, bit16StorageFeatures, KEY_STORAGE_BUFFER_16BIT_ACCESS);
                         emitBoolean(store, bit16StorageFeatures, KEY_UNIFORM_AND_STORAGE_BUFFER_16BIT_ACCESS);
@@ -1117,11 +1296,11 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                     }
                     store.endGroup();
 
-                    JSONObject variablePointerFeatures = device.getJSONObject(KEY_VARIABLE_POINTER_FEATURES);
-                    store.startGroup(convertName(KEY_VARIABLE_POINTER_FEATURES));
+                    JSONObject variablePointersFeatures = device.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES);
+                    store.startGroup(convertName(KEY_VARIABLE_POINTERS_FEATURES));
                     {
-                        emitBoolean(store, variablePointerFeatures, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
-                        emitBoolean(store, variablePointerFeatures, KEY_VARIABLE_POINTERS);
+                        emitBoolean(store, variablePointersFeatures, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                        emitBoolean(store, variablePointersFeatures, KEY_VARIABLE_POINTERS);
                     }
                     store.endGroup();
 
@@ -1263,6 +1442,13 @@ public final class VulkanDeviceInfo extends DeviceInfo {
                         emitBoolean(store, variablePointerFeaturesKHR, KEY_VARIABLE_POINTERS);
                     }
                     store.endGroup();
+                    JSONObject variablePointersFeaturesKHR = extVariablePointerFeatures.getJSONObject(KEY_VARIABLE_POINTERS_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_VARIABLE_POINTERS_FEATURES_KHR));
+                    {
+                        emitBoolean(store, variablePointersFeaturesKHR, KEY_VARIABLE_POINTERS_STORAGE_BUFFER);
+                        emitBoolean(store, variablePointersFeaturesKHR, KEY_VARIABLE_POINTERS);
+                    }
+                    store.endGroup();
                 }
                 store.endGroup();
             } catch (JSONException e) {
@@ -1300,6 +1486,563 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         }
     }
 
+    private static void emitVertexAttributeDivisorFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrVertexAttributeDivisorFeatures = parent.getJSONObject(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR));
+                {
+                    JSONObject vertexAttributeDivisorFeaturesKHR = khrVertexAttributeDivisorFeatures.getJSONObject(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR));
+                    {
+                        emitBoolean(store, vertexAttributeDivisorFeaturesKHR, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR);
+                        emitBoolean(store, vertexAttributeDivisorFeaturesKHR, KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitCustomBorderColorFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extCustomborderColorFeatures =
+                    parent.getJSONObject(KEY_VK_EXT_CUSTOM_BORDER_COLOR);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_CUSTOM_BORDER_COLOR));
+                {
+                    JSONObject customBorderColorFeaturesEXT =
+                            extCustomborderColorFeatures.getJSONObject(
+                                    KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT));
+                    {
+                        emitBoolean(
+                                store,
+                                customBorderColorFeaturesEXT,
+                                KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT);
+                        emitBoolean(store, customBorderColorFeaturesEXT, KEY_CUSTOM_BORDER_COLORS);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitPrimitiveTopologyListRestartFeaturesEXT(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject extPrimitiveTopologyListRestartFeatures =
+                    parent.getJSONObject(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART));
+                {
+                    JSONObject primitiveTopologyListRestartFeaturesEXT =
+                            extPrimitiveTopologyListRestartFeatures.getJSONObject(
+                                    KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT));
+                    {
+                        emitBoolean(
+                                store,
+                                primitiveTopologyListRestartFeaturesEXT,
+                                KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART);
+                        emitBoolean(
+                                store,
+                                primitiveTopologyListRestartFeaturesEXT,
+                                KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitransformFeedbackFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extTransformFeedbackFeatures =
+                    parent.getJSONObject(KEY_VK_EXT_TRANSFORM_FEEDBACK);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_TRANSFORM_FEEDBACK));
+                {
+                    JSONObject transformFeedbackFeaturesEXT =
+                            extTransformFeedbackFeatures.getJSONObject(
+                                    KEY_TRANSFORM_FEEDBACK_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_TRANSFORM_FEEDBACK_FEATURES_EXT));
+                    {
+                        emitBoolean(store, transformFeedbackFeaturesEXT, KEY_GEOMETRY_STREAMS);
+                        emitBoolean(store, transformFeedbackFeaturesEXT, KEY_TRANSFORM_FEEDBACK);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitProvokingVertexFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extProvokingVertexFeatures =
+                    parent.getJSONObject(KEY_VK_EXT_PROVOKING_VERTEX);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_PROVOKING_VERTEX));
+                {
+                    JSONObject provokingVertexFeaturesEXT =
+                            extProvokingVertexFeatures.getJSONObject(
+                                    KEY_PROVOKING_VERTEX_FEATURES_EXT);
+
+                    store.startGroup(convertName(KEY_PROVOKING_VERTEX_FEATURES_EXT));
+                    {
+                        emitBoolean(store, provokingVertexFeaturesEXT, KEY_PROVOKING_VERTEX_LAST);
+
+                        emitBoolean(
+                                store,
+                                provokingVertexFeaturesEXT,
+                                KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitIndexTypeUint8FeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extIndexTypeUint8Features =
+                    parent.getJSONObject(KEY_VK_EXT_INDEX_TYPE_UINT8);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_INDEX_TYPE_UINT8));
+                {
+                    JSONObject indexTypeUint8FeaturesEXT =
+                            extIndexTypeUint8Features.getJSONObject(
+                                    KEY_INDEX_TYPE_UINT8_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_INDEX_TYPE_UINT8_FEATURES_EXT));
+                    {
+                        emitBoolean(store, indexTypeUint8FeaturesEXT, KEY_INDEX_TYPE_UINT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitIndexTypeUint8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrIndexTypeUint8Features =
+                    parent.getJSONObject(KEY_VK_KHR_INDEX_TYPE_UINT8);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_INDEX_TYPE_UINT8));
+                {
+                    JSONObject indexTypeUint8FeaturesKHR =
+                            khrIndexTypeUint8Features.getJSONObject(
+                                    KEY_INDEX_TYPE_UINT8_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_INDEX_TYPE_UINT8_FEATURES_KHR));
+                    {
+                        emitBoolean(store, indexTypeUint8FeaturesKHR, KEY_INDEX_TYPE_UINT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emit8bitStorageFeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khr8bitStorageFeatures = parent.getJSONObject(KEY_VK_KHR_8BIT_STORAGE);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_8BIT_STORAGE));
+                {
+                    JSONObject bit8StorageFeaturesKHR=
+                            khr8bitStorageFeatures.getJSONObject(KEY_BIT8_STORAGE_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_BIT8_STORAGE_FEATURES_KHR));
+                    {
+                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_BUFFER_8BIT_ACCESS);
+                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_STORAGE_PUSH_CONSTANT8);
+                        emitBoolean(store, bit8StorageFeaturesKHR, KEY_UNIFORM_AND_STORAGE_BUFFER_8BIT_ACCESS);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderFloat16Int8FeaturesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrShaderFloat16Int8Features =
+                    parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT16_INT8);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_SHADER_FLOAT16_INT8));
+                {
+                    JSONObject shaderFloat16Int8FeaturesKHR =
+                            khrShaderFloat16Int8Features.getJSONObject(
+                                    KEY_SHADER_FLOAT16_INT8_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_SHADER_FLOAT16_INT8_FEATURES_KHR));
+                    {
+                        emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
+                        emitBoolean(store, shaderFloat16Int8FeaturesKHR, KEY_SHADER_INT8);
+                    }
+                    store.endGroup();
+
+                    JSONObject float16Int8FeaturesKHR =
+                            khrShaderFloat16Int8Features.getJSONObject(
+                                    KEY_FLOAT16_INT8_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_FLOAT16_INT8_FEATURES_KHR));
+                    {
+                        emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_FLOAT16);
+                        emitBoolean(store, float16Int8FeaturesKHR, KEY_SHADER_INT8);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderIntegerDotProductFeaturesKHR(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject khrShaderIntegerDotProductFeatures =
+                    parent.getJSONObject(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT));
+                {
+                    JSONObject shaderIntegerDotProductFeaturesKHR =
+                            khrShaderIntegerDotProductFeatures.getJSONObject(
+                                    KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR));
+                    {
+                        emitBoolean(
+                                store,
+                                shaderIntegerDotProductFeaturesKHR,
+                                KEY_SHADER_INTEGER_DOT_PRODUCT);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderSubgroupExtendedTypesFeaturesKHR(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject khrShaderSubgroupExtendedTypesFeatures =
+                    parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES));
+                {
+                    JSONObject shaderSubgroupExtendedTypesFeaturesKHR =
+                            khrShaderSubgroupExtendedTypesFeatures.getJSONObject(
+                                    KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR);
+                    store.startGroup(convertName(KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR));
+                    {
+                        emitBoolean(
+                                store,
+                                shaderSubgroupExtendedTypesFeaturesKHR,
+                                KEY_SHADER_SUBGROUP_EXTENDED_TYPES);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitShaderSubgroupUniformControlFlowFeaturesKHR(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject extShaderSubgroupUniformControlFlowFeatures =
+                    parent.getJSONObject(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW));
+                {
+                    JSONObject shaderSubgroupUniformControlFlowFeaturesKHR =
+                            extShaderSubgroupUniformControlFlowFeatures.getJSONObject(
+                                    KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR);
+                    store.startGroup(
+                            convertName(KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR));
+                    {
+                        emitBoolean(
+                                store,
+                                shaderSubgroupUniformControlFlowFeaturesKHR,
+                                KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitLineRasterizationFeaturesEXT(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject extLineRasterizationFeatures =
+                    parent.getJSONObject(KEY_VK_EXT_LINE_RASTERIZATION);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_LINE_RASTERIZATION));
+                {
+                    JSONObject lineRasterizationFeaturesEXT =
+                            extLineRasterizationFeatures.getJSONObject(
+                                    KEY_LINE_RASTERIZATION_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_LINE_RASTERIZATION_FEATURES_EXT));
+                    {
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_BRESENHAM_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_RECTANGULAR_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_SMOOTH_LINES);
+                        emitBoolean(
+                                store, lineRasterizationFeaturesEXT, KEY_STIPPLED_BRESENHAM_LINES);
+                        emitBoolean(
+                                store,
+                                lineRasterizationFeaturesEXT,
+                                KEY_STIPPLED_RECTANGULAR_LINES);
+                        emitBoolean(store, lineRasterizationFeaturesEXT, KEY_STIPPLED_SMOOTH_LINES);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitPrimitivesGeneratedQueryFeaturesEXT(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject extPrimitivesGeneratedQueryFeatures =
+                    parent.getJSONObject(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY);
+            try {
+                store.startGroup(convertName(KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY));
+                {
+                    JSONObject primitivesGeneratedQueryFeaturesEXT =
+                            extPrimitivesGeneratedQueryFeatures.getJSONObject(
+                                    KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT);
+                    store.startGroup(convertName(KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT));
+                    {
+                        emitBoolean(
+                                store,
+                                primitivesGeneratedQueryFeaturesEXT,
+                                KEY_PRIMITIVES_GENERATED_QUERY);
+                        emitBoolean(
+                                store,
+                                primitivesGeneratedQueryFeaturesEXT,
+                                KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS);
+                        emitBoolean(
+                                store,
+                                primitivesGeneratedQueryFeaturesEXT,
+                                KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitFloatControlsPropertiesKHR(DeviceInfoStore store, JSONObject parent)
+            throws Exception {
+        try {
+            JSONObject khrFloatControlsProperties =
+                    parent.getJSONObject(KEY_VK_KHR_SHADER_FLOAT_CONTROLS);
+            try {
+                store.startGroup(convertName(KEY_VK_KHR_SHADER_FLOAT_CONTROLS));
+                {
+                    JSONObject floatControlsPropertiesKHR =
+                            khrFloatControlsProperties.getJSONObject(
+                                    KEY_FLOAT_CONTROLS_PROPERTIES_KHR);
+                    store.startGroup(convertName(KEY_FLOAT_CONTROLS_PROPERTIES_KHR));
+                    {
+                        emitLong(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_DENORM_BEHAVIOR_INDEPENDENCE);
+                        emitLong(
+                                store, floatControlsPropertiesKHR, KEY_ROUNDING_MODE_INDEPENDENCE);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_DENORM_FLUSH_TO_ZERO_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_DENORM_PRESERVE_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_DENORM_PRESERVE_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_DENORM_PRESERVE_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_ROUNDING_MODE_RTE_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_ROUNDING_MODE_RTZ_FLOAT64);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT16);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT32);
+                        emitBoolean(
+                                store,
+                                floatControlsPropertiesKHR,
+                                KEY_SHADER_SIGNED_ZERO_INF_NAN_PRESERVE_FLOAT64);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
+    private static void emitRelaxedLineRasterizationFeaturesIMG(
+            DeviceInfoStore store, JSONObject parent) throws Exception {
+        try {
+            JSONObject imgRelaxedLineRasterizationFeatures =
+                    parent.getJSONObject(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION);
+            try {
+                store.startGroup(convertName(KEY_VK_IMG_RELAXED_LINE_RASTERIZATION));
+                {
+                    JSONObject relaxedLineRasterizationFeaturesIMG =
+                            imgRelaxedLineRasterizationFeatures.getJSONObject(
+                                    KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG);
+                    store.startGroup(convertName(KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG));
+                    {
+                        emitBoolean(
+                                store,
+                                relaxedLineRasterizationFeaturesIMG,
+                                RELAXED_LINE_RASTERIZATION);
+                    }
+                    store.endGroup();
+                }
+                store.endGroup();
+            } catch (JSONException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        } catch (JSONException ok) {
+            // The tag is not present in vkjson; that's fine, just continue
+        }
+    }
+
     private static void emitExtension(String key, DeviceInfoStore store, JSONObject parent)
             throws Exception {
         if (!extensionNameToEnum.containsKey(key)) return;
@@ -1310,8 +2053,56 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             case ENUM_VK_KHR_DRIVER_PROPERTIES:
               emitDriverPropertiesKHR(store, parent);
               break;
+            case ENUM_KEY_VK_EXT_CUSTOM_BORDER_COLOR:
+                emitCustomBorderColorFeaturesEXT(store, parent);
+              break;
             case ENUM_KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D:
                 emitImage2DViewOf3DFeaturesEXT(store, parent);
+              break;
+            case ENUM_KEY_VK_EXT_TRANSFORM_FEEDBACK:
+                emitransformFeedbackFeaturesEXT(store, parent);
+                break;
+            case ENUM_KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART:
+                emitPrimitiveTopologyListRestartFeaturesEXT(store, parent);
+                break;
+            case ENUM_KEY_VK_EXT_PROVOKING_VERTEX:
+                emitProvokingVertexFeaturesEXT(store, parent);
+                break;
+            case ENUM_KEY_VK_EXT_INDEX_TYPE_UINT8:
+                emitIndexTypeUint8FeaturesEXT(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_INDEX_TYPE_UINT8:
+                emitIndexTypeUint8FeaturesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_8BIT_STORAGE:
+                emit8bitStorageFeaturesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_SHADER_FLOAT16_INT8:
+                emitShaderFloat16Int8FeaturesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
+                emitShaderSubgroupUniformControlFlowFeaturesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
+                emitShaderSubgroupExtendedTypesFeaturesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
+                emitShaderIntegerDotProductFeaturesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_EXT_LINE_RASTERIZATION:
+                emitLineRasterizationFeaturesEXT(store, parent);
+                break;
+            case ENUM_KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
+                emitPrimitivesGeneratedQueryFeaturesEXT(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
+                emitFloatControlsPropertiesKHR(store, parent);
+                break;
+            case ENUM_KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
+                emitRelaxedLineRasterizationFeaturesIMG(store, parent);
+                break;
+            case ENUM_KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR:
+                emitVertexAttributeDivisorFeaturesKHR(store, parent);
                 break;
         }
     }
@@ -1382,7 +2173,7 @@ public final class VulkanDeviceInfo extends DeviceInfo {
         // This translation could be done algorithmically, but in this case being able to
         // code-search for both the original and converted names is more important.
         switch (name) {
-            case KEY_16BIT_STORAGE_FEATURES: return "bit16_storage_features";
+            case KEY_BIT16_STORAGE_FEATURES: return "bit16_storage_features";
             case KEY_ALPHA_TO_ONE: return "alpha_to_one";
             case KEY_API_VERSION: return "api_version";
             case KEY_BUFFER_DEVICE_ADDRESS: return "buffer_device_address";
@@ -1788,8 +2579,10 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             case KEY_VARIABLE_MULTISAMPLE_RATE: return "variable_multisample_rate";
             case KEY_VARIABLE_POINTERS: return "variable_pointers";
             case KEY_VARIABLE_POINTERS_STORAGE_BUFFER: return "variable_pointers_storage_buffer";
-            case KEY_VARIABLE_POINTER_FEATURES: return "variable_pointer_features";
+            // Field name should ideally be `variable_pointers_features`, but renaming would cause parsing errors for older JSON reports.
+            case KEY_VARIABLE_POINTERS_FEATURES: return "variable_pointer_features";
             case KEY_VARIABLE_POINTER_FEATURES_KHR: return "variable_pointer_features_khr";
+            case KEY_VARIABLE_POINTERS_FEATURES_KHR: return "variable_pointers_features_khr";
             case KEY_IMAGE_2D_VIEW_OF_3D_FEATURES_EXT: return "image_2d_view_of_3d_features_ext";
             case KEY_IMAGE_2D_VIEW_OF_3D: return "image_2d_view_of_3d";
             case KEY_SAMPLER_2D_VIEW_OF_3D: return "sampler_2d_view_of_3d";
@@ -1800,6 +2593,108 @@ public final class VulkanDeviceInfo extends DeviceInfo {
             case KEY_VK_KHR_DRIVER_PROPERTIES: return "vk_khr_driver_properties";
             case KEY_VK_KHR_VARIABLE_POINTERS: return "vk_khr_variable_pointers";
             case KEY_VK_EXT_IMAGE_2D_VIEW_OF_3D: return "vk_ext_image_2d_view_of_3d";
+            case KEY_CUSTOM_BORDER_COLOR_FEATURES_EXT: return "custom_border_color_features_ext";
+            case KEY_CUSTOM_BORDER_COLOR_WITHOUT_FORMAT: return "custom_border_color_without_format";
+            case KEY_CUSTOM_BORDER_COLORS: return "custom_border_colors";
+            case KEY_VK_EXT_CUSTOM_BORDER_COLOR: return "vk_ext_custom_border_color";
+            case KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT: return "primitive_topology_list_restart_features_ext";
+            case KEY_PRIMITIVE_TOPOLOGY_LIST_RESTART: return "primitive_topology_list_restart";
+            case KEY_PRIMITIVE_TOPOLOGY_PATCH_LIST_RESTART: return "primitive_topology_patch_list_restart";
+            case KEY_VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART: return "vk_ext_primitive_topology_list_restart";
+            case KEY_TRANSFORM_FEEDBACK_FEATURES_EXT: return "transform_feedback_features_ext";
+            case KEY_GEOMETRY_STREAMS: return "geometry_streams";
+            case KEY_TRANSFORM_FEEDBACK: return "transform_feedback";
+            case KEY_VK_EXT_TRANSFORM_FEEDBACK: return "vk_ext_transform_feedback";
+            case KEY_PROVOKING_VERTEX_FEATURES_EXT: return "provoking_vertex_features_ext";
+            case KEY_PROVOKING_VERTEX_LAST: return "provoking_vertex_last";
+            case KEY_TRANSFORM_FEEDBACK_PRESERVES_PROVOKING_VERTEX: return "transform_feedback_preserves_provoking_vertex";
+            case KEY_VK_EXT_PROVOKING_VERTEX: return "vk_ext_provoking_vertex";
+            case KEY_INDEX_TYPE_UINT8_FEATURES_EXT:
+                return "index_type_uint8_features_ext";
+            case KEY_INDEX_TYPE_UINT8:
+                return "index_type_uint8";
+            case KEY_VK_EXT_INDEX_TYPE_UINT8:
+                return "vk_ext_index_type_uint8";
+            case KEY_INDEX_TYPE_UINT8_FEATURES_KHR:
+                return "index_type_uint8_features_khr";
+            case KEY_VK_KHR_INDEX_TYPE_UINT8:
+                return "vk_khr_index_type_uint8";
+            case KEY_SHADER_FLOAT16_INT8_FEATURES_KHR:
+                return "shader_float16_int8_features_khr";
+            case KEY_FLOAT16_INT8_FEATURES_KHR:
+                return "float16_int8_features_khr";
+            case KEY_VK_KHR_SHADER_FLOAT16_INT8:
+                return "vk_khr_shader_float16_int8";
+            case KEY_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES_KHR:
+                return "shader_subgroup_extended_types_features_khr";
+            case KEY_VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES:
+                return "vk_khr_shader_subgroup_extended_types";
+            case KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR:
+                return "shader_subgroup_uniform_control_flow_features_khr";
+            case KEY_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
+                return "shader_subgroup_uniform_control_flow";
+            case KEY_VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW:
+                return "vk_khr_shader_subgroup_uniform_control_flow";
+            case KEY_BIT8_STORAGE_FEATURES_KHR:
+                return "bit8_storage_features_khr";
+            case KEY_VK_KHR_8BIT_STORAGE:
+                return "vk_khr_8bit_storage";
+            case KEY_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR:
+                return "shader_integer_dot_product_features_khr";
+            case KEY_VK_KHR_SHADER_INTEGER_DOT_PRODUCT:
+                return "vk_khr_shader_integer_dot_product";
+            case KEY_LINE_RASTERIZATION_FEATURES_EXT:
+                return "line_rasterization_features_ext";
+            case KEY_BRESENHAM_LINES:
+                return "bresenham_lines";
+            case KEY_RECTANGULAR_LINES:
+                return "rectangular_lines";
+            case KEY_SMOOTH_LINES:
+                return "smooth_lines";
+            case KEY_STIPPLED_BRESENHAM_LINES:
+                return "stippled_bresenham_lines";
+            case KEY_STIPPLED_RECTANGULAR_LINES:
+                return "stippled_rectangular_lines";
+            case KEY_STIPPLED_SMOOTH_LINES:
+                return "stippled_smooth_lines";
+            case KEY_VK_EXT_LINE_RASTERIZATION:
+                return "vk_ext_line_rasterization";
+            case KEY_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT:
+                return "primitives_generated_query_features_ext";
+            case KEY_PRIMITIVES_GENERATED_QUERY:
+                return "primitives_generated_query";
+            case KEY_PRIMITIVES_GENERATED_QUERY_WITH_NON_ZERO_STREAMS:
+                return "primitives_generated_query_with_non_zero_streams";
+            case KEY_PRIMITIVES_GENERATED_QUERY_WITH_RASTERIZER_DISCARD:
+                return "primitives_generated_query_with_rasterizer_discard";
+            case KEY_VK_EXT_PRIMITIVES_GENERATED_QUERY:
+                return "vk_ext_primitives_generated_query";
+            case KEY_FLOAT_CONTROLS_PROPERTIES_KHR:
+                return "float_controls_properties_khr";
+            case KEY_VK_KHR_SHADER_FLOAT_CONTROLS:
+                return "vk_khr_shader_float_controls";
+            case KEY_RELAXED_LINE_RASTERIZATION_FEATURES_IMG:
+                return "relaxed_line_rasterization_features_img";
+            case RELAXED_LINE_RASTERIZATION:
+                return "relaxed_line_rasterization";
+            case KEY_VK_IMG_RELAXED_LINE_RASTERIZATION:
+                return "vk_img_relaxed_line_rasterization";
+            case KEY_VULKAN_11_PROPERTIES:
+                return "vulkan_11_properties";
+            case KEY_VULKAN_11_FEATURES:
+                return "vulkan_11_features";
+            case KEY_PROTECTED_NO_FAULT:
+                return "protected_no_fault";
+            case KEY_SUBGROUP_QUAD_OPERATIONS_IN_ALL_STAGES:
+                return "subgroup_quad_operations_in_all_stages";
+            case KEY_SUBGROUP_SUPPORTED_OPERATIONS:
+                return "subgroup_supported_operations";
+            case KEY_SUBGROUP_SUPPORTED_STAGES:
+                return "subgroup_supported_stages";
+            case KEY_VK_KHR_VERTEX_ATTRIBUTE_DIVISOR: return "vk_khr_vertex_attribute_divisor";
+            case KEY_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_KHR: return "vertex_attribute_divisor_features_khr";
+            case KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_DIVISOR: return "vertex_attribute_instance_rate_divisor";
+            case KEY_VERTEX_ATTRIBUTE_INSTANCE_RATE_ZERO_DIVISOR: return "vertex_attribute_instance_rate_zero_divisor";
             case KEY_VULKAN_12_FEATURES: return "vulkan_12_features";
             case KEY_VULKAN_12_PROPERTIES: return "vulkan_12_properties";
             case KEY_VULKAN_13_FEATURES: return "vulkan_13_features";

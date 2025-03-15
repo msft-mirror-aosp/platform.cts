@@ -42,7 +42,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.companion.AssociationInfo;
 import android.companion.AssociationRequest;
@@ -585,7 +584,7 @@ public class VirtualDeviceManagerBasicTest {
 
         mVirtualDeviceManager.playSoundEffect(virtualDevice.getDeviceId() + 1, FX_KEY_CLICK);
 
-        verifyZeroInteractions(mSoundEffectListener);
+        verifyNoMoreInteractions(mSoundEffectListener);
     }
 
     @Test

@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -134,7 +134,7 @@ public class CaptioningManagerTest {
         putSecureSetting("accessibility_captioning_enabled","0");
         putSecureSetting("odi_captions_enabled", "0");
         putSecureSetting("odi_captions_volume_ui_enabled", "0");
-        verifyZeroInteractions(mockListener);
+        verifyNoMoreInteractions(mockListener);
 
         try {
             mManager.removeCaptioningChangeListener(mockListener);

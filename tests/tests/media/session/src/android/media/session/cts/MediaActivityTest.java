@@ -186,7 +186,7 @@ public class MediaActivityTest {
 
     /** Tests whether volume key changes volume with the session's stream. */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testVolumeKey_whileSessionAlive() throws Exception {
         assumeTrue(/* message= */ "Test skipped on automotive target",
                 !isAutomotive());
@@ -219,7 +219,7 @@ public class MediaActivityTest {
      * being ignored.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testVolumeKey_afterSessionReleased() throws Exception {
         assumeTrue(/* message= */ "Test skipped on automotive target",
                 !isAutomotive());
@@ -249,7 +249,7 @@ public class MediaActivityTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testMediaKey_whileSessionAlive() throws Exception {
         int testKeyEvent = KeyEvent.KEYCODE_MEDIA_PLAY;
 
@@ -272,7 +272,7 @@ public class MediaActivityTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testMediaKey_whileSessionReleased() throws Exception {
         int testKeyEvent = KeyEvent.KEYCODE_MEDIA_PLAY;
 

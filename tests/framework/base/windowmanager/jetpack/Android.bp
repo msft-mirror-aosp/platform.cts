@@ -96,7 +96,6 @@ android_test {
         "cts_window-extensions-core",
         "com.android.window.flags.window-aconfig-java",
         "android.hardware.devicestate.feature.flags-aconfig-java",
-        "display_flags_lib",
         "truth",
     ],
     libs: [

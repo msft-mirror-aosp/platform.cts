@@ -21,6 +21,7 @@ import static android.service.watchdog.ExplicitHealthCheckService.EXTRA_HEALTH_C
 import static com.google.common.truth.Truth.assertThat;
 
 import android.crashrecovery.flags.Flags;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.RemoteCallback;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -28,6 +29,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.watchdog.ExplicitHealthCheckService;
 
+import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
@@ -40,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 @RunWith(AndroidJUnit4.class)
+@SdkSuppress(minSdkVersion = Build.VERSION_CODES.BAKLAVA)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CRASHRECOVERY)
 public final class ExplicitHealthCheckServiceTest {
 

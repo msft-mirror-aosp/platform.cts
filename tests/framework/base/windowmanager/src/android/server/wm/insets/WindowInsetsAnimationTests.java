@@ -39,7 +39,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import android.platform.test.annotations.Presubmit;
@@ -211,7 +211,7 @@ public class WindowInsetsAnimationTests extends WindowInsetsAnimationTestBase {
 
         waitForOrFail("Waiting until animation done", () -> mActivity.mCallback.animationDone);
 
-        verifyZeroInteractions(childCallback);
+        verifyNoMoreInteractions(childCallback);
     }
 
     @Test

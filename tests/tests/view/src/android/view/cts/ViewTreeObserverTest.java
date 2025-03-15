@@ -17,6 +17,7 @@
 package android.view.cts;
 
 import static com.android.compatibility.common.util.CtsMockitoUtils.within;
+import static android.view.flags.Flags.FLAG_ENABLE_DISPATCH_ON_SCROLL_CHANGED;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -24,13 +25,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
@@ -77,6 +81,10 @@ public class ViewTreeObserverTest {
     @Rule(order = 1)
     public ActivityTestRule<MockActivity> mActivityRule =
             new ActivityTestRule<>(MockActivity.class);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() throws Throwable {
@@ -145,6 +153,18 @@ public class ViewTreeObserverTest {
         verify(listener, times(1)).onDraw();
     }
 
+    @RequiresFlagsEnabled(FLAG_ENABLE_DISPATCH_ON_SCROLL_CHANGED)
+    @Test
+    public void testAddOnScrollChangedListener() {
+        mViewTreeObserver = mLinearLayout.getViewTreeObserver();
+
+        final ViewTreeObserver.OnScrollChangedListener listener =
+                mock(ViewTreeObserver.OnScrollChangedListener.class);
+        mViewTreeObserver.addOnScrollChangedListener(listener);
+        mViewTreeObserver.dispatchOnScrollChanged();
+        verify(listener, times(1)).onScrollChanged();
+    }
+
     @Test
     public void testFrameCommitListener() throws Throwable {
         mViewTreeObserver = mLinearLayout.getViewTreeObserver();
@@ -157,7 +177,7 @@ public class ViewTreeObserverTest {
             mViewTreeObserver.unregisterFrameCommitCallback(removedListener);
         });
         verify(activeListener, within(TIMEOUT_MS)).run();
-        verifyZeroInteractions(removedListener);
+        verifyNoMoreInteractions(removedListener);
     }
 
     @Test(expected=IllegalStateException.class)
@@ -216,7 +236,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -236,7 +256,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -262,7 +282,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -285,7 +305,7 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener, we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -312,7 +332,28 @@ public class ViewTreeObserverTest {
         // Since we've unregistered our listener we expect it to not be called even after
         // we've waited for a couple of seconds
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
+    }
+
+    @RequiresFlagsEnabled(FLAG_ENABLE_DISPATCH_ON_SCROLL_CHANGED)
+    @LargeTest
+    @Test
+    public void testRemoveOnScrollChangedListener() {
+        mViewTreeObserver = mLinearLayout.getViewTreeObserver();
+
+        final ViewTreeObserver.OnScrollChangedListener listener =
+                mock(ViewTreeObserver.OnScrollChangedListener.class);
+        mViewTreeObserver.addOnScrollChangedListener(listener);
+        mViewTreeObserver.dispatchOnScrollChanged();
+        verify(listener, times(1)).onScrollChanged();
+
+        reset(listener);
+        mViewTreeObserver.removeOnScrollChangedListener(listener);
+        mViewTreeObserver.dispatchOnScrollChanged();
+        // Since we've unregistered our listener, we expect it to not be called even after
+        // we've waited for a couple of seconds
+        SystemClock.sleep(TIMEOUT_MS);
+        verifyNoMoreInteractions(listener);
     }
 
     @LargeTest
@@ -335,9 +376,8 @@ public class ViewTreeObserverTest {
 
         mViewTreeObserver.removeOnScrollChangedListener(listener);
         mActivityRule.runOnUiThread(() -> scrollView.fullScroll(View.FOCUS_UP));
-        // Since we've unregistered our listener, we expect it to not be called even after
-        // we've waited for a couple of seconds
+
         SystemClock.sleep(TIMEOUT_MS);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
     }
 }

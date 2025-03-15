@@ -38,7 +38,7 @@ import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Test;
@@ -47,7 +47,7 @@ import org.junit.runner.RunWith;
 import java.util.UUID;
 
 @AppModeFull(reason = "Dynamic config not supported")
-@NonMainlineTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 public class AudioEffectTest extends PostProcTestBase {
 

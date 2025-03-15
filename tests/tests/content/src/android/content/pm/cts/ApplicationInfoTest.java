@@ -44,7 +44,7 @@ import android.os.Parcel;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.StringBuilderPrinter;
 
@@ -98,7 +98,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testWriteToParcel() throws NameNotFoundException {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 getPackageName(), PackageManager.ApplicationInfoFlags.of(0));
@@ -131,7 +131,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testDescribeContents() throws NameNotFoundException {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 getPackageName(), PackageManager.ApplicationInfoFlags.of(0));
@@ -154,7 +154,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testLoadDescription() throws NameNotFoundException {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 getPackageName(), PackageManager.ApplicationInfoFlags.of(0));
@@ -169,7 +169,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void verifyOwnInfo() throws NameNotFoundException {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 getPackageName(), PackageManager.ApplicationInfoFlags.of(0));
@@ -190,7 +190,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void verifyDefaultValues() throws NameNotFoundException {
         // Make sure we install the original version of com.android.cts.stub.
         installPackage(STUB_PACKAGE_APK);
@@ -230,21 +230,21 @@ public class ApplicationInfoTest {
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void setOwnAppCategory() throws Exception {
         getContext().getPackageManager().setApplicationCategoryHint(getContext().getPackageName(),
                 CATEGORY_MAPS);
     }
 
     @Test(expected=IllegalArgumentException.class)
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void setAppCategoryByNotInstaller() throws Exception {
         getContext().getPackageManager().setApplicationCategoryHint(
                 SYNC_ACCOUNT_ACCESS_STUB_PACKAGE_NAME, CATEGORY_MAPS);
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testDirectBootUnawareAppIsNotEncryptionAware() throws Exception {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 DIRECT_BOOT_UNAWARE_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0));
@@ -252,7 +252,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testDirectBootUnawareAppCategoryIsAccessibility() throws Exception {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 DIRECT_BOOT_UNAWARE_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0));
@@ -260,7 +260,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testDefaultAppCategoryIsUndefined() throws Exception {
         final ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 NO_APPLICATION_PACKAGE_NAME, PackageManager.ApplicationInfoFlags.of(0));
@@ -268,7 +268,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testPartiallyDirectBootAwareAppIsEncryptionAware() throws Exception {
         ApplicationInfo applicationInfo = getContext().getPackageManager().getApplicationInfo(
                 PARTIALLY_DIRECT_BOOT_AWARE_PACKAGE_NAME,
@@ -277,7 +277,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testWriteToParcelDontSquash() throws Exception {
         // Make sure ApplicationInfo.writeToParcel() doesn't do the "squashing",
         // because Parcel.allowSquashing() isn't called.
@@ -311,7 +311,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testWriteToParcelSquash() throws Exception {
         // Make sure ApplicationInfo.writeToParcel() does the "squashing", after
         // Parcel.allowSquashing() is called.
@@ -339,7 +339,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testIsProduct() throws Exception {
         // The product flag is supported since P. Suppose that devices lauch on Android P may not
         // have product partition.
@@ -357,7 +357,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testIsVendor() throws Exception {
         final String systemPath = Environment.getRootDirectory().getAbsolutePath();
         final String vendorPath = Environment.getVendorDirectory().getAbsolutePath();
@@ -371,7 +371,7 @@ public class ApplicationInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testIsOem() throws Exception {
         final String systemPath = Environment.getRootDirectory().getAbsolutePath();
         final String oemPath = Environment.getOemDirectory().getAbsolutePath();
