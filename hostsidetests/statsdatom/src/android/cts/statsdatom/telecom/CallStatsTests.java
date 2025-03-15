@@ -47,8 +47,14 @@ import java.util.List;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class CallStatsTests extends BaseTelecomMetricsTest {
 
-    private static final String CLASS_OUTGOING_CALL_TEST = "android.telecom.cts.OutgoingCallTest";
-    private static final String CASE_TEST_PHONE_STATE_CHANGE = "testPhoneStateChangeAsExpected";
+    private static final String APK_TELECOM_CUJ_TEST = "CtsTelecomCujTestCases.apk";
+    private static final String APK_MANAGED_CONNECTION_APP = "ManagedConnectionServiceApp.apk";
+    private static final String PKG_TELECOM_CUJ_TEST = "android.telecom.cts.cuj";
+    private static final String PKG_MANAGED_CONNECTION_APP = "android.telecom.cts.apps.managedapp";
+    private static final String CLASS_SINGLE_CALLING_TEST =
+            "android.telecom.cts.cuj.app.integration.SingleCallingTest";
+    private static final String CASE_TEST_OUTGOING_CALL =
+            "testOutgoingCall_ManagedConnectionServiceApp";
 
     @Test
     public void testCallStats() throws Exception {
@@ -60,9 +66,9 @@ public class CallStatsTests extends BaseTelecomMetricsTest {
         TelecomExtensionAtom.registerAllExtensions(registry);
         DeviceUtils.runDeviceTests(
                 getDevice(),
-                PKG_CTS_TELECOM_TEST,
-                CLASS_OUTGOING_CALL_TEST,
-                CASE_TEST_PHONE_STATE_CHANGE);
+                PKG_TELECOM_CUJ_TEST,
+                CLASS_SINGLE_CALLING_TEST,
+                CASE_TEST_OUTGOING_CALL);
         AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
 
@@ -85,5 +91,13 @@ public class CallStatsTests extends BaseTelecomMetricsTest {
         assertThat(stats.getCallDirection()).isEqualTo(CallDirectionEnum.DIR_OUTGOING);
         assertThat(stats.getEmergencyCall()).isEqualTo(false);
         assertThat(stats.getAccountType()).isEqualTo(AccountTypeEnum.ACCOUNT_MANAGED);
+    }
+
+    @Override
+    protected String[][] getInstalledTestApps() {
+        return new String[][] {
+            {APK_TELECOM_CUJ_TEST, PKG_TELECOM_CUJ_TEST},
+            {APK_MANAGED_CONNECTION_APP, PKG_MANAGED_CONNECTION_APP}
+        };
     }
 }

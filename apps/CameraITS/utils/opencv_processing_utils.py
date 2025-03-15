@@ -1023,7 +1023,7 @@ def version_agnostic_detect_markers(image):
 
 def find_aruco_markers(
     input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT,
-    force_greyscale=False, save_images=True):
+    save_images=True):
   """Detects ArUco markers in the input_img.
 
   Finds ArUco markers in the input_img and draws the contours
@@ -1034,8 +1034,6 @@ def find_aruco_markers(
     output_img_path: path of the image to be saved with contours
       around the markers detected
     aruco_marker_count: optional int for minimum markers to expect.
-    force_greyscale: optional bool to force greyscale detection, even if enough
-      markers are detected.
     save_images: optional bool to save images with test artifacts.
   Returns:
     corners: list of detected corners
@@ -1043,37 +1041,42 @@ def find_aruco_markers(
     rejected_params: list of rejected corners
   """
   corners, ids, rejected_params = version_agnostic_detect_markers(input_img)
+  ids = [] if ids is None else ids
   normalized_input_img = input_img / CH_FULL_SCALE
-  # Early return if sufficient markers found and greyscale detection not needed
-  if ids is not None and len(ids) >= aruco_marker_count and not force_greyscale:
-    logging.debug('All ArUco markers detected.')
+  if len(ids) >= aruco_marker_count:
+    logging.debug(
+        'Expected at least %d ArUco markers detected with original image. '
+        '%d markers detected.',
+        aruco_marker_count, len(ids)
+    )
     cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
     if save_images:
       image_processing_utils.write_image(normalized_input_img, output_img_path)
-    return corners, ids, rejected_params
-  # Try with high-contrast greyscale if needed
+  # Try with high-contrast greyscale to see if more markers are detected
   logging.debug('Trying ArUco marker detection with greyscale image.')
   bw_img = convert_image_to_high_contrast_black_white(input_img)
-  corners, ids, rejected_params = version_agnostic_detect_markers(bw_img)
-  if ids is not None and len(ids) >= aruco_marker_count:
-    logging.debug('All ArUco markers detected with greyscale image.')
-  # Handle case where markers are not found
-  else:
+  bw_corners, bw_ids, bw_rejected_params = version_agnostic_detect_markers(
+      bw_img
+  )
+  bw_ids = [] if bw_ids is None else bw_ids
+  # If more markers are detected with greyscale, use those results
+  if len(bw_ids) > len(ids):
+    logging.debug('More ArUco markers detected with greyscale image.')
+    ids, corners, rejected_params = bw_ids, bw_corners, bw_rejected_params
+    cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
+    if save_images:
+      image_processing_utils.write_image(
+          bw_img / CH_FULL_SCALE, output_img_path)
+  # Handle case where not enough markers are not found
+  if len(ids) < aruco_marker_count:
     if save_images:
       image_processing_utils.write_image(normalized_input_img, output_img_path)
-    assertion_err_msg = ('Not enough markers detected. Check setup & scene. ')
-    if ids is not None:
-      assertion_err_msg += f'Found: {len(ids)}, Expected: {aruco_marker_count}.'
-    else:
-      assertion_err_msg += f'Found: 0, Expected: {aruco_marker_count}.'
-    raise AssertionError(assertion_err_msg)
+    raise AssertionError('Not enough markers detected. Check setup & scene. '
+                         f'Found: {len(ids)}, Expected: {aruco_marker_count}.')
   # Log and save results
   logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
-  cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
-  if save_images:
-    image_processing_utils.write_image(bw_img / CH_FULL_SCALE, output_img_path)
   return corners, ids, rejected_params
 
 

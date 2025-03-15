@@ -44,6 +44,8 @@ import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -76,6 +78,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.MockImeHelper;
 import android.server.wm.WindowManagerTestBase;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.MotionEvent;
@@ -97,6 +100,7 @@ import androidx.test.filters.FlakyTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
+import com.android.cts.mockime.MockImePackageNames;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Rule;
@@ -856,6 +860,120 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
             assertFalse(firstWindowInsetsDuringAnimation[0].isVisible(ime()));
             assertNotNull(firstWindowInsetsDuringAnimation[0].getInsets(ime()));
             assertEquals(0, firstWindowInsetsDuringAnimation[0].getInsets(ime()).bottom);
+        }
+    }
+
+    /**
+     * Verifies that the final IME insets size after a show request is the maximum one dispatched
+     * to the app. This shows MockIme2, then switches to and shows MockIme1, and quickly switches
+     * back to MockIme2, to verify the scenario with a previously showing IME window.
+     */
+    @Test
+    public void testImeInsetsFinalSizeIsMaximumSize() throws Exception {
+        final Instrumentation instrumentation = getInstrumentation();
+        assumeThat(MockImeSession.getUnavailabilityReason(instrumentation.getContext()),
+                nullValue());
+        try (var session1 = MockImeSession.create(instrumentation.getContext(),
+                instrumentation.getUiAutomation(), new ImeSettings.Builder()
+                        .setSuppressSetIme(true));
+                    var session2 = MockImeSession.create(instrumentation.getContext(),
+                            instrumentation.getUiAutomation(), new ImeSettings.Builder()
+                                    .setSuppressResetIme(true)
+                                    .setMockImePackageName(MockImePackageNames.MockIme2))) {
+            final var stream1 = session1.openEventStream();
+            final var stream2 = session2.openEventStream();
+
+            final TestActivity activity =
+                    startActivityInWindowingModeFullScreen(TestActivity.class);
+            final View rootView = activity.getWindow().getDecorView();
+            // Activities are forced to a non-fullscreen mode in a few form-factors like Automotive.
+            // And this test is not supported for such cases in android-15.
+            assumeTrue(activity.getResources().getConfiguration().windowConfiguration
+                    .getWindowingMode() == WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
+
+            expectEvent(stream2, editorMatcher("onStartInput", activity.mEditTextMarker), TIMEOUT);
+
+            // Storing all new insets that the activity's rootView is receiving
+            final ArrayList<WindowInsets> windowInsetsList = new ArrayList<>();
+
+            final int[] maxImeInsetsSize = {0};
+            final int[] dispatchApplyWindowInsetsCount = {0};
+            rootView.setOnApplyWindowInsetsListener((v, insets) -> {
+                dispatchApplyWindowInsetsCount[0]++;
+                maxImeInsetsSize[0] = Math.max(maxImeInsetsSize[0], insets.getInsets(ime()).bottom);
+                windowInsetsList.add(insets);
+                return v.onApplyWindowInsets(insets);
+            });
+
+            // One show-ime call on MockIme2 ...
+            ANIMATION_CALLBACK.reset();
+            getInstrumentation().runOnMainSync(() -> {
+                rootView.setWindowInsetsAnimationCallback(ANIMATION_CALLBACK);
+                rootView.getWindowInsetsController().show(ime());
+            });
+            ANIMATION_CALLBACK.waitForFinishing();
+            // Wait for windowInsetsList to also be updated
+            getInstrumentation().waitForIdleSync();
+
+            // ... should only trigger one dispatchApplyWindowInsets
+            assertWithMessage("insets should be dispatched exactly once, received: "
+                    + TextUtils.join("\n", windowInsetsList))
+                    .that(dispatchApplyWindowInsetsCount[0]).isEqualTo(1);
+
+            assertWithMessage("final IME insets size should be the maximum one, received: "
+                    + TextUtils.join("\n", windowInsetsList))
+                    .that(windowInsetsList.getLast().getInsets(ime()).bottom)
+                    .isEqualTo(maxImeInsetsSize[0]);
+
+            windowInsetsList.clear();
+            maxImeInsetsSize[0] = 0;
+            dispatchApplyWindowInsetsCount[0] = 0;
+
+            // One show-ime call on switching to MockIme1 ...
+            ANIMATION_CALLBACK.reset();
+            expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
+
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInput", activity.mEditTextMarker), TIMEOUT);
+
+            ANIMATION_CALLBACK.waitForFinishing();
+            // Wait for windowInsetsList to also be updated
+            getInstrumentation().waitForIdleSync();
+
+            // ... should trigger two dispatchApplyWindowInsets (hide + show)
+            assertWithMessage("insets should be dispatched exactly twice, received: "
+                    + TextUtils.join("\n", windowInsetsList))
+                    .that(dispatchApplyWindowInsetsCount[0]).isEqualTo(2);
+
+            assertWithMessage("final IME insets size should be the maximum one, received: "
+                    + TextUtils.join("\n", windowInsetsList))
+                    .that(windowInsetsList.getLast().getInsets(ime()).bottom)
+                    .isEqualTo(maxImeInsetsSize[0]);
+
+            windowInsetsList.clear();
+            maxImeInsetsSize[0] = 0;
+            dispatchApplyWindowInsetsCount[0] = 0;
+
+            // One show-ime call on switching back to MockIme2 ...
+            ANIMATION_CALLBACK.reset();
+            expectCommand(stream1, session1.callSwitchInputMethod(session2.getImeId()), TIMEOUT);
+
+            expectEvent(stream2, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream2, editorMatcher("onStartInput", activity.mEditTextMarker), TIMEOUT);
+
+            ANIMATION_CALLBACK.waitForFinishing();
+            // Wait for windowInsetsList to also be updated
+            getInstrumentation().waitForIdleSync();
+
+            // ... should trigger two dispatchApplyWindowInsets (hide + show)
+            assertWithMessage("insets should be dispatched exactly twice, received: "
+                    + TextUtils.join("\n", windowInsetsList))
+                    .that(dispatchApplyWindowInsetsCount[0]).isEqualTo(2);
+
+            assertWithMessage("final IME insets size should be the maximum one, received: "
+                    + TextUtils.join("\n", windowInsetsList))
+                    .that(windowInsetsList.getLast().getInsets(ime()).bottom)
+                    .isEqualTo(maxImeInsetsSize[0]);
         }
     }
 

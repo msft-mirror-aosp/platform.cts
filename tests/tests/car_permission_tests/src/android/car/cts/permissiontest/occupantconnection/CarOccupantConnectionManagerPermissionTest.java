@@ -28,6 +28,7 @@ import static org.junit.Assume.assumeNotNull;
 import android.app.UiAutomation;
 import android.car.Car;
 import android.car.CarOccupantZoneManager.OccupantZoneInfo;
+import android.car.cts.permissiontest.AbstractCarManagerPermissionTest;
 import android.car.occupantconnection.CarOccupantConnectionManager;
 import android.car.occupantconnection.CarOccupantConnectionManager.ConnectionRequestCallback;
 import android.car.occupantconnection.Payload;
@@ -35,8 +36,6 @@ import android.car.occupantconnection.Payload;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import android.car.cts.permissiontest.AbstractCarManagerPermissionTest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +63,6 @@ public final class CarOccupantConnectionManagerPermissionTest extends
         super.connectCar();
         mCarOccupantConnectionManager = mCar.getCarManager(CarOccupantConnectionManager.class);
         // CarOccupantConnectionManager is available on multi-display builds only.
-        // TODO(b/265091454): annotate the test with @RequireMultipleUsersOnMultipleDisplays.
         assumeNotNull(
                 "Skip the test because CarOccupantConnectionManager is not available on this build",
                 mCarOccupantConnectionManager);

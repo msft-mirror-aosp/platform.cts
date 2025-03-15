@@ -164,8 +164,7 @@ class ZoomTest(its_base_test.UiAutomatorItsBaseTest):
               bgr_img,
               (f'{img_name_stem}_{zoom_ratio:.2f}_'
                f'ArUco.{zoom_capture_utils.JPEG_STR}'),
-              aruco_marker_count=1,
-              force_greyscale=True  # Maximize number of markers detected
+              aruco_marker_count=1
           )
         except AssertionError as e:
           logging.debug('Could not find ArUco marker at zoom ratio %.2f: %s',

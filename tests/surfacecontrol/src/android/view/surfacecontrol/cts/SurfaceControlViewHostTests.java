@@ -25,6 +25,8 @@ import static android.server.wm.CtsWindowInfoUtils.waitForWindowInfos;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowVisible;
 import static android.server.wm.MockImeHelper.createManagedMockImeSession;
+import static android.server.wm.WindowManagerState.STATE_RESUMED;
+import static android.server.wm.WindowManagerState.STATE_STOPPED;
 import static android.view.SurfaceControlViewHost.SurfacePackage;
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -81,11 +83,13 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.FutureConnection;
+import android.server.wm.TouchHelper;
 import android.server.wm.WindowManagerState;
 import android.server.wm.scvh.Components;
 import android.server.wm.scvh.ICrossProcessSurfaceControlViewHostTestService;
 import android.util.ArrayMap;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceControl;
 import android.view.SurfaceControlViewHost;
@@ -154,6 +158,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
             }
         }
     }
+
+    public static class SecondActivity extends Activity {}
 
     private static final String TAG = "SurfaceControlViewHostTests";
 
@@ -987,6 +993,39 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         waitForWindowVisible(mEmbeddedView);
         assertWindowFocused(mEmbeddedView, true);
         assertWindowFocused(mSurfaceView, false);
+    }
+
+    @Test
+    public void testViewHostParentRemainConnected() throws Throwable {
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        requestSurfaceViewFocus();
+        mSvCreatedLatch.await();
+        mEmbeddedView = new Button(mActivity);
+        mActivityRule.runOnUiThread(
+                () -> {
+                    addViewToSurfaceView(
+                            mSurfaceView, mEmbeddedView, mEmbeddedViewWidth, mEmbeddedViewHeight);
+                });
+        waitForWindowVisible(mEmbeddedView);
+        assertWindowFocused(mEmbeddedView, true);
+        assertWindowFocused(mSurfaceView, false);
+
+        final ActivityTestRule<SecondActivity> secondActivityRule =
+                new ActivityTestRule<>(SecondActivity.class);
+        final Activity secondActivity = secondActivityRule.launchActivity(null);
+        waitAndAssertActivityState(
+                secondActivity.getComponentName(), STATE_RESUMED, "Top activity must be resumed.");
+        waitAndAssertActivityState(
+                mActivity.getComponentName(), STATE_STOPPED, "Test activity must be stopped.");
+
+        secondActivity.finish();
+        waitAndAssertActivityState(
+                mActivity.getComponentName(), STATE_RESUMED, "Test activity must be resumed.");
+        // Input focus should remained as the remote view.
+        assertWindowFocused(mEmbeddedView, false);
+        // The remote view should forward the back key to host activity, which will finish itself.
+        TouchHelper.injectKey(KeyEvent.KEYCODE_BACK, false /* longpress */, true /* sync */);
+        mWmState.waitForHomeActivityVisible();
     }
 
     private static class SurfaceCreatedCallback implements SurfaceHolder.Callback {

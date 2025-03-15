@@ -124,6 +124,8 @@ java_test_host {
         ":CtsAppFunctionsSidecarTestHelper",
         ":CtsTelecomTestCases",
         ":CtsTelecomCujTestCases",
+        ":ManagedConnectionServiceApp",
+        ":TransactionalVoipAppMain",
     ],
     per_testcase_directory: true,
 }

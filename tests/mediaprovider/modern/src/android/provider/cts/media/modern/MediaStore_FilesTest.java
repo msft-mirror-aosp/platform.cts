@@ -17,8 +17,8 @@
 package android.provider.cts.media.modern;
 
 import static android.provider.cts.media.modern.MediaProviderTestUtils.containsId;
-import static android.provider.cts.media.modern.MediaProviderTestUtils.resolveVolumeName;
 import static android.provider.cts.media.modern.MediaProviderTestUtils.createMediaInDownloads;
+import static android.provider.cts.media.modern.MediaProviderTestUtils.resolveVolumeName;
 import static android.provider.cts.media.modern.MediaStoreTest.TAG;
 
 import static org.junit.Assert.assertEquals;
@@ -54,6 +54,8 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.providers.media.flags.Flags;
 
+import com.google.common.truth.Truth;
+
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -67,6 +69,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
@@ -470,6 +474,77 @@ public class MediaStore_FilesTest {
         assertTrue("gmod <= afterMod", gmod <= afterMod);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OEM_METADATA_UPDATE)
+    public void testOemMetadataUpdate_withoutPermission_throwsSecurityException() throws Exception {
+        final File file =
+                new File(
+                        MediaProviderTestUtils.stageDownloadDir(mVolumeName),
+                        "test" + System.nanoTime() + ".mp3");
+        MediaProviderTestUtils.stageFile(R.raw.testmp3, file);
+        final Uri uri = MediaStore.scanFile(mResolver, file);
+
+        try {
+            ContentValues contentValues = new ContentValues();
+            Map<String, String> updatedData = Map.of("a1", "b1", "a2", "b2");
+            contentValues.put(FileColumns.OEM_METADATA, updatedData.toString());
+            mResolver.update(uri, contentValues, null);
+            fail("Expected to fail with security exception");
+        } catch (SecurityException e) {
+            // Expected exception
+        } finally {
+            file.delete();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_OEM_METADATA_UPDATE)
+    public void testOemMetadataUpdate_withPermission_updatesOemMetadata() throws Exception {
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        MediaStore.ACCESS_OEM_METADATA_PERMISSION,
+                        MediaStore.UPDATE_OEM_METADATA_PERMISSION);
+        final File file =
+                new File(
+                        MediaProviderTestUtils.stageDownloadDir(mVolumeName),
+                        "test" + System.nanoTime() + ".mp3");
+        MediaProviderTestUtils.stageFile(R.raw.testmp3, file);
+        final Uri uri = MediaStore.scanFile(mResolver, file);
+        long generationModifiedBefore, generationModifiedAfter;
+        generationModifiedBefore = queryLong(uri, FileColumns.GENERATION_MODIFIED);
+
+        try {
+            ContentValues contentValues = new ContentValues();
+            Map<String, String> updatedData = Map.of("a1", "b1", "a2", "b2");
+            contentValues.put(FileColumns.OEM_METADATA, updatedData.toString());
+            mResolver.update(uri, contentValues, null);
+
+            try (Cursor c =
+                    mResolver.query(
+                            uri,
+                            new String[] {
+                                FileColumns.GENERATION_MODIFIED, FileColumns.OEM_METADATA
+                            },
+                            null,
+                            null,
+                            null)) {
+                assertTrue(c.moveToFirst());
+                generationModifiedAfter = c.getLong(0);
+                assertTrue(generationModifiedAfter > generationModifiedBefore);
+                byte[] oemData = c.getBlob(1);
+                Truth.assertThat(oemData).isNotNull();
+                Map<String, String> map = convertStringToOemMetadataMap(new String(oemData));
+                Truth.assertThat(map.keySet()).containsExactly("a1", "a2");
+            }
+        } finally {
+            file.delete();
+            InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation()
+                    .dropShellPermissionIdentity();
+        }
+    }
+
     private long queryLong(Uri uri, String columnName) {
         try (Cursor c = mResolver.query(uri, new String[] { columnName }, null, null, null)) {
             assertTrue(c.moveToFirst());
@@ -486,5 +561,25 @@ public class MediaStore_FilesTest {
 
     private void assertStringColumn(Uri fileUri, String columnName, String expectedValue) {
         assertEquals(expectedValue, queryString(fileUri, columnName));
+    }
+
+    private static Map<String, String> convertStringToOemMetadataMap(String stringMapping) {
+        Map<String, String> map = new HashMap<>();
+        if (stringMapping == null || stringMapping.isEmpty()) {
+            return map;
+        }
+        stringMapping = stringMapping.substring(1, stringMapping.length() - 1);
+        // Split into key-value pairs
+        String[] pairs = stringMapping.split(", ");
+
+        for (String pair : pairs) {
+            String[] keyValue = pair.split("=");
+            String key = keyValue[0];
+            String value = keyValue[1];
+            if (key != null) {
+                map.put(key, value);
+            }
+        }
+        return map;
     }
 }
