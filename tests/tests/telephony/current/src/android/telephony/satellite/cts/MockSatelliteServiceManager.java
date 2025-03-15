@@ -105,6 +105,11 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-access-allowed-for-subscriptions";
     private static final String SET_SATELLITE_TN_SCANNING_SUPPORT_CMD =
             "cmd phone set-satellite-tn-scanning-support ";
+    private static final String OVERRIDE_CONFIG_DATA_VERSION =
+            "cmd phone override-config-data-version";
+    private static final String UPDATE_TELEPHONY_CONFIG_INTENT =
+            "com.google.android.configupdater.TelephonyConfigUpdate.UPDATE_CONFIG";
+    private static final String CONFIG_UPDATER_PACKAGE = "com.google.android.configupdater";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -1409,6 +1414,47 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception ex) {
             loge("setSatelliteAccessControlOverlayConfigs: ex= " + ex);
+            return false;
+        }
+    }
+
+    boolean overrideConfigDataVersion(boolean reset, int version) {
+        logd("overrideConfigDataVersion: reset=" + reset + ", version=" + version);
+        try {
+            StringBuilder command = new StringBuilder();
+            command.append(OVERRIDE_CONFIG_DATA_VERSION);
+            if (reset) {
+                command.append(" -r");
+            } else {
+                command.append(" -v ");
+                command.append(version);
+            }
+            logd("command=" + command);
+            TelephonyUtils.executeShellCommand(mInstrumentation, command.toString());
+            return true;
+        } catch (Exception ex) {
+            loge("overrideConfigDataVersion: ex= " + ex);
+            return false;
+        }
+    }
+
+    boolean updateTelephonyConfig(@NonNull String contentUrl, @NonNull String metaDataUrl) {
+        logd("updateTelephonyConfig");
+        try {
+            StringBuilder commandStringBuilder = new StringBuilder();
+            commandStringBuilder.append("am broadcast -a ");
+            commandStringBuilder.append(UPDATE_TELEPHONY_CONFIG_INTENT);
+            commandStringBuilder.append(" --es CONTENT_URL ");
+            commandStringBuilder.append(contentUrl);
+            commandStringBuilder.append(" --es METADATA_URL ");
+            commandStringBuilder.append(metaDataUrl);
+            commandStringBuilder.append(" -p ");
+            commandStringBuilder.append(CONFIG_UPDATER_PACKAGE);
+            TelephonyUtils.executeShellCommand(mInstrumentation, commandStringBuilder.toString());
+            logd("updateTelephonyConfig: " + commandStringBuilder.toString());
+            return true;
+        } catch (Exception ex) {
+            loge("updateTelephonyConfig: ex=" + ex);
             return false;
         }
     }
