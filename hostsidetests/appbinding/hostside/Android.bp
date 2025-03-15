@@ -27,6 +27,10 @@ java_test_host {
         "compatibility-host-util",
         "guava",
     ],
+    static_libs: [
+        "am_flags_host_lib",
+        "flag-junit-host",
+    ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
