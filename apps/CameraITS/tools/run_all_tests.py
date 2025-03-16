@@ -48,6 +48,7 @@ RESULT_NOT_EXECUTED = 'NOT_EXECUTED'
 RESULT_KEY = 'result'
 METRICS_KEY = 'mpc_metrics'
 PERFORMANCE_KEY = 'performance_metrics'
+FEATURE_QUERY_KEY = 'feature_query_proto'
 SUMMARY_KEY = 'summary'
 RESULT_VALUES = (RESULT_PASS, RESULT_FAIL, RESULT_NOT_EXECUTED)
 CTS_VERIFIER_PACKAGE_NAME = 'com.android.cts.verifier'
@@ -74,8 +75,8 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
     'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
-    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
-    'scene6', 'scene7', 'scene8', 'scene9',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene2_g', 'scene3',
+    'scene4', 'scene6', 'scene6_tele', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -102,10 +103,11 @@ _EXTENSIONS_SCENES = (os.path.join('scene_extensions', 'scene_hdr'),
 _ALL_SCENES = _TABLET_SCENES + _MANUAL_SCENES + _MOTION_SCENES + _FLASH_SCENES
 
 # Scenes that are logically grouped and can be called as group
+# scene6_tele is not grouped with scene6 because it requires extension rig
 _GROUPED_SCENES = types.MappingProxyType({
         'scene1': ('scene1_1', 'scene1_2'),
         'scene2': ('scene2_a', 'scene2_b', 'scene2_c', 'scene2_d', 'scene2_e',
-                   'scene2_f')
+                   'scene2_f', 'scene2_g')
 })
 
 # Scene requirements for manual testing.
@@ -121,14 +123,18 @@ _SCENE_REQ = types.MappingProxyType({
     'scene2_d': 'The picture with 3 faces in tests/scene2_d/scene2_d.png',
     'scene2_e': 'The picture with 3 faces in tests/scene2_e/scene2_e.png',
     'scene2_f': 'The picture with 3 faces in tests/scene2_f/scene2_f.png',
+    'scene2_g': 'The picture with 3 profile faces in tests/scene2_g/scene2_g.png',
     'scene3': 'The ISO12233 chart',
     'scene4': 'A test chart of a circle covering at least the middle 50% of '
               'the scene. See tests/scene4/scene4.png',
     'scene5': 'Capture images with a diffuser attached to the camera. See '
               'source.android.com/docs/compatibility/cts/camera-its-tests#scene5/diffuser '  # pylint: disable line-too-long
               'for more details',
-    'scene6': 'A grid of black circles on a white background. '
+    'scene6': 'A grid of ArUco markers on a white background. '
               'See tests/scene6/scene6.png',
+    'scene6_tele': 'A grid of ArUco markers on a white background. Identical '
+                   'to scene6, but for tele cameras. '
+                   'See tests/scene6_tele/scene6_tele.png',
     'scene7': 'The picture with 4 different colors, slanted edge and'
               '4 ArUco markers. See tests/scene7/scene7.png',
     'scene8': 'The picture with 4 faces in 4 different colors overlay.'
@@ -188,6 +194,9 @@ SUB_CAMERA_TESTS = {
     ),
     'scene4': (
         'test_aspect_ratio_and_crop',
+    ),
+    'scene6_tele': (
+        'test_zoom_tele',
     ),
     'scene_video': (
         'test_preview_frame_drop',
@@ -660,6 +669,7 @@ def main():
     its_session_utils.validate_tablet(tablet_name, brightness, tablet_id)
   else:
     tablet_id = None
+    tablet_name = "sensor_fusion"
 
   testing_sensor_fusion_with_controller = False
   if TEST_KEY_SENSOR_FUSION in config_file_test_key:
@@ -805,6 +815,7 @@ def main():
       results[s]['TEST_STATUS'] = []
       results[s][METRICS_KEY] = []
       results[s][PERFORMANCE_KEY] = []
+      results[s][FEATURE_QUERY_KEY] = []
 
       # unit is millisecond for execution time record in CtsVerifier
       scene_start_time = int(round(time.time() * 1000))
@@ -906,6 +917,7 @@ def main():
             test_mpc_req = ''
             perf_test_metrics = ''
             hdr_mpc_req = ''
+            feature_query_proto = ''
             content = file.read()
 
             # Find media performance class logging
@@ -928,6 +940,17 @@ def main():
                 hdr_mpc_req = one_line
                 break
 
+            # Find feature combination query proto
+            for one_line in lines:
+              # regular expression pattern must match in ItsTestActivity.java.
+              feature_comb_query_string_match = re.search(
+                  '^feature_query_proto:(.*)', one_line
+              )
+              if feature_comb_query_string_match:
+                feature_query_proto = feature_comb_query_string_match.group(1)
+                break
+
+            # Find performance metrics logging
             for one_line in lines:
               # regular expression pattern must match in ItsTestActivity.java.
               perf_metrics_string_match = re.search(
@@ -975,6 +998,9 @@ def main():
           results[s][METRICS_KEY].append(test_mpc_req)
         if hdr_mpc_req:
           results[s][METRICS_KEY].append(hdr_mpc_req)
+        if feature_query_proto:
+          results[s][FEATURE_QUERY_KEY].append(feature_query_proto)
+
         msg_short = f'{return_string} {test}'
         scene_test_summary += msg_short + '\n'
         if (test in _LIGHTING_CONTROL_TESTS and

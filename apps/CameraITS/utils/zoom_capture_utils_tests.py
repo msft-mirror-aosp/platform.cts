@@ -19,43 +19,57 @@ import unittest
 import zoom_capture_utils
 
 
-_CIRCLE_X = 320
-_CIRCLE_Y = 240
+_ARUCO_MARKER_CENTER = (320, 240)
 _FOCAL_LENGTH = 1
 _IMG_SIZE = (640, 480)
 _OFFSET_RTOL = 0.1
 _RADIUS_RTOL = 0.1
+_WRONG_ARUCO_OFFSET = 100
+
+
+def _generate_aruco_markers(center, side_length):
+  x, y = center
+  return (
+      (x - side_length // 2, y - side_length // 2),  # top left
+      (x + side_length // 2, y - side_length // 2),  # top right
+      (x + side_length // 2, y + side_length // 2),  # bottom right
+      (x - side_length // 2, y + side_length // 2),  # bottom left
+  )
 
 
 def _generate_valid_zoom_results():
   return [
       zoom_capture_utils.ZoomTestData(
           result_zoom=1,
-          circle=[_CIRCLE_X, _CIRCLE_Y, 1],
           radius_tol=_RADIUS_RTOL,
           offset_tol=_OFFSET_RTOL,
-          focal_length=_FOCAL_LENGTH
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 10),
+          aruco_offset=10
       ),
       zoom_capture_utils.ZoomTestData(
           result_zoom=2,
-          circle=[_CIRCLE_X, _CIRCLE_Y, 2],
           radius_tol=_RADIUS_RTOL,
           offset_tol=_OFFSET_RTOL,
-          focal_length=_FOCAL_LENGTH
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 20),
+          aruco_offset=20
       ),
       zoom_capture_utils.ZoomTestData(
           result_zoom=3,
-          circle=[_CIRCLE_X, _CIRCLE_Y, 3],
           radius_tol=_RADIUS_RTOL,
           offset_tol=_OFFSET_RTOL,
-          focal_length=_FOCAL_LENGTH
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 30),
+          aruco_offset=30
       ),
       zoom_capture_utils.ZoomTestData(
           result_zoom=4,
-          circle=[_CIRCLE_X, _CIRCLE_Y, 4],
           radius_tol=_RADIUS_RTOL,
           offset_tol=_OFFSET_RTOL,
-          focal_length=_FOCAL_LENGTH
+          focal_length=_FOCAL_LENGTH,
+          aruco_corners=_generate_aruco_markers(_ARUCO_MARKER_CENTER, 40),
+          aruco_offset=40
       ),
   ]
 
@@ -90,7 +104,7 @@ class ZoomCaptureUtilsTest(unittest.TestCase):
     )
 
   def test_verify_zoom_results_wrong_offset(self):
-    self.zoom_results[-1].circle[0] = 640
+    self.zoom_results[-1].aruco_offset = _WRONG_ARUCO_OFFSET
     self.assertFalse(
         zoom_capture_utils.verify_zoom_results(
             self.zoom_results, _IMG_SIZE, 4, 1

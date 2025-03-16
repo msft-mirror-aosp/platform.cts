@@ -50,14 +50,12 @@ public class PhotoPickerUiUtils {
     // other ui objects like the "Photos" tab
     private static final String REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION =
             "^(Media|Photo|Video|GIF|Motion)[^s].*";
-    private static final String MEDIA_ITEM_CONTENT_DESCRIPTION = "Media";
 
     /**
      * Gets the list of items from the photo grid list.
      *
      * @param itemCount if the itemCount is -1, return all matching items. Otherwise, return the
      *                  item list that its size is not greater than the itemCount.
-     * @throws Exception
      */
     public static List<UiObject> findItemList(int itemCount) throws Exception {
         final List<UiObject> itemList = new ArrayList<>();
@@ -129,7 +127,7 @@ public class PhotoPickerUiUtils {
     /** Find a media item to perform click events */
     public static UiObject getMediaItem(UiDevice device) throws Exception {
         UiSelector mediaItemSelector =
-                new UiSelector().descriptionMatches(MEDIA_ITEM_CONTENT_DESCRIPTION);
+                new UiSelector().descriptionMatches(REGEX_MEDIA_ITEM_CONTENT_DESCRIPTION);
         return device.findObject(mediaItemSelector);
     }
 
@@ -368,7 +366,7 @@ public class PhotoPickerUiUtils {
      * Click the given UI object(UiObject2)
      *
      * @param uiDevice The {@link UiDevice} instance to use for interacting with the UI.
-     * @param uiObject2 The {@link UiObject2} The UI object to click
+     * @param The {@link UiObject2} The UI object to click
      * @throws Exception if an error occurs during the click action or while waiting for the UI
      * to become idle
      */
@@ -471,6 +469,7 @@ public class PhotoPickerUiUtils {
      * Gets a UI element using UI Automator (BySelector) that matches the provided text.
      *
      * @param text   The text to match. This can be a regular expression.
+     * @param device The {@link UiDevice} instance to use for searching.
      * @param displayId The id of the target display.
      * @return the BySelector for given text and displayId
      */

@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.harrier
 
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
@@ -93,5 +94,32 @@ class BedsteadServiceLocatorTest {
 
         assertThat(firstClass.secondClass).isNotNull()
         assertThat(secondClass.firstClass).isNotNull()
+    }
+
+    @Test
+    fun getClassByName_dependencyIsCreated() {
+        val locator = BedsteadServiceLocator()
+
+        val instance: UserTypeResolver = locator.get(UserTypeResolver::class.qualifiedName!!)
+
+        assertThat(instance).isNotNull()
+    }
+
+    @Test
+    fun getNonExistingClass_throwsException() {
+        val locator = BedsteadServiceLocator()
+
+        assertThrows {
+            locator.get("non.existing.class")
+        }
+    }
+
+    @Test
+    fun useGetOrNullForNonExistingClass_valueIsNull() {
+        val locator = BedsteadServiceLocator()
+
+        val instance: Any? = locator.getOrNull("non.existing.class")
+
+        assertThat(instance).isNull()
     }
 }

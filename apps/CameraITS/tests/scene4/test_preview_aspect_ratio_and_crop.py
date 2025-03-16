@@ -76,7 +76,7 @@ def _get_supported_preview_sizes(cam, camera_id):
       int(common_size_max.split('x')[0])*int(common_size_max.split('x')[1]))
   smallest_common_size_area = max(
       int(common_size_min.split('x')[0])*int(common_size_min.split('x')[1]),
-          _LOW_RESOLUTION_SIZE_AREA)
+      _LOW_RESOLUTION_SIZE_AREA)
   logging.debug('Smallest common size area: %s', smallest_common_size_area)
   # Clamp list of previews with min and max sizes' area
   supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)

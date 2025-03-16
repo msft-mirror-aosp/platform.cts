@@ -23,7 +23,6 @@ import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet
-import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 
@@ -41,47 +40,49 @@ class UserPasswordComponent(locator: BedsteadServiceLocator) : DeviceStateCompon
      * See [EnsurePasswordSet]
      */
     fun ensurePasswordSet(forUser: UserType, password: String) {
-        val user: UserReference = userTypeResolver.toUser(forUser)
-        if (user.hasLockCredential() && user.lockCredentialEquals(password)) {
-            return
+        userTypeResolver.toUser(forUser) {
+            if (it.hasLockCredential() && it.lockCredentialEquals(password)) {
+                return@toUser
+            }
+            try {
+                it.setPassword(password)
+            } catch (e: NeneException) {
+                throw AssertionError("Require password set but error when setting " +
+                        "password on user " + it, e)
+            }
+            mUsersSetPasswords.add(it)
         }
-        try {
-            user.setPassword(password)
-        } catch (e: NeneException) {
-            throw AssertionError("Require password set but error when setting " +
-                    "password on user " + user, e)
-        }
-        mUsersSetPasswords.add(user)
     }
 
     /**
      * See [EnsurePasswordNotSet]
      */
     fun ensurePasswordNotSet(forUser: UserType) {
-        val user = userTypeResolver.toUser(forUser)
-        if (!user.hasLockCredential()) {
-            return
-        }
-        if (mUsersSetPasswords.contains(user)) {
-            try {
-                user.clearPassword()
-            } catch (e: NeneException) {
-                Log.e(LOG_TAG, "Error clearing password", e)
+        userTypeResolver.toUser(forUser) {
+            if (!it.hasLockCredential()) {
+                return@toUser
             }
+            if (mUsersSetPasswords.contains(it)) {
+                try {
+                    it.clearPassword()
+                } catch (e: NeneException) {
+                    Log.e(LOG_TAG, "Error clearing password", e)
+                }
+            }
+            if (!it.hasLockCredential()) {
+                return@toUser
+            }
+            try {
+                it.clearPassword(Defaults.DEFAULT_PASSWORD)
+            } catch (exception: NeneException) {
+                throw AssertionError(
+                        "Test requires user " + it + " does not have a password. " +
+                                "Password is set and is not DEFAULT_PASSWORD.",
+                        exception
+                )
+            }
+            mUsersSetPasswords.remove(it)
         }
-        if (!user.hasLockCredential()) {
-            return
-        }
-        try {
-            user.clearPassword(Defaults.DEFAULT_PASSWORD)
-        } catch (exception: NeneException) {
-            throw AssertionError(
-                "Test requires user " + user + " does not have a password. " +
-                        "Password is set and is not DEFAULT_PASSWORD.",
-                exception
-            )
-        }
-        mUsersSetPasswords.remove(user)
     }
 
     override fun teardownShareableState() {

@@ -47,7 +47,8 @@ public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES)
+    @RequiresFlagsEnabled({Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES,
+            Flags.FLAG_RRO_CONTROL_FOR_ANDROID_NO_OVERLAYABLE})
     public void testOverlayFrameworkRes() throws Exception {
         runDeviceTests(DEVICE_TEST_PKG1, DEVICE_TEST_PKG1 + "." + DEVICE_TEST_CLASS,
                 "overlayFrameworkRes_onConfigurationChanged");
@@ -68,7 +69,8 @@ public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES)
+    @RequiresFlagsEnabled({Flags.FLAG_HANDLE_ALL_CONFIG_CHANGES,
+            Flags.FLAG_RRO_CONTROL_FOR_ANDROID_NO_OVERLAYABLE})
     public void testOverlayLayoutFrameworkRes() throws Exception {
         runDeviceTests(DEVICE_TEST_PKG1, DEVICE_TEST_PKG1 + "." + DEVICE_TEST_CLASS,
                 "overlayLayoutFrameworkRes_onConfigurationChanged");
@@ -80,5 +82,4 @@ public class CtsHandleConfigChangeHostTests extends BaseHostJUnit4Test {
         runDeviceTests(DEVICE_TEST_PKG2, DEVICE_TEST_PKG2 + "." + DEVICE_TEST_CLASS,
                 "overlayRes_onConfigurationChanged");
     }
-
 }

@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
 import android.graphics.Color;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.CtsWindowInfoUtils;
@@ -36,8 +35,6 @@ import android.widget.PopupWindow;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +68,6 @@ public class FlagSecureTest {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_SECURE_WINDOW_STATE)
     @Test
     public void testChildWindowInheritsFlagSecure() throws InterruptedException {
         CountDownLatch popupWindowCreatedLatch = new CountDownLatch(1);

@@ -41,7 +41,7 @@ import android.util.Log;
 import androidx.test.filters.SmallTest;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 
@@ -69,13 +69,13 @@ import java.time.Duration;
 @RunWith(MockitoJUnitRunner.class)
 @AppModeFull(reason = "Instant Apps cannot get Bluetooth related permissions")
 public final class CarProjectionManagerTest extends AbstractCarTestCase {
-    @Rule public MockitoRule rule = MockitoJUnit.rule();
-
-    @Mock BluetoothProfile.ServiceListener mServiceListener;
-
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
+
+    @Rule public MockitoRule rule = MockitoJUnit.rule();
+
+    @Mock BluetoothProfile.ServiceListener mServiceListener;
 
     private static final String TAG = "CarProjectionMgrTest";
     private static final boolean DBG = Log.isLoggable(TAG, Log.DEBUG);

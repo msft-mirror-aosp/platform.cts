@@ -1190,6 +1190,9 @@ public class WifiNetworkSuggestionTest extends WifiJUnit4TestBase {
         // Should not disconnect immediately
         assertFalse(callback.onLostCalled);
         if (hasActiveNetwork) {
+            if (!callback.onLosingCalled) {
+                callback.waitForAnyCallback(DURATION_NETWORK_DISCONNECT_MILLIS);
+            }
             assertTrue(callback.onLosingCalled);
         }
         // Should disconnect immediately

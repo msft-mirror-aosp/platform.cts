@@ -26,8 +26,7 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
     static_libs: [
         "cts-install-lib",
-        "Nene",
-        "Harrier",
+        "bedstead",
     ],
     java_resources: [
         ":CtsStaticSharedLibProviderApp5",

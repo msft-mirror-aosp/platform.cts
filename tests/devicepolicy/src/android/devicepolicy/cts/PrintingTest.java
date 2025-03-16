@@ -18,6 +18,8 @@ package android.devicepolicy.cts;
 
 import static android.os.UserManager.DISALLOW_PRINTING;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
@@ -32,21 +34,20 @@ import android.print.PrintJob;
 import android.print.PrintManager;
 
 import com.android.activitycontext.ActivityContext;
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
+import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.harrier.policies.DisallowPrinting;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -83,12 +84,12 @@ public final class PrintingTest {
     public void addUserRestriction_disallowPrinting_cannotSet_throwsException() {
         try {
             assertThrows(SecurityException.class,
-                    () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                            sDeviceState.dpc().componentName(), DISALLOW_PRINTING));
+                    () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                            dpc(sDeviceState).componentName(), DISALLOW_PRINTING));
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager()
-                        .clearUserRestriction(sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager()
+                        .clearUserRestriction(dpc(sDeviceState).componentName(),
                                 DISALLOW_PRINTING);
             } catch (Exception e) {
                 // Expected
@@ -101,15 +102,15 @@ public final class PrintingTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_PRINTING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
                     .isTrue();
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager()
-                        .clearUserRestriction(sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager()
+                        .clearUserRestriction(dpc(sDeviceState).componentName(),
                                 DISALLOW_PRINTING);
             } catch (Exception e) {
                 // Expected
@@ -122,15 +123,15 @@ public final class PrintingTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_PRINTING")
     public void addUserRestriction_disallowPrinting_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_PRINTING);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_PRINTING);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_PRINTING))
                     .isFalse();
         } finally {
             try {
-                sDeviceState.dpc().devicePolicyManager()
-                        .clearUserRestriction(sDeviceState.dpc().componentName(),
+                dpc(sDeviceState).devicePolicyManager()
+                        .clearUserRestriction(dpc(sDeviceState).componentName(),
                                 DISALLOW_PRINTING);
             } catch (Exception e) {
                 // Expected

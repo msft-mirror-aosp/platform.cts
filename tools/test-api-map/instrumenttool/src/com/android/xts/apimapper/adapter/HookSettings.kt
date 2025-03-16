@@ -27,7 +27,8 @@ private const val TEST_CLASS_ACCESS_MASK = Opcodes.ACC_STATIC or Opcodes.ACC_PRI
 private val JUNIT3_TEST_CLASS_NAMES = setOf(
     "junit/framework/TestCase",
     "android/test/AndroidTestCase",
-    "android/test/InstrumentationTestCase"
+    "android/test/InstrumentationTestCase",
+    "android/test/ActivityInstrumentationTestCase2",
 )
 private val JUNIT4_ANNOTATION_PREFIXED = arrayOf("org.junit")
 
