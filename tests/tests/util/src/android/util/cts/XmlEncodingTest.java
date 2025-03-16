@@ -19,7 +19,7 @@ package android.util.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Xml;
 
@@ -44,7 +44,7 @@ import java.util.Vector;
 //FIXME: This is a duplicated testcase. Need to improve the coverage tool in future.
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = Xml.class)
+@DisabledOnRavenwood(blockedBy = Xml.class)
 public class XmlEncodingTest {
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule();

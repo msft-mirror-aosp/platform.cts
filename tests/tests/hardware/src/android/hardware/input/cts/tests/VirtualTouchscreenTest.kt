@@ -15,6 +15,7 @@
  */
 package android.hardware.input.cts.tests
 
+import android.graphics.Point
 import android.hardware.input.VirtualTouchEvent
 import android.hardware.input.VirtualTouchscreen
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
@@ -44,8 +45,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         // Convert the input axis size to its equivalent fraction of the total screen.
         val computedSize = (inputSize /
                 (mVirtualDisplay.display.mode.physicalWidth - 1f))
-        val x = 50f
-        val y = 50f
+        val point = getActivityCenter()
 
         // The number of move events that are sent between the down and up event.
         val moveEventCount = 5
@@ -61,16 +61,16 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         mVirtualTouchscreen.sendTouchEvent(
             builder
                 .setAction(VirtualTouchEvent.ACTION_DOWN)
-                .setX(x)
-                .setY(y)
+                .setX(point.x.toFloat())
+                .setY(point.y.toFloat())
                 .setPressure(255f)
                 .build()
         )
         expectedEvents.add(
             VirtualInputEventCreator.createTouchscreenEvent(
                 MotionEvent.ACTION_DOWN,
-                x,
-                y,
+                point.x.toFloat(),
+                point.y.toFloat(),
                 pressure = 1f,
                 computedSize,
                 inputSize
@@ -87,15 +87,15 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         // kernel drops the event as there is no point in delivering a new event if nothing changed.
         builder.setAction(VirtualTouchEvent.ACTION_MOVE)
         for (i in 1..moveEventCount) {
-            builder.setX(x + i)
-                .setY(y + i)
+            builder.setX((point.x + i).toFloat())
+                .setY((point.y + i).toFloat())
                 .setPressure(255f)
             mVirtualTouchscreen.sendTouchEvent(builder.build())
             expectedEvents.add(
                 VirtualInputEventCreator.createTouchscreenEvent(
                     MotionEvent.ACTION_MOVE,
-                    x + i,
-                    y + i,
+                    (point.x + i).toFloat(),
+                    (point.y + i).toFloat(),
                     pressure = 1f,
                     computedSize,
                     inputSize
@@ -106,15 +106,15 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         mVirtualTouchscreen.sendTouchEvent(
             builder
                 .setAction(VirtualTouchEvent.ACTION_UP)
-                .setX(x + moveEventCount)
-                .setY(y + moveEventCount)
+                .setX((point.x + moveEventCount).toFloat())
+                .setY((point.y + moveEventCount).toFloat())
                 .build()
         )
         expectedEvents.add(
             VirtualInputEventCreator.createTouchscreenEvent(
                 MotionEvent.ACTION_UP,
-                x + moveEventCount,
-                y + moveEventCount,
+                (point.x + moveEventCount).toFloat(),
+                (point.y + moveEventCount).toFloat(),
                 pressure = 1f,
                 computedSize,
                 inputSize
@@ -126,23 +126,41 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
 
     @Test
     fun sendHoverEvents() {
-        val x0 = 50f
-        val y0 = 50f
-        val x1 = 60f
-        val y1 = 60f
+        val point0 = getActivityCenter()
+        val point1 = Point(point0.x + 10, point0.y + 10)
 
-        sendHoverEvent(VirtualTouchEvent.ACTION_DOWN, x0, y0)
-        sendHoverEvent(VirtualTouchEvent.ACTION_MOVE, x0, y1)
-        sendHoverEvent(VirtualTouchEvent.ACTION_MOVE, x1, y1)
-        sendHoverEvent(VirtualTouchEvent.ACTION_UP, x1, y1)
+        sendHoverEvent(VirtualTouchEvent.ACTION_DOWN, point0.x.toFloat(), point0.y.toFloat())
+        sendHoverEvent(VirtualTouchEvent.ACTION_MOVE, point0.x.toFloat(), point1.y.toFloat())
+        sendHoverEvent(VirtualTouchEvent.ACTION_MOVE, point1.x.toFloat(), point1.y.toFloat())
+        sendHoverEvent(VirtualTouchEvent.ACTION_UP, point1.x.toFloat(), point1.y.toFloat())
 
         verifyEvents(
             listOf<InputEvent>(
-                createMotionEvent(MotionEvent.ACTION_HOVER_ENTER, x0, y0),
-                createMotionEvent(MotionEvent.ACTION_HOVER_MOVE, x0, y0),
-                createMotionEvent(MotionEvent.ACTION_HOVER_MOVE, x0, y1),
-                createMotionEvent(MotionEvent.ACTION_HOVER_MOVE, x1, y1),
-                createMotionEvent(MotionEvent.ACTION_HOVER_EXIT, x1, y1)
+                createMotionEvent(
+                    MotionEvent.ACTION_HOVER_ENTER,
+                    point0.x.toFloat(),
+                    point0.y.toFloat()
+                ),
+                createMotionEvent(
+                    MotionEvent.ACTION_HOVER_MOVE,
+                    point0.x.toFloat(),
+                    point0.y.toFloat()
+                ),
+                createMotionEvent(
+                    MotionEvent.ACTION_HOVER_MOVE,
+                    point0.x.toFloat(),
+                    point1.y.toFloat()
+                ),
+                createMotionEvent(
+                    MotionEvent.ACTION_HOVER_MOVE,
+                    point1.x.toFloat(),
+                    point1.y.toFloat()
+                ),
+                createMotionEvent(
+                    MotionEvent.ACTION_HOVER_EXIT,
+                    point1.x.toFloat(),
+                    point1.y.toFloat()
+                )
             )
         )
     }

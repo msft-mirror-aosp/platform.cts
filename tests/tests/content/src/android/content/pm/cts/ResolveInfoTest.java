@@ -29,7 +29,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Printer;
 import android.util.StringBuilderPrinter;
@@ -68,7 +68,7 @@ public class ResolveInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public final void testResolveInfo() {
         // Test constructor
         new ResolveInfo();
@@ -87,7 +87,7 @@ public class ResolveInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public final void testLoadLabel_noNonLocalizedLabelAndNullPM_throwsNPE() {
         final ResolveInfo resolveInfo = new ResolveInfo();
         resolveInfo.activityInfo = new ActivityInfo();
@@ -97,7 +97,7 @@ public class ResolveInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public final void testLoadLabel_hasNonLocalizedLabelAndNullPM_correctResult() {
         final ResolveInfo resolveInfo = new ResolveInfo();
         final String expectedResult = "none";
@@ -107,7 +107,7 @@ public class ResolveInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public final void testDump() {
         PackageManager pm = getContext().getPackageManager();
         Intent intent = new Intent(SERVICE_NAME);

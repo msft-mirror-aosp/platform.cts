@@ -26,7 +26,7 @@ import android.platform.test.annotations.Presubmit;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,7 +38,7 @@ import org.junit.runner.RunWith;
  */
 
 @Presubmit
-@NonMainlineTest
+@FrameworkSpecificTest
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 @AppModeFull(reason = "Instant applications do not have permission MODIFY_AUDIO_SETTINGS")

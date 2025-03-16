@@ -29,7 +29,6 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -136,7 +135,7 @@ public class DeviceAssociationTest {
         mContext.updateDeviceId(mVirtualDevice.getDeviceId());
 
         assertThat(mContext.getDeviceId()).isEqualTo(mVirtualDevice.getDeviceId());
-        verifyZeroInteractions(mDeviceChangeListener);
+        verifyNoMoreInteractions(mDeviceChangeListener);
     }
 
     @Test

@@ -24,7 +24,7 @@ import android.media.AudioTrack
 import android.platform.test.annotations.AppModeSdkSandbox
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.NonMainlineTest
+import com.android.compatibility.common.util.FrameworkSpecificTest
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -32,7 +32,7 @@ import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4::class)
 class DtsAudioFormatsTest {

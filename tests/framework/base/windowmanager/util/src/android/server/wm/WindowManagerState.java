@@ -3049,7 +3049,9 @@ public class WindowManagerState {
             if (proto.hasSourceWindowState()) {
                 mWindowState = new WindowState(proto.getSourceWindowState());
             }
-            mIdentifier = new Identifier(proto.getSourceWindowStateIdentifier());
+            if (proto.hasSourceWindowStateIdentifier()) {
+                mIdentifier = new Identifier(proto.getSourceWindowStateIdentifier());
+            }
         }
 
         InsetsSourceProvider(com.android.server.wm.nano.InsetsSourceProviderProto proto) {
@@ -3059,7 +3061,9 @@ public class WindowManagerState {
             if (proto.sourceWindowState != null) {
                 mWindowState = new WindowState(proto.sourceWindowState);
             }
-            mIdentifier = new Identifier(proto.sourceWindowStateIdentifier);
+            if (proto.sourceWindowStateIdentifier != null) {
+                mIdentifier = new Identifier(proto.sourceWindowStateIdentifier);
+            }
         }
 
         int getType() {

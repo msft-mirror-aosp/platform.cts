@@ -809,7 +809,7 @@ public class VirtualDisplayTest {
     }
 
     private final class DisplayChangeWaiter {
-        private static final int DISPLAY_CHANGE_TIMEOUT_SECS = 3;
+        private static final int DISPLAY_CHANGE_TIMEOUT_SECS = 5;
 
         private final Display mDisplay;
         private int mCurrentRotation;

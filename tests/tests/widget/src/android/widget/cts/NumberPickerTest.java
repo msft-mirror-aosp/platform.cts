@@ -32,7 +32,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -356,7 +355,7 @@ public class NumberPickerTest {
 
         // Since all changes to value are via API calls, we should have no interactions /
         // callbacks on our listener.
-        verifyZeroInteractions(mockValueChangeListener);
+        verifyNoMoreInteractions(mockValueChangeListener);
     }
 
     private boolean isWatch() {
@@ -593,7 +592,7 @@ public class NumberPickerTest {
 
         // Wait a second to check if value is changed or not.
         SystemClock.sleep(1000);
-        verifyZeroInteractions(mockValueChangeListener);
+        verifyNoMoreInteractions(mockValueChangeListener);
 
         event = MotionEvent.obtain(System.currentTimeMillis(), System.currentTimeMillis(),
                 MotionEvent.ACTION_UP, x, y, 0);
@@ -613,7 +612,7 @@ public class NumberPickerTest {
 
         // Wait a second to check if value is changed or not.
         SystemClock.sleep(1000);
-        verifyZeroInteractions(mockValueChangeListener);
+        verifyNoMoreInteractions(mockValueChangeListener);
 
         event = MotionEvent.obtain(System.currentTimeMillis(), System.currentTimeMillis(),
                 MotionEvent.ACTION_UP, x, y, 0);

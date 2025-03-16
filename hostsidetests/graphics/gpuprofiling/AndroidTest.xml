@@ -29,6 +29,10 @@
         <option name="push" value="ctsgraphicsgpucountersinit->/data/local/tmp/ctsgraphicsgpucountersinit" />
         <option name="append-bitness" value="true" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
+        <option name="run-command" value="wm dismiss-keyguard" />
+    </target_preparer>
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
         <option name="jar" value="CtsGpuProfilingDataTestCases.jar" />
     </test>

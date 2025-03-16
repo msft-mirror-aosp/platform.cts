@@ -3076,19 +3076,6 @@
             <meta-data android:name="display_mode"
                        android:value="single_display_mode" />
         </activity>
-        <activity android:name=".wifiaware.TestListActivity"
-                  android:label="@string/aware_test"
-                  android:exported="true"
-                  android:configChanges="keyboardHidden|orientation|screenSize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_networking" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.wifi.aware" />
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-        </activity>
 
         <activity android:name=".notifications.NotificationDismissVerifierActivity"
             android:exported="true"
@@ -3158,9 +3145,54 @@
                 android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="9.8.2" />
         </activity>
+
         <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+
+
+        <!-- The following components are needed for the test to hold the SMS role -->
+        <activity android:name="com.android.cts.verifier.notifications.SmsActivity"
+            android:exported="true">
+            <meta-data android:name="NonApiTest"
+               android:value="dummy activity to allow the verifier to hold the SMS role" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="smsto" />
+            </intent-filter>
+        </activity>
+
+        <!-- The following components are needed for the test app to hold the SMS role -->
+
+        <service android:name=".notifications.SmsService"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="smsto" />
+            </intent-filter>
+        </service>
+
+        <receiver android:name=".notifications.SmsReceiver"
+            android:permission="android.permission.BROADCAST_SMS"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_DELIVER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".notifications.SmsReceiver2"
+            android:permission="android.permission.BROADCAST_WAP_PUSH"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
 
         <activity android:name=".notifications.NotificationPrivacyVerifierActivity"
             android:exported="true"
@@ -3882,346 +3914,6 @@
                        android:value="single_display_mode" />
             <meta-data android:name="ApiTest"
                     android:value="android.net.wifi.p2p.WifiP2pManager#addLocalService" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenUnsolicitedPublishTestActivity"
-                  android:label="@string/aware_data_path_open_unsolicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.PublishConfig.Builder#setPublishType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenPassiveSubscribeTestActivity"
-                  android:label="@string/aware_data_path_open_passive_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenPassiveSubscribeAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_open_passive_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphraseUnsolicitedPublishTestActivity"
-                  android:label="@string/aware_data_path_passphrase_unsolicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.PublishConfig.Builder#setPublishType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphrasePassiveSubscribeTestActivity"
-                  android:label="@string/aware_data_path_passphrase_passive_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphrasePassiveSubscribeAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_passphrase_passive_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkUnsolicitedPublishTestActivity"
-                  android:label="@string/aware_data_path_pmk_unsolicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.PublishConfig.Builder#setPublishType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkPassiveSubscribeTestActivity"
-                  android:label="@string/aware_data_path_pmk_passive_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkPassiveSubscribeAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_pmk_passive_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenSolicitedPublishTestActivity"
-                  android:label="@string/aware_data_path_open_solicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.PublishConfig.Builder#setPublishType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenActiveSubscribeTestActivity"
-                  android:label="@string/aware_data_path_open_active_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenActiveSubscribeAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_open_active_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphraseSolicitedPublishTestActivity"
-                  android:label="@string/aware_data_path_passphrase_solicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.PublishConfig.Builder#setPublishType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPassphrase
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphraseActiveSubscribeTestActivity"
-                  android:label="@string/aware_data_path_passphrase_active_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphraseActiveSubscribeAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_passphrase_active_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkSolicitedPublishTestActivity"
-                  android:label="@string/aware_data_path_pmk_solicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.PublishConfig.Builder#setPublishType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkActiveSubscribeTestActivity"
-                  android:label="@string/aware_data_path_pmk_active_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkActiveSubscribeAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_pmk_active_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.SubscribeConfig.Builder#setSubscribeType
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOobOpenResponderTestActivity"
-                  android:label="@string/aware_data_path_oob_open_responder"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareSession#createNetworkSpecifierOpen" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOobOpenInitiatorTestActivity"
-                  android:label="@string/aware_data_path_oob_open_initiator"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareSession#createNetworkSpecifierOpen" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOobPassphraseResponderTestActivity"
-                  android:label="@string/aware_data_path_oob_passphrase_responder"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareSession#createNetworkSpecifierPassphrase" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOobPassphraseInitiatorTestActivity"
-                  android:label="@string/aware_data_path_oob_passphrase_initiator"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareSession#createNetworkSpecifierPassphrase" />
-        </activity>
-
-        <activity android:name=".wifiaware.DiscoveryRangingPublishTestActivity"
-                  android:label="@string/aware_discovery_ranging_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.rtt.RangingRequest.Builder#addWifiAwarePeer
-                       |android.net.wifi.aware.PublishConfig.Builder#setRangingEnabled
-                       |android.net.wifi.rtt.WifiRttManager#startRanging
-                       |android.net.wifi.aware.WifiAwareManager#attach
-                       |android.net.wifi.aware.WifiAwareSession#publish" />
-        </activity>
-
-        <activity android:name=".wifiaware.DiscoveryRangingSubscribeTestActivity"
-                  android:label="@string/aware_discovery_ranging_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.rtt.RangingRequest.Builder#addWifiAwarePeer
-                       |android.net.wifi.aware.SubscribeConfig.Builder#setMaxDistanceMm
-                       |android.net.wifi.rtt.WifiRttManager#startRanging
-                       |android.net.wifi.aware.WifiAwareManager#attach
-                       |android.net.wifi.aware.WifiAwareSession#subscrible" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenSolicitedPublishAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_open_solicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build
-                       |android.net.NetworkCapabilities#TRANSPORT_WIFI_AWARE" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkUnsolicitedPublishAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_pmk_unsolicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#build
-                       |android.net.NetworkCapabilities#TRANSPORT_WIFI_AWARE" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPmkSolicitedPublishAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_pmk_solicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPmk" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphraseUnsolicitedPublishAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_passphrase_unsolicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathPassphraseSolicitedPublishAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_passphrase_solicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathOpenUnsolicitedPublishAcceptAnyTestActivity"
-                  android:label="@string/aware_data_path_open_unsolicited_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setPskPassphrase" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathForceChannelSetupSubscribeTestActivity"
-                  android:label="@string/aware_data_path_force_channel_setup_subscribe"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setChannelFrequencyMhz" />
-        </activity>
-
-        <activity android:name=".wifiaware.DataPathForceChannelSetupPublishTestActivity"
-                  android:label="@string/aware_data_path_force_channel_setup_publish"
-                  android:configChanges="keyboardHidden|orientation|screenSize" >
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-            <meta-data android:name="ApiTest"
-                       android:value="android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#Builder
-                       |android.net.wifi.aware.WifiAwareNetworkSpecifier.Builder#setChannelFrequencyMhz" />
         </activity>
 
         <!--            CTS Verifier Presence Test Top Screen -->

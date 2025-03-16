@@ -33,6 +33,7 @@ import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.cts.helpers.StaticMetadata;
@@ -608,6 +609,20 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                                 outConfigurations.add(config);
                             }
 
+                            if (mCameraManager.isCameraDeviceSetupSupported(
+                                    cameraIdsUnderTest[i])) {
+                                CameraDevice.CameraDeviceSetup cameraSetup =
+                                        mCameraManager.getCameraDeviceSetup(cameraIdsUnderTest[i]);
+                                SessionConfiguration sessionConfig = new SessionConfiguration(
+                                        SessionConfiguration.SESSION_REGULAR, outConfigurations,
+                                        new HandlerExecutor(mHandler), sessionListener);
+                                sessionConfig.setSessionParameters(recordingRequest);
+                                if (!cameraSetup.isSessionConfigurationSupported(sessionConfig)) {
+                                    Log.i(TAG, "Camera " + cameraIdsUnderTest[i] +
+                                            " does not support the feature combination, skipping");
+                                    continue;
+                                }
+                            }
                             SessionConfiguration sessionConfig = new SessionConfiguration(
                                     SessionConfiguration.SESSION_REGULAR, outConfigurations,
                                     new HandlerExecutor(mHandler), sessionListener);

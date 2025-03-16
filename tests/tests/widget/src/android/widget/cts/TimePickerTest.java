@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -222,7 +222,7 @@ public class TimePickerTest {
         // set the same hour as current
         reset(mockOnTimeChangeListener);
         mTimePicker.setCurrentHour(Integer.valueOf(hourForTesting));
-        verifyZeroInteractions(mockOnTimeChangeListener);
+        verifyNoMoreInteractions(mockOnTimeChangeListener);
 
         mTimePicker.setCurrentHour(Integer.valueOf(hourForTesting + 1));
         verify(mockOnTimeChangeListener, times(1)).onTimeChanged(
@@ -231,7 +231,7 @@ public class TimePickerTest {
         // set the same minute as current
         reset(mockOnTimeChangeListener);
         mTimePicker.setCurrentMinute(minuteForTesting);
-        verifyZeroInteractions(mockOnTimeChangeListener);
+        verifyNoMoreInteractions(mockOnTimeChangeListener);
 
         reset(mockOnTimeChangeListener);
         mTimePicker.setCurrentMinute(minuteForTesting + 1);
@@ -241,7 +241,7 @@ public class TimePickerTest {
         // change time picker mode
         reset(mockOnTimeChangeListener);
         mTimePicker.setIs24HourView(!mTimePicker.is24HourView());
-        verifyZeroInteractions(mockOnTimeChangeListener);
+        verifyNoMoreInteractions(mockOnTimeChangeListener);
     }
 
     @UiThreadTest

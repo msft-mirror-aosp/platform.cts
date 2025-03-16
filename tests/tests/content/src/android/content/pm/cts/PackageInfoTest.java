@@ -37,7 +37,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -97,7 +97,7 @@ public class PackageInfoTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = PackageManager.class)
+    @DisabledOnRavenwood(blockedBy = PackageManager.class)
     public void testApplicationInfoSame() throws Exception {
         PackageInfo packageInfo = getPackageInfo();
         ApplicationInfo ai = packageInfo.applicationInfo;

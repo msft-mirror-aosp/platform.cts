@@ -34,8 +34,7 @@ import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.Parcelable;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
@@ -46,7 +45,6 @@ import com.google.common.util.concurrent.AbstractFuture;
 
 import junit.framework.ComparisonFailure;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,10 +66,6 @@ import java.util.concurrent.TimeoutException;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ParcelFileDescriptorTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
-            .setProvideMainThread(true).build();
-
     private static final long DURATION = 100l;
 
     @Test
@@ -179,7 +173,7 @@ public class ParcelFileDescriptorTest {
 
     @Test
     @AppModeFull // opening a listening socket not permitted for instant apps
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testFromSocket() throws Throwable {
         final int PORT = 12222;
         final int DATA = 1;
@@ -353,7 +347,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testPipeNormal() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
         final ParcelFileDescriptor red = pipe[0];
@@ -370,7 +364,7 @@ public class ParcelFileDescriptorTest {
     // Reading should be done via AutoCloseInputStream if possible, rather than
     // recreating a FileInputStream from a raw FD, what's done in read(PFD).
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testPipeError_Discouraged() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
         final ParcelFileDescriptor red = pipe[0];
@@ -391,7 +385,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testPipeError() throws Exception {
         final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
         final ParcelFileDescriptor red = pipe[0];
@@ -410,7 +404,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
+    @DisabledOnRavenwood(blockedBy = MessageQueue.class)
     public void testFileNormal() throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final FutureCloseListener listener = new FutureCloseListener();
@@ -426,7 +420,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
+    @DisabledOnRavenwood(blockedBy = MessageQueue.class)
     public void testFileError() throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final FutureCloseListener listener = new FutureCloseListener();
@@ -442,7 +436,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
+    @DisabledOnRavenwood(blockedBy = MessageQueue.class)
     public void testFileDetach() throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final FutureCloseListener listener = new FutureCloseListener();
@@ -457,7 +451,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = MessageQueue.class)
+    @DisabledOnRavenwood(blockedBy = MessageQueue.class)
     public void testFileWrapped() throws Exception {
         final Handler handler1 = new Handler(Looper.getMainLooper());
         final Handler handler2 = new Handler(Looper.getMainLooper());
@@ -476,7 +470,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testSocketErrorAfterClose() throws Exception {
         final ParcelFileDescriptor[] pair = ParcelFileDescriptor.createReliableSocketPair();
         final ParcelFileDescriptor red = pair[0];
@@ -500,7 +494,7 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
+    @DisabledOnRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testSocketMultipleCheck() throws Exception {
         final ParcelFileDescriptor[] pair = ParcelFileDescriptor.createReliableSocketPair();
         final ParcelFileDescriptor red = pair[0];

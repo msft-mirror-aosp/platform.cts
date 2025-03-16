@@ -24,7 +24,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.Manifest;
 import android.app.Instrumentation;
@@ -240,7 +239,7 @@ public class CalendarViewTest {
         assertTrue(getDayBoundsSuccess);
 
         if (onlyAllowOneChangeEvent) {
-            verifyZeroInteractions(mockDateChangeListener);
+            verifyNoMoreInteractions(mockDateChangeListener);
         }
 
         // Use instrumentation to emulate a tap on 09/07/2008

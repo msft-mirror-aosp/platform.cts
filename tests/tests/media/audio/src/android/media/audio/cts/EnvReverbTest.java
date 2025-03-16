@@ -30,12 +30,12 @@ import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeFull(reason = "Fails in instant mode")
 @RunWith(AndroidJUnit4.class)
 public class EnvReverbTest extends PostProcTestBase {

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.database.DataSetObserver;
 import android.view.View;
@@ -88,7 +88,7 @@ public class BaseExpandableListAdapterTest {
         DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
         adapter.registerDataSetObserver(mockDataSetObserver);
 
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetChanged();
         verify(mockDataSetObserver, times(1)).onChanged();
     }
@@ -99,7 +99,7 @@ public class BaseExpandableListAdapterTest {
         DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
         adapter.registerDataSetObserver(mockDataSetObserver);
 
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetInvalidated();
         verify(mockDataSetObserver, times(1)).onInvalidated();
     }
@@ -124,15 +124,15 @@ public class BaseExpandableListAdapterTest {
         DataSetObserver mockDataSetObserver = mock(DataSetObserver.class);
         adapter.registerDataSetObserver(mockDataSetObserver);
 
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.notifyDataSetChanged();
         verify(mockDataSetObserver, times(1)).onChanged();
 
         reset(mockDataSetObserver);
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
         adapter.unregisterDataSetObserver(mockDataSetObserver);
         adapter.notifyDataSetChanged();
-        verifyZeroInteractions(mockDataSetObserver);
+        verifyNoMoreInteractions(mockDataSetObserver);
     }
 
     private class MockBaseExpandableListAdapter extends BaseExpandableListAdapter {

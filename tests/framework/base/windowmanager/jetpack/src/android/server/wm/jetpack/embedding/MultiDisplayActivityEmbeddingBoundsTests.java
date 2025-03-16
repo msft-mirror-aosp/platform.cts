@@ -18,18 +18,12 @@ package android.server.wm.jetpack.embedding;
 
 import static org.junit.Assume.assumeTrue;
 
-import static com.android.server.display.feature.flags.Flags.FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT;
-
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.annotation.Nullable;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 
 /**
  * Tests for the {@link androidx.window.extensions} implementation provided on the device (and only
@@ -40,12 +34,7 @@ import org.junit.Rule;
  *     atest CtsWindowManagerJetpackTestCases:MultiDisplayActivityEmbeddingBoundsTests
  */
 @Presubmit
-@RequiresFlagsDisabled(FLAG_ENABLE_DISPLAY_CONTENT_MODE_MANAGEMENT)
-// TODO(b/391965805): Re-enable this test
 public class MultiDisplayActivityEmbeddingBoundsTests extends ActivityEmbeddingBoundsTests {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final MultiDisplayTestHelper mTestHelper =
             new MultiDisplayTestHelper(new VirtualDisplaySession());

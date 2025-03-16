@@ -80,14 +80,14 @@ class ModifierKeyGestureTest {
             instrumentation,
             listOf("KEY_Q", "KEY_LEFTALT", "KEY_LEFTMETA")
         ).use { keyboardDevice ->
-            injectKeyDown(keyboardDevice, KEY_LEFTMETA)
-            injectKeyDown(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTMETA)
+            keyboardDevice.injectKeyDown(KEY_LEFTMETA)
+            keyboardDevice.injectKeyDown(KEY_LEFTALT)
+            keyboardDevice.injectKeyUp(KEY_LEFTALT)
+            keyboardDevice.injectKeyUp(KEY_LEFTMETA)
 
             activity.assertNoEvents()
 
-            injectKeyDown(keyboardDevice, KEY_Q)
+            keyboardDevice.injectKeyDown(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
@@ -96,7 +96,7 @@ class ModifierKeyGestureTest {
                 )
             )
 
-            injectKeyUp(keyboardDevice, KEY_Q)
+            keyboardDevice.injectKeyUp(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
@@ -106,14 +106,14 @@ class ModifierKeyGestureTest {
             )
 
             // Re-toggle the Caps lock state
-            injectKeyDown(keyboardDevice, KEY_LEFTMETA)
-            injectKeyDown(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTALT)
-            injectKeyUp(keyboardDevice, KEY_LEFTMETA)
+            keyboardDevice.injectKeyDown(KEY_LEFTMETA)
+            keyboardDevice.injectKeyDown(KEY_LEFTALT)
+            keyboardDevice.injectKeyUp(KEY_LEFTALT)
+            keyboardDevice.injectKeyUp(KEY_LEFTMETA)
 
             activity.assertNoEvents()
 
-            injectKeyDown(keyboardDevice, KEY_Q)
+            keyboardDevice.injectKeyDown(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),
@@ -122,7 +122,7 @@ class ModifierKeyGestureTest {
                 )
             )
 
-            injectKeyUp(keyboardDevice, KEY_Q)
+            keyboardDevice.injectKeyUp(KEY_Q)
             verifier.assertReceivedKey(
                 Matchers.allOf(
                     withKeyCode(KeyEvent.KEYCODE_Q),

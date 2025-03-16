@@ -251,11 +251,13 @@ public class TouchHelper {
         public void finishSwipe() {
             injectMotion(mStartDownTime, mNextEventTime, MotionEvent.ACTION_UP, mEndX, mEndY,
                     mDisplayId, mSync, mWaitForAnimations);
+            resetSwipe();
         }
 
         public void cancelSwipe() {
             injectMotion(mStartDownTime, mNextEventTime, MotionEvent.ACTION_CANCEL, mEndX, mEndY,
                     mDisplayId, mSync, mWaitForAnimations);
+            resetSwipe();
         }
 
         void quickSwipe(int startX, int startY, int endX, int endY, int steps) {
@@ -263,6 +265,15 @@ public class TouchHelper {
             continueSwipe(endX, endY, steps);
             SystemClock.sleep(INJECT_INPUT_DELAY_MILLIS);
             finishSwipe();
+        }
+
+        private void resetSwipe() {
+            mStartDownTime = -1;
+            mNextEventTime = -1;
+        }
+
+        public boolean isSwipe() {
+            return mStartDownTime > 0 || mNextEventTime > 0;
         }
     }
 }

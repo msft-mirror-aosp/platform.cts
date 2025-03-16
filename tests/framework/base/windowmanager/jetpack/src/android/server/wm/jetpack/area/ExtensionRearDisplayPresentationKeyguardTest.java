@@ -318,7 +318,7 @@ public class ExtensionRearDisplayPresentationKeyguardTest
         activitySession.getActivity().finish();
 
         waitAndAssert(() -> mWindowAreaSessionState == SESSION_STATE_INACTIVE);
-        assertNotEquals(Display.STATE_ON, presentationDisplay.getState());
+        waitAndAssert(() -> Display.STATE_ON != presentationDisplay.getState());
     }
 
     /**

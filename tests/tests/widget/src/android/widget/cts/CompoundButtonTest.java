@@ -29,7 +29,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -127,7 +127,7 @@ public class CompoundButtonTest  {
                 mock(CompoundButton.OnCheckedChangeListener.class);
         mCompoundButton.setOnCheckedChangeListener(mockCheckedChangeListener);
         assertFalse(mCompoundButton.isChecked());
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         mCompoundButton.setChecked(true);
         assertTrue(mCompoundButton.isChecked());
@@ -136,7 +136,7 @@ public class CompoundButtonTest  {
         reset(mockCheckedChangeListener);
         mCompoundButton.setChecked(true);
         assertTrue(mCompoundButton.isChecked());
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         mCompoundButton.setChecked(false);
         assertFalse(mCompoundButton.isChecked());
@@ -150,7 +150,7 @@ public class CompoundButtonTest  {
                 mock(CompoundButton.OnCheckedChangeListener.class);
         mCompoundButton.setOnCheckedChangeListener(mockCheckedChangeListener);
         assertFalse(mCompoundButton.isChecked());
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
 
         mCompoundButton.setChecked(true);
         verify(mockCheckedChangeListener, times(1)).onCheckedChanged(mCompoundButton, true);
@@ -159,7 +159,7 @@ public class CompoundButtonTest  {
         mCompoundButton.setOnCheckedChangeListener(null);
         reset(mockCheckedChangeListener);
         mCompoundButton.setChecked(false);
-        verifyZeroInteractions(mockCheckedChangeListener);
+        verifyNoMoreInteractions(mockCheckedChangeListener);
     }
 
     @UiThreadTest

@@ -77,14 +77,14 @@ public class MediaCommunicationManagerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetVersion() {
         assertNotNull("Missing MediaCommunicationManager", mManager);
         assertTrue(mManager.getVersion() > 0);
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSession2Tokens() throws Exception {
         // registerSessionCallback requires permission MEDIA_CONTENT_CONTROL
         InstrumentationRegistry.getInstrumentation()
@@ -113,7 +113,7 @@ public class MediaCommunicationManagerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void registerSessionCallback_noMediaContentControlPermission_throwsSecurityException() {
         InstrumentationRegistry.getInstrumentation()
                 .getUiAutomation()
@@ -129,7 +129,7 @@ public class MediaCommunicationManagerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER}) // SystemApi. Requires full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires full user.
     public void testManagerSessionCallback() throws Exception {
         // registerSessionCallback requires permission MEDIA_CONTENT_CONTROL
         InstrumentationRegistry.getInstrumentation()

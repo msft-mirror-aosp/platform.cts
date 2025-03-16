@@ -31,10 +31,8 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.DisabledOnRavenwood;
-import android.platform.test.ravenwood.RavenwoodRule;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -46,8 +44,6 @@ import java.util.concurrent.TimeUnit;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BinderTest {
-    @Rule public RavenwoodRule mRavenwood = new RavenwoodRule.Builder().setProcessApp().build();
-
     private static final String DESCRIPTOR_GOOGLE = "google";
     private static final String DESCRIPTOR_ANDROID = "android";
     private MockBinder mBinder;

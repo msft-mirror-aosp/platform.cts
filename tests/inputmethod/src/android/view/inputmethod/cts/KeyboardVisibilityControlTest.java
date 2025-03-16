@@ -182,6 +182,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private TestActivity mTestActivity;
 
+    private final UserHelper mUserHelper = new UserHelper();
+
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -203,8 +205,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             @NonNull String nonFocusedMarker) {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
         final AtomicReference<EditText> nonFocusedEditTextRef = new AtomicReference<>();
-        final var activityStarter = new TestActivity.Starter().withDisplayId(
-                new UserHelper().getMainDisplayId());
+        final var activityStarter =
+                new TestActivity.Starter().withDisplayId(mUserHelper.getMainDisplayId());
         mTestActivity = activityStarter.startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
@@ -1266,8 +1268,6 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
             assertNotNull(uiDevice.wait(Until.hasObject(dialogSelector), TIMEOUT));
 
-            final UserHelper mUserHelper = new UserHelper();
-
             // Dismiss dialog and back to original test activity
             MockTestActivityUtil.sendBroadcastAction(MockTestActivityUtil.EXTRA_DISMISS_DIALOG,
                     mUserHelper.getUserId());
@@ -1316,9 +1316,8 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 expectImeInvisible(TIMEOUT);
 
                 // Request showSoftInput, expect the request is valid and soft-keyboard visible.
-                final UserHelper userHelper = new UserHelper();
                 MockTestActivityUtil.sendBroadcastAction(
-                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, userHelper.getUserId());
+                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, mUserHelper.getUserId());
                 expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
                 expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
@@ -1797,6 +1796,9 @@ public final class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     mInstrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK);
                     expectEvent(stream, onFinishInputViewMatcher(false), TIMEOUT);
                     expectImeInvisible(TIMEOUT);
+
+                    assertTrue("TestActivity2 is still focused after IME is hidden",
+                            testActivity2.hasWindowFocus());
 
                     // Focus the 2nd editor and show the IME with WindowInsets API.
                     testActivity2.runOnUiThread(() -> {

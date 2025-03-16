@@ -68,7 +68,6 @@ public final class CarRemoteDeviceManagerTest extends AbstractCarTestCase {
     public void setUp() throws Exception {
         mRemoteDeviceManager = getCar().getCarManager(CarRemoteDeviceManager.class);
         // CarRemoteDeviceManager is available on multi-display builds only.
-        // TODO(b/265091454): annotate the test with @RequireMultipleUsersOnMultipleDisplays.
         assumeNotNull(
                 "Skip the test because CarRemoteDeviceManager is not available on this build",
                 mRemoteDeviceManager);

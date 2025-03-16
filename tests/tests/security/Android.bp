@@ -29,6 +29,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "android-common",
         "android.security.flags-aconfig-java",
+        "wifi_aconfig_flags_lib",
         "ctstestserver",
         "ctstestrunner-axt",
         "cts-input-lib",
@@ -103,6 +104,7 @@ android_test {
         ":CtsPermissionBackupAppCert4History124",
         ":DynamicPermissionTestAttackerApp",
         ":RolePermissionOverrideTestApp",
+        ":ForceStopAssistantTestApp",
         ":SplitBluetoothPermissionTestApp",
         ":CertBlocklistTestApp",
         ":UpdatedDynamicPermissionTestAttackerApp",
@@ -247,6 +249,15 @@ android_test_helper_app {
     resource_dirs: [],
     asset_dirs: [],
     manifest: "testdata/rolepermissionoverridetestapp.xml",
+}
+
+android_test_helper_app {
+    name: "ForceStopAssistantTestApp",
+    asset_dirs: [],
+    manifest: "testdata/forcestopassistanttestapp/AndroidManifest.xml",
+    min_sdk_version: "30",
+    resource_dirs: ["testdata/forcestopassistanttestapp/res"],
+    target_sdk_version: "30",
 }
 
 android_app_certificate {

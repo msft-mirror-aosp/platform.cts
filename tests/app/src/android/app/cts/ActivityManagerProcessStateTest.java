@@ -1553,12 +1553,12 @@ public class ActivityManagerProcessStateTest {
             device.waitForIdle();
 
             // App should now be back in foreground.
-            uid1Watcher.expect(WatchUidRunner.CMD_UNCACHED, null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_UNCACHED, null);
             uid1Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP);
 
             // Return to home.
             mTargetContext.startActivity(homeIntent);
-            uid1Watcher.expect(WatchUidRunner.CMD_CACHED, null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uid1Watcher.expect(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_HEAVY_WEIGHT);
 
             // Again try starting second heavy-weight app to get prompt.
@@ -1630,7 +1630,7 @@ public class ActivityManagerProcessStateTest {
             finishIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             mTargetContext.startActivity(finishIntent);
 
-            uid1Watcher.expect(WatchUidRunner.CMD_CACHED, null);
+            uid1Watcher.waitFor(WatchUidRunner.CMD_CACHED, null);
             uid1Watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_RECENT);
 
             // Make both apps idle for cleanliness.

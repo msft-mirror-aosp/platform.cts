@@ -36,6 +36,7 @@ android_test {
         "junit",
         "flag-junit",
         "cts-display-lib",
+        "hwui_flags_java_lib",
         "junit-params",
         "SurfaceFlingerProperties",
         "testng",

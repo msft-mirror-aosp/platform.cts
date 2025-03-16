@@ -44,18 +44,19 @@ public class ClassProfile {
     // A list of interfaces implemented by this class.
     private final List<ClassProfile> mInterfaces = new ArrayList<>();
 
-    // A map of methods defined in this class with the method signature as the key.
+    // Methods defined in this class.
     private final Map<String, MethodProfile> mMethods = new HashMap<>();
 
-    // A map of test methods defined in this class with the method signature as the key.
+    // Test methods defined in this class.
     private Map<String, MethodProfile> mTestMethods = null;
+
+    // Methods inherited from apis.
+    private final Map<String, MethodProfile> mInheritedApiMethods = new HashMap<>();
 
     // A map of API classes extended/implemented by this class with the API class signature as
     // the key.
     private Map<String, ClassProfile> mInheritedApiClasses = null;
 
-    // A map between the method and abstract API methods it overrides.
-    private Map<String, Map<String, MethodProfile>> mOverriddenAbstractApiMethods = null;
 
     private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
             List.of(
@@ -86,7 +87,7 @@ public class ClassProfile {
         JUNIT3(4),
         JUNIT4(8),
         ANNOTATION(16),
-        /** A non-test and non-annotation class.*/
+        /** A non-test and non-annotation class. */
         COMMON(32),
         API(64);
 
@@ -117,16 +118,16 @@ public class ClassProfile {
         return mModule;
     }
 
-    public ClassProfile getSuperClass() {
-        return mSuperClass;
-    }
-
     public List<ClassProfile> getInterfaces() {
         return mInterfaces;
     }
 
     public Map<String, MethodProfile> getMethods() {
         return mMethods;
+    }
+
+    public Map<String, MethodProfile> getInheritedApiMethods() {
+        return mInheritedApiMethods;
     }
 
     /** Creates a class method. */
@@ -139,21 +140,7 @@ public class ClassProfile {
         return mMethods.get(methodSignature);
     }
 
-    /**
-     * @return The methods that are overriding abstract API methods.
-     * @throws RuntimeException if the abstract API methods overridden case is not solved.
-     */
-    public Map<String, Map<String, MethodProfile>> getOverriddenAbstractApiMethods() {
-        if (mOverriddenAbstractApiMethods == null) {
-            throw new RuntimeException(
-                    String.format(
-                            "Methods that override abstract APIs are not collected in class %s",
-                            getClassSignature()));
-        }
-        return mOverriddenAbstractApiMethods;
-    }
-
-    /** Gets API classes inherited by the class. */
+    /** Gets API classes extended/implemented by the class. */
     public Map<String, ClassProfile> getInheritedApiClasses() {
         if (mInheritedApiClasses != null) {
             return mInheritedApiClasses;
@@ -177,37 +164,31 @@ public class ClassProfile {
     }
 
     /**
-     * Adds a supper method call when the method is extended from super classes. If the "super"
+     * Adds a supper method call when the method is inherited from super classes. If the "super"
      * keyword is not explicitly added, the java bytecode will not show which super class is called.
      * In this case, find the nearest method along the super class chain and add an additionally
      * call to that method.
      */
-    public void resolveExtendedMethods() {
+    public void resolveInheritedMethods(ApiCoverage apiCoverage) {
         for (MethodProfile method : mMethods.values()) {
-            if (method.isDirectMember() || mSuperClass == null) {
+            if (method.isDirectMember()) {
                 continue;
             }
-            MethodProfile superMethod = mSuperClass.findMethod(
-                    method.getMethodName(), method.getMethodParams());
-            if (superMethod != null) {
-                method.addMethodCall(superMethod);
+            MethodProfile inheritedMethod =
+                    findInheritedMethod(
+                            method.getMethodName(), method.getMethodParams(), apiCoverage);
+            if (inheritedMethod != null) {
+                method.addMethodCall(inheritedMethod);
             }
         }
     }
 
     /**
      * Filters out methods that are overriding abstract API methods defined in extended API classes
-     * or implemented API interfaces. An additional method call to corresponding abstract API
+     * or implemented API interfaces. An additional method link to corresponding abstract API
      * methods will be recorded to ensure they will be included in the API coverage measurement.
      */
     public void resolveOverriddenAbstractApiMethods(ApiCoverage apiCoverage) {
-        if (mOverriddenAbstractApiMethods != null) {
-            return;
-        }
-        mOverriddenAbstractApiMethods = new HashMap<>();
-        if (isApiClass()) {
-            return;
-        }
         for (MethodProfile method : mMethods.values()) {
             if (method.isAbstract() || !method.isDirectMember()) {
                 continue;
@@ -229,14 +210,46 @@ public class ClassProfile {
                 MethodProfile overriddenApiMethod =
                         inheritedApiClass.getOrCreateMethod(
                                 method.getMethodName(), method.getMethodParams());
-                String apiMethodSignature = overriddenApiMethod.getMethodSignatureWithClass();
                 // The corresponding abstract API method should be regarded as covered.
-                method.addMethodCall(overriddenApiMethod);
-                mOverriddenAbstractApiMethods.putIfAbsent(
-                        method.getMethodSignatureWithClass(), new HashMap<>());
-                mOverriddenAbstractApiMethods
-                        .get(method.getMethodSignatureWithClass())
-                        .put(apiMethodSignature, overriddenApiMethod);
+                method.addOverriddenApiMethod(overriddenApiMethod);
+            }
+        }
+    }
+
+    /**
+     * Records API methods that are inherited by this class.
+     *
+     * <p>This method iterates through all inherited API classes and their methods. For each
+     * non-abstract API method, it attempts to find a corresponding method in the current class. If
+     * the method is inherited from an API, it is added to the {@code mInheritedApiMethods} map.
+     *
+     * @param apiCoverage The {@link ApiCoverage} object containing information about API classes
+     *     and methods.
+     */
+    public void resolveInheritedApiMethods(ApiCoverage apiCoverage) {
+        for (ClassProfile inheritedApiClass : getInheritedApiClasses().values()) {
+            // Skip java.lang.Object, which can make the runtime very long.
+            if (inheritedApiClass.getClassSignature().startsWith("java.lang.Object")) {
+                continue;
+            }
+            for (ApiMethod apiMethod :
+                    apiCoverage
+                            .getClass(
+                                    inheritedApiClass.getPackageName(),
+                                    inheritedApiClass.getClassName())
+                            .getMethods()) {
+                if (apiMethod.isAbstractMethod()) {
+                    continue;
+                }
+                String methodName = apiMethod.getName();
+                List<String> methodParams = apiMethod.getParameterTypes();
+                MethodProfile method = findInheritedMethod(methodName, methodParams, apiCoverage);
+                if (method != null && method.isApiMethod()) {
+                    mInheritedApiMethods.putIfAbsent(
+                            Utils.getMethodSignatureWithClass(
+                                    getPackageName(), getClassName(), methodName, methodParams),
+                            method);
+                }
             }
         }
     }
@@ -359,16 +372,39 @@ public class ClassProfile {
         return false;
     }
 
-    /** Finds the given method from the class or its super classes. */
-    private MethodProfile findMethod(String methodName, List<String> params) {
+    /**
+     * Finds the inherited method corresponding to the given method signature, searching through the
+     * current class, its superclass, and implemented interfaces.
+     *
+     * @param methodName The name of the method to find.
+     * @param params The list of parameter types for the method.
+     * @param apiCoverage The {@link ApiCoverage} object containing API information.
+     * @return The {@link MethodProfile} of the inherited method, or {@code null} if not found.
+     */
+    private MethodProfile findInheritedMethod(
+            String methodName, List<String> params, ApiCoverage apiCoverage) {
         if (isApiClass()) {
-            return getOrCreateMethod(methodName, params);
+            ApiMethod apiMethod = apiCoverage.getMethod(mPackage, mClass, methodName, params);
+            return apiMethod == null ? null : getOrCreateMethod(methodName, params);
         }
         String methodSignature = Utils.getMethodSignature(methodName, params);
-        if (mMethods.containsKey(methodSignature)) {
-            return mMethods.get(methodSignature);
+        MethodProfile inheritedMethod = mMethods.get(methodSignature);
+        if (inheritedMethod != null && inheritedMethod.isDirectMember()) {
+            return inheritedMethod;
         }
-        return mSuperClass == null ? null : mSuperClass.findMethod(methodName, params);
+        if (mSuperClass != null) {
+            inheritedMethod = mSuperClass.findInheritedMethod(methodName, params, apiCoverage);
+            if (inheritedMethod != null) {
+                return inheritedMethod;
+            }
+        }
+        for (ClassProfile interfaceClass : getInterfaces()) {
+            inheritedMethod = interfaceClass.findInheritedMethod(methodName, params, apiCoverage);
+            if (inheritedMethod != null) {
+                return inheritedMethod;
+            }
+        }
+        return null;
     }
 
     private boolean matchAnyTypes(int typesValue) {

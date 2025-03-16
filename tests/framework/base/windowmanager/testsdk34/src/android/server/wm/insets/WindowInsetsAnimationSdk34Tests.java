@@ -23,7 +23,7 @@ import static android.view.WindowInsets.Type.systemBars;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowInsetsAnimationTestBase;
@@ -66,6 +66,6 @@ public class WindowInsetsAnimationSdk34Tests extends WindowInsetsAnimationTestBa
                         "Waiting for status bar to be hidden");
         assertFalse(getWmState().isWindowVisible("StatusBar"));
 
-        verifyZeroInteractions(mActivity.mCallback);
+        verifyNoMoreInteractions(mActivity.mCallback);
     }
 }

@@ -268,9 +268,13 @@ public final class ApiMap {
                         throw new RuntimeException(e);
                     }
                     CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
-                    if (modeTypes.contains(ModeType.API_MAP)
-                            || modeTypes.contains(ModeType.XTS_API_INHERIT)) {
+                    if (modeTypes.contains(ModeType.API_MAP)) {
+                        callGraphManager.resolveInheritedMethods(apiCoverage);
+                        callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
                         callGraphManager.resolveCoveredApis(apiCoverage);
+                    } else if (modeTypes.contains(ModeType.XTS_API_INHERIT)) {
+                        callGraphManager.resolveOverriddenAbstractApiMethods(apiCoverage);
+                        callGraphManager.resolveInheritedApiMethods(apiCoverage);
                     }
                     return callGraphManager;
                 });

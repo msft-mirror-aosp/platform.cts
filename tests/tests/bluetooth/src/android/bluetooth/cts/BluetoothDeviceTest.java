@@ -757,6 +757,8 @@ public class BluetoothDeviceTest {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
 
+        // Use alternate address to prevent another test from having unwanted consequences here
+        mFakeDevice = mAdapter.getRemoteDevice("AB:11:22:AA:BB:CC");
         Permissions.enforceEachPermissions(
                 () -> mFakeDevice.setMicrophonePreferredForCalls(false),
                 List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));

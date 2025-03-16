@@ -81,6 +81,20 @@ public class PictureInPictureParamsTest extends WindowManagerTestBase {
     }
 
     @Test
+    public void testPictureInPictureParams_autoEnterEnabledDefaultFalse() {
+        PictureInPictureParams params = new PictureInPictureParams.Builder().build();
+
+        assertFalse(params.isAutoEnterEnabled());
+    }
+
+    @Test
+    public void testPictureInPictureParams_seamlessResizeEnabledDefaultFalse() {
+        PictureInPictureParams params = new PictureInPictureParams.Builder().build();
+
+        assertFalse(params.isSeamlessResizeEnabled());
+    }
+
+    @Test
     public void testIsSameAspectRatio_exactMatch_returnTrue() {
         final Rect bounds = new Rect(0, 0, 100, 200);
         final Rational aspectRatio = new Rational(1, 2);

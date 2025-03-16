@@ -24,13 +24,13 @@ import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioPresentationTest extends CtsAndroidTestCase {
     private String TAG = "AudioPresentationTest";

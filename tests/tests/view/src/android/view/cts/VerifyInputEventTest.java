@@ -103,16 +103,18 @@ public class VerifyInputEventTest {
         KeyEvent downEvent = new KeyEvent(downTime, downTime,
                 KeyEvent.ACTION_DOWN, keyCode, 0 /* repeatCount */);
         mAutomation.injectInputEvent(downEvent, true);
-        KeyEvent received = waitForKey();
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
-        assertNotNull(verified);
-        compareKeys(downEvent, verified);
-
-        // Send UP event for consistency
-        KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
-                KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForKey();
+        try {
+            KeyEvent received = waitForKey();
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
+            assertNotNull(verified);
+            compareKeys(downEvent, verified);
+        } finally {
+            // Send UP event for consistency
+            KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
+                    KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForKey();
+        }
     }
 
     /**
@@ -127,15 +129,17 @@ public class VerifyInputEventTest {
         KeyEvent downEvent = new KeyEvent(downTime, downTime,
                 KeyEvent.ACTION_DOWN, keyCode, 0 /* repeatCount */);
         mAutomation.injectInputEvent(downEvent, true);
-        waitForKey(); // we will not be using the received event
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(downEvent);
-        assertNull(verified);
-
-        // Send UP event for consistency
-        KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
-                KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForKey();
+        try {
+            waitForKey(); // we will not be using the received event
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(downEvent);
+            assertNull(verified);
+        } finally {
+            // Send UP event for consistency
+            KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
+                    KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForKey();
+        }
     }
 
     /**
@@ -149,16 +153,18 @@ public class VerifyInputEventTest {
         KeyEvent downEvent = new KeyEvent(downTime, downTime,
                 KeyEvent.ACTION_DOWN, keyCode, 0 /* repeatCount */);
         mAutomation.injectInputEvent(downEvent, true);
-        KeyEvent received = waitForKey();
-        received.setSource(SOURCE_JOYSTICK); // use the received event, but modify its source
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
-        assertNull(verified);
-
-        // Send UP event for consistency
-        KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
-                KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForKey();
+        try {
+            KeyEvent received = waitForKey();
+            received.setSource(SOURCE_JOYSTICK); // use the received event, but modify its source
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
+            assertNull(verified);
+        } finally {
+            // Send UP event for consistency
+            KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
+                    KeyEvent.ACTION_UP, keyCode, 0 /* repeatCount */);
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForKey();
+        }
     }
 
     @Test
@@ -171,19 +177,21 @@ public class VerifyInputEventTest {
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
-        MotionEvent received = waitForMotion();
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
-        assertNotNull(verified);
+        try {
+            MotionEvent received = waitForMotion();
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
+            assertNotNull(verified);
 
-        compareMotions(downEvent, verified);
-
-        // Send UP event for consistency
-        MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_UP, point.x, point.y, 0 /*metaState*/);
-        upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        upEvent.setDisplayId(mActivity.getDisplayId());
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForMotion();
+            compareMotions(downEvent, verified);
+        } finally {
+            // Send UP event for consistency
+            MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
+                    MotionEvent.ACTION_UP, point.x, point.y, 0 /*metaState*/);
+            upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            upEvent.setDisplayId(mActivity.getDisplayId());
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForMotion();
+        }
     }
 
     /**
@@ -201,17 +209,19 @@ public class VerifyInputEventTest {
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
-        waitForMotion(); // we will not be using the received event
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(downEvent);
-        assertNull(verified);
-
-        // Send UP event for consistency
-        MotionEvent upEvent = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_UP,
-                point.x, point.y, 0 /*metaState*/);
-        upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        upEvent.setDisplayId(mActivity.getDisplayId());
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForMotion();
+        try {
+            waitForMotion(); // we will not be using the received event
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(downEvent);
+            assertNull(verified);
+        } finally {
+            // Send UP event for consistency
+            MotionEvent upEvent = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_UP,
+                    point.x, point.y, 0 /*metaState*/);
+            upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            upEvent.setDisplayId(mActivity.getDisplayId());
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForMotion();
+        }
     }
 
     /**
@@ -228,19 +238,21 @@ public class VerifyInputEventTest {
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
-        MotionEvent received = waitForMotion();
-        // use the received event, by modify its action
-        received.setAction(MotionEvent.ACTION_CANCEL);
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
-        assertNull(verified);
-
-        // Send UP event for consistency
-        MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_UP, point.x, point.y, 0 /*metaState*/);
-        upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        upEvent.setDisplayId(mActivity.getDisplayId());
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForMotion();
+        try {
+            MotionEvent received = waitForMotion();
+            // use the received event, by modify its action
+            received.setAction(MotionEvent.ACTION_CANCEL);
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
+            assertNull(verified);
+        } finally {
+            // Send UP event for consistency
+            MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
+                    MotionEvent.ACTION_UP, point.x, point.y, 0 /*metaState*/);
+            upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            upEvent.setDisplayId(mActivity.getDisplayId());
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForMotion();
+        }
     }
 
     /**
@@ -256,19 +268,21 @@ public class VerifyInputEventTest {
                 KeyEvent.KEYCODE_A, 0 /*repeat*/, 0 /*metaState*/,
                 1/*deviceId*/, 0 /*scanCode*/);
         mAutomation.injectInputEvent(downEvent, true);
-        KeyEvent received = waitForKey();
-        assertEquals(INJECTED_EVENT_DEVICE_ID, received.getDeviceId());
+        try {
+            KeyEvent received = waitForKey();
+            assertEquals(INJECTED_EVENT_DEVICE_ID, received.getDeviceId());
 
-        // This event can still be verified, however.
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
-        assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
-
-        // Send UP event for consistency
-        KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(), KeyEvent.ACTION_UP,
-                KeyEvent.KEYCODE_A, 0 /*repeat*/, 0 /*metaState*/,
-                1/*deviceId*/, 0 /*scanCode*/);
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForKey();
+            // This event can still be verified, however.
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
+            assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
+        } finally {
+            // Send UP event for consistency
+            KeyEvent upEvent = new KeyEvent(downTime, SystemClock.uptimeMillis(),
+                    KeyEvent.ACTION_UP, KeyEvent.KEYCODE_A, 0 /*repeat*/, 0 /*metaState*/,
+                    1/*deviceId*/, 0 /*scanCode*/);
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForKey();
+        }
     }
 
     /**
@@ -288,22 +302,24 @@ public class VerifyInputEventTest {
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         downEvent.setDisplayId(mActivity.getDisplayId());
         mAutomation.injectInputEvent(downEvent, true);
-        MotionEvent received = waitForMotion();
-        assertEquals(INJECTED_EVENT_DEVICE_ID, received.getDeviceId());
+        try {
+            MotionEvent received = waitForMotion();
+            assertEquals(INJECTED_EVENT_DEVICE_ID, received.getDeviceId());
 
-        // This event can still be verified, however.
-        VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
-        assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
-
-        // Send UP event for consistency
-        MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
-                MotionEvent.ACTION_UP, point.x, point.y, 0 /*pressure*/, 1 /*size*/,
-                0 /*metaState*/, 0 /*xPrecision*/, 0 /*yPrecision*/,
-                1 /*deviceId*/, 0 /*edgeFlags*/);
-        upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
-        upEvent.setDisplayId(mActivity.getDisplayId());
-        mAutomation.injectInputEvent(upEvent, true);
-        waitForMotion();
+            // This event can still be verified, however.
+            VerifiedInputEvent verified = mInputManager.verifyInputEvent(received);
+            assertEquals(INJECTED_EVENT_DEVICE_ID, verified.getDeviceId());
+        } finally {
+            // Send UP event for consistency
+            MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
+                    MotionEvent.ACTION_UP, point.x, point.y, 0 /*pressure*/, 1 /*size*/,
+                    0 /*metaState*/, 0 /*xPrecision*/, 0 /*yPrecision*/,
+                    1 /*deviceId*/, 0 /*edgeFlags*/);
+            upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            upEvent.setDisplayId(mActivity.getDisplayId());
+            mAutomation.injectInputEvent(upEvent, true);
+            waitForMotion();
+        }
     }
 
     private static Point getViewCenterOnScreen(View view) {

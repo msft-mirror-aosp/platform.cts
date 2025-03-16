@@ -133,7 +133,7 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withPermission(String... permissions) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withPermission(permissions);
@@ -152,7 +152,7 @@ public final class Permissions {
      */
     public PermissionContextImpl withPermissionOnVersionAtLeast(
             int minSdkVersion, String... permissions) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused =
@@ -172,7 +172,7 @@ public final class Permissions {
      */
     public PermissionContextImpl withPermissionOnVersionAtMost(
             int maxSdkVersion, String... permissions) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused =
@@ -192,7 +192,7 @@ public final class Permissions {
      */
     public PermissionContextImpl withPermissionOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... permissions) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused =
@@ -212,7 +212,7 @@ public final class Permissions {
      * <p>If the version does not match, the permission context will not change.
      */
     public PermissionContextImpl withPermissionOnVersion(int sdkVersion, String... permissions) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused =
@@ -236,7 +236,7 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withAppOp(String... appOps) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withAppOp(appOps);
@@ -261,7 +261,7 @@ public final class Permissions {
      * <p>If the version does not match the appOp will not be granted.
      */
     public PermissionContextImpl withAppOpOnVersion(int sdkVersion, String... appOps) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withAppOpOnVersion(sdkVersion, appOps);
@@ -286,7 +286,7 @@ public final class Permissions {
      * <p>If the version does not match the appOp will not be granted.
      */
     public PermissionContextImpl withAppOpOnVersionAtLeast(int sdkVersion, String... appOps) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withAppOpOnVersionAtLeast(sdkVersion,
@@ -312,7 +312,7 @@ public final class Permissions {
      * <p>If the version does not match the appOp will not be granted.
      */
     public PermissionContextImpl withAppOpOnVersionAtMost(int sdkVersion, String... appOps) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withAppOpOnVersionAtMost(sdkVersion,
@@ -339,7 +339,7 @@ public final class Permissions {
      */
     public PermissionContextImpl withAppOpOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... appOps) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withAppOpOnVersionBetween(minSdkVersion,
@@ -363,7 +363,7 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withoutPermission(String... permissions) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withoutPermission(permissions);
@@ -387,7 +387,7 @@ public final class Permissions {
      * }
      */
     public PermissionContextImpl withoutAppOp(String... appOps) {
-        PermissionContextImpl permissionContext = new PermissionContextImpl(this);
+        PermissionContextImpl permissionContext = PermissionContextImpl.create(this);
         mPermissionContexts.add(permissionContext);
 
         PermissionContextImpl unused = permissionContext.withoutAppOp(appOps);
@@ -443,7 +443,8 @@ public final class Permissions {
                 TestApis.users().instrumented(),
                 grantedPermissions,
                 deniedPermissions);
-        Package appOpPackage = hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage;
+        Package appOpPackage =
+                hasAdoptedShellPermissionIdentity ? sShellPackage : sInstrumentedPackage;
         setAppOpState(
                 appOpPackage,
                 TestApis.users().instrumented(),
@@ -624,7 +625,8 @@ public final class Permissions {
      * Note that if shell permission identity is adopted, then the app op state will not be queried
      * for the package - and the shell package should have its app op state set instead.
      */
-    public void setAppOpState(Package pkg, UserReference user, Collection<String> grantedAppOps, Collection<String> deniedAppOps) {
+    public void setAppOpState(Package pkg, UserReference user, Collection<String> grantedAppOps,
+            Collection<String> deniedAppOps) {
         FailureDumper.Companion.getFailureDumpers().add(
                 "com.android.bedstead.permissions.PermissionsAnnotationExecutor");
         // Filter so we get just the appOps which require a state that they are not currently in
@@ -653,7 +655,8 @@ public final class Permissions {
         }
     }
 
-    private void setPermissionStateToPackageWithoutAdoption(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
+    private void setPermissionStateToPackageWithoutAdoption(Package pkg, UserReference user,
+            Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
         for (String permission : permissionsToGrant) {
             if (canGrantPermission(permission)) {
                 pkg.grantPermission(user, permission);
@@ -665,7 +668,8 @@ public final class Permissions {
         }
 
         for (String permission : permissionsToDeny) {
-            if (pkg.equals(TestApis.packages().instrumented()) && user.equals(TestApis.users().instrumented())) {
+            if (pkg.equals(TestApis.packages().instrumented()) && user.equals(
+                    TestApis.users().instrumented())) {
                 // We can't deny permissions from ourselves or it'll kill the process
                 removePermissionContextsUntilCanApplyPermissions();
                 throwPermissionException(
@@ -676,10 +680,12 @@ public final class Permissions {
         }
     }
 
-    private void setPermissionStateToPackageWithoutRoot(Package pkg, UserReference user, Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
+    private void setPermissionStateToPackageWithoutRoot(Package pkg, UserReference user,
+            Collection<String> permissionsToGrant, Collection<String> permissionsToDeny) {
         if (!pkg.equals(TestApis.packages().instrumented()) || !SUPPORTS_ADOPT_SHELL_PERMISSIONS) {
             // We can't adopt...
-            setPermissionStateToPackageWithoutAdoption(pkg, user, permissionsToGrant, permissionsToDeny);
+            setPermissionStateToPackageWithoutAdoption(pkg, user, permissionsToGrant,
+                    permissionsToDeny);
             return;
         }
 
@@ -728,7 +734,8 @@ public final class Permissions {
             adoptShellPermissionIdentity(adoptedShellPermissions);
         }
         if (!grantedPermissions.isEmpty() || !deniedPermissions.isEmpty()) {
-            setPermissionStateToPackageWithoutAdoption(pkg, user, grantedPermissions, deniedPermissions);
+            setPermissionStateToPackageWithoutAdoption(pkg, user, grantedPermissions,
+                    deniedPermissions);
         }
     }
 
@@ -828,6 +835,16 @@ public final class Permissions {
         }
 
         return Collections.emptySet();
+    }
+
+    /**
+     * create a PermissionContextImpl that doesn't block others threads to create other contexts
+     * don't use it in the tests directly
+     */
+    public PermissionContextImpl createNonBlockingPermissionContext() {
+        var context = PermissionContextImpl.createNonBlocking(this);
+        mPermissionContexts.add(context);
+        return context;
     }
 }
 

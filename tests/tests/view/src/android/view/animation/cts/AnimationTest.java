@@ -29,7 +29,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -578,7 +578,7 @@ public class AnimationTest {
         final Animation anim = AnimationUtils.loadAnimation(mActivity, R.anim.accelerate_alpha);
         final AnimationListener listener = mock(AnimationListener.class);
         anim.setAnimationListener(listener);
-        verifyZeroInteractions(listener);
+        verifyNoMoreInteractions(listener);
 
         AnimationTestUtils.assertRunAnimation(mInstrumentation, mActivityRule, animWindow, anim);
         verify(listener, times(1)).onAnimationStart(anim);

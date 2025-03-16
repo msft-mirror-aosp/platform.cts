@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -95,7 +95,7 @@ public class ChoreographerTest {
             // We expect the remaining callbacks to have been invoked once.
             verify(addedCallback1, timeout(NOMINAL_VSYNC_PERIOD * 30).times(1)).run();
             verify(addedCallback2, timeout(NOMINAL_VSYNC_PERIOD * 30).times(1)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
 
             // If we post a callback again, then it should be invoked again.
             mChoreographer.postCallback(
@@ -103,7 +103,7 @@ public class ChoreographerTest {
 
             verify(addedCallback1, timeout(NOMINAL_VSYNC_PERIOD * 30).times(2)).run();
             verify(addedCallback2, times(1)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
 
             // If the token matches, the the callback should be removed.
             mChoreographer.postCallback(
@@ -113,7 +113,7 @@ public class ChoreographerTest {
             mChoreographer.removeCallbacks(
                     Choreographer.CALLBACK_ANIMATION, null, TOKEN);
             verify(addedCallback1, timeout(NOMINAL_VSYNC_PERIOD * 30).times(3)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
 
             // If the action and token matches, then the callback should be removed.
             // If only the token matches, then the callback should not be removed.
@@ -124,7 +124,7 @@ public class ChoreographerTest {
             mChoreographer.removeCallbacks(
                     Choreographer.CALLBACK_ANIMATION, removedCallback, TOKEN);
             verify(addedCallback1, timeout(NOMINAL_VSYNC_PERIOD * 30).times(4)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
         } finally {
             mChoreographer.removeCallbacks(
                     Choreographer.CALLBACK_ANIMATION, addedCallback1, null);
@@ -152,12 +152,12 @@ public class ChoreographerTest {
             SystemClock.sleep(NOMINAL_VSYNC_PERIOD * 3);
 
             // The callbacks should not have been invoked yet because of the delay.
-            verifyZeroInteractions(addedCallback);
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(addedCallback);
+            verifyNoMoreInteractions(removedCallback);
 
             // We expect the remaining callbacks to have been invoked.
             verify(addedCallback, timeout(DELAY_PERIOD * 3).times(1)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
 
             // If the token matches, the the callback should be removed.
             mChoreographer.postCallbackDelayed(
@@ -167,7 +167,7 @@ public class ChoreographerTest {
             mChoreographer.removeCallbacks(
                     Choreographer.CALLBACK_ANIMATION, null, TOKEN);
             verify(addedCallback, timeout(DELAY_PERIOD * 3).times(2)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
 
             // If the action and token matches, then the callback should be removed.
             // If only the token matches, then the callback should not be removed.
@@ -178,7 +178,7 @@ public class ChoreographerTest {
             mChoreographer.removeCallbacks(
                     Choreographer.CALLBACK_ANIMATION, removedCallback, TOKEN);
             verify(addedCallback, timeout(DELAY_PERIOD * 3).times(3)).run();
-            verifyZeroInteractions(removedCallback);
+            verifyNoMoreInteractions(removedCallback);
         } finally {
             mChoreographer.removeCallbacks(
                     Choreographer.CALLBACK_ANIMATION, addedCallback, null);
@@ -220,7 +220,7 @@ public class ChoreographerTest {
             verify(addedFrameCallback1, timeout(NOMINAL_VSYNC_PERIOD * 10).times(1))
                     .doFrame(frameTimeNanosCaptor1.capture());
             verify(addedFrameCallback2, times(1)).doFrame(frameTimeNanosCaptor2.capture());
-            verifyZeroInteractions(removedFrameCallback);
+            verifyNoMoreInteractions(removedFrameCallback);
 
             assertTimeDeltaLessThan(frameTimeNanosCaptor1.getValue() - postTimeNanos,
                     NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
@@ -237,7 +237,7 @@ public class ChoreographerTest {
             verify(addedFrameCallback1, timeout(NOMINAL_VSYNC_PERIOD * 10).times(2))
                     .doFrame(frameTimeNanosCaptor1.capture());
             verify(addedFrameCallback2, times(1)).doFrame(frameTimeNanosCaptor2.capture());
-            verifyZeroInteractions(removedFrameCallback);
+            verifyNoMoreInteractions(removedFrameCallback);
             assertTimeDeltaLessThan(frameTimeNanosCaptor1.getAllValues().get(1) - postTimeNanos,
                     NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
         } finally {
@@ -264,14 +264,14 @@ public class ChoreographerTest {
             SystemClock.sleep(NOMINAL_VSYNC_PERIOD * 3);
 
             // The callbacks should not have been invoked yet because of the delay.
-            verifyZeroInteractions(addedFrameCallback);
-            verifyZeroInteractions(removedFrameCallback);
+            verifyNoMoreInteractions(addedFrameCallback);
+            verifyNoMoreInteractions(removedFrameCallback);
 
             // We expect the remaining callbacks to have been invoked.
             ArgumentCaptor<Long> frameTimeNanosCaptor = ArgumentCaptor.forClass(Long.class);
             verify(addedFrameCallback, timeout(DELAY_PERIOD * 3).times(1))
                     .doFrame(frameTimeNanosCaptor.capture());
-            verifyZeroInteractions(removedFrameCallback);
+            verifyNoMoreInteractions(removedFrameCallback);
             assertTimeDeltaLessThan(frameTimeNanosCaptor.getValue() - postTimeNanos,
                     (NOMINAL_VSYNC_PERIOD * 10 + DELAY_PERIOD) * NANOS_PER_MS);
         } finally {
@@ -357,7 +357,7 @@ public class ChoreographerTest {
         assertTrue(addedCallback1.mErrorMessages, addedCallback1.mAssertionPassed);
         awaitCountDown(addedCallback2.mCallbackComplete);
         assertTrue(addedCallback2.mErrorMessages, addedCallback2.mAssertionPassed);
-        verifyZeroInteractions(removedCallback);
+        verifyNoMoreInteractions(removedCallback);
 
         assertTimeDeltaLessThan(addedCallback1.mFrameTimeNanos - postTimeNanos,
                 NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
@@ -371,7 +371,7 @@ public class ChoreographerTest {
 
         awaitCountDown(addedCallback1.mCallbackComplete);
         assertTrue(addedCallback1.mErrorMessages, addedCallback1.mAssertionPassed);
-        verifyZeroInteractions(removedCallback);
+        verifyNoMoreInteractions(removedCallback);
         assertTimeDeltaLessThan(addedCallback1.mFrameTimeNanos - postTimeNanos,
                 NOMINAL_VSYNC_PERIOD * 10 * NANOS_PER_MS);
         // Callback #2 is not invoked a second time so the time delta is not checked here.

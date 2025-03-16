@@ -2192,132 +2192,6 @@
     <string name="p2p_waiting_for_peer_to_disconnect">Waiting for peer
         to disconnect ...</string>
 
-    <!-- Strings for TestListActivity -->
-    <string name="aware_test">Wi-Fi Aware Test</string>
-    <string name="aware_test_info">
-        The Wi-Fi Aware tests require two devices with Wi-Fi enabled. One device must
-        be the candidate device running the software build to be tested, while the other
-        device must be an implementation already known to be compatible.\n\nThere are
-        tests for Publisher and Subscriber, Responder and Initiator. One device should
-        start in a role, and the other should start in the complementary
-        role. Your device must pass the tests in all roles.
-    </string>
-    <string name="aware_not_enabled">Wi-Fi / Location Mode is not enabled</string>
-    <string name="aware_not_enabled_message">These tests require Wi-Fi and Location Mode to be enabled.
-        Click the button below to go to system settings and enable Wi-Fi and Location Mode.</string>
-    <string name="aware_settings">Wi-Fi Settings</string>
-    <string name="aware_setup_error">
-        Test failed.\n\nSet up error. Check whether Wi-Fi is enabled.</string>
-    <string name="aware_unexpected_error">
-        Test failed.\n\nUnexpected error. Check logcat.</string>
-
-    <string name="aware_dp_ib_open_unsolicited">Data Path: Open: Unsolicited/Passive</string>
-    <string name="aware_dp_ib_passphrase_unsolicited">Data Path: Passphrase: Unsolicited/Passive</string>
-    <string name="aware_dp_ib_pmk_unsolicited">Data Path: PMK: Unsolicited/Passive</string>
-    <string name="aware_dp_ib_open_solicited">Data Path: Open: Solicited/Active</string>
-    <string name="aware_dp_ib_passphrase_solicited">Data Path: Passphrase: Solicited/Active</string>
-    <string name="aware_dp_ib_pmk_solicited">Data Path: PMK: Solicited/Active</string>
-    <string name="aware_dp_ib_open_unsolicited_accept_any">Data Path: Open: Unsolicited/Passive: accept any peer</string>
-    <string name="aware_dp_ib_passphrase_unsolicited_accept_any">Data Path: Passphrase: Unsolicited/Passive: accept any peer</string>
-    <string name="aware_dp_ib_pmk_unsolicited_accept_any">Data Path: PMK: Unsolicited/Passive: accept any peer</string>
-    <string name="aware_dp_ib_open_solicited_accept_any">Data Path: Open: Solicited/Active: accept any peer</string>
-    <string name="aware_dp_ib_passphrase_solicited_accept_any">Data Path: Passphrase: Solicited/Active: accept any peer</string>
-    <string name="aware_dp_ib_pmk_solicited_accept_any">Data Path: PMK: Solicited/Active: accept any peer</string>
-    <string name="aware_dp_ib_force_channel_setup">Data Path: force channel setup</string>
-    <string name="aware_discovery_ranging">Discovery with Ranging</string>
-    <string name="aware_publish">Publish</string>
-    <string name="aware_subscribe">Subscribe</string>
-
-    <string name="aware_dp_oob_open">Data Path (OOB): Open</string>
-    <string name="aware_dp_oob_passphrase">Data Path (OOB): Passphrase</string>
-    <string name="aware_responder">Responder</string>
-    <string name="aware_initiator">Initiator</string>
-
-    <string name="aware_status_attached">Attached ...</string>
-    <string name="aware_status_attach_fail">Attach failure!</string>
-    <string name="aware_status_attach_timeout">Attach failure - timed out!</string>
-    <string name="aware_status_identity">Discovery (Identity) MAC address: %1$s ...</string>
-    <string name="aware_status_identity_fail">Identity listener failure - timed out!</string>
-    <string name="aware_status_subscribe_started">Subscribe discovery session started ...</string>
-    <string name="aware_status_subscribe_failed">Subscribe failure!</string>
-    <string name="aware_status_subscribe_timeout">Subscribe failure - timed out!</string>
-    <string name="aware_status_subscribe_null_session">Subscribe failure - null session!</string>
-    <string name="aware_status_publish_started">Publish discovery session started ...</string>
-    <string name="aware_status_publish_failed">Publish failure!</string>
-    <string name="aware_status_publish_timeout">Publish failure - timed out!</string>
-    <string name="aware_status_publish_null_session">Publish failure - null session!</string>
-    <string name="aware_status_discovery">Service discovered ...</string>
-    <string name="aware_status_discovery_with_info">Service discovered ... peer MAC : %1$s</string>
-    <string name="aware_status_discovery_timeout">Service discovery failure - timed out!</string>
-    <string name="aware_status_discovery_fail">Service discovery failure - parameter mismatch!</string>
-    <string name="aware_status_send_success">Sent message successfully ...</string>
-    <string name="aware_status_send_failed">Send message failure!</string>
-    <string name="aware_status_send_timeout">Send message failure - timed out!</string>
-    <string name="aware_status_send_fail_parameter">Send message failure - mismatched ids!</string>
-    <string name="aware_status_received">Received message ...</string>
-    <string name="aware_status_starting_rtt">Starting RTT operations ...</string>
-    <string name="aware_status_waiting_for_peer_rtt">Pausing to let other device perform RTT ...</string>
-    <string name="aware_status_received_peer_rtt_done">Other device done with RTT ...</string>
-    <string name="aware_status_received_mac">Received peer MAC address: %1$s ...</string>
-    <string name="aware_status_receive_timeout">Receive message failure - timed out!</string>
-    <string name="aware_status_receive_failure">Receive message failure - didn\'t receive expected message!</string>
-    <string name="aware_status_network_requested">Network requested ...</string>
-    <string name="aware_status_network_success">Network formed ...</string>
-    <string name="aware_status_network_failed">Network request failure - timed out!</string>
-    <string name="aware_status_network_failed_leak">Failure: Network request success - but leaked information!</string>
-    <string name="aware_status_sleeping_wait_for_responder">Pausing to let Responder time to set up ...</string>
-    <string name="aware_status_ranging_peer_failure">Ranging to PeerHandle failure: %1$d failures of %2$d attempts!</string>
-    <string name="aware_status_ranging_mac_failure">Ranging to MAC address failure: %1$d failures of %2$d attempts!</string>
-    <string name="aware_status_ranging_peer_success">Ranging to PeerHandle success: %1$d successes of %2$d attempts!</string>
-    <string name="aware_status_ranging_mac_success">Ranging to MAC address success: %1$d successes of %2$d attempts!</string>
-    <string name="aware_status_lifecycle_failed">Discovery lifecycle FAILURE!</string>
-    <string name="aware_status_lifecycle_ok">Discovery lifecycle validated!</string>
-
-    <string name="aware_status_socket_failure">Failure on socket connection setup!</string>
-    <string name="aware_status_socket_server_socket_started">ServerSocket started on port %1$d!</string>
-    <string name="aware_status_socket_server_info_rx">Peer server info: IPv6=%1$s @ port=%2$d!</string>
-    <string name="aware_status_socket_server_message_from_peer">Message from peer: \'%1$s\'</string>
-
-    <string name="aware_data_path_open_unsolicited_publish">Data Path: Open: Unsolicited Publish</string>
-    <string name="aware_data_path_open_unsolicited_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: Open: Unsolicited/Passive\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_open_passive_subscribe">Data Path: Open: Passive Subscribe</string>
-
-    <string name="aware_data_path_passphrase_unsolicited_publish">Data Path: Passphrase: Unsolicited Publish</string>
-    <string name="aware_data_path_passphrase_unsolicited_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: Passphrase: Unsolicited/Passive\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_passphrase_passive_subscribe">Data Path: Passphrase: Passive Subscribe</string>
-
-    <string name="aware_data_path_pmk_unsolicited_publish">Data Path: PMK: Unsolicited Publish</string>
-    <string name="aware_data_path_pmk_unsolicited_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: PMK: Unsolicited/Passive\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_pmk_passive_subscribe">Data Path: PMK: Passive Subscribe</string>
-
-    <string name="aware_data_path_open_solicited_publish">Data Path: Open: Solicited Publish</string>
-    <string name="aware_data_path_open_solicited_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: Open: Solicited/Active\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_open_active_subscribe">Data Path: Open: Active Subscribe</string>
-
-    <string name="aware_data_path_passphrase_solicited_publish">Data Path: Passphrase: Solicited Publish</string>
-    <string name="aware_data_path_passphrase_solicited_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: Passphrase: Solicited/Active\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_passphrase_active_subscribe">Data Path: Passphrase: Active Subscribe</string>
-
-    <string name="aware_data_path_pmk_solicited_publish">Data Path: PMK: Solicited Publish</string>
-    <string name="aware_data_path_pmk_solicited_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: PMK: Solicited/Active\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_pmk_active_subscribe">Data Path: PMK: Active Subscribe</string>
-
-    <string name="aware_data_path_oob_open_responder">Data Path (OOB): Open: Responder</string>
-    <string name="aware_data_path_oob_open_responder_info">The responder is now ready.\n\nOn the other device: start the \'Data Path (OOB): Open\' / \'Initiator\' test.</string>
-    <string name="aware_data_path_oob_open_initiator">Data Path (OOB): Open: Initiator</string>
-
-    <string name="aware_data_path_oob_passphrase_responder">Data Path (OOB): Passphrase: Responder</string>
-    <string name="aware_data_path_oob_passphrase_responder_info">The responder is now ready.\n\nOn the other device: start the \'Data Path (OOB): Passphrase\' / \'Initiator\' test.</string>
-    <string name="aware_data_path_oob_passphrase_initiator">Data Path (OOB): Passphrase: Initiator</string>
-
-    <string name="aware_discovery_ranging_publish">Discovery with Ranging: Publish</string>
-    <string name="aware_discovery_ranging_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Discovery with Ranging\' / \'Subscribe\' test.</string>
-    <string name="aware_discovery_ranging_subscribe">Discovery with Ranging: Subscribe</string>
-
-    <string name="aware_data_path_force_channel_setup_publish">Data Path: force channel setup Publish</string>
-    <string name="aware_data_path_force_channel_setup_publish_info">The publisher is now ready.\n\nOn the other device: start the \'Data Path: force channel setup\' / \'Subscribe\' test.</string>
-    <string name="aware_data_path_force_channel_setup_subscribe">Data Path: force channel setup Subscribe</string>
-
     <string name="camera_fov_calibration">Camera FOV Calibration</string>
     <string name="camera_fov_calibration_done">Done</string>
     <string name="camera_fov_general_settings">General settings</string>
@@ -5854,7 +5728,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \n • Select the \"Java API\" button.
         \n • Press the \"Start\" button to repeat each data path test for the Java API.
         \n\nTest Completion:
-        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+        \n • Once each of the data paths and APIs have been measured, and a signal detected, the test can be marked successful.
     </string>
     <string name="audio_datapaths_mic">Mic:</string>
     <string name="audio_datapaths_speaker">Speaker:</string>
@@ -5872,7 +5746,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \n • Select the \"Java API\" button.
         \n • Press the \"Start\" button to repeat each data path test for the Java API.
         \n\nTest Completion:
-        \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
+        \n • Once each of the data paths and APIs have been measured, and a signal detected, the test can be marked successful.
     </string>
     <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test.
         Please insert an Analog Loopback Plug into the Analog Headset Jack and run the test.</string>
@@ -7777,11 +7651,12 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\n* \"Save screen capture\" action below can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
-        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
-        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
-        \n3. Press \"Send notification\".
-        \n4. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
-        \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
+        1.  Press \"Request SMS Role\". Select the Cts Verifier app in the dialog that pops up, and press "set as default", then wait 60 seconds, or reboot the phone.
+        \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n4. Press \"Send notification\".
+        \n5. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
+        \n6. If screenshot is blank, click \"Pass\", otherwise click \"Fail\". Afterwards, navigate to the "Default Apps" page in settings, and reset the SMS app
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
         1. Press \"Start screen recording\", then select \"A Single App\" in the resulting recording dialog, then select \"Start\", then pick \"Cts Verifier\" in the list of apps that shows.
@@ -7841,6 +7716,7 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="notif_hiding_no_local_screen_recorder_warning">This test requires a local screen recorder that declares uses-permission of android.permission.RECORD_SENSITIVE_CONTENT to exempt it from protections</string>
     <string name="notif_hiding_start_screen_recording">Start screen recording</string>
+    <string name="notif_hiding_request_sms_role">Request SMS role</string>
     <string name="notif_hiding_send_notification">Send notification</string>
     <string name="notif_hiding_save_screen_capture">Save screen capture</string>
     <string name="notif_hiding_save_screen_capture_path">Screen capture saved to %1$s</string>
@@ -7864,7 +7740,6 @@ You should be prompted to select credentials; choose the ones you just installed
         <item>CtsMultiDeviceGenericRangingTests</item>
         <item>CtsUwbMultiDeviceUwbManagerTests</item>
         <item>CtsWifiAwareTests</item>
-        <item>CtsWifiDirectTests</item>
         <item>CtsWifiSoftApTestCases</item>
     </string-array>
 </resources>

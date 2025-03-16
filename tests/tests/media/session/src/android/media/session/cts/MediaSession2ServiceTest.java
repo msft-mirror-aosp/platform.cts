@@ -120,7 +120,7 @@ public class MediaSession2ServiceTest {
      * controller tries to connect, with the proper arguments.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnGetSessionIsCalled() throws InterruptedException {
         final List<ControllerInfo> controllerInfoList = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(1);
@@ -156,7 +156,7 @@ public class MediaSession2ServiceTest {
      * ControllerInfo)}.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnGetSession_returnsSession() throws InterruptedException {
         final List<ControllerInfo> controllerInfoList = new ArrayList<>();
         final CountDownLatch latch = new CountDownLatch(2);
@@ -221,7 +221,7 @@ public class MediaSession2ServiceTest {
      * sessions for different controllers.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnGetSession_returnsDifferentSessions() throws InterruptedException {
         final List<Session2Token> tokens = new ArrayList<>();
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
@@ -251,7 +251,7 @@ public class MediaSession2ServiceTest {
      * connection by returning null.
      */
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnGetSession_rejectsConnection() throws InterruptedException {
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
             @Override
@@ -275,7 +275,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAllControllersDisconnected_oneSession() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         final MediaSession2 testSession =
@@ -304,7 +304,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAllControllersDisconnected_multipleSessions() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
         StubMediaSession2Service.setTestInjector(new StubMediaSession2Service.TestInjector() {
@@ -332,7 +332,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSessions() throws InterruptedException {
         MediaController2 controller = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -352,7 +352,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAddSessions_removedWhenClose() throws InterruptedException {
         MediaController2 controller = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -372,7 +372,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnUpdateNotification() throws InterruptedException {
         MediaController2 controller = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -408,7 +408,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnBind() throws Exception {
         MediaController2 controller1 = createConnectedController(mToken);
         MediaSession2Service service = StubMediaSession2Service.getInstance();
@@ -421,7 +421,7 @@ public class MediaSession2ServiceTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testMediaNotification() {
         final int testId = 1001;
         final String testChannelId = "channelId";

@@ -21,9 +21,9 @@ import android.media.ToneGenerator;
 import android.platform.test.annotations.AppModeFull;
 import android.test.AndroidTestCase;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
-@NonMainlineTest
+@FrameworkSpecificTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class ToneGeneratorTest extends AndroidTestCase {
 

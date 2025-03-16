@@ -1576,7 +1576,6 @@ public class SubscriptionManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_USER_ASSOCIATION_QUERY)
     @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsSubscriptionAssociatedWithUser() throws Exception {
 

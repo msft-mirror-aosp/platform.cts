@@ -109,7 +109,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetActiveSessions() throws Exception {
         assertThrows("Expected security exception for unauthorized call to getActiveSessions",
                 SecurityException.class,
@@ -119,7 +119,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetMediaKeyEventSession_throwsSecurityException() {
         assertThrows("Expected security exception for call to getMediaKeyEventSession",
                 SecurityException.class,
@@ -128,7 +128,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetMediaKeyEventSessionPackageName_throwsSecurityException() {
         assertThrows("Expected security exception for call to getMediaKeyEventSessionPackageName",
                 SecurityException.class,
@@ -137,7 +137,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires a full user.
     public void testOnMediaKeyEventSessionChangedListener() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_CONTENT_CONTROL,
@@ -168,7 +168,7 @@ public class MediaSessionManagerTest {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires a full user.
     public void testOnMediaKeyEventSessionChangedListener_whenSessionIsReleased() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_CONTENT_CONTROL,
@@ -197,7 +197,7 @@ public class MediaSessionManagerTest {
     @Ignore // Ignore for b/389531777
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires a full user.
     public void testOnMediaKeyEventSessionChangedListener_noSession_passesEmptyPackageAndNullToken()
             throws InterruptedException {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
@@ -233,7 +233,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testOnMediaKeyEventSessionChangedListener_noPermission_throwsSecurityException() {
         getInstrumentation()
                 .getUiAutomation()
@@ -250,7 +250,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires a full user.
     public void testOnMediaKeyEventDispatchedListener() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_CONTENT_CONTROL,
@@ -307,7 +307,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires a full user.
     public void testSetOnVolumeKeyLongPressListener() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -357,7 +357,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER}) // Requires a full user. Don't run for work profile.
+    @UserTest({UserType.INITIAL_USER, UserType.SECONDARY_USER}) // Requires a full user.
     public void testSetOnMediaKeyListener() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -423,7 +423,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testRemoteUserInfo() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -475,7 +475,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSession2Tokens() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -504,7 +504,7 @@ public class MediaSessionManagerTest {
 
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetSession2TokensWithTwoSessions() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -557,7 +557,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAddAndRemoveSession2TokensListener() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -591,7 +591,7 @@ public class MediaSessionManagerTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testSession2TokensNotChangedBySession1() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -615,7 +615,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testCustomClassConfigValuesAreValid() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -640,7 +640,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testIsTrustedForMediaControl_noPermissionWithEnabledNotificationListener_isTrusted()
             throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(new String[0]);
@@ -656,7 +656,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void
             testIsTrustedForMediaControl_withPermissionNoEnabledNotificationListener_isTrusted() {
         getInstrumentation()
@@ -676,7 +676,7 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void
             testIsTrustedForMediaControl_noPermissionNoEnabledNotificationListener_notTrusted() {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(new String[0]);

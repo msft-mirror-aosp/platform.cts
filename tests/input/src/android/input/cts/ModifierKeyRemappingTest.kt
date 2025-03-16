@@ -103,7 +103,7 @@ class ModifierKeyRemappingTest {
                             inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
                 }
 
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT),
@@ -112,7 +112,7 @@ class ModifierKeyRemappingTest {
                     )
                 )
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT))
 
                 clearAllModifierKeyRemappings()
@@ -121,7 +121,8 @@ class ModifierKeyRemappingTest {
                             inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
                 }
 
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
+
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
@@ -130,7 +131,7 @@ class ModifierKeyRemappingTest {
                     )
                 )
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
 
                 activity.assertNoEvents()
@@ -152,7 +153,7 @@ class ModifierKeyRemappingTest {
                             inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
                 }
 
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT),
@@ -161,7 +162,7 @@ class ModifierKeyRemappingTest {
                     )
                 )
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_SHIFT_LEFT))
 
                 clearAllModifierKeyRemappings()
@@ -170,7 +171,7 @@ class ModifierKeyRemappingTest {
                             inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
                 }
 
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
@@ -179,7 +180,7 @@ class ModifierKeyRemappingTest {
                     )
                 )
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
 
                 activity.assertNoEvents()
@@ -198,10 +199,10 @@ class ModifierKeyRemappingTest {
                             inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
                 }
 
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK))
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK),
@@ -210,7 +211,7 @@ class ModifierKeyRemappingTest {
                 )
 
                 // Send second pair of key presses to reset caps lock state
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK),
@@ -218,7 +219,7 @@ class ModifierKeyRemappingTest {
                     )
                 )
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_CAPS_LOCK))
 
                 clearAllModifierKeyRemappings()
@@ -227,7 +228,7 @@ class ModifierKeyRemappingTest {
                             inputDevice?.getKeyCodeForKeyLocation(KeyEvent.KEYCODE_ALT_LEFT)
                 }
 
-                injectKeyDown(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyDown(KEY_LEFTALT)
                 verifier.assertReceivedKey(
                     allOf(
                         withKeyCode(KeyEvent.KEYCODE_ALT_LEFT),
@@ -236,7 +237,7 @@ class ModifierKeyRemappingTest {
                     )
                 )
 
-                injectKeyUp(keyboardDevice, KEY_LEFTALT)
+                keyboardDevice.injectKeyUp(KEY_LEFTALT)
                 verifier.assertReceivedKey(withKeyCode(KeyEvent.KEYCODE_ALT_LEFT))
 
                 activity.assertNoEvents()

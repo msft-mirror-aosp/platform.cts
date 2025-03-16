@@ -29,7 +29,9 @@ java_defaults {
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "platform-test-annotations",
+        "platform-test-rules",
         "truth",
+        "TestParameterInjector",
     ],
 
     test_suites: [
@@ -54,12 +56,34 @@ android_test {
     srcs: [
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentActionViewTest.java",
-        "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentForResultTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentTest.java",
-        "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaSessionTest.java",
         "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
     ],
     test_config: "InstallationTest.xml",
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJInstallationViaIntentForResultTestCases",
+    defaults: ["cts_package_installer_cuj_defaults"],
+    manifest: "AndroidManifest_installation_forResult.xml",
+    srcs: [
+        "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaIntentForResultTest.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
+    ],
+    test_config: "InstallationViaIntentForResultTest.xml",
+}
+
+android_test {
+    name: "CtsPackageInstallerCUJInstallationViaSessionTestCases",
+    defaults: ["cts_package_installer_cuj_defaults"],
+    manifest: "AndroidManifest_installation_viaSession.xml",
+    srcs: [
+        "src/android/packageinstaller/criticaluserjourney/cts/InstallationTestBase.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/InstallationViaSessionTest.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
+    ],
+    test_config: "InstallationViaSessionTest.xml",
 }
 
 android_test {

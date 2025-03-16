@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import android.Manifest;
 import android.app.Activity;
@@ -302,7 +302,7 @@ public class DialerFilterTest {
         reset(mockTextWatcher);
         mDialerFilter.setLettersWatcher(mockTextWatcher);
         mDialerFilter.append("");
-        verifyZeroInteractions(mockTextWatcher);
+        verifyNoMoreInteractions(mockTextWatcher);
     }
 
     @UiThreadTest
@@ -381,7 +381,7 @@ public class DialerFilterTest {
         reset(mockTextWatcher);
         mDialerFilter.removeFilterWatcher(mockTextWatcher);
         mDialerFilter.append("GOLF");
-        verifyZeroInteractions(mockTextWatcher);
+        verifyNoMoreInteractions(mockTextWatcher);
 
         assertEquals(-1, span.getSpanStart(mockTextWatcher));
         assertEquals(-1, span.getSpanEnd(mockTextWatcher));

@@ -192,7 +192,7 @@ class PreviewNumFacesTest(its_base_test.ItsBaseTest):
       # Check skip conditions.
       should_run = (camera_properties_utils.face_detect(props) and
                     (its_session_utils.get_first_api_level(self.dut.serial) >=
-                    its_session_utils.ANDROID16_API_LEVEL))
+                     its_session_utils.ANDROID16_API_LEVEL))
       camera_properties_utils.skip_unless(should_run)
       mono_camera = camera_properties_utils.mono_camera(props)
       fd_modes = props['android.statistics.info.availableFaceDetectModes']

@@ -45,7 +45,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import static java.lang.annotation.RetentionPolicy.SOURCE;
@@ -3467,7 +3466,7 @@ public class TextViewTest {
         mTextView.setOnCreateContextMenuListener(mockOnCreateContextMenuListener);
         assertTrue(mTextView.performLongClick());
         verify(mockOnLongClickListener, times(1)).onLongClick(mTextView);
-        verifyZeroInteractions(mockOnCreateContextMenuListener);
+        verifyNoMoreInteractions(mockOnCreateContextMenuListener);
 
         reset(mockOnLongClickListener);
         when(mockOnLongClickListener.onLongClick(any(View.class))).thenReturn(Boolean.FALSE);
@@ -5843,10 +5842,10 @@ public class TextViewTest {
 
         final TextView.OnEditorActionListener mockOnEditorActionListener =
                 mock(TextView.OnEditorActionListener.class);
-        verifyZeroInteractions(mockOnEditorActionListener);
+        verifyNoMoreInteractions(mockOnEditorActionListener);
 
         mTextView.setOnEditorActionListener(mockOnEditorActionListener);
-        verifyZeroInteractions(mockOnEditorActionListener);
+        verifyNoMoreInteractions(mockOnEditorActionListener);
 
         mTextView.onEditorAction(EditorInfo.IME_ACTION_DONE);
         verify(mockOnEditorActionListener, times(1)).onEditorAction(mTextView,

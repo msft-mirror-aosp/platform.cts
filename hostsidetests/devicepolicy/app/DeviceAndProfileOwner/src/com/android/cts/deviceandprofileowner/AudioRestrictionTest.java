@@ -18,9 +18,9 @@ package com.android.cts.deviceandprofileowner;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.media.AudioDeviceVolumeManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -47,12 +47,16 @@ public class AudioRestrictionTest extends BaseDeviceAdminTest {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mAudioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
+        AudioDeviceVolumeManager audioDeviceVolumeManager =
+                mContext.getSystemService(AudioDeviceVolumeManager.class);
         mPackageManager = mContext.getPackageManager();
         mUseFixedVolume = mContext.getResources().getBoolean(
                 Resources.getSystem().getIdentifier("config_useFixedVolume", "bool", "android"));
-        mUseFullVolume = runWithShellPermissionIdentity(() -> mAudioManager.isFullVolumeDevice(),
-                android.Manifest.permission.QUERY_AUDIO_STATE);
+        mUseFullVolume =
+                runWithShellPermissionIdentity(
+                        () -> audioDeviceVolumeManager.isFullVolumeDevice(),
+                        android.Manifest.permission.QUERY_AUDIO_STATE);
     }
 
     // Here we test that DISALLOW_ADJUST_VOLUME disallows to unmute volume.

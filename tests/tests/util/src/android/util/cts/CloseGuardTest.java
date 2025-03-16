@@ -16,7 +16,7 @@
 
 package android.util.cts;
 
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.CloseGuard;
 
@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 /** CTS tests for {@link CloseGuard} */
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = CloseGuard.class)
+@DisabledOnRavenwood(blockedBy = CloseGuard.class)
 public class CloseGuardTest {
 
     @Rule
@@ -41,7 +41,7 @@ public class CloseGuardTest {
 
     @Rule
     public final TestRule rule =
-            RavenwoodRule.isUnderRavenwood() ? null : CloseGuardSupport.getRule();
+            RavenwoodRule.isOnRavenwood() ? null : CloseGuardSupport.getRule();
 
     @Test
     public void testEnabled_NotOpen() throws Throwable {

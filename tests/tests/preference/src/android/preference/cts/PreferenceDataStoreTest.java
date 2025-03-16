@@ -35,7 +35,6 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import android.content.Context;
@@ -156,7 +155,7 @@ public class PreferenceDataStoreTest {
         assertEquals(mDataStore, mPreference.getPreferenceDataStore());
 
         // Check that the secondary data store assigned to the manager was NOT used.
-        verifyZeroInteractions(secondaryDataStore);
+        verifyNoMoreInteractions(secondaryDataStore);
 
         // Check that the primary data store assigned directly to the preference was used.
         verify(mDataStore, atLeastOnce()).getString(eq(KEY), any());

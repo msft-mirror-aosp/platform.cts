@@ -36,6 +36,7 @@ import android.content.pm.ResolveInfo;
 import android.graphics.Insets;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.platform.test.rule.SystemSettingRule;
 import android.provider.DeviceConfig;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -55,6 +56,8 @@ import androidx.test.uiautomator.Until;
 import com.android.compatibility.common.util.DisableAnimationRule;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
+
+import com.google.testing.junit.testparameterinjector.TestParameter;
 
 import org.junit.After;
 import org.junit.AssumptionViolatedException;
@@ -129,8 +132,15 @@ public class PackageInstallerCujTestBase {
     private static final ComponentName TEST_APP_ACTIVITY_COMPONENT = new ComponentName(
             TEST_APP_PACKAGE_NAME, "android.packageinstaller.cts.cuj.app.MainActivity");
 
+    @TestParameter
+    private static boolean sUsePiaV2;
+
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
+
+    @ClassRule
+    public static final SystemSettingRule<Boolean> sUsePiaRule = new SystemSettingRule<>(
+            "use_pia_v2", sUsePiaV2);
 
     private static String sPackageInstallerPackageName = null;
 
@@ -169,6 +179,9 @@ public class PackageInstallerCujTestBase {
 
         uninstallTestPackage();
         assertTestPackageNotInstalled();
+
+        Log.i(TAG, "Using Pia V" + (sUsePiaV2 ? "2" : "1"));
+        sUsePiaRule.setSettingValue(sUsePiaV2);
     }
 
     @After

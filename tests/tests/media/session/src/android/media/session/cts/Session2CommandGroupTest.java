@@ -42,7 +42,7 @@ public class Session2CommandGroupTest {
     private static final int TEST_COMMAND_CODE_3 = 10002;
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testHasCommand() {
         Session2Command testCommand = new Session2Command(TEST_COMMAND_CODE_1);
         Session2CommandGroup.Builder builder = new Session2CommandGroup.Builder()
@@ -54,7 +54,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testGetCommands() {
         Session2Command command1 = new Session2Command(TEST_COMMAND_CODE_1);
         Session2Command command2 = new Session2Command(TEST_COMMAND_CODE_2);
@@ -68,7 +68,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testDescribeContents() {
         final int expected = 0;
         Session2Command command = new Session2Command(TEST_COMMAND_CODE_1);
@@ -79,7 +79,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testWriteToParcel() {
         Session2CommandGroup.Builder builder = new Session2CommandGroup.Builder()
                 .addCommand(new Session2Command(TEST_COMMAND_CODE_1))
@@ -95,7 +95,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testBuilder() {
         Session2CommandGroup.Builder builder = new Session2CommandGroup.Builder()
                 .addCommand(new Session2Command(TEST_COMMAND_CODE_1));
@@ -106,7 +106,7 @@ public class Session2CommandGroupTest {
     }
 
     @Test
-    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE})
+    @UserTest({UserType.INITIAL_USER, UserType.WORK_PROFILE, UserType.SECONDARY_USER})
     public void testAddAndRemoveCommand() {
         Session2Command testCommand1 = new Session2Command(TEST_COMMAND_CODE_1);
         Session2Command testCommand2 = new Session2Command(TEST_COMMAND_CODE_2);

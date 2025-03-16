@@ -1943,25 +1943,25 @@ public class PinnedStackTests extends ActivityManagerTestBase {
     }
 
     @Test
-    public void testIsSeamlessResizeEnabledDefaultToTrue() {
+    public void testIsSeamlessResizeEnabledDefaultToFalse() {
         // Launch the PIP activity with some random param without setting isSeamlessResizeEnabled
         // so the PictureInPictureParams acquired from TaskInfo is not null
         launchActivity(PIP_ACTIVITY,
                 extraString(EXTRA_NUMBER_OF_CUSTOM_ACTIONS, String.valueOf(1)));
         enterPipAndAssertPinnedTaskExists(PIP_ACTIVITY);
 
-        // Assert the default value of isSeamlessResizeEnabled is set to true.
-        assertIsSeamlessResizeEnabled(PIP_ACTIVITY, true);
+        // Assert the default value of isSeamlessResizeEnabled is set to false.
+        assertIsSeamlessResizeEnabled(PIP_ACTIVITY, false);
     }
 
     @Test
-    public void testDisableIsSeamlessResizeEnabled() {
+    public void testSetIsSeamlessResizeEnabled() {
         // Launch the PIP activity with overridden isSeamlessResizeEnabled param
-        launchActivity(PIP_ACTIVITY, extraBool(EXTRA_IS_SEAMLESS_RESIZE_ENABLED, false));
+        launchActivity(PIP_ACTIVITY, extraBool(EXTRA_IS_SEAMLESS_RESIZE_ENABLED, true));
         enterPipAndAssertPinnedTaskExists(PIP_ACTIVITY);
 
         // Assert the value of isSeamlessResizeEnabled is overridden.
-        assertIsSeamlessResizeEnabled(PIP_ACTIVITY, false);
+        assertIsSeamlessResizeEnabled(PIP_ACTIVITY, true);
     }
 
     @Test

@@ -15,6 +15,7 @@
  */
 package android.hardware.input.cts.tests
 
+import android.graphics.Point
 import android.hardware.input.VirtualStylus
 import android.hardware.input.VirtualStylusButtonEvent
 import android.hardware.input.VirtualStylusMotionEvent
@@ -50,8 +51,7 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
     @Parameters(method = "allToolTypes")
     @Test
     fun sendTouchEvents(toolType: Int) {
-        val x = 50
-        val y = 50
+        val point = getActivityCenter()
         // The number of move events that are sent between the down and up event.
         val moveEventCount = 5
         val expectedEvents: MutableList<InputEvent> = ArrayList(moveEventCount + 2)
@@ -64,16 +64,16 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         mVirtualStylus.sendMotionEvent(
             builder
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                .setX(x)
-                .setY(y)
+                .setX(point.x)
+                .setY(point.y)
                 .setPressure(255)
                 .build()
         )
         expectedEvents.add(
             VirtualInputEventCreator.createStylusTouchMotionEvent(
                 MotionEvent.ACTION_DOWN,
-                x.toFloat(),
-                y.toFloat(),
+                point.x.toFloat(),
+                point.y.toFloat(),
                 toolType
             )
         )
@@ -81,15 +81,15 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         // Next we send a bunch of ACTION_MOVE events. Each one with a different x and y coordinate.
         builder.setAction(VirtualStylusMotionEvent.ACTION_MOVE)
         for (i in 1..moveEventCount) {
-            builder.setX(x + i)
-                .setY(y + i)
+            builder.setX(point.x + i)
+                .setY(point.y + i)
                 .setPressure(255)
             mVirtualStylus.sendMotionEvent(builder.build())
             expectedEvents.add(
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_MOVE,
-                    (x + i).toFloat(),
-                    (y + i).toFloat(),
+                    (point.x + i).toFloat(),
+                    (point.y + i).toFloat(),
                     toolType
                 )
             )
@@ -99,15 +99,15 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         mVirtualStylus.sendMotionEvent(
             builder
                 .setAction(VirtualStylusMotionEvent.ACTION_UP)
-                .setX(x + moveEventCount)
-                .setY(y + moveEventCount)
+                .setX(point.x + moveEventCount)
+                .setY(point.y + moveEventCount)
                 .build()
         )
         expectedEvents.add(
             VirtualInputEventCreator.createStylusTouchMotionEvent(
                 MotionEvent.ACTION_UP,
-                (x + moveEventCount).toFloat(),
-                (y + moveEventCount).toFloat(),
+                (point.x + moveEventCount).toFloat(),
+                (point.y + moveEventCount).toFloat(),
                 toolType
             )
         )
@@ -118,16 +118,14 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
     @Parameters(method = "allButtonCodes")
     @Test
     fun sendTouchEvents_withButtonPressed(buttonCode: Int) {
-        val startX = 50
-        val startY = 50
-        val endX = 60
-        val endY = 60
+        val point0 = getActivityCenter()
+        val point1 = Point(point0.x + 10, point0.y + 10)
         val toolType: Int = VirtualStylusMotionEvent.TOOL_TYPE_STYLUS
         moveStylusWithButtonPressed(
-            startX,
-            startY,
-            endX,
-            endY,
+            point0.x,
+            point0.y,
+            point1.x,
+            point1.y,
             pressure = 255,
             buttonCode,
             toolType
@@ -137,42 +135,42 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
             listOf<InputEvent>(
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_DOWN,
-                    startX.toFloat(),
-                    startY.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_BUTTON_PRESS,
-                    startX.toFloat(),
-                    startY.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_MOVE,
-                    startX.toFloat(),
-                    endY.toFloat(),
+                    point0.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_MOVE,
-                    endX.toFloat(),
-                    endY.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_BUTTON_RELEASE,
-                    endX.toFloat(),
-                    endY.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_UP,
-                    endX.toFloat(),
-                    endY.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType
                 )
             )
@@ -240,47 +238,63 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
     @Parameters(method = "allToolTypes")
     @Test
     fun sendHoverEvents(toolType: Int) {
-        val x0 = 50
-        val y0 = 50
-        val x1 = 60
-        val y1 = 60
+        val point0 = getActivityCenter()
+        val point1 = Point(point0.x + 10, point0.y + 10)
         val pressure = 0
 
-        sendMotionEvent(VirtualStylusMotionEvent.ACTION_DOWN, x0, y0, pressure, toolType)
-        sendMotionEvent(VirtualStylusMotionEvent.ACTION_MOVE, x0, y1, pressure, toolType)
-        sendMotionEvent(VirtualStylusMotionEvent.ACTION_MOVE, x1, y1, pressure, toolType)
-        sendMotionEvent(VirtualStylusMotionEvent.ACTION_UP, x1, y1, pressure, toolType)
+        sendMotionEvent(
+            VirtualStylusMotionEvent.ACTION_DOWN,
+            point0.x,
+            point0.y,
+            pressure,
+            toolType
+        )
+        sendMotionEvent(
+            VirtualStylusMotionEvent.ACTION_MOVE,
+            point0.x,
+            point1.y,
+            pressure,
+            toolType
+        )
+        sendMotionEvent(
+            VirtualStylusMotionEvent.ACTION_MOVE,
+            point1.x,
+            point1.y,
+            pressure,
+            toolType
+        )
+        sendMotionEvent(VirtualStylusMotionEvent.ACTION_UP, point1.x, point1.y, pressure, toolType)
 
         verifyEvents(
             listOf<InputEvent>(
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_ENTER,
-                    x0.toFloat(),
-                    y0.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_MOVE,
-                    x0.toFloat(),
-                    y0.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_MOVE,
-                    x0.toFloat(),
-                    y1.toFloat(),
+                    point0.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_MOVE,
-                    x1.toFloat(),
-                    y1.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_EXIT,
-                    x1.toFloat(),
-                    y1.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType
                 )
             )
@@ -290,16 +304,14 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
     @Parameters(method = "allButtonCodes")
     @Test
     fun sendHoverEvents_withButtonAlwaysPressed(buttonCode: Int) {
-        val startX = 60
-        val startY = 60
-        val endX = 50
-        val endY = 50
+        val point0 = getActivityCenter()
+        val point1 = Point(point0.x + 10, point0.y + 10)
         val toolType: Int = VirtualStylusMotionEvent.TOOL_TYPE_STYLUS
         moveStylusWithButtonPressed(
-            startX,
-            startY,
-            endX,
-            endY,
+            point0.x,
+            point0.y,
+            point1.x,
+            point1.y,
             pressure = 0,
             buttonCode,
             toolType
@@ -309,36 +321,36 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
             listOf<InputEvent>(
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_ENTER,
-                    startX.toFloat(),
-                    startY.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_MOVE,
-                    startX.toFloat(),
-                    startY.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_MOVE,
-                    startX.toFloat(),
-                    endY.toFloat(),
+                    point0.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_MOVE,
-                    endX.toFloat(),
-                    endY.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     buttonCode
                 ),
                 VirtualInputEventCreator.createStylusHoverMotionEvent(
                     MotionEvent.ACTION_HOVER_EXIT,
-                    endX.toFloat(),
-                    endY.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     buttonCode
                 )
@@ -371,17 +383,15 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         expectedTiltDegrees: Int,
         expectedOrientationDegrees: Int
     ) {
-        val x0 = 60
-        val y0 = 60
-        val x1 = 50
-        val y1 = 50
+        val point0 = getActivityCenter()
+        val point1 = Point(point0.x + 10, point0.y + 10)
         val pressure = 255
         val toolType: Int = VirtualStylusMotionEvent.TOOL_TYPE_STYLUS
 
         sendMotionEvent(
             VirtualStylusMotionEvent.ACTION_DOWN,
-            x0,
-            y0,
+            point0.x,
+            point0.y,
             pressure,
             toolType,
             tiltXDegrees,
@@ -389,8 +399,8 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         )
         sendMotionEvent(
             VirtualStylusMotionEvent.ACTION_MOVE,
-            x0,
-            y1,
+            point0.x,
+            point1.y,
             pressure,
             toolType,
             tiltXDegrees,
@@ -398,8 +408,8 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         )
         sendMotionEvent(
             VirtualStylusMotionEvent.ACTION_MOVE,
-            x1,
-            y1,
+            point1.x,
+            point1.y,
             pressure,
             toolType,
             tiltXDegrees,
@@ -407,8 +417,8 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
         )
         sendMotionEvent(
             VirtualStylusMotionEvent.ACTION_UP,
-            x1,
-            y1,
+            point1.x,
+            point1.y,
             pressure,
             toolType,
             tiltXDegrees,
@@ -422,32 +432,32 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
             listOf<InputEvent>(
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_DOWN,
-                    x0.toFloat(),
-                    y0.toFloat(),
+                    point0.x.toFloat(),
+                    point0.y.toFloat(),
                     toolType,
                     expectedTiltRadians,
                     expectedOrientationRadians
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_MOVE,
-                    x0.toFloat(),
-                    y1.toFloat(),
+                    point0.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     expectedTiltRadians,
                     expectedOrientationRadians
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_MOVE,
-                    x1.toFloat(),
-                    y1.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     expectedTiltRadians,
                     expectedOrientationRadians
                 ),
                 VirtualInputEventCreator.createStylusTouchMotionEvent(
                     MotionEvent.ACTION_UP,
-                    x1.toFloat(),
-                    y1.toFloat(),
+                    point1.x.toFloat(),
+                    point1.y.toFloat(),
                     toolType,
                     expectedTiltRadians,
                     expectedOrientationRadians

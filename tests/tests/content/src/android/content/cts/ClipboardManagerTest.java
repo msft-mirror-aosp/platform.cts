@@ -39,7 +39,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.InstrumentationRegistry;
@@ -52,7 +52,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -63,13 +62,6 @@ import java.util.concurrent.TimeUnit;
 //@AppModeFull // TODO(Instant) Should clip board data be visible?
 @AppModeNonSdkSandbox(reason = "SDK sandboxes cannot access ClipboardManager.")
 public class ClipboardManagerTest {
-    @Rule
-    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder()
-            .setProvideMainThread(true)
-            .setPackageName("android.content.cts")
-            .setServicesRequired(ClipboardManager.class)
-            .build();
-
     private Context mContext;
     private ClipboardManager mClipboardManager;
     private UiDevice mUiDevice;
@@ -152,7 +144,7 @@ public class ClipboardManagerTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testSetPrimaryClip_contentUri() {
         Uri contentUri = Uri.parse("content://cts/test/for/clipboardmanager");
         ClipData contentUriData = ClipData.newUri(mContext.getContentResolver(),
@@ -195,7 +187,7 @@ public class ClipboardManagerTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ContentResolver.class)
+    @DisabledOnRavenwood(blockedBy = ContentResolver.class)
     public void testSetPrimaryClip_multipleMimeTypes() {
         ContentResolver contentResolver = mContext.getContentResolver();
 
@@ -283,7 +275,7 @@ public class ClipboardManagerTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = UiAutomation.class)
+    @DisabledOnRavenwood(blockedBy = UiAutomation.class)
     public void testPrimaryClipNotAvailableWithoutFocus() throws Exception {
         ClipData textData = ClipData.newPlainText("TextLabel", "Text1");
         assertSetPrimaryClip(textData, "TextLabel",
@@ -322,7 +314,7 @@ public class ClipboardManagerTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = UiAutomation.class)
+    @DisabledOnRavenwood(blockedBy = UiAutomation.class)
     public void testReadInBackgroundRequiresPermission() throws Exception {
         ClipData clip = ClipData.newPlainText("TextLabel", "Text1");
         mClipboardManager.setPrimaryClip(clip);
