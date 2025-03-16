@@ -137,7 +137,7 @@ public final class Package {
 
         try {
             // Expected output "Package X installed for user: Y"
-            String unused = ShellCommand.builderForUser(user, "cmd package install-existing")
+            ShellCommand.builderForUser(user, "cmd package install-existing")
                     .addOperand(mPackageName)
                     .validate(
                             (output) -> output.contains("installed for user"))
@@ -309,7 +309,7 @@ public final class Package {
     @CanIgnoreReturnValue
     public Package enable(UserReference user) {
         try {
-            String unused = ShellCommand.builderForUser(user, "pm enable")
+            ShellCommand.builderForUser(user, "pm enable")
                     .addOperand(mPackageName)
                     .validate(o -> o.contains("new state"))
                     .execute();
@@ -336,7 +336,7 @@ public final class Package {
         try {
             // TODO(279387509): "pm disable" is currently broken for packages - restore to normal
             //  disable when fixed
-            String unused = ShellCommand.builderForUser(user, "pm disable-user")
+            ShellCommand.builderForUser(user, "pm disable-user")
                     .addOperand(mPackageName)
                     .validate(o -> o.contains("new state"))
                     .execute();
@@ -379,7 +379,7 @@ public final class Package {
             // TODO: Replace with DeviceState.testUsesAdbRoot() when this class is modularised
             boolean shouldRunAsRoot = Tags.hasTag("adb-root");
 
-            String unused = ShellCommand.builderForUser(user, "pm grant")
+            ShellCommand.builderForUser(user, "pm grant")
                     .asRoot(shouldRunAsRoot)
                     .addOperand(packageName())
                     .addOperand(permission)
@@ -1140,7 +1140,7 @@ public final class Package {
      */
     @Experimental
     public void setAllowTestApiAccess(boolean allowed) {
-        String unused = ShellCommand.builder("am compat")
+        ShellCommand.builder("am compat")
                 .addOperand(allowed ? "enable" : "disable")
                 .addOperand("ALLOW_TEST_API_ACCESS")
                 .addOperand(packageName())
@@ -1209,7 +1209,7 @@ public final class Package {
     @Experimental
     public void setAppLinksToAllApproved() {
         try {
-            String unused = ShellCommand.builder("pm set-app-links")
+            ShellCommand.builder("pm set-app-links")
                     .addOption("--package", this.mPackageName)
                     .addOperand(2) // 2 = STATE_APPROVED
                     .addOperand("all")
@@ -1227,7 +1227,7 @@ public final class Package {
 
     @Experimental
     public void clearStorage() {
-        String unused = ShellCommand.builder("pm clear")
+        ShellCommand.builder("pm clear")
                 .addOperand(mPackageName)
                 .validate(ShellCommandUtils::startsWithSuccess)
                 .executeOrThrowNeneException("Error clearing storage for " + this);

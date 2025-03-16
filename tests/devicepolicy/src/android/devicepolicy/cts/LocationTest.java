@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.dpc;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_CONFIG_LOCATION;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SHARE_LOCATION;
 
@@ -23,14 +24,14 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.testng.Assert.assertThrows;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.enterprise.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DisallowConfigLocation;
 import com.android.bedstead.harrier.policies.DisallowShareLocation;
 import com.android.bedstead.nene.TestApis;
@@ -56,8 +57,8 @@ public final class LocationTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SHARE_LOCATION")
     public void setUserRestriction_disallowShareLocation_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_SHARE_LOCATION));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_SHARE_LOCATION));
     }
 
     @PolicyAppliesTest(policy = DisallowShareLocation.class)
@@ -65,14 +66,14 @@ public final class LocationTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SHARE_LOCATION")
     public void setUserRestriction_disallowShareLocation_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SHARE_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SHARE_LOCATION);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_SHARE_LOCATION))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SHARE_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SHARE_LOCATION);
         }
     }
 
@@ -81,15 +82,15 @@ public final class LocationTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_SHARE_LOCATION")
     public void setUserRestriction_disallowShareLocation_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SHARE_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SHARE_LOCATION);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_SHARE_LOCATION))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_SHARE_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_SHARE_LOCATION);
         }
     }
 
@@ -122,8 +123,8 @@ public final class LocationTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_LOCATION")
     public void setUserRestriction_disallowConfigLocation_cannotSet_throwsException() {
         assertThrows(SecurityException.class,
-                () -> sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                        sDeviceState.dpc().componentName(), DISALLOW_CONFIG_LOCATION));
+                () -> dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                        dpc(sDeviceState).componentName(), DISALLOW_CONFIG_LOCATION));
     }
 
     @PolicyAppliesTest(policy = DisallowConfigLocation.class)
@@ -131,14 +132,14 @@ public final class LocationTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_LOCATION")
     public void setUserRestriction_disallowConfigLocation_isSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_LOCATION);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_LOCATION))
                     .isTrue();
         } finally {
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_LOCATION);
         }
     }
 
@@ -147,15 +148,15 @@ public final class LocationTest {
     @ApiTest(apis = "android.os.UserManager#DISALLOW_CONFIG_LOCATION")
     public void setUserRestriction_disallowConfigLocation_isNotSet() {
         try {
-            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().addUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_LOCATION);
 
             assertThat(TestApis.devicePolicy().userRestrictions().isSet(DISALLOW_CONFIG_LOCATION))
                     .isFalse();
         } finally {
 
-            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
-                    sDeviceState.dpc().componentName(), DISALLOW_CONFIG_LOCATION);
+            dpc(sDeviceState).devicePolicyManager().clearUserRestriction(
+                    dpc(sDeviceState).componentName(), DISALLOW_CONFIG_LOCATION);
         }
     }
 

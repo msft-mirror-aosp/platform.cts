@@ -20,15 +20,15 @@ import static com.android.bedstead.testapisreflection.processor.Processor.FILE_N
 import static com.android.bedstead.testapisreflection.processor.Processor.PACKAGE_NAME;
 import static com.android.bedstead.testapisreflection.processor.Processor.BLOCKLISTED_TEST_CLASSES;
 
-import com.android.bedstead.testapisreflection.processor.generators.common.CodeGenerator;
 import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 import com.android.bedstead.testapis.parser.signatures.MethodSignature;
 import com.android.bedstead.testapis.parser.signatures.PackageSignature;
+import com.android.bedstead.testapisreflection.processor.generators.common.CodeGenerator;
 
 import com.squareup.kotlinpoet.FileSpec;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
 
 import javax.annotation.processing.ProcessingEnvironment;
 
@@ -57,7 +57,7 @@ public final class ProxyMethodExtensionsGenerator {
     /**
      * Generate methods and add to the file.
      */
-    public void generateMethods(Set<PackageSignature> testApis, Set<ClassSignature> testClasses) {
+    public void generateMethods(List<PackageSignature> testApis, List<ClassSignature> testClasses) {
         FileSpec.Builder fileBuilder = FileSpec.builder(PACKAGE_NAME, FILE_NAME);
 
         for (PackageSignature packageSignature : testApis) {

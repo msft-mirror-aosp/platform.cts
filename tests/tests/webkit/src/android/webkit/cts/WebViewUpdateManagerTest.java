@@ -152,7 +152,6 @@ public class WebViewUpdateManagerTest {
 
     @Test
     @ApiTest(apis = "android.webkit.WebViewUpdateManager#getDefaultWebViewPackage")
-    @RequiresFlagsEnabled(Flags.FLAG_UPDATE_SERVICE_V2)
     public void testGetDefaultWebViewPackage() {
         WebViewProviderInfo defaultPackage = mUpdateManager.getDefaultWebViewPackage();
         assertNotNull(defaultPackage);

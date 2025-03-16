@@ -22,6 +22,7 @@ import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CLIPBOARD;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_RECENTS;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_SENSORS;
 import static android.hardware.Sensor.TYPE_ACCELEROMETER;
@@ -32,7 +33,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.companion.virtual.sensor.VirtualSensorCallback;
 import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtual.sensor.VirtualSensorDirectChannelCallback;
@@ -55,6 +55,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -108,6 +109,8 @@ public class VirtualDeviceParamsTest {
                 .setVirtualSensorCallback(mExecutor, mVirtualSensorCallback)
                 .setVirtualSensorDirectChannelCallback(
                         mExecutor, mVirtualSensorDirectChannelCallback)
+                .setInputMethodComponent(COMPONENT_NAME)
+                .setHomeComponent(COMPONENT_NAME_2)
                 .build();
         Parcel parcel = Parcel.obtain();
         originalParams.writeToParcel(parcel, 0);
@@ -121,10 +124,11 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_SENSORS)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_AUDIO)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_CUSTOM);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(
-                Flags.crossDeviceClipboard() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getAudioPlaybackSessionId()).isEqualTo(PLAYBACK_SESSION_ID);
         assertThat(params.getAudioRecordingSessionId()).isEqualTo(RECORDING_SESSION_ID);
+        assertThat(params.getInputMethodComponent()).isEqualTo(COMPONENT_NAME);
+        assertThat(params.getHomeComponent()).isEqualTo(COMPONENT_NAME_2);
 
         List<VirtualSensorConfig> sensorConfigs = params.getVirtualSensorConfigs();
         assertThat(sensorConfigs).hasSize(1);
@@ -134,11 +138,15 @@ public class VirtualDeviceParamsTest {
         assertThat(sensorConfig.getVendor()).isEqualTo(SENSOR_VENDOR);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_HOME)
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
     @Test
-    public void customHome_parcelable_shouldRecreateSuccessfully() {
+    public void customTimeouts_parcelable_shouldRecreateSuccessfully() {
+        final Duration dimDuration = Duration.ofMinutes(2);
+        final Duration screenOffTimeout = Duration.ofMinutes(5);
         VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
-                .setHomeComponent(COMPONENT_NAME)
+                .setDimDuration(dimDuration)
+                .setScreenOffTimeout(screenOffTimeout)
                 .build();
 
         Parcel parcel = Parcel.obtain();
@@ -147,23 +155,8 @@ public class VirtualDeviceParamsTest {
 
         VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
         assertThat(params).isEqualTo(originalParams);
-        assertThat(params.getHomeComponent()).isEqualTo(COMPONENT_NAME);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_IME)
-    @Test
-    public void customIme_parcelable_shouldRecreateSuccessfully() {
-        VirtualDeviceParams originalParams = new VirtualDeviceParams.Builder()
-                .setInputMethodComponent(COMPONENT_NAME)
-                .build();
-
-        Parcel parcel = Parcel.obtain();
-        originalParams.writeToParcel(parcel, 0);
-        parcel.setDataPosition(0);
-
-        VirtualDeviceParams params = VirtualDeviceParams.CREATOR.createFromParcel(parcel);
-        assertThat(params).isEqualTo(originalParams);
-        assertThat(params.getInputMethodComponent()).isEqualTo(COMPONENT_NAME);
+        assertThat(params.getDimDuration()).isEqualTo(dimDuration);
+        assertThat(params.getScreenOffTimeout()).isEqualTo(screenOffTimeout);
     }
 
     @Test
@@ -250,7 +243,6 @@ public class VirtualDeviceParamsTest {
                 .isEqualTo(VirtualDeviceParams.ACTIVITY_POLICY_DEFAULT_ALLOWED);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_activityPolicyCustom_throwsException() {
         assertThrows(IllegalArgumentException.class,
@@ -260,7 +252,6 @@ public class VirtualDeviceParamsTest {
                         .build());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_activityPolicyDefault_isOK() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -274,7 +265,6 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_ACTIVITY)).isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_activityPolicyDefault_throwsException() {
         assertThrows(IllegalArgumentException.class,
@@ -284,7 +274,6 @@ public class VirtualDeviceParamsTest {
                         .build());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_activityPolicyCustom_isOK() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -298,7 +287,6 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_ACTIVITY)).isEqualTo(DEVICE_POLICY_CUSTOM);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setAllowedActivities_activityPolicyUndefined_setsActivityPolicyCustom() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -307,7 +295,6 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_ACTIVITY)).isEqualTo(DEVICE_POLICY_CUSTOM);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void setBlockedActivities_activityPolicyUndefined_setsActivityPolicyDefault() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -354,6 +341,8 @@ public class VirtualDeviceParamsTest {
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_DEFAULT);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_DEFAULT);
         assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS))
+                .isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
     @Test
@@ -365,15 +354,17 @@ public class VirtualDeviceParamsTest {
                 .setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM)
                 .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
                 .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
+                .setDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS, DEVICE_POLICY_CUSTOM)
                 .build();
 
         assertThat(params.getDevicePolicy(POLICY_TYPE_SENSORS)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_AUDIO)).isEqualTo(DEVICE_POLICY_CUSTOM);
         assertThat(params.getDevicePolicy(POLICY_TYPE_RECENTS)).isEqualTo(DEVICE_POLICY_CUSTOM);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(
-                Flags.crossDeviceClipboard() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
-        assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(
-                Flags.virtualCamera() ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_CLIPBOARD)).isEqualTo(DEVICE_POLICY_CUSTOM);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_CAMERA)).isEqualTo(DEVICE_POLICY_CUSTOM);
+        assertThat(params.getDevicePolicy(POLICY_TYPE_DEFAULT_DEVICE_CAMERA_ACCESS)).isEqualTo(
+                android.companion.virtualdevice.flags.Flags.defaultDeviceCameraAccessPolicy()
+                        ? DEVICE_POLICY_CUSTOM : DEVICE_POLICY_DEFAULT);
     }
 
     @Test
@@ -527,5 +518,30 @@ public class VirtualDeviceParamsTest {
         assertThrows(IllegalArgumentException.class, () -> new VirtualDeviceParams.Builder()
                 .setAudioRecordingSessionId(recordingSessionId).build());
     }
+
+    @Test
+    @RequiresFlagsEnabled(
+            android.companion.virtualdevice.flags.Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    public void invalidTimeouts_throwsException() {
+        assertThrows(NullPointerException.class, () ->
+                new VirtualDeviceParams.Builder().setScreenOffTimeout(null));
+        assertThrows(NullPointerException.class, () ->
+                new VirtualDeviceParams.Builder().setDimDuration(null));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder().setScreenOffTimeout(Duration.ofMillis(-1)));
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder().setDimDuration(Duration.ofMillis(-1)));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder().setDimDuration(Duration.ofMillis(1000)).build());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new VirtualDeviceParams.Builder()
+                        .setDimDuration(Duration.ofMillis(1000))
+                        .setScreenOffTimeout(Duration.ofMillis(500))
+                        .build());
+    }
+
 }
 

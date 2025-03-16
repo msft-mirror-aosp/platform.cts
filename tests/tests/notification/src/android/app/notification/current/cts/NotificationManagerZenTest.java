@@ -118,8 +118,8 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
@@ -713,7 +713,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     public void testAreAutomaticZenRulesUserManaged_flagsOn() {
-        assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+        if (mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
+                || mPackageManager.hasSystemFeature(FEATURE_WATCH)) {
+            assertFalse(mNotificationManager.areAutomaticZenRulesUserManaged());
+        } else {
+            assertTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
+        }
     }
 
     @Test
@@ -3008,8 +3013,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
     @Test
     public void testIndividualRuleIntent_resolvesToActivity() {
-        assumeFalse(mPackageManager.hasSystemFeature(FEATURE_AUTOMOTIVE)
-                || mPackageManager.hasSystemFeature(FEATURE_WATCH));
+        assumeTrue(mNotificationManager.areAutomaticZenRulesUserManaged());
 
         AutomaticZenRule ruleToCreate = createRule("testIndividualRuleIntent_resolvesToActivity");
         String id = mNotificationManager.addAutomaticZenRule(ruleToCreate);

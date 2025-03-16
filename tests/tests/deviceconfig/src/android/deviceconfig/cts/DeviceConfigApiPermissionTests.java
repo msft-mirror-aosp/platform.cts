@@ -18,6 +18,7 @@ package android.deviceconfig.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.os.Binder;
@@ -34,6 +35,7 @@ import com.android.modules.utils.build.SdkLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -50,6 +52,9 @@ public final class DeviceConfigApiPermissionTests {
     private static final String KEY = "key";
     private static final String KEY2 = "key2";
     private static final String VALUE = "value";
+
+    private static final String WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION =
+            "android.permission.WRITE_ALLOWLISTED_DEVICE_CONFIG";
 
     private static final String WRITE_DEVICE_CONFIG_PERMISSION =
             "android.permission.WRITE_DEVICE_CONFIG";
@@ -92,8 +97,9 @@ public final class DeviceConfigApiPermissionTests {
     }
 
     /**
-     * Checks that when application does not have WRITE_DEVICE_CONFIG
-     * permissions it cannot access any write DeviceConfig API methods
+     * Checks that when application does not have WRITE_DEVICE_CONFIG or
+     * WRITE_ALLOWLISTED_DEVICE_CONFIG permissions it cannot access any
+     * write DeviceConfig API methods.
      */
     @Test
     public void testDeviceConfigWithoutPermissions() {
@@ -111,15 +117,16 @@ public final class DeviceConfigApiPermissionTests {
     }
 
     /**
-     * Checks that when application has only WRITE_DEVICE_CONFIG permission it can access only
-     * setProperty() methods
+     * Checks that when application has only WRITE_DEVICE_CONFIG and WRITE_ALLOWLISTED_DEVICE_CONFIG
+     * permission it can access only setProperty() methods.
      */
     @Test
     public void testDeviceConfigWithWritePermission() {
 
         StringBuilder violations = new StringBuilder();
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG_PERMISSION);
+                .adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG_PERMISSION,
+                        WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION);
 
         // setters with write permission
         trySetPropertyWithWritePermission(violations);
@@ -159,8 +166,8 @@ public final class DeviceConfigApiPermissionTests {
     }
 
     /**
-     * Checks that when application has both READ_DEVICE_CONFIG and WRITE_DEVICE_CONFIG permissions
-     * it can access all methods
+     * Checks that when application has all of READ_DEVICE_CONFIG, WRITE_DEVICE_CONFIG, and
+     * WRITE_ALLOWLISTED_DEVICE_CONFIG permissions, it can access all methods
      */
     @Test
     public void testDeviceConfigWithAllPermissions() {
@@ -171,6 +178,7 @@ public final class DeviceConfigApiPermissionTests {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(
                         WRITE_DEVICE_CONFIG_PERMISSION,
+                        WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION,
                         READ_DEVICE_CONFIG_PERMISSION);
 
         // setters with write permission
@@ -206,7 +214,8 @@ public final class DeviceConfigApiPermissionTests {
         try {
             DeviceConfig.setProperty(PUBLIC_NAMESPACE, KEY, VALUE, /*makeDefault=*/ false);
             violations.append("DeviceConfig.setProperty() for public namespaces must not be "
-                    + "accessible without WRITE_DEVICE_CONFIG permission\n");
+                    + "accessible without WRITE_DEVICE_CONFIG or WRITE_ALLOWLISTED_DEVICE_CONFIG "
+                    + "permission\n");
         } catch (SecurityException e) {
         }
 
@@ -215,7 +224,8 @@ public final class DeviceConfigApiPermissionTests {
                     new Properties.Builder(PUBLIC_NAMESPACE).setString(KEY2, VALUE).build();
             DeviceConfig.setProperties(properties);
             violations.append("DeviceConfig.setProperties() for public namespaces must not be "
-                    + " accessible without WRITE_DEVICE_CONFIG permission\n");
+                    + " accessible without WRITE_DEVICE_CONFIG or WRITE_ALLOWLISTED_DEVICE_CONFIG"
+                    + " permission\n");
         } catch (DeviceConfig.BadConfigException e) {
             addExceptionToViolations(violations, "DeviceConfig.setProperties() should not throw "
                     + "BadConfigException without a known bad configuration", e);
@@ -223,13 +233,14 @@ public final class DeviceConfigApiPermissionTests {
         }
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG_PERMISSION);
+                .adoptShellPermissionIdentity(WRITE_DEVICE_CONFIG_PERMISSION,
+                        WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION);
 
         try {
             DeviceConfig.setProperty(PUBLIC_NAMESPACE, KEY, VALUE, /*makeDefault=*/ false);
         } catch (SecurityException e) {
             addExceptionToViolations(violations, "DeviceConfig.setProperty() must be accessible "
-                    + "with WRITE_DEVICE_CONFIG permission", e);
+                    + "with WRITE_DEVICE_CONFIG and WRITE_ALLOWLISTED_DEVICE_CONFIG permission", e);
         }
 
         try {
@@ -241,7 +252,7 @@ public final class DeviceConfigApiPermissionTests {
                     + "BadConfigException without a known bad configuration", e);
         } catch (SecurityException e) {
             addExceptionToViolations(violations, "DeviceConfig.setProperties() must be accessible "
-                    + "with WRITE_DEVICE_CONFIG permission", e);
+                    + "with WRITE_DEVICE_CONFIG and WRITE_ALLOWLISTED_DEVICE_CONFIG permission", e);
         }
 
         try {
@@ -277,6 +288,29 @@ public final class DeviceConfigApiPermissionTests {
         }
     }
 
+    /**
+     * Checks that a package that only has the WRITE_ALLOWLISTED_DEVICE_CONFIG permission is
+     * not able to write to a namespace / flag that has not been allowlisted.
+     */
+    @Test
+    @Ignore("Bypass until SettingsProvider throws a SecurityException for this case")
+    public void testDeviceConfigWithAllowlistedPermission_flagNotAllowlisted() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(WRITE_ALLOWLISTED_DEVICE_CONFIG_PERMISSION);
+
+        assertThrows(
+                "DeviceConfig.setProperty must fail with WRITE_ALLOWLISTED_DEVICE_CONFIG if flag "
+                        + "is not allowlisted",
+                SecurityException.class,
+                () -> DeviceConfig.setProperty("invalidNamespace", "invalidFlag",
+                        "true", /*makeDefault=*/ false));
+        assertThrows(
+                "DeviceConfig.deleteProperty must fail with WRITE_ALLOWLISTED_DEVICE_CONFIG if "
+                        + "flag is not allowlisted",
+                SecurityException.class,
+                () -> DeviceConfig.deleteProperty("invalidNamespace", "invalidFlag"));
+    }
+
     private final class TestOnPropertiesListener extends OnPropertiesChangedListenerForTests {
 
         TestOnPropertiesListener() {
@@ -288,7 +322,7 @@ public final class DeviceConfigApiPermissionTests {
         try {
             DeviceConfig.setProperty(NAMESPACE, KEY, VALUE, /*makeDefault=*/ false);
             violations.append("DeviceConfig.setProperty() must not be accessible without "
-                    + "WRITE_DEVICE_CONFIG permission.\n");
+                    + "WRITE_DEVICE_CONFIG and WRITE_ALLOWLISTED_DEVICE_CONFIG permission.\n");
         } catch (SecurityException e) {
         }
     }
@@ -299,7 +333,7 @@ public final class DeviceConfigApiPermissionTests {
                     new Properties.Builder(NAMESPACE2).setString(KEY2, VALUE).build();
             DeviceConfig.setProperties(properties);
             violations.append("DeviceConfig.setProperties() must not be accessible without "
-                    + "WRITE_DEVICE_CONFIG permission.\n");
+                    + "WRITE_DEVICE_CONFIG and WRITE_ALLOWLISTED_DEVICE_CONFIG permission.\n");
         } catch (DeviceConfig.BadConfigException e) {
             addExceptionToViolations(violations, "DeviceConfig.setProperties() should not throw "
                     + "BadConfigException without a known bad configuration.", e);
@@ -311,7 +345,7 @@ public final class DeviceConfigApiPermissionTests {
         try {
             DeviceConfig.deleteProperty(NAMESPACE, KEY);
             violations.append("DeviceConfig.deleteProperty() must not be accessible without "
-                    + "WRITE_DEVICE_CONFIG permission.\n");
+                    + "WRITE_DEVICE_CONFIG and WRITE_ALLOWLISTED_DEVICE_CONFIG permission.\n");
         } catch (SecurityException e) {
         }
     }
@@ -321,7 +355,7 @@ public final class DeviceConfigApiPermissionTests {
             DeviceConfig.setProperty(NAMESPACE, KEY, VALUE, /*makeDefault=*/ false);
         } catch (SecurityException e) {
             addExceptionToViolations(violations, "DeviceConfig.setProperty() must be accessible "
-                    + "with WRITE_DEVICE_CONFIG permission", e);
+                    + "with WRITE_DEVICE_CONFIG or WRITE_ALLOWLISTED_DEVICE_CONFIG permission", e);
         }
     }
 

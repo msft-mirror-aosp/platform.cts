@@ -47,6 +47,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.wifi.flags.Flags;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -89,7 +90,7 @@ public class TestBase extends WifiJUnit4TestBase {
 
     // 5GHz Frequency band
     private static final int FREQUENCY_OF_5GHZ_BAND_IN_MHZ = 5_000;
-    private static Context sContext;
+    protected static Context sContext;
     private static boolean sShouldRunTest;
     private static UiDevice sUiDevice;
     private static TestHelper sTestHelper;
@@ -99,6 +100,7 @@ public class TestBase extends WifiJUnit4TestBase {
     private static boolean sWasWifiEnabled;
     private static ScanResult s11McScanResult;
     private static ScanResult s11AzScanResult;
+    private static ScanResult s11AzSecureScanResult;
     private static ScanResult sLegacyScanResult;
 
     protected WifiRttManager mWifiRttManager;
@@ -106,10 +108,12 @@ public class TestBase extends WifiJUnit4TestBase {
 
     private final HandlerThread mHandlerThread = new HandlerThread("SingleDeviceTest");
     protected final Executor mExecutor;
+    protected final Handler mHandler;
 
     {
         mHandlerThread.start();
-        mExecutor = new HandlerExecutor(new Handler(mHandlerThread.getLooper()));
+        mHandler = new Handler(mHandlerThread.getLooper());
+        mExecutor = new HandlerExecutor(mHandler);
     }
 
     @BeforeClass
@@ -346,10 +350,29 @@ public class TestBase extends WifiJUnit4TestBase {
 
         if (!ap5Ghz11Az.isEmpty()) {
             s11AzScanResult = getRandomScanResult(ap5Ghz11Az.values());
+            s11AzSecureScanResult = getRandomSecure11azResult(ap5Ghz11Az.values());
         } else {
             s11AzScanResult = getRandomScanResult(ap24Ghz11Az.values());
+            s11AzSecureScanResult = getRandomSecure11azResult(ap5Ghz11Az.values());
         }
+    }
 
+    private static ScanResult getRandomSecure11azResult(Collection<ScanResult> scanResults) {
+        List<ScanResult> secureScanResults = new ArrayList<>();
+        for (ScanResult scanResult : scanResults) {
+            if (isSecureRangingResponder(scanResult)) {
+                secureScanResults.add(scanResult);
+            }
+        }
+        if (secureScanResults.isEmpty()) return null;
+        int index = new Random().nextInt(secureScanResults.size());
+        return new ArrayList<>(secureScanResults).get(index);
+    }
+
+    private static boolean isSecureRangingResponder(ScanResult scanResult) {
+        if (!Flags.secureRanging()) return false;
+        return (scanResult.capabilities != null && scanResult.capabilities.contains("PASN")
+                && scanResult.isSecureHeLtfSupported());
     }
 
     static Context getContext() {
@@ -358,6 +381,10 @@ public class TestBase extends WifiJUnit4TestBase {
 
     static ScanResult getS11AzScanResult() {
         return s11AzScanResult;
+    }
+
+    static ScanResult getS11AzSecureScanResult() {
+        return s11AzSecureScanResult;
     }
 
     static ScanResult getS11McScanResult() {

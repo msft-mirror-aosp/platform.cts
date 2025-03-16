@@ -20,7 +20,7 @@ import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.nene.TestApis;
 
 import org.junit.ClassRule;

@@ -16,9 +16,13 @@
 
 package android.gameframerate.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.Manifest;
 import android.app.compat.CompatChanges;
+import android.content.Context;
 import android.gameframerate.cts.GameFrameRateCtsActivity.FrameRateObserver;
+import android.gamemanager.cts.util.TestUtil;
 import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -92,6 +96,9 @@ public final class GameFrameRateTest {
 
     @Before
     public void setUp() throws Exception {
+        Context context = mActivityRule.getActivity();
+        assumeTrue(TestUtil.shouldTestGameFeatures(context));
+
         mUiDevice = UiDevice.getInstance(
                 androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
         mUiDevice.wakeUp();
@@ -122,6 +129,7 @@ public final class GameFrameRateTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mUiDevice == null) return;
         mUiDevice.executeShellCommand("device_config delete game_overlay " + TEST_PKG);
         mDisplayManager.setRefreshRateSwitchingType(mInitialMatchContentFrameRate);
         mDisplayManager.setShouldAlwaysRespectAppRequestedMode(false);

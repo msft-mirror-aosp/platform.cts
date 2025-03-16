@@ -163,6 +163,53 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
     }
 
     @Test
+    public void testAutoFillOneDatasetAndSaveOnViewInvisible() throws Exception {
+        startActivity();
+
+        // Set service.
+        enableService();
+
+        // Set expectations.
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .setOptionalSavableIds(ID_INPUT, ID_PASSWORD)
+                .setSaveInfoFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_INPUT, "id")
+                        .setField(ID_PASSWORD, "pass")
+                        .setPresentation(createPresentation("YO"))
+                        .build())
+                .build());
+
+        // Trigger autofill.
+        mActivity.syncRunOnUiThread(() -> mActivity.mInput.requestFocus());
+        sReplier.getNextFillRequest();
+
+        // Select dataset.
+        final FillExpectation autofillExpectation = mActivity.expectAutoFill("id", "pass");
+        mUiBot.selectDataset("YO");
+        mUiBot.waitForIdleSync();
+        autofillExpectation.assertAutoFilled();
+
+        mActivity.setTextAndWaitTextChange(/* input= */ "ID", /* password= */ "PASS");
+        mUiBot.waitForIdleSync();
+
+        mActivity.syncRunOnUiThread(() -> {
+            mActivity.mInvisibleButton.performClick();
+        });
+        mUiBot.waitForIdleSync();
+
+        final UiObject2 saveUi = mUiBot.assertUpdateShowing(SAVE_DATA_TYPE_GENERIC);
+
+        // Save it...
+        mUiBot.saveForAutofill(saveUi, true);
+
+        // ... and assert results
+        final SaveRequest saveRequest = sReplier.getNextSaveRequest();
+        assertTextAndValue(findNodeByResourceId(saveRequest.structure, ID_INPUT), "ID");
+        assertTextAndValue(findNodeByResourceId(saveRequest.structure, ID_PASSWORD), "PASS");
+    }
+
+    @Test
     @AppModeFull(reason = "testAutoFillOneDatasetAndSave() is enough")
     public void testAutoFillOneDatasetAndSave_largeAssistStructure() throws Exception {
         startActivity();

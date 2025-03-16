@@ -18,6 +18,8 @@ package android.os.lib.app;
 
 import static android.Manifest.permission.INSTALL_PACKAGES;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -28,7 +30,7 @@ import android.content.IntentFilter;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.users.UserReference;
@@ -68,7 +70,7 @@ public class StaticSharedLibsMultiUserTests {
     @Before
     public void setUp() throws Exception {
         mInitialUser = sDeviceState.initialUser();
-        mAdditionalUser = sDeviceState.additionalUser();
+        mAdditionalUser = additionalUser(sDeviceState);
 
         mContextInitial = TestApis.context().androidContextAsUser(mInitialUser);
         mContextAdditional = TestApis.context().androidContextAsUser(mAdditionalUser);

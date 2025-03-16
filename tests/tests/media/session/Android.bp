@@ -28,7 +28,7 @@ java_defaults {
         "cts-media-common",
         "flag-junit",
         "truth",
-        "Harrier",
+        "bedstead-enterprise",
     ],
     aaptflags: [
         "--auto-add-overlay",

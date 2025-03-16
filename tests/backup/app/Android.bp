@@ -176,3 +176,99 @@ android_test_helper_app {
     platform_apis: true,
     manifest: "BackupRestoreEventLoggerApp/AndroidManifest.xml",
 }
+
+android_test_helper_app {
+    name: "CtsRestrictedModeOptedInApp",
+    defaults: [
+        "cts_support_defaults",
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
+    target_sdk_version: "34",
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "mts",
+    ],
+    platform_apis: true,
+    manifest: "RestrictedModeOptedInApp/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CtsRestrictedModeOptedOutApp",
+    defaults: [
+        "cts_support_defaults",
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
+    target_sdk_version: "34",
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "mts",
+    ],
+    platform_apis: true,
+    manifest: "RestrictedModeOptedOutApp/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CtsRestrictedModeNoActionApp1",
+    defaults: [
+        "cts_support_defaults",
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
+    target_sdk_version: "34",
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "mts",
+    ],
+    platform_apis: true,
+    manifest: "RestrictedModeNoActionApp1/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CtsRestrictedModeNoActionApp2",
+    defaults: [
+        "cts_support_defaults",
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
+    target_sdk_version: "34",
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "general-tests",
+        "mts",
+    ],
+    platform_apis: true,
+    manifest: "RestrictedModeNoActionApp2/AndroidManifest.xml",
+}

@@ -17,8 +17,8 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test_helper_app {
-    name: "CtsIntentResolutionTestApp",
+java_defaults {
+    name: "CtsIntentResolutionTestAppDefaults",
     srcs: ["src/**/*.java"],
     sdk_version: "current",
     defaults: [
@@ -30,4 +30,25 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+}
+
+// Original app
+android_test_helper_app {
+    name: "CtsIntentResolutionTestApp",
+    defaults: ["CtsIntentResolutionTestAppDefaults"],
+}
+
+// This app is similar to original app but has "enforceIntentFilter" at application level
+android_test_helper_app {
+    name: "CtsIntentResolutionApplicationOverrideTestApp",
+    defaults: ["CtsIntentResolutionTestAppDefaults"],
+    manifest: "AndroidManifest-ApplicationOverride.xml",
+}
+
+// This app is similar to "CtsIntentResolutionApplicationOverrideTestApp" but overrides
+// intentMatchingFilter flags it at component level
+android_test_helper_app {
+    name: "CtsIntentResolutionComponentOverrideTestApp",
+    defaults: ["CtsIntentResolutionTestAppDefaults"],
+    manifest: "AndroidManifest-ComponentOverride.xml",
 }

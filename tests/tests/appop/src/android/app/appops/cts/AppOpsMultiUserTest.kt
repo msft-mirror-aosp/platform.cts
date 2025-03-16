@@ -5,6 +5,7 @@ import android.app.AppOpsManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.pm.UserInfo
+import android.os.Process
 import android.os.SystemClock
 import android.os.UserManager
 import android.permission.flags.Flags
@@ -74,6 +75,7 @@ class AppOpsMultiUserTest {
         }
         // Some users aren't in running state in the secondary_user option test.
         // The AppOpsService doesn't receive ACTION_PACKAGE_ADDED for that user.
+        // TODO(b/376345874) this workaround can be removed once PackageMonitor is used.
         SystemUtil.runWithShellPermissionIdentity {
             preExistingUsers.removeAll { userInfo ->
                 !activityManager.isUserRunning(userInfo.id)
@@ -152,19 +154,23 @@ class AppOpsMultiUserTest {
         installApkForAllUsers(SHARED_UID_APK1)
         installApkForAllUsers(SHARED_UID_APK2)
 
-        val user = preExistingUsers[0]
-        val testUid = packageManager.getPackageUidAsUser(SHARED_UID_PKG1, user.id)
+        val user = Process.myUserHandle()
+        val testUid = packageManager.getPackageUid(SHARED_UID_PKG1, 0)
 
-        runWithShellPermissionIdentity {
-            val mode = appOpsManager.noteOpNoThrow(
-                AppOpsManager.OPSTR_RESERVED_FOR_TESTING,
-                testUid,
-                SHARED_UID_PKG1
-            )
-            Assert.assertEquals(AppOpsManager.MODE_ALLOWED, mode)
+        eventually {
+            // Current implementation of AppOpsService may receive package added broadcast late
+            // TODO(b/376345874): Move to PackageMonitor and remove this eventually block
+            runWithShellPermissionIdentity {
+                val mode = appOpsManager.noteOpNoThrow(
+                    AppOpsManager.OPSTR_RESERVED_FOR_TESTING,
+                    testUid,
+                    SHARED_UID_PKG1
+                )
+                Assert.assertEquals(AppOpsManager.MODE_ALLOWED, mode)
+            }
         }
 
-        SystemUtil.runShellCommandOrThrow("pm uninstall --user ${user.id} $SHARED_UID_PKG2")
+        SystemUtil.runShellCommandOrThrow("pm uninstall --user ${user.identifier} $SHARED_UID_PKG2")
         SystemUtil.waitForBroadcasts()
 
         runWithShellPermissionIdentity {
