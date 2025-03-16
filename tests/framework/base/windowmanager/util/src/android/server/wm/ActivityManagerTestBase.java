@@ -250,9 +250,6 @@ public abstract class ActivityManagerTestBase {
             "am start -a android.intent.action.MAIN -c android.intent.category.HOME --user "
                     + Process.myUserHandle().getIdentifier();
 
-    protected static final String AM_START_HOME_ACTIVITY_COMMAND_XR =
-            "am shell input keyevent KEYCODE_ALL_APPS";
-
     protected static final String MSG_NO_MOCK_IME =
             "MockIme cannot be used for devices that do not support installable IMEs";
 
@@ -1012,11 +1009,6 @@ public abstract class ActivityManagerTestBase {
         // dismiss all system dialogs before launch home.
         closeSystemDialogs();
         executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND);
-
-        // Show the "home screen" because the home screen isn't showing if we go home on XR.
-        if (FeatureUtil.isXrHeadset()) {
-            executeShellCommand(AM_START_HOME_ACTIVITY_COMMAND_XR);
-        }
     }
 
     protected static void launchHomeActivityNoWaitExpectFailure() {
@@ -1316,10 +1308,11 @@ public abstract class ActivityManagerTestBase {
     public void waitAndAssertTopResumedActivity(ComponentName activityName, int displayId,
             String message) {
         final String activityClassName = getActivityName(activityName);
-        mWmState.waitForWithAmState(state -> activityClassName.equals(state.getFocusedActivity()),
+        mWmState.waitForWithAmState(state ->
+                activityClassName.equals(state.getFocusedActivityOnDisplay(displayId)),
                 "activity to be on top");
         waitAndAssertResumedActivity(activityName, "Activity must be resumed");
-        mWmState.assertFocusedActivity(message, activityName);
+        mWmState.assertFocusedActivityOnDisplay(message, activityName, displayId);
 
         final int frontRootTaskId = mWmState.getFrontRootTaskId(displayId);
         Task frontRootTaskOnDisplay = mWmState.getRootTask(frontRootTaskId);
@@ -1328,8 +1321,8 @@ public abstract class ActivityManagerTestBase {
                 activityClassName,
                 frontRootTaskOnDisplay.isLeafTask() ? frontRootTaskOnDisplay.mResumedActivity
                         : frontRootTaskOnDisplay.getTopTask().mResumedActivity);
-        mWmState.assertFocusedRootTask("Top activity's rootTask must also be on top",
-                frontRootTaskId);
+        mWmState.assertFocusedRootTaskOnDisplay("Top activity's rootTask must also be on top",
+                frontRootTaskId, displayId);
     }
 
     /**
