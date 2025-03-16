@@ -5049,11 +5049,7 @@ public final class CarPropertyManagerTest extends AbstractCarTestCase {
                 "android.car.hardware.property.CarPropertyConfig#getAreaIdConfig",
                 "android.car.hardware.property.AreaIdConfig#isVariableUpdateRateSupported"
             })
-    @RequiresFlagsEnabled({
-        Flags.FLAG_BATCHED_SUBSCRIPTIONS,
-        Flags.FLAG_VARIABLE_UPDATE_RATE,
-        Flags.FLAG_SUBSCRIPTION_WITH_RESOLUTION
-    })
+    @RequiresFlagsEnabled({Flags.FLAG_BATCHED_SUBSCRIPTIONS, Flags.FLAG_VARIABLE_UPDATE_RATE})
     public void testSubscribePropertyEventsForContinuousProperty_withResolution() throws Exception {
         runWithShellPermissionIdentity(
                 () -> {
