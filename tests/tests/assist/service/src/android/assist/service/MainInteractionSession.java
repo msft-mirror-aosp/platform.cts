@@ -130,52 +130,55 @@ public class MainInteractionSession extends VoiceInteractionSession {
         if (mContentView == null) return; // Happens when ui is not enabled.
         mContentView.getViewTreeObserver().addOnPreDrawListener(
                 new ViewTreeObserver.OnPreDrawListener() {
-                @Override
-                public boolean onPreDraw() {
-                    mContentView.getViewTreeObserver().removeOnPreDrawListener(this);
-                    Display d = mContentView.getDisplay();
-                    Point displayPoint = new Point();
-                    // The voice interaction window layer is higher than keyguard, status bar,
-                    // nav bar now. So we should take both status bar, nav bar into consideration.
-                    // The voice interaction hide the nav bar, so the height only need to consider
-                    // status bar. The status bar may contain display cutout but the display cutout
-                    // is device specific, we need to check it.
-                    WindowManager wm = mContext.getSystemService(WindowManager.class);
-                    WindowMetrics windowMetrics = wm.getCurrentWindowMetrics();
-                    Rect bound = windowMetrics.getBounds();
-                    WindowInsets windowInsets = windowMetrics.getWindowInsets();
-                    android.graphics.Insets statusBarInsets =
-                            windowInsets.getInsets(statusBars());
-                    android.graphics.Insets displayCutoutInsets =
-                            windowInsets.getInsets(displayCutout());
-                    android.graphics.Insets min =
-                            android.graphics.Insets.min(statusBarInsets, displayCutoutInsets);
-                    boolean statusBarContainsCutout = !android.graphics.Insets.NONE.equals(min);
-                    Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
-                    displayPoint.y = statusBarContainsCutout
-                            ? bound.height() - min.top - min.bottom : bound.height();
-                    displayPoint.x = bound.width();
-                    DisplayCutout dc = d.getCutout();
-                    if (dc != null) {
-                        // Means the device has a cutout area
-                        android.graphics.Insets wi = d.getCutout().getWaterfallInsets();
+                    @Override
+                    public boolean onPreDraw() {
+                        mContentView.getViewTreeObserver().removeOnPreDrawListener(this);
+                        Display d = mContentView.getDisplay();
+                        Point displayPoint = new Point();
+                        // The voice interaction window layer is higher than keyguard, status bar,
+                        // nav bar now. So we should take both status bar, nav bar into
+                        // consideration.
+                        // The voice interaction hide the nav bar, so the height only need to
+                        // consider
+                        // status bar. The status bar may contain display cutout but the display
+                        // cutout
+                        // is device specific, we need to check it.
+                        WindowManager wm = mContext.getSystemService(WindowManager.class);
+                        WindowMetrics windowMetrics = wm.getCurrentWindowMetrics();
+                        Rect bound = windowMetrics.getBounds();
+                        WindowInsets windowInsets = windowMetrics.getWindowInsets();
+                        android.graphics.Insets statusBarInsets =
+                                windowInsets.getInsets(statusBars());
+                        android.graphics.Insets displayCutoutInsets =
+                                windowInsets.getInsets(displayCutout());
+                        android.graphics.Insets min =
+                                android.graphics.Insets.min(statusBarInsets, displayCutoutInsets);
+                        boolean statusBarContainsCutout = !android.graphics.Insets.NONE.equals(min);
+                        Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
+                        displayPoint.y = statusBarContainsCutout
+                                ? bound.height() - min.top - min.bottom : bound.height();
+                        displayPoint.x = bound.width();
+                        DisplayCutout dc = d.getCutout();
+                        if (dc != null) {
+                            // Means the device has a cutout area
+                            android.graphics.Insets wi = d.getCutout().getWaterfallInsets();
 
-                        if (wi != android.graphics.Insets.NONE) {
-                            // Waterfall cutout. Considers only the display
-                            // useful area discarding the cutout.
-                            displayPoint.x -= (wi.left + wi.right);
+                            if (wi.equals(android.graphics.Insets.NONE)) {
+                                // Waterfall cutout. Considers only the display
+                                // useful area discarding the cutout.
+                                displayPoint.x -= (wi.left + wi.right);
+                            }
                         }
+                        Bundle bundle = new Bundle();
+                        bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION,
+                                Utils.BROADCAST_CONTENT_VIEW_HEIGHT);
+                        bundle.putInt(Utils.EXTRA_CONTENT_VIEW_HEIGHT, mContentView.getHeight());
+                        bundle.putInt(Utils.EXTRA_CONTENT_VIEW_WIDTH, mContentView.getWidth());
+                        bundle.putParcelable(Utils.EXTRA_DISPLAY_POINT, displayPoint);
+                        mRemoteCallback.sendResult(bundle);
+                        return true;
                     }
-                    Bundle bundle = new Bundle();
-                    bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION,
-                            Utils.BROADCAST_CONTENT_VIEW_HEIGHT);
-                    bundle.putInt(Utils.EXTRA_CONTENT_VIEW_HEIGHT, mContentView.getHeight());
-                    bundle.putInt(Utils.EXTRA_CONTENT_VIEW_WIDTH, mContentView.getWidth());
-                    bundle.putParcelable(Utils.EXTRA_DISPLAY_POINT, displayPoint);
-                    mRemoteCallback.sendResult(bundle);
-                    return true;
-                }
-            });
+                });
     }
 
     @Override
@@ -191,7 +194,8 @@ public class MainInteractionSession extends VoiceInteractionSession {
 
         // The structure becomes null under following conditions
         // May be null if assist data has been disabled by the user or device policy;
-        // Will be an empty stub if the application has disabled assist by marking its window as secure.
+        // Will be an empty stub if the application has disabled assist by marking its window as
+        // secure.
         // The CTS testcase will fail under the condition(automotive usecases) where
         // there are multiple displays and some of the displays are marked with FLAG_SECURE
 
@@ -200,13 +204,13 @@ public class MainInteractionSession extends VoiceInteractionSession {
             return;
         }
 
-        if (activity != null && Utils.isAutomotive(mContext)
+        if (activity != null && (Utils.isAutomotive(mContext) || Utils.isXr(mContext))
                 && !activity.getPackageName().startsWith("android.assist")) {
-            // TODO: automotive has multiple activities / displays, so the test might fail if it
+            // TODO: automotive/Xr has multiple activities / displays, so the test might fail if it
             // receives one of them (like the cluster activity) instead of what's expecting. This is
             // a quick fix for the issue; a better solution would be refactoring the infra to
             // either send all events, or let the test specifify which activity it's waiting for
-            Log.i(TAG, "Ignoring " + activity.flattenToShortString() + " on automotive");
+            Log.i(TAG, "Ignoring " + activity.flattenToShortString() + " on automotive/Xr");
             return;
         }
 
@@ -245,7 +249,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
                 boolean screenshotMatches = compareScreenshot(screenshot, mCurColor);
                 Log.i(TAG, "this is a screenshot test. Matches? " + screenshotMatches);
                 mAssistData.putBoolean(
-                    Utils.COMPARE_SCREENSHOT_KEY, screenshotMatches);
+                        Utils.COMPARE_SCREENSHOT_KEY, screenshotMatches);
             }
         } else {
             mAssistData.putBoolean(Utils.ASSIST_SCREENSHOT_KEY, false);
@@ -299,7 +303,8 @@ public class MainInteractionSession extends VoiceInteractionSession {
             Log.i(TAG, "waiting for screenshot before broadcasting results");
         } else {
             Bundle bundle = new Bundle();
-            bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION, Utils.BROADCAST_ASSIST_DATA_INTENT);
+            bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION,
+                    Utils.BROADCAST_ASSIST_DATA_INTENT);
             bundle.putAll(mAssistData);
             mRemoteCallback.sendResult(bundle);
 
@@ -314,7 +319,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
         if (f == null) {
             Log.wtf(TAG, "layout inflater was null");
         }
-        mContentView = f.inflate(R.layout.assist_layer,null);
+        mContentView = f.inflate(R.layout.assist_layer, null);
         Log.i(TAG, "onCreateContentView");
         return mContentView;
     }
