@@ -20,26 +20,17 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeTrue;
 
-import android.car.feature.Flags;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.host.HostFlagsValueProvider;
-
 import com.android.car.power.CarPowerDumpProto;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ProtoUtils;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.Objects;
 import java.util.concurrent.Callable;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CarPowerHostTest extends CarHostJUnit4TestCase {
@@ -53,19 +44,12 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private static final String POWER_STATE_PATTERN =
             "mCurrentState:.*CpmsState=([A-Z_]+)\\(\\d+\\)";
     private static final String CMD_DUMPSYS_POWER =
-            "dumpsys car_service --services CarPowerManagementService";
-    private static final String CMD_DUMPSYS_POWER_PROTO =
             "dumpsys car_service --services CarPowerManagementService --proto";
     private static final String ANDROID_CLIENT_SERVICE = "android.car.cts.app/.CarPowerTestService";
     private static final String TEST_COMMAND_HEADER =
             "am start-foreground-service -n " + ANDROID_CLIENT_SERVICE + " --es power ";
     private static final String LISTENER_DUMP_HEADER = "mListener set";
     private static final String RESULT_DUMP_HEADER = "mResultBuf";
-    private boolean mUseProtoDump;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Before
     public void setUp() throws Exception {
@@ -74,9 +58,7 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testPowerStateOnAfterBootUp_protoDump() throws Exception {
-        setUseProtoDump(true);
+    public void testPowerStateOnAfterBootUp() throws Exception {
         rebootDevice();
 
         PollingCheck.check("Power state is not ON", TIMEOUT_MS,
@@ -84,21 +66,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testPowerStateOnAfterBootUp_textDump() throws Exception {
-        setUseProtoDump(false);
-        rebootDevice();
-
-        PollingCheck.check("Power state is not ON", TIMEOUT_MS,
-                () -> getPowerState().equals(POWER_ON));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithoutCompletion_suspendToRam_protoDump() throws Exception {
+    public void testSetListenerWithoutCompletion_suspendToRam() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
         assumeEmulatorBuild();
-        setUseProtoDump(true);
         testSetListenerInternal(/* suspendType= */ "s2r",
                 /* completionType= */ "without-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
@@ -112,29 +82,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithoutCompletion_suspendToRam_textDump() throws Exception {
+    public void testSetListenerWithoutCompletion_suspendToDisk() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
         assumeEmulatorBuild();
-        setUseProtoDump(false);
-        testSetListenerInternal(/* suspendType= */ "s2r",
-                /* completionType= */ "without-completion",
-                /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
-                /* suspendDevice= */ () -> {
-                    try {
-                        suspendDeviceToRam();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithoutCompletion_suspendToDisk_protoDump() throws Exception {
-        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
-        assumeEmulatorBuild();
-        setUseProtoDump(true);
         testSetListenerInternal(/* suspendType= */ "s2d",
                 /* completionType= */ "without-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
@@ -148,29 +98,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithoutCompletion_suspendToDisk_textDump() throws Exception {
+    public void testSetListenerWithCompletion_suspendToRam() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
         assumeEmulatorBuild();
-        setUseProtoDump(false);
-        testSetListenerInternal(/* suspendType= */ "s2d",
-                /* completionType= */ "without-completion",
-                /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
-                /* suspendDevice= */ () -> {
-                    try {
-                        suspendDeviceToDisk();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithCompletion_suspendToRam_protoDump() throws Exception {
-        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
-        assumeEmulatorBuild();
-        setUseProtoDump(true);
         testSetListenerInternal(/* suspendType= */ "s2r",
                 /* completionType= */ "with-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
@@ -184,28 +114,9 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithCompletion_suspendToRam_textDump() throws Exception {
-        assumeEmulatorBuild();
-        setUseProtoDump(false);
-        testSetListenerInternal(/* suspendType= */ "s2r",
-                /* completionType= */ "with-completion",
-                /* isSuspendAvailable= */ () -> isSuspendToRamAvailable(),
-                /* suspendDevice= */ () -> {
-                    try {
-                        suspendDeviceToRam();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithCompletion_suspendToDisk_protoDump() throws Exception {
+    public void testSetListenerWithCompletion_suspendToDisk() throws Exception {
         // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
         assumeEmulatorBuild();
-        setUseProtoDump(true);
         testSetListenerInternal(/* suspendType= */ "s2d",
                 /* completionType= */ "with-completion",
                 /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
@@ -216,28 +127,6 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
                         throw new RuntimeException(e);
                     }
                 });
-    }
-
-    @Test
-    @RequiresFlagsDisabled(Flags.FLAG_CAR_DUMP_TO_PROTO)
-    public void testSetListenerWithCompletion_suspendToDisk_textDump() throws Exception {
-        // TODO(b/328617252): remove emulator check once ADB reconnection from suspend is stable
-        assumeEmulatorBuild();
-        setUseProtoDump(false);
-        testSetListenerInternal(/* suspendType= */ "s2d",
-                /* completionType= */ "with-completion",
-                /* isSuspendAvailable= */ () -> isSuspendToDiskAvailable(),
-                /* suspendDevice= */ () -> {
-                    try {
-                        suspendDeviceToDisk();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-    }
-
-    private void setUseProtoDump(boolean useProtoDump) {
-        mUseProtoDump = useProtoDump;
     }
 
     private void rebootDevice() throws Exception {
@@ -247,29 +136,14 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
 
     @SuppressWarnings("LiteProtoToString")
     private String getPowerState() throws Exception {
-        if (mUseProtoDump) {
-            CarPowerDumpProto carPowerDump = ProtoUtils.getProto(getDevice(),
-                    CarPowerDumpProto.parser(), CMD_DUMPSYS_POWER_PROTO);
-            boolean hasPowerState = carPowerDump.getCurrentState().hasStateName();
-            if (hasPowerState) {
-                return carPowerDump.getCurrentState().getStateName();
-            }
-            throw new IllegalStateException(
-                    "Proto doesn't have current_state.state_name field\n proto:" + carPowerDump);
-        } else {
-            Pattern pattern = Pattern.compile(POWER_STATE_PATTERN);
-            String cpmsDump =
-                    executeCommand("dumpsys car_service --services CarPowerManagementService");
-            String[] lines = cpmsDump.split("\\r?\\n");
-
-            for (String line : lines) {
-                Matcher matcher = pattern.matcher(line);
-                if (matcher.find()) {
-                    return matcher.group(1);
-                }
-            }
-            throw new IllegalStateException("Power state is not found:\n" + cpmsDump);
+        CarPowerDumpProto carPowerDump =
+                ProtoUtils.getProto(getDevice(), CarPowerDumpProto.parser(), CMD_DUMPSYS_POWER);
+        boolean hasPowerState = carPowerDump.getCurrentState().hasStateName();
+        if (hasPowerState) {
+            return carPowerDump.getCurrentState().getStateName();
         }
+        throw new IllegalStateException(
+                "Proto doesn't have current_state.state_name field\n proto:" + carPowerDump);
     }
 
     private void testSetListenerInternal(String suspendType, String completionType,
@@ -343,23 +217,15 @@ public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     }
 
     private boolean isSuspendToRamAvailable() throws Exception {
-        if (mUseProtoDump) {
-            CarPowerDumpProto carPowerDump = ProtoUtils.getProto(getDevice(),
-                    CarPowerDumpProto.parser(), CMD_DUMPSYS_POWER_PROTO);
-            return carPowerDump.getKernelSupportsDeepSleep();
-        } else {
-            return isSuspendSupported("S2R");
-        }
+        CarPowerDumpProto carPowerDump =
+                ProtoUtils.getProto(getDevice(), CarPowerDumpProto.parser(), CMD_DUMPSYS_POWER);
+        return carPowerDump.getKernelSupportsDeepSleep();
     }
 
     private boolean isSuspendToDiskAvailable() throws Exception {
-        if (mUseProtoDump) {
-            CarPowerDumpProto carPowerDump = ProtoUtils.getProto(getDevice(),
-                    CarPowerDumpProto.parser(), CMD_DUMPSYS_POWER_PROTO);
-            return carPowerDump.getKernelSupportsHibernation();
-        } else {
-            return isSuspendSupported("S2D");
-        }
+        CarPowerDumpProto carPowerDump =
+                ProtoUtils.getProto(getDevice(), CarPowerDumpProto.parser(), CMD_DUMPSYS_POWER);
+        return carPowerDump.getKernelSupportsHibernation();
     }
 
     private void setPowerStateListener(String completionType, String suspendType) throws Exception {
