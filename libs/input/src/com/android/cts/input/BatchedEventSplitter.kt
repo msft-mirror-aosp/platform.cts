@@ -71,6 +71,7 @@ fun splitBatchedMotionEvent(event: MotionEvent): List<MotionEvent> {
                 event.source, event.flags
             )
         singleEvent.actionButton = event.actionButton
+        singleEvent.displayId = event.displayId
         events.add(singleEvent)
     }
 
@@ -89,6 +90,7 @@ fun splitBatchedMotionEvent(event: MotionEvent): List<MotionEvent> {
             event.source, event.flags
         )
     singleEvent.actionButton = event.actionButton
+    singleEvent.displayId = event.displayId
     events.add(singleEvent)
     return events
 }
