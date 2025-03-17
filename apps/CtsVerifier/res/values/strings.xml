@@ -7570,11 +7570,12 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\n* \"Save screen capture\" action below can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
-        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
-        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
-        \n3. Press \"Send notification\".
-        \n4. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
-        \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
+        1.  Press \"Request SMS Role\". Select the Cts Verifier app in the dialog that pops up, and press "set as default", then wait 60 seconds, or reboot the phone.
+        \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n4. Press \"Send notification\".
+        \n5. Use \"Save screen capture\" action below to take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
+        \n6. If screenshot is blank, click \"Pass\", otherwise click \"Fail\". Afterwards, navigate to the "Default Apps" page in settings, and reset the SMS app
     </string>
     <string name="notif_hiding_shade_partial_test_instructions">
         1. Press \"Start screen recording\", then select \"A Single App\" in the resulting recording dialog, then select \"Start\", then pick \"Cts Verifier\" in the list of apps that shows.
@@ -7634,6 +7635,7 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="notif_hiding_no_local_screen_recorder_warning">This test requires a local screen recorder that declares uses-permission of android.permission.RECORD_SENSITIVE_CONTENT to exempt it from protections</string>
     <string name="notif_hiding_start_screen_recording">Start screen recording</string>
+    <string name="notif_hiding_request_sms_role">Request SMS role</string>
     <string name="notif_hiding_send_notification">Send notification</string>
     <string name="notif_hiding_save_screen_capture">Save screen capture</string>
     <string name="notif_hiding_save_screen_capture_path">Screen capture saved to %1$s</string>
