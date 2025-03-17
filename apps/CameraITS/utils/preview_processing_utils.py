@@ -43,7 +43,6 @@ _SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
-_MAX_FRAME_WIDTH = 1920  # maximum frame width for stabilization verification
 
 
 def get_720p_or_above_size(supported_preview_sizes):
@@ -215,20 +214,8 @@ def verify_preview_stabilization(recording_obj, gyro_events, test_name,
   file_list = video_processing_utils.extract_all_frames_from_video(
       log_path, file_name, _IMG_FORMAT
   )
-  frames = []
 
   logging.debug('Number of frames %d', len(file_list))
-  scale_factor = _MAX_FRAME_WIDTH / int(video_size.split('x')[0])
-  logging.debug('scale_factor is %f', scale_factor)
-  for file in file_list:
-    img_bgr = cv2.imread(os.path.join(log_path, file))
-    if scale_factor < 1.0:
-      img_bgr = cv2.resize(img_bgr, None, fx=scale_factor, fy=scale_factor)
-    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-    frames.append(img_rgb / 255)
-  frame_h, frame_w, _ = frames[0].shape
-  logging.debug('Frame size %d x %d', frame_w, frame_h)
-
   # Extract camera rotations
   if zoom_ratio:
     zoom_ratio_suffix = f'{zoom_ratio:.1f}'
@@ -237,16 +224,14 @@ def verify_preview_stabilization(recording_obj, gyro_events, test_name,
   file_name_stem = (
       f'{os.path.join(log_path, test_name)}_{video_size}_{zoom_ratio_suffix}x'
       f'_stabilization={stabilization_mode}')
-  cam_rots = sensor_fusion_utils.get_cam_rotations(
-      frames[_START_FRAME:],
+  cam_rots = sensor_fusion_utils.get_cam_rotations_from_files(
+      file_list[_START_FRAME:],
       facing,
-      frame_h,
       file_name_stem,
+      log_path,
       _START_FRAME,
       stabilized_video=stabilization_mode
   )
-  # Explicitly delete frames to keep memory consumption low
-  del frames
   sensor_fusion_utils.plot_camera_rotations(cam_rots, _START_FRAME,
                                             video_size, file_name_stem)
   max_camera_angle = sensor_fusion_utils.calc_max_rotation_angle(

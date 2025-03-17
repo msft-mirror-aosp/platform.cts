@@ -204,7 +204,7 @@ class VideoStabilizationTest(its_base_test.ItsBaseTest):
 
         # Extract camera rotations
         file_name_stem = f'{os.path.join(log_path, _NAME)}_{video_quality}'
-        cam_rots = sensor_fusion_utils.get_cam_rotations(
+        cam_rots = sensor_fusion_utils.get_cam_rotations_from_frames(
             frames[_START_FRAME:], facing, frame_shape[0],
             file_name_stem, _START_FRAME, stabilized_video=True)
         sensor_fusion_utils.plot_camera_rotations(
