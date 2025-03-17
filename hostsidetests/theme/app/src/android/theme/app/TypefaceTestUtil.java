@@ -17,11 +17,7 @@
 package android.theme.app;
 
 import android.graphics.Paint;
-import android.graphics.Typeface;
 import android.graphics.fonts.Font;
-import android.graphics.fonts.FontFamily;
-import android.graphics.fonts.FontVariationAxis;
-import android.graphics.fonts.SystemFonts;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
 
@@ -36,33 +32,6 @@ public class TypefaceTestUtil {
         Font font = glyphs.getFont(0);
         requireNonNull(font.getFile());
         return font.getFile();
-    }
-
-    public static Typeface getRobotoTypeface(int weight, boolean italic) {
-        FontFamily.Builder builder = null;
-        for (Font font : SystemFonts.getAvailableFonts()) {
-            boolean useThisFont = false;
-            if (font.getFile().getName().startsWith("Roboto-")) {
-                for (FontVariationAxis axis : font.getAxes()) {
-                    if (axis.getTag().equals("wdth") && axis.getStyleValue() == 100f) {
-                        useThisFont = true;
-                    }
-                }
-            } else if (font.getFile().getName().equals("RobotoStatic-Regular.ttf")) {
-                useThisFont = true;
-            }
-            if (useThisFont) {
-                if (builder == null) {
-                    builder = new FontFamily.Builder(font);
-                } else {
-                    builder.addFont(font);
-                }
-            }
-        }
-        requireNonNull(builder);
-        Typeface tf = new Typeface.CustomFallbackBuilder(builder.build()).build();
-        requireNonNull(tf);
-        return Typeface.create(tf, weight, italic);
     }
 
     private static void requireNonNull(Object obj) {
