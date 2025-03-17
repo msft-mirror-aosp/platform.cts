@@ -70,7 +70,7 @@ public class WallpaperManagerSdk33Test {
     private static WallpaperManager sWallpaperManager;
     private static Bitmap sDefaultBitmap;
     private static Bitmap sRedBitmap;
-    private static boolean sTvTarget;
+    private static boolean sTvOrCarTarget;
 
     /**
      * Note: all tests in this class assume to start with a red bitmap on both system & lock screen.
@@ -85,10 +85,11 @@ public class WallpaperManagerSdk33Test {
 
         // ignore for TV targets
         PackageManager packageManager = context.getPackageManager();
-        sTvTarget = packageManager != null
+        sTvOrCarTarget = packageManager != null
                 && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
-        if (sTvTarget) return;
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION))
+                || packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        if (sTvOrCarTarget) return;
 
         sWallpaperManager = WallpaperManager.getInstance(context);
         sWallpaperManager.clearWallpaper();
@@ -109,7 +110,7 @@ public class WallpaperManagerSdk33Test {
 
     @Before
     public void setUp() throws Exception {
-        assumeFalse("WallpaperManagerSdk33Test is not meaningful for TV targets", sTvTarget);
+        assumeFalse("WallpaperManagerSdk33Test is not meaningful for TV or Car targets", sTvOrCarTarget);
         assumeTrue("Device does not support wallpapers", sWallpaperManager.isWallpaperSupported());
         MockitoAnnotations.initMocks(this);
     }
