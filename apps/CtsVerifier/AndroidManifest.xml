@@ -3116,9 +3116,54 @@
                 android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="9.8.2" />
         </activity>
+
         <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
             android:exported="false"
             android:foregroundServiceType="mediaProjection" />
+
+
+        <!-- The following components are needed for the test to hold the SMS role -->
+        <activity android:name="com.android.cts.verifier.notifications.SmsActivity"
+            android:exported="true">
+            <meta-data android:name="NonApiTest"
+               android:value="dummy activity to allow the verifier to hold the SMS role" />
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="smsto" />
+            </intent-filter>
+        </activity>
+
+        <!-- The following components are needed for the test app to hold the SMS role -->
+
+        <service android:name=".notifications.SmsService"
+            android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="smsto" />
+            </intent-filter>
+        </service>
+
+        <receiver android:name=".notifications.SmsReceiver"
+            android:permission="android.permission.BROADCAST_SMS"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_DELIVER" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".notifications.SmsReceiver2"
+            android:permission="android.permission.BROADCAST_WAP_PUSH"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+        </receiver>
 
         <activity android:name=".notifications.NotificationPrivacyVerifierActivity"
             android:exported="true"
