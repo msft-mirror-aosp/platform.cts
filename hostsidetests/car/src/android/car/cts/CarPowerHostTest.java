@@ -36,7 +36,7 @@ import java.util.concurrent.Callable;
 public final class CarPowerHostTest extends CarHostJUnit4TestCase {
     private static final long TIMEOUT_MS = 5_000;
     private static final int SUSPEND_SEC = 3;
-    private static final long WAIT_FOR_SUSPEND_MS = SUSPEND_SEC * 1000 + 2000;
+    private static final long WAIT_FOR_SUSPEND_MS = SUSPEND_SEC * 2000;
     private static final String PRODUCT_MODEL_PROPERTY = "ro.product.model";
     private static final String GOLDFISH_PROPERTY = "ro.kernel.qemu";
     private static final String CUTTLEFISH_DEVICE_NAME_PREFIX = "Cuttlefish";
