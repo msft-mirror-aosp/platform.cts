@@ -158,7 +158,6 @@ public final class CarPropertyValueTest extends AbstractCarTestCase {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     @Test
     public void testGetPropertyStatus() {
         for (CarPropertyValue propertyValue : mCarPropertyValues) {

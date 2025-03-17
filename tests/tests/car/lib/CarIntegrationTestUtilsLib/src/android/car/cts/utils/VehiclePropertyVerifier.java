@@ -2300,14 +2300,6 @@ public class VehiclePropertyVerifier<T> {
             verifyValidAreaIdsForAreaType(ALL_POSSIBLE_DOOR_AREA_IDS);
             verifyNoAreaOverlapInAreaIds();
         } else if (mAreaType == VehicleAreaType.VEHICLE_AREA_TYPE_VENDOR) {
-            assertWithMessage(
-                            mPropertyName
-                                    + " has an unsupported area type "
-                                    + areaTypeToString(mAreaType)
-                                    + " since associated feature flag is false")
-                    .that(Flags.androidVicVehicleProperties())
-                    .isTrue();
-
             verifyNoAreaOverlapInAreaIds();
         }
 
