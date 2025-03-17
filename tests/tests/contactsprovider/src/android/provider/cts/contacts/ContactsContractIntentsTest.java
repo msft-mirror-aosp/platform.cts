@@ -63,16 +63,17 @@ public class ContactsContractIntentsTest extends AndroidTestCase {
             return; // Skip test on watch and automotive since the intent is not required.
         }
 
-        Intent intent = new Intent(
-                ContactsContract.RawContacts.DefaultAccount.ACTION_MOVE_CONTACTS_TO_DEFAULT_ACCOUNT);
+        String intentAction =
+                ContactsContract.RawContacts.DefaultAccount.ACTION_MOVE_CONTACTS_TO_DEFAULT_ACCOUNT;
+        Intent intent = new Intent(intentAction);
         List<ResolveInfo> resolveInfoList = packageManager.queryIntentActivities(intent, 0);
-        assertNotNull("Missing ResolveInfo", resolveInfoList);
-        int handlerCount = 0;
-        for (ResolveInfo resolveInfo : resolveInfoList) {
-            if ("com.android.providers.contacts".equals(resolveInfo.activityInfo.packageName)) {
-                handlerCount++;
-            }
-        }
-        assertEquals(1, handlerCount);
+
+        assertNotNull(
+                "Expected at least one activity to resolve the intent: " + intentAction,
+                resolveInfoList);
+        assertEquals(
+                "Expected exactly one activity to resolve the intent: " + intentAction,
+                1,
+                resolveInfoList.size());
     }
 }
