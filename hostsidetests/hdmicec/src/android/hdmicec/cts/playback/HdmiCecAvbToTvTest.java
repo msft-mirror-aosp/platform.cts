@@ -34,6 +34,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Tests for absolute volume behavior where the DUT is a Playback device and the
  * System Audio device is a TV.
@@ -197,6 +199,7 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
         // Calling AudioManager#setStreamVolume should cause the DUT to send
         // <Set Audio Volume Level> with the new volume level as a parameter
         AudioManagerHelper.setDeviceVolume(getDevice(), 80);
+        TimeUnit.SECONDS.sleep(HdmiCecConstants.DEVICE_WAIT_TIME_SECONDS);
         int realDeviceVolume = AudioManagerHelper.getDutAudioVolume(getDevice());
         String setAudioVolumeLevelMessage = hdmiCecClient.checkExpectedOutput(
                 hdmiCecClient.getSelfDevice(), CecOperand.SET_AUDIO_VOLUME_LEVEL);
