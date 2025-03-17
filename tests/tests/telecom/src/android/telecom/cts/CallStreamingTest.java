@@ -37,6 +37,7 @@ import android.os.ParcelUuid;
 import android.telecom.CallAttributes;
 import android.telecom.CallControl;
 import android.telecom.CallException;
+import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.StreamingCall;
@@ -128,6 +129,7 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
         // Tricksy way to get around the fact that this has to be final and assigned in the below
         // lambda
         final ParcelUuid[] callId = new ParcelUuid[1];
+
         mTelecomManager.addCall(attributes, Runnable::run, new OutcomeReceiver<>() {
             @Override
             public void onResult(CallControl callControl) {
@@ -149,31 +151,43 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
         }, call.mHandshakes, call.mEvents);
 
         assertOnResultWasReceived(latch);
+        try {
 
-        final android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver outcome =
-                new android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver(latch);
-        call.mCallControl.startCallStreaming(Runnable::run, outcome);
-        assertOnResultWasReceived(outcome.mCountDownLatch);
+            final android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver outcome =
+                    new android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver(latch);
+            call.mCallControl.startCallStreaming(Runnable::run, outcome);
+            assertOnResultWasReceived(outcome.mCountDownLatch);
 
-        // Wait until the streaming service is bound and a streaming call is added to it.
-        Bundle bundle = control.waitForCallAdded();
+            // Wait until the streaming service is bound and a streaming call is added to it.
+            Bundle bundle = control.waitForCallAdded();
 
-        assertTrue(!bundle.containsKey(CtsCallStreamingService.EXTRA_FAILED));
-        assertTrue(bundle.containsKey(CtsCallStreamingService.EXTRA_CALL_EXTRAS));
-        Bundle theExtras = bundle.getBundle(CtsCallStreamingService.EXTRA_CALL_EXTRAS);
+            assertTrue(!bundle.containsKey(CtsCallStreamingService.EXTRA_FAILED));
+            assertTrue(bundle.containsKey(CtsCallStreamingService.EXTRA_CALL_EXTRAS));
+            Bundle theExtras = bundle.getBundle(CtsCallStreamingService.EXTRA_CALL_EXTRAS);
 
-        // Verify that the StreamingCall got the right call ID.
-        if (Flags.callDetailsIdChanges()){
-            assertEquals(callId[0].toString(),
-                    theExtras.getString(StreamingCall.EXTRA_CALL_ID));
-        } else {
-            assertEquals(callId[0].toString(),
-                    theExtras.getString("android.telecom.extra.CALL_ID"));
+            // Verify that the StreamingCall got the right call ID.
+            if (Flags.callDetailsIdChanges()) {
+                assertEquals(
+                        callId[0].toString(), theExtras.getString(StreamingCall.EXTRA_CALL_ID));
+            } else {
+                assertEquals(
+                        callId[0].toString(), theExtras.getString("android.telecom.extra.CALL_ID"));
+            }
+
+            // confirm the audio mode is for comm redirect
+            AudioManager audioManager = mContext.getSystemService(AudioManager.class);
+            assertAudioMode(audioManager, AudioManager.MODE_COMMUNICATION_REDIRECT);
+        } finally {
+            // Make sure we disconnect the call and wait for it to be disconnected.
+            // This guarantees that streaming will stop.
+            final CountDownLatch disconnectLatch = new CountDownLatch(1);
+            final var disconnectOutcome =
+                    new android.telecom.cts.TelecomCtsVoipCall.LatchedOutcomeReceiver(
+                            disconnectLatch);
+            call.mCallControl.disconnect(
+                    new DisconnectCause(DisconnectCause.LOCAL), Runnable::run, disconnectOutcome);
+            assertOnResultWasReceived(disconnectOutcome.mCountDownLatch);
         }
-
-        // confirm the audio mode is for comm redirect
-        AudioManager audioManager = mContext.getSystemService(AudioManager.class);
-        assertAudioMode(audioManager, AudioManager.MODE_COMMUNICATION_REDIRECT);
     }
 
     /**
