@@ -65,6 +65,15 @@
                 android:orientation="vertical">
 
                 <Button
+                    android:id="@+id/request_sms_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="20dip"
+                    android:layout_marginRight="20dip"
+                    android:layout_gravity="center_horizontal"
+                    android:text="@string/notif_hiding_request_sms_role" />
+
+                <Button
                     android:id="@+id/start_screenshare_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
