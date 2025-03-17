@@ -114,7 +114,7 @@ public abstract class WindowUntrustedTouchTestBase {
             Float.intBitsToFloat(0b00111000100000000000000000000000);
 
     static final float MAXIMUM_OBSCURING_OPACITY = .8f;
-    static final long TIMEOUT_MS = 3000L;
+    static final long TIMEOUT_MS = 5000L * HW_TIMEOUT_MULTIPLIER;
     static final long MAX_ANIMATION_DURATION_MS = 3000L;
     static final long ANIMATION_DURATION_TOLERANCE_MS = 500L;
 
