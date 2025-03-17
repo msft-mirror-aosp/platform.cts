@@ -33,6 +33,7 @@ import android.util.Pair;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class MockModemService extends Service {
@@ -84,6 +85,8 @@ public class MockModemService extends Service {
     private Object mLock;
     protected static CountDownLatch[] sLatches;
     private LocalBinder mBinder;
+    private final Semaphore mSetSatellitePlmnSemaphore = new Semaphore(0);
+    private static final long TIMEOUT = 5000;
 
     // For local access of this Service.
     class LocalBinder extends Binder {
@@ -412,5 +415,31 @@ public class MockModemService extends Service {
 
     public int getActiveMockModemCount() {
         return mNumOfPhone;
+    }
+
+    /** Modem completed setting satellite PLMN. */
+    public void onSetSatellitePlmn() {
+        Log.d(TAG, "onSetSatellitePlmn");
+        try {
+            mSetSatellitePlmnSemaphore.release();
+        } catch (Exception ex) {
+            Log.d(TAG, "onSetSatellitePlmn: Got exception, ex=" + ex);
+        }
+    }
+
+    /** Wait until setSatellitePlmn() is called. */
+    boolean waitForEventOnSetSatellitePlmn(int expectedNumberOfEvents) {
+        for (int i = 0; i < expectedNumberOfEvents; i++) {
+            try {
+                if (!mSetSatellitePlmnSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                    Log.e(TAG, "Timeout to receive onSetSatellitePlmn");
+                    return false;
+                }
+            } catch (Exception ex) {
+                Log.e(TAG, "onSetSatellitePlmn: Got exception=" + ex);
+                return false;
+            }
+        }
+        return true;
     }
 }
