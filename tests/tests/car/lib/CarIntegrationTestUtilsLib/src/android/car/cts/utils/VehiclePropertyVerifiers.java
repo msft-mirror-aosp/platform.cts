@@ -1329,7 +1329,6 @@ public class VehiclePropertyVerifiers {
                         Integer.class)
                 .setAllPossibleEnumValues(
                         ImmutableSet.of(
-                                VehicleAreaSeat.SEAT_UNKNOWN,
                                 VehicleAreaSeat.SEAT_ROW_1_LEFT,
                                 VehicleAreaSeat.SEAT_ROW_1_CENTER,
                                 VehicleAreaSeat.SEAT_ROW_1_RIGHT))
