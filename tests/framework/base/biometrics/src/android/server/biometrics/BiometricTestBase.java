@@ -643,6 +643,11 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
 
     @After
     public void cleanup() {
+        mInstrumentation
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.WAKE_LOCK,
+                        android.Manifest.permission.TEST_BIOMETRIC);
         mInstrumentation.waitForIdleSync();
 
         // Authentication lifecycle is done
