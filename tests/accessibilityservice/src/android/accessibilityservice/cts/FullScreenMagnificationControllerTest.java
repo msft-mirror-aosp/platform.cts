@@ -48,6 +48,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
@@ -59,6 +61,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -72,7 +75,14 @@ public class FullScreenMagnificationControllerTest {
 
     /** Maximum timeout while waiting for a config to be updated */
     private static final int TIMEOUT_CONFIG_SECONDS = 15;
+
     private static final int BOUNDS_TOLERANCE = 1;
+
+    private static final String DEVICE_CONFIG_NAMESPACE_WM = "window_manager";
+    private static final String DEVICE_CONFIG_KEY_ALWAYS_ON_MAGNIFIER =
+            "AlwaysOnMagnifier__enable_always_on_magnifier";
+    private static final String SETTING_KEY_MAGNIFICATION_ALWAYS_ON =
+            "accessibility_magnification_always_on_enabled";
 
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
@@ -80,16 +90,25 @@ public class FullScreenMagnificationControllerTest {
 
     private ActivityScenario<AccessibilityWindowQueryActivity> mActivityScenario = null;
 
-    private InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
-            mMagnificationAccessibilityServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
-            StubMagnificationAccessibilityService.class, false);
+    private final InstrumentedAccessibilityServiceTestRule<StubMagnificationAccessibilityService>
+            mMagnificationAccessibilityServiceRule =
+                    new InstrumentedAccessibilityServiceTestRule<>(
+                            StubMagnificationAccessibilityService.class, false);
 
-    private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
-            new AccessibilityDumpOnFailureRule();
+    // StateChangerRules starts UiAutomation without FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES.
+    // They have to be outer rule than other accessibility related rules.
+    private final DeviceConfigStateChangerRule mDeviceConfigStateChangerRule =
+            new DeviceConfigStateChangerRule(
+                    sInstrumentation.getContext(),
+                    DEVICE_CONFIG_NAMESPACE_WM,
+                    DEVICE_CONFIG_KEY_ALWAYS_ON_MAGNIFIER,
+                    "true");
 
     @Rule
     public final RuleChain mRuleChain =
-            RuleChain.outerRule(mMagnificationAccessibilityServiceRule).around(mDumpOnFailureRule);
+            RuleChain.outerRule(mDeviceConfigStateChangerRule)
+                    .around(mMagnificationAccessibilityServiceRule)
+                    .around(new AccessibilityDumpOnFailureRule());
 
     @BeforeClass
     public static void oneTimeSetup() {
@@ -110,6 +129,18 @@ public class FullScreenMagnificationControllerTest {
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(sInstrumentation.getTargetContext()));
         mService = mMagnificationAccessibilityServiceRule.enableService();
+
+        // `setServiceInfo` resets magnification unless there's any magnification listener.
+        // In `homeScreenOrBust`, `uiAutomation.setServiceInfo` is done to ensure uiAutomation can
+        // listen the window events.
+        // Although we don't need to listen magnification here, adding an empty listener makes sure
+        // that magnification won't be reset by calling `setServiceInfo`.
+        // See also b/401998908.
+        final MagnificationController controller = mService.getMagnificationController();
+        controller.addListener(
+                (controllerInner, region, scale1, centerX, centerY) -> {
+                    // Do nothing.
+                });
     }
 
     @After
@@ -120,44 +151,61 @@ public class FullScreenMagnificationControllerTest {
     }
 
     @Test
-    public void testActivityTransitions_fullscreenMagnifierMagnifying_zoomOut() throws Exception {
+    public void testActivityTransitions_alwaysOnEnabled_keepMagnifiedDisabled_zoomOut()
+            throws Exception {
         assumeFalse(isKeepMagnifiedOnContextChangeEnabled());
 
-        // wait for the activity to be on screen
-        mActivityScenario =
-                ActivityScenario.launch(AccessibilityWindowQueryActivity.class)
-                        .moveToState(Lifecycle.State.RESUMED);
-        sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
+        try (var state = new MagnificationAlwaysOnSettingState(sInstrumentation, true)) {
+            mActivityScenario = launchActivityAndWait();
 
-        zoomIn(/* scale= */ 2.0f);
-        // transition to home screen
-        homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+            zoomIn(/* scale= */ 2.0f);
+            // transition to home screen
+            homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
 
-        // we cannot identify if the always on feature flag is enabled here, so we cannot ensure if
-        // the magnifier should deactivate itself when transitions. At least we can still verify
-        // the fullscreen magnifier zooming out here.
-        assertThat(currentScale()).isEqualTo(1f);
+            assertThat(currentScale()).isEqualTo(1f);
+            assertThat(isActivated()).isTrue();
+        }
     }
 
     @Test
-    public void testActivityTransitions_fullscreenMagnifierMagnifyingWithKeepMagnified_keepZoom()
+    public void testActivityTransitions_alwaysOnEnabled_keepMagnifiedEnabled_keepZoom()
             throws Exception {
         assumeTrue(isKeepMagnifiedOnContextChangeEnabled());
 
-        // wait for the activity to be on screen
-        mActivityScenario =
+        try (var state = new MagnificationAlwaysOnSettingState(sInstrumentation, true)) {
+            mActivityScenario = launchActivityAndWait();
+
+            zoomIn(/* scale= */ 2.0f);
+            // transition to home screen
+            homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+
+            assertThat(currentScale()).isEqualTo(2f);
+            assertThat(isActivated()).isTrue();
+        }
+    }
+
+    @Test
+    public void testActivityTransitions_alwaysOnDisabled_disableMagnification() throws Exception {
+        try (var state = new MagnificationAlwaysOnSettingState(sInstrumentation, false)) {
+            mActivityScenario = launchActivityAndWait();
+
+            zoomIn(/* scale= */ 2.0f);
+            // transition to home screen
+            homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+
+            assertThat(currentScale()).isEqualTo(1f);
+            assertThat(isActivated()).isFalse();
+        }
+    }
+
+    // launch an activity and waits for it to be on screen
+    private ActivityScenario<AccessibilityWindowQueryActivity> launchActivityAndWait()
+            throws Exception {
+        final var activityScenario =
                 ActivityScenario.launch(AccessibilityWindowQueryActivity.class)
                         .moveToState(Lifecycle.State.RESUMED);
         sUiAutomation.waitForIdle(DEFAULT_IDLE_TIMEOUT_MS, DEFAULT_GLOBAL_TIMEOUT_MS);
-
-        zoomIn(/* scale= */ 2.0f);
-        // transition to home screen
-        homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
-
-        // we cannot identify if the always on feature flag is enabled here, so we cannot ensure if
-        // the magnifier should deactivate itself when transitions. At least we can still verify
-        // the fullscreen magnifier zooming out here.
-        assertThat(currentScale()).isEqualTo(2f);
+        return activityScenario;
     }
 
     private void zoomIn(float scale) throws Exception {
@@ -173,9 +221,10 @@ public class FullScreenMagnificationControllerTest {
                 .setCenterX(x)
                 .setCenterY(y).build();
 
-        mService.runOnServiceSync(() -> {
-            setConfig.set(controller.setMagnificationConfig(config, false));
-        });
+        mService.runOnServiceSync(
+                () -> {
+                    setConfig.set(controller.setMagnificationConfig(config, false));
+                });
         waitUntilMagnificationConfigEquals(controller, config);
 
         assertTrue("Failed to set config", setConfig.get());
@@ -188,6 +237,15 @@ public class FullScreenMagnificationControllerTest {
         assertThat(config).isNotNull();
 
         return config.getScale();
+    }
+
+    private boolean isActivated() {
+        final MagnificationController controller = mService.getMagnificationController();
+        final MagnificationConfig config = controller.getMagnificationConfig();
+
+        assertThat(config).isNotNull();
+
+        return config.isActivated();
     }
 
     private void waitUntilMagnificationConfigEquals(
@@ -223,6 +281,51 @@ public class FullScreenMagnificationControllerTest {
                             "android"));
         } catch (Resources.NotFoundException ignore) {
             return false;
+        }
+    }
+
+    private static class MagnificationAlwaysOnSettingState implements AutoCloseable {
+        private final UiAutomation mUiAutomation;
+        private final String mOriginalValue;
+
+        MagnificationAlwaysOnSettingState(Instrumentation instrumentation, boolean enabled)
+                throws IOException {
+            mUiAutomation =
+                    instrumentation.getUiAutomation(
+                            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+            final String targetValue = enabled ? "1" : "0";
+
+            mOriginalValue = get();
+            if (!targetValue.equals(mOriginalValue)) {
+                set(targetValue);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            final String currentValue = get();
+            if (!currentValue.equals(mOriginalValue)) {
+                set(mOriginalValue);
+            }
+        }
+
+        private String get() throws IOException {
+            return SystemUtil.runShellCommand(
+                            mUiAutomation,
+                            "settings get secure " + SETTING_KEY_MAGNIFICATION_ALWAYS_ON)
+                    .strip();
+        }
+
+        private void set(String value) throws IOException {
+            if (value.isEmpty() || value.equals("null")) {
+                SystemUtil.runShellCommand(
+                        mUiAutomation,
+                        "settings delete secure " + SETTING_KEY_MAGNIFICATION_ALWAYS_ON);
+                return;
+            }
+            SystemUtil.runShellCommand(
+                    mUiAutomation,
+                    "settings put secure " + SETTING_KEY_MAGNIFICATION_ALWAYS_ON + " " + value);
         }
     }
 }
