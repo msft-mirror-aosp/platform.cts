@@ -56,9 +56,11 @@ public final class PermissionContextImpl implements PermissionContextModifier {
         try {
             boolean success = sPermissionsLock.tryLock(90, TimeUnit.SECONDS);
             if (!success) {
-                throw new NeneException("unable to obtain the lock in PermissionContextImpl, "
-                        + "make sure to not use permission contexts from more than one thread "
-                        + "at a time");
+                var exception = new NeneException("unable to obtain the lock in "
+                        + "PermissionContextImpl, make sure to not use permission contexts from "
+                        + "more than one thread at a time");
+                Log.e(TAG, Log.getStackTraceString(exception));
+                throw exception;
             }
         } catch (InterruptedException e) {
             Log.w(TAG, "unable to obtain the lock in PermissionContextImpl", e);
