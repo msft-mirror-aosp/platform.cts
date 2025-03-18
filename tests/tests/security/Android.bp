@@ -82,6 +82,7 @@ android_test {
         ":DynamicPermissionTestAttackerApp",
         ":CtsDeviceInfo",
         ":RolePermissionOverrideTestApp",
+        ":ForceStopAssistantTestApp",
         ":SplitBluetoothPermissionTestApp",
         ":CtsAppThatRequestCustomCameraPermission",
         ":CtsWallpaperBalTestApp",
@@ -102,4 +103,13 @@ android_app_certificate {
 android_test_helper_app {
     name: "RolePermissionOverrideTestApp",
     manifest: "testdata/rolepermissionoverridetestapp.xml",
+}
+
+android_test_helper_app {
+    name: "ForceStopAssistantTestApp",
+    asset_dirs: [],
+    manifest: "testdata/forcestopassistanttestapp/AndroidManifest.xml",
+    min_sdk_version: "30",
+    resource_dirs: ["testdata/forcestopassistanttestapp/res"],
+    target_sdk_version: "30",
 }
