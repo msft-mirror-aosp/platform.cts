@@ -35,6 +35,7 @@ import android.accessibilityservice.AccessibilityService.MagnificationController
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.accessibilityservice.MagnificationConfig;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
+import android.accessibilityservice.cts.utils.SettingsSession;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.res.Resources;
@@ -49,8 +50,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule;
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.TestUtils;
+import com.android.compatibility.common.util.UserSettings;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -155,7 +156,7 @@ public class FullScreenMagnificationControllerTest {
             throws Exception {
         assumeFalse(isKeepMagnifiedOnContextChangeEnabled());
 
-        try (var state = new MagnificationAlwaysOnSettingState(sInstrumentation, true)) {
+        try (var session = getAlwaysOnSettingsSession(true)) {
             mActivityScenario = launchActivityAndWait();
 
             zoomIn(/* scale= */ 2.0f);
@@ -172,7 +173,7 @@ public class FullScreenMagnificationControllerTest {
             throws Exception {
         assumeTrue(isKeepMagnifiedOnContextChangeEnabled());
 
-        try (var state = new MagnificationAlwaysOnSettingState(sInstrumentation, true)) {
+        try (var session = getAlwaysOnSettingsSession(true)) {
             mActivityScenario = launchActivityAndWait();
 
             zoomIn(/* scale= */ 2.0f);
@@ -186,7 +187,7 @@ public class FullScreenMagnificationControllerTest {
 
     @Test
     public void testActivityTransitions_alwaysOnDisabled_disableMagnification() throws Exception {
-        try (var state = new MagnificationAlwaysOnSettingState(sInstrumentation, false)) {
+        try (var session = getAlwaysOnSettingsSession(false)) {
             mActivityScenario = launchActivityAndWait();
 
             zoomIn(/* scale= */ 2.0f);
@@ -284,48 +285,11 @@ public class FullScreenMagnificationControllerTest {
         }
     }
 
-    private static class MagnificationAlwaysOnSettingState implements AutoCloseable {
-        private final UiAutomation mUiAutomation;
-        private final String mOriginalValue;
-
-        MagnificationAlwaysOnSettingState(Instrumentation instrumentation, boolean enabled)
-                throws IOException {
-            mUiAutomation =
-                    instrumentation.getUiAutomation(
-                            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
-            final String targetValue = enabled ? "1" : "0";
-
-            mOriginalValue = get();
-            if (!targetValue.equals(mOriginalValue)) {
-                set(targetValue);
-            }
-        }
-
-        @Override
-        public void close() throws Exception {
-            final String currentValue = get();
-            if (!currentValue.equals(mOriginalValue)) {
-                set(mOriginalValue);
-            }
-        }
-
-        private String get() throws IOException {
-            return SystemUtil.runShellCommand(
-                            mUiAutomation,
-                            "settings get secure " + SETTING_KEY_MAGNIFICATION_ALWAYS_ON)
-                    .strip();
-        }
-
-        private void set(String value) throws IOException {
-            if (value.isEmpty() || value.equals("null")) {
-                SystemUtil.runShellCommand(
-                        mUiAutomation,
-                        "settings delete secure " + SETTING_KEY_MAGNIFICATION_ALWAYS_ON);
-                return;
-            }
-            SystemUtil.runShellCommand(
-                    mUiAutomation,
-                    "settings put secure " + SETTING_KEY_MAGNIFICATION_ALWAYS_ON + " " + value);
-        }
+    private static SettingsSession getAlwaysOnSettingsSession(boolean enabled) throws IOException {
+        return new SettingsSession(
+                sInstrumentation,
+                UserSettings.Namespace.SECURE,
+                SETTING_KEY_MAGNIFICATION_ALWAYS_ON,
+                enabled ? "1" : "0");
     }
 }
