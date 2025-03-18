@@ -21,6 +21,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -32,6 +37,7 @@ import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,6 +46,9 @@ import java.util.regex.Pattern;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class AppBindingHostTest extends BaseHostJUnit4Test implements IBuildReceiver {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     private static final boolean SKIP_UNINSTALL = false;
 
@@ -748,7 +757,20 @@ ACTIVITY MANAGER RUNNING PROCESSES (dumpsys activity processes)
     }
 
     @Test
+    @RequiresFlagsEnabled(com.android.server.am.Flags.FLAG_LOWER_SMS_OOM_IMPORTANCE)
     public void testOomAdjustment() throws Throwable {
+        if (!isSmsCapable()) {
+            // device not supporting sms. cannot run the test.
+            return;
+        }
+
+        installAndCheckBound(APK_1, PACKAGE_A, SERVICE_1, mCurrentUserId);
+        assertOomAdjustment(PACKAGE_A, PACKAGE_A_PROC, 201);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(com.android.server.am.Flags.FLAG_LOWER_SMS_OOM_IMPORTANCE)
+    public void testOomAdjustment_legacyImeScore() throws Throwable {
         if (!isSmsCapable()) {
             // device not supporting sms. cannot run the test.
             return;
