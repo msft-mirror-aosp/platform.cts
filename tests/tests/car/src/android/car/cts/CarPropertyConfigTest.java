@@ -345,7 +345,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
     public void testIsPropertyIdSimulationPropId() {
-        assumeTrue(BuildUtils.isDebuggableBuild());
+        assumeFalse(BuildUtils.isUserBuild());
         for (CarPropertyConfig<?> cfg : mConfigs) {
             assertThat(cfg.isPropertyIdSimulationPropId()).isFalse();
         }
@@ -354,7 +354,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
     public void testIsPropertyIdSimulationPropId_userBuild() {
-        assumeFalse(BuildUtils.isDebuggableBuild());
+        assumeTrue(BuildUtils.isUserBuild());
         for (CarPropertyConfig<?> cfg : mConfigs) {
             IllegalStateException thrown =
                     assertThrows(

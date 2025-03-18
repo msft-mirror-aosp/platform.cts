@@ -26,11 +26,29 @@ public final class BuildUtils {
     }
 
     /**
-     * Check if the Android build is debuggable
+     * Check if the Android build is user
      *
-     * @return {@code true} if the build is debuggable
+     * @return {@code true} if the build is user
      */
-    public static boolean isDebuggableBuild() {
-        return !TextUtils.equals(Build.TYPE, "user");
+    public static boolean isUserBuild() {
+        return TextUtils.equals(Build.TYPE, "user");
+    }
+
+    /**
+     * Checks if the current build is a userdebug build.
+     *
+     * @return {@code true} if the build type is "userdebug", {@code false} otherwise.
+     */
+    public static boolean isUserdebugBuild() {
+        return TextUtils.equals(Build.TYPE, "userdebug");
+    }
+
+    /**
+     * Checks if the current build is an eng build.
+     *
+     * @return {@code true} if the build type is "eng", {@code false} otherwise.
+     */
+    public static boolean isEngBuild() {
+        return TextUtils.equals(Build.TYPE, "eng");
     }
 }
