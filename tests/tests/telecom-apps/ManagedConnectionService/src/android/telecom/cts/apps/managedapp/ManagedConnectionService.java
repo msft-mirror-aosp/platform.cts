@@ -22,6 +22,7 @@ import android.telecom.ConnectionService;
 import android.telecom.DisconnectCause;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
+import android.telecom.cts.apps.HoldableTracker;
 import android.telecom.cts.apps.ManagedConnection;
 import android.util.Log;
 
@@ -123,6 +124,7 @@ public class ManagedConnectionService extends ConnectionService {
                 Connection.CAPABILITY_HOLD | Connection.CAPABILITY_SUPPORT_HOLD
         );
         connection.setAudioModeIsVoip(false);
+        HoldableTracker.addHoldable(connection);
         return connection;
     }
 }

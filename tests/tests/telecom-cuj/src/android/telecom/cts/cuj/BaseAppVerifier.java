@@ -368,6 +368,10 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.disconnectCallViaInCallService(id);
     }
 
+    public boolean isCallHoldable(String id) {
+        return mBaseAppVerifierImpl.isCallHoldable(id);
+    }
+
     public CallException setCallStateButExpectOnError(AppControlWrapper appControl,
                                                       String id,
                                                       int targetCallState)

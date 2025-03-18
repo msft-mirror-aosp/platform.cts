@@ -81,7 +81,7 @@ public class ManagedConnection extends Connection {
 
     public void setCallToDisconnected(Context context, DisconnectCause cause) {
         this.setDisconnected(cause);
-        this.destroy();
+        processDestroy();
     }
 
     /**
@@ -155,7 +155,7 @@ public class ManagedConnection extends Connection {
     @Override
     public void onDisconnect() {
         this.setDisconnected(new DisconnectCause(DisconnectCause.LOCAL));
-        this.destroy();
+        processDestroy();
         super.onDisconnect();
         if (mOperationConsumer != null) {
             mOperationConsumer.accept(new CallStateTransitionOperation(
@@ -166,7 +166,7 @@ public class ManagedConnection extends Connection {
     @Override
     public void onReject() {
         this.setDisconnected(new DisconnectCause(DisconnectCause.REJECTED));
-        this.destroy();
+        processDestroy();
         super.onReject();
         if (mOperationConsumer != null) {
             mOperationConsumer.accept(
@@ -180,7 +180,7 @@ public class ManagedConnection extends Connection {
     public void onReject(int rejectReason) {
         this.setDisconnected(
                 new DisconnectCause(DisconnectCause.REJECTED, Integer.toString(rejectReason)));
-        this.destroy();
+        processDestroy();
         super.onReject(rejectReason);
         if (mOperationConsumer != null) {
             mOperationConsumer.accept(
@@ -193,7 +193,7 @@ public class ManagedConnection extends Connection {
     @Override
     public void onReject(String reason) {
         this.setDisconnected(new DisconnectCause(DisconnectCause.REJECTED, reason));
-        this.destroy();
+        processDestroy();
         super.onReject();
         if (mOperationConsumer != null) {
             mOperationConsumer.accept(
@@ -223,5 +223,10 @@ public class ManagedConnection extends Connection {
         this.setConnectionCapabilities(finalCaps);
         Log.i(TAG, String.format("Final capabilities as list=[%s]",
                 Connection.capabilitiesToString(this.getConnectionCapabilities())));
+    }
+
+    private void processDestroy() {
+        HoldableTracker.removeHoldable(this);
+        this.destroy();
     }
 }
