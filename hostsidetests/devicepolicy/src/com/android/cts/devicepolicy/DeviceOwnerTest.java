@@ -93,6 +93,7 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     }
 
     @Test
+    @Ignore("b/393092771")
     public void testProxyPacProxyTest() throws Exception {
         assumeFalse("Test does not apply to WearOS", mIsWatch);
         executeDeviceOwnerTest("proxy.PacProxyTest");
