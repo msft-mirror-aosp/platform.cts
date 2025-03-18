@@ -746,6 +746,9 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Test that the associated user of the call is propagated
      */
     public void testUserPropagation() {
+        if (!mShouldTestTelecom) {
+            return;
+        }
         UserHandle testUser = mContext.getUser();
         assertEquals(testUser, mCall.getDetails().getExtras()
                 .getParcelable(Intent.EXTRA_USER_HANDLE, UserHandle.class));
