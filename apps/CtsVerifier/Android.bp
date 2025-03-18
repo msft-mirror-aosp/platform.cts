@@ -172,7 +172,6 @@ android_library {
     name: "its-service",
 
     sdk_version: "test_current",
-    min_sdk_version: "34",
     resource_dirs: ["res"],
     srcs: [
         "src/com/android/cts/verifier/camera/its/*.java",
@@ -189,10 +188,6 @@ android_library {
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
     ],
-
-    lint: {
-        baseline_filename: "lint-baseline.xml",
-    },
 }
 
 filegroup {
