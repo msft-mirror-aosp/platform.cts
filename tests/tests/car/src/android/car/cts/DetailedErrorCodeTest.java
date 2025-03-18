@@ -20,23 +20,14 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.cts.utils.VehiclePropertyUtils;
-import android.car.feature.Flags;
 import android.car.hardware.property.DetailedErrorCode;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 
 public class DetailedErrorCodeTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_DETAILED_ERROR_CODES)
     public void testToString() {
         assertThat(DetailedErrorCode.toString(
                     DetailedErrorCode.NO_DETAILED_ERROR_CODE))
@@ -59,7 +50,6 @@ public class DetailedErrorCodeTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_DETAILED_ERROR_CODES)
     public void testAllDetailedErrorCodesAreMappedInToString() {
         List<Integer> detailedErrorCodes =
                 VehiclePropertyUtils.getIntegersFromDataEnums(DetailedErrorCode.class);
