@@ -19,6 +19,7 @@ package android.hdmicec.cts.playback;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.hdmicec.cts.AudioManagerHelper;
 import android.hdmicec.cts.BaseHdmiCecAbsoluteVolumeBehaviorTest;
@@ -33,6 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for absolute volume behavior where the DUT is a Playback device and the
@@ -183,6 +186,11 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
 
         assumeFalse("Skip for fixed volume device", isFixedVolumeDevice());
 
+        assumeTrue(
+                "Skip for devices that redirect audio output to internal speakers when testing "
+                        + "with an HDMI stub",
+                isPlayingStreamMusicOnHdmiOut());
+
         // Enable AVB
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,
                 HdmiCecConstants.VOLUME_CONTROL_ENABLED);
@@ -197,6 +205,7 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
         // Calling AudioManager#setStreamVolume should cause the DUT to send
         // <Set Audio Volume Level> with the new volume level as a parameter
         AudioManagerHelper.setDeviceVolume(getDevice(), 80);
+        TimeUnit.SECONDS.sleep(HdmiCecConstants.DEVICE_WAIT_TIME_SECONDS);
         int realDeviceVolume = AudioManagerHelper.getDutAudioVolume(getDevice());
         String setAudioVolumeLevelMessage = hdmiCecClient.checkExpectedOutput(
                 hdmiCecClient.getSelfDevice(), CecOperand.SET_AUDIO_VOLUME_LEVEL);
@@ -225,6 +234,11 @@ public class HdmiCecAvbToTvTest extends BaseHdmiCecAbsoluteVolumeBehaviorTest {
                 hasDeviceType(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
 
         assumeFalse("Skip for fixed volume device", isFixedVolumeDevice());
+
+        assumeTrue(
+                "Skip for devices that redirect audio output to internal speakers when testing "
+                        + "with an HDMI stub",
+                isPlayingStreamMusicOnHdmiOut());
 
         // Enable AVB
         setSettingsValue(HdmiCecConstants.SETTING_VOLUME_CONTROL_ENABLED,

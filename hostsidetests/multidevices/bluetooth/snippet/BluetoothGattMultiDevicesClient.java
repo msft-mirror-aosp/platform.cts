@@ -95,7 +95,13 @@ public final class BluetoothGattMultiDevicesClient {
                         }
                     }
                 };
-        scanner.startScan(null, new ScanSettings.Builder().setLegacy(false).build(), callback);
+        scanner.startScan(
+            null,
+            new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                .setLegacy(false)
+                .build(),
+            callback);
         boolean timeout = false;
         try {
             timeout = !serverFoundBlocker.await(CALLBACK_TIMEOUT_SEC, SECONDS);
