@@ -7249,6 +7249,51 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         afterSubscriberIdTest(callback);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_SATELLITE_25Q4_APIS)
+    public void testGetSatelliteDataSupportMode() {
+        logd("testGetSatelliteDataSupportMode");
+
+        if (!shouldTestSatellite()) return;
+        grantSatellitePermission();
+
+        if (Flags.carrierRoamingNbIotNtn()) {
+            sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+            logd("sub_id:" + sTestSubIDForCarrierSatellite);
+            if (sTestSubIDForCarrierSatellite == SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
+                return;
+            }
+
+            // Update available services with data for the carrier sub id
+            PersistableBundle bundle = new PersistableBundle();
+            int[] defaultSupportedServices = {2, 3, 6};
+            bundle.putIntArray(
+                    CarrierConfigManager.KEY_CARRIER_ROAMING_SATELLITE_DEFAULT_SERVICES_INT_ARRAY,
+                    defaultSupportedServices);
+            // With data mode: restricted
+            bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                    SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_RESTRICTED,
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+
+            // With data mode: constrained
+            bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                    SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_CONSTRAINED,
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+
+            // With data mode: UnConstrained
+            bundle.putInt(CarrierConfigManager.KEY_SATELLITE_DATA_SUPPORT_MODE_INT,
+                    SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            assertEquals(SatelliteManager.SATELLITE_DATA_SUPPORT_UNCONSTRAINED,
+                    sSatelliteManager.getSatelliteDataSupportMode(sTestSubIDForCarrierSatellite));
+        }
+    }
+
     /*
      * Before calling this function, caller need to make sure the modem is in LISTENING or IDLE
      * state.
