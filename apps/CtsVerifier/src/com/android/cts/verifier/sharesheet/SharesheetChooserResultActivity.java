@@ -94,10 +94,15 @@ abstract class SharesheetChooserResultActivity extends PassFailButtons.Activity 
     protected final void setExpectedResult(
             int type, ComponentName selectedComponent, boolean isShortcut) {
         Parcel values = Parcel.obtain();
-        values.writeInt(type);
-        ComponentName.writeToParcel(selectedComponent, values);
-        values.writeBoolean(isShortcut);
-        mResultExpected = ChooserResult.CREATOR.createFromParcel(values);
+        try {
+            values.writeInt(type);
+            ComponentName.writeToParcel(selectedComponent, values);
+            values.writeBoolean(isShortcut);
+            values.setDataPosition(0);
+            mResultExpected = ChooserResult.CREATOR.createFromParcel(values);
+        } finally {
+            values.recycle();
+        }
     }
 
     protected abstract Intent createChooserIntent();
