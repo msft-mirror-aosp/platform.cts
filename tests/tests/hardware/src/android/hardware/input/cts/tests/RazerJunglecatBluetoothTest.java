@@ -21,6 +21,9 @@ import android.hardware.cts.R;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.cts.input.DebugInputRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -28,12 +31,15 @@ import org.junit.runner.RunWith;
 @RunWith(AndroidJUnit4.class)
 public class RazerJunglecatBluetoothTest extends InputHidTestCase {
 
+    @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
+
     // Simulates the behavior of Razer Junglecat gamepad.
     public RazerJunglecatBluetoothTest() {
         super(R.raw.razer_junglecat_register);
         addDelayAfterSetup();
     }
 
+    @DebugInputRule.DebugInput(bug = 403626048)
     @Test
     public void testAllKeys() {
         testInputEvents(R.raw.razer_junglecat_keyeventtests);
