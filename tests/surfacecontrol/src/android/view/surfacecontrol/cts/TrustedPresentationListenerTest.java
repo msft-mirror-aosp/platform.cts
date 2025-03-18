@@ -69,8 +69,6 @@ public class TrustedPresentationListenerTest {
 
     private static final float FRACTION_VISIBLE = 0.1f;
 
-    private final List<Boolean> mResults = Collections.synchronizedList(new ArrayList<>());
-    private CountDownLatch mReceivedResults = new CountDownLatch(1);
 
     private TrustedPresentationThresholds mThresholds = new TrustedPresentationThresholds(
             1 /* minAlpha */, FRACTION_VISIBLE, STABILITY_REQUIREMENT_MS);
@@ -93,7 +91,7 @@ public class TrustedPresentationListenerTest {
     @Before
     public void setup() {
         mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
-        mDefaultListener = new Listener(mReceivedResults);
+        mDefaultListener = new Listener(1);
     }
 
     @After
@@ -106,21 +104,37 @@ public class TrustedPresentationListenerTest {
     }
 
     private class Listener implements Consumer<Boolean> {
-        final CountDownLatch mLatch;
+        CountDownLatch mReceivedResultsLatch;
+        final List<Boolean> mResults = Collections.synchronizedList(new ArrayList<>());
 
-        Listener(CountDownLatch latch) {
-            mLatch = latch;
+        Listener(int numExpectedResults) {
+            mReceivedResultsLatch = new CountDownLatch(numExpectedResults);
         }
 
         @Override
         public void accept(Boolean inTrustedPresentationState) {
             Log.d(TAG, "onTrustedPresentationChanged " + inTrustedPresentationState);
             mResults.add(inTrustedPresentationState);
-            mLatch.countDown();
+            mReceivedResultsLatch.countDown();
+        }
+
+        void waitForResults() {
+            if (!TrustedPresentationListenerTest.wait(mReceivedResultsLatch, WAIT_TIME_MS)) {
+                try {
+                    CtsWindowInfoUtils.dumpWindowsOnScreen(TAG, "test " + mName.getMethodName());
+                } catch (InterruptedException e) {
+                    Log.d(TAG, "Couldn't dump windows", e);
+                }
+                Assert.fail(
+                        "Timed out waiting for results mReceivedResultsLatch.count="
+                                + mReceivedResultsLatch.getCount()
+                                + " mResults="
+                                + mResults);
+            }
         }
     }
 
-    private Consumer<Boolean> mDefaultListener;
+    private Listener mDefaultListener;
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
@@ -129,7 +143,7 @@ public class TrustedPresentationListenerTest {
         windowManager.registerTrustedPresentationListener(
                 mActivity.getWindow().getDecorView().getWindowToken(), mThresholds, Runnable::run,
                 mDefaultListener);
-        assertResults(List.of(true));
+        assertResults(mDefaultListener, List.of(true));
     }
 
     @Test
@@ -139,18 +153,20 @@ public class TrustedPresentationListenerTest {
         windowManager.registerTrustedPresentationListener(
                 mActivity.getWindow().getDecorView().getWindowToken(), mThresholds, Runnable::run,
                 mDefaultListener);
-        assertResults(List.of(true));
+        assertResults(mDefaultListener, List.of(true));
         // reset the latch
-        mReceivedResults = new CountDownLatch(1);
+        mDefaultListener.mReceivedResultsLatch = new CountDownLatch(1);
 
         windowManager.unregisterTrustedPresentationListener(mDefaultListener);
         // Ensure we waited the full time and never received a notify on the result from the
         // callback.
-        assertFalse("Should never have received a callback", wait(mReceivedResults, WAIT_TIME_MS));
+        assertFalse(
+                "Should never have received a callback",
+                wait(mDefaultListener.mReceivedResultsLatch, WAIT_TIME_MS));
         // Ensure we waited the full time and never received a notify on the result from the
         // callback.
         // results shouldn't have changed.
-        assertEquals(mResults, List.of(true));
+        assertEquals(mDefaultListener.mResults, List.of(true));
     }
 
     @Test
@@ -172,30 +188,36 @@ public class TrustedPresentationListenerTest {
 
         // Ensure we waited the full time and never received a notify on the result from the
         // callback.
-        assertFalse("Should never have received a callback", wait(mReceivedResults, WAIT_TIME_MS));
+        assertFalse(
+                "Should never have received a callback",
+                wait(mDefaultListener.mReceivedResultsLatch, WAIT_TIME_MS));
 
         windowManager.registerTrustedPresentationListener(
                 mActivity.getWindow().getDecorView().getWindowToken(), mThresholds,
                 Runnable::run, mDefaultListener);
-        assertResults(List.of(true));
+        assertResults(mDefaultListener, List.of(true));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
     public void testAddDuplicateThresholds() {
-        mReceivedResults = new CountDownLatch(2);
-        mDefaultListener = new Listener(mReceivedResults);
+        var listener1 = new Listener(1 /*numExpectedResults*/);
         WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
         windowManager.registerTrustedPresentationListener(
-                mActivity.getWindow().getDecorView().getWindowToken(), mThresholds,
-                Runnable::run, mDefaultListener);
+                mActivity.getWindow().getDecorView().getWindowToken(),
+                mThresholds,
+                Runnable::run,
+                listener1);
 
-        Consumer<Boolean> mNewListener = new Listener(mReceivedResults);
-
+        var listener2 = new Listener(1 /*numExpectedResults*/);
         windowManager.registerTrustedPresentationListener(
-                mActivity.getWindow().getDecorView().getWindowToken(), mThresholds,
-                Runnable::run, mNewListener);
-        assertResults(List.of(true, true));
+                mActivity.getWindow().getDecorView().getWindowToken(),
+                mThresholds,
+                Runnable::run,
+                listener2);
+
+        assertResults(listener1, List.of(true));
+        assertResults(listener2, List.of(true));
     }
 
     private void waitForViewAttach(View view) {
@@ -240,11 +262,10 @@ public class TrustedPresentationListenerTest {
         });
 
         waitForViewAttach(embeddedView);
-        windowManager.registerTrustedPresentationListener(embeddedView.getWindowToken(),
-                mThresholds,
-                Runnable::run, mDefaultListener);
+        windowManager.registerTrustedPresentationListener(
+                embeddedView.getWindowToken(), mThresholds, Runnable::run, mDefaultListener);
 
-        assertResults(List.of(true));
+        assertResults(mDefaultListener, List.of(true));
     }
 
     @Test
@@ -268,12 +289,12 @@ public class TrustedPresentationListenerTest {
         int stabilityRequirementMs = 20;
         TrustedPresentationThresholds thresholdsA = new TrustedPresentationThresholds(alpha,
                 fractionRendered, stabilityRequirementMs);
-        TrustedPresentationThresholds thresholdsB = new TrustedPresentationThresholds(alpha,
-                fractionRendered, stabilityRequirementMs);
+        TrustedPresentationThresholds thresholdsB =
+                new TrustedPresentationThresholds(alpha, fractionRendered, stabilityRequirementMs);
         Assert.assertEquals(thresholdsA, thresholdsB);
     }
 
-    private boolean wait(CountDownLatch latch, long waitTimeMs) {
+    static boolean wait(CountDownLatch latch, long waitTimeMs) {
         while (true) {
             long now = SystemClock.uptimeMillis();
             try {
@@ -286,19 +307,9 @@ public class TrustedPresentationListenerTest {
 
     }
 
-    private void assertResults(List<Boolean> results) {
-        if (!wait(mReceivedResults, WAIT_TIME_MS)) {
-            try {
-                CtsWindowInfoUtils.dumpWindowsOnScreen(TAG, "test " + mName.getMethodName());
-            } catch (InterruptedException e) {
-                Log.d(TAG, "Couldn't dump windows", e);
-            }
-            Assert.fail("Timed out waiting for results mReceivedResults.count="
-                    + mReceivedResults.getCount() + "mReceivedResults=" + mReceivedResults);
-        }
-
-        // Make sure we received the results
-        assertEquals(results.toArray(), mResults.toArray());
+    private void assertResults(Listener listener, List<Boolean> expectedResults) {
+        listener.waitForResults();
+        assertEquals(expectedResults.toArray(), listener.mResults.toArray());
     }
 
     public static class TestActivity extends Activity {
