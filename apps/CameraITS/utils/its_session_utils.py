@@ -1629,7 +1629,8 @@ class ItsSession(object):
     return ret
 
   def do_jca_capture(
-      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratio=1.0):
+      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratio=1.0,
+      save_image_delay=None):
     """Take a single capture using JCA, modifying capture settings using the UI.
 
     This function is a convenience wrapper for tests that only need to take
@@ -1643,13 +1644,15 @@ class ItsSession(object):
       lens_facing: str; constant describing the direction the camera lens faces.
         Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
       zoom_ratio: float; zoom ratio for the capture.
+      save_image_delay: Optional[float]; time to wait after pressing the
+        capture button before ending the JCA capture activity.
     Returns:
       A ui_interaction_utils.JcaCapture object describing the capture.
     """
     captures = list(
         self.do_jca_captures_across_zoom_ratios(
             dut, log_path, flash_mode_desc, lens_facing,
-            zoom_ratios=(zoom_ratio,)
+            zoom_ratios=(zoom_ratio,), save_image_delay=save_image_delay
         )
     )
     if len(captures) != 1:
@@ -1657,7 +1660,8 @@ class ItsSession(object):
     return captures[0]
 
   def do_jca_captures_across_zoom_ratios(
-      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratios=(1.0,)):
+      self, dut, log_path, flash_mode_desc, lens_facing, zoom_ratios=(1.0,),
+      save_image_delay=None):
     """Take multiple captures using JCA, modifying capture settings using UI.
 
     Selects UI elements to modify settings, and presses the capture button.
@@ -1675,6 +1679,8 @@ class ItsSession(object):
       lens_facing: str; constant describing the direction the camera lens faces.
         Acceptable values: camera_properties_utils.LENS_FACING[BACK, FRONT]
       zoom_ratios: Optional[Iterable[float]]; zoom ratio for the capture.
+      save_image_delay: Optional[float]; time to wait after pressing the
+        capture button before ending the JCA capture activity.
     Yields:
       A ui_interaction_utils.JcaCapture object describing each capture.
     """
@@ -1701,6 +1707,9 @@ class ItsSession(object):
               ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
       dut.ui(text=ui_interaction_utils.UI_IMAGE_CAPTURE_SUCCESS_TEXT).wait.gone(
           ui_interaction_utils.UI_OBJECT_WAIT_TIME_SECONDS)
+    # TODO: b/404350495 - Handle the case where the image is still not saved.
+    if save_image_delay:
+      time.sleep(save_image_delay)
     dut.ui.press.back()
     number_of_captures = 0
     for capture_path, physical_camera_id in zip(
