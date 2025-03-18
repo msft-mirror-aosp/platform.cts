@@ -240,8 +240,10 @@ public class VirtualDeviceImeTest {
                 new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
         SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
                 + mDefaultDeviceDefaultImeId);
-        assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
-                .isNotEqualTo(mDefaultDeviceDefaultImeId);
+        assertThat(Condition.waitFor("Disable default device IME",
+                () -> !mDefaultDeviceDefaultImeId.equals(
+                        mInputMethodManager.getCurrentInputMethodInfo().getId())))
+                .isTrue();
 
         showSoftInputOnDisplay(mVirtualDisplayId);
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
