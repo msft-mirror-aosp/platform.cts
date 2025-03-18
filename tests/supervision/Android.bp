@@ -21,6 +21,7 @@ android_test {
         "truth",
         "androidx.test.ext.junit",
         "android.app.supervision.flags-aconfig-java",
+        "android.multiuser.flags-aconfig-java",
         "testng",
         "bedstead-flags",
         "bedstead-root",
