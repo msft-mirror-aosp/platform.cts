@@ -70,6 +70,7 @@ import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.MockImeSession;
@@ -272,8 +273,9 @@ public class KeyguardLockedTests extends KeyguardTestBase {
 
     @Test
     public void testDismissKeyguardActivity_method_cancelled() {
-        // Pressing the back button does not cancel Keyguard in AAOS.
+        // Pressing the back button does not cancel Keyguard in AAOS or XR.
         assumeFalse(isCar());
+        assumeFalse(FeatureUtil.isXrHeadset());
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
