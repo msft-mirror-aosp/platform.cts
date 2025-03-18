@@ -26,4 +26,6 @@ public class Constants {
             "com.android.cts.device.broadcasts.RECEIVE";
 
     public static final int BROADCAST_PROCESSING_TIME_MS = 10;
+
+    public static final int BROADCAST_FINISH_TIMEOUT_MS = 5000;
 }
