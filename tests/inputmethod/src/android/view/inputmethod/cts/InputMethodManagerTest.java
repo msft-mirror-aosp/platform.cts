@@ -440,6 +440,8 @@ public final class InputMethodManagerTest {
     public void testInputMethodPickerNoLanguageSettingsWhenScreenLocked() throws Exception {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
 
