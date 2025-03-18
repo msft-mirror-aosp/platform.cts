@@ -481,6 +481,14 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     }
 
     @Override
+    @Test
+    @IgnoreOnHeadlessSystemUserMode(
+        reason = "no_set_wallpaper to DO does not apply to secondary user in headless system (b/383057837)")
+    public void testSetWallpaper_disallowed() throws Exception {
+        super.testSetWallpaper_disallowed();
+    }
+
+    @Override
     protected void installDelegateApp() throws Exception {
         // TODO(b/176993670): must call installDeviceOwnerApp() - even though it's not one - so
         // the permissions required to use DpmWrapper are set on headless system user mode
