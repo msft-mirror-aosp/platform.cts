@@ -294,6 +294,49 @@ public class TrustedPresentationListenerTest {
         Assert.assertEquals(thresholdsA, thresholdsB);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TRUSTED_PRESENTATION_LISTENER_FOR_WINDOW)
+    public void testInvisibleWindowsDoesNotOcclude() {
+        WindowManager windowManager = mActivity.getSystemService(WindowManager.class);
+        var hostSurfaceView = new SurfaceView(mActivity);
+        hostSurfaceView.setZOrderOnTop(true);
+        var embeddedView = new View(mActivity);
+        embeddedView.setBackgroundColor(Color.GREEN);
+        mActivityRule
+                .getScenario()
+                .onActivity(
+                        activity -> {
+                            activity.setContentView(hostSurfaceView);
+                            var scvh =
+                                    new SurfaceControlViewHost(
+                                            mActivity,
+                                            mActivity.getDisplay(),
+                                            hostSurfaceView.getHostToken());
+                            mSurfacePackage = scvh.getSurfacePackage();
+                            scvh.setView(
+                                    embeddedView,
+                                    mActivity.getWindow().getDecorView().getWidth(),
+                                    mActivity.getWindow().getDecorView().getHeight());
+                            hostSurfaceView.setChildSurfacePackage(mSurfacePackage);
+                        });
+
+        waitForViewAttach(embeddedView);
+        Log.d(TAG, "Embedded window added");
+
+        // at this point the main window should be occluded.
+
+        // make the occluding surface invisible
+        new SurfaceControl.Transaction().setAlpha(mSurfacePackage.getSurfaceControl(), 0f).apply();
+
+        var listener = new Listener(1 /*numExpectedResults*/);
+        windowManager.registerTrustedPresentationListener(
+                mActivity.getWindow().getDecorView().getWindowToken(),
+                mThresholds,
+                Runnable::run,
+                listener);
+        assertResults(listener, List.of(true));
+    }
+
     static boolean wait(CountDownLatch latch, long waitTimeMs) {
         while (true) {
             long now = SystemClock.uptimeMillis();
