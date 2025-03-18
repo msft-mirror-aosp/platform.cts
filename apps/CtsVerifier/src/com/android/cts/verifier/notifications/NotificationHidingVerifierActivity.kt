@@ -24,6 +24,7 @@ import android.app.PendingIntent
 import android.app.Person
 import android.app.RemoteInput
 import android.app.Service
+import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -112,6 +113,9 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         requireViewById<Button>(R.id.save_screen_capture_button).setOnClickListener { _ ->
             saveScreenCapture()
         }
+        requireViewById<Button>(R.id.request_sms_button).setOnClickListener { _ ->
+            requestSmsRole()
+        }
         val am = getSystemService(ActivityManager::class.java)!!
 
         var supportsBubble = false
@@ -184,6 +188,14 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
             }
             screenCapturePath.setText("")
         }
+    }
+
+    private fun requestSmsRole() {
+        startActivityForResult(
+            getSystemService(RoleManager::class.java)
+            .createRequestRoleIntent(RoleManager.ROLE_SMS),
+            0
+        )
     }
 
     private fun showCompletionSummary() {
