@@ -75,6 +75,7 @@ import static android.view.Surface.ROTATION_90;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
@@ -93,6 +94,7 @@ import com.android.compatibility.common.util.AmUtils;
 
 import org.junit.Test;
 
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -475,6 +477,24 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
     @Test
     public void testRelaunchResumed() throws Exception {
+        final WeakReference<Activity> activity = verifyRelaunchResumed();
+
+        // Verify the Activity instance before launched can be garbage collected.
+        getInstrumentation()
+                .runOnMainSync(
+                        () -> {
+                            System.gc();
+                            System.runFinalization();
+                        });
+
+        assertNull(activity.get());
+    }
+
+    /**
+     * Verify the Activity lifecycle when it relaunched. Returns the initial Activity instance
+     * before relaunched.
+     */
+    private WeakReference<Activity> verifyRelaunchResumed() throws Exception {
         final Activity activity = launchActivityAndWait(FirstActivity.class);
 
         getTransitionLog().clear();
@@ -482,6 +502,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         waitAndAssertActivityStates(state(activity, ON_RESUME));
 
         assertRelaunchSequence(FirstActivity.class, getTransitionLog(), ON_RESUME);
+        return new WeakReference<>(activity);
     }
 
     @Test
