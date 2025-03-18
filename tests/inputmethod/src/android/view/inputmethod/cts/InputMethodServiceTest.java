@@ -388,8 +388,11 @@ public final class InputMethodServiceTest extends EndToEndImeTestBase {
             // Make sure IME was not restarted.
             notExpectEvent(stream, eventMatcher("onCreate"),
                     EXPECTED_TIMEOUT);
-            notExpectEvent(stream, showSoftInputMatcher(0),
-                    EXPECTED_TIMEOUT);
+            if (!Flags.refactorInsetsController()) {
+                // With the flag enabled, the IME is redrawn when the font scale changes.
+                notExpectEvent(stream, showSoftInputMatcher(0),
+                        EXPECTED_TIMEOUT);
+            }
 
             eraseFontScale();
 
