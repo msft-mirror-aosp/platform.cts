@@ -143,6 +143,10 @@ public class MethodProfile {
                 mClass.getPackageName(), mClass.getClassName(), mMethod, mParams);
     }
 
+    public String getMethodSignature() {
+        return Utils.getMethodSignature(mMethod, mParams);
+    }
+
     /** Adds a method type for the method. */
     public void addMethodType(MethodType methodType) {
         mMethodType |= methodType.getValue();
