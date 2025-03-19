@@ -76,7 +76,6 @@
   <option name="compatibility:include-filter" value="CtsSimpleperfTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppExitTestCases"/>
   <option name="compatibility:include-filter" value="CtsAppCompatHostTestCases"/>
-  <option name="compatibility:include-filter" value="CtsOsHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsSystemUiHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsAnimationTestCases"/>
   <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases"/>
