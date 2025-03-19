@@ -396,6 +396,9 @@
     <!-- b/378989105 -->
     <option name="compatibility:exclude-filter" value="CtsSliceTestCases" />
 
+     <!-- b/404545229 -->
+    <option name="compatibility:exclude-filter" value="CtsPackageWatchdogTestCases" />
+
     <!-- b/400073092 -->
     <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ActivityIntensityTest#appPermissions_allowAll_grantsPermissions"/>
     <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.ActivityIntensityTest#dataAndAccess_deleteData_deletesDataType_doesNotDeleteOtherDataTypes"/>
