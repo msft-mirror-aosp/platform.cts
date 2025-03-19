@@ -1301,7 +1301,9 @@ public class PhotoPickerTest extends PhotoPickerBaseTest {
     private void swipeLeftAndWait() throws UiObjectNotFoundException {
         final int width = findViewPager().getVisibleBounds().width();
         final int height = findViewPager().getVisibleBounds().height();
-        sDevice.swipe(15 * width / 20, height / 2, width / 20, height / 2, 10);
+        final int centerX = findViewPager().getVisibleBounds().centerX();
+        final int centerY = findViewPager().getVisibleBounds().centerY();
+        sDevice.swipe(centerX - (width / 3), centerY, centerX + (width / 3), centerY, 10);
         sDevice.waitForIdle();
     }
 
