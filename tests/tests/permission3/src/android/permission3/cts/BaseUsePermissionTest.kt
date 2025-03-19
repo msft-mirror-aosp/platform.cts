@@ -23,6 +23,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Process
 import android.provider.Settings
 import android.support.test.uiautomator.By
 import android.support.test.uiautomator.BySelector
@@ -34,6 +35,7 @@ import android.text.style.ClickableSpan
 import android.view.View
 import com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity
 import com.android.compatibility.common.util.SystemUtil.eventually
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.modules.utils.build.SdkLevel
 import org.junit.After
 import org.junit.Assert
@@ -509,6 +511,23 @@ abstract class BaseUsePermissionTest : BasePermissionTest() {
             }
         }
     }
+
+    protected fun navigateToIndividualPermissionSetting(
+        permission: String,
+        packageName: String,
+    ) {
+        runWithShellPermissionIdentity {
+            context.startActivity(
+                Intent(Intent.ACTION_MANAGE_APP_PERMISSION).apply {
+                    putExtra(Intent.EXTRA_PACKAGE_NAME, packageName)
+                    putExtra(Intent.EXTRA_PERMISSION_NAME, permission)
+                    putExtra(Intent.EXTRA_USER, Process.myUserHandle())
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                })
+        }
+    }
+
 
     private fun setAppPermissionState(
         vararg permissions: String,

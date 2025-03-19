@@ -17,9 +17,14 @@
 package android.permission3.cts
 
 import android.Manifest
+import android.app.role.RoleManager
+import android.content.pm.PackageManager
 import android.os.Build
+import android.platform.test.annotations.AsbSecurityTest
+import android.support.test.uiautomator.By
 import androidx.test.filters.SdkSuppress
 import com.android.compatibility.common.util.SystemUtil
+import org.junit.Assert
 import org.junit.Assume
 import org.junit.Test
 
@@ -168,5 +173,34 @@ class MediaPermissionTest : BaseUsePermissionTest() {
         assertAppHasPermission(Manifest.permission.READ_MEDIA_AUDIO, true)
         assertAppHasPermission(Manifest.permission.READ_MEDIA_VIDEO, true)
         assertAppHasPermission(Manifest.permission.READ_MEDIA_IMAGES, true)
+    }
+
+
+    @Test
+    @AsbSecurityTest(cveBugId = [315320090])
+    fun testGalleryAppListedAsFixed() {
+        val galleryPkgs = SystemUtil.callWithShellPermissionIdentity {
+            context.getSystemService(RoleManager::class.java)
+                .getRoleHolders(SYSTEM_GALLERY_ROLE_NAME)
+        }
+        Assume.assumeTrue(galleryPkgs.isNotEmpty())
+        val galleryPkg = galleryPkgs[0]
+        val checkPermissionResult = SystemUtil.callWithShellPermissionIdentity {
+            packageManager.checkPermission(Manifest.permission.READ_MEDIA_IMAGES, galleryPkg)
+        }
+        Assume.assumeTrue(checkPermissionResult == PackageManager.PERMISSION_GRANTED)
+        navigateToIndividualPermissionSetting(Manifest.permission.READ_MEDIA_IMAGES, galleryPkg)
+        // Attempt to deny the permission. It should not show the
+        // "denying default permission dialog"
+        click(By.res(DENY_RADIO_BUTTON))
+        try {
+            waitFindObject(By.res(CANCEL_BUTTON_ID), 1000L)
+            Assert.fail("expected not to find the default deny dialog")
+        } catch (_: Exception) {}
+    }
+
+    companion object {
+        private val SYSTEM_GALLERY_ROLE_NAME = "android.app.role.SYSTEM_GALLERY"
+        private val CANCEL_BUTTON_ID = "android:id/button1"
     }
 }
