@@ -14,7 +14,6 @@ CDM_SNIPPET_PACKAGE = 'android.companion.cts.multidevice'
 
 BT_DISCOVERABLE_TIME = 15
 OPERATION_DELAY_TIME = 5
-RETRY_ITERATIONS = 3
 
 def paired_devices(self):
     return map(lambda device: device['Address'], self.cdm.btGetPairedDevices())
