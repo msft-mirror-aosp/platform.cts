@@ -6549,6 +6549,7 @@ public class TelephonyManagerTest {
                         .map(nri -> nri.getCellIdentity())
                         .distinct()
                         .findFirst();
+        assumeTrue(primaryCellIdentity.isPresent());
 
         CellIdentity cellIdentity =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -6556,9 +6557,7 @@ public class TelephonyManagerTest {
                         (tm) -> tm.getLastKnownCellIdentity(),
                         permission.ACCESS_LAST_KNOWN_CELL_ID,
                         permission.ACCESS_FINE_LOCATION);
-        assertEquals(
-                cellIdentity,
-                primaryCellIdentity.isPresent() ? primaryCellIdentity.get() : null);
+        assertEquals(cellIdentity, primaryCellIdentity.get());
     }
 
     @Test
