@@ -16,28 +16,19 @@
 
 package android.car.cts;
 
-import static android.car.feature.Flags.FLAG_ANDROID_VIC_VEHICLE_PROPERTIES;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.cts.utils.VehiclePropertyUtils;
 import android.car.hardware.property.CrossTrafficMonitoringWarningState;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
 
 public class CrossTrafficMonitoringWarningStateTest {
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testToString() {
         assertThat(CrossTrafficMonitoringWarningState.toString(
                 CrossTrafficMonitoringWarningState.OTHER))
@@ -68,7 +59,6 @@ public class CrossTrafficMonitoringWarningStateTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(FLAG_ANDROID_VIC_VEHICLE_PROPERTIES)
     public void testAllCrossTrafficMonitoringWarningStatesAreMappedInToString() {
         List<Integer> crossTrafficMonitoringWarningStates = VehiclePropertyUtils
                 .getIntegersFromDataEnums(CrossTrafficMonitoringWarningState.class);

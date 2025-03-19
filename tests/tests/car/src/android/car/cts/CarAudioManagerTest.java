@@ -20,6 +20,7 @@ import static android.car.Car.PERMISSION_CAR_CONTROL_AUDIO_VOLUME;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_AUDIO_MIRRORING;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_DYNAMIC_ROUTING;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_OEM_AUDIO_SERVICE;
+import static android.car.media.CarAudioManager.AUDIO_FEATURE_PERSIST_FADE_BALANCE_VALUES;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_VOLUME_GROUP_EVENTS;
 import static android.car.media.CarAudioManager.AUDIO_FEATURE_VOLUME_GROUP_MUTING;
 import static android.car.media.CarAudioManager.AUDIO_MIRROR_CAN_ENABLE;
@@ -227,6 +228,42 @@ public final class CarAudioManagerTest extends AbstractCarTestCase {
                 AUDIO_FEATURE_AUDIO_MIRRORING);
 
         assertThat(audioMirroringEnabled).isAnyOf(true, false);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#isAudioFeatureEnabled(int)",
+                "android.car.media.CarAudioManager#AUDIO_FEATURE_PERSIST_FADE_BALANCE_VALUES"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
+    public void isAudioFeatureEnabled_withPersistFadeBalanceLevelsFeature_succeeds() {
+        assumeDynamicRoutingIsEnabled();
+
+        boolean isPersisted =
+                mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_PERSIST_FADE_BALANCE_VALUES);
+
+        assertWithMessage("Persist fade balance values feature")
+                .that(isPersisted)
+                .isAnyOf(true, false);
+    }
+
+    @Test
+    @ApiTest(
+            apis = {
+                "android.car.media.CarAudioManager#isAudioFeatureEnabled(int)",
+                "android.car.media.CarAudioManager#AUDIO_FEATURE_PERSIST_FADE_BALANCE_VALUES"
+            })
+    @RequiresFlagsEnabled(Flags.FLAG_AUDIO_FADE_BALANCE_GETTER_APIS)
+    public void isAudioFeatureEnabled_forPersistFadeBalance_whenDisabledDynamicRouting() {
+        assumeDynamicRoutingIsDisabled();
+
+        boolean isPersisted =
+                mCarAudioManager.isAudioFeatureEnabled(AUDIO_FEATURE_PERSIST_FADE_BALANCE_VALUES);
+
+        assertWithMessage("Persist fade balance values feature when dynamic routing is disabled")
+                .that(isPersisted)
+                .isFalse();
     }
 
     @Test

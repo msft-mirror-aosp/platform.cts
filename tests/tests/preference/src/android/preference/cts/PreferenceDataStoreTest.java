@@ -272,8 +272,8 @@ public class PreferenceDataStoreTest {
         testSet.add(TEST_STR);
         mPreference.putStringSet(testSet);
 
-        verify(mDataStore, atLeast(0)).getStringSet(eq(KEY), or(isNull(Set.class), any()));
-        verify(mDataStore, atLeastOnce()).putStringSet(eq(KEY), or(isNull(Set.class), any()));
+        verify(mDataStore, atLeast(0)).getStringSet(eq(KEY), any());
+        verify(mDataStore, atLeastOnce()).putStringSet(eq(KEY), any());
         verifyNoMoreInteractions(mDataStore);
 
         // Test that the value was NOT propagated to SharedPreferences.

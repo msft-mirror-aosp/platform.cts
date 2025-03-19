@@ -27,6 +27,7 @@ import static android.telecom.cts.apps.CallSequencingUtil.isOutgoing;
 import static android.telecom.cts.apps.TelecomTestApp.ManagedConnectionServiceApp;
 
 import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -168,26 +169,82 @@ public class CallSequencingMultiCallingTests extends BaseAppVerifier {
             // Third call
             app = apps.get(2);
             attr = attrs.get(2);
+            boolean isNewCallVoip = app.isVoipControl();
+            boolean isHeldCallManaged = apps.get(0).isManagedControl();
+            boolean isActiveCallManaged = apps.get(1).isManagedControl();
+            boolean canActiveCallHold = isCallHoldable(c2);
+
             if (attr.getDirection() == CallAttributes.DIRECTION_INCOMING) {
                 // Verify second call held and third call is active
                 String c3 = addCallAndVerifyNewCall(app, attr, c2, c3Validator);
                 answerViaInCallService(c3, VideoProfile.STATE_AUDIO_ONLY);
-                CallStateTransitionOperation holdOp = c2Validator.completePendingOperationOrTimeout(
-                        CallStateTransitionOperation.OPERATION_HOLD);
-                assertNotNull("HOLD operation never received for second call " + c2,
-                        holdOp);
-                verifyCallIsInState(c2, STATE_HOLDING);
-                CallStateTransitionOperation answerOp = c3Validator
-                        .completePendingOperationOrTimeout(
-                                CallStateTransitionOperation.OPERATION_ANSWER);
-                assertNotNull("ANSWER operation never received for third call " + c3,
-                        answerOp);
-                verifyCallIsInState(c3, STATE_ACTIVE);
-                // Verify that HOLD operation is received before the ANSWER operation
-                long holdOpTimestamp = holdOp.getCreationTimeMs();
-                long answerOpTimestamp = answerOp.getCreationTimeMs();
-                assertTrue("HOLD operation should've been received before ANSWER operation",
-                        holdOpTimestamp < answerOpTimestamp);
+                // If active call is VOIP, active call is held.
+                // If active call is managed:
+                //    (1) if it can hold: hold active
+                //    (2) if it can't:
+                //           - if 3rd call is VOIP and held call is managed, 3rd call is rejected
+                //           - else, disconnect held + hold active
+                CallStateTransitionOperation heldCallOp = null;
+                CallStateTransitionOperation activeCallOp;
+                CallStateTransitionOperation newCallOp;
+                boolean newCallRejected = false;
+                if (isActiveCallManaged && !canActiveCallHold) {
+                    if (isNewCallVoip && isHeldCallManaged) {
+                        newCallOp =
+                                c3Validator.completePendingOperationOrTimeout(
+                                        CallStateTransitionOperation.OPERATION_ANSWER);
+                        assertNull(
+                                "Answer operation should never have been received for "
+                                        + "third call "
+                                        + c3,
+                                newCallOp);
+                        newCallRejected = true;
+                    } else {
+                        heldCallOp =
+                                c1Validator.completePendingOperationOrTimeout(
+                                        CallStateTransitionOperation.OPERATION_DISCONNECT);
+                        assertNotNull(
+                                "DISCONNECT operation never received for second call " + c2,
+                                heldCallOp);
+                    }
+                }
+                if (!newCallRejected) {
+                    // Verify active call is held
+                    activeCallOp =
+                            c2Validator.completePendingOperationOrTimeout(
+                                    CallStateTransitionOperation.OPERATION_HOLD);
+                    assertNotNull(
+                            "HOLD operation never received for second call " + c2, activeCallOp);
+                    verifyCallIsInState(c2, STATE_HOLDING);
+                    // If the held call was disconnected, verify that it was done before the active
+                    // call was held across phone accounts
+                    if (heldCallOp != null
+                            && apps.get(0).getTelecomApps() != apps.get(1).getTelecomApps()) {
+                        // Verify that DISCONNECT operation for the held call is received before
+                        // the HOLD operation for the active call.
+                        long disconnectTimestamp = heldCallOp.getCreationTimeMs();
+                        long holdTimestamp = activeCallOp.getCreationTimeMs();
+                        assertTrue(
+                                "DISCONNECT operation for the held call should've been "
+                                        + "received before HOLD operation for the active call",
+                                disconnectTimestamp < holdTimestamp);
+                    }
+                    // Verify that the new call was answered.
+                    newCallOp =
+                            c3Validator.completePendingOperationOrTimeout(
+                                    CallStateTransitionOperation.OPERATION_ANSWER);
+                    assertNotNull(
+                            "ANSWER operation never received for third call " + c3, newCallOp);
+                    verifyCallIsInState(c3, STATE_ACTIVE);
+                    if (app.getTelecomApps() != apps.get(1).getTelecomApps()) {
+                        // Verify that HOLD operation is received before the ANSWER operation
+                        long holdTimestamp = activeCallOp.getCreationTimeMs();
+                        long answerTimestamp = newCallOp.getCreationTimeMs();
+                        assertTrue(
+                                "HOLD operation should've been received before ANSWER operation",
+                                holdTimestamp < answerTimestamp);
+                    }
+                }
             }
             //NOTE: the outgoing case is not possible to test right now.
         } finally {

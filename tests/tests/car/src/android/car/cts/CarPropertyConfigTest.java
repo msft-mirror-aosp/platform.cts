@@ -168,14 +168,9 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
             try {
                 result = cfg.getAreaType();
             } catch (RuntimeException e) {
-                if (!Flags.androidVicVehicleProperties()) {
-                    // The VENDOR Area Type (134217728) was added with the Android VIC vehicle
-                    // properties.
-                    assertThat(e.getMessage()).contains("Unsupported area type 134217728");
-                } else {
-                    Assert.fail("Unexpected Runtime Exception for property: "
-                            + VehiclePropertyIds.toString(cfg.getPropertyId()));
-                }
+                Assert.fail(
+                        "Unexpected Runtime Exception for property: "
+                                + VehiclePropertyIds.toString(cfg.getPropertyId()));
             }
 
             assertThat(expectedAreaTypes).contains(result);
@@ -192,8 +187,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
                 Assert.assertEquals(VehicleArea.DOOR, propertyArea);
             } else if (result == VehicleAreaType.VEHICLE_AREA_TYPE_WHEEL) {
                 Assert.assertEquals(VehicleArea.WHEEL, propertyArea);
-            } else if (Flags.androidVicVehicleProperties()
-                    && result == VehicleAreaType.VEHICLE_AREA_TYPE_VENDOR) {
+            } else if (result == VehicleAreaType.VEHICLE_AREA_TYPE_VENDOR) {
                 Assert.assertEquals(VehicleArea.VENDOR, propertyArea);
             } else {
                 Assert.fail("Failed for property: "
@@ -351,7 +345,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
     public void testIsPropertyIdSimulationPropId() {
-        assumeTrue(BuildUtils.isDebuggableBuild());
+        assumeFalse(BuildUtils.isUserBuild());
         for (CarPropertyConfig<?> cfg : mConfigs) {
             assertThat(cfg.isPropertyIdSimulationPropId()).isFalse();
         }
@@ -360,7 +354,7 @@ public final class CarPropertyConfigTest extends AbstractCarTestCase {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CAR_PROPERTY_SIMULATION)
     public void testIsPropertyIdSimulationPropId_userBuild() {
-        assumeFalse(BuildUtils.isDebuggableBuild());
+        assumeTrue(BuildUtils.isUserBuild());
         for (CarPropertyConfig<?> cfg : mConfigs) {
             IllegalStateException thrown =
                     assertThrows(

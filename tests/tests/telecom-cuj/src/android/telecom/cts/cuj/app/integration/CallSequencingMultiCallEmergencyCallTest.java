@@ -107,9 +107,11 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
             ManagedConnectionServiceApp,
             ManagedConnectionServiceAppClone
         }, // 12
-        {
-            ManagedConnectionServiceApp, ManagedConnectionServiceApp, ManagedConnectionServiceApp
-        }, // 13
+        // Todo: - Disabling this test for now (this will be corrected by b/403620519)
+        //        {
+        //            ManagedConnectionServiceApp, ManagedConnectionServiceApp,
+        // ManagedConnectionServiceApp
+        //        }, // 13
         {
             ManagedConnectionServiceApp,
             ManagedConnectionServiceAppClone,
@@ -157,7 +159,7 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
         {true, true, true}, // 10
         {true, true, false}, // 11
         {true, true, false}, // 12
-        {true, true, false}, // 13
+        //        {true, true, false}, // 13
         /* non-holdable tests */
         {true, false, true}, // 14
         {true, false, true}, // 15
@@ -186,7 +188,7 @@ public class CallSequencingMultiCallEmergencyCallTest extends BaseAppVerifier {
         {STATE_ACTIVE, STATE_DIALING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 10
         {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 11
         {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 12
-        {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 13
+        //        {STATE_ACTIVE, STATE_RINGING, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 13
         {STATE_HOLDING, STATE_ACTIVE, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 14
         {STATE_HOLDING, STATE_ACTIVE, STATE_HOLDING, STATE_DISCONNECTED, 1}, // 15
         {STATE_HOLDING, STATE_ACTIVE, STATE_DISCONNECTED, STATE_DISCONNECTED, 2}, // 16

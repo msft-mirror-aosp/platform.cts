@@ -29,6 +29,7 @@ import android.location.BeidouSatelliteEphemeris.BeidouSatelliteClockModel;
 import android.location.BeidouSatelliteEphemeris.BeidouSatelliteEphemerisTime;
 import android.location.BeidouSatelliteEphemeris.BeidouSatelliteHealth;
 import android.location.GalileoAssistance;
+import android.location.GalileoIonosphericModel;
 import android.location.GalileoSatelliteEphemeris;
 import android.location.GalileoSatelliteEphemeris.GalileoSatelliteClockModel;
 import android.location.GalileoSatelliteEphemeris.GalileoSvHealth;
@@ -364,7 +365,10 @@ public class GnssAssistanceTest {
         assertEqualsWithDelta(0.0, gnssSatelliteAlmanac.getAf1());
 
         // verify ionospheric model
-        assertTrue(verifyTestKlobucharIonosphericModel(galileoAssistance.getIonosphericModel()));
+        GalileoIonosphericModel galileoIonosphericModel = galileoAssistance.getIonosphericModel();
+        assertEqualsWithDelta(121, galileoIonosphericModel.getAi0());
+        assertEqualsWithDelta(-0.74609, galileoIonosphericModel.getAi1());
+        assertEqualsWithDelta(0.0088196, galileoIonosphericModel.getAi2());
         // verify utc model
         assertTrue(verifyTestUtcModel(galileoAssistance.getUtcModel()));
         // verify leap seconds model
@@ -463,7 +467,7 @@ public class GnssAssistanceTest {
         assertEqualsWithDelta(2.0, satelliteHealth.getSvAccur());
         BeidouSatelliteEphemerisTime satelliteEphemerisTime =
                 satelliteEphemeris.getSatelliteEphemerisTime();
-        assertEquals(1, satelliteEphemerisTime.getIode());
+        assertEquals(1, satelliteEphemerisTime.getAode());
         assertEquals(934, satelliteEphemerisTime.getBeidouWeekNumber());
         assertEquals(457200, satelliteEphemerisTime.getToeSeconds());
 
@@ -625,7 +629,7 @@ public class GnssAssistanceTest {
     private GalileoAssistance getTestGalileoAssistance() {
         return new GalileoAssistance.Builder()
                 .setAlmanac(getTestGalileoAlmanac())
-                .setIonosphericModel(getTestKlobucharIonosphericModel())
+                .setIonosphericModel(getTestGalileoIonosphericModel())
                 .setUtcModel(getTestUtcModel())
                 .setLeapSecondsModel(getTestLeapSecondsModel())
                 .setTimeModels(getTestTimeModelList())
@@ -918,7 +922,7 @@ public class GnssAssistanceTest {
                 new BeidouSatelliteHealth.Builder().setSatH1(0).setSvAccur(2.0).build();
         final BeidouSatelliteEphemerisTime beidouSatelliteEphemerisTime =
                 new BeidouSatelliteEphemerisTime.Builder()
-                        .setIode(1)
+                        .setAode(1)
                         .setBeidouWeekNumber(934)
                         .setToeSeconds(457200)
                         .build();
@@ -1056,6 +1060,14 @@ public class GnssAssistanceTest {
                 .setBeta1(-180220)
                 .setBeta2(0.0)
                 .setBeta3(131070)
+                .build();
+    }
+
+    private GalileoIonosphericModel getTestGalileoIonosphericModel() {
+        return new GalileoIonosphericModel.Builder()
+                .setAi0(121)
+                .setAi1(-0.74609)
+                .setAi2(0.0088196)
                 .build();
     }
 

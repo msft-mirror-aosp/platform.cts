@@ -648,7 +648,7 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     private OccupantZoneConfigChangeListener createOccupantZoneConfigChangeListener() {
         return new OccupantZoneConfigChangeListener() {
             public void onOccupantZoneConfigChanged(int changeFlags) {
-                Log.i(TAG, "Got a confing change, flags: " + changeFlags);
+                Log.i(TAG, "Got a config change, flags: " + changeFlags);
             }
         };
     }

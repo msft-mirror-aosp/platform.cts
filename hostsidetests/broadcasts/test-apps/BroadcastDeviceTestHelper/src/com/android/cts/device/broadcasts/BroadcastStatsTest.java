@@ -15,8 +15,13 @@
  */
 package com.android.cts.device.broadcasts;
 
+import static com.android.cts.host.broadcasts.Constants.BROADCAST_FINISH_TIMEOUT_MS;
 import static com.android.cts.host.broadcasts.Constants.TEST_BROADCAST_ACTION;
 
+import static org.junit.Assert.fail;
+
+import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
@@ -26,6 +31,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class BroadcastStatsTest {
@@ -42,5 +50,32 @@ public class BroadcastStatsTest {
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                 .addFlags(Intent.FLAG_RECEIVER_INCLUDE_BACKGROUND);
         mContext.sendBroadcast(intent);
+    }
+
+    @Test
+    public void testBroadcastProcessed() throws InterruptedException {
+        final Intent intent =
+                new Intent(TEST_BROADCAST_ACTION)
+                        .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        .addFlags(Intent.FLAG_RECEIVER_INCLUDE_BACKGROUND);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        mContext.sendOrderedBroadcast(
+                intent,
+                /* receiverPermission= */ null,
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        latch.countDown();
+                    }
+                },
+                /* scheduler= */ null,
+                Activity.RESULT_OK,
+                /* initialData= */ null,
+                /* initialExtras= */ null);
+
+        if (!latch.await(BROADCAST_FINISH_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            fail("Timeout waiting for the TestReceiver to process the broadcast");
+        }
     }
 }

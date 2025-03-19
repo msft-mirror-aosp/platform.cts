@@ -16,10 +16,13 @@
 
 package android.supervision.cts
 
+import android.Manifest.permission.CREATE_USERS
 import android.Manifest.permission.MANAGE_USERS
 import android.Manifest.permission.QUERY_USERS
 import android.app.supervision.SupervisionManager
 import android.app.supervision.flags.Flags
+import android.os.UserManager
+import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
@@ -27,6 +30,7 @@ import com.android.bedstead.nene.TestApis
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.xts.root.annotations.RequireRootInstrumentation
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
@@ -36,7 +40,10 @@ import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
 
 @RunWith(BedsteadJUnit4::class)
-@RequireFlagsEnabled(Flags.FLAG_SUPERVISION_MANAGER_APIS)
+@RequireFlagsEnabled(
+    Flags.FLAG_SUPERVISION_MANAGER_APIS,
+    android.multiuser.Flags.FLAG_ALLOW_SUPERVISING_PROFILE,
+)
 class SupervisionCredentialsTest {
     @Test
     @ApiTest(
@@ -46,9 +53,25 @@ class SupervisionCredentialsTest {
     @EnsureHasPermission(MANAGE_USERS)
     @RequireRootInstrumentation(reason = "Use of MANAGE_USERS")
     fun createConfirmSupervisionCredentialsIntent_hasManageUsersPermission_returnsValidIntent() {
-        val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-        assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
-        assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
+        supervisionManager.setSupervisionEnabled(true)
+        val supervisingUser =
+            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
+        if (supervisingUser != null) {
+            runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
+                "locksettings set-pin --user ${supervisingUser.userHandle.identifier} 1234",
+            )
+        }
+
+        try {
+            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+            assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
+            assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
+        } finally {
+            if (supervisingUser != null) {
+                userManager.removeUser(supervisingUser.userHandle)
+            }
+        }
     }
 
     @Test
@@ -56,11 +79,27 @@ class SupervisionCredentialsTest {
         apis =
             ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
     )
-    @EnsureHasPermission(QUERY_USERS)
+    @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
     fun createConfirmSupervisionCredentialsIntent_hasQueryUsersPermission_returnsValidIntent() {
-        val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
-        assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
-        assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
+        supervisionManager.setSupervisionEnabled(true)
+        val supervisingUser =
+            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
+        if (supervisingUser != null) {
+            runShellCommand(
+                InstrumentationRegistry.getInstrumentation(),
+                "locksettings set-pin --user ${supervisingUser.userHandle.identifier} 1234",
+            )
+        }
+
+        try {
+            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+            assertThat(intent?.action).isEqualTo(ACTION_CONFIRM_SUPERVISION_CREDENTIALS)
+            assertThat(intent?.getPackage()).isEqualTo(APPLICATION_PACKAGE)
+        } finally {
+            if (supervisingUser != null) {
+                userManager.removeUser(supervisingUser.userHandle)
+            }
+        }
     }
 
     @Test
@@ -75,8 +114,60 @@ class SupervisionCredentialsTest {
         }
     }
 
-    // TODO: b/400776510: Add tests to cover the case when supervision is not enabled and PIN is not
-    // available.
+    @Test
+    @ApiTest(
+        apis =
+            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
+    )
+    @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
+    fun createConfirmSupervisionCredentialsIntent_supervisionNotEnabled_returnsNull() {
+        supervisionManager.setSupervisionEnabled(false)
+        val supervisingUser =
+            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
+
+        try {
+            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+            assertThat(intent).isNull()
+        } finally {
+            if (supervisingUser != null) {
+                userManager.removeUser(supervisingUser.userHandle)
+            }
+        }
+    }
+
+    @Test
+    @ApiTest(
+        apis =
+            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
+    )
+    @EnsureHasPermission(QUERY_USERS)
+    fun createConfirmSupervisionCredentialsIntent_noSupervisingUser_returnsNull() {
+        supervisionManager.setSupervisionEnabled(true)
+
+        val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+        assertThat(intent).isNull()
+    }
+
+    @Test
+    @ApiTest(
+        apis =
+            ["android.app.supervision.SupervisionManager#createConfirmSupervisionCredentialsIntent"]
+    )
+    @EnsureHasPermission(QUERY_USERS, CREATE_USERS)
+    fun createConfirmSupervisionCredentialsIntent_supervisingUserMissingSecureLock_returnsNull() {
+        supervisionManager.isSupervisionEnabled = true
+        val supervisingUser =
+            userManager.createUser("Supervising", UserManager.USER_TYPE_PROFILE_SUPERVISING, 0)
+
+        try {
+            val intent = supervisionManager.createConfirmSupervisionCredentialsIntent()
+            assertThat(intent).isNull()
+        } finally {
+            if (supervisingUser != null) {
+                userManager.removeUser(supervisingUser.userHandle)
+            }
+        }
+    }
 
     companion object {
         @[JvmField ClassRule Rule]
@@ -87,5 +178,6 @@ class SupervisionCredentialsTest {
         private const val APPLICATION_PACKAGE = "com.android.settings"
         private val context = TestApis.context().instrumentedContext()
         private val supervisionManager = context.getSystemService(SupervisionManager::class.java)
+        private val userManager = context.getSystemService(UserManager::class.java)
     }
 }
