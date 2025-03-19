@@ -24,7 +24,6 @@ import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.profileOwner;
 import static com.android.bedstead.enterprise.EnterpriseDeviceStateExtensionsKt.workProfile;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.assertThrows;
@@ -57,7 +56,6 @@ import com.android.bedstead.harrier.policies.ManagedSubscriptions;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.compatibility.common.util.ApiTest;
@@ -150,7 +148,6 @@ public final class ManagedSubscriptionsPolicyTest {
             key = Settings.Global.ALLOW_WORK_PROFILE_TELEPHONY_FOR_NON_DPM_ROLE_HOLDERS, value =
             "1")
     @EnsureHasNoDpc
-    @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setManagedSubscriptionsPolicy"})
     @Postsubmit(reason = "new test")
     @Test

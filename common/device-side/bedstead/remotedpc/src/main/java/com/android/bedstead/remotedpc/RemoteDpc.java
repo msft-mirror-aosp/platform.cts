@@ -19,8 +19,8 @@ package com.android.bedstead.remotedpc;
 import static android.os.UserManager.DISALLOW_DEBUGGING_FEATURES;
 import static android.os.UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES;
 
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.ManagedProfileProvisioningParams;
@@ -38,9 +38,9 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppProvider;
 import com.android.bedstead.testapp.TestAppQueryBuilder;
@@ -385,8 +385,6 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
-     *
-     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile() {
@@ -399,8 +397,6 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
-     *
-     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile(TestAppQueryBuilder dpcQuery) {
@@ -413,8 +409,6 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
-     *
-     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile(UserReference parent) {
@@ -428,8 +422,6 @@ public class RemoteDpc extends RemotePolicyManager {
      * <p>If autoclosed, the user will be removed along with the dpc.
      *
      * <p>If called for Android versions prior to Q an exception will be thrown
-     *
-     * <p>requires MANAGE_PROFILE_AND_DEVICE_OWNERS permission
      */
     @Experimental
     public static RemoteDpc createWorkProfile(UserReference parent, TestAppQueryBuilder dpcQuery) {
@@ -458,13 +450,9 @@ public class RemoteDpc extends RemotePolicyManager {
             Log.i(LOG_TAG, "Installing RemoteDPC app: " + testApp.packageName());
             testApp.install(parent);
         }
-
-        try {
+        try  {
             RemoteDpc dpc = forDevicePolicyController(TestApis.devicePolicy().getProfileOwner(
-                    sDevicePolicyManager.createAndProvisionManagedProfile(
-                            new ManagedProfileProvisioningParams.Builder(
-                                    new ComponentName(testApp.packageName(), TEST_APP_CLASS_NAME),
-                                    "RemoteDPC").build())));
+                    createAndProvisionManagedProfile(testApp)));
 
             dpc.devicePolicyManager().setProfileEnabled(dpc.componentName());
 
@@ -477,6 +465,19 @@ public class RemoteDpc extends RemotePolicyManager {
             if (removeFromParent) {
                 testApp.uninstall(parent);
             }
+        }
+    }
+
+    private static UserHandle createAndProvisionManagedProfile(TestApp testApp) throws ProvisioningException {
+        ManagedProfileProvisioningParams provisioningParams =
+                new ManagedProfileProvisioningParams.Builder(
+                        new ComponentName(testApp.packageName(), TEST_APP_CLASS_NAME),
+                        "RemoteDPC"
+                ).build();
+        try (PermissionContext p = TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
+            UserHandle managedProfile = sDevicePolicyManager.createManagedProfile(provisioningParams);
+            sDevicePolicyManager.finalizeWorkProfileProvisioning(managedProfile, null);
+            return managedProfile;
         }
     }
 
