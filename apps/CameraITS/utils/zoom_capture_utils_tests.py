@@ -24,7 +24,7 @@ _FOCAL_LENGTH = 1
 _IMG_SIZE = (640, 480)
 _OFFSET_RTOL = 0.1
 _RADIUS_RTOL = 0.1
-_WRONG_ARUCO_OFFSET = 100
+_WRONG_ARUCO_OFFSET = 200
 
 
 def _generate_aruco_markers(center, side_length):

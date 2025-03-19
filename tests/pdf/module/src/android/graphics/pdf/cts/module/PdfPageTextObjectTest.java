@@ -49,12 +49,14 @@ public class PdfPageTextObjectTest {
     private static final int FILL_COLOR = Color.GREEN;
     private static final int RENDER_MODE = PdfPageObjectRenderMode.FILL_STROKE;
 
-    private static final PdfPageTextObjectFont FONT =
-            new PdfPageTextObjectFont(PdfPageTextObjectFontFamily.COURIER, true, false);
-
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_EDIT_PDF_TEXT_OBJECTS)
     public void textPageObject_test() {
-        PdfPageTextObject pageTextObject = new PdfPageTextObject(TEXT, FONT, FONT_SIZE);
+        PdfPageTextObject pageTextObject =
+                new PdfPageTextObject(
+                        TEXT,
+                        new PdfPageTextObjectFont(PdfPageTextObjectFontFamily.COURIER, true, false),
+                        FONT_SIZE);
         assertThat(pageTextObject.getText()).isEqualTo(TEXT);
         assertThat(pageTextObject.getFontSize()).isEqualTo(FONT_SIZE);
         assertThat(pageTextObject.getRenderMode()).isEqualTo(PdfPageObjectRenderMode.FILL);

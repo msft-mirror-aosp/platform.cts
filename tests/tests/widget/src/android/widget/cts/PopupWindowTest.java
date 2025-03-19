@@ -17,6 +17,8 @@
 package android.widget.cts;
 
 import static android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop;
+import static android.view.WindowInsets.Type.displayCutout;
+import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -42,6 +44,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
@@ -1356,7 +1359,8 @@ public class PopupWindowTest {
         assertEquals(80, mPopupWindow.getHeight());
 
         final WindowInsets windowInsets = containerView.getRootWindowInsets();
-        popupPos.set(windowInsets.getStableInsetLeft() + 20, windowInsets.getStableInsetTop() + 50);
+        final Insets stableInsets = windowInsets.getInsets(systemBars() | displayCutout());
+        popupPos.set(stableInsets.left + 20, stableInsets.top + 50);
 
         // update if it is not shown
         mActivityRule.runOnUiThread(() -> mPopupWindow.update(popupPos.x, popupPos.y, 50, 50));
@@ -1370,7 +1374,7 @@ public class PopupWindowTest {
         assertEquals(containingRect.left + popupPos.x + viewInWindowXY[0], fstXY[0]);
         assertEquals(containingRect.top + popupPos.y + viewInWindowXY[1], fstXY[1]);
 
-        popupPos.set(windowInsets.getStableInsetLeft() + 4, windowInsets.getStableInsetTop());
+        popupPos.set(stableInsets.left + 4, stableInsets.top);
 
         // ignore if width or height is -1
         mActivityRule.runOnUiThread(
