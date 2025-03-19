@@ -641,4 +641,13 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
         return sb.toString();
     }
 
+    protected void waitAndAssertActivityRemoved(ComponentName componentName) {
+        recordTaskStateDump("waitAndAssertActivityRemoved " + getActivityName(componentName));
+        try {
+            mWmState.waitAndAssertActivityRemoved(componentName);
+            recordTaskStateDump("activityRemoved " + getActivityName(componentName));
+        } catch (AssertionError e) {
+            throw new AssertionError(e.getMessage() + "\n" + allTaskStateDumps());
+        }
+    }
 }
