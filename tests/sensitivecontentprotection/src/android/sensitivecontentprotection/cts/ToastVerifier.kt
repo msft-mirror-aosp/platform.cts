@@ -24,7 +24,8 @@ import com.google.common.truth.Truth
 class ToastVerifier {
     companion object {
         fun verifyToastShowsAndGoes() {
-            Truth.assertThat(waitForToast()).isTrue()
+            // Toasts may take a while to show up on slower devices.
+             eventually { Truth.assertThat(waitForToast()).isTrue() }
             // Toasts using Toast.LENGTH_LONG tends to not dismiss before the
             // WindowManagerStateHelper().waitFor timeout
             eventually { Truth.assertThat(waitForNoToast()).isTrue() }
