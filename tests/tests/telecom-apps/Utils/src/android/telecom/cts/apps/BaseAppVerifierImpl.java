@@ -542,6 +542,11 @@ public class BaseAppVerifierImpl {
         appControl.setMuteState(id, isMuted);
     }
 
+    public void sendConnectionEvent(AppControlWrapper appControl, String id, String event)
+            throws RemoteException {
+        appControl.sendConnectionEvent(id, event);
+    }
+
     // -- phone accounts
     public void registerDefaultPhoneAccount(AppControlWrapper appControl) throws RemoteException {
         appControl.registerDefaultPhoneAccount();

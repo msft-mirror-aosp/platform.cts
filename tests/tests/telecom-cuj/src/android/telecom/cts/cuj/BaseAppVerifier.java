@@ -416,6 +416,11 @@ public class BaseAppVerifier {
         mBaseAppVerifierImpl.setMuteState(appControl, id, isMuted);
     }
 
+    public void sendConnectionEvent(AppControlWrapper appControl, String id, String event)
+            throws RemoteException {
+        mBaseAppVerifierImpl.sendConnectionEvent(appControl, id, event);
+    }
+
     public CallEndpoint getCurrentCallEndpoint(AppControlWrapper appControl, String id)
             throws Exception {
         return mBaseAppVerifierImpl.getCurrentCallEndpoint(appControl, id);
