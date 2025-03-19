@@ -58,6 +58,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.ComponentNameUtils;
+import android.server.wm.Condition;
 import android.server.wm.CtsWindowInfoUtils;
 import android.server.wm.FutureConnection;
 import android.server.wm.TouchHelper;
@@ -68,6 +69,7 @@ import android.server.wm.shared.BlockingResultReceiver;
 import android.server.wm.shared.IUntrustedTouchTestService;
 import android.util.ArrayMap;
 import android.util.ArraySet;
+import android.util.Log;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -258,28 +260,61 @@ public abstract class WindowUntrustedTouchTestBase {
         } else {
             getService(packageName).showToast();
         }
-        String message = "Toast from app " + packageName + " did not appear on time";
-        // TODO: WindowStateProto does not have package/UID information from the window, the current
-        //  package test relies on the window name, which is not how toast windows are named. We
-        //  should ideally incorporate that information in WindowStateProto and use here.
-        if (!mWmState.waitFor("toast window", this::hasVisibleToast)) {
-            fail(message);
-        }
 
-        // Make sure the toast is displayed on top of the container activity.
-        Rect toastBounds = mWmState.waitForResult("toast bounds",
-                state -> state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).getFrame());
-        int[] viewXY = new int[2];
-        mContainer.getLocationOnScreen(viewXY);
-        Rect containerRect = new Rect(viewXY[0], viewXY[1], viewXY[0] + mContainer.getWidth(),
-                viewXY[1] + mContainer.getHeight());
-        assumeTrue("Toast displayed outside of container bounds.",
-                containerRect.contains(toastBounds.centerX(), toastBounds.centerY()));
+        Condition.waitFor(
+                new Condition<WindowManagerState.WindowState>(null)
+                        .setRetryIntervalMs(100)
+                        .setRetryLimit(20)
+                        .setResultSupplier(
+                                () -> {
+                                    mWmState.computeState();
+                                    return mWmState.findFirstWindowWithType(
+                                            LayoutParams.TYPE_TOAST);
+                                })
+                        .setResultValidator(
+                                toastWindow -> {
+                                    String invalidReason = validateToastWindow(toastWindow);
+                                    if (invalidReason != null) {
+                                        Log.d(TAG, "Failed to validate toast window: " +
+                                            invalidReason);
+                                        return false;
+                                    }
+                                    return true;
+                                })
+                        .setOnFailure(
+                                toastWindow ->
+                                        fail(
+                                                "Toast from app "
+                                                        + packageName
+                                                        + " did not appear on time or is outside of"
+                                                        + " container bounds. Last reason: "
+                                                        + validateToastWindow(toastWindow))));
     }
 
-    private boolean hasVisibleToast(WindowManagerState state) {
-        return !state.getMatchingWindowType(LayoutParams.TYPE_TOAST).isEmpty()
-                && state.findFirstWindowWithType(LayoutParams.TYPE_TOAST).isSurfaceShown();
+    private String validateToastWindow(WindowManagerState.WindowState toastWindow) {
+        if (toastWindow == null) {
+            return "toast window not found";
+        }
+        if (toastWindow.getType() != LayoutParams.TYPE_TOAST) {
+            return "window is not a toast window";
+        }
+        if (!toastWindow.isSurfaceShown()) {
+            return "toast surface not shown";
+        }
+        Rect toastBounds = toastWindow.getFrame();
+        int[] viewXY = new int[2];
+        mContainer.getLocationOnScreen(viewXY);
+        Rect containerRect =
+                new Rect(
+                        viewXY[0],
+                        viewXY[1],
+                        viewXY[0] + mContainer.getWidth(),
+                        viewXY[1] + mContainer.getHeight());
+        if (!containerRect.contains(toastBounds.centerX(), toastBounds.centerY())) {
+            return "toast window is outside container bounds";
+        }
+        // Toast window is valid
+        return null;
     }
 
     private void addMyCustomToastOverlay() {
