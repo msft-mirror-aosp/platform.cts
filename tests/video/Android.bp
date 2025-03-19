@@ -14,11 +14,11 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_video_image_codecs",
 }
 
-android_test {
-    name: "CtsVideoTestCases",
-    team: "trendy_team_android_video_image_codecs",
+java_defaults {
+    name: "VideoTestCases_defaults",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
@@ -33,11 +33,30 @@ android_test {
         "libnativehelper_compat_libc++",
     ],
     srcs: ["src/**/*.java"],
+    sdk_version: "test_current",
+    min_sdk_version: "29",
+}
+
+android_test {
+    name: "CtsVideoTestCases",
+    defaults: ["VideoTestCases_defaults"],
     // Tag this module as a cts test artifact
+    test_config: "AndroidTest.xml",
     test_suites: [
         "cts",
         "general-tests",
     ],
-    sdk_version: "test_current",
-    min_sdk_version: "29",
+}
+
+android_test {
+    name: "MctsVideoTestCases",
+    defaults: ["VideoTestCases_defaults"],
+    // Tag this module as a Mcts test artifact
+    test_config: "AndroidTest-mcts.xml",
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mcts-media",
+        "mts-media",
+    ],
 }

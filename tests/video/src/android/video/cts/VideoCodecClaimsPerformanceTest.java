@@ -25,6 +25,7 @@ import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Rule;
@@ -46,6 +47,11 @@ import java.util.List;
  * other tests that verify whether the codecs perform at the level they claim. The combination of
  * "does the device claim to meet..." and "do all codecs meet their individual claims..." allows
  * us to determine whether the device does deliver the required performance.
+ * This test looks at performance advertised by the codecs (performance points for h/w codecs and
+ * achievable frame rates for s/w codecs) and ensures there is at least one codec that meets CDD
+ * requirements. Since achievable frame rates for s/w codecs are in media_codecs_performance.xml
+ * which corresponds to vendor partition, any changes to the s/w codecs in the mainline module has
+ * no effect, therefore we only need to test when we test the framework.
  * <p>
  * The tests that measure actual performance include:
  * {@link android.video.cts.CodecEncoderPerformanceTest}
@@ -53,6 +59,7 @@ import java.util.List;
  * {@link android.video.cts.VideoEncoderDecoderTest}
  * {@link android.media.decoder.cts.VideoDecoderPerfTest}
  */
+@FrameworkSpecificTest
 @RunWith(Parameterized.class)
 public class VideoCodecClaimsPerformanceTest extends VideoCodecClaimsPerformanceTestBase {
     public VideoCodecClaimsPerformanceTest(String mediaType, int width, int height, int fps,

@@ -25,6 +25,7 @@ import android.mediav2.common.cts.CodecTestBase.ComponentClass;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.CddTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 
 import org.junit.Test;
@@ -40,9 +41,26 @@ import java.util.List;
  * The CDD requires devices to support certain combinations of resolution+framerate for video
  * processing. Some of these requirements vary based on the presence of a hardware codec.
  * <p>
+ * This test verifies that a device claims to support the required combinations. The test does
+ * not verify that the device actually delivers the claimed performance; such testing is done in
+ * other tests that verify whether the codecs perform at the level they claim. The combination of
+ * "does the device claim to meet..." and "do all codecs meet their individual claims..." allows
+ * us to determine whether the device does deliver the required performance.
+ * This test looks at performance advertised by the codecs (performance points for h/w codecs and
+ * achievable frame rates for s/w codecs) and ensures there is at least one codec that meets CDD
+ * requirements. Since achievable frame rates for s/w codecs are in media_codecs_performance.xml
+ * which corresponds to vendor partition, any changes to the s/w codecs in the mainline module has
+ * no effect, therefore we only need to test when we test the framework.
+ * <p>
+ * The tests that measure actual performance include:
+ * {@link android.video.cts.CodecEncoderPerformanceTest}
+ * {@link android.video.cts.CodecDecoderPerformanceTest}
+ * {@link android.video.cts.VideoEncoderDecoderTest}
+ * {@link android.media.decoder.cts.VideoDecoderPerfTest}
  * This test is an extension to {@link VideoCodecClaimsPerformanceTest} which checks whether the
  * device claims to support at least one of H.265 or VP9 decoding of 720, 1080 and UHD profiles.
  */
+@FrameworkSpecificTest
 @RunWith(Parameterized.class)
 public class HevcVp9ClaimsPerformanceTest {
     private final List<VideoCodecClaimsPerformanceTestBase> mBaseInstances = new ArrayList<>();
