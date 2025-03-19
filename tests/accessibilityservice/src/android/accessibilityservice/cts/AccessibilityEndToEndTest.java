@@ -1670,10 +1670,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                     return false;
                 });
 
-        final GestureDescription.Builder builder =
-                new GestureDescription.Builder()
-                        .addStroke(click(new PointF(location[0], location[1])));
-        dispatch(service, builder.build());
+        awaitDispatchGesture(service, null, click(new PointF(location[0], location[1])));
         TestUtils.waitOn(waitLock, touched::get, DEFAULT_TIMEOUT_MS, "Expected touch");
     }
 
@@ -2367,15 +2364,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         final int midY = button.getHeight() / 2;
         button.getLocationOnScreen(buttonLocation);
         PointF tapLocation = new PointF(buttonLocation[0] + midX, buttonLocation[1] + midY);
-        try {
-            dispatch(service, click(tapLocation));
-        } catch (RuntimeException e) {
-            // The input filter could have been  rebuilt causing this gesture to cancel.
-            // Reset state and try again.
-            eventCount.set(0);
-            listener.clear();
-            dispatch(service, click(tapLocation));
-        }
+        awaitDispatchGesture(
+                service,
+                () -> {
+                    eventCount.set(0);
+                    listener.clear();
+                },
+                click(tapLocation));
 
         // We should find 2 events.
         TestUtils.waitOn(
@@ -2389,15 +2384,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         // Stop listening to events for this source, then inject 1 more event to the input filter.
         service.setMotionEventSources(0 /* no sources */);
         assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(0);
-        try {
-            dispatch(service, click(tapLocation));
-        } catch (RuntimeException e) {
-            // The input filter could have been  rebuilt causing this gesture to cancel.
-            // Reset state and try again.
-            eventCount.set(2);
-            listener.clear();
-            dispatch(service, click(tapLocation));
-        }
+        awaitDispatchGesture(
+                service,
+                () -> {
+                    eventCount.set(2);
+                    listener.clear();
+                },
+                click(tapLocation));
 
         // Assert we only received the original 2.
         try {
@@ -3132,8 +3125,9 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         });
     }
 
-    private void dispatch(
+    private void awaitDispatchGesture(
             InstrumentedAccessibilityService service,
+            @Nullable Runnable reset,
             StrokeDescription firstStroke,
             StrokeDescription... rest) {
         GestureDescription.Builder builder =
@@ -3141,10 +3135,21 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         for (StrokeDescription stroke : rest) {
             builder.addStroke(stroke);
         }
-        dispatch(service, builder.build());
+        final GestureDescription gesture = builder.build();
+        try {
+            awaitDispatchGesture(service, gesture);
+        } catch (RuntimeException e) {
+            // The input filter could have been rebuilt causing this gesture to cancel.
+            // Reset state and try one more time.
+            if (reset != null) {
+                reset.run();
+            }
+            awaitDispatchGesture(service, gesture);
+        }
     }
 
-    private void dispatch(InstrumentedAccessibilityService service, GestureDescription gesture) {
+    private void awaitDispatchGesture(
+            InstrumentedAccessibilityService service, GestureDescription gesture) {
         await(dispatchGesture(service, gesture));
     }
 
