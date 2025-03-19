@@ -43,6 +43,17 @@ public class ApiCoverage {
     }
 
     /** Finds the given API method. */
+    public ApiMethod getDeclaredMethod(
+            String packageName, String className, String methodName, List<String> methodParams) {
+        ApiClass apiClass = getClass(packageName, className);
+        if (apiClass == null) {
+            return null;
+        }
+        Optional<ApiMethod> apiMethod = apiClass.getDeclaredMethod(methodName, methodParams);
+        return apiMethod.orElse(null);
+    }
+
+    /** Finds the given API method including both inherited and directly declared methods. */
     public ApiMethod getMethod(
             String packageName, String className, String methodName, List<String> methodParams) {
         ApiClass apiClass = getClass(packageName, className);
@@ -62,6 +73,15 @@ public class ApiCoverage {
         for (Map.Entry<String, ApiPackage> entry : mPackages.entrySet()) {
             ApiPackage pkg = entry.getValue();
             pkg.resolveSuperClasses(mPackages);
+        }
+    }
+
+    /** Iterate through all packages and update all classes to include inherited methods. */
+    public void resolveInheritedMethods() {
+        for (ApiPackage apiPackage : mPackages.values()) {
+            for (ApiClass apiClass : apiPackage.getClasses()) {
+                apiClass.resolveInheritedMethods();
+            }
         }
     }
 }
